@@ -479,21 +479,102 @@ export default function SolRefund() {
 
   const refundCalc = calculateRefund();
 
+  // Connect wallet function
+  const connectWallet = async () => {
+    try {
+      if (!window.solana?.isPhantom) {
+        toast({
+          title: "Phantom Wallet Required",
+          description: "Please install Phantom wallet to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await window.solana.connect();
+      setForceDisconnected(false);
+      toast({
+        title: "Wallet Connected",
+        description: "Successfully connected to Phantom wallet.",
+      });
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      toast({
+        title: "Connection Failed",
+        description: "Failed to connect to Phantom wallet.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Disconnect wallet function
+  const disconnectWallet = async () => {
+    try {
+      if (window.solana) {
+        await window.solana.disconnect();
+      }
+      setForceDisconnected(true);
+      setPublicKey(null);
+      setIsConnected(false);
+      setScanResult(null);
+      toast({
+        title: "Wallet Disconnected",
+        description: "Successfully disconnected from Phantom wallet.",
+      });
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-4 py-8">
-            <div className="flex items-center justify-center space-x-3">
+          {/* Header with Wallet Connection */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-3">
               <Coins className="h-8 w-8 text-purple-400" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Claim Sol</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">SOL Refund</h1>
             </div>
+            
+            {/* Wallet Connection Button */}
+            <div className="flex items-center space-x-4">
+              {isConnected && publicKey ? (
+                <div className="flex items-center space-x-3">
+                  <div className="text-white text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span className="font-mono">{publicKey.slice(0, 4)}...{publicKey.slice(-4)}</span>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={disconnectWallet}
+                    variant="outline"
+                    size="sm"
+                    className="border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+                  >
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={connectWallet}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Connect Wallet
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-lg">
               Reclaim your SOL rent from empty token accounts. Each empty token account holds ~0.002 SOL 
               that can be recovered by closing the account.
             </p>
-
           </div>
 
           {/* Scan Wallet Section */}
@@ -521,8 +602,7 @@ export default function SolRefund() {
               <div className="text-center space-y-4">
                 <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
-                <p className="text-purple-200">Please connect your Phantom wallet using the button in the top navigation to access the Claim Sol utility.</p>
-
+                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to access the Claim Sol utility.</p>
               </div>
             </div>
           )}
