@@ -1,0 +1,32 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+sol_refund = "SoLRefundProgram11111111111111111111111111111"
+dca_automation = "DCAuto1111111111111111111111111111111111111"
+trading_escrow = "TradeBotEscrow1111111111111111111111111111"
+
+[programs.devnet]
+sol_refund = "SoLRefundProgram11111111111111111111111111111"
+dca_automation = "DCAuto1111111111111111111111111111111111111"
+trading_escrow = "TradeBotEscrow1111111111111111111111111111"
+
+[programs.mainnet]
+sol_refund = "SoLRefundProgram11111111111111111111111111111"
+dca_automation = "DCAuto1111111111111111111111111111111111111"
+trading_escrow = "TradeBotEscrow1111111111111111111111111111"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "mainnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[[test.genesis]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+program = "metadata.so"
