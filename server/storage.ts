@@ -95,15 +95,19 @@ export class MemStorage implements IStorage {
       id,
       scannedAt: new Date(),
       claimed: false,
+      tokenSymbol: account.tokenSymbol ?? null,
+      tokenName: account.tokenName ?? null,
+      balance: account.balance ?? "0",
     };
     this.emptyTokenAccounts.set(id, emptyTokenAccount);
     return emptyTokenAccount;
   }
 
   async getEmptyTokenAccountsByWallet(walletAddress: string): Promise<EmptyTokenAccount[]> {
-    return Array.from(this.emptyTokenAccounts.values()).filter(
+    const accounts = Array.from(this.emptyTokenAccounts.values()).filter(
       (account) => account.walletAddress === walletAddress && !account.claimed
     );
+    return accounts;
   }
 
   async markAccountsAsClaimed(accountAddresses: string[]): Promise<void> {

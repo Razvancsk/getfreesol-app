@@ -50,10 +50,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try each endpoint until one works
       for (const endpoint of rpcEndpoints) {
         try {
-          const testConnection = new Connection(endpoint, 'confirmed');
+          const testConnection = new Connection(endpoint as string, 'confirmed');
           await testConnection.getLatestBlockhash();
           connection = testConnection;
-          workingEndpoint = endpoint;
+          workingEndpoint = endpoint as string;
           break;
         } catch (error) {
           console.log(`RPC endpoint ${endpoint} failed, trying next...`);
@@ -90,8 +90,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             walletAddress: address,
             tokenSymbol: parsedInfo.mint.substring(0, 8) + "...", // Simplified symbol
             tokenName: null,
-            rentAmount: rentAmount,
-            balance: 0,
+            rentAmount: rentAmount.toString(),
+            balance: "0",
             decimals: parsedInfo.tokenAmount.decimals
           });
 
