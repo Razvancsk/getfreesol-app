@@ -1,8 +1,8 @@
-# SOL Refund Application
+# Get Your Sol Application
 
 ## Overview
 
-This is a full-stack TypeScript application that helps Solana users reclaim SOL from empty token accounts. The application consists of a React frontend built with Vite and a Node.js Express backend, using PostgreSQL for data persistence. It integrates with the Solana blockchain to scan wallets, identify empty token accounts, and facilitate the reclamation of rent deposits.
+This is a full-stack TypeScript application called "Get Your Sol" that helps Solana users reclaim SOL from empty token accounts. The application consists of a React frontend built with Vite and a Node.js Express backend, using PostgreSQL for data persistence. It integrates with the Solana blockchain to scan wallets, identify empty token accounts, and facilitate the reclamation of rent deposits.
 
 ## User Preferences
 

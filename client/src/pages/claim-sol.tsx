@@ -534,7 +534,7 @@ export default function SolRefund() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-3">
               <Coins className="h-8 w-8 text-purple-400" />
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">SOL Refund</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
             </div>
             
             {/* Wallet Connection Button */}
@@ -596,7 +596,7 @@ export default function SolRefund() {
               <div className="text-center space-y-4">
                 <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
-                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to access the Claim Sol utility.</p>
+                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to access the Get Your Sol utility.</p>
               </div>
             </div>
           )}
