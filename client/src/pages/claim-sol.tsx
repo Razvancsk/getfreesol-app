@@ -538,29 +538,23 @@ export default function SolRefund() {
             </div>
             
             {/* Wallet Connection Button */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               {isConnected && publicKey ? (
-                <div className="flex items-center space-x-3">
-                  <div className="text-white text-sm">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <span className="font-mono">{publicKey.slice(0, 4)}...{publicKey.slice(-4)}</span>
-                    </div>
+                <>
+                  <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
+                    {publicKey.slice(0, 6)}...{publicKey.slice(-6)}
                   </div>
                   <Button
                     onClick={disconnectWallet}
-                    variant="outline"
-                    size="sm"
-                    className="border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+                    className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
                   >
-                    <Wallet className="h-4 w-4 mr-2" />
                     Disconnect
                   </Button>
-                </div>
+                </>
               ) : (
                 <Button
                   onClick={connectWallet}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
                 >
                   <Wallet className="h-4 w-4 mr-2" />
                   Connect Wallet
