@@ -533,7 +533,6 @@ export default function SolRefund() {
           {/* Header with Wallet Connection */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-3">
-              <Coins className="h-8 w-8 text-purple-400" />
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
             </div>
             
