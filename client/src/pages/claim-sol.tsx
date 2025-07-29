@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -47,7 +48,7 @@ interface RefundStats {
   recentTransactions: TransactionRecord[];
 }
 
-export default function ClaimSol() {
+export default function SolRefund() {
   const queryClient = useQueryClient();
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -157,7 +158,7 @@ export default function ClaimSol() {
         (window.solana as any).off('disconnect', handleDisconnect);
       }
     };
-  }, [forceDisconnected, hasCheckedInitialState]);
+  }, []);
 
   // Add comprehensive error handler to prevent ALL unhandled promise rejections from showing overlay
   useEffect(() => {
@@ -406,8 +407,6 @@ export default function ClaimSol() {
         }
         
         throw new Error(errorMessage);
-      } finally {
-        setProcessing(false);
       }
     },
     onSuccess: (result: any) => {
@@ -446,42 +445,7 @@ export default function ClaimSol() {
     },
   });
 
-  const connectWallet = async () => {
-    try {
-      if (!window.solana?.isPhantom) {
-        toast({
-          title: "Phantom Wallet Not Found",
-          description: "Please install Phantom wallet to continue",
-          variant: "destructive",
-        });
-        return;
-      }
 
-      await window.solana.connect();
-      setForceDisconnected(false);
-    } catch (error: any) {
-      console.error('Failed to connect wallet:', error);
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect wallet",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const disconnectWallet = async () => {
-    try {
-      if (window.solana) {
-        await window.solana.disconnect();
-      }
-      setForceDisconnected(true);
-      setPublicKey(null);
-      setIsConnected(false);
-      setScanResult(null);
-    } catch (error: any) {
-      console.error('Failed to disconnect wallet:', error);
-    }
-  };
 
   const handleProcessAllRefunds = () => {
     if (!scanResult || scanResult.accounts.length === 0) {
@@ -530,54 +494,6 @@ export default function ClaimSol() {
               that can be recovered by closing the account.
             </p>
 
-            {/* Stats Row */}
-            {stats && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                  <div className="text-3xl font-bold text-emerald-400">{stats.totalSolRecovered.toFixed(1)}</div>
-                  <div className="text-purple-200">SOL Recovered</div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                  <div className="text-3xl font-bold text-purple-400">{stats.totalAccountsClaimed.toLocaleString()}</div>
-                  <div className="text-purple-200">Accounts Closed</div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                  <div className="text-3xl font-bold text-amber-400">{stats.recentTransactions.length}</div>
-                  <div className="text-purple-200">Recent Claims</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Wallet Connection */}
-          <div className="text-center mb-8">
-            {!isConnected ? (
-              <Button 
-                onClick={connectWallet}
-                size="lg"
-                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
-              >
-                <Wallet className="h-6 w-6 mr-3" />
-                Connect Phantom Wallet
-              </Button>
-            ) : (
-              <div className="flex items-center justify-center space-x-4">
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 px-6 py-3 flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                  <span className="text-white font-mono text-sm">
-                    {publicKey?.substring(0, 8)}...{publicKey?.substring(publicKey.length - 8)}
-                  </span>
-                  <Button
-                    onClick={disconnectWallet}
-                    variant="ghost"
-                    size="sm"
-                    className="text-purple-300 hover:text-white"
-                  >
-                    Disconnect
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Scan Wallet Section */}
@@ -605,7 +521,8 @@ export default function ClaimSol() {
               <div className="text-center space-y-4">
                 <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
-                <p className="text-purple-200">Please connect your Phantom wallet to access the Claim Sol utility.</p>
+                <p className="text-purple-200">Please connect your Phantom wallet using the button in the top navigation to access the Claim Sol utility.</p>
+
               </div>
             </div>
           )}
@@ -638,19 +555,6 @@ export default function ClaimSol() {
 
                   <div className="w-full h-px bg-slate-600"></div>
 
-                  {/* Fee Disclosure */}
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <AlertTriangle className="text-amber-400 text-lg mt-0.5" />
-                      <div>
-                        <div className="font-semibold text-amber-400 mb-1">Service Fee: 15%</div>
-                        <div className="text-sm text-gray-300">
-                          A 15% service fee ({refundCalc.donation.toFixed(6)} SOL) will be deducted from your refund to cover transaction costs and platform maintenance.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Empty Accounts List */}
                   <div className="space-y-4">
                     <h4 className="text-base font-medium text-white">Empty Accounts Found ({scanResult.accounts.length})</h4>
@@ -663,7 +567,7 @@ export default function ClaimSol() {
                               {account.accountAddress}
                             </div>
                             <div className="text-xs text-white">
-                              Mint: {account.mintAddress.substring(0, 8)}...{account.mintAddress.substring(account.mintAddress.length - 8)}
+                              Mint: {account.mintAddress.substring(0, 8)}...{account.mintAddress.substring(-8)}
                             </div>
                           </div>
                           <div className="px-2 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded text-xs text-purple-400">
@@ -674,19 +578,23 @@ export default function ClaimSol() {
                     </div>
                   </div>
 
+
+
+
+
                   {/* Process Button */}
                   <Button 
                     onClick={handleProcessAllRefunds}
-                    disabled={refundMutation.isPending || processing}
+                    disabled={refundMutation.isPending}
                     size="lg"
                     className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
                   >
-                    {(refundMutation.isPending || processing) ? (
+                    {refundMutation.isPending ? (
                       <RefreshCw className="h-5 w-5 animate-spin mr-2" />
                     ) : (
                       <CheckCircle className="h-5 w-5 mr-2" />
                     )}
-                    {(refundMutation.isPending || processing) ? 'Processing...' : 'CLAIM ALL'}
+                    CLAIM ALL
                   </Button>
                 </div>
               ) : (
@@ -799,10 +707,13 @@ export default function ClaimSol() {
                       </tbody>
                     </table>
                   </div>
+
                 </div>
               )}
             </div>
           )}
+
+
 
           {/* Safety Information */}
           <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -828,26 +739,20 @@ export default function ClaimSol() {
                 <span>15% service fee supports platform maintenance and development</span>
               </div>
             </div>
+
+
           </div>
 
           {/* What is this rent explanation - at bottom */}
           <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
             <div className="flex items-center space-x-2 mb-4">
-              <AlertTriangle className="h-5 w-5 text-amber-400" />
-              <h3 className="text-lg font-semibold text-white">What are empty token accounts?</h3>
+              <AlertTriangle className="h-5 w-5 text-purple-400" />
+              <h3 className="text-lg font-semibold text-white">What is this rent?</h3>
             </div>
-            <div className="space-y-3 text-sm text-white">
-              <p>
-                On Solana, every token account requires a small rent deposit (~0.002 SOL) to remain active on the blockchain. 
-                When you receive tokens, a new token account is created for each different token type.
-              </p>
-              <p>
-                When all tokens are spent or transferred out, the account becomes "empty" but the rent deposit remains locked. 
-                By closing these empty accounts, you can reclaim this SOL back to your wallet.
-              </p>
-              <p className="text-purple-200 font-medium">
-                This is completely safe and only affects accounts with zero token balance.
-              </p>
+            <div className="space-y-3 text-white">
+              <p className="text-sm">Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).</p>
+              <p className="text-sm">When you sell or transfer all tokens, the account becomes empty but the rent remains locked. Our tool safely closes these empty accounts and returns your SOL.</p>
+              <p className="text-sm font-medium text-white">Only accounts with 0 tokens are eligible for closure - your funds are completely safe.</p>
             </div>
           </div>
         </div>
