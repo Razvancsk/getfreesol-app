@@ -529,9 +529,63 @@ export default function SolRefund() {
         const coreData = await coreResponse.json();
         
         if (coreData.requiresFrontendBurn) {
-          // For Core NFTs, show instructions for manual burning via Phantom
-          // The current Metaplex Core SDK has browser compatibility issues
-          throw new Error('Core NFTs should be burned through Phantom wallet. In your wallet: Find the NFT → Three dots menu → Burn. This will recover approximately 0.0036 SOL. Our app will support direct burning once browser compatibility is improved.');
+          // Handle Core NFTs by creating proper burn transaction
+          if (!window.solana || !window.solana.isPhantom) {
+            throw new Error('Phantom wallet not found');
+          }
+
+          const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } = await import('@solana/web3.js');
+          
+          // Get RPC config
+          const heliusResponse = await fetch('/api/helius-config');
+          const rpcConfig = await heliusResponse.json();
+          const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
+          
+          const connection = new Connection(rpcUrl, 'confirmed');
+          
+          // Create Core NFT burn transaction
+          const transaction = new Transaction();
+          
+          // Metaplex Core program ID
+          const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+          
+          for (const nftMint of coreData.nftsToProcess) {
+            const assetPublicKey = new PublicKey(nftMint);
+            const ownerPublicKey = new PublicKey(publicKey!);
+            
+            // Create burn instruction for Core NFT - using correct account layout
+            const instruction = new TransactionInstruction({
+              programId: MPL_CORE_PROGRAM_ID,
+              keys: [
+                { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Asset account to burn
+                { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // Owner/authority
+                { pubkey: ownerPublicKey, isSigner: false, isWritable: true },    // Payer for transaction
+                { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+              ],
+              data: Buffer.from([4]), // Burn instruction discriminator
+            });
+            
+            transaction.add(instruction);
+          }
+          
+          // Set transaction details
+          const { blockhash } = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = new PublicKey(publicKey!);
+          
+          // Sign and send transaction
+          const signedTx = await window.solana.signTransaction(transaction);
+          const signature = await connection.sendRawTransaction(signedTx.serialize());
+          
+          // Wait for confirmation
+          await connection.confirmTransaction(signature, 'confirmed');
+          
+          return { 
+            nftsProcessed: coreData.nftsToProcess.length, 
+            solRecovered: coreData.solRecovered, 
+            signature,
+            nftType: 'Core'
+          };
         }
       }
       
