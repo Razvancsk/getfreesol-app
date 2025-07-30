@@ -591,6 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create single transaction with multiple burn+close instructions
       const transaction = new Transaction();
       let totalTokensProcessed = 0;
+      let totalLamports = 0;
       
       for (const tokenMint of tokenMints) {
         try {
@@ -602,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ownerPublicKey
           );
           
-          // Get token account info to determine balance and decimals
+          // Get token account info to determine balance, decimals, and actual lamports
           const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
           const parsedInfo = tokenAccountInfo.value?.data as any;
           
@@ -611,8 +612,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
+          // Get actual account lamports (this is what user will receive)
+          const accountLamports = tokenAccountInfo.value?.lamports || 0;
+          totalLamports += accountLamports;
+          
           const balance = parsedInfo.parsed.info.tokenAmount.amount;
           const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
+          
+          console.log(`Token ${tokenMint} account has ${accountLamports} lamports`);
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
@@ -657,7 +664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      const totalSolRecovered = (totalTokensProcessed * 0.00203928).toFixed(8);
+      // Show actual recovery amount based on real account lamports
+      const totalSolRecovered = (totalLamports / 1e9).toFixed(9);
       
       console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered} SOL`);
       

@@ -676,10 +676,18 @@ export default function SolRefund() {
     setSelectedNFTs(new Set());
   };
 
-  // Calculate total SOL to recover
-  const calculateTotalSOL = (count: number) => {
-    // Core NFTs recover ~0.002710 SOL each (0.003588 total - 0.00089784 prevention fee)
-    return (count * 0.002710).toFixed(8);
+  // Calculate total SOL to recover based on actual token accounts
+  const calculateTokenSOL = (selectedMints: Set<string>) => {
+    // For tokens, we need to calculate based on actual token account lamports
+    // Each token account typically holds ~0.00203928 SOL but actual amounts vary
+    // We'll show "TBD" until we get actual amounts from the backend
+    return "TBD";
+  };
+
+  // Calculate total SOL to recover for NFTs
+  const calculateNFTSOL = (count: number) => {
+    // This will be replaced with actual amounts from backend when burning
+    return "TBD"; 
   };
 
   // Process SOL refund (15% service fee)
@@ -1244,7 +1252,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="text-sm text-green-400 font-semibold">
-                    SOL to recover: {calculateTotalSOL(selectedTokens.size)}
+                    SOL to recover: {calculateTokenSOL(selectedTokens)}
                   </div>
                   <Button
                     onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
