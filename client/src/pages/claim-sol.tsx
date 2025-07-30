@@ -1168,17 +1168,15 @@ export default function SolRefund() {
                 <div className="flex items-center space-x-3">
                   <Button
                     onClick={selectAllTokens}
-                    variant="outline"
                     size="sm"
-                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                    className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
                   >
                     Select All
                   </Button>
                   <Button
                     onClick={clearTokenSelection}
-                    variant="outline"
                     size="sm"
-                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                    className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
                   >
                     Clear
                   </Button>
@@ -1262,17 +1260,15 @@ export default function SolRefund() {
                 <div className="flex items-center space-x-3">
                   <Button
                     onClick={selectAllNFTs}
-                    variant="outline"
                     size="sm"
-                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                    className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
                   >
                     Select All
                   </Button>
                   <Button
                     onClick={clearNFTSelection}
-                    variant="outline"
                     size="sm"
-                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                    className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
                   >
                     Clear
                   </Button>
