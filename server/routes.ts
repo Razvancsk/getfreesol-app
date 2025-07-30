@@ -458,6 +458,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const walletPublicKey = new PublicKey(address);
       
+      // Import required token functions
+      const { getAssociatedTokenAddress } = await import('@solana/spl-token');
+
       // Use Helius DAS API to get all NFTs with metadata
       let nfts = [];
       if (heliusApiKey) {
@@ -488,23 +491,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (heliusData.result?.items) {
               
-              // Filter for NFTs (exclude fungible tokens)
-              nfts = heliusData.result.items
-                .filter((asset: any) => 
-                  asset.interface === 'V1_NFT' || 
-                  asset.interface === 'ProgrammableNFT' ||
-                  asset.interface === 'Legacy' ||
-                  asset.interface === 'MplCoreAsset'
-                )
-                .map((asset: any) => ({
-                  mint: asset.id,
-                  name: asset.content?.metadata?.name || 'Unknown NFT',
-                  image: asset.content?.files?.[0]?.uri || 
-                         asset.content?.files?.[0]?.cdn_uri || 
-                         asset.content?.links?.image || 
-                         null,
-                  collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null
-                }));
+              // Filter for non-compressed NFTs only (cNFTs can't be burned for SOL)
+              const allNFTs = heliusData.result.items
+                .filter((asset: any) => {
+                  const isCompressed = asset.compression?.compressed === true;
+                  const isNFT = asset.interface === 'V1_NFT' || 
+                               asset.interface === 'ProgrammableNFT' ||
+                               asset.interface === 'Legacy';
+                  
+                  console.log(`Asset ${asset.id}: interface=${asset.interface}, compressed=${isCompressed}`);
+                  return isNFT && !isCompressed;
+                });
+
+              console.log(`Found ${allNFTs.length} non-compressed NFTs out of ${heliusData.result.items.length} total assets`);
+
+              // For now, show all non-compressed NFTs (we'll validate burnability when burning)
+              nfts = allNFTs.map((asset: any) => ({
+                mint: asset.id,
+                name: asset.content?.metadata?.name || 'Unknown NFT',
+                image: asset.content?.files?.[0]?.uri || 
+                       asset.content?.files?.[0]?.cdn_uri || 
+                       asset.content?.links?.image || 
+                       null,
+                collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null
+              }));
               
               console.log(`Processed ${nfts.length} NFTs with metadata`);
             }
