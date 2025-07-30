@@ -529,47 +529,8 @@ export default function SolRefund() {
         const coreData = await coreResponse.json();
         
         if (coreData.requiresFrontendBurn) {
-          // Handle Core NFTs using Metaplex Core SDK
-          const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-          const { burnV1 } = await import('@metaplex-foundation/mpl-core');
-          const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
-          
-          if (!window.solana || !window.solana.isPhantom) {
-            throw new Error('Phantom wallet not found');
-          }
-
-          // Get RPC config
-          const heliusResponse = await fetch('/api/helius-config');
-          const rpcConfig = await heliusResponse.json();
-          const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
-          
-          // Create UMI instance
-          const umi = createUmi(rpcUrl);
-          umi.use(walletAdapterIdentity(window.solana as any));
-          
-          const signatures = [];
-          
-          // Burn each Core NFT individually
-          for (const nftMint of coreData.nftsToProcess) {
-            try {
-              const result = await burnV1(umi, {
-                asset: nftMint,
-              }).sendAndConfirm(umi);
-              
-              signatures.push(result.signature);
-              console.log(`Burned Core NFT ${nftMint}: ${result.signature}`);
-            } catch (error: any) {
-              console.error(`Failed to burn Core NFT ${nftMint}:`, error);
-              throw new Error(`Failed to burn Core NFT: ${error?.message || 'Unknown error'}`);
-            }
-          }
-          
-          return { 
-            nftsProcessed: coreData.nftsToProcess.length, 
-            solRecovered: coreData.solRecovered, 
-            signatures,
-            nftType: 'Core'
-          };
+          // For Core NFTs, inform user to use Phantom wallet's built-in burn feature
+          throw new Error('Core NFTs need to be burned through Phantom wallet. Go to your wallet, find this NFT, click the three dots menu, and select "Burn" to recover SOL.');
         }
       }
       
@@ -1360,8 +1321,8 @@ export default function SolRefund() {
                       <div className="text-xs text-purple-300 font-mono truncate">
                         {nft.mint}
                       </div>
-                      <div className="text-xs text-green-400 font-semibold mb-2">
-                        🪙 Recover: ~0.00203928 SOL
+                      <div className="text-xs text-blue-400 font-semibold mb-2">
+                        💎 Core NFT - Use Phantom to burn
                       </div>
                     </div>
                   </div>
