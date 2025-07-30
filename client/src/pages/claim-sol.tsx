@@ -57,6 +57,10 @@ export default function SolRefund() {
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [nftList, setNftList] = useState<any[]>([]);
   
+  // Selection states for bulk burning
+  const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+  const [selectedNFTs, setSelectedNFTs] = useState<Set<string>>(new Set());
+  
   // Debug NFT list changes
   useEffect(() => {
     console.log('NFT List updated:', nftList.length, nftList);
@@ -442,6 +446,198 @@ export default function SolRefund() {
       });
     },
   });
+
+  // Bulk Burn Tokens Mutation
+  const bulkBurnTokensMutation = useMutation({
+    mutationFn: async (tokenMints: string[]) => {
+      const results = [];
+      for (const tokenMint of tokenMints) {
+        try {
+          // Get transaction from backend
+          const response = await fetch('/api/tokens/burn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              walletAddress: publicKey,
+              tokenMint
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to prepare burn transaction for ${tokenMint}`);
+          }
+          
+          const { transaction, solRecovered } = await response.json();
+          
+          // Sign and send transaction
+          if (!window.solana || !window.solana.isPhantom) {
+            throw new Error('Phantom wallet not found');
+          }
+
+          const { Connection, Transaction } = await import('@solana/web3.js');
+          
+          const heliusResponse = await fetch('/api/helius-config');
+          const rpcConfig = await heliusResponse.json();
+          
+          const connection = new Connection(
+            rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+            'confirmed'
+          );
+          
+          const txBuffer = Buffer.from(transaction, 'base64');
+          const tx = Transaction.from(txBuffer);
+          
+          const signedTx = await window.solana.signTransaction(tx);
+          const signature = await connection.sendRawTransaction(signedTx.serialize());
+          
+          await connection.confirmTransaction(signature, 'confirmed');
+          
+          results.push({ tokenMint, signature, solRecovered });
+        } catch (error) {
+          console.error(`Error burning token ${tokenMint}:`, error);
+          throw error;
+        }
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      const totalSol = results.reduce((sum, r) => sum + parseFloat(r.solRecovered), 0);
+      toast({
+        title: "Success!",
+        description: `Burned ${results.length} tokens! Recovered ${totalSol.toFixed(8)} SOL`,
+      });
+      // Clear selections and refresh
+      setSelectedTokens(new Set());
+      if (publicKey) {
+        scanTokensMutation.mutate(publicKey);
+      }
+    },
+    onError: (error) => {
+      console.error('Error bulk burning tokens:', error);
+      toast({
+        title: "Error",
+        description: "Failed to burn tokens. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk Burn NFTs Mutation
+  const bulkBurnNFTsMutation = useMutation({
+    mutationFn: async (nftMints: string[]) => {
+      const results = [];
+      for (const nftMint of nftMints) {
+        try {
+          // Get transaction from backend
+          const response = await fetch('/api/nfts/burn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              walletAddress: publicKey,
+              nftMint
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to prepare burn transaction for ${nftMint}`);
+          }
+          
+          const { transaction, solRecovered } = await response.json();
+          
+          // Sign and send transaction
+          if (!window.solana || !window.solana.isPhantom) {
+            throw new Error('Phantom wallet not found');
+          }
+
+          const { Connection, Transaction } = await import('@solana/web3.js');
+          
+          const heliusResponse = await fetch('/api/helius-config');
+          const rpcConfig = await heliusResponse.json();
+          
+          const connection = new Connection(
+            rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+            'confirmed'
+          );
+          
+          const txBuffer = Buffer.from(transaction, 'base64');
+          const tx = Transaction.from(txBuffer);
+          
+          const signedTx = await window.solana.signTransaction(tx);
+          const signature = await connection.sendRawTransaction(signedTx.serialize());
+          
+          await connection.confirmTransaction(signature, 'confirmed');
+          
+          results.push({ nftMint, signature, solRecovered });
+        } catch (error) {
+          console.error(`Error burning NFT ${nftMint}:`, error);
+          throw error;
+        }
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      const totalSol = results.reduce((sum, r) => sum + parseFloat(r.solRecovered), 0);
+      toast({
+        title: "Success!",
+        description: `Burned ${results.length} NFTs! Recovered ${totalSol.toFixed(8)} SOL`,
+      });
+      // Clear selections and refresh
+      setSelectedNFTs(new Set());
+      if (publicKey) {
+        scanNFTsMutation.mutate(publicKey);
+      }
+    },
+    onError: (error) => {
+      console.error('Error bulk burning NFTs:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to burn NFTs. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Selection handlers
+  const toggleTokenSelection = (mintAddress: string) => {
+    const newSelection = new Set(selectedTokens);
+    if (newSelection.has(mintAddress)) {
+      newSelection.delete(mintAddress);
+    } else {
+      newSelection.add(mintAddress);
+    }
+    setSelectedTokens(newSelection);
+  };
+
+  const toggleNFTSelection = (mintAddress: string) => {
+    const newSelection = new Set(selectedNFTs);
+    if (newSelection.has(mintAddress)) {
+      newSelection.delete(mintAddress);
+    } else {
+      newSelection.add(mintAddress);
+    }
+    setSelectedNFTs(newSelection);
+  };
+
+  const selectAllTokens = () => {
+    setSelectedTokens(new Set(tokenList.map(token => token.mint)));
+  };
+
+  const selectAllNFTs = () => {
+    setSelectedNFTs(new Set(nftList.map(nft => nft.mint)));
+  };
+
+  const clearTokenSelection = () => {
+    setSelectedTokens(new Set());
+  };
+
+  const clearNFTSelection = () => {
+    setSelectedNFTs(new Set());
+  };
+
+  // Calculate total SOL to recover
+  const calculateTotalSOL = (count: number) => {
+    return (count * 0.00203928).toFixed(8);
+  };
 
   // Process SOL refund (15% service fee)
   const refundMutation = useMutation({
@@ -986,10 +1182,54 @@ export default function SolRefund() {
                   </div>
                 </div>
               </div>
+
+              {/* Selection Controls */}
+              <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                <div className="flex items-center space-x-3">
+                  <Button
+                    onClick={selectAllTokens}
+                    variant="outline"
+                    size="sm"
+                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    onClick={clearTokenSelection}
+                    variant="outline"
+                    size="sm"
+                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                  >
+                    Clear
+                  </Button>
+                  <div className="text-sm text-purple-300">
+                    {selectedTokens.size} selected
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-green-400 font-semibold">
+                    SOL to recover: {calculateTotalSOL(selectedTokens.size)}
+                  </div>
+                  <Button
+                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Flame className="h-4 w-4 mr-1" />
+                    {bulkBurnTokensMutation.isPending ? 'Burning...' : `Burn Selected (${selectedTokens.size})`}
+                  </Button>
+                </div>
+              </div>
               
               <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
                 {tokenList.map((token, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-slate-700/50 rounded border border-slate-700/50">
+                  <div key={index} className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50">
+                    <input
+                      type="checkbox"
+                      checked={selectedTokens.has(token.mint)}
+                      onChange={() => toggleTokenSelection(token.mint)}
+                      className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                    />
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
                       {token.logo && (
                         <img 
@@ -1016,15 +1256,6 @@ export default function SolRefund() {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      onClick={() => handleBurnToken(token.mint)}
-                      size="sm"
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                      disabled={burnTokenMutation.isPending}
-                    >
-                      <Flame className="h-4 w-4 mr-1" />
-                      {burnTokenMutation.isPending ? 'Burning...' : 'Burn'}
-                    </Button>
                   </div>
                 ))}
               </div>
@@ -1045,10 +1276,54 @@ export default function SolRefund() {
                   </div>
                 </div>
               </div>
+
+              {/* Selection Controls */}
+              <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                <div className="flex items-center space-x-3">
+                  <Button
+                    onClick={selectAllNFTs}
+                    variant="outline"
+                    size="sm"
+                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    onClick={clearNFTSelection}
+                    variant="outline"
+                    size="sm"
+                    className="text-white border-purple-500/50 hover:bg-purple-600/20"
+                  >
+                    Clear
+                  </Button>
+                  <div className="text-sm text-purple-300">
+                    {selectedNFTs.size} selected
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-green-400 font-semibold">
+                    SOL to recover: {calculateTotalSOL(selectedNFTs.size)}
+                  </div>
+                  <Button
+                    onClick={() => bulkBurnNFTsMutation.mutate(Array.from(selectedNFTs))}
+                    disabled={selectedNFTs.size === 0 || bulkBurnNFTsMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {bulkBurnNFTsMutation.isPending ? 'Burning...' : `Burn Selected (${selectedNFTs.size})`}
+                  </Button>
+                </div>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
                 {nftList.map((nft, index) => (
-                  <div key={index} className="bg-slate-700/50 rounded border border-slate-700/50 p-4">
+                  <div key={index} className="bg-slate-700/50 rounded border border-slate-700/50 p-4 relative">
+                    <input
+                      type="checkbox"
+                      checked={selectedNFTs.has(nft.mint)}
+                      onChange={() => toggleNFTSelection(nft.mint)}
+                      className="absolute top-2 left-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 z-10"
+                    />
                     {nft.image && (
                       <img 
                         src={nft.image} 
@@ -1066,15 +1341,6 @@ export default function SolRefund() {
                       <div className="text-xs text-green-400 font-semibold mb-2">
                         🪙 Recover: ~0.00203928 SOL
                       </div>
-                      <Button
-                        onClick={() => handleBurnNFT(nft.mint)}
-                        size="sm"
-                        className="w-full bg-red-600 hover:bg-red-700 text-white"
-                        disabled={burnNFTMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        {burnNFTMutation.isPending ? 'Burning...' : 'Burn NFT'}
-                      </Button>
                     </div>
                   </div>
                 ))}
