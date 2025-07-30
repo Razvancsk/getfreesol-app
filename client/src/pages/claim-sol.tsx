@@ -795,15 +795,27 @@ export default function SolRefund() {
               <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
                 {tokenList.map((token, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-slate-700/50 rounded border border-slate-700/50">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-white">
-                        {token.name || 'Unknown Token'}
-                      </div>
-                      <div className="text-xs text-purple-300 font-mono">
-                        {token.mint}
-                      </div>
-                      <div className="text-xs text-white">
-                        Balance: {token.balance} {token.symbol || 'TOKENS'}
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      {token.logo && (
+                        <img 
+                          src={token.logo} 
+                          alt={token.symbol || 'Token'} 
+                          className="w-8 h-8 rounded-full flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white">
+                          {token.name || 'Unknown Token'}
+                        </div>
+                        <div className="text-xs text-purple-300 font-mono truncate">
+                          {token.mint}
+                        </div>
+                        <div className="text-xs text-white">
+                          Balance: {token.balance} {token.symbol || 'TOKENS'}
+                        </div>
                       </div>
                     </div>
                     <Button

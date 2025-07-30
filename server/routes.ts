@@ -332,21 +332,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         programId: TOKEN_PROGRAM_ID,
       });
 
-      const tokens = tokenAccounts.value
-        .filter(account => {
-          const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
-          return balance > 0;
-        })
-        .map(account => {
-          const info = account.account.data.parsed?.info;
-          return {
-            mint: info?.mint || 'Unknown',
-            balance: info?.tokenAmount?.uiAmount || 0,
-            decimals: info?.tokenAmount?.decimals || 0,
-            name: 'Token', // Would need token metadata for real names
-            symbol: 'TOKEN' // Would need token metadata for real symbols
-          };
-        });
+      // Fetch Jupiter Token List once for efficiency
+      let jupiterTokens: any[] = [];
+      try {
+        const jupiterResponse = await fetch(`https://token.jup.ag/strict`);
+        if (jupiterResponse.ok) {
+          jupiterTokens = await jupiterResponse.json();
+          console.log(`Loaded ${jupiterTokens.length} tokens from Jupiter`);
+        }
+      } catch (error) {
+        console.log(`Failed to fetch Jupiter token list:`, error instanceof Error ? error.message : String(error));
+      }
+
+      // Process each token account
+      const tokens = [];
+      for (const account of tokenAccounts.value) {
+        const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+        if (balance <= 0) continue;
+
+        const info = account.account.data.parsed?.info;
+        const mint = info?.mint;
+        
+        let tokenMetadata = {
+          mint: mint || 'Unknown',
+          balance: balance,
+          decimals: info?.tokenAmount?.decimals || 0,
+          name: 'Unknown Token',
+          symbol: 'TOKEN',
+          logo: null
+        };
+
+        // Look up token in Jupiter list
+        if (mint && jupiterTokens.length > 0) {
+          const jupiterToken = jupiterTokens.find((token: any) => token.address === mint);
+          if (jupiterToken) {
+            tokenMetadata.name = jupiterToken.name || 'Unknown Token';
+            tokenMetadata.symbol = jupiterToken.symbol || 'TOKEN';
+            tokenMetadata.logo = jupiterToken.logoURI || null;
+            console.log(`Found metadata for ${mint}: ${tokenMetadata.name} (${tokenMetadata.symbol})`);
+          } else {
+            console.log(`No Jupiter metadata found for ${mint}`);
+          }
+        }
+
+        // If Jupiter didn't have it, try Helius if available
+        if (tokenMetadata.name === 'Unknown Token' && heliusApiKey) {
+          try {
+            const metadataResponse = await fetch(`https://api.helius.xyz/v0/token-metadata?api-key=${heliusApiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ mintAccounts: [mint] })
+            });
+            
+            if (metadataResponse.ok) {
+              const metadataData = await metadataResponse.json();
+              if (metadataData && metadataData.length > 0) {
+                const tokenData = metadataData[0];
+                tokenMetadata.name = tokenData.onChainMetadata?.metadata?.name || tokenData.offChainMetadata?.name || 'Unknown Token';
+                tokenMetadata.symbol = tokenData.onChainMetadata?.metadata?.symbol || tokenData.offChainMetadata?.symbol || 'TOKEN';
+                tokenMetadata.logo = tokenData.offChainMetadata?.image || null;
+                console.log(`Found Helius metadata for ${mint}: ${tokenMetadata.name} (${tokenMetadata.symbol})`);
+              }
+            }
+          } catch (error) {
+            console.log(`Failed to fetch Helius metadata for token ${mint}:`, error instanceof Error ? error.message : String(error));
+          }
+        }
+
+        tokens.push(tokenMetadata);
+      }
 
       res.json(tokens);
     } catch (error) {
@@ -404,21 +458,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         programId: TOKEN_PROGRAM_ID,
       });
 
-      const nfts = tokenAccounts.value
-        .filter(account => {
-          const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
-          const decimals = account.account.data.parsed?.info?.tokenAmount?.decimals || 0;
-          return balance === 1 && decimals === 0; // NFTs typically have balance=1 and decimals=0
-        })
-        .map(account => {
-          const info = account.account.data.parsed?.info;
-          return {
-            mint: info?.mint || 'Unknown',
-            name: 'NFT', // Would need metadata for real names
-            image: null, // Would need metadata for images
-            collection: null // Would need metadata for collection info
-          };
-        });
+      // Fetch NFT metadata for each NFT
+      const nfts = [];
+      for (const account of tokenAccounts.value) {
+        const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+        const decimals = account.account.data.parsed?.info?.tokenAmount?.decimals || 0;
+        
+        if (!(balance === 1 && decimals === 0)) continue; // NFTs typically have balance=1 and decimals=0
+
+        const info = account.account.data.parsed?.info;
+        const mint = info?.mint;
+        
+        let nftMetadata = {
+          mint: mint || 'Unknown',
+          name: 'Unknown NFT',
+          image: null,
+          collection: null
+        };
+
+        // Try to fetch NFT metadata from Helius if available
+        if (mint && heliusApiKey) {
+          try {
+            const metadataResponse = await fetch(`https://api.helius.xyz/v0/token-metadata?api-key=${heliusApiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ mintAccounts: [mint] })
+            });
+            
+            if (metadataResponse.ok) {
+              const metadataData = await metadataResponse.json();
+              if (metadataData && metadataData.length > 0) {
+                const nftData = metadataData[0];
+                nftMetadata.name = nftData.onChainMetadata?.metadata?.name || nftData.offChainMetadata?.name || 'Unknown NFT';
+                nftMetadata.image = nftData.offChainMetadata?.image || null;
+                nftMetadata.collection = nftData.onChainMetadata?.metadata?.collection || null;
+              }
+            }
+          } catch (error) {
+            console.log(`Failed to fetch metadata for NFT ${mint}:`, error instanceof Error ? error.message : String(error));
+          }
+        }
+
+        nfts.push(nftMetadata);
+      }
 
       res.json(nfts);
     } catch (error) {
