@@ -1224,9 +1224,7 @@ export default function SolRefund() {
                         <div className="text-xs text-white">
                           Balance: {token.balance} {token.symbol || 'TOKENS'}
                         </div>
-                        <div className="text-xs text-green-400 font-semibold">
-                          🪙 Recover: ~0.00203928 SOL
-                        </div>
+                        {/* SOL recovery info removed */}
                       </div>
                     </div>
                   </div>
