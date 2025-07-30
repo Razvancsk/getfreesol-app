@@ -529,11 +529,64 @@ export default function SolRefund() {
         const coreData = await coreResponse.json();
         
         if (coreData.requiresFrontendBurn) {
-          // For Core NFTs, show instructions instead of error
-          return {
-            nftsProcessed: 0,
-            solRecovered: '0',
-            instructionsShown: true,
+          // Handle Core NFTs by creating a burn transaction manually
+          if (!window.solana || !window.solana.isPhantom) {
+            throw new Error('Phantom wallet not found');
+          }
+
+          const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
+          
+          // Get RPC config
+          const heliusResponse = await fetch('/api/helius-config');
+          const rpcConfig = await heliusResponse.json();
+          const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
+          
+          const connection = new Connection(rpcUrl, 'confirmed');
+          
+          // Create Core NFT burn transaction using direct instruction
+          const transaction = new Transaction();
+          
+          // Add a Core NFT burn instruction using the mpl-core program
+          const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+          
+          for (const nftMint of coreData.nftsToProcess) {
+            try {
+              const assetPublicKey = new PublicKey(nftMint);
+              const ownerPublicKey = new PublicKey(publicKey);
+              
+              // Create the burn instruction for Core NFT
+              const burnInstruction = {
+                programId: MPL_CORE_PROGRAM_ID,
+                keys: [
+                  { pubkey: assetPublicKey, isSigner: false, isWritable: true },
+                  { pubkey: ownerPublicKey, isSigner: true, isWritable: true },
+                  { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+                ],
+                data: Buffer.from([4]), // Burn instruction discriminator for mpl-core
+              };
+              
+              transaction.add(burnInstruction);
+            } catch (error) {
+              console.error(`Error adding burn instruction for ${nftMint}:`, error);
+            }
+          }
+          
+          // Set transaction details
+          const { blockhash } = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = new PublicKey(publicKey);
+          
+          // Sign and send transaction
+          const signedTx = await window.solana.signTransaction(transaction);
+          const signature = await connection.sendRawTransaction(signedTx.serialize());
+          
+          // Wait for confirmation
+          await connection.confirmTransaction(signature, 'confirmed');
+          
+          return { 
+            nftsProcessed: coreData.nftsToProcess.length, 
+            solRecovered: coreData.solRecovered, 
+            signature,
             nftType: 'Core'
           };
         }
@@ -581,21 +634,14 @@ export default function SolRefund() {
       return { nftsProcessed, solRecovered, signature, nftType: 'Traditional' };
     },
     onSuccess: (result) => {
-      if (result.instructionsShown) {
-        toast({
-          title: "Core NFT Instructions",
-          description: "To burn your Core NFT: Open Phantom wallet → Find your NFT → Click the three dots → Select 'Burn' → Confirm to recover SOL",
-        });
-      } else {
-        toast({
-          title: "Success!",
-          description: `Burned ${result.nftsProcessed} NFTs! Recovered ${result.solRecovered} SOL`,
-        });
-        // Clear selections and refresh
-        setSelectedNFTs(new Set());
-        if (publicKey) {
-          scanNFTsMutation.mutate(publicKey);
-        }
+      toast({
+        title: "Success!",
+        description: `Burned ${result.nftsProcessed} ${result.nftType} NFT${result.nftsProcessed > 1 ? 's' : ''}! Recovered ${result.solRecovered} SOL`,
+      });
+      // Clear selections and refresh
+      setSelectedNFTs(new Set());
+      if (publicKey) {
+        scanNFTsMutation.mutate(publicKey);
       }
     },
     onError: (error) => {
@@ -1333,8 +1379,8 @@ export default function SolRefund() {
                       <div className="text-xs text-purple-300 font-mono truncate">
                         {nft.mint}
                       </div>
-                      <div className="text-xs text-blue-400 font-semibold mb-2">
-                        💎 Core NFT - Use Phantom to burn
+                      <div className="text-xs text-green-400 font-semibold mb-2">
+                        🪙 Core NFT - ~0.005 SOL
                       </div>
                     </div>
                   </div>
