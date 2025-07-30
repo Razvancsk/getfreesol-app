@@ -56,6 +56,11 @@ export default function SolRefund() {
   const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'burnNFTs'>('reclaim');
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [nftList, setNftList] = useState<any[]>([]);
+  
+  // Debug NFT list changes
+  useEffect(() => {
+    console.log('NFT List updated:', nftList.length, nftList);
+  }, [nftList]);
   const { toast } = useToast();
   
   // Wallet state synced with main navigation
@@ -259,13 +264,16 @@ export default function SolRefund() {
   // Scan NFTs for burning
   const scanNFTsMutation = useMutation({
     mutationFn: async (address: string) => {
-      const response = await fetch(`/api/nfts/scan/${address}`);
+      // Add timestamp to prevent caching
+      const response = await fetch(`/api/nfts/scan/${address}?t=${Date.now()}`);
       if (!response.ok) {
         throw new Error('Failed to scan NFTs');
       }
       return response.json();
     },
     onSuccess: (data: any[]) => {
+      console.log('NFT scan successful, received NFTs:', data);
+      console.log('Setting NFT list state...');
       setNftList(data);
     },
     onError: (error: any) => {
@@ -833,7 +841,7 @@ export default function SolRefund() {
           )}
 
           {/* Burn NFTs Results */}
-          {activeTab === 'burnNFTs' && nftList.length > 0 && (
+          {activeTab === 'burnNFTs' && nftList && nftList.length > 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Your NFTs</h3>
@@ -885,7 +893,18 @@ export default function SolRefund() {
             </div>
           )}
 
-          {activeTab === 'burnNFTs' && nftList.length === 0 && (
+          {/* NFT Scanning Loading State */}
+          {activeTab === 'burnNFTs' && scanNFTsMutation.isPending && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="text-center space-y-4">
+                <RefreshCw className="h-12 w-12 text-purple-400 mx-auto animate-spin" />
+                <h3 className="text-lg font-semibold text-white">Scanning for NFTs...</h3>
+                <p className="text-purple-200">Please wait while we find your NFTs.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'burnNFTs' && (!nftList || nftList.length === 0) && !scanNFTsMutation.isPending && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="text-center space-y-4">
                 <Image className="h-12 w-12 text-purple-400 mx-auto" />
