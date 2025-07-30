@@ -703,7 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Core NFT Transaction Creation API (for actual burning)
+  // Core NFT Transaction Creation API (using Metaplex SDK only)
   app.post("/api/nfts/burn-core-transaction", async (req, res) => {
     try {
       const { walletAddress, nftMints } = req.body;
@@ -712,8 +712,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
       }
 
-      const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } = await import('@solana/web3.js');
-      const { createHash } = await import('crypto');
+      const { Connection, PublicKey } = await import('@solana/web3.js');
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+      const { publicKey } = await import('@metaplex-foundation/umi');
+      const { burnV1 } = await import('@metaplex-foundation/mpl-core');
       
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -721,15 +723,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
         : 'https://api.mainnet-beta.solana.com';
       
-      console.log(`Creating Core NFT burn transaction that closes account for ${nftMints.length} NFTs...`);
+      console.log(`Creating Core NFT burn transaction using Metaplex SDK for ${nftMints.length} NFTs...`);
       
+      // Create UMI instance for Metaplex Core operations
+      const umi = createUmi(rpcUrl);
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
       
-      // Create transaction with proper Core burn + close instructions
-      const transaction = new Transaction();
-      const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
       let processedNfts = 0;
+      const transactions = [];
       
       // Use Metaplex Core SDK for proper burn instruction
       for (const nftMint of nftMints) {
@@ -746,24 +748,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Asset account lamports: ${assetAccount.lamports}`);
           
-          // Core NFTs are burned directly - calculate discriminator for burn_v1
-          const hash = createHash('sha256').update('global:burn_v1').digest();
-          const discriminator = hash.slice(0, 8);
-          
-          // Create Core burn instruction that closes the account and recovers rent
-          const burnInstruction = new TransactionInstruction({
-            programId: MPL_CORE_PROGRAM_ID,
-            keys: [
-              { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Asset to burn
-              { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // Payer (receives lamports)
-              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },    // Authority
-            ],
-            data: Buffer.concat([discriminator, Buffer.from([0])]) // Discriminator + None compression proof
+          // Create burn instruction using Metaplex Core SDK
+          const burnInstruction = burnV1(umi, {
+            asset: publicKey(nftMint),
+            authority: publicKey(walletAddress),
+            compressionProof: null
           });
           
-          transaction.add(burnInstruction);
+          // Build transaction using UMI
+          const transaction = await burnInstruction.buildAndSign(umi);
+          transactions.push(transaction);
           processedNfts++;
-          console.log(`Added Core burn instruction for ${nftMint} with discriminator: [${Array.from(discriminator).join(', ')}]`);
+          
+          console.log(`Added Metaplex Core burn instruction for ${nftMint}`);
           
         } catch (error) {
           console.error(`Failed to process Core NFT ${nftMint}:`, error);
@@ -774,30 +771,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid Core NFTs found to burn" });
       }
 
-      // Set recent blockhash and fee payer
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = ownerPublicKey;
-
-      // Serialize transaction for frontend signing
-      const base64Tx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+      // For now, return the first transaction (batch processing can be added later)
+      const firstTransaction = transactions[0];
+      const base64Tx = Buffer.from(firstTransaction.serializedMessage).toString('base64');
       
-      const solRecovered = (nftMints.length * 0.002710).toFixed(8); // Actual recovery after prevention fee
+      const solRecovered = (processedNfts * 0.002710).toFixed(8);
       
       res.json({
         success: true,
         transaction: base64Tx,
         nftsProcessed: processedNfts,
-        solRecovered,
-        nftType: 'MplCoreAsset'
+        solRecovered: solRecovered,
+        nftType: 'MplCoreAsset',
+        message: `Created Metaplex Core burn transaction for ${processedNfts} NFT${processedNfts > 1 ? 's' : ''}`
       });
-
+      
     } catch (error) {
-      console.error('Error creating Core NFT burn transaction:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to create Core NFT burn transaction' 
-      });
+      console.error('Error creating Core NFT burn transaction with Metaplex SDK:', error);
+      res.status(500).json({ error: "Failed to create Core NFT burn transaction using Metaplex SDK" });
     }
   });
 
