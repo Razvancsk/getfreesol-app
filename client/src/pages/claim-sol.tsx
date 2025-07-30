@@ -531,7 +531,7 @@ export default function SolRefund() {
         if (coreData.requiresFrontendBurn) {
           // For Core NFTs, show instructions for manual burning via Phantom
           // The current Metaplex Core SDK has browser compatibility issues
-          throw new Error('Core NFTs should be burned through Phantom wallet. In your wallet: Find the NFT → Three dots menu → Burn. This will recover approximately 0.0009 SOL. Our app will support direct burning once browser compatibility is improved.');
+          throw new Error('Core NFTs should be burned through Phantom wallet. In your wallet: Find the NFT → Three dots menu → Burn. This will recover approximately 0.0036 SOL. Our app will support direct burning once browser compatibility is improved.');
         }
       }
       
@@ -636,8 +636,8 @@ export default function SolRefund() {
 
   // Calculate total SOL to recover
   const calculateTotalSOL = (count: number) => {
-    // Core NFTs recover ~0.00089784 SOL each (rent minus small prevention amount)
-    return (count * 0.00089784).toFixed(8);
+    // Core NFTs recover ~0.003588 SOL each based on actual account rent data
+    return (count * 0.003588).toFixed(8);
   };
 
   // Process SOL refund (15% service fee)
@@ -1324,7 +1324,7 @@ export default function SolRefund() {
                         {nft.mint}
                       </div>
                       <div className="text-xs text-green-400 font-semibold mb-2">
-                        🪙 Core NFT - ~0.0009 SOL
+                        🪙 Core NFT - ~0.0036 SOL
                       </div>
                     </div>
                   </div>
