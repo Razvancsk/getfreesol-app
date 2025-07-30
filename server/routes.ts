@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema } from "@shared/schema";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 
@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Record transaction
+      // Record transaction (legacy)
       const transactionRecord = await storage.createTransactionRecord({
         signature,
         walletAddress,
@@ -243,6 +243,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         netAmount: netAmount.toString(),
         feeAmount: feeAmount.toString(),
         accountsClosed
+      });
+
+      // Record in comprehensive transaction ledger
+      await storage.createTransactionLedgerEntry({
+        signature,
+        walletAddress,
+        transactionType: 'sol_reclaim',
+        solRecovered: solRecovered.toString(),
+        netAmount: netAmount.toString(),
+        feeAmount: feeAmount.toString(),
+        itemsProcessed: accountsClosed,
+        itemDetails: JSON.stringify({ 
+          type: 'sol_reclaim',
+          accountsClosed: accountsClosed,
+          description: `Closed ${accountsClosed} empty token accounts`
+        })
       });
 
       res.json({
@@ -999,6 +1015,204 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error preparing NFT burn:', error);
       res.status(500).json({ error: "Failed to prepare NFT burn transaction" });
+    }
+  });
+
+  // Record successful token burn transaction
+  app.post("/api/tokens/record-burn-success", async (req, res) => {
+    try {
+      const { signature, walletAddress, tokenMints, tokensProcessed, solRecovered, netAmount, feeAmount } = req.body;
+
+      // Validate required fields
+      if (!signature || !walletAddress || !tokenMints || !tokensProcessed || !solRecovered) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Check if transaction already recorded
+      const existingRecord = await storage.getTransactionLedgerBySignature(signature);
+      if (existingRecord) {
+        return res.json({ 
+          success: true, 
+          message: `Successfully burned ${tokensProcessed} tokens and recovered ${netAmount.toFixed(6)} SOL!`
+        });
+      }
+
+      // Record in comprehensive transaction ledger
+      await storage.createTransactionLedgerEntry({
+        signature,
+        walletAddress,
+        transactionType: 'token_burn',
+        solRecovered: solRecovered.toString(),
+        netAmount: netAmount.toString(),
+        feeAmount: feeAmount.toString(),
+        itemsProcessed: tokensProcessed,
+        itemDetails: JSON.stringify({
+          type: 'token_burn',
+          tokenMints: tokenMints,
+          tokensProcessed: tokensProcessed,
+          description: `Burned ${tokensProcessed} tokens`
+        })
+      });
+
+      // Record individual token burn records
+      for (const tokenMint of tokenMints) {
+        await storage.createTokenBurnRecord({
+          signature,
+          walletAddress,
+          tokenMint,
+          tokenSymbol: 'TOKEN',
+          tokenName: 'Unknown Token',
+          amountBurned: '1.0',
+          solRecovered: (solRecovered / tokensProcessed).toString()
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Successfully burned ${tokensProcessed} tokens and recovered ${netAmount.toFixed(6)} SOL!`
+      });
+
+    } catch (error) {
+      console.error("Record token burn success error:", error);
+      res.status(500).json({ error: "Failed to record token burn transaction" });
+    }
+  });
+
+  // Record successful NFT burn transaction
+  app.post("/api/nfts/record-burn-success", async (req, res) => {
+    try {
+      const { signature, walletAddress, nftMints, nftsProcessed, solRecovered, netAmount, feeAmount } = req.body;
+
+      // Validate required fields
+      if (!signature || !walletAddress || !nftMints || !nftsProcessed || !solRecovered) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Check if transaction already recorded
+      const existingRecord = await storage.getTransactionLedgerBySignature(signature);
+      if (existingRecord) {
+        return res.json({ 
+          success: true, 
+          message: `Successfully burned ${nftsProcessed} NFTs and recovered ${netAmount.toFixed(6)} SOL!`
+        });
+      }
+
+      // Record in comprehensive transaction ledger
+      await storage.createTransactionLedgerEntry({
+        signature,
+        walletAddress,
+        transactionType: 'nft_burn',
+        solRecovered: solRecovered.toString(),
+        netAmount: netAmount.toString(),
+        feeAmount: feeAmount.toString(),
+        itemsProcessed: nftsProcessed,
+        itemDetails: JSON.stringify({
+          type: 'nft_burn',
+          nftMints: nftMints,
+          nftsProcessed: nftsProcessed,
+          description: `Burned ${nftsProcessed} NFTs`
+        })
+      });
+
+      // Record individual NFT burn records
+      for (const nftMint of nftMints) {
+        await storage.createNftBurnRecord({
+          signature,
+          walletAddress,
+          nftMint,
+          nftName: 'Unknown NFT',
+          nftImage: null,
+          collectionAddress: null,
+          solRecovered: (solRecovered / nftsProcessed).toString()
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Successfully burned ${nftsProcessed} NFTs and recovered ${netAmount.toFixed(6)} SOL!`
+      });
+
+    } catch (error) {
+      console.error("Record NFT burn success error:", error);
+      res.status(500).json({ error: "Failed to record NFT burn transaction" });
+    }
+  });
+
+  // Get comprehensive transaction history
+  app.get("/api/transactions/history", async (req, res) => {
+    try {
+      const { wallet, limit = 50 } = req.query;
+      
+      let transactionHistory;
+      if (wallet) {
+        transactionHistory = await storage.getTransactionLedgerByWallet(wallet as string, parseInt(limit as string));
+      } else {
+        transactionHistory = await storage.getTransactionLedger(parseInt(limit as string));
+      }
+
+      const formattedHistory = transactionHistory.map(tx => ({
+        id: tx.id,
+        signature: tx.signature,
+        walletAddress: tx.walletAddress,
+        type: tx.transactionType,
+        solRecovered: parseFloat(tx.solRecovered),
+        netAmount: parseFloat(tx.netAmount),
+        feeAmount: parseFloat(tx.feeAmount),
+        itemsProcessed: tx.itemsProcessed,
+        details: tx.itemDetails ? JSON.parse(tx.itemDetails) : null,
+        processedAt: tx.processedAt.toISOString()
+      }));
+
+      res.json({
+        success: true,
+        transactions: formattedHistory,
+        count: formattedHistory.length
+      });
+
+    } catch (error) {
+      console.error("Transaction history error:", error);
+      res.status(500).json({ error: "Failed to get transaction history" });
+    }
+  });
+
+  // Get enhanced statistics including all transaction types
+  app.get("/api/transactions/stats", async (req, res) => {
+    try {
+      const [
+        totalSolRecovered,
+        totalAccountsClaimed,
+        totalTokensBurned,
+        totalNftsBurned,
+        recentTransactions
+      ] = await Promise.all([
+        storage.getTotalSolRecovered(),
+        storage.getTotalAccountsClaimed(),
+        storage.getTotalTokensBurned(),
+        storage.getTotalNftsBurned(),
+        storage.getTransactionLedger(20)
+      ]);
+
+      const stats = {
+        success: true,
+        totalSolRecovered,
+        totalAccountsClaimed,
+        totalTokensBurned,
+        totalNftsBurned,
+        recentTransactions: recentTransactions.map(tx => ({
+          signature: tx.signature,
+          type: tx.transactionType,
+          walletAddress: tx.walletAddress,
+          solRecovered: parseFloat(tx.solRecovered),
+          netAmount: parseFloat(tx.netAmount),
+          itemsProcessed: tx.itemsProcessed,
+          processedAt: tx.processedAt.toISOString()
+        }))
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error("Enhanced stats error:", error);
+      res.status(500).json({ error: "Failed to get enhanced statistics" });
     }
   });
 

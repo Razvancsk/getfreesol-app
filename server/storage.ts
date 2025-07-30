@@ -6,8 +6,23 @@ import {
   type EmptyTokenAccount,
   type InsertEmptyTokenAccount,
   type ScanResult,
-  type InsertScanResult
+  type InsertScanResult,
+  type TransactionLedger,
+  type InsertTransactionLedger,
+  type TokenBurnRecord,
+  type InsertTokenBurnRecord,
+  type NftBurnRecord,
+  type InsertNftBurnRecord,
+  users,
+  transactionRecords,
+  emptyTokenAccounts,
+  scanResults,
+  transactionLedger,
+  tokenBurnRecords,
+  nftBurnRecords
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -15,10 +30,26 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  // Transaction Records
+  // Transaction Records (legacy)
   createTransactionRecord(record: InsertTransactionRecord): Promise<TransactionRecord>;
   getTransactionRecords(limit?: number): Promise<TransactionRecord[]>;
   getTransactionRecordBySignature(signature: string): Promise<TransactionRecord | undefined>;
+  
+  // Comprehensive Transaction Ledger
+  createTransactionLedgerEntry(entry: InsertTransactionLedger): Promise<TransactionLedger>;
+  getTransactionLedger(limit?: number): Promise<TransactionLedger[]>;
+  getTransactionLedgerBySignature(signature: string): Promise<TransactionLedger | undefined>;
+  getTransactionLedgerByWallet(walletAddress: string, limit?: number): Promise<TransactionLedger[]>;
+  
+  // Token Burn Records
+  createTokenBurnRecord(record: InsertTokenBurnRecord): Promise<TokenBurnRecord>;
+  getTokenBurnRecords(limit?: number): Promise<TokenBurnRecord[]>;
+  getTokenBurnRecordsByWallet(walletAddress: string, limit?: number): Promise<TokenBurnRecord[]>;
+  
+  // NFT Burn Records
+  createNftBurnRecord(record: InsertNftBurnRecord): Promise<NftBurnRecord>;
+  getNftBurnRecords(limit?: number): Promise<NftBurnRecord[]>;
+  getNftBurnRecordsByWallet(walletAddress: string, limit?: number): Promise<NftBurnRecord[]>;
   
   // Empty Token Accounts
   createEmptyTokenAccount(account: InsertEmptyTokenAccount): Promise<EmptyTokenAccount>;
@@ -32,120 +63,211 @@ export interface IStorage {
   // Statistics
   getTotalSolRecovered(): Promise<number>;
   getTotalAccountsClaimed(): Promise<number>;
+  getTotalTokensBurned(): Promise<number>;
+  getTotalNftsBurned(): Promise<number>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private transactionRecords: Map<string, TransactionRecord>;
-  private emptyTokenAccounts: Map<string, EmptyTokenAccount>;
-  private scanResults: Map<string, ScanResult>;
-
-  constructor() {
-    this.users = new Map();
-    this.transactionRecords = new Map();
-    this.emptyTokenAccounts = new Map();
-    this.scanResults = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
+  // Transaction Records (legacy)
   async createTransactionRecord(record: InsertTransactionRecord): Promise<TransactionRecord> {
-    const id = randomUUID();
-    const transactionRecord: TransactionRecord = {
-      ...record,
-      id,
-      processedAt: new Date(),
-    };
-    this.transactionRecords.set(id, transactionRecord);
+    const [transactionRecord] = await db
+      .insert(transactionRecords)
+      .values(record)
+      .returning();
     return transactionRecord;
   }
 
-  async getTransactionRecords(limit = 50): Promise<TransactionRecord[]> {
-    const records = Array.from(this.transactionRecords.values())
-      .sort((a, b) => b.processedAt.getTime() - a.processedAt.getTime())
-      .slice(0, limit);
-    return records;
+  async getTransactionRecords(limit: number = 50): Promise<TransactionRecord[]> {
+    return await db
+      .select()
+      .from(transactionRecords)
+      .orderBy(desc(transactionRecords.processedAt))
+      .limit(limit);
   }
 
   async getTransactionRecordBySignature(signature: string): Promise<TransactionRecord | undefined> {
-    return Array.from(this.transactionRecords.values()).find(
-      (record) => record.signature === signature
-    );
+    const [record] = await db
+      .select()
+      .from(transactionRecords)
+      .where(eq(transactionRecords.signature, signature));
+    return record || undefined;
   }
 
+  // Comprehensive Transaction Ledger
+  async createTransactionLedgerEntry(entry: InsertTransactionLedger): Promise<TransactionLedger> {
+    const [ledgerEntry] = await db
+      .insert(transactionLedger)
+      .values(entry)
+      .returning();
+    return ledgerEntry;
+  }
+
+  async getTransactionLedger(limit: number = 100): Promise<TransactionLedger[]> {
+    return await db
+      .select()
+      .from(transactionLedger)
+      .orderBy(desc(transactionLedger.processedAt))
+      .limit(limit);
+  }
+
+  async getTransactionLedgerBySignature(signature: string): Promise<TransactionLedger | undefined> {
+    const [entry] = await db
+      .select()
+      .from(transactionLedger)
+      .where(eq(transactionLedger.signature, signature));
+    return entry || undefined;
+  }
+
+  async getTransactionLedgerByWallet(walletAddress: string, limit: number = 50): Promise<TransactionLedger[]> {
+    return await db
+      .select()
+      .from(transactionLedger)
+      .where(eq(transactionLedger.walletAddress, walletAddress))
+      .orderBy(desc(transactionLedger.processedAt))
+      .limit(limit);
+  }
+
+  // Token Burn Records
+  async createTokenBurnRecord(record: InsertTokenBurnRecord): Promise<TokenBurnRecord> {
+    const [burnRecord] = await db
+      .insert(tokenBurnRecords)
+      .values(record)
+      .returning();
+    return burnRecord;
+  }
+
+  async getTokenBurnRecords(limit: number = 100): Promise<TokenBurnRecord[]> {
+    return await db
+      .select()
+      .from(tokenBurnRecords)
+      .orderBy(desc(tokenBurnRecords.burnedAt))
+      .limit(limit);
+  }
+
+  async getTokenBurnRecordsByWallet(walletAddress: string, limit: number = 50): Promise<TokenBurnRecord[]> {
+    return await db
+      .select()
+      .from(tokenBurnRecords)
+      .where(eq(tokenBurnRecords.walletAddress, walletAddress))
+      .orderBy(desc(tokenBurnRecords.burnedAt))
+      .limit(limit);
+  }
+
+  // NFT Burn Records
+  async createNftBurnRecord(record: InsertNftBurnRecord): Promise<NftBurnRecord> {
+    const [burnRecord] = await db
+      .insert(nftBurnRecords)
+      .values(record)
+      .returning();
+    return burnRecord;
+  }
+
+  async getNftBurnRecords(limit: number = 100): Promise<NftBurnRecord[]> {
+    return await db
+      .select()
+      .from(nftBurnRecords)
+      .orderBy(desc(nftBurnRecords.burnedAt))
+      .limit(limit);
+  }
+
+  async getNftBurnRecordsByWallet(walletAddress: string, limit: number = 50): Promise<NftBurnRecord[]> {
+    return await db
+      .select()
+      .from(nftBurnRecords)
+      .where(eq(nftBurnRecords.walletAddress, walletAddress))
+      .orderBy(desc(nftBurnRecords.burnedAt))
+      .limit(limit);
+  }
+
+  // Empty Token Accounts
   async createEmptyTokenAccount(account: InsertEmptyTokenAccount): Promise<EmptyTokenAccount> {
-    const id = randomUUID();
-    const emptyTokenAccount: EmptyTokenAccount = {
-      ...account,
-      id,
-      scannedAt: new Date(),
-      claimed: false,
-      tokenSymbol: account.tokenSymbol ?? null,
-      tokenName: account.tokenName ?? null,
-      balance: account.balance ?? "0",
-    };
-    this.emptyTokenAccounts.set(id, emptyTokenAccount);
+    const [emptyTokenAccount] = await db
+      .insert(emptyTokenAccounts)
+      .values(account)
+      .returning();
     return emptyTokenAccount;
   }
 
   async getEmptyTokenAccountsByWallet(walletAddress: string): Promise<EmptyTokenAccount[]> {
-    const accounts = Array.from(this.emptyTokenAccounts.values()).filter(
-      (account) => account.walletAddress === walletAddress && !account.claimed
-    );
-    return accounts;
+    return await db
+      .select()
+      .from(emptyTokenAccounts)
+      .where(eq(emptyTokenAccounts.walletAddress, walletAddress));
   }
 
   async markAccountsAsClaimed(accountAddresses: string[]): Promise<void> {
-    for (const account of this.emptyTokenAccounts.values()) {
-      if (accountAddresses.includes(account.accountAddress)) {
-        account.claimed = true;
-      }
-    }
+    await db
+      .update(emptyTokenAccounts)
+      .set({ claimed: true })
+      .where(sql`${emptyTokenAccounts.accountAddress} = ANY(${accountAddresses})`);
   }
 
+  // Scan Results
   async createScanResult(result: InsertScanResult): Promise<ScanResult> {
-    const id = randomUUID();
-    const scanResult: ScanResult = {
-      ...result,
-      id,
-      scannedAt: new Date(),
-    };
-    this.scanResults.set(id, scanResult);
+    const [scanResult] = await db
+      .insert(scanResults)
+      .values(result)
+      .returning();
     return scanResult;
   }
 
   async getLatestScanResult(walletAddress: string): Promise<ScanResult | undefined> {
-    const results = Array.from(this.scanResults.values())
-      .filter((result) => result.walletAddress === walletAddress)
-      .sort((a, b) => b.scannedAt.getTime() - a.scannedAt.getTime());
-    return results[0];
+    const [result] = await db
+      .select()
+      .from(scanResults)
+      .where(eq(scanResults.walletAddress, walletAddress))
+      .orderBy(desc(scanResults.scannedAt))
+      .limit(1);
+    return result || undefined;
   }
 
+  // Statistics
   async getTotalSolRecovered(): Promise<number> {
-    const total = Array.from(this.transactionRecords.values())
-      .reduce((sum, record) => sum + parseFloat(record.solRecovered), 0);
-    return Math.round(total * 1000000) / 1000000; // Round to 6 decimal places
+    const result = await db
+      .select({ total: sql<string>`sum(${transactionLedger.solRecovered})` })
+      .from(transactionLedger);
+    return parseFloat(result[0]?.total || "0");
   }
 
   async getTotalAccountsClaimed(): Promise<number> {
-    return Array.from(this.transactionRecords.values())
-      .reduce((sum, record) => sum + record.accountsClosed, 0);
+    const result = await db
+      .select({ total: sql<string>`sum(${transactionLedger.itemsProcessed})` })
+      .from(transactionLedger)
+      .where(eq(transactionLedger.transactionType, 'sol_reclaim'));
+    return parseInt(result[0]?.total || "0");
+  }
+
+  async getTotalTokensBurned(): Promise<number> {
+    const result = await db
+      .select({ total: sql<string>`count(*)` })
+      .from(tokenBurnRecords);
+    return parseInt(result[0]?.total || "0");
+  }
+
+  async getTotalNftsBurned(): Promise<number> {
+    const result = await db
+      .select({ total: sql<string>`count(*)` })
+      .from(nftBurnRecords);
+    return parseInt(result[0]?.total || "0");
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

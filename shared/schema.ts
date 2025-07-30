@@ -43,6 +43,46 @@ export const scanResults = pgTable("scan_results", {
   scannedAt: timestamp("scanned_at").notNull().defaultNow(),
 });
 
+// Comprehensive transaction ledger for all operations
+export const transactionLedger = pgTable("transaction_ledger", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signature: text("signature").notNull().unique(),
+  walletAddress: text("wallet_address").notNull(),
+  transactionType: text("transaction_type").notNull(), // 'sol_reclaim', 'token_burn', 'nft_burn'
+  solRecovered: decimal("sol_recovered", { precision: 18, scale: 9 }).notNull(),
+  netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(),
+  feeAmount: decimal("fee_amount", { precision: 18, scale: 9 }).notNull(),
+  itemsProcessed: integer("items_processed").notNull(), // accounts closed, tokens burned, or NFTs burned
+  itemDetails: text("item_details"), // JSON string with mint addresses, account addresses, etc.
+  processedAt: timestamp("processed_at").notNull().defaultNow(),
+});
+
+// Token burning records
+export const tokenBurnRecords = pgTable("token_burn_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signature: text("signature").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  tokenMint: text("token_mint").notNull(),
+  tokenSymbol: text("token_symbol"),
+  tokenName: text("token_name"),
+  amountBurned: decimal("amount_burned", { precision: 18, scale: 9 }).notNull(),
+  solRecovered: decimal("sol_recovered", { precision: 18, scale: 9 }).notNull(),
+  burnedAt: timestamp("burned_at").notNull().defaultNow(),
+});
+
+// NFT burning records
+export const nftBurnRecords = pgTable("nft_burn_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signature: text("signature").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  nftMint: text("nft_mint").notNull(),
+  nftName: text("nft_name"),
+  nftImage: text("nft_image"),
+  collectionAddress: text("collection_address"),
+  solRecovered: decimal("sol_recovered", { precision: 18, scale: 9 }).notNull(),
+  burnedAt: timestamp("burned_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -64,6 +104,21 @@ export const insertScanResultSchema = createInsertSchema(scanResults).omit({
   scannedAt: true,
 });
 
+export const insertTransactionLedgerSchema = createInsertSchema(transactionLedger).omit({
+  id: true,
+  processedAt: true,
+});
+
+export const insertTokenBurnRecordSchema = createInsertSchema(tokenBurnRecords).omit({
+  id: true,
+  burnedAt: true,
+});
+
+export const insertNftBurnRecordSchema = createInsertSchema(nftBurnRecords).omit({
+  id: true,
+  burnedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -72,3 +127,9 @@ export type EmptyTokenAccount = typeof emptyTokenAccounts.$inferSelect;
 export type InsertEmptyTokenAccount = z.infer<typeof insertEmptyTokenAccountSchema>;
 export type ScanResult = typeof scanResults.$inferSelect;
 export type InsertScanResult = z.infer<typeof insertScanResultSchema>;
+export type TransactionLedger = typeof transactionLedger.$inferSelect;
+export type InsertTransactionLedger = z.infer<typeof insertTransactionLedgerSchema>;
+export type TokenBurnRecord = typeof tokenBurnRecords.$inferSelect;
+export type InsertTokenBurnRecord = z.infer<typeof insertTokenBurnRecordSchema>;
+export type NftBurnRecord = typeof nftBurnRecords.$inferSelect;
+export type InsertNftBurnRecord = z.infer<typeof insertNftBurnRecordSchema>;

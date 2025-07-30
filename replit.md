@@ -43,7 +43,10 @@ Preferred communication style: Simple, everyday language.
 
 #### Database Schema
 - **users**: User authentication and profile data
-- **transaction_records**: Records of completed SOL recovery transactions
+- **transaction_records**: Legacy records of completed SOL recovery transactions
+- **transaction_ledger**: Comprehensive ledger for all transaction types (SOL reclaim, token burns, NFT burns)
+- **token_burn_records**: Detailed records of individual token burning transactions
+- **nft_burn_records**: Detailed records of individual NFT burning transactions
 - **empty_token_accounts**: Discovered empty accounts with metadata
 - **scan_results**: Historical wallet scan data with aggregate statistics
 
@@ -103,3 +106,23 @@ Preferred communication style: Simple, everyday language.
 6. **State Management**: TanStack Query eliminates the need for complex state management while providing excellent caching and synchronization with the server
 
 7. **Development Experience**: Vite + tsx provides fast iteration cycles and excellent TypeScript support for both frontend and backend development
+
+## Recent Changes
+
+### January 30, 2025 - Comprehensive Transaction Ledger Implementation
+- **Replaced memory storage with PostgreSQL database** for permanent transaction persistence
+- **Created comprehensive transaction ledger system** that logs ALL operations:
+  - SOL reclaim transactions (closing empty token accounts)
+  - Token burning transactions with detailed metadata
+  - NFT burning transactions with collection data
+- **Added detailed transaction logging tables**:
+  - `transaction_ledger`: Master ledger for all transaction types
+  - `token_burn_records`: Individual token burn details
+  - `nft_burn_records`: Individual NFT burn details
+- **Implemented 15% fee system** with automatic transfers to fee collector wallet
+- **Enhanced API endpoints** with comprehensive logging:
+  - `/api/tokens/record-burn-success` - Records successful token burns
+  - `/api/nfts/record-burn-success` - Records successful NFT burns  
+  - `/api/transactions/history` - Complete transaction history
+  - `/api/transactions/stats` - Enhanced statistics across all operation types
+- **Database migration completed** using Drizzle ORM push for schema deployment
