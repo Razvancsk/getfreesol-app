@@ -332,60 +332,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
         programId: TOKEN_PROGRAM_ID,
       });
 
-      // Process each token account and get metadata from Helius
-      const tokens = [];
-      for (const account of tokenAccounts.value) {
-        const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
-        if (balance <= 0) continue;
-
-        const info = account.account.data.parsed?.info;
-        const mint = info?.mint;
-        
-        let tokenMetadata = {
-          mint: mint || 'Unknown',
-          balance: balance,
-          decimals: info?.tokenAmount?.decimals || 0,
-          name: 'Unknown Token',
-          symbol: 'TOKEN',
-          logo: null
-        };
-
-        // Use Helius as primary metadata source
-        if (mint && heliusApiKey) {
-          try {
-            const metadataResponse = await fetch(`https://api.helius.xyz/v0/token-metadata?api-key=${heliusApiKey}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ mintAccounts: [mint] })
-            });
-            
-            if (metadataResponse.ok) {
-              const metadataData = await metadataResponse.json();
-              if (metadataData && metadataData.length > 0) {
-                const tokenData = metadataData[0];
-                console.log(`Raw Helius data for ${mint}:`, JSON.stringify(tokenData, null, 2));
-                
-                // Try multiple metadata sources in order of preference
-                tokenMetadata.name = tokenData.onChainMetadata?.metadata?.data?.name || 
-                                   tokenData.legacyMetadata?.name || 
-                                   tokenData.offChainMetadata?.name || 
-                                   'Unknown Token';
-                tokenMetadata.symbol = tokenData.onChainMetadata?.metadata?.data?.symbol || 
-                                     tokenData.legacyMetadata?.symbol || 
-                                     tokenData.offChainMetadata?.symbol || 
-                                     'TOKEN';
-                tokenMetadata.logo = tokenData.legacyMetadata?.logoURI || 
-                                   tokenData.offChainMetadata?.image || 
-                                   null;
-                console.log(`Parsed metadata: name=${tokenMetadata.name}, symbol=${tokenMetadata.symbol}, logo=${tokenMetadata.logo}`);
+      // Use Helius DAS API to get all assets with metadata
+      let tokens = [];
+      if (heliusApiKey) {
+        try {
+          const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+          const heliusResponse = await fetch(heliusRpcUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: 'token-scan',
+              method: 'getAssetsByOwner',
+              params: {
+                ownerAddress: address,
+                page: 1,
+                limit: 1000,
+                displayOptions: {
+                  showFungible: true,
+                  showNativeBalance: false
+                }
               }
+            })
+          });
+          
+          if (heliusResponse.ok) {
+            const heliusData = await heliusResponse.json();
+            console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
+            
+            if (heliusData.result?.items) {
+              // Filter for fungible tokens with balance > 0
+              tokens = heliusData.result.items
+                .filter((asset: any) => 
+                  asset.interface === 'FungibleToken' || 
+                  asset.interface === 'FungibleAsset'
+                )
+                .filter((asset: any) => {
+                  const balance = asset.token_info?.balance || 0;
+                  return balance > 0;
+                })
+                .map((asset: any) => ({
+                  mint: asset.id,
+                  balance: (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0),
+                  decimals: asset.token_info?.decimals || 0,
+                  name: asset.content?.metadata?.name || 'Unknown Token',
+                  symbol: asset.content?.metadata?.symbol || 'TOKEN',
+                  logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null
+                }));
+              
+              console.log(`Processed ${tokens.length} fungible tokens with balances`);
             }
-          } catch (error) {
-            console.log(`Failed to fetch Helius metadata for token ${mint}:`, error instanceof Error ? error.message : String(error));
           }
+        } catch (error) {
+          console.log(`Failed to fetch assets from Helius DAS:`, error instanceof Error ? error.message : String(error));
         }
+      }
 
-        tokens.push(tokenMetadata);
+      // Fallback to RPC if Helius didn't work
+      if (tokens.length === 0) {
+        console.log('Falling back to RPC token scanning...');
+        for (const account of tokenAccounts.value) {
+          const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+          if (balance <= 0) continue;
+
+          const info = account.account.data.parsed?.info;
+          tokens.push({
+            mint: info?.mint || 'Unknown',
+            balance: balance,
+            decimals: info?.tokenAmount?.decimals || 0,
+            name: 'Unknown Token',
+            symbol: 'TOKEN',
+            logo: null
+          });
+        }
       }
 
       res.json(tokens);
