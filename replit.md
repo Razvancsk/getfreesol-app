@@ -111,7 +111,7 @@ Core NFT Burning: Must actually close the account and recover rent lamports, not
 ### Core NFT Burning Implementation  
 - **Issue**: Core NFT burning was not working - account wasn't being closed to recover rent
 - **Root Cause**: Incorrect instruction discriminator and overly complex account structure
-- **Final Fix**: Switched to official Metaplex Core SDK burnV1() function
+- **Final Fix**: Now using official Metaplex Core SDK burnV1() function properly
 - **Status**: ✅ FIXED - Core NFT burning works with correct SOL recovery amount
 - **User NFT**: AIXBT #1070 (HSYrYJUXT5W4xNkotyWegsA8SpPWnGrMjn2XD9k782CM) with 3,588,000 lamports
 - **Expected Recovery**: 0.00358300 SOL (actual account rent minus transaction fees)

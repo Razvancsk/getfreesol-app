@@ -536,7 +536,7 @@ export default function SolRefund() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               walletAddress: publicKey,
-              nftMints: coreData.nftsToProcess
+              nftMints: coreData.nftsToProcess || nftMints
             })
           });
 
