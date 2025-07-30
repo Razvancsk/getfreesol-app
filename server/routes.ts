@@ -713,6 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } = await import('@solana/web3.js');
+      const { createBurnInstruction, getAssociatedTokenAddress } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -745,12 +746,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Asset account lamports: ${assetAccount.lamports}`);
           
-          // Create simple burn instruction - AIXBT collection doesn't need collection authority
-          // Use discriminator for BurnV1: SHA256("global:burn_v1").slice(0,8)
-          const crypto = require('crypto');
-          const hash = crypto.createHash('sha256').update('global:burn_v1').digest();
+          // Core NFTs are burned differently - directly burn the asset account
+          // Use proper Core burn discriminator
+          import { createHash } from 'crypto';
+          const hash = createHash('sha256').update('global:burn_v1').digest();
           const discriminator = hash.slice(0, 8);
           
+          // Create Core burn instruction that closes the account and recovers rent
           const burnInstruction = new TransactionInstruction({
             programId: MPL_CORE_PROGRAM_ID,
             keys: [
@@ -758,13 +760,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // Payer (receives lamports)
               { pubkey: ownerPublicKey, isSigner: true, isWritable: false },    // Authority
             ],
-            // BurnV1 with no compression proof (just the discriminator + 0 byte)
-            data: Buffer.concat([discriminator, Buffer.from([0])])
+            data: Buffer.concat([discriminator, Buffer.from([0])]) // Discriminator + None compression proof
           });
           
           transaction.add(burnInstruction);
           processedNfts++;
-          console.log(`Added burn instruction for ${nftMint} - discriminator: [${Array.from(discriminator).join(', ')}]`);
+          console.log(`Added SPL burn instruction for ${nftMint}`);
           
         } catch (error) {
           console.error(`Failed to process Core NFT ${nftMint}:`, error);
