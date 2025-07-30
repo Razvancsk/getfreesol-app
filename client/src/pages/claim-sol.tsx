@@ -1153,13 +1153,8 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Your Tokens</h3>
-                <div className="flex space-x-2">
-                  <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
-                    {tokenList.length} Tokens Found
-                  </div>
-                  <div className="px-3 py-1 bg-green-600/20 backdrop-blur-sm border border-green-500/30 rounded-full text-sm text-green-400">
-                    ~{(tokenList.length * 0.00203928).toFixed(6)} SOL Total
-                  </div>
+                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                  {tokenList.length} Tokens Found
                 </div>
               </div>
 
@@ -1245,13 +1240,8 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Your NFTs</h3>
-                <div className="flex space-x-2">
-                  <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
-                    {nftList.length} NFTs Found
-                  </div>
-                  <div className="px-3 py-1 bg-green-600/20 backdrop-blur-sm border border-green-500/30 rounded-full text-sm text-green-400">
-                    ~{(nftList.length * 0.00203928).toFixed(6)} SOL Total
-                  </div>
+                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                  {nftList.length} NFTs Found
                 </div>
               </div>
 
