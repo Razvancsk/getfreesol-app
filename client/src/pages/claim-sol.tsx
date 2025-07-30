@@ -464,7 +464,7 @@ export default function SolRefund() {
         throw new Error('Failed to prepare bulk burn transaction');
       }
       
-      const { transaction, tokensProcessed, solRecovered } = await response.json();
+      const { transaction, tokensProcessed, solRecovered, netAmount, feeAmount } = await response.json();
       
       // Sign and send transaction
       if (!window.solana || !window.solana.isPhantom) {
@@ -489,12 +489,12 @@ export default function SolRefund() {
       
       await connection.confirmTransaction(signature, 'confirmed');
       
-      return { tokensProcessed, solRecovered, signature };
+      return { tokensProcessed, solRecovered, netAmount, feeAmount, signature };
     },
     onSuccess: (result) => {
       toast({
         title: "Success!",
-        description: `Burned ${result.tokensProcessed} tokens! Recovered ${result.solRecovered} SOL`,
+        description: `Burned ${result.tokensProcessed} tokens! Net recovery: ${result.netAmount} SOL (${result.feeAmount} SOL fee)`,
       });
       // Clear selections and refresh
       setSelectedTokens(new Set());
@@ -529,7 +529,7 @@ export default function SolRefund() {
         throw new Error('Failed to prepare bulk burn transaction');
       }
       
-      const { transaction, nftsProcessed, solRecovered } = await response.json();
+      const { transaction, nftsProcessed, solRecovered, netAmount, feeAmount } = await response.json();
       
       // Sign and send transaction
       if (!window.solana || !window.solana.isPhantom) {
@@ -554,12 +554,12 @@ export default function SolRefund() {
       
       await connection.confirmTransaction(signature, 'confirmed');
       
-      return { nftsProcessed, solRecovered, signature };
+      return { nftsProcessed, solRecovered, netAmount, feeAmount, signature };
     },
     onSuccess: (result) => {
       toast({
         title: "Success!",
-        description: `Burned ${result.nftsProcessed} NFTs! Recovered ${result.solRecovered} SOL`,
+        description: `Burned ${result.nftsProcessed} NFTs! Net recovery: ${result.netAmount} SOL (${result.feeAmount} SOL fee)`,
       });
       // Clear selections and refresh
       setSelectedNFTs(new Set());
@@ -614,9 +614,11 @@ export default function SolRefund() {
     setSelectedNFTs(new Set());
   };
 
-  // Calculate total SOL to recover
+  // Calculate total SOL to recover (net after 15% fee)
   const calculateTotalSOL = (count: number) => {
-    return (count * 0.00203928).toFixed(8);
+    const grossAmount = count * 0.00203928;
+    const netAmount = grossAmount * 0.85; // 15% fee deducted
+    return `${netAmount.toFixed(6)} net (15% fee)`;
   };
 
   // Process SOL refund (15% service fee)

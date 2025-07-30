@@ -631,6 +631,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (totalTokensProcessed === 0) {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
+
+      // Calculate fee and net amount
+      const totalSolRecovered = totalTokensProcessed * 0.00203928;
+      const feePercentage = 0.15; // 15% fee
+      const feeAmount = totalSolRecovered * feePercentage;
+      const netAmount = totalSolRecovered - feeAmount;
+
+      // Add service fee transfer if applicable
+      if (feeAmount > 0) {
+        const { SystemProgram } = await import('@solana/web3.js');
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const feeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(feeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(feeTransferInstruction);
+      }
       
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -641,15 +661,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      const totalSolRecovered = (totalTokensProcessed * 0.00203928).toFixed(8);
-      
-      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered} SOL`);
+      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${feeAmount.toFixed(8)} fee)`);
       
       res.json({
         transaction: transactionBase64,
         tokensProcessed: totalTokensProcessed,
-        solRecovered: totalSolRecovered,
-        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens`
+        solRecovered: totalSolRecovered.toFixed(8),
+        feeAmount: feeAmount.toFixed(8),
+        netAmount: netAmount.toFixed(8),
+        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`
       });
       
     } catch (error) {
@@ -745,6 +765,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (totalNFTsProcessed === 0) {
         return res.status(400).json({ error: "No valid NFTs found to burn" });
       }
+
+      // Calculate fee and net amount
+      const totalSolRecovered = totalNFTsProcessed * 0.00203928;
+      const feePercentage = 0.15; // 15% fee
+      const feeAmount = totalSolRecovered * feePercentage;
+      const netAmount = totalSolRecovered - feeAmount;
+
+      // Add service fee transfer if applicable
+      if (feeAmount > 0) {
+        const { SystemProgram } = await import('@solana/web3.js');
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const feeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(feeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(feeTransferInstruction);
+      }
       
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -755,15 +795,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      const totalSolRecovered = (totalNFTsProcessed * 0.00203928).toFixed(8);
-      
-      console.log(`Bulk NFT burn transaction prepared: ${totalNFTsProcessed} NFTs, ${totalSolRecovered} SOL`);
+      console.log(`Bulk NFT burn transaction prepared: ${totalNFTsProcessed} NFTs, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${feeAmount.toFixed(8)} fee)`);
       
       res.json({
         transaction: transactionBase64,
         nftsProcessed: totalNFTsProcessed,
-        solRecovered: totalSolRecovered,
-        message: `Bulk burn transaction prepared for ${totalNFTsProcessed} NFTs`
+        solRecovered: totalSolRecovered.toFixed(8),
+        feeAmount: feeAmount.toFixed(8),
+        netAmount: netAmount.toFixed(8),
+        message: `Bulk burn transaction prepared for ${totalNFTsProcessed} NFTs (${netAmount.toFixed(6)} SOL net after 15% fee)`
       });
       
     } catch (error) {
