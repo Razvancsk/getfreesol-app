@@ -687,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // The actual burning will be done on the frontend using the Metaplex Core SDK
       console.log(`Preparing Core NFT burn for ${nftMints.length} NFTs...`);
       
-      const solRecovered = (nftMints.length * 0.005).toFixed(8); // Core NFTs recover ~0.005 SOL
+      const solRecovered = (nftMints.length * 0.00089784).toFixed(8); // Core NFTs recover ~0.00089784 SOL
       
       res.json({
         requiresFrontendBurn: true,

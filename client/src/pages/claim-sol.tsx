@@ -529,71 +529,9 @@ export default function SolRefund() {
         const coreData = await coreResponse.json();
         
         if (coreData.requiresFrontendBurn) {
-          // Handle Core NFTs by creating a burn transaction manually
-          if (!window.solana || !window.solana.isPhantom) {
-            throw new Error('Phantom wallet not found');
-          }
-
-          const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
-          
-          // Get RPC config
-          const heliusResponse = await fetch('/api/helius-config');
-          const rpcConfig = await heliusResponse.json();
-          const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
-          
-          const connection = new Connection(rpcUrl, 'confirmed');
-          
-          // Create Core NFT burn transaction using proper Metaplex Core format
-          const transaction = new Transaction();
-          
-          // Add a Core NFT burn instruction using the mpl-core program
-          const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
-          
-          for (const nftMint of coreData.nftsToProcess) {
-            try {
-              const assetPublicKey = new PublicKey(nftMint);
-              const ownerPublicKey = new PublicKey(publicKey!);
-              
-              // Create the proper burn instruction for Core NFT
-              // Based on Metaplex Core documentation: instruction 4 is burn
-              const burnInstructionData = Buffer.alloc(1);
-              burnInstructionData.writeUInt8(4, 0); // Burn instruction discriminator
-              
-              const burnInstruction = {
-                programId: MPL_CORE_PROGRAM_ID,
-                keys: [
-                  { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // asset
-                  { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // authority (owner)
-                  { pubkey: ownerPublicKey, isSigner: false, isWritable: true },    // payer 
-                  { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system program
-                ],
-                data: burnInstructionData,
-              };
-              
-              transaction.add(burnInstruction);
-            } catch (error) {
-              console.error(`Error adding burn instruction for ${nftMint}:`, error);
-            }
-          }
-          
-          // Set transaction details
-          const { blockhash } = await connection.getLatestBlockhash();
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = new PublicKey(publicKey!);
-          
-          // Sign and send transaction
-          const signedTx = await window.solana.signTransaction(transaction);
-          const signature = await connection.sendRawTransaction(signedTx.serialize());
-          
-          // Wait for confirmation
-          await connection.confirmTransaction(signature, 'confirmed');
-          
-          return { 
-            nftsProcessed: coreData.nftsToProcess.length, 
-            solRecovered: coreData.solRecovered, 
-            signature,
-            nftType: 'Core'
-          };
+          // For Core NFTs, show instructions for manual burning via Phantom
+          // The current Metaplex Core SDK has browser compatibility issues
+          throw new Error('Core NFTs should be burned through Phantom wallet. In your wallet: Find the NFT → Three dots menu → Burn. This will recover approximately 0.0009 SOL. Our app will support direct burning once browser compatibility is improved.');
         }
       }
       
@@ -698,8 +636,8 @@ export default function SolRefund() {
 
   // Calculate total SOL to recover
   const calculateTotalSOL = (count: number) => {
-    // Core NFTs recover ~0.005 SOL each
-    return (count * 0.005).toFixed(8);
+    // Core NFTs recover ~0.00089784 SOL each (rent minus small prevention amount)
+    return (count * 0.00089784).toFixed(8);
   };
 
   // Process SOL refund (15% service fee)
@@ -1386,7 +1324,7 @@ export default function SolRefund() {
                         {nft.mint}
                       </div>
                       <div className="text-xs text-green-400 font-semibold mb-2">
-                        🪙 Core NFT - ~0.005 SOL
+                        🪙 Core NFT - ~0.0009 SOL
                       </div>
                     </div>
                   </div>
