@@ -687,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // The actual burning will be done on the frontend using the Metaplex Core SDK
       console.log(`Preparing Core NFT burn for ${nftMints.length} NFTs...`);
       
-      const solRecovered = (nftMints.length * 0.002710).toFixed(8); // Core NFTs recover ~0.002710 SOL (0.003588 - 0.00089784 prevention fee)
+      const solRecovered = (nftMints.length * 0.003583).toFixed(8); // Core NFTs recover actual rent amount (~3,583,000 lamports = 0.003583 SOL)
       
       res.json({
         requiresFrontendBurn: true,
@@ -712,10 +712,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
       }
 
-      const { Connection, PublicKey } = await import('@solana/web3.js');
-      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { publicKey } = await import('@metaplex-foundation/umi');
-      const { burnV1 } = await import('@metaplex-foundation/mpl-core');
+      const { Connection, PublicKey, Transaction, TransactionInstruction } = await import('@solana/web3.js');
       
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -723,22 +720,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
         : 'https://api.mainnet-beta.solana.com';
       
-      console.log(`Creating Core NFT burn transaction using Metaplex SDK for ${nftMints.length} NFTs...`);
+      console.log(`Creating Core NFT burn transaction using proper Core burn for ${nftMints.length} NFTs...`);
       
-      // Create UMI instance for Metaplex Core operations
-      const umi = createUmi(rpcUrl);
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
+      const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
       
       let processedNfts = 0;
-      const transactions = [];
+      let totalLamports = 0;
+      const transaction = new Transaction();
       
-      // Use Metaplex Core SDK for proper burn instruction
+      // Process each Core NFT with proper burn instruction
       for (const nftMint of nftMints) {
         try {
           console.log(`Processing Core NFT: ${nftMint}`);
           
-          // Get account info to verify it exists and has rent
+          // Get account info to verify it exists and calculate actual recovery
           const assetPublicKey = new PublicKey(nftMint);
           const assetAccount = await connection.getAccountInfo(assetPublicKey);
           if (!assetAccount) {
@@ -747,20 +744,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           console.log(`Asset account lamports: ${assetAccount.lamports}`);
+          totalLamports += assetAccount.lamports;
           
-          // Create burn instruction using Metaplex Core SDK
-          const burnInstruction = burnV1(umi, {
-            asset: publicKey(nftMint),
-            authority: publicKey(walletAddress),
-            compressionProof: null
+          // Create proper Core NFT burn instruction that closes account
+          // Using the correct burn_v1 discriminator for Metaplex Core assets
+          const discriminator = Buffer.from([241, 99, 194, 76, 6, 126, 49, 154]); // SHA256("global:burn_v1")[0..8]
+          
+          const burnInstruction = new TransactionInstruction({
+            programId: MPL_CORE_PROGRAM_ID,
+            keys: [
+              { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Asset to burn and close
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // Payer (receives lamports)  
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },    // Authority
+            ],
+            data: Buffer.concat([discriminator, Buffer.from([0])]) // burn_v1 + None compression proof
           });
           
-          // Build transaction using UMI
-          const transaction = await burnInstruction.buildAndSign(umi);
-          transactions.push(transaction);
+          transaction.add(burnInstruction);
           processedNfts++;
           
-          console.log(`Added Metaplex Core burn instruction for ${nftMint}`);
+          console.log(`Added Core NFT burn instruction for ${nftMint} - will recover ${assetAccount.lamports} lamports`);
           
         } catch (error) {
           console.error(`Failed to process Core NFT ${nftMint}:`, error);
@@ -771,19 +774,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid Core NFTs found to burn" });
       }
 
-      // For now, return the first transaction (batch processing can be added later)
-      const firstTransaction = transactions[0];
-      const base64Tx = Buffer.from(firstTransaction.serializedMessage).toString('base64');
+      // Set recent blockhash and fee payer
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+
+      // Serialize transaction for frontend signing
+      const base64Tx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
       
-      const solRecovered = (processedNfts * 0.002710).toFixed(8);
+      // Calculate actual SOL recovery: total lamports minus transaction fee (typically ~5000 lamports)
+      const actualSolRecovered = ((totalLamports - 5000) / 1e9).toFixed(8);
       
       res.json({
         success: true,
         transaction: base64Tx,
         nftsProcessed: processedNfts,
-        solRecovered: solRecovered,
+        solRecovered: actualSolRecovered,
         nftType: 'MplCoreAsset',
-        message: `Created Metaplex Core burn transaction for ${processedNfts} NFT${processedNfts > 1 ? 's' : ''}`
+        totalLamports: totalLamports,
+        message: `Created Metaplex Core burn transaction for ${processedNfts} NFT${processedNfts > 1 ? 's' : ''} - recovers ${actualSolRecovered} SOL`
       });
       
     } catch (error) {
