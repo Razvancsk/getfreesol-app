@@ -458,53 +458,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const walletPublicKey = new PublicKey(address);
       
-      // Get all token accounts with balance = 1 (typical for NFTs)
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
-        programId: TOKEN_PROGRAM_ID,
-      });
-
-      // Fetch NFT metadata for each NFT
-      const nfts = [];
-      for (const account of tokenAccounts.value) {
-        const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
-        const decimals = account.account.data.parsed?.info?.tokenAmount?.decimals || 0;
-        
-        if (!(balance === 1 && decimals === 0)) continue; // NFTs typically have balance=1 and decimals=0
-
-        const info = account.account.data.parsed?.info;
-        const mint = info?.mint;
-        
-        let nftMetadata = {
-          mint: mint || 'Unknown',
-          name: 'Unknown NFT',
-          image: null,
-          collection: null
-        };
-
-        // Try to fetch NFT metadata from Helius if available
-        if (mint && heliusApiKey) {
-          try {
-            const metadataResponse = await fetch(`https://api.helius.xyz/v0/token-metadata?api-key=${heliusApiKey}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ mintAccounts: [mint] })
-            });
-            
-            if (metadataResponse.ok) {
-              const metadataData = await metadataResponse.json();
-              if (metadataData && metadataData.length > 0) {
-                const nftData = metadataData[0];
-                nftMetadata.name = nftData.onChainMetadata?.metadata?.name || nftData.offChainMetadata?.name || 'Unknown NFT';
-                nftMetadata.image = nftData.offChainMetadata?.image || null;
-                nftMetadata.collection = nftData.onChainMetadata?.metadata?.collection || null;
+      // Use Helius DAS API to get all NFTs with metadata
+      let nfts = [];
+      if (heliusApiKey) {
+        try {
+          const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+          const heliusResponse = await fetch(heliusRpcUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: 'nft-scan',
+              method: 'getAssetsByOwner',
+              params: {
+                ownerAddress: address,
+                page: 1,
+                limit: 1000,
+                displayOptions: {
+                  showFungible: true,
+                  showNativeBalance: false
+                }
               }
+            })
+          });
+          
+          if (heliusResponse.ok) {
+            const heliusData = await heliusResponse.json();
+            console.log(`Found ${heliusData.result?.items?.length || 0} total assets from Helius DAS`);
+            
+            if (heliusData.result?.items) {
+              
+              // Filter for NFTs (exclude fungible tokens)
+              nfts = heliusData.result.items
+                .filter((asset: any) => 
+                  asset.interface === 'V1_NFT' || 
+                  asset.interface === 'ProgrammableNFT' ||
+                  asset.interface === 'Legacy' ||
+                  asset.interface === 'MplCoreAsset'
+                )
+                .map((asset: any) => ({
+                  mint: asset.id,
+                  name: asset.content?.metadata?.name || 'Unknown NFT',
+                  image: asset.content?.files?.[0]?.uri || 
+                         asset.content?.files?.[0]?.cdn_uri || 
+                         asset.content?.links?.image || 
+                         null,
+                  collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null
+                }));
+              
+              console.log(`Processed ${nfts.length} NFTs with metadata`);
             }
-          } catch (error) {
-            console.log(`Failed to fetch metadata for NFT ${mint}:`, error instanceof Error ? error.message : String(error));
           }
+        } catch (error) {
+          console.log(`Failed to fetch NFTs from Helius DAS:`, error instanceof Error ? error.message : String(error));
         }
+      }
 
-        nfts.push(nftMetadata);
+      // Fallback to RPC if Helius didn't work
+      if (nfts.length === 0) {
+        console.log('Falling back to RPC NFT scanning...');
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+          programId: TOKEN_PROGRAM_ID,
+        });
+
+        for (const account of tokenAccounts.value) {
+          const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+          const decimals = account.account.data.parsed?.info?.tokenAmount?.decimals || 0;
+          
+          if (!(balance === 1 && decimals === 0)) continue; // NFTs typically have balance=1 and decimals=0
+
+          const info = account.account.data.parsed?.info;
+          nfts.push({
+            mint: info?.mint || 'Unknown',
+            name: 'Unknown NFT',
+            image: null,
+            collection: null
+          });
+        }
       }
 
       res.json(nfts);
