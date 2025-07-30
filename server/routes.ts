@@ -544,6 +544,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Burn Token API
+  app.post("/api/tokens/burn", async (req, res) => {
+    try {
+      const { walletAddress, tokenMint } = req.body;
+      
+      if (!walletAddress || !tokenMint) {
+        return res.status(400).json({ error: "Wallet address and token mint are required" });
+      }
+
+      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddress } = await import('@solana/spl-token');
+      
+      // Use Helius RPC if available
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      console.log('Creating token burn transaction...');
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      const mintPublicKey = new PublicKey(tokenMint);
+      
+      // Get associated token account
+      const tokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        ownerPublicKey
+      );
+      
+      // Create transaction
+      const transaction = new Transaction();
+      
+      // Add close account instruction
+      const closeInstruction = createCloseAccountInstruction(
+        tokenAccount,
+        ownerPublicKey, // destination (receives SOL)
+        ownerPublicKey  // owner
+      );
+      
+      transaction.add(closeInstruction);
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = serializedTransaction.toString('base64');
+      
+      res.json({
+        transaction: transactionBase64,
+        solRecovered: '0.00203928', // Standard rent-exempt amount
+        message: 'Token burn transaction prepared successfully'
+      });
+      
+    } catch (error) {
+      console.error('Error preparing token burn:', error);
+      res.status(500).json({ error: "Failed to prepare token burn transaction" });
+    }
+  });
+
+  // Burn NFT API  
+  app.post("/api/nfts/burn", async (req, res) => {
+    try {
+      const { walletAddress, nftMint } = req.body;
+      
+      if (!walletAddress || !nftMint) {
+        return res.status(400).json({ error: "Wallet address and NFT mint are required" });
+      }
+
+      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddress } = await import('@solana/spl-token');
+      
+      // Use Helius RPC if available
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      console.log('Creating NFT burn transaction...');
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      const mintPublicKey = new PublicKey(nftMint);
+      
+      // Get associated token account
+      const tokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        ownerPublicKey
+      );
+      
+      // Create transaction
+      const transaction = new Transaction();
+      
+      // Add close account instruction
+      const closeInstruction = createCloseAccountInstruction(
+        tokenAccount,
+        ownerPublicKey, // destination (receives SOL)
+        ownerPublicKey  // owner
+      );
+      
+      transaction.add(closeInstruction);
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = serializedTransaction.toString('base64');
+      
+      res.json({
+        transaction: transactionBase64,
+        solRecovered: '0.00203928', // Standard rent-exempt amount  
+        message: 'NFT burn transaction prepared successfully'
+      });
+      
+    } catch (error) {
+      console.error('Error preparing NFT burn:', error);
+      res.status(500).json({ error: "Failed to prepare NFT burn transaction" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

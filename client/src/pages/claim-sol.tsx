@@ -285,6 +285,164 @@ export default function SolRefund() {
     },
   });
 
+  // Burn Token Mutation
+  const burnTokenMutation = useMutation({
+    mutationFn: async (tokenMint: string) => {
+      // First, get the transaction from backend
+      const response = await fetch('/api/tokens/burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey,
+          tokenMint
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to prepare burn transaction');
+      }
+      
+      const { transaction, solRecovered } = await response.json();
+      
+      // Sign and send transaction using Phantom wallet
+      if (!window.solana || !window.solana.isPhantom) {
+        throw new Error('Phantom wallet not found');
+      }
+
+      const { Connection, Transaction } = await import('@solana/web3.js');
+      
+      // Use Helius RPC if available, otherwise fallback
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+      
+      const connection = new Connection(
+        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      // Deserialize and sign transaction
+      const txBuffer = Buffer.from(transaction, 'base64');
+      const tx = Transaction.from(txBuffer);
+      
+      const signedTx = await window.solana.signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      return { signature, solRecovered };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success!",
+        description: `Token burned successfully! Recovered ${data.solRecovered} SOL`,
+      });
+      // Refresh token list
+      if (publicKey) {
+        scanTokensMutation.mutate(publicKey);
+      }
+    },
+    onError: (error) => {
+      console.error('Error burning token:', error);
+      let errorMessage = "Failed to burn token. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('Phantom wallet not found')) {
+          errorMessage = "Please install and connect Phantom wallet.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Burn NFT Mutation  
+  const burnNFTMutation = useMutation({
+    mutationFn: async (nftMint: string) => {
+      // First, get the transaction from backend  
+      const response = await fetch('/api/nfts/burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey,
+          nftMint
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to prepare burn transaction');
+      }
+      
+      const { transaction, solRecovered } = await response.json();
+      
+      // Sign and send transaction using Phantom wallet
+      if (!window.solana || !window.solana.isPhantom) {
+        throw new Error('Phantom wallet not found');
+      }
+
+      const { Connection, Transaction } = await import('@solana/web3.js');
+      
+      // Use Helius RPC if available, otherwise fallback
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+      
+      const connection = new Connection(
+        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      // Deserialize and sign transaction
+      const txBuffer = Buffer.from(transaction, 'base64');
+      const tx = Transaction.from(txBuffer);
+      
+      const signedTx = await window.solana.signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      return { signature, solRecovered };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success!",
+        description: `NFT burned successfully! Recovered ${data.solRecovered} SOL`,
+      });
+      // Refresh NFT list
+      if (publicKey) {
+        scanNFTsMutation.mutate(publicKey);
+      }
+    },
+    onError: (error) => {
+      console.error('Error burning NFT:', error);
+      let errorMessage = "Failed to burn NFT. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('Phantom wallet not found')) {
+          errorMessage = "Please install and connect Phantom wallet.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error", 
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Process SOL refund (15% service fee)
   const refundMutation = useMutation({
     mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number }) => {
@@ -518,6 +676,30 @@ export default function SolRefund() {
       selectedAccounts: allAccountAddresses,
       donationPercentage,
     });
+  };
+
+  const handleBurnToken = (tokenMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+    burnTokenMutation.mutate(tokenMint);
+  };
+
+  const handleBurnNFT = (nftMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error", 
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+    burnNFTMutation.mutate(nftMint);
   };
 
   const calculateRefund = () => {
@@ -835,12 +1017,13 @@ export default function SolRefund() {
                       </div>
                     </div>
                     <Button
-                      onClick={() => {/* TODO: Implement burn token */}}
+                      onClick={() => handleBurnToken(token.mint)}
                       size="sm"
                       className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={burnTokenMutation.isPending}
                     >
                       <Flame className="h-4 w-4 mr-1" />
-                      Burn
+                      {burnTokenMutation.isPending ? 'Burning...' : 'Burn'}
                     </Button>
                   </div>
                 ))}
@@ -884,12 +1067,13 @@ export default function SolRefund() {
                         🪙 Recover: ~0.00203928 SOL
                       </div>
                       <Button
-                        onClick={() => {/* TODO: Implement burn NFT */}}
+                        onClick={() => handleBurnNFT(nft.mint)}
                         size="sm"
                         className="w-full bg-red-600 hover:bg-red-700 text-white"
+                        disabled={burnNFTMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Burn NFT
+                        {burnNFTMutation.isPending ? 'Burning...' : 'Burn NFT'}
                       </Button>
                     </div>
                   </div>
