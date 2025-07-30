@@ -496,13 +496,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 .filter((asset: any) => {
                   const isCompressed = asset.compression?.compressed === true;
                   const isFungible = asset.interface === 'FungibleToken';
+                  // Only include traditional NFT standards that can be burned for SOL recovery
                   const isNFT = asset.interface === 'V1_NFT' || 
                                asset.interface === 'ProgrammableNFT' ||
-                               asset.interface === 'Legacy' ||
-                               asset.interface === 'MplCoreAsset';
+                               asset.interface === 'Legacy';
+                  
+                  // Note: MplCoreAsset NFTs use a different standard and may not be burnable for SOL recovery
                   
                   const shouldInclude = isNFT && !isCompressed && !isFungible;
-                  console.log(`Asset ${asset.id}: interface=${asset.interface}, compressed=${isCompressed}, fungible=${isFungible}, shouldInclude=${shouldInclude}`);
+                  console.log(`Asset ${asset.id}: interface=${asset.interface}, compressed=${isCompressed}, fungible=${isFungible}, isNFT=${isNFT}, shouldInclude=${shouldInclude}`);
                   
                   // Include NFTs that are NOT compressed and NOT fungible tokens
                   return shouldInclude;
@@ -715,12 +717,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ownerPublicKey
           );
           
-          // Get token account info - NFTs typically have balance=1, decimals=0
-          const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
-          const parsedInfo = tokenAccountInfo.value?.data as any;
+          // Check if this is a traditional SPL token account
+          const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
+          
+          if (!tokenAccountInfo) {
+            console.log(`Skipping ${nftMint} - NFT account not found (may be MplCoreAsset or other new standard)`);
+            continue;
+          }
+          
+          // Get parsed account info for traditional SPL tokens
+          const parsedAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+          const parsedInfo = parsedAccountInfo.value?.data as any;
           
           if (!parsedInfo?.parsed?.info) {
-            console.log(`Skipping ${nftMint} - NFT account not found`);
+            console.log(`Skipping ${nftMint} - Cannot parse NFT account data`);
             continue;
           }
           

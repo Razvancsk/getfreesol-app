@@ -1338,8 +1338,8 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="text-center space-y-4">
                 <Image className="h-12 w-12 text-purple-400 mx-auto" />
-                <h3 className="text-lg font-semibold text-white">No NFTs Found</h3>
-                <p className="text-purple-200">Scan your wallet to find NFTs available for burning.</p>
+                <h3 className="text-lg font-semibold text-white">No Burnable NFTs Found</h3>
+                <p className="text-purple-200">Only traditional NFTs (not compressed NFTs) can be burned for SOL recovery. Your wallet may contain compressed NFTs which are not shown here.</p>
               </div>
             </div>
           )}
