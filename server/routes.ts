@@ -735,17 +735,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const assetPublicKey = new PublicKey(nftMint);
           
+          // Check if the Core NFT has a collection by fetching its data
+          const assetAccount = await connection.getAccountInfo(assetPublicKey);
+          if (!assetAccount) {
+            console.error(`Asset account not found: ${nftMint}`);
+            continue;
+          }
+          
+          // This NFT has collection: 9rvj2zVHJeuJXWDWfbceVzpS25myA6zB99UdskmpM2aS
+          const collectionPublicKey = new PublicKey('9rvj2zVHJeuJXWDWfbceVzpS25myA6zB99UdskmpM2aS');
+          
           // Create proper Core NFT burn instruction using BurnV1
           // IDL accounts: asset (mut), collection (opt), payer (mut, signer), authority (opt, signer), system_program
           const burnInstruction = new TransactionInstruction({
             programId: MPL_CORE_PROGRAM_ID,
             keys: [
               { pubkey: assetPublicKey, isSigner: false, isWritable: true },     // Asset to burn
+              { pubkey: collectionPublicKey, isSigner: false, isWritable: true }, // Collection (required for this NFT)
               { pubkey: ownerPublicKey, isSigner: true, isWritable: true },      // Payer (receives rent back)
               { pubkey: ownerPublicKey, isSigner: true, isWritable: false },     // Authority (owner)
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
             ],
-            data: Buffer.from([12, 0]), // BurnV1 discriminator + empty compressionProof
+            data: Buffer.from([12, 0]), // BurnV1 discriminator + None for compressionProof (Option::None = 0x00)
           });
           
           transaction.add(burnInstruction);
