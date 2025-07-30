@@ -758,8 +758,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               { pubkey: ownerPublicKey, isSigner: true, isWritable: false },      // Authority
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
             ],
-            // BurnV1 instruction data with proper encoding for account closure
-            data: Buffer.from([12, 0]) // BurnV1 discriminator + no compression proof
+            // Correct Anchor discriminator for "global:burn_v1" instruction
+            data: Buffer.from([241, 99, 194, 76, 6, 126, 49, 154, 0]) // SHA256 hash + None compression proof
           });
           
           transaction.add(burnInstruction);
