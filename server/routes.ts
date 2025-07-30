@@ -720,47 +720,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
         : 'https://api.mainnet-beta.solana.com';
       
-      console.log(`Creating Core NFT burn transaction using Metaplex SDK for ${nftMints.length} NFTs...`);
+      console.log(`Creating Core NFT burn transaction that closes account for ${nftMints.length} NFTs...`);
       
-      // Import Metaplex Core SDK
-      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
-      const { publicKey } = await import('@metaplex-foundation/umi');
-
-      // Create Umi instance with RPC
-      const umi = createUmi(rpcUrl).use(mplCore());
-
-      // Build burn transaction using proper SDK
-      let transactionBuilder = umi.transactions.create();
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      
+      // Create transaction with proper Core burn + close instructions
+      const transaction = new Transaction();
+      const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
       let processedNfts = 0;
       
       for (const nftMint of nftMints) {
         try {
-          const assetId = publicKey(nftMint);
+          const assetPublicKey = new PublicKey(nftMint);
           console.log(`Processing Core NFT: ${nftMint}`);
           
-          // Fetch asset data
-          const asset = await fetchAsset(umi, assetId);
-          console.log(`Asset fetched successfully`);
-          
-          // Check if asset has collection
-          const collectionId = collectionAddress(asset);
-          let collection = undefined;
-          
-          if (collectionId) {
-            console.log(`Fetching collection: ${collectionId}`);
-            collection = await fetchCollection(umi, collectionId);
+          // Get account info to verify it exists and has rent
+          const assetAccount = await connection.getAccountInfo(assetPublicKey);
+          if (!assetAccount) {
+            console.error(`Asset account not found: ${nftMint}`);
+            continue;
           }
-
-          // Create burn instruction using SDK
-          const burnIx = burn(umi, {
-            asset: asset,
-            collection: collection,
+          
+          console.log(`Asset account lamports: ${assetAccount.lamports}`);
+          
+          // For AIXBT collection, include collection account
+          const collectionPublicKey = new PublicKey('9rvj2zVHJeuJXWDWfbceVzpS25myA6zB99UdskmpM2aS');
+          
+          // Create Core burn instruction that closes the account
+          // Based on Core IDL: BurnV1 with proper account closure
+          const burnInstruction = new TransactionInstruction({
+            programId: MPL_CORE_PROGRAM_ID,
+            keys: [
+              { pubkey: assetPublicKey, isSigner: false, isWritable: true },      // Asset (will be closed)
+              { pubkey: collectionPublicKey, isSigner: false, isWritable: true }, // Collection
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: true },       // Payer (receives rent)
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },      // Authority
+              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+            ],
+            // BurnV1 instruction data with proper encoding for account closure
+            data: Buffer.from([12, 0]) // BurnV1 discriminator + no compression proof
           });
-
-          transactionBuilder = transactionBuilder.add(burnIx);
+          
+          transaction.add(burnInstruction);
           processedNfts++;
-          console.log(`Added burn instruction for ${nftMint}`);
+          console.log(`Added burn+close instruction for ${nftMint}`);
           
         } catch (error) {
           console.error(`Failed to process Core NFT ${nftMint}:`, error);
@@ -771,13 +775,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid Core NFTs found to burn" });
       }
 
-      // Set blockhash and build final transaction
-      const { blockhash } = await umi.rpc.getLatestBlockhash();
-      transactionBuilder = transactionBuilder.setBlockhash(blockhash);
+      // Set recent blockhash and fee payer
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
 
       // Serialize transaction for frontend signing
-      const serializedTx = umi.transactions.serialize(transactionBuilder);
-      const base64Tx = Buffer.from(serializedTx).toString('base64');
+      const base64Tx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
       
       const solRecovered = (nftMints.length * 0.002710).toFixed(8); // Actual recovery after prevention fee
       
