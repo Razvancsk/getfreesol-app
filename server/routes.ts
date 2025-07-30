@@ -687,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // The actual burning will be done on the frontend using the Metaplex Core SDK
       console.log(`Preparing Core NFT burn for ${nftMints.length} NFTs...`);
       
-      const solRecovered = (nftMints.length * 0.003583).toFixed(8); // Core NFTs recover actual rent amount (~3,583,000 lamports = 0.003583 SOL)
+      const solRecovered = "TBD"; // Will show actual account balance when transaction is created
       
       res.json({
         requiresFrontendBurn: true,
@@ -782,8 +782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Serialize transaction for frontend signing
       const base64Tx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
       
-      // Calculate actual SOL recovery: total lamports minus transaction fee (typically ~5000 lamports)
-      const actualSolRecovered = ((totalLamports - 5000) / 1e9).toFixed(8);
+      // Show actual account balance - no calculations needed
+      const actualSolRecovered = (totalLamports / 1e9).toFixed(9);
       
       res.json({
         success: true,
