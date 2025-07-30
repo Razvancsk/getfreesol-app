@@ -450,61 +450,51 @@ export default function SolRefund() {
   // Bulk Burn Tokens Mutation
   const bulkBurnTokensMutation = useMutation({
     mutationFn: async (tokenMints: string[]) => {
-      const results = [];
-      for (const tokenMint of tokenMints) {
-        try {
-          // Get transaction from backend
-          const response = await fetch('/api/tokens/burn', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              walletAddress: publicKey,
-              tokenMint
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Failed to prepare burn transaction for ${tokenMint}`);
-          }
-          
-          const { transaction, solRecovered } = await response.json();
-          
-          // Sign and send transaction
-          if (!window.solana || !window.solana.isPhantom) {
-            throw new Error('Phantom wallet not found');
-          }
-
-          const { Connection, Transaction } = await import('@solana/web3.js');
-          
-          const heliusResponse = await fetch('/api/helius-config');
-          const rpcConfig = await heliusResponse.json();
-          
-          const connection = new Connection(
-            rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-            'confirmed'
-          );
-          
-          const txBuffer = Buffer.from(transaction, 'base64');
-          const tx = Transaction.from(txBuffer);
-          
-          const signedTx = await window.solana.signTransaction(tx);
-          const signature = await connection.sendRawTransaction(signedTx.serialize());
-          
-          await connection.confirmTransaction(signature, 'confirmed');
-          
-          results.push({ tokenMint, signature, solRecovered });
-        } catch (error) {
-          console.error(`Error burning token ${tokenMint}:`, error);
-          throw error;
-        }
+      // Get bulk transaction from backend
+      const response = await fetch('/api/tokens/bulk-burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey,
+          tokenMints
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to prepare bulk burn transaction');
       }
-      return results;
+      
+      const { transaction, tokensProcessed, solRecovered } = await response.json();
+      
+      // Sign and send transaction
+      if (!window.solana || !window.solana.isPhantom) {
+        throw new Error('Phantom wallet not found');
+      }
+
+      const { Connection, Transaction } = await import('@solana/web3.js');
+      
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+      
+      const connection = new Connection(
+        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      const txBuffer = Buffer.from(transaction, 'base64');
+      const tx = Transaction.from(txBuffer);
+      
+      const signedTx = await window.solana.signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      return { tokensProcessed, solRecovered, signature };
     },
-    onSuccess: (results) => {
-      const totalSol = results.reduce((sum, r) => sum + parseFloat(r.solRecovered), 0);
+    onSuccess: (result) => {
       toast({
         title: "Success!",
-        description: `Burned ${results.length} tokens! Recovered ${totalSol.toFixed(8)} SOL`,
+        description: `Burned ${result.tokensProcessed} tokens! Recovered ${result.solRecovered} SOL`,
       });
       // Clear selections and refresh
       setSelectedTokens(new Set());
@@ -525,61 +515,51 @@ export default function SolRefund() {
   // Bulk Burn NFTs Mutation
   const bulkBurnNFTsMutation = useMutation({
     mutationFn: async (nftMints: string[]) => {
-      const results = [];
-      for (const nftMint of nftMints) {
-        try {
-          // Get transaction from backend
-          const response = await fetch('/api/nfts/burn', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              walletAddress: publicKey,
-              nftMint
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Failed to prepare burn transaction for ${nftMint}`);
-          }
-          
-          const { transaction, solRecovered } = await response.json();
-          
-          // Sign and send transaction
-          if (!window.solana || !window.solana.isPhantom) {
-            throw new Error('Phantom wallet not found');
-          }
-
-          const { Connection, Transaction } = await import('@solana/web3.js');
-          
-          const heliusResponse = await fetch('/api/helius-config');
-          const rpcConfig = await heliusResponse.json();
-          
-          const connection = new Connection(
-            rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-            'confirmed'
-          );
-          
-          const txBuffer = Buffer.from(transaction, 'base64');
-          const tx = Transaction.from(txBuffer);
-          
-          const signedTx = await window.solana.signTransaction(tx);
-          const signature = await connection.sendRawTransaction(signedTx.serialize());
-          
-          await connection.confirmTransaction(signature, 'confirmed');
-          
-          results.push({ nftMint, signature, solRecovered });
-        } catch (error) {
-          console.error(`Error burning NFT ${nftMint}:`, error);
-          throw error;
-        }
+      // Get bulk transaction from backend
+      const response = await fetch('/api/nfts/bulk-burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey,
+          nftMints
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to prepare bulk burn transaction');
       }
-      return results;
+      
+      const { transaction, nftsProcessed, solRecovered } = await response.json();
+      
+      // Sign and send transaction
+      if (!window.solana || !window.solana.isPhantom) {
+        throw new Error('Phantom wallet not found');
+      }
+
+      const { Connection, Transaction } = await import('@solana/web3.js');
+      
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+      
+      const connection = new Connection(
+        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      const txBuffer = Buffer.from(transaction, 'base64');
+      const tx = Transaction.from(txBuffer);
+      
+      const signedTx = await window.solana.signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      return { nftsProcessed, solRecovered, signature };
     },
-    onSuccess: (results) => {
-      const totalSol = results.reduce((sum, r) => sum + parseFloat(r.solRecovered), 0);
+    onSuccess: (result) => {
       toast({
         title: "Success!",
-        description: `Burned ${results.length} NFTs! Recovered ${totalSol.toFixed(8)} SOL`,
+        description: `Burned ${result.nftsProcessed} NFTs! Recovered ${result.solRecovered} SOL`,
       });
       // Clear selections and refresh
       setSelectedNFTs(new Set());

@@ -544,7 +544,235 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Burn Token API
+  // Bulk Burn Tokens API
+  app.post("/api/tokens/bulk-burn", async (req, res) => {
+    try {
+      const { walletAddress, tokenMints } = req.body;
+      
+      if (!walletAddress || !tokenMints || !Array.isArray(tokenMints) || tokenMints.length === 0) {
+        return res.status(400).json({ error: "Wallet address and token mints array are required" });
+      }
+
+      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { 
+        TOKEN_PROGRAM_ID, 
+        createBurnCheckedInstruction, 
+        createCloseAccountInstruction, 
+        getAssociatedTokenAddress 
+      } = await import('@solana/spl-token');
+      
+      // Use Helius RPC if available
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      console.log(`Creating bulk token burn transaction for ${tokenMints.length} tokens...`);
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      
+      // Create single transaction with multiple burn+close instructions
+      const transaction = new Transaction();
+      let totalTokensProcessed = 0;
+      
+      for (const tokenMint of tokenMints) {
+        try {
+          const mintPublicKey = new PublicKey(tokenMint);
+          
+          // Get associated token account
+          const tokenAccount = await getAssociatedTokenAddress(
+            mintPublicKey,
+            ownerPublicKey
+          );
+          
+          // Get token account info to determine balance and decimals
+          const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+          const parsedInfo = tokenAccountInfo.value?.data as any;
+          
+          if (!parsedInfo?.parsed?.info) {
+            console.log(`Skipping ${tokenMint} - token account not found`);
+            continue;
+          }
+          
+          const balance = parsedInfo.parsed.info.tokenAmount.amount;
+          const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
+          
+          // Step 1: Burn tokens (if balance > 0)
+          if (balance > 0) {
+            const burnInstruction = createBurnCheckedInstruction(
+              tokenAccount,     // Token account to burn from
+              mintPublicKey,    // Token mint
+              ownerPublicKey,   // Owner
+              balance,          // Amount to burn (full balance)
+              decimals,         // Decimals
+              [],               // Additional signers
+              TOKEN_PROGRAM_ID  // Token program ID
+            );
+            transaction.add(burnInstruction);
+          }
+          
+          // Step 2: Close the now-empty account to reclaim SOL
+          const closeInstruction = createCloseAccountInstruction(
+            tokenAccount,
+            ownerPublicKey, // destination (receives SOL)
+            ownerPublicKey  // owner
+          );
+          
+          transaction.add(closeInstruction);
+          totalTokensProcessed++;
+          
+        } catch (error) {
+          console.log(`Error processing token ${tokenMint}:`, error);
+          continue;
+        }
+      }
+      
+      if (totalTokensProcessed === 0) {
+        return res.status(400).json({ error: "No valid tokens found to burn" });
+      }
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = serializedTransaction.toString('base64');
+      
+      const totalSolRecovered = (totalTokensProcessed * 0.00203928).toFixed(8);
+      
+      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered} SOL`);
+      
+      res.json({
+        transaction: transactionBase64,
+        tokensProcessed: totalTokensProcessed,
+        solRecovered: totalSolRecovered,
+        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens`
+      });
+      
+    } catch (error) {
+      console.error('Error preparing bulk token burn:', error);
+      res.status(500).json({ error: "Failed to prepare bulk token burn transaction" });
+    }
+  });
+
+  // Bulk Burn NFTs API
+  app.post("/api/nfts/bulk-burn", async (req, res) => {
+    try {
+      const { walletAddress, nftMints } = req.body;
+      
+      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftMints.length === 0) {
+        return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
+      }
+
+      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { 
+        TOKEN_PROGRAM_ID, 
+        createBurnCheckedInstruction, 
+        createCloseAccountInstruction, 
+        getAssociatedTokenAddress 
+      } = await import('@solana/spl-token');
+      
+      // Use Helius RPC if available
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      console.log(`Creating bulk NFT burn transaction for ${nftMints.length} NFTs...`);
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      
+      // Create single transaction with multiple burn+close instructions
+      const transaction = new Transaction();
+      let totalNFTsProcessed = 0;
+      
+      for (const nftMint of nftMints) {
+        try {
+          const mintPublicKey = new PublicKey(nftMint);
+          
+          // Get associated token account
+          const tokenAccount = await getAssociatedTokenAddress(
+            mintPublicKey,
+            ownerPublicKey
+          );
+          
+          // Get token account info - NFTs typically have balance=1, decimals=0
+          const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+          const parsedInfo = tokenAccountInfo.value?.data as any;
+          
+          if (!parsedInfo?.parsed?.info) {
+            console.log(`Skipping ${nftMint} - NFT account not found`);
+            continue;
+          }
+          
+          const balance = parsedInfo.parsed.info.tokenAmount.amount;
+          const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
+          
+          // Step 1: Burn the NFT (if balance > 0)
+          if (balance > 0) {
+            const burnInstruction = createBurnCheckedInstruction(
+              tokenAccount,     // Token account to burn from
+              mintPublicKey,    // NFT mint
+              ownerPublicKey,   // Owner
+              balance,          // Amount to burn (typically 1 for NFTs)
+              decimals,         // Decimals (typically 0 for NFTs)
+              [],               // Additional signers
+              TOKEN_PROGRAM_ID  // Token program ID
+            );
+            transaction.add(burnInstruction);
+          }
+          
+          // Step 2: Close the now-empty account to reclaim SOL
+          const closeInstruction = createCloseAccountInstruction(
+            tokenAccount,
+            ownerPublicKey, // destination (receives SOL)
+            ownerPublicKey  // owner
+          );
+          
+          transaction.add(closeInstruction);
+          totalNFTsProcessed++;
+          
+        } catch (error) {
+          console.log(`Error processing NFT ${nftMint}:`, error);
+          continue;
+        }
+      }
+      
+      if (totalNFTsProcessed === 0) {
+        return res.status(400).json({ error: "No valid NFTs found to burn" });
+      }
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = serializedTransaction.toString('base64');
+      
+      const totalSolRecovered = (totalNFTsProcessed * 0.00203928).toFixed(8);
+      
+      console.log(`Bulk NFT burn transaction prepared: ${totalNFTsProcessed} NFTs, ${totalSolRecovered} SOL`);
+      
+      res.json({
+        transaction: transactionBase64,
+        nftsProcessed: totalNFTsProcessed,
+        solRecovered: totalSolRecovered,
+        message: `Bulk burn transaction prepared for ${totalNFTsProcessed} NFTs`
+      });
+      
+    } catch (error) {
+      console.error('Error preparing bulk NFT burn:', error);
+      res.status(500).json({ error: "Failed to prepare bulk NFT burn transaction" });
+    }
+  });
+
+  // Single Burn Token API (for individual burns)
   app.post("/api/tokens/burn", async (req, res) => {
     try {
       const { walletAddress, tokenMint } = req.body;
