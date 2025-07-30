@@ -529,62 +529,63 @@ export default function SolRefund() {
         const coreData = await coreResponse.json();
         
         if (coreData.requiresFrontendBurn) {
-          // Handle Core NFTs by creating proper burn transaction
+          // Handle Core NFTs using proper Metaplex Core SDK
           if (!window.solana || !window.solana.isPhantom) {
             throw new Error('Phantom wallet not found');
           }
 
-          const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } = await import('@solana/web3.js');
+          // Import Metaplex Core SDK
+          const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+          const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+          const { mplCore, burn, fetchAsset, publicKey: umiPublicKey } = await import('@metaplex-foundation/mpl-core');
           
           // Get RPC config
           const heliusResponse = await fetch('/api/helius-config');
           const rpcConfig = await heliusResponse.json();
           const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
           
-          const connection = new Connection(rpcUrl, 'confirmed');
-          
-          // Create Core NFT burn transaction
-          const transaction = new Transaction();
-          
-          // Metaplex Core program ID
-          const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+          // Create UMI instance with Metaplex Core
+          const umi = createUmi(rpcUrl)
+            .use(mplCore())
+            .use(walletAdapterIdentity(window.solana));
+
+          const results = [];
           
           for (const nftMint of coreData.nftsToProcess) {
-            const assetPublicKey = new PublicKey(nftMint);
-            const ownerPublicKey = new PublicKey(publicKey!);
-            
-            // Create burn instruction for Core NFT - using correct account layout
-            const instruction = new TransactionInstruction({
-              programId: MPL_CORE_PROGRAM_ID,
-              keys: [
-                { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Asset account to burn
-                { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // Owner/authority
-                { pubkey: ownerPublicKey, isSigner: false, isWritable: true },    // Payer for transaction
-                { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
-              ],
-              data: Buffer.from([4]), // Burn instruction discriminator
-            });
-            
-            transaction.add(instruction);
+            try {
+              // Fetch the Core asset
+              const assetId = umiPublicKey(nftMint);
+              const asset = await fetchAsset(umi, assetId);
+              
+              // Burn the Core NFT asset - this destroys the actual token
+              const result = await burn(umi, {
+                asset: asset,
+              }).sendAndConfirm(umi);
+              
+              results.push({
+                mint: nftMint,
+                signature: result.signature,
+                success: true
+              });
+              
+            } catch (error) {
+              console.error(`Failed to burn Core NFT ${nftMint}:`, error);
+              results.push({
+                mint: nftMint,
+                error: error.message,
+                success: false
+              });
+            }
           }
           
-          // Set transaction details
-          const { blockhash } = await connection.getLatestBlockhash();
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = new PublicKey(publicKey!);
-          
-          // Sign and send transaction
-          const signedTx = await window.solana.signTransaction(transaction);
-          const signature = await connection.sendRawTransaction(signedTx.serialize());
-          
-          // Wait for confirmation
-          await connection.confirmTransaction(signature, 'confirmed');
+          const successCount = results.filter(r => r.success).length;
           
           return { 
-            nftsProcessed: coreData.nftsToProcess.length, 
-            solRecovered: coreData.solRecovered, 
-            signature,
-            nftType: 'Core'
+            nftsProcessed: successCount, 
+            solRecovered: (successCount * 0.003588).toFixed(8), 
+            signatures: results.filter(r => r.success).map(r => r.signature),
+            nftType: 'Core',
+            results: results
           };
         }
       }
