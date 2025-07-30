@@ -529,63 +529,50 @@ export default function SolRefund() {
         const coreData = await coreResponse.json();
         
         if (coreData.requiresFrontendBurn) {
-          // Handle Core NFTs using proper Metaplex Core SDK
+          // Handle Core NFTs with backend transaction creation
+          // Due to browser compatibility issues with Metaplex Core SDK, we'll create transactions on the backend
+          const burnResponse = await fetch('/api/nfts/burn-core-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              walletAddress: publicKey,
+              nftMints: coreData.nftsToProcess
+            })
+          });
+
+          if (!burnResponse.ok) {
+            throw new Error('Failed to create Core NFT burn transaction');
+          }
+
+          const { transaction, nftsProcessed, solRecovered } = await burnResponse.json();
+
+          // Sign and send transaction
           if (!window.solana || !window.solana.isPhantom) {
             throw new Error('Phantom wallet not found');
           }
 
-          // Import Metaplex Core SDK
-          const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-          const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
-          const { mplCore, burn, fetchAsset, publicKey: umiPublicKey } = await import('@metaplex-foundation/mpl-core');
+          const { Connection, Transaction } = await import('@solana/web3.js');
           
           // Get RPC config
           const heliusResponse = await fetch('/api/helius-config');
           const rpcConfig = await heliusResponse.json();
           const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
           
-          // Create UMI instance with Metaplex Core
-          const umi = createUmi(rpcUrl)
-            .use(mplCore())
-            .use(walletAdapterIdentity(window.solana));
-
-          const results = [];
+          const connection = new Connection(rpcUrl, 'confirmed');
           
-          for (const nftMint of coreData.nftsToProcess) {
-            try {
-              // Fetch the Core asset
-              const assetId = umiPublicKey(nftMint);
-              const asset = await fetchAsset(umi, assetId);
-              
-              // Burn the Core NFT asset - this destroys the actual token
-              const result = await burn(umi, {
-                asset: asset,
-              }).sendAndConfirm(umi);
-              
-              results.push({
-                mint: nftMint,
-                signature: result.signature,
-                success: true
-              });
-              
-            } catch (error) {
-              console.error(`Failed to burn Core NFT ${nftMint}:`, error);
-              results.push({
-                mint: nftMint,
-                error: error.message,
-                success: false
-              });
-            }
-          }
+          const txBuffer = Buffer.from(transaction, 'base64');
+          const tx = Transaction.from(txBuffer);
           
-          const successCount = results.filter(r => r.success).length;
+          const signedTx = await window.solana.signTransaction(tx);
+          const signature = await connection.sendRawTransaction(signedTx.serialize());
+          
+          await connection.confirmTransaction(signature, 'confirmed');
           
           return { 
-            nftsProcessed: successCount, 
-            solRecovered: (successCount * 0.003588).toFixed(8), 
-            signatures: results.filter(r => r.success).map(r => r.signature),
-            nftType: 'Core',
-            results: results
+            nftsProcessed, 
+            solRecovered, 
+            signature,
+            nftType: 'Core'
           };
         }
       }

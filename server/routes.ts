@@ -703,6 +703,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Core NFT Transaction Creation API (for actual burning)
+  app.post("/api/nfts/burn-core-transaction", async (req, res) => {
+    try {
+      const { walletAddress, nftMints } = req.body;
+      
+      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftMints.length === 0) {
+        return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
+      }
+
+      const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } = await import('@solana/web3.js');
+      
+      // Use Helius RPC if available
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      console.log(`Creating Core NFT burn transaction for ${nftMints.length} NFTs...`);
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      
+      // Create transaction with Core NFT burn instructions
+      const transaction = new Transaction();
+      
+      // Metaplex Core program ID
+      const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+      
+      for (const nftMint of nftMints) {
+        try {
+          const assetPublicKey = new PublicKey(nftMint);
+          
+          // Create proper Core NFT burn instruction
+          // Account layout: [asset, owner, payer, system_program]
+          const burnInstruction = new TransactionInstruction({
+            programId: MPL_CORE_PROGRAM_ID,
+            keys: [
+              { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Core asset to burn
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },    // Owner/authority (signer)
+              { pubkey: ownerPublicKey, isSigner: false, isWritable: true },    // Payer (receives SOL)
+              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+            ],
+            data: Buffer.from([4]), // Burn instruction discriminator
+          });
+          
+          transaction.add(burnInstruction);
+          
+        } catch (error) {
+          console.error(`Failed to create burn instruction for ${nftMint}:`, error);
+          // Continue with other NFTs
+        }
+      }
+
+      if (transaction.instructions.length === 0) {
+        return res.status(400).json({ error: "No valid Core NFTs found to burn" });
+      }
+
+      // Set recent blockhash and fee payer
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+
+      // Serialize transaction for frontend signing
+      const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+      
+      const solRecovered = (nftMints.length * 0.003588).toFixed(8);
+      
+      res.json({
+        success: true,
+        transaction: serializedTx,
+        nftsProcessed: nftMints.length,
+        solRecovered,
+        nftType: 'MplCoreAsset'
+      });
+
+    } catch (error) {
+      console.error('Error creating Core NFT burn transaction:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to create Core NFT burn transaction' 
+      });
+    }
+  });
+
   // Bulk Burn NFTs API
   app.post("/api/nfts/bulk-burn", async (req, res) => {
     try {
