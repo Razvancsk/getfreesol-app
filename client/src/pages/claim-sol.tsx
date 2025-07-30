@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2 } from "lucide-react";
 
 interface EmptyTokenAccount {
   id: number;
@@ -53,6 +53,9 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'burnNFTs'>('reclaim');
+  const [tokenList, setTokenList] = useState<any[]>([]);
+  const [nftList, setNftList] = useState<any[]>([]);
   const { toast } = useToast();
   
   // Wallet state synced with main navigation
@@ -227,6 +230,48 @@ export default function SolRefund() {
       toast({
         title: "Scan Failed",
         description: error.message || "Failed to scan wallet for empty accounts",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Scan tokens for burning
+  const scanTokensMutation = useMutation({
+    mutationFn: async (address: string) => {
+      const response = await fetch(`/api/tokens/scan/${address}`);
+      if (!response.ok) {
+        throw new Error('Failed to scan tokens');
+      }
+      return response.json();
+    },
+    onSuccess: (data: any[]) => {
+      setTokenList(data);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Token Scan Failed",
+        description: error.message || "Failed to scan wallet for tokens",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Scan NFTs for burning
+  const scanNFTsMutation = useMutation({
+    mutationFn: async (address: string) => {
+      const response = await fetch(`/api/nfts/scan/${address}`);
+      if (!response.ok) {
+        throw new Error('Failed to scan NFTs');
+      }
+      return response.json();
+    },
+    onSuccess: (data: any[]) => {
+      setNftList(data);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "NFT Scan Failed",
+        description: error.message || "Failed to scan wallet for NFTs",
         variant: "destructive",
       });
     },
@@ -565,26 +610,81 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-lg">
-              Reclaim your SOL rent from empty token accounts. Each empty token account holds ~0.002 SOL 
-              that can be recovered by closing the account.
+              Reclaim your SOL rent from empty token accounts, burn unwanted tokens, and burn NFTs you no longer need.
             </p>
           </div>
+
+          {/* Action Tabs */}
+          {isConnected && (
+            <div className="flex justify-center mb-6">
+              <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1">
+                <div className="flex space-x-1">
+                  <Button
+                    onClick={() => setActiveTab('reclaim')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'reclaim' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                  >
+                    <Coins className="h-4 w-4 mr-2" />
+                    Reclaim SOL
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('burnTokens')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'burnTokens' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                  >
+                    <Flame className="h-4 w-4 mr-2" />
+                    Burn Tokens
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('burnNFTs')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'burnNFTs' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                  >
+                    <Image className="h-4 w-4 mr-2" />
+                    Burn NFTs
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Scan Wallet Section */}
           {isConnected && (
             <div className="text-center">
               <Button 
-                onClick={() => publicKey && scanMutation.mutate(publicKey)}
-                disabled={scanMutation.isPending || !publicKey}
+                onClick={() => {
+                  if (publicKey) {
+                    if (activeTab === 'reclaim') {
+                      scanMutation.mutate(publicKey);
+                    } else if (activeTab === 'burnTokens') {
+                      scanTokensMutation.mutate(publicKey);
+                    } else if (activeTab === 'burnNFTs') {
+                      scanNFTsMutation.mutate(publicKey);
+                    }
+                  }
+                }}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || scanNFTsMutation.isPending || !publicKey}
                 size="lg"
                 className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
               >
-                {scanMutation.isPending ? (
+                {(scanMutation.isPending || scanTokensMutation.isPending || scanNFTsMutation.isPending) ? (
                   <RefreshCw className="h-6 w-6 animate-spin mr-3" />
                 ) : (
                   <Search className="h-6 w-6 mr-3" />
                 )}
-                {scanMutation.isPending ? 'Scanning Wallet...' : 'Scan Wallet'}
+                {(scanMutation.isPending || scanTokensMutation.isPending || scanNFTsMutation.isPending) 
+                  ? 'Scanning Wallet...' 
+                  : `Scan ${activeTab === 'reclaim' ? 'Empty Accounts' : activeTab === 'burnTokens' ? 'Tokens' : 'NFTs'}`
+                }
               </Button>
             </div>
           )}
@@ -600,8 +700,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Scan Results */}
-          {scanResult && (
+          {/* Reclaim SOL Results */}
+          {activeTab === 'reclaim' && scanResult && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
@@ -679,6 +779,107 @@ export default function SolRefund() {
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Burn Tokens Results */}
+          {activeTab === 'burnTokens' && tokenList.length > 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Your Tokens</h3>
+                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                  {tokenList.length} Tokens Found
+                </div>
+              </div>
+              
+              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
+                {tokenList.map((token, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-slate-700/50 rounded border border-slate-700/50">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white">
+                        {token.name || 'Unknown Token'}
+                      </div>
+                      <div className="text-xs text-purple-300 font-mono">
+                        {token.mint}
+                      </div>
+                      <div className="text-xs text-white">
+                        Balance: {token.balance} {token.symbol || 'TOKENS'}
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => {/* TODO: Implement burn token */}}
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      <Flame className="h-4 w-4 mr-1" />
+                      Burn
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Burn NFTs Results */}
+          {activeTab === 'burnNFTs' && nftList.length > 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Your NFTs</h3>
+                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                  {nftList.length} NFTs Found
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                {nftList.map((nft, index) => (
+                  <div key={index} className="bg-slate-700/50 rounded border border-slate-700/50 p-4">
+                    {nft.image && (
+                      <img 
+                        src={nft.image} 
+                        alt={nft.name || 'NFT'} 
+                        className="w-full h-32 object-cover rounded mb-3"
+                      />
+                    )}
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium text-white truncate">
+                        {nft.name || 'Unnamed NFT'}
+                      </div>
+                      <div className="text-xs text-purple-300 font-mono truncate">
+                        {nft.mint}
+                      </div>
+                      <Button
+                        onClick={() => {/* TODO: Implement burn NFT */}}
+                        size="sm"
+                        className="w-full bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Burn NFT
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty State Messages */}
+          {activeTab === 'burnTokens' && tokenList.length === 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="text-center space-y-4">
+                <Flame className="h-12 w-12 text-purple-400 mx-auto" />
+                <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
+                <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'burnNFTs' && nftList.length === 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="text-center space-y-4">
+                <Image className="h-12 w-12 text-purple-400 mx-auto" />
+                <h3 className="text-lg font-semibold text-white">No NFTs Found</h3>
+                <p className="text-purple-200">Scan your wallet to find NFTs available for burning.</p>
+              </div>
             </div>
           )}
 

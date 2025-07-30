@@ -283,6 +283,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Scan wallet for tokens (for burning)
+  app.get("/api/tokens/scan/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      // Validate address
+      try {
+        new PublicKey(address);
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid wallet address" });
+      }
+
+      // Get RPC connection
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcEndpoints = [
+        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-api.projectserum.com',
+        'https://rpc.ankr.com/solana'
+      ].filter(Boolean);
+
+      let connection: Connection | null = null;
+      let workingEndpoint = '';
+
+      for (const endpoint of rpcEndpoints) {
+        try {
+          const testConnection = new Connection(endpoint as string, 'confirmed');
+          await testConnection.getLatestBlockhash();
+          connection = testConnection;
+          workingEndpoint = endpoint as string;
+          break;
+        } catch (error) {
+          console.log(`RPC endpoint ${endpoint} failed, trying next...`);
+        }
+      }
+
+      if (!connection) {
+        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
+      }
+
+      console.log(`Using RPC endpoint: ${workingEndpoint}`);
+
+      const walletPublicKey = new PublicKey(address);
+      
+      // Get all token accounts with balances > 0
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+        programId: TOKEN_PROGRAM_ID,
+      });
+
+      const tokens = tokenAccounts.value
+        .filter(account => {
+          const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+          return balance > 0;
+        })
+        .map(account => {
+          const info = account.account.data.parsed?.info;
+          return {
+            mint: info?.mint || 'Unknown',
+            balance: info?.tokenAmount?.uiAmount || 0,
+            decimals: info?.tokenAmount?.decimals || 0,
+            name: 'Token', // Would need token metadata for real names
+            symbol: 'TOKEN' // Would need token metadata for real symbols
+          };
+        });
+
+      res.json(tokens);
+    } catch (error) {
+      console.error('Error scanning tokens:', error);
+      res.status(500).json({ error: "Failed to scan tokens" });
+    }
+  });
+
+  // Scan wallet for NFTs (for burning)
+  app.get("/api/nfts/scan/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      // Validate address
+      try {
+        new PublicKey(address);
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid wallet address" });
+      }
+
+      // Get RPC connection
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcEndpoints = [
+        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-api.projectserum.com',
+        'https://rpc.ankr.com/solana'
+      ].filter(Boolean);
+
+      let connection: Connection | null = null;
+      let workingEndpoint = '';
+
+      for (const endpoint of rpcEndpoints) {
+        try {
+          const testConnection = new Connection(endpoint as string, 'confirmed');
+          await testConnection.getLatestBlockhash();
+          connection = testConnection;
+          workingEndpoint = endpoint as string;
+          break;
+        } catch (error) {
+          console.log(`RPC endpoint ${endpoint} failed, trying next...`);
+        }
+      }
+
+      if (!connection) {
+        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
+      }
+
+      console.log(`Using RPC endpoint: ${workingEndpoint}`);
+
+      const walletPublicKey = new PublicKey(address);
+      
+      // Get all token accounts with balance = 1 (typical for NFTs)
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+        programId: TOKEN_PROGRAM_ID,
+      });
+
+      const nfts = tokenAccounts.value
+        .filter(account => {
+          const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
+          const decimals = account.account.data.parsed?.info?.tokenAmount?.decimals || 0;
+          return balance === 1 && decimals === 0; // NFTs typically have balance=1 and decimals=0
+        })
+        .map(account => {
+          const info = account.account.data.parsed?.info;
+          return {
+            mint: info?.mint || 'Unknown',
+            name: 'NFT', // Would need metadata for real names
+            image: null, // Would need metadata for images
+            collection: null // Would need metadata for collection info
+          };
+        });
+
+      res.json(nfts);
+    } catch (error) {
+      console.error('Error scanning NFTs:', error);
+      res.status(500).json({ error: "Failed to scan NFTs" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
