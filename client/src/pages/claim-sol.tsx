@@ -1208,7 +1208,7 @@ export default function SolRefund() {
                       type="checkbox"
                       checked={selectedTokens.has(token.mint)}
                       onChange={() => toggleTokenSelection(token.mint)}
-                      className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                      className="w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600"
                     />
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
                       {token.logo && (
@@ -1302,7 +1302,7 @@ export default function SolRefund() {
                       type="checkbox"
                       checked={selectedNFTs.has(nft.mint)}
                       onChange={() => toggleNFTSelection(nft.mint)}
-                      className="absolute top-2 left-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 z-10"
+                      className="absolute top-2 left-2 w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600 z-10"
                     />
                     {nft.image && (
                       <img 
