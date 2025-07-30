@@ -7,6 +7,7 @@ This is a full-stack TypeScript application called "Get Your Sol" that helps Sol
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+NFT Display: Only show regular NFTs that can be burned for SOL recovery. Do not show compressed NFTs (cNFTs) as they cannot be burned for SOL.
 
 ## System Architecture
 
