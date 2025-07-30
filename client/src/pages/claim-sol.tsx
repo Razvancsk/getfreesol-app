@@ -529,8 +529,13 @@ export default function SolRefund() {
         const coreData = await coreResponse.json();
         
         if (coreData.requiresFrontendBurn) {
-          // For Core NFTs, inform user to use Phantom wallet's built-in burn feature
-          throw new Error('Core NFTs need to be burned through Phantom wallet. Go to your wallet, find this NFT, click the three dots menu, and select "Burn" to recover SOL.');
+          // For Core NFTs, show instructions instead of error
+          return {
+            nftsProcessed: 0,
+            solRecovered: '0',
+            instructionsShown: true,
+            nftType: 'Core'
+          };
         }
       }
       
@@ -576,14 +581,21 @@ export default function SolRefund() {
       return { nftsProcessed, solRecovered, signature, nftType: 'Traditional' };
     },
     onSuccess: (result) => {
-      toast({
-        title: "Success!",
-        description: `Burned ${result.nftsProcessed} NFTs! Recovered ${result.solRecovered} SOL`,
-      });
-      // Clear selections and refresh
-      setSelectedNFTs(new Set());
-      if (publicKey) {
-        scanNFTsMutation.mutate(publicKey);
+      if (result.instructionsShown) {
+        toast({
+          title: "Core NFT Instructions",
+          description: "To burn your Core NFT: Open Phantom wallet → Find your NFT → Click the three dots → Select 'Burn' → Confirm to recover SOL",
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: `Burned ${result.nftsProcessed} NFTs! Recovered ${result.solRecovered} SOL`,
+        });
+        // Clear selections and refresh
+        setSelectedNFTs(new Set());
+        if (publicKey) {
+          scanNFTsMutation.mutate(publicKey);
+        }
       }
     },
     onError: (error) => {
