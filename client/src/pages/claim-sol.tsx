@@ -808,7 +808,7 @@ export default function SolRefund() {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-white">
-                          {token.name || 'Unknown Token'}
+                          {token.symbol || 'TOKEN'}
                         </div>
                         <div className="text-xs text-purple-300 font-mono truncate">
                           {token.mint}

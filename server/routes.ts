@@ -332,19 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         programId: TOKEN_PROGRAM_ID,
       });
 
-      // Fetch Jupiter Token List once for efficiency
-      let jupiterTokens: any[] = [];
-      try {
-        const jupiterResponse = await fetch(`https://token.jup.ag/strict`);
-        if (jupiterResponse.ok) {
-          jupiterTokens = await jupiterResponse.json();
-          console.log(`Loaded ${jupiterTokens.length} tokens from Jupiter`);
-        }
-      } catch (error) {
-        console.log(`Failed to fetch Jupiter token list:`, error instanceof Error ? error.message : String(error));
-      }
-
-      // Process each token account
+      // Process each token account and get metadata from Helius
       const tokens = [];
       for (const account of tokenAccounts.value) {
         const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
@@ -362,21 +350,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           logo: null
         };
 
-        // Look up token in Jupiter list
-        if (mint && jupiterTokens.length > 0) {
-          const jupiterToken = jupiterTokens.find((token: any) => token.address === mint);
-          if (jupiterToken) {
-            tokenMetadata.name = jupiterToken.name || 'Unknown Token';
-            tokenMetadata.symbol = jupiterToken.symbol || 'TOKEN';
-            tokenMetadata.logo = jupiterToken.logoURI || null;
-            console.log(`Found metadata for ${mint}: ${tokenMetadata.name} (${tokenMetadata.symbol})`);
-          } else {
-            console.log(`No Jupiter metadata found for ${mint}`);
-          }
-        }
-
-        // If Jupiter didn't have it, try Helius if available
-        if (tokenMetadata.name === 'Unknown Token' && heliusApiKey) {
+        // Use Helius as primary metadata source
+        if (mint && heliusApiKey) {
           try {
             const metadataResponse = await fetch(`https://api.helius.xyz/v0/token-metadata?api-key=${heliusApiKey}`, {
               method: 'POST',
@@ -388,10 +363,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const metadataData = await metadataResponse.json();
               if (metadataData && metadataData.length > 0) {
                 const tokenData = metadataData[0];
-                tokenMetadata.name = tokenData.onChainMetadata?.metadata?.name || tokenData.offChainMetadata?.name || 'Unknown Token';
-                tokenMetadata.symbol = tokenData.onChainMetadata?.metadata?.symbol || tokenData.offChainMetadata?.symbol || 'TOKEN';
-                tokenMetadata.logo = tokenData.offChainMetadata?.image || null;
-                console.log(`Found Helius metadata for ${mint}: ${tokenMetadata.name} (${tokenMetadata.symbol})`);
+                console.log(`Raw Helius data for ${mint}:`, JSON.stringify(tokenData, null, 2));
+                
+                // Try multiple metadata sources in order of preference
+                tokenMetadata.name = tokenData.onChainMetadata?.metadata?.data?.name || 
+                                   tokenData.legacyMetadata?.name || 
+                                   tokenData.offChainMetadata?.name || 
+                                   'Unknown Token';
+                tokenMetadata.symbol = tokenData.onChainMetadata?.metadata?.data?.symbol || 
+                                     tokenData.legacyMetadata?.symbol || 
+                                     tokenData.offChainMetadata?.symbol || 
+                                     'TOKEN';
+                tokenMetadata.logo = tokenData.legacyMetadata?.logoURI || 
+                                   tokenData.offChainMetadata?.image || 
+                                   null;
+                console.log(`Parsed metadata: name=${tokenMetadata.name}, symbol=${tokenMetadata.symbol}, logo=${tokenMetadata.logo}`);
               }
             }
           } catch (error) {
