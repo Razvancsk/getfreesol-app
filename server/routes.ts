@@ -496,12 +496,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 .filter((asset: any) => {
                   const isCompressed = asset.compression?.compressed === true;
                   const isFungible = asset.interface === 'FungibleToken';
-                  // Only include traditional NFT standards that can be burned for SOL recovery
+                  // Include NFT standards that can be burned for SOL recovery
                   const isNFT = asset.interface === 'V1_NFT' || 
                                asset.interface === 'ProgrammableNFT' ||
-                               asset.interface === 'Legacy';
-                  
-                  // Note: MplCoreAsset NFTs use a different standard and may not be burnable for SOL recovery
+                               asset.interface === 'Legacy' ||
+                               asset.interface === 'MplCoreAsset'; // Core NFTs can be burned using Metaplex Core SDK
                   
                   const shouldInclude = isNFT && !isCompressed && !isFungible;
                   console.log(`Asset ${asset.id}: interface=${asset.interface}, compressed=${isCompressed}, fungible=${isFungible}, isNFT=${isNFT}, shouldInclude=${shouldInclude}`);
@@ -672,6 +671,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error preparing bulk token burn:', error);
       res.status(500).json({ error: "Failed to prepare bulk token burn transaction" });
+    }
+  });
+
+  // Core NFT Burn API (for MplCoreAsset NFTs)
+  app.post("/api/nfts/burn-core", async (req, res) => {
+    try {
+      const { walletAddress, nftMints } = req.body;
+      
+      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftMints.length === 0) {
+        return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
+      }
+
+      // For Core NFTs, we return a special response indicating they need frontend handling
+      // The actual burning will be done on the frontend using the Metaplex Core SDK
+      console.log(`Preparing Core NFT burn for ${nftMints.length} NFTs...`);
+      
+      const solRecovered = (nftMints.length * 0.005).toFixed(8); // Core NFTs recover ~0.005 SOL
+      
+      res.json({
+        requiresFrontendBurn: true,
+        nftType: 'MplCoreAsset',
+        nftsToProcess: nftMints,
+        solRecovered: solRecovered,
+        message: `Ready to burn ${nftMints.length} Core NFT${nftMints.length > 1 ? 's' : ''}`
+      });
+      
+    } catch (error) {
+      console.error('Error preparing Core NFT burn:', error);
+      res.status(500).json({ error: "Failed to prepare Core NFT burn" });
     }
   });
 

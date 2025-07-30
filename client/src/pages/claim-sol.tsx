@@ -515,7 +515,65 @@ export default function SolRefund() {
   // Bulk Burn NFTs Mutation
   const bulkBurnNFTsMutation = useMutation({
     mutationFn: async (nftMints: string[]) => {
-      // Get bulk transaction from backend
+      // First, check if we need to use Core NFT burning endpoint
+      const coreResponse = await fetch('/api/nfts/burn-core', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey,
+          nftMints
+        })
+      });
+      
+      if (coreResponse.ok) {
+        const coreData = await coreResponse.json();
+        
+        if (coreData.requiresFrontendBurn) {
+          // Handle Core NFTs using Metaplex Core SDK
+          const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+          const { burnV1 } = await import('@metaplex-foundation/mpl-core');
+          const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+          
+          if (!window.solana || !window.solana.isPhantom) {
+            throw new Error('Phantom wallet not found');
+          }
+
+          // Get RPC config
+          const heliusResponse = await fetch('/api/helius-config');
+          const rpcConfig = await heliusResponse.json();
+          const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
+          
+          // Create UMI instance
+          const umi = createUmi(rpcUrl);
+          umi.use(walletAdapterIdentity(window.solana as any));
+          
+          const signatures = [];
+          
+          // Burn each Core NFT individually
+          for (const nftMint of coreData.nftsToProcess) {
+            try {
+              const result = await burnV1(umi, {
+                asset: nftMint,
+              }).sendAndConfirm(umi);
+              
+              signatures.push(result.signature);
+              console.log(`Burned Core NFT ${nftMint}: ${result.signature}`);
+            } catch (error: any) {
+              console.error(`Failed to burn Core NFT ${nftMint}:`, error);
+              throw new Error(`Failed to burn Core NFT: ${error?.message || 'Unknown error'}`);
+            }
+          }
+          
+          return { 
+            nftsProcessed: coreData.nftsToProcess.length, 
+            solRecovered: coreData.solRecovered, 
+            signatures,
+            nftType: 'Core'
+          };
+        }
+      }
+      
+      // Fallback to traditional NFT burning
       const response = await fetch('/api/nfts/bulk-burn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -554,7 +612,7 @@ export default function SolRefund() {
       
       await connection.confirmTransaction(signature, 'confirmed');
       
-      return { nftsProcessed, solRecovered, signature };
+      return { nftsProcessed, solRecovered, signature, nftType: 'Traditional' };
     },
     onSuccess: (result) => {
       toast({
