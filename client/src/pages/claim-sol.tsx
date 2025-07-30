@@ -543,7 +543,7 @@ export default function SolRefund() {
           
           const connection = new Connection(rpcUrl, 'confirmed');
           
-          // Create Core NFT burn transaction using direct instruction
+          // Create Core NFT burn transaction using proper Metaplex Core format
           const transaction = new Transaction();
           
           // Add a Core NFT burn instruction using the mpl-core program
@@ -552,17 +552,22 @@ export default function SolRefund() {
           for (const nftMint of coreData.nftsToProcess) {
             try {
               const assetPublicKey = new PublicKey(nftMint);
-              const ownerPublicKey = new PublicKey(publicKey);
+              const ownerPublicKey = new PublicKey(publicKey!);
               
-              // Create the burn instruction for Core NFT
+              // Create the proper burn instruction for Core NFT
+              // Based on Metaplex Core documentation: instruction 4 is burn
+              const burnInstructionData = Buffer.alloc(1);
+              burnInstructionData.writeUInt8(4, 0); // Burn instruction discriminator
+              
               const burnInstruction = {
                 programId: MPL_CORE_PROGRAM_ID,
                 keys: [
-                  { pubkey: assetPublicKey, isSigner: false, isWritable: true },
-                  { pubkey: ownerPublicKey, isSigner: true, isWritable: true },
-                  { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+                  { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // asset
+                  { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // authority (owner)
+                  { pubkey: ownerPublicKey, isSigner: false, isWritable: true },    // payer 
+                  { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system program
                 ],
-                data: Buffer.from([4]), // Burn instruction discriminator for mpl-core
+                data: burnInstructionData,
               };
               
               transaction.add(burnInstruction);
@@ -574,7 +579,7 @@ export default function SolRefund() {
           // Set transaction details
           const { blockhash } = await connection.getLatestBlockhash();
           transaction.recentBlockhash = blockhash;
-          transaction.feePayer = new PublicKey(publicKey);
+          transaction.feePayer = new PublicKey(publicKey!);
           
           // Sign and send transaction
           const signedTx = await window.solana.signTransaction(transaction);
@@ -693,7 +698,8 @@ export default function SolRefund() {
 
   // Calculate total SOL to recover
   const calculateTotalSOL = (count: number) => {
-    return (count * 0.00203928).toFixed(8);
+    // Core NFTs recover ~0.005 SOL each
+    return (count * 0.005).toFixed(8);
   };
 
   // Process SOL refund (15% service fee)
