@@ -713,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } = await import('@solana/web3.js');
-      const { createBurnInstruction, getAssociatedTokenAddress } = await import('@solana/spl-token');
+      const { createHash } = await import('crypto');
       
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -746,9 +746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Asset account lamports: ${assetAccount.lamports}`);
           
-          // Core NFTs are burned differently - directly burn the asset account
-          // Use proper Core burn discriminator
-          import { createHash } from 'crypto';
+          // Core NFTs are burned directly - calculate discriminator for burn_v1
           const hash = createHash('sha256').update('global:burn_v1').digest();
           const discriminator = hash.slice(0, 8);
           
@@ -765,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           transaction.add(burnInstruction);
           processedNfts++;
-          console.log(`Added SPL burn instruction for ${nftMint}`);
+          console.log(`Added Core burn instruction for ${nftMint} with discriminator: [${Array.from(discriminator).join(', ')}]`);
           
         } catch (error) {
           console.error(`Failed to process Core NFT ${nftMint}:`, error);
