@@ -554,7 +554,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
-      const { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddress } = await import('@solana/spl-token');
+      const { 
+        TOKEN_PROGRAM_ID, 
+        createBurnCheckedInstruction, 
+        createCloseAccountInstruction, 
+        getAssociatedTokenAddress 
+      } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -574,10 +579,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ownerPublicKey
       );
       
+      // Get token account info to determine balance and decimals
+      const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+      const parsedInfo = tokenAccountInfo.value?.data as any;
+      
+      if (!parsedInfo?.parsed?.info) {
+        throw new Error('Token account not found or invalid');
+      }
+      
+      const balance = parsedInfo.parsed.info.tokenAmount.amount;
+      const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
+      
       // Create transaction
       const transaction = new Transaction();
       
-      // Add close account instruction
+      // Step 1: Burn all tokens (if balance > 0)
+      if (balance > 0) {
+        const burnInstruction = createBurnCheckedInstruction(
+          tokenAccount,     // Token account to burn from
+          mintPublicKey,    // Token mint
+          ownerPublicKey,   // Owner
+          balance,          // Amount to burn (full balance)
+          decimals,         // Decimals
+          [],               // Additional signers
+          TOKEN_PROGRAM_ID  // Token program ID
+        );
+        transaction.add(burnInstruction);
+      }
+      
+      // Step 2: Close the now-empty account to reclaim SOL
       const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
@@ -595,10 +625,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
+      console.log(`Token burn transaction prepared: ${balance > 0 ? 'burn + close' : 'close only'} for mint ${tokenMint}`);
+      
       res.json({
         transaction: transactionBase64,
         solRecovered: '0.00203928', // Standard rent-exempt amount
-        message: 'Token burn transaction prepared successfully'
+        message: `Token burn transaction prepared successfully (${balance > 0 ? 'burn + close' : 'close only'})`
       });
       
     } catch (error) {
@@ -617,7 +649,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
-      const { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddress } = await import('@solana/spl-token');
+      const { 
+        TOKEN_PROGRAM_ID, 
+        createBurnCheckedInstruction, 
+        createCloseAccountInstruction, 
+        getAssociatedTokenAddress 
+      } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -637,10 +674,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ownerPublicKey
       );
       
+      // Get token account info - NFTs typically have balance=1, decimals=0
+      const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+      const parsedInfo = tokenAccountInfo.value?.data as any;
+      
+      if (!parsedInfo?.parsed?.info) {
+        throw new Error('NFT token account not found or invalid');
+      }
+      
+      const balance = parsedInfo.parsed.info.tokenAmount.amount;
+      const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
+      
       // Create transaction
       const transaction = new Transaction();
       
-      // Add close account instruction
+      // Step 1: Burn the NFT (if balance > 0)
+      if (balance > 0) {
+        const burnInstruction = createBurnCheckedInstruction(
+          tokenAccount,     // Token account to burn from
+          mintPublicKey,    // NFT mint
+          ownerPublicKey,   // Owner
+          balance,          // Amount to burn (typically 1 for NFTs)
+          decimals,         // Decimals (typically 0 for NFTs)
+          [],               // Additional signers
+          TOKEN_PROGRAM_ID  // Token program ID
+        );
+        transaction.add(burnInstruction);
+      }
+      
+      // Step 2: Close the now-empty account to reclaim SOL
       const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
@@ -658,10 +720,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
+      console.log(`NFT burn transaction prepared: ${balance > 0 ? 'burn + close' : 'close only'} for mint ${nftMint}`);
+      
       res.json({
         transaction: transactionBase64,
         solRecovered: '0.00203928', // Standard rent-exempt amount  
-        message: 'NFT burn transaction prepared successfully'
+        message: `NFT burn transaction prepared successfully (${balance > 0 ? 'burn + close' : 'close only'})`
       });
       
     } catch (error) {
