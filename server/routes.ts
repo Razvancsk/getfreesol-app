@@ -491,16 +491,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (heliusData.result?.items) {
               
-              // Filter for non-compressed NFTs only (cNFTs can't be burned for SOL)
+              // Filter for NFTs that can potentially be burned (exclude cNFTs and fungible tokens)
               const allNFTs = heliusData.result.items
                 .filter((asset: any) => {
                   const isCompressed = asset.compression?.compressed === true;
+                  const isFungible = asset.interface === 'FungibleToken';
                   const isNFT = asset.interface === 'V1_NFT' || 
                                asset.interface === 'ProgrammableNFT' ||
-                               asset.interface === 'Legacy';
+                               asset.interface === 'Legacy' ||
+                               asset.interface === 'MplCoreAsset';
                   
-                  console.log(`Asset ${asset.id}: interface=${asset.interface}, compressed=${isCompressed}`);
-                  return isNFT && !isCompressed;
+                  const shouldInclude = isNFT && !isCompressed && !isFungible;
+                  console.log(`Asset ${asset.id}: interface=${asset.interface}, compressed=${isCompressed}, fungible=${isFungible}, shouldInclude=${shouldInclude}`);
+                  
+                  // Include NFTs that are NOT compressed and NOT fungible tokens
+                  return shouldInclude;
                 });
 
               console.log(`Found ${allNFTs.length} non-compressed NFTs out of ${heliusData.result.items.length} total assets`);
