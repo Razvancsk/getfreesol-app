@@ -730,12 +730,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
       let processedNfts = 0;
       
+      // Use Metaplex Core SDK for proper burn instruction
       for (const nftMint of nftMints) {
         try {
-          const assetPublicKey = new PublicKey(nftMint);
           console.log(`Processing Core NFT: ${nftMint}`);
           
           // Get account info to verify it exists and has rent
+          const assetPublicKey = new PublicKey(nftMint);
           const assetAccount = await connection.getAccountInfo(assetPublicKey);
           if (!assetAccount) {
             console.error(`Asset account not found: ${nftMint}`);
@@ -744,27 +745,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Asset account lamports: ${assetAccount.lamports}`);
           
-          // For AIXBT collection, include collection account
-          const collectionPublicKey = new PublicKey('9rvj2zVHJeuJXWDWfbceVzpS25myA6zB99UdskmpM2aS');
+          // Create simple burn instruction - AIXBT collection doesn't need collection authority
+          // Use discriminator for BurnV1: SHA256("global:burn_v1").slice(0,8)
+          const crypto = require('crypto');
+          const hash = crypto.createHash('sha256').update('global:burn_v1').digest();
+          const discriminator = hash.slice(0, 8);
           
-          // Create Core burn instruction that closes the account
-          // Based on Core IDL: BurnV1 with proper account closure
           const burnInstruction = new TransactionInstruction({
             programId: MPL_CORE_PROGRAM_ID,
             keys: [
-              { pubkey: assetPublicKey, isSigner: false, isWritable: true },      // Asset (will be closed)
-              { pubkey: collectionPublicKey, isSigner: false, isWritable: true }, // Collection
-              { pubkey: ownerPublicKey, isSigner: true, isWritable: true },       // Payer (receives rent)
-              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },      // Authority
-              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+              { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Asset to burn
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // Payer (receives lamports)
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },    // Authority
             ],
-            // Correct Anchor discriminator for "global:burn_v1" instruction
-            data: Buffer.from([241, 99, 194, 76, 6, 126, 49, 154, 0]) // SHA256 hash + None compression proof
+            // BurnV1 with no compression proof (just the discriminator + 0 byte)
+            data: Buffer.concat([discriminator, Buffer.from([0])])
           });
           
           transaction.add(burnInstruction);
           processedNfts++;
-          console.log(`Added burn+close instruction for ${nftMint}`);
+          console.log(`Added burn instruction for ${nftMint} - discriminator: [${Array.from(discriminator).join(', ')}]`);
           
         } catch (error) {
           console.error(`Failed to process Core NFT ${nftMint}:`, error);
