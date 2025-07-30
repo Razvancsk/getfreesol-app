@@ -678,8 +678,8 @@ export default function SolRefund() {
 
   // Calculate total SOL to recover
   const calculateTotalSOL = (count: number) => {
-    // Core NFTs recover ~0.003588 SOL each based on actual account rent data
-    return (count * 0.003588).toFixed(8);
+    // Core NFTs recover ~0.002710 SOL each (0.003588 total - 0.00089784 prevention fee)
+    return (count * 0.002710).toFixed(8);
   };
 
   // Process SOL refund (15% service fee)
@@ -1366,7 +1366,7 @@ export default function SolRefund() {
                         {nft.mint}
                       </div>
                       <div className="text-xs text-green-400 font-semibold mb-2">
-                        🪙 Core NFT - ~0.0036 SOL
+                        🪙 Core NFT - ~0.0027 SOL
                       </div>
                     </div>
                   </div>

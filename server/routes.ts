@@ -687,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // The actual burning will be done on the frontend using the Metaplex Core SDK
       console.log(`Preparing Core NFT burn for ${nftMints.length} NFTs...`);
       
-      const solRecovered = (nftMints.length * 0.003588).toFixed(8); // Core NFTs recover ~0.003588 SOL based on actual account data
+      const solRecovered = (nftMints.length * 0.002710).toFixed(8); // Core NFTs recover ~0.002710 SOL (0.003588 - 0.00089784 prevention fee)
       
       res.json({
         requiresFrontendBurn: true,
@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Serialize transaction for frontend signing
       const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
       
-      const solRecovered = (nftMints.length * 0.003588).toFixed(8);
+      const solRecovered = (nftMints.length * 0.002710).toFixed(8); // Actual recovery after prevention fee
       
       res.json({
         success: true,
