@@ -735,17 +735,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const assetPublicKey = new PublicKey(nftMint);
           
-          // Create proper Core NFT burn instruction
-          // Account layout: [asset, owner, payer, system_program]
+          // Create proper Core NFT burn instruction using BurnV1
+          // IDL accounts: asset (mut), collection (opt), payer (mut, signer), authority (opt, signer), system_program
           const burnInstruction = new TransactionInstruction({
             programId: MPL_CORE_PROGRAM_ID,
             keys: [
-              { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Core asset to burn
-              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },    // Owner/authority (signer)
-              { pubkey: ownerPublicKey, isSigner: false, isWritable: true },    // Payer (receives SOL)
+              { pubkey: assetPublicKey, isSigner: false, isWritable: true },     // Asset to burn
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: true },      // Payer (receives rent back)
+              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },     // Authority (owner)
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
             ],
-            data: Buffer.from([4]), // Burn instruction discriminator
+            data: Buffer.from([12, 0]), // BurnV1 discriminator + empty compressionProof
           });
           
           transaction.add(burnInstruction);
