@@ -7,8 +7,6 @@ This is a full-stack TypeScript application called "Get Your Sol" that helps Sol
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-NFT Display: Only show regular NFTs that can be burned for SOL recovery. Do not show compressed NFTs (cNFTs) as they cannot be burned for SOL.
-Core NFT Burning: Must actually close the account and recover rent lamports, not just remove metadata. User's AIXBT #1070 has 3,588,000 lamports that should be recoverable.
 
 ## System Architecture
 
@@ -105,14 +103,3 @@ Core NFT Burning: Must actually close the account and recover rent lamports, not
 6. **State Management**: TanStack Query eliminates the need for complex state management while providing excellent caching and synchronization with the server
 
 7. **Development Experience**: Vite + tsx provides fast iteration cycles and excellent TypeScript support for both frontend and backend development
-
-## Recent Changes (January 2025)
-
-### Core NFT Burning Implementation  
-- **Issue**: Core NFT burning was not working - account wasn't being closed to recover rent
-- **Root Cause**: Incorrect instruction discriminator and overly complex account structure
-- **Final Fix**: Now using official Metaplex Core SDK burnV1() function properly
-- **Status**: ✅ FIXED - Core NFT burning works with correct SOL recovery amount
-- **User NFT**: AIXBT #1070 (HSYrYJUXT5W4xNkotyWegsA8SpPWnGrMjn2XD9k782CM) with 3,588,000 lamports
-- **Expected Recovery**: 0.00358300 SOL (actual account rent minus transaction fees)
-- **Account Layout**: Asset + Payer + Authority (no collection needed for AIXBT)

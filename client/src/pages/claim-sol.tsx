@@ -515,69 +515,7 @@ export default function SolRefund() {
   // Bulk Burn NFTs Mutation
   const bulkBurnNFTsMutation = useMutation({
     mutationFn: async (nftMints: string[]) => {
-      // First, check if we need to use Core NFT burning endpoint
-      const coreResponse = await fetch('/api/nfts/burn-core', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: publicKey,
-          nftMints
-        })
-      });
-      
-      if (coreResponse.ok) {
-        const coreData = await coreResponse.json();
-        
-        if (coreData.requiresFrontendBurn) {
-          // Handle Core NFTs with backend transaction creation
-          // Due to browser compatibility issues with Metaplex Core SDK, we'll create transactions on the backend
-          const burnResponse = await fetch('/api/nfts/burn-core-transaction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              walletAddress: publicKey,
-              nftMints: coreData.nftsToProcess || nftMints
-            })
-          });
-
-          if (!burnResponse.ok) {
-            throw new Error('Failed to create Core NFT burn transaction');
-          }
-
-          const { transaction, nftsProcessed, solRecovered } = await burnResponse.json();
-
-          // Sign and send transaction
-          if (!window.solana || !window.solana.isPhantom) {
-            throw new Error('Phantom wallet not found');
-          }
-
-          const { Connection, Transaction } = await import('@solana/web3.js');
-          
-          // Get RPC config
-          const heliusResponse = await fetch('/api/helius-config');
-          const rpcConfig = await heliusResponse.json();
-          const rpcUrl = rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com';
-          
-          const connection = new Connection(rpcUrl, 'confirmed');
-          
-          const txBuffer = Buffer.from(transaction, 'base64');
-          const tx = Transaction.from(txBuffer);
-          
-          const signedTx = await window.solana.signTransaction(tx);
-          const signature = await connection.sendRawTransaction(signedTx.serialize());
-          
-          await connection.confirmTransaction(signature, 'confirmed');
-          
-          return { 
-            nftsProcessed, 
-            solRecovered, 
-            signature,
-            nftType: 'Core'
-          };
-        }
-      }
-      
-      // Fallback to traditional NFT burning
+      // Get bulk transaction from backend
       const response = await fetch('/api/nfts/bulk-burn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -616,12 +554,12 @@ export default function SolRefund() {
       
       await connection.confirmTransaction(signature, 'confirmed');
       
-      return { nftsProcessed, solRecovered, signature, nftType: 'Traditional' };
+      return { nftsProcessed, solRecovered, signature };
     },
     onSuccess: (result) => {
       toast({
         title: "Success!",
-        description: `Burned ${result.nftsProcessed} ${result.nftType} NFT${result.nftsProcessed > 1 ? 's' : ''}! Recovered ${result.solRecovered} SOL`,
+        description: `Burned ${result.nftsProcessed} NFTs! Recovered ${result.solRecovered} SOL`,
       });
       // Clear selections and refresh
       setSelectedNFTs(new Set());
@@ -676,18 +614,9 @@ export default function SolRefund() {
     setSelectedNFTs(new Set());
   };
 
-  // Calculate total SOL to recover based on actual token accounts
-  const calculateTokenSOL = (selectedMints: Set<string>) => {
-    // For tokens, we need to calculate based on actual token account lamports
-    // Each token account typically holds ~0.00203928 SOL but actual amounts vary
-    // We'll show "TBD" until we get actual amounts from the backend
-    return "TBD";
-  };
-
-  // Calculate total SOL to recover for NFTs
-  const calculateNFTSOL = (count: number) => {
-    // This will be replaced with actual amounts from backend when burning
-    return "TBD"; 
+  // Calculate total SOL to recover
+  const calculateTotalSOL = (count: number) => {
+    return (count * 0.00203928).toFixed(8);
   };
 
   // Process SOL refund (15% service fee)
@@ -1252,7 +1181,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="text-sm text-green-400 font-semibold">
-                    SOL to recover: {calculateTokenSOL(selectedTokens)}
+                    SOL to recover: {calculateTotalSOL(selectedTokens.size)}
                   </div>
                   <Button
                     onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
@@ -1374,7 +1303,7 @@ export default function SolRefund() {
                         {nft.mint}
                       </div>
                       <div className="text-xs text-green-400 font-semibold mb-2">
-                        🪙 Core NFT - ~0.0027 SOL
+                        🪙 Recover: ~0.00203928 SOL
                       </div>
                     </div>
                   </div>
@@ -1409,8 +1338,8 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="text-center space-y-4">
                 <Image className="h-12 w-12 text-purple-400 mx-auto" />
-                <h3 className="text-lg font-semibold text-white">No Burnable NFTs Found</h3>
-                <p className="text-purple-200">Only traditional NFTs (not compressed NFTs) can be burned for SOL recovery. Your wallet may contain compressed NFTs which are not shown here.</p>
+                <h3 className="text-lg font-semibold text-white">No NFTs Found</h3>
+                <p className="text-purple-200">Scan your wallet to find NFTs available for burning.</p>
               </div>
             </div>
           )}

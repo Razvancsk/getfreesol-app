@@ -458,9 +458,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const walletPublicKey = new PublicKey(address);
       
-      // Import required token functions
-      const { getAssociatedTokenAddress } = await import('@solana/spl-token');
-
       // Use Helius DAS API to get all NFTs with metadata
       let nfts = [];
       if (heliusApiKey) {
@@ -491,36 +488,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (heliusData.result?.items) {
               
-              // Filter for NFTs that can potentially be burned (exclude cNFTs and fungible tokens)
-              const allNFTs = heliusData.result.items
-                .filter((asset: any) => {
-                  const isCompressed = asset.compression?.compressed === true;
-                  const isFungible = asset.interface === 'FungibleToken';
-                  // Include NFT standards that can be burned for SOL recovery
-                  const isNFT = asset.interface === 'V1_NFT' || 
-                               asset.interface === 'ProgrammableNFT' ||
-                               asset.interface === 'Legacy' ||
-                               asset.interface === 'MplCoreAsset'; // Core NFTs can be burned using Metaplex Core SDK
-                  
-                  const shouldInclude = isNFT && !isCompressed && !isFungible;
-                  console.log(`Asset ${asset.id}: interface=${asset.interface}, compressed=${isCompressed}, fungible=${isFungible}, isNFT=${isNFT}, shouldInclude=${shouldInclude}`);
-                  
-                  // Include NFTs that are NOT compressed and NOT fungible tokens
-                  return shouldInclude;
-                });
-
-              console.log(`Found ${allNFTs.length} non-compressed NFTs out of ${heliusData.result.items.length} total assets`);
-
-              // For now, show all non-compressed NFTs (we'll validate burnability when burning)
-              nfts = allNFTs.map((asset: any) => ({
-                mint: asset.id,
-                name: asset.content?.metadata?.name || 'Unknown NFT',
-                image: asset.content?.files?.[0]?.uri || 
-                       asset.content?.files?.[0]?.cdn_uri || 
-                       asset.content?.links?.image || 
-                       null,
-                collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null
-              }));
+              // Filter for NFTs (exclude fungible tokens)
+              nfts = heliusData.result.items
+                .filter((asset: any) => 
+                  asset.interface === 'V1_NFT' || 
+                  asset.interface === 'ProgrammableNFT' ||
+                  asset.interface === 'Legacy' ||
+                  asset.interface === 'MplCoreAsset'
+                )
+                .map((asset: any) => ({
+                  mint: asset.id,
+                  name: asset.content?.metadata?.name || 'Unknown NFT',
+                  image: asset.content?.files?.[0]?.uri || 
+                         asset.content?.files?.[0]?.cdn_uri || 
+                         asset.content?.links?.image || 
+                         null,
+                  collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null
+                }));
               
               console.log(`Processed ${nfts.length} NFTs with metadata`);
             }
@@ -591,7 +575,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create single transaction with multiple burn+close instructions
       const transaction = new Transaction();
       let totalTokensProcessed = 0;
-      let totalLamports = 0;
       
       for (const tokenMint of tokenMints) {
         try {
@@ -603,7 +586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ownerPublicKey
           );
           
-          // Get token account info to determine balance, decimals, and actual lamports
+          // Get token account info to determine balance and decimals
           const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
           const parsedInfo = tokenAccountInfo.value?.data as any;
           
@@ -612,14 +595,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
-          // Get actual account lamports (this is what user will receive)
-          const accountLamports = tokenAccountInfo.value?.lamports || 0;
-          totalLamports += accountLamports;
-          
           const balance = parsedInfo.parsed.info.tokenAmount.amount;
           const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
-          
-          console.log(`Token ${tokenMint} account has ${accountLamports} lamports`);
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
@@ -664,8 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      // Show actual recovery amount based on real account lamports
-      const totalSolRecovered = (totalLamports / 1e9).toFixed(9);
+      const totalSolRecovered = (totalTokensProcessed * 0.00203928).toFixed(8);
       
       console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered} SOL`);
       
@@ -679,131 +655,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error preparing bulk token burn:', error);
       res.status(500).json({ error: "Failed to prepare bulk token burn transaction" });
-    }
-  });
-
-  // Core NFT Burn API (for MplCoreAsset NFTs)
-  app.post("/api/nfts/burn-core", async (req, res) => {
-    try {
-      const { walletAddress, nftMints } = req.body;
-      
-      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftMints.length === 0) {
-        return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
-      }
-
-      // For Core NFTs, we return a special response indicating they need frontend handling
-      // The actual burning will be done on the frontend using the Metaplex Core SDK
-      console.log(`Preparing Core NFT burn for ${nftMints.length} NFTs...`);
-      
-      const solRecovered = (nftMints.length * 0.003588).toFixed(6); // Estimate based on typical Core NFT rent
-      
-      res.json({
-        requiresFrontendBurn: true,
-        nftType: 'MplCoreAsset',
-        nftsToProcess: nftMints,
-        solRecovered: solRecovered,
-        message: `Ready to burn ${nftMints.length} Core NFT${nftMints.length > 1 ? 's' : ''}`
-      });
-      
-    } catch (error) {
-      console.error('Error preparing Core NFT burn:', error);
-      res.status(500).json({ error: "Failed to prepare Core NFT burn" });
-    }
-  });
-
-  // Core NFT Transaction Creation API (using Metaplex SDK only)
-  app.post("/api/nfts/burn-core-transaction", async (req, res) => {
-    try {
-      const { walletAddress, nftMints } = req.body;
-      
-      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftMints.length === 0) {
-        return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
-      }
-
-      const { Connection, PublicKey, Transaction, TransactionInstruction } = await import('@solana/web3.js');
-      
-      // Use Helius RPC if available
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      const rpcUrl = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
-      
-      console.log(`Creating Core NFT burn transaction for ${nftMints.length} NFTs...`);
-      
-      const connection = new Connection(rpcUrl, 'confirmed');
-      const ownerPublicKey = new PublicKey(walletAddress);
-      const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
-      
-      let processedNfts = 0;
-      let totalLamports = 0;
-      const transaction = new Transaction();
-      
-      // Process each Core NFT
-      for (const nftMint of nftMints) {
-        try {
-          console.log(`Processing Core NFT: ${nftMint}`);
-          
-          const assetPublicKey = new PublicKey(nftMint);
-          
-          // Get account info for the Core NFT asset
-          const assetAccount = await connection.getAccountInfo(assetPublicKey);
-          if (!assetAccount) {
-            console.error(`Core NFT asset account not found: ${nftMint}`);
-            continue;
-          }
-          
-          console.log(`Core NFT asset lamports: ${assetAccount.lamports}`);
-          totalLamports += assetAccount.lamports;
-          
-          // Create Core NFT burn instruction using proper discriminator
-          const burnInstruction = new TransactionInstruction({
-            programId: MPL_CORE_PROGRAM_ID,
-            keys: [
-              { pubkey: assetPublicKey, isSigner: false, isWritable: true },    // Asset account
-              { pubkey: ownerPublicKey, isSigner: true, isWritable: true },     // Payer (receives lamports)
-              { pubkey: ownerPublicKey, isSigner: true, isWritable: false },    // Authority
-            ],
-            data: Buffer.from([241, 99, 194, 76, 6, 126, 49, 154, 0]) // burn_v1 discriminator + no compression
-          });
-          
-          transaction.add(burnInstruction);
-          processedNfts++;
-          
-          console.log(`Added Core NFT burn for ${nftMint} - will recover ${assetAccount.lamports} lamports`);
-          
-        } catch (error) {
-          console.error(`Failed to process Core NFT ${nftMint}:`, error);
-        }
-      }
-
-      if (processedNfts === 0) {
-        return res.status(400).json({ error: "No valid Core NFTs found to burn" });
-      }
-
-      // Set recent blockhash and fee payer
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = ownerPublicKey;
-
-      // Serialize transaction for frontend signing
-      const base64Tx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
-      
-      // Show actual account balance
-      const actualSolRecovered = (totalLamports / 1e9).toFixed(9);
-      
-      res.json({
-        success: true,
-        transaction: base64Tx,
-        nftsProcessed: processedNfts,
-        solRecovered: actualSolRecovered,
-        nftType: 'MplCoreAsset',
-        totalLamports: totalLamports,
-        message: `Created Core NFT burn transaction for ${processedNfts} NFT${processedNfts > 1 ? 's' : ''} - recovers ${actualSolRecovered} SOL`
-      });
-      
-    } catch (error) {
-      console.error('Error creating Core NFT burn transaction with Metaplex SDK:', error);
-      res.status(500).json({ error: "Failed to create Core NFT burn transaction using Metaplex SDK" });
     }
   });
 
@@ -849,20 +700,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ownerPublicKey
           );
           
-          // Check if this is a traditional SPL token account
-          const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
-          
-          if (!tokenAccountInfo) {
-            console.log(`Skipping ${nftMint} - NFT account not found (may be MplCoreAsset or other new standard)`);
-            continue;
-          }
-          
-          // Get parsed account info for traditional SPL tokens
-          const parsedAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
-          const parsedInfo = parsedAccountInfo.value?.data as any;
+          // Get token account info - NFTs typically have balance=1, decimals=0
+          const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+          const parsedInfo = tokenAccountInfo.value?.data as any;
           
           if (!parsedInfo?.parsed?.info) {
-            console.log(`Skipping ${nftMint} - Cannot parse NFT account data`);
+            console.log(`Skipping ${nftMint} - NFT account not found`);
             continue;
           }
           
