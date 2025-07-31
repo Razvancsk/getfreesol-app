@@ -202,6 +202,18 @@ export class DatabaseStorage implements IStorage {
     const [emptyTokenAccount] = await db
       .insert(emptyTokenAccounts)
       .values(account)
+      .onConflictDoUpdate({
+        target: emptyTokenAccounts.accountAddress,
+        set: {
+          walletAddress: account.walletAddress,
+          mintAddress: account.mintAddress,
+          tokenSymbol: account.tokenSymbol,
+          tokenName: account.tokenName,
+          rentAmount: account.rentAmount,
+          balance: account.balance,
+          decimals: account.decimals
+        }
+      })
       .returning();
     return emptyTokenAccount;
   }
