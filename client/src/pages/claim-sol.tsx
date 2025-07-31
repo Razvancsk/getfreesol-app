@@ -431,7 +431,7 @@ export default function SolRefund() {
   const calculateTotalSOL = (count: number) => {
     const grossAmount = count * 0.00203928;
     const netAmount = grossAmount * 0.85; // 15% fee deducted
-    return `${netAmount.toFixed(6)} net (15% fee)`;
+    return `${netAmount.toFixed(6)}`;
   };
 
   // Process SOL refund (15% service fee)
@@ -983,7 +983,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="text-sm text-green-400 font-semibold">
-                    SOL to recover: {calculateTotalSOL(selectedTokens.size)}
+                    SOL to receive: {calculateTotalSOL(selectedTokens.size)}
                   </div>
                   <Button
                     onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
