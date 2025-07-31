@@ -690,7 +690,7 @@ export default function SolRefund() {
       });
       return;
     }
-    burnNFTMutation.mutate(nftMint);
+    burnTokenMutation.mutate(nftMint);
   };
 
   const calculateRefund = () => {
