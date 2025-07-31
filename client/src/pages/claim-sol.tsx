@@ -721,7 +721,7 @@ export default function SolRefund() {
       setForceDisconnected(false);
       toast({
         title: "Wallet Connected",
-        description: "Successfully connected to Phantom wallet.",
+        description: "SUCCESSFULLY CONNECTED",
       });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
@@ -745,7 +745,7 @@ export default function SolRefund() {
       setScanResult(null);
       toast({
         title: "Wallet Disconnected",
-        description: "Successfully disconnected from Phantom wallet.",
+        description: "SUCCESSFULLY DISCONNECTED",
       });
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
