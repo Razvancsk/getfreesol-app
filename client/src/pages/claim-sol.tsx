@@ -11,8 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw } from "lucide-react";
-import { useWallet } from "@/providers/WalletProvider";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2 } from "lucide-react";
 
 interface EmptyTokenAccount {
   id: number;
@@ -54,19 +53,117 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens'>('reclaim');
+  const [tokenList, setTokenList] = useState<any[]>([]);
+  
+  // Selection states for bulk burning
+  const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   
-  // Use wallet adapter instead of direct state management
-  const { publicKey: walletPublicKey, connected: walletConnected, wallet } = useWallet();
-  const publicKey = walletPublicKey?.toString() || null;
-  const isConnected = walletConnected;
+  // Wallet state synced with main navigation
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [forceDisconnected, setForceDisconnected] = useState(false);
+  const [hasCheckedInitialState, setHasCheckedInitialState] = useState(false);
 
-  // Clear scan results when wallet disconnects
+  // Sync with Phantom wallet state from main navigation
   useEffect(() => {
-    if (!isConnected) {
+    const checkWalletConnection = () => {
+      // If user manually disconnected from SOL Refund page, stay disconnected
+      if (forceDisconnected) {
+        setPublicKey(null);
+        setIsConnected(false);
+        setScanResult(null);
+        console.log('SOL Refund: Force disconnected by user');
+        return;
+      }
+      
+      // Check if wallet is properly connected
+      const isPhantomInstalled = window.solana && window.solana.isPhantom;
+      
+      // On first load, be extra strict - wallet must be truly connected
+      if (!hasCheckedInitialState) {
+        setHasCheckedInitialState(true);
+        // Only show as connected if wallet is actually connected
+        if (isPhantomInstalled && window.solana?.isConnected && window.solana?.publicKey) {
+          try {
+            const currentKey = window.solana.publicKey.toString();
+            if (currentKey && currentKey.length > 40) {
+              setPublicKey(currentKey);
+              setIsConnected(true);
+              console.log('SOL Refund: Initial wallet check - connected');
+              return;
+            }
+          } catch (error) {
+            console.log('SOL Refund: Initial wallet check - error');
+          }
+        }
+        // Default to disconnected on first load
+        setPublicKey(null);
+        setIsConnected(false);
+        setScanResult(null);
+        console.log('SOL Refund: Initial wallet check - not connected');
+        return;
+      }
+      
+      // Regular checks after initial load
+      if (isPhantomInstalled && window.solana?.isConnected && window.solana?.publicKey) {
+        try {
+          const currentKey = window.solana.publicKey.toString();
+          if (currentKey && currentKey.length > 40) {
+            setPublicKey(currentKey);
+            setIsConnected(true);
+            console.log('SOL Refund: Wallet verified as connected');
+          } else {
+            throw new Error('Invalid wallet key');
+          }
+        } catch (error) {
+          setPublicKey(null);
+          setIsConnected(false);
+          setScanResult(null);
+          console.log('SOL Refund: Error validating wallet');
+        }
+      } else {
+        setPublicKey(null);
+        setIsConnected(false);
+        setScanResult(null);
+        console.log('SOL Refund: Wallet not connected');
+      }
+    };
+
+    // Check initial connection state
+    checkWalletConnection();
+
+    // Listen for wallet connection events
+    const handleConnect = () => {
+      console.log('Wallet connect event detected');
+      checkWalletConnection();
+    };
+    
+    const handleDisconnect = () => {
+      console.log('Wallet disconnect event detected');
+      setPublicKey(null);
+      setIsConnected(false);
       setScanResult(null);
+    };
+
+    // Add event listeners if available
+    if (window.solana && typeof (window.solana as any).on === 'function') {
+      (window.solana as any).on('connect', handleConnect);
+      (window.solana as any).on('disconnect', handleDisconnect);
     }
-  }, [isConnected]);
+
+    // Fallback: Check wallet state periodically
+    const interval = setInterval(checkWalletConnection, 2000);
+
+    return () => {
+      clearInterval(interval);
+      if (window.solana && typeof (window.solana as any).off === 'function') {
+        (window.solana as any).off('connect', handleConnect);
+        (window.solana as any).off('disconnect', handleDisconnect);
+      }
+    };
+  }, []);
 
   // Add comprehensive error handler to prevent ALL unhandled promise rejections from showing overlay
   useEffect(() => {
@@ -139,6 +236,203 @@ export default function SolRefund() {
       });
     },
   });
+
+  // Scan tokens for burning
+  const scanTokensMutation = useMutation({
+    mutationFn: async (address: string) => {
+      const response = await fetch(`/api/tokens/scan/${address}`);
+      if (!response.ok) {
+        throw new Error('Failed to scan tokens');
+      }
+      return response.json();
+    },
+    onSuccess: (data: any[]) => {
+      setTokenList(data);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Token Scan Failed",
+        description: error.message || "Failed to scan wallet for tokens",
+        variant: "destructive",
+      });
+    },
+  });
+
+
+
+  // Burn Token Mutation
+  const burnTokenMutation = useMutation({
+    mutationFn: async (tokenMint: string) => {
+      // First, get the transaction from backend
+      const response = await fetch('/api/tokens/burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey,
+          tokenMint
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to prepare burn transaction');
+      }
+      
+      const { transaction, solRecovered } = await response.json();
+      
+      // Sign and send transaction using Phantom wallet
+      if (!window.solana || !window.solana.isPhantom) {
+        throw new Error('Phantom wallet not found');
+      }
+
+      const { Connection, Transaction } = await import('@solana/web3.js');
+      
+      // Use Helius RPC if available, otherwise fallback
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+      
+      const connection = new Connection(
+        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      // Deserialize and sign transaction
+      const txBuffer = Buffer.from(transaction, 'base64');
+      const tx = Transaction.from(txBuffer);
+      
+      const signedTx = await window.solana.signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      return { signature, solRecovered };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success!",
+        description: `Token burned successfully! Recovered ${data.solRecovered} SOL`,
+      });
+      // Refresh token list
+      if (publicKey) {
+        scanTokensMutation.mutate(publicKey);
+      }
+    },
+    onError: (error) => {
+      console.error('Error burning token:', error);
+      let errorMessage = "Failed to burn token. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('Phantom wallet not found')) {
+          errorMessage = "Please install and connect Phantom wallet.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+
+
+  // Bulk Burn Tokens Mutation
+  const bulkBurnTokensMutation = useMutation({
+    mutationFn: async (tokenMints: string[]) => {
+      // Get bulk transaction from backend
+      const response = await fetch('/api/tokens/bulk-burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey,
+          tokenMints
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to prepare bulk burn transaction');
+      }
+      
+      const { transaction, tokensProcessed, solRecovered, netAmount, feeAmount } = await response.json();
+      
+      // Sign and send transaction
+      if (!window.solana || !window.solana.isPhantom) {
+        throw new Error('Phantom wallet not found');
+      }
+
+      const { Connection, Transaction } = await import('@solana/web3.js');
+      
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+      
+      const connection = new Connection(
+        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      const txBuffer = Buffer.from(transaction, 'base64');
+      const tx = Transaction.from(txBuffer);
+      
+      const signedTx = await window.solana.signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      return { tokensProcessed, solRecovered, netAmount, feeAmount, signature };
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Success!",
+        description: `Burned ${result.tokensProcessed} tokens! Net recovery: ${result.netAmount} SOL (${result.feeAmount} SOL fee)`,
+      });
+      // Clear selections and refresh
+      setSelectedTokens(new Set());
+      if (publicKey) {
+        scanTokensMutation.mutate(publicKey);
+      }
+    },
+    onError: (error) => {
+      console.error('Error bulk burning tokens:', error);
+      toast({
+        title: "Error",
+        description: "Failed to burn tokens. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+
+
+  // Selection handlers
+  const toggleTokenSelection = (mintAddress: string) => {
+    const newSelection = new Set(selectedTokens);
+    if (newSelection.has(mintAddress)) {
+      newSelection.delete(mintAddress);
+    } else {
+      newSelection.add(mintAddress);
+    }
+    setSelectedTokens(newSelection);
+  };
+
+  const selectAllTokens = () => {
+    setSelectedTokens(new Set(tokenList.map(token => token.mint)));
+  };
+
+  const clearTokenSelection = () => {
+    setSelectedTokens(new Set());
+  };
+
+  // Calculate total SOL to recover (net after 15% fee)
+  const calculateTotalSOL = (count: number) => {
+    const grossAmount = count * 0.00203928;
+    const netAmount = grossAmount * 0.85; // 15% fee deducted
+    return `${netAmount.toFixed(6)}`;
+  };
 
   // Process SOL refund (15% service fee)
   const refundMutation = useMutation({
@@ -375,6 +669,30 @@ export default function SolRefund() {
     });
   };
 
+  const handleBurnToken = (tokenMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+    burnTokenMutation.mutate(tokenMint);
+  };
+
+  const handleBurnNFT = (nftMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error", 
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+    burnTokenMutation.mutate(nftMint);
+  };
+
   const calculateRefund = () => {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
     
@@ -387,38 +705,148 @@ export default function SolRefund() {
 
   const refundCalc = calculateRefund();
 
+  // Connect wallet function
+  const connectWallet = async () => {
+    try {
+      // Clear force disconnected state first
+      setForceDisconnected(false);
+      
+      if (!window.solana?.isPhantom) {
+        toast({
+          title: "Phantom Wallet Required",
+          description: "Please install Phantom wallet to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await window.solana.connect();
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      toast({
+        title: "Connection Failed",
+        description: "Failed to connect to Phantom wallet.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Disconnect wallet function
+  const disconnectWallet = async () => {
+    try {
+      if (window.solana) {
+        await window.solana.disconnect();
+      }
+      setForceDisconnected(true);
+      setPublicKey(null);
+      setIsConnected(false);
+      setScanResult(null);
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-4 py-8">
-            <div className="flex items-center justify-center space-x-3">
-              <Coins className="h-8 w-8 text-purple-400" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Claim Sol</h1>
+          {/* Header with Wallet Connection */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-3">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
             </div>
-            <p className="text-white max-w-2xl mx-auto text-lg">
-              Reclaim your SOL rent from empty token accounts. Each empty token account holds ~0.002 SOL 
-              that can be recovered by closing the account.
-            </p>
-
+            
+            {/* Wallet Connection Button */}
+            <div className="flex items-center space-x-3">
+              {isConnected && publicKey ? (
+                <>
+                  <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
+                    {publicKey.slice(0, 6)}...{publicKey.slice(-6)}
+                  </div>
+                  <Button
+                    onClick={disconnectWallet}
+                    className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                  >
+                    Disconnect
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={connectWallet}
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
+                >
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Connect Wallet
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Description */}
+          <div className="text-center space-y-4 py-4">
+            <p className="text-white max-w-2xl mx-auto text-lg">
+              Reclaim your SOL rent from empty token accounts and burn unwanted tokens.
+            </p>
+          </div>
+
+          {/* Action Tabs */}
+          {isConnected && (
+            <div className="flex justify-center mb-6">
+              <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1">
+                <div className="flex space-x-1">
+                  <Button
+                    onClick={() => setActiveTab('reclaim')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'reclaim' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                  >
+                    <Coins className="h-4 w-4 mr-2" />
+                    Reclaim SOL
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('burnTokens')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'burnTokens' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                  >
+                    <Flame className="h-4 w-4 mr-2" />
+                    Burn Tokens
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Scan Wallet Section */}
           {isConnected && (
             <div className="text-center">
               <Button 
-                onClick={() => publicKey && scanMutation.mutate(publicKey)}
-                disabled={scanMutation.isPending || !publicKey}
+                onClick={() => {
+                  if (publicKey) {
+                    if (activeTab === 'reclaim') {
+                      scanMutation.mutate(publicKey);
+                    } else if (activeTab === 'burnTokens') {
+                      scanTokensMutation.mutate(publicKey);
+                    }
+                  }
+                }}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
                 size="lg"
                 className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
               >
-                {scanMutation.isPending ? (
+                {(scanMutation.isPending || scanTokensMutation.isPending) ? (
                   <RefreshCw className="h-6 w-6 animate-spin mr-3" />
                 ) : (
                   <Search className="h-6 w-6 mr-3" />
                 )}
-                {scanMutation.isPending ? 'Scanning Wallet...' : 'Scan Wallet'}
+                {(scanMutation.isPending || scanTokensMutation.isPending) 
+                  ? 'Scanning Wallet...' 
+                  : `Scan ${activeTab === 'reclaim' ? 'Empty Accounts' : 'Tokens'}`
+                }
               </Button>
             </div>
           )}
@@ -429,14 +857,13 @@ export default function SolRefund() {
               <div className="text-center space-y-4">
                 <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
-                <p className="text-purple-200">Please connect your Phantom wallet using the button in the top navigation to access the Claim Sol utility.</p>
-
+                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to access the Get Your Sol utility.</p>
               </div>
             </div>
           )}
 
-          {/* Scan Results */}
-          {scanResult && (
+          {/* Reclaim SOL Results */}
+          {activeTab === 'reclaim' && scanResult && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
@@ -517,6 +944,113 @@ export default function SolRefund() {
             </div>
           )}
 
+          {/* Burn Tokens Results */}
+          {activeTab === 'burnTokens' && tokenList.length > 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Your Tokens</h3>
+                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                  {tokenList.length} Tokens Found
+                </div>
+              </div>
+
+              {/* Selection Controls */}
+              <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                <div className="flex items-center space-x-3">
+                  <Button
+                    onClick={selectAllTokens}
+                    size="sm"
+                    className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    onClick={clearTokenSelection}
+                    size="sm"
+                    className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
+                  >
+                    Clear
+                  </Button>
+                  <div className="text-sm text-purple-300">
+                    {selectedTokens.size} selected
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-green-400 font-semibold">
+                    SOL {calculateTotalSOL(selectedTokens.size)}
+                  </div>
+                  <Button
+                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Flame className="h-4 w-4 mr-1" />
+                    {bulkBurnTokensMutation.isPending ? 'Burning...' : `Burn Selected (${selectedTokens.size})`}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
+                {tokenList.map((token, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50 hover:bg-slate-700/70 cursor-pointer transition-colors"
+                    onClick={() => toggleTokenSelection(token.mint)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedTokens.has(token.mint)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleTokenSelection(token.mint);
+                      }}
+                      className="w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600"
+                    />
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      {token.logo && (
+                        <img 
+                          src={token.logo} 
+                          alt={token.symbol || 'Token'} 
+                          className="w-8 h-8 rounded-full flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white">
+                          {token.symbol || 'TOKEN'}
+                        </div>
+                        <div className="text-xs text-purple-300 font-mono truncate">
+                          {token.mint}
+                        </div>
+                        <div className="text-xs text-white">
+                          Balance: {token.balance} {token.symbol || 'TOKENS'}
+                        </div>
+                        {/* SOL recovery info removed */}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+
+
+          {/* Empty State Messages */}
+          {activeTab === 'burnTokens' && tokenList.length === 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="text-center space-y-4">
+                <Flame className="h-12 w-12 text-purple-400 mx-auto" />
+                <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
+                <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+              </div>
+            </div>
+          )}
+
+
+
           {/* Statistics Cards */}
           {stats && (
             <div className="space-y-6">
@@ -533,91 +1067,100 @@ export default function SolRefund() {
               </div>
 
               {/* Transaction History */}
-              {stats.recentTransactions && stats.recentTransactions.length > 0 && (
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  <h3 className="text-xl font-bold text-white mb-6 text-center">ALL TIME LEDGER</h3>
-                  
-                  {/* Mobile Card Layout */}
-                  <div className="block md:hidden space-y-3">
-                    {stats.recentTransactions.map((tx: any, index: number) => (
-                      <div key={tx.signature} className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-xs text-purple-300">TRANSACTION</div>
-                          <div className="text-xs text-purple-300">
-                            {new Date(tx.processedAt).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        </div>
-                        <div className="mb-3">
-                          <a 
-                            href={`https://solscan.io/tx/${tx.signature}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-purple-300 hover:text-white font-mono text-xs hover:underline break-all"
-                          >
-                            {tx.signature.substring(0, 12)}...{tx.signature.substring(tx.signature.length - 12)}
-                          </a>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-center">
-                            <div className="text-xs text-purple-300">ACCOUNTS</div>
-                            <div className="text-white font-medium">{tx.accountsClosed}</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-xs text-purple-300">CLAIMED SOL</div>
-                            <div className="text-white font-medium">{tx.solRecovered.toFixed(6)}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Desktop Table Layout */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-white">
-                      <thead>
-                        <tr className="text-purple-300 border-b border-purple-600/50">
-                          <th className="text-left py-3 px-2">WALLET/TX</th>
-                          <th className="text-center py-3 px-2">ACCTS</th>
-                          <th className="text-center py-3 px-2">CLAIMED SOL</th>
-                          <th className="text-center py-3 px-2">DATE</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stats.recentTransactions.map((tx: any, index: number) => (
-                          <tr key={tx.signature} className="border-b border-purple-700/30 hover:bg-purple-700/20">
-                            <td className="py-3 px-2">
-                              <a 
-                                href={`https://solscan.io/tx/${tx.signature}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-purple-300 hover:text-white font-mono text-sm hover:underline"
-                              >
-                                {tx.signature.substring(0, 8)}...{tx.signature.substring(tx.signature.length - 8)}
-                              </a>
-                            </td>
-                            <td className="text-center py-3 px-2">{tx.accountsClosed}</td>
-                            <td className="text-center py-3 px-2">{tx.solRecovered.toFixed(6)}</td>
-                            <td className="text-center py-3 px-2 text-sm">
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <h3 className="text-xl font-bold text-white mb-6 text-center">ALL TIME LEDGER</h3>
+                
+                {stats.recentTransactions && stats.recentTransactions.length > 0 ? (
+                  <>
+                    {/* Mobile Card Layout */}
+                    <div className="block md:hidden space-y-3">
+                      {stats.recentTransactions.map((tx: any, index: number) => (
+                        <div key={tx.signature} className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs text-purple-300">TRANSACTION</div>
+                            <div className="text-xs text-purple-300">
                               {new Date(tx.processedAt).toLocaleDateString('en-US', { 
                                 month: 'short', 
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'
                               })}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            </div>
+                          </div>
+                          <div className="mb-3">
+                            <a 
+                              href={`https://solscan.io/tx/${tx.signature}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-purple-300 hover:text-white font-mono text-xs hover:underline break-all"
+                            >
+                              {tx.signature.substring(0, 12)}...{tx.signature.substring(tx.signature.length - 12)}
+                            </a>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-center">
+                              <div className="text-xs text-purple-300">ACCOUNTS</div>
+                              <div className="text-white font-medium">{tx.accountsClosed}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-xs text-purple-300">CLAIMED SOL</div>
+                              <div className="text-white font-medium">{tx.solRecovered.toFixed(6)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                </div>
-              )}
+                    {/* Desktop Table Layout */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-white">
+                        <thead>
+                          <tr className="text-purple-300 border-b border-purple-600/50">
+                            <th className="text-left py-3 px-2">WALLET/TX</th>
+                            <th className="text-center py-3 px-2">ACCTS</th>
+                            <th className="text-center py-3 px-2">CLAIMED SOL</th>
+                            <th className="text-center py-3 px-2">DATE</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.recentTransactions.map((tx: any, index: number) => (
+                            <tr key={tx.signature} className="border-b border-purple-700/30 hover:bg-purple-700/20">
+                              <td className="py-3 px-2">
+                                <a 
+                                  href={`https://solscan.io/tx/${tx.signature}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-purple-300 hover:text-white font-mono text-sm hover:underline"
+                                >
+                                  {tx.signature.substring(0, 8)}...{tx.signature.substring(tx.signature.length - 8)}
+                                </a>
+                              </td>
+                              <td className="text-center py-3 px-2">{tx.accountsClosed}</td>
+                              <td className="text-center py-3 px-2">{tx.solRecovered.toFixed(6)}</td>
+                              <td className="text-center py-3 px-2 text-sm">
+                                {new Date(tx.processedAt).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">📜</div>
+                    <h4 className="text-lg font-medium text-purple-400 mb-2">No Transactions Yet</h4>
+                    <p className="text-purple-200">
+                      Once you start claiming SOL or burning tokens, your transaction history will appear here.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
