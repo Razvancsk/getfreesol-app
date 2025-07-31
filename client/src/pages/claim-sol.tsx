@@ -708,6 +708,9 @@ export default function SolRefund() {
   // Connect wallet function
   const connectWallet = async () => {
     try {
+      // Clear force disconnected state first
+      setForceDisconnected(false);
+      
       if (!window.solana?.isPhantom) {
         toast({
           title: "Phantom Wallet Required",
@@ -718,7 +721,6 @@ export default function SolRefund() {
       }
 
       await window.solana.connect();
-      setForceDisconnected(false);
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       toast({
