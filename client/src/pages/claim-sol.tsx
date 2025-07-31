@@ -983,7 +983,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="text-sm text-green-400 font-semibold">
-                    SOL to receive: {calculateTotalSOL(selectedTokens.size)}
+                    SOL {calculateTotalSOL(selectedTokens.size)}
                   </div>
                   <Button
                     onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
