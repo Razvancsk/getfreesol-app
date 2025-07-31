@@ -998,11 +998,18 @@ export default function SolRefund() {
               
               <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
                 {tokenList.map((token, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50">
+                  <div 
+                    key={index} 
+                    className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50 hover:bg-slate-700/70 cursor-pointer transition-colors"
+                    onClick={() => toggleTokenSelection(token.mint)}
+                  >
                     <input
                       type="checkbox"
                       checked={selectedTokens.has(token.mint)}
-                      onChange={() => toggleTokenSelection(token.mint)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleTokenSelection(token.mint);
+                      }}
                       className="w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600"
                     />
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
