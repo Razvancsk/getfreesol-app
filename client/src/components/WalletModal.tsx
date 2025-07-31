@@ -25,6 +25,8 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
     const detectWallets = () => {
       const detectedWallets: WalletInfo[] = [];
 
+
+
       // Phantom Wallet
       if (window.solana && window.solana.isPhantom) {
         detectedWallets.push({
@@ -89,13 +91,22 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
         });
       }
 
-      // Magic Eden Wallet
-      if (window.magicEden && window.magicEden.solana) {
+      // Magic Eden Wallet - check multiple possible locations
+      let magicEdenAdapter = null;
+      if (window.magicEden?.solana) {
+        magicEdenAdapter = window.magicEden.solana;
+      } else if (window.magicEden) {
+        magicEdenAdapter = window.magicEden;
+      } else if ((window as any).mobileWallet?.magicEden) {
+        magicEdenAdapter = (window as any).mobileWallet.magicEden;
+      }
+      
+      if (magicEdenAdapter) {
         detectedWallets.push({
           name: 'Magic Eden',
           icon: '🪄',
           detected: true,
-          adapter: window.magicEden.solana
+          adapter: magicEdenAdapter
         });
       } else {
         detectedWallets.push({
@@ -126,8 +137,8 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
 
     detectWallets();
     
-    // Re-detect wallets every 2 seconds in case they load asynchronously
-    const interval = setInterval(detectWallets, 2000);
+    // Re-detect wallets every 3 seconds in case they load asynchronously
+    const interval = setInterval(detectWallets, 3000);
     
     return () => clearInterval(interval);
   }, []);
@@ -184,6 +195,9 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
           <DialogTitle className="text-white text-center text-xl font-bold">
             Connect a Wallet on Solana to continue
           </DialogTitle>
+          <DialogDescription className="text-gray-300 text-center text-sm">
+            Choose from the supported Solana wallets below
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-3 py-4">
