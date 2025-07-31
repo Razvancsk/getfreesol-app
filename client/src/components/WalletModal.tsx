@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Wallet } from 'lucide-react';
 
@@ -24,6 +24,8 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
   useEffect(() => {
     const detectWallets = () => {
       const detectedWallets: WalletInfo[] = [];
+      
+
 
 
 
@@ -91,13 +93,32 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
         });
       }
 
-      // Magic Eden Wallet - check multiple possible locations
+      // Magic Eden Wallet - comprehensive detection
       let magicEdenAdapter = null;
-      if (window.magicEden?.solana) {
-        magicEdenAdapter = window.magicEden.solana;
-      } else if (window.magicEden) {
-        magicEdenAdapter = window.magicEden;
-      } else if ((window as any).mobileWallet?.magicEden) {
+      const possibleMagicEdenLocations = [
+        'magicEden',
+        'magiceden', 
+        'MagicEden',
+        'magicEdenwallet',
+        'magicEdenWallet'
+      ];
+      
+      for (const location of possibleMagicEdenLocations) {
+        const wallet = (window as any)[location];
+        if (wallet) {
+          // Try different provider patterns
+          if (wallet.solana) {
+            magicEdenAdapter = wallet.solana;
+            break;
+          } else if (wallet.isConnected !== undefined || wallet.connect) {
+            magicEdenAdapter = wallet;
+            break;
+          }
+        }
+      }
+      
+      // Also check nested locations
+      if (!magicEdenAdapter && (window as any).mobileWallet?.magicEden) {
         magicEdenAdapter = (window as any).mobileWallet.magicEden;
       }
       
@@ -137,8 +158,8 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
 
     detectWallets();
     
-    // Re-detect wallets every 3 seconds in case they load asynchronously
-    const interval = setInterval(detectWallets, 3000);
+    // Re-detect wallets every 2 seconds in case they load asynchronously
+    const interval = setInterval(detectWallets, 2000);
     
     return () => clearInterval(interval);
   }, []);
@@ -219,6 +240,10 @@ export default function WalletModal({ isConnected, publicKey, onConnect, onDisco
               )}
             </button>
           ))}
+          
+          <div className="pt-2 text-center text-xs text-gray-400">
+            If your wallet isn't showing as "Detected", try refreshing the page or reopening the modal.
+          </div>
         </div>
         
         <div className="text-center pt-4 border-t border-purple-500/20">
