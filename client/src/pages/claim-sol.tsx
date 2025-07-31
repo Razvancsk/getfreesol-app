@@ -719,10 +719,6 @@ export default function SolRefund() {
 
       await window.solana.connect();
       setForceDisconnected(false);
-      toast({
-        title: "Wallet Connected",
-        description: "SUCCESSFULLY CONNECTED",
-      });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       toast({
@@ -743,10 +739,6 @@ export default function SolRefund() {
       setPublicKey(null);
       setIsConnected(false);
       setScanResult(null);
-      toast({
-        title: "Wallet Disconnected",
-        description: "SUCCESSFULLY DISCONNECTED",
-      });
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
     }
