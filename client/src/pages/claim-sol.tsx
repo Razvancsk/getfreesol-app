@@ -12,6 +12,18 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2 } from "lucide-react";
+import WalletModal from "@/components/WalletModal";
+
+// Extend window interface for multiple wallet detection
+declare global {
+  interface Window {
+    solflare?: any;
+    trustwallet?: any;
+    coinbaseSolana?: any;
+    magicEden?: any;
+    ave?: any;
+  }
+}
 
 interface EmptyTokenAccount {
   id: number;
@@ -78,16 +90,25 @@ export default function SolRefund() {
         return;
       }
       
-      // Check if wallet is properly connected
-      const isPhantomInstalled = window.solana && window.solana.isPhantom;
+      // Check if any supported wallet is properly connected
+      const availableWallets = [
+        window.solana,
+        window.solflare,
+        window.trustwallet?.solana,
+        window.coinbaseSolana,
+        window.magicEden?.solana,
+        window.ave?.solana
+      ].filter(Boolean);
+      
+      const connectedWallet = availableWallets.find(wallet => wallet.isConnected && wallet.publicKey);
       
       // On first load, be extra strict - wallet must be truly connected
       if (!hasCheckedInitialState) {
         setHasCheckedInitialState(true);
-        // Only show as connected if wallet is actually connected
-        if (isPhantomInstalled && window.solana?.isConnected && window.solana?.publicKey) {
+        // Only show as connected if any wallet is actually connected
+        if (connectedWallet) {
           try {
-            const currentKey = window.solana.publicKey.toString();
+            const currentKey = connectedWallet.publicKey.toString();
             if (currentKey && currentKey.length > 40) {
               setPublicKey(currentKey);
               setIsConnected(true);
@@ -107,9 +128,9 @@ export default function SolRefund() {
       }
       
       // Regular checks after initial load
-      if (isPhantomInstalled && window.solana?.isConnected && window.solana?.publicKey) {
+      if (connectedWallet) {
         try {
-          const currentKey = window.solana.publicKey.toString();
+          const currentKey = connectedWallet.publicKey.toString();
           if (currentKey && currentKey.length > 40) {
             setPublicKey(currentKey);
             setIsConnected(true);
@@ -705,38 +726,59 @@ export default function SolRefund() {
 
   const refundCalc = calculateRefund();
 
-  // Connect wallet function
-  const connectWallet = async () => {
+  // Connect wallet function - now supports multiple wallets
+  const connectWallet = async (walletAdapter?: any) => {
     try {
       // Clear force disconnected state first
       setForceDisconnected(false);
       
-      if (!window.solana?.isPhantom) {
+      // Use provided adapter or default to window.solana
+      const adapter = walletAdapter || window.solana;
+      
+      if (!adapter) {
         toast({
-          title: "Phantom Wallet Required",
-          description: "Please install Phantom wallet to continue.",
+          title: "Wallet Not Found",
+          description: "Please install a supported wallet to continue.",
           variant: "destructive",
         });
         return;
       }
 
-      await window.solana.connect();
+      await adapter.connect();
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       toast({
         title: "Connection Failed",
-        description: "Failed to connect to Phantom wallet.",
+        description: "Failed to connect wallet.",
         variant: "destructive",
       });
     }
   };
 
-  // Disconnect wallet function
+  // Disconnect wallet function - supports multiple wallets
   const disconnectWallet = async () => {
     try {
-      if (window.solana) {
-        await window.solana.disconnect();
+      // Try to disconnect from all possible wallets
+      const wallets = [
+        window.solana,
+        window.solflare,
+        window.trustwallet?.solana,
+        window.coinbaseSolana,
+        window.magicEden?.solana,
+        window.ave?.solana
+      ].filter(Boolean);
+
+      for (const wallet of wallets) {
+        try {
+          if (wallet.isConnected) {
+            await wallet.disconnect();
+          }
+        } catch (e) {
+          // Continue to next wallet if one fails
+          console.log('Failed to disconnect from one wallet:', e);
+        }
       }
+
       setForceDisconnected(true);
       setPublicKey(null);
       setIsConnected(false);
@@ -756,30 +798,13 @@ export default function SolRefund() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
             </div>
             
-            {/* Wallet Connection Button */}
-            <div className="flex items-center space-x-3">
-              {isConnected && publicKey ? (
-                <>
-                  <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
-                    {publicKey.slice(0, 6)}...{publicKey.slice(-6)}
-                  </div>
-                  <Button
-                    onClick={disconnectWallet}
-                    className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                  >
-                    Disconnect
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={connectWallet}
-                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Connect Wallet
-                </Button>
-              )}
-            </div>
+            {/* Multi-Wallet Connection */}
+            <WalletModal
+              isConnected={isConnected}
+              publicKey={publicKey}
+              onConnect={connectWallet}
+              onDisconnect={disconnectWallet}
+            />
           </div>
 
           {/* Description */}
