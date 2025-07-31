@@ -53,18 +53,11 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'burnNFTs'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens'>('reclaim');
   const [tokenList, setTokenList] = useState<any[]>([]);
-  const [nftList, setNftList] = useState<any[]>([]);
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
-  const [selectedNFTs, setSelectedNFTs] = useState<Set<string>>(new Set());
-  
-  // Debug NFT list changes
-  useEffect(() => {
-    console.log('NFT List updated:', nftList.length, nftList);
-  }, [nftList]);
   const { toast } = useToast();
   
   // Wallet state synced with main navigation
@@ -265,29 +258,7 @@ export default function SolRefund() {
     },
   });
 
-  // Scan NFTs for burning
-  const scanNFTsMutation = useMutation({
-    mutationFn: async (address: string) => {
-      // Add timestamp to prevent caching
-      const response = await fetch(`/api/nfts/scan/${address}?t=${Date.now()}`);
-      if (!response.ok) {
-        throw new Error('Failed to scan NFTs');
-      }
-      return response.json();
-    },
-    onSuccess: (data: any[]) => {
-      console.log('NFT scan successful, received NFTs:', data);
-      console.log('Setting NFT list state...');
-      setNftList(data);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "NFT Scan Failed",
-        description: error.message || "Failed to scan wallet for NFTs",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Burn Token Mutation
   const burnTokenMutation = useMutation({
@@ -368,84 +339,7 @@ export default function SolRefund() {
     },
   });
 
-  // Burn NFT Mutation  
-  const burnNFTMutation = useMutation({
-    mutationFn: async (nftMint: string) => {
-      // First, get the transaction from backend  
-      const response = await fetch('/api/nfts/burn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: publicKey,
-          nftMint
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to prepare burn transaction');
-      }
-      
-      const { transaction, solRecovered } = await response.json();
-      
-      // Sign and send transaction using Phantom wallet
-      if (!window.solana || !window.solana.isPhantom) {
-        throw new Error('Phantom wallet not found');
-      }
 
-      const { Connection, Transaction } = await import('@solana/web3.js');
-      
-      // Use Helius RPC if available, otherwise fallback
-      const heliusResponse = await fetch('/api/helius-config');
-      const rpcConfig = await heliusResponse.json();
-      
-      const connection = new Connection(
-        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-        'confirmed'
-      );
-      
-      // Deserialize and sign transaction
-      const txBuffer = Buffer.from(transaction, 'base64');
-      const tx = Transaction.from(txBuffer);
-      
-      const signedTx = await window.solana.signTransaction(tx);
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-      
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
-      
-      return { signature, solRecovered };
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Success!",
-        description: `NFT burned successfully! Recovered ${data.solRecovered} SOL`,
-      });
-      // Refresh NFT list
-      if (publicKey) {
-        scanNFTsMutation.mutate(publicKey);
-      }
-    },
-    onError: (error) => {
-      console.error('Error burning NFT:', error);
-      let errorMessage = "Failed to burn NFT. Please try again.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('User rejected')) {
-          errorMessage = "Transaction was cancelled by user.";
-        } else if (error.message.includes('Phantom wallet not found')) {
-          errorMessage = "Please install and connect Phantom wallet.";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      toast({
-        title: "Error", 
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
 
   // Bulk Burn Tokens Mutation
   const bulkBurnTokensMutation = useMutation({
@@ -512,70 +406,7 @@ export default function SolRefund() {
     },
   });
 
-  // Bulk Burn NFTs Mutation
-  const bulkBurnNFTsMutation = useMutation({
-    mutationFn: async (nftMints: string[]) => {
-      // Get bulk transaction from backend
-      const response = await fetch('/api/nfts/bulk-burn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: publicKey,
-          nftMints
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to prepare bulk burn transaction');
-      }
-      
-      const { transaction, nftsProcessed, solRecovered, netAmount, feeAmount } = await response.json();
-      
-      // Sign and send transaction
-      if (!window.solana || !window.solana.isPhantom) {
-        throw new Error('Phantom wallet not found');
-      }
 
-      const { Connection, Transaction } = await import('@solana/web3.js');
-      
-      const heliusResponse = await fetch('/api/helius-config');
-      const rpcConfig = await heliusResponse.json();
-      
-      const connection = new Connection(
-        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-        'confirmed'
-      );
-      
-      const txBuffer = Buffer.from(transaction, 'base64');
-      const tx = Transaction.from(txBuffer);
-      
-      const signedTx = await window.solana.signTransaction(tx);
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-      
-      await connection.confirmTransaction(signature, 'confirmed');
-      
-      return { nftsProcessed, solRecovered, netAmount, feeAmount, signature };
-    },
-    onSuccess: (result) => {
-      toast({
-        title: "Success!",
-        description: `Burned ${result.nftsProcessed} NFTs! Net recovery: ${result.netAmount} SOL (${result.feeAmount} SOL fee)`,
-      });
-      // Clear selections and refresh
-      setSelectedNFTs(new Set());
-      if (publicKey) {
-        scanNFTsMutation.mutate(publicKey);
-      }
-    },
-    onError: (error) => {
-      console.error('Error bulk burning NFTs:', error);
-      toast({
-        title: "Error", 
-        description: "Failed to burn NFTs. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   // Selection handlers
   const toggleTokenSelection = (mintAddress: string) => {
@@ -588,30 +419,12 @@ export default function SolRefund() {
     setSelectedTokens(newSelection);
   };
 
-  const toggleNFTSelection = (mintAddress: string) => {
-    const newSelection = new Set(selectedNFTs);
-    if (newSelection.has(mintAddress)) {
-      newSelection.delete(mintAddress);
-    } else {
-      newSelection.add(mintAddress);
-    }
-    setSelectedNFTs(newSelection);
-  };
-
   const selectAllTokens = () => {
     setSelectedTokens(new Set(tokenList.map(token => token.mint)));
   };
 
-  const selectAllNFTs = () => {
-    setSelectedNFTs(new Set(nftList.map(nft => nft.mint)));
-  };
-
   const clearTokenSelection = () => {
     setSelectedTokens(new Set());
-  };
-
-  const clearNFTSelection = () => {
-    setSelectedNFTs(new Set());
   };
 
   // Calculate total SOL to recover (net after 15% fee)
@@ -978,7 +791,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-lg">
-              Reclaim your SOL rent from empty token accounts, burn unwanted tokens, and burn NFTs you no longer need.
+              Reclaim your SOL rent from empty token accounts and burn unwanted tokens.
             </p>
           </div>
 
@@ -1009,17 +822,6 @@ export default function SolRefund() {
                     <Flame className="h-4 w-4 mr-2" />
                     Burn Tokens
                   </Button>
-                  <Button
-                    onClick={() => setActiveTab('burnNFTs')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'burnNFTs' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
-                    }`}
-                  >
-                    <Image className="h-4 w-4 mr-2" />
-                    Burn NFTs
-                  </Button>
                 </div>
               </div>
             </div>
@@ -1035,23 +837,21 @@ export default function SolRefund() {
                       scanMutation.mutate(publicKey);
                     } else if (activeTab === 'burnTokens') {
                       scanTokensMutation.mutate(publicKey);
-                    } else if (activeTab === 'burnNFTs') {
-                      scanNFTsMutation.mutate(publicKey);
                     }
                   }
                 }}
-                disabled={scanMutation.isPending || scanTokensMutation.isPending || scanNFTsMutation.isPending || !publicKey}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
                 size="lg"
                 className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
               >
-                {(scanMutation.isPending || scanTokensMutation.isPending || scanNFTsMutation.isPending) ? (
+                {(scanMutation.isPending || scanTokensMutation.isPending) ? (
                   <RefreshCw className="h-6 w-6 animate-spin mr-3" />
                 ) : (
                   <Search className="h-6 w-6 mr-3" />
                 )}
-                {(scanMutation.isPending || scanTokensMutation.isPending || scanNFTsMutation.isPending) 
+                {(scanMutation.isPending || scanTokensMutation.isPending) 
                   ? 'Scanning Wallet...' 
-                  : `Scan ${activeTab === 'reclaim' ? 'Empty Accounts' : activeTab === 'burnTokens' ? 'Tokens' : 'NFTs'}`
+                  : `Scan ${activeTab === 'reclaim' ? 'Empty Accounts' : 'Tokens'}`
                 }
               </Button>
             </div>
@@ -1235,84 +1035,7 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Burn NFTs Results */}
-          {activeTab === 'burnNFTs' && nftList && nftList.length > 0 && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Your NFTs</h3>
-                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
-                  {nftList.length} NFTs Found
-                </div>
-              </div>
 
-              {/* Selection Controls */}
-              <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
-                <div className="flex items-center space-x-3">
-                  <Button
-                    onClick={selectAllNFTs}
-                    size="sm"
-                    className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    onClick={clearNFTSelection}
-                    size="sm"
-                    className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
-                  >
-                    Clear
-                  </Button>
-                  <div className="text-sm text-purple-300">
-                    {selectedNFTs.size} selected
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-sm text-green-400 font-semibold">
-                    SOL to recover: {calculateTotalSOL(selectedNFTs.size)}
-                  </div>
-                  <Button
-                    onClick={() => bulkBurnNFTsMutation.mutate(Array.from(selectedNFTs))}
-                    disabled={selectedNFTs.size === 0 || bulkBurnNFTsMutation.isPending}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    {bulkBurnNFTsMutation.isPending ? 'Burning...' : `Burn Selected (${selectedNFTs.size})`}
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-                {nftList.map((nft, index) => (
-                  <div key={index} className="bg-slate-700/50 rounded border border-slate-700/50 p-4 relative">
-                    <input
-                      type="checkbox"
-                      checked={selectedNFTs.has(nft.mint)}
-                      onChange={() => toggleNFTSelection(nft.mint)}
-                      className="absolute top-2 left-2 w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600 z-10"
-                    />
-                    {nft.image && (
-                      <img 
-                        src={nft.image} 
-                        alt={nft.name || 'NFT'} 
-                        className="w-full h-32 object-cover rounded mb-3"
-                      />
-                    )}
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium text-white truncate">
-                        {nft.name || 'Unnamed NFT'}
-                      </div>
-                      <div className="text-xs text-purple-300 font-mono truncate">
-                        {nft.mint}
-                      </div>
-                      <div className="text-xs text-green-400 font-semibold mb-2">
-                        🪙 Recover: ~0.00203928 SOL
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Empty State Messages */}
           {activeTab === 'burnTokens' && tokenList.length === 0 && (
@@ -1325,26 +1048,7 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* NFT Scanning Loading State */}
-          {activeTab === 'burnNFTs' && scanNFTsMutation.isPending && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="text-center space-y-4">
-                <RefreshCw className="h-12 w-12 text-purple-400 mx-auto animate-spin" />
-                <h3 className="text-lg font-semibold text-white">Scanning for NFTs...</h3>
-                <p className="text-purple-200">Please wait while we find your NFTs.</p>
-              </div>
-            </div>
-          )}
 
-          {activeTab === 'burnNFTs' && (!nftList || nftList.length === 0) && !scanNFTsMutation.isPending && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="text-center space-y-4">
-                <Image className="h-12 w-12 text-purple-400 mx-auto" />
-                <h3 className="text-lg font-semibold text-white">No NFTs Found</h3>
-                <p className="text-purple-200">Scan your wallet to find NFTs available for burning.</p>
-              </div>
-            </div>
-          )}
 
           {/* Statistics Cards */}
           {stats && (
