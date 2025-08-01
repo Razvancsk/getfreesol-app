@@ -157,7 +157,16 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Jupiter Terminal: Prevent screen transitions and keep swap interface visible */
+/* Jupiter Terminal: Force prevent ALL screen transitions and overlays */
+#jupiter-terminal div[class*="swapping"],
+#jupiter-terminal div[class*="pending"],
+#jupiter-terminal div[class*="loading"],
+#jupiter-terminal div[class*="transaction"],
+#jupiter-terminal div:has(> h1:contains("Swapping")),
+#jupiter-terminal div:has(> h2:contains("Pending")),
+#jupiter-terminal div:has(> div:contains("Pending Approval")),
+#jupiter-terminal [data-testid*="swap-progress"],
+#jupiter-terminal [data-testid*="transaction-progress"],
 #jupiter-terminal [data-testid="swapping-screen"],
 #jupiter-terminal [data-testid="pending-screen"],
 #jupiter-terminal .swapping-overlay,
@@ -165,14 +174,24 @@ input[type="number"] {
 #jupiter-terminal .loading-screen,
 #jupiter-terminal .transaction-screen {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  z-index: -9999 !important;
 }
 
-/* Ensure the main swap form stays visible during transactions */
+/* Force the main swap form to always be visible */
 #jupiter-terminal [data-testid="jupiter-swap-form"],
-#jupiter-terminal .swap-form {
+#jupiter-terminal .swap-form,
+#jupiter-terminal form,
+#jupiter-terminal > div > div:first-child {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  position: relative !important;
+  z-index: 9999 !important;
 }
 
 /* Jupiter Terminal size constraints */

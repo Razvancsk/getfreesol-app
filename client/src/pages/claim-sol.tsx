@@ -293,6 +293,69 @@ export default function SolRefund() {
 
           console.log('Jupiter found, initializing terminal...');
           
+          // Add runtime script to prevent screen transitions
+          const preventTransitions = () => {
+            // Function to hide transition screens
+            const hideTransitionScreens = () => {
+              const terminalElement = document.getElementById('jupiter-terminal');
+              if (!terminalElement) return;
+
+              // Find and hide all elements containing transition text
+              const allElements = terminalElement.querySelectorAll('*');
+              allElements.forEach((element: Element) => {
+                const htmlElement = element as HTMLElement;
+                const text = htmlElement.textContent || '';
+                
+                if (text.includes('Swapping') || 
+                    text.includes('Pending Approval') ||
+                    text.includes('Transaction pending') ||
+                    text.includes('Confirming') ||
+                    htmlElement.tagName === 'H1' && text.trim() === 'Swapping' ||
+                    htmlElement.tagName === 'H2' && text.includes('Pending')) {
+                  
+                  // Hide the element and its parent containers
+                  let currentElement = htmlElement;
+                  while (currentElement && currentElement !== terminalElement) {
+                    currentElement.style.display = 'none';
+                    currentElement.style.visibility = 'hidden';
+                    currentElement.style.opacity = '0';
+                    console.log('Hid Jupiter transition element:', text.slice(0, 50));
+                    currentElement = currentElement.parentElement as HTMLElement;
+                    
+                    // Stop if we've hidden too many parent elements
+                    if (currentElement && currentElement.children.length > 5) break;
+                  }
+                }
+              });
+            };
+
+            // Run immediately
+            hideTransitionScreens();
+
+            // Set up mutation observer
+            const observer = new MutationObserver(() => {
+              hideTransitionScreens();
+            });
+            
+            const terminalElement = document.getElementById('jupiter-terminal');
+            if (terminalElement) {
+              observer.observe(terminalElement, {
+                childList: true,
+                subtree: true,
+                characterData: true
+              });
+            }
+
+            // Also run periodically as backup
+            const interval = setInterval(hideTransitionScreens, 500);
+            
+            // Clean up after 30 seconds
+            setTimeout(() => {
+              clearInterval(interval);
+              observer.disconnect();
+            }, 30000);
+          };
+          
           // Initialize Jupiter with wallet passthrough
           (window as any).Jupiter.init({
             displayMode: "integrated",
@@ -381,6 +444,13 @@ export default function SolRefund() {
               console.error('Jupiter swap error:', error);
             }
           });
+
+          // Start preventing screen transitions immediately and with delay
+          preventTransitions();
+          setTimeout(() => {
+            preventTransitions();
+            console.log('Jupiter screen transition prevention activated');
+          }, 1000);
 
           console.log('Jupiter Terminal initialized successfully');
           
