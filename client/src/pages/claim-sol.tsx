@@ -1341,11 +1341,56 @@ export default function SolRefund() {
                   id="jupiter-terminal" 
                   style={{ 
                     width: '390px', 
-                    height: '577px',
-                    minHeight: '577px',
+                    height: '460px',
+                    minHeight: '460px',
                     backgroundColor: 'transparent'
                   }}
                 />
+                
+                {/* Transaction Details Panel */}
+                <div className="p-4 bg-gray-900/90 border-t border-gray-700/50 space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-300">Price</span>
+                      <div className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-gray-300 text-xs">ⓘ</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-white font-mono">1 SOL = 167.72 USDC</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-gray-400 hover:text-white cursor-pointer">
+                        <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-300">Minimum Received</span>
+                    <span className="text-white font-mono">334 USDC</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-300">Jito Fee</span>
+                      <span className="text-yellow-400">⚡</span>
+                      <div className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-gray-300 text-xs">ⓘ</span>
+                      </div>
+                    </div>
+                    <span className="text-white font-mono">0.0003 SOL</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-300">Slippage Tolerance</span>
+                      <div className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-gray-300 text-xs">ⓘ</span>
+                      </div>
+                    </div>
+                    <span className="text-white font-mono">{slippage}%</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
