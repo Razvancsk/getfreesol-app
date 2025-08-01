@@ -1352,8 +1352,8 @@ export default function SolRefund() {
 
           {/* Slippage Settings Modal */}
           {showSlippageModal && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-              <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 w-96 max-w-[90vw]">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-white">Sell Setting</h2>
                   <button
@@ -1367,9 +1367,9 @@ export default function SolRefund() {
                 </div>
 
                 {/* Slippage Tolerance */}
-                <div className="mb-6">
+                <div className="mb-8">
                   <h3 className="text-white font-medium mb-4">Slippage Tolerance</h3>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {[1, 3, 5, 10].map((value) => (
                       <button
                         key={value}
@@ -1396,13 +1396,13 @@ export default function SolRefund() {
                 </div>
 
                 {/* Jito Fee */}
-                <div className="mb-6">
+                <div className="mb-8">
                   <div className="flex items-center gap-2 mb-4">
                     <h3 className="text-white font-medium">Jito Fee</h3>
                     <span className="text-yellow-400">⚡</span>
                     <span className="text-gray-400 text-sm">[SOL]</span>
                   </div>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {['Slow', 'Normal', 'Fast', 'Turbo'].map((priority) => (
                       <button
                         key={priority}
