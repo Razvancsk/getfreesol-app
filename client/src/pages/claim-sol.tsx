@@ -287,12 +287,41 @@ export default function SolRefund() {
 
           console.log('Jupiter found, initializing terminal...');
           
-          // Initialize Jupiter with minimal config
+          // Initialize Jupiter with wallet passthrough
           (window as any).Jupiter.init({
             displayMode: "integrated",
             integratedTargetId: "jupiter-terminal",
             endpoint: "https://api.mainnet-beta.solana.com",
             enableWalletPassthrough: true,
+            passthroughWalletContextState: isConnected && publicKey && window.solana ? {
+              connected: true,
+              connecting: false,
+              disconnecting: false,
+              publicKey: {
+                toString: () => publicKey,
+                toBase58: () => publicKey
+              },
+              wallet: {
+                adapter: {
+                  name: 'Phantom',
+                  icon: '',
+                  url: '',
+                  publicKey: {
+                    toString: () => publicKey,
+                    toBase58: () => publicKey
+                  },
+                  connected: true,
+                  connecting: false,
+                  disconnecting: false,
+                  signTransaction: window.solana.signTransaction,
+                  signAllTransactions: (window.solana as any).signAllTransactions || window.solana.signTransaction,
+                  signMessage: (window.solana as any).signMessage || (() => Promise.reject('SignMessage not supported'))
+                }
+              },
+              signTransaction: window.solana.signTransaction,
+              signAllTransactions: (window.solana as any).signAllTransactions || window.solana.signTransaction,
+              signMessage: (window.solana as any).signMessage || (() => Promise.reject('SignMessage not supported'))
+            } : undefined,
             containerStyles: {
               maxHeight: '577px',
               height: '577px',
@@ -335,28 +364,9 @@ export default function SolRefund() {
 
           console.log('Jupiter Terminal initialized successfully');
           
-          // Sync wallet after initialization
+          // Wallet state is now passed directly in initialization
           if (isConnected && publicKey && window.solana) {
-            setTimeout(() => {
-              try {
-                console.log('Syncing wallet with Jupiter...');
-                (window as any).Jupiter.syncProps({
-                  passthroughWalletContextState: {
-                    connected: true,
-                    publicKey: publicKey,
-                    wallet: {
-                      adapter: {
-                        name: 'Phantom',
-                        publicKey: publicKey
-                      }
-                    }
-                  }
-                });
-                console.log('Wallet synced with Jupiter');
-              } catch (syncError) {
-                console.error('Jupiter wallet sync error:', syncError);
-              }
-            }, 1000);
+            console.log('Wallet passed through Jupiter initialization');
           }
           
         } catch (error) {
