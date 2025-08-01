@@ -15,32 +15,6 @@
   display: none !important;
 }
 
-/* Ensure Jupiter Terminal has proper size and shows transaction details */
-#jupiter-terminal {
-  width: 390px !important;
-  height: 577px !important;
-  max-width: 390px !important;
-  max-height: 577px !important;
-  overflow: visible !important;
-}
-
-/* Force Jupiter to show transaction details */
-#jupiter-terminal * {
-  max-height: none !important;
-}
-
-/* Ensure all transaction info is visible */
-#jupiter-terminal [class*="details"],
-#jupiter-terminal [class*="info"],
-#jupiter-terminal [class*="price"],
-#jupiter-terminal [class*="minimum"],
-#jupiter-terminal [class*="slippage"],
-#jupiter-terminal [class*="fee"] {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);

@@ -287,7 +287,7 @@ export default function SolRefund() {
 
           console.log('Jupiter found, initializing terminal...');
           
-          // Initialize Jupiter with full config to show transaction details
+          // Initialize Jupiter with minimal config
           (window as any).Jupiter.init({
             displayMode: "integrated",
             integratedTargetId: "jupiter-terminal",
@@ -301,17 +301,12 @@ export default function SolRefund() {
             defaultExplorer: "SolanaFM",
             strictTokenList: false,
             enableAdvancedRouting: true,
-            showTradingDetails: true,
-            showPriceInfo: true,
-            showFeesBreakdown: true,
-            enableJito: true,
             formProps: {
               fixedInputMint: false,
               fixedOutputMint: false,
               swapMode: "ExactIn",
-              slippageBps: slippage * 100,
-              initialSlippageBps: slippage * 100,
-              showTradingDetails: true
+              slippageBps: slippage * 100, // Convert percentage to basis points
+              initialSlippageBps: slippage * 100
             },
             defaultSlippageSettings: {
               slippageBps: slippage * 100,
@@ -1346,8 +1341,8 @@ export default function SolRefund() {
                   id="jupiter-terminal" 
                   style={{ 
                     width: '390px', 
-                    height: '577px',
-                    minHeight: '577px',
+                    height: '540px',
+                    minHeight: '540px',
                     backgroundColor: 'transparent'
                   }}
                 />
