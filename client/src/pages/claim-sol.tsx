@@ -55,6 +55,7 @@ export default function SolRefund() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'swap'>('reclaim');
+  const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   
   // Selection states for bulk burning
@@ -298,6 +299,19 @@ export default function SolRefund() {
               fixedInputMint: false,
               fixedOutputMint: false,
               swapMode: "ExactIn"
+            },
+            onFormUpdate: (form: any) => {
+              // Update chart when user changes output token
+              if (form.outputMint && form.outputMint !== selectedTokenMint) {
+                setSelectedTokenMint(form.outputMint);
+                console.log('Token changed to:', form.outputMint);
+              }
+            },
+            onSuccess: ({ txid, swapResult }: any) => {
+              console.log('Jupiter swap successful:', txid);
+            },
+            onSwapError: ({ error }: any) => {
+              console.error('Jupiter swap error:', error);
             }
           });
 
@@ -1277,7 +1291,8 @@ export default function SolRefund() {
                   <p className="text-gray-400 text-sm">Real-time price data</p>
                 </div>
                 <iframe
-                  src="https://dexscreener.com/solana/pumpfun?embed=1&theme=dark&trades=0&info=0"
+                  key={selectedTokenMint}
+                  src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=1`}
                   style={{
                     width: '100%',
                     height: '600px',
