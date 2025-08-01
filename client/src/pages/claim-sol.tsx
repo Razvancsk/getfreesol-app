@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,8 @@ export default function SolRefund() {
   });
   const [realSwapData, setRealSwapData] = useState<any>(null);
   const [showTokenSelector, setShowTokenSelector] = useState<string | null>(null);
+  const [tokenSearchQuery, setTokenSearchQuery] = useState('');
+  const [allTokens, setAllTokens] = useState<any[]>([]);
 
   // Popular tokens list with logos
   const popularTokens = [
@@ -205,6 +207,42 @@ export default function SolRefund() {
     }
   };
 
+  // Fetch Jupiter token list
+  const fetchJupiterTokens = async () => {
+    try {
+      const response = await fetch('https://token.jup.ag/strict');
+      const tokens = await response.json();
+      setAllTokens(tokens);
+      return tokens;
+    } catch (error) {
+      console.error('Failed to fetch Jupiter tokens:', error);
+      return popularTokens; // Fallback to popular tokens
+    }
+  };
+
+  // Load tokens on component mount
+  useEffect(() => {
+    fetchJupiterTokens();
+  }, []);
+
+  // Filter tokens based on search query
+  const filteredTokens = useMemo(() => {
+    const tokensToFilter = allTokens.length > 0 ? allTokens : popularTokens;
+    
+    if (!tokenSearchQuery.trim()) {
+      return tokensToFilter.slice(0, 20); // Show top 20 by default
+    }
+    
+    const query = tokenSearchQuery.toLowerCase();
+    return tokensToFilter
+      .filter(token => 
+        token.symbol.toLowerCase().includes(query) ||
+        token.name.toLowerCase().includes(query) ||
+        token.address.toLowerCase().includes(query)
+      )
+      .slice(0, 50); // Limit to 50 results
+  }, [allTokens, popularTokens, tokenSearchQuery]);
+
   const selectToken = (token: any, position: 'from' | 'to') => {
     if (position === 'from') {
       setSwapInputToken(token);
@@ -214,6 +252,7 @@ export default function SolRefund() {
       setRealTokens(prev => ({ ...prev, toSymbol: token.symbol }));
     }
     setShowTokenSelector(null);
+    setTokenSearchQuery(''); // Clear search on selection
     setSwapForm({ fromValue: '', toValue: '' });
     setRealSwapData(null);
   };
@@ -1903,6 +1942,8 @@ export default function SolRefund() {
                         <input
                           type="text"
                           placeholder="Search"
+                          value={tokenSearchQuery}
+                          onChange={(e) => setTokenSearchQuery(e.target.value)}
                           className="w-full bg-gray-800 text-white pl-10 pr-4 py-3 rounded-lg border border-gray-700 focus:border-purple-500 outline-none"
                         />
                       </div>
@@ -1910,7 +1951,7 @@ export default function SolRefund() {
 
                     {/* Token List */}
                     <div className="flex-1 overflow-y-auto">
-                      {popularTokens.map((token) => (
+                      {filteredTokens.map((token) => (
                         <button
                           key={token.address}
                           onClick={() => selectToken(token, showTokenSelector as 'from' | 'to')}
@@ -1949,7 +1990,7 @@ export default function SolRefund() {
                                token.symbol === 'USDT' ? '0.828564' : 
                                token.symbol === 'mSOL' ? '0.0123' : 
                                token.symbol === 'JUP' ? '127.635729' : 
-                               '0.012345'}
+                               '0.00000'}
                             </div>
                             <div className="text-white font-medium">
                               {token.symbol === 'SOL' ? '$2.98' : 
@@ -1957,7 +1998,7 @@ export default function SolRefund() {
                                token.symbol === 'USDT' ? '$0.83' : 
                                token.symbol === 'mSOL' ? '$3.45' : 
                                token.symbol === 'JUP' ? '$1.58' : 
-                               '$0.45'}
+                               '$0.00'}
                             </div>
                           </div>
                         </button>
