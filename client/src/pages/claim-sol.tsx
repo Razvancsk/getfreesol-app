@@ -441,17 +441,29 @@ export default function SolRefund() {
               // No notification - user doesn't want transaction messages
             },
             onSwapError: ({ error }: any) => {
-              // Don't show error for user rejection/cancellation
-              if (error && (
-                error.code === 4001 || 
-                error.message?.includes('User rejected') ||
-                error.message?.includes('rejected the request') ||
-                error.name === 'WalletNotConnectedError'
-              )) {
-                console.log('Swap cancelled by user');
-                return; // Silently handle user cancellation
-              }
-              console.error('Jupiter swap error:', error);
+              // Completely suppress ALL error handling - no error screens at all
+              console.log('Swap error silently handled:', error);
+              
+              // Force Jupiter back to swap interface immediately
+              setTimeout(() => {
+                const terminal = document.getElementById('jupiter-terminal');
+                if (terminal) {
+                  // Remove any error elements that might have appeared
+                  const errorElements = terminal.querySelectorAll('*');
+                  errorElements.forEach((el: Element) => {
+                    const htmlEl = el as HTMLElement;
+                    const text = htmlEl.textContent || '';
+                    if (text.includes('Swap Failed') || 
+                        text.includes('unable to complete') ||
+                        text.includes('not been authorized') ||
+                        text.includes('Retry')) {
+                      htmlEl.remove();
+                    }
+                  });
+                }
+              }, 1);
+              
+              return; // Never let Jupiter show error screens
             }
           });
 
@@ -560,6 +572,40 @@ export default function SolRefund() {
 
           // Start nuclear override immediately  
           nuclearOverride();
+          
+          // IMMEDIATE DOM CLEANER - Remove error screens instantly
+          const immediateClean = () => {
+            const terminal = document.getElementById('jupiter-terminal');
+            if (!terminal) return;
+            
+            const allElements = terminal.querySelectorAll('*');
+            allElements.forEach((el: Element) => {
+              const htmlEl = el as HTMLElement;
+              const text = htmlEl.textContent || '';
+              const computedStyle = window.getComputedStyle(htmlEl);
+              
+              // Remove error screens, overlays, and positioned elements
+              if (text.includes('Swap Failed') || 
+                  text.includes('unable to complete') ||
+                  text.includes('not been authorized') ||
+                  text.includes('Retry') ||
+                  text.includes('Try Again') ||
+                  text.includes('Swapping') ||
+                  text.includes('Pending') ||
+                  computedStyle.position === 'absolute' ||
+                  computedStyle.position === 'fixed' ||
+                  computedStyle.zIndex === '9999' ||
+                  htmlEl.style.zIndex === '9999') {
+                
+                htmlEl.remove();
+                console.log('IMMEDIATE CLEAN: Removed', text.slice(0, 20));
+              }
+            });
+          };
+          
+          // Run immediate cleaner continuously for first 10 seconds
+          const immediateCleanInterval = setInterval(immediateClean, 10);
+          setTimeout(() => clearInterval(immediateCleanInterval), 10000);
           
           // Run enforcement every 25ms for ultra-fast response
           const enforcementInterval = setInterval(enforceSwapView, 25);
