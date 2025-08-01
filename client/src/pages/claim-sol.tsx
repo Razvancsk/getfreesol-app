@@ -1962,7 +1962,10 @@ export default function SolRefund() {
                                   const response = await fetch(`/api/jupiter/tokens/search?q=${encodeURIComponent(query)}`);
                                   const data = await response.json();
                                   if (data.success) {
+                                    console.log('Jupiter tokens received:', data.tokens);
                                     setJupiterTokens(data.tokens);
+                                  } else {
+                                    console.error('Jupiter search failed:', data);
                                   }
                                 } catch (error) {
                                   console.error('Error searching tokens:', error);
@@ -2017,10 +2020,17 @@ export default function SolRefund() {
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
                                       target.style.display = 'none';
-                                      target.nextElementSibling?.classList.remove('hidden');
+                                      const fallback = target.nextElementSibling as HTMLElement;
+                                      if (fallback) {
+                                        fallback.classList.remove('hidden');
+                                      }
                                     }}
                                   />
-                                ) : null}
+                                ) : (
+                                  <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                    {token.symbol.charAt(0)}
+                                  </div>
+                                )}
                                 <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold hidden">
                                   {token.symbol.charAt(0)}
                                 </div>

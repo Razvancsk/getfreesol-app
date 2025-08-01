@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// Use native fetch in Node.js
 
 export interface JupiterToken {
   address: string;
