@@ -1703,7 +1703,7 @@ export default function SolRefund() {
               </div>
 
               {/* Custom Purple Jupiter Terminal Wrapper */}
-              <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl border border-purple-600/30 shadow-2xl overflow-hidden w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
+              <div className="relative bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl border border-purple-600/30 shadow-2xl overflow-hidden w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
                 {/* Custom Purple Header */}
                 <div className="bg-gradient-to-r from-purple-800 to-purple-700 p-4 border-b border-purple-600/40">
                   <div className="flex items-center justify-between">
