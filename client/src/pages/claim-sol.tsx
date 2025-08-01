@@ -1573,33 +1573,62 @@ export default function SolRefund() {
                 />
               </div>
 
-              {/* Jupiter Terminal */}
-              <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden w-fit mx-auto">
-                {/* Settings Button */}
-                <div className="p-3 border-b border-gray-700/50 flex justify-between items-center">
-                  <div className="text-white text-sm">
-                    Slippage: {slippage}% | Priority: {jitoPriority} | Jito Fee⚡ {manualJitoFee || '0'} SOL
+              {/* Custom Purple Jupiter Terminal Wrapper */}
+              <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl border border-purple-600/30 shadow-2xl overflow-hidden w-fit mx-auto">
+                {/* Custom Purple Header */}
+                <div className="bg-gradient-to-r from-purple-800 to-purple-700 p-4 border-b border-purple-600/40">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-purple-500 rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold text-lg">Token Swap</h3>
+                        <div className="text-purple-200 text-xs">
+                          Slippage: {slippage}% | Priority: {jitoPriority} | Jito Fee⚡ {manualJitoFee || '0'} SOL
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowSlippageModal(true)}
+                      className="p-2 bg-purple-700/50 hover:bg-purple-600/70 rounded-lg transition-all duration-200 hover:scale-105 border border-purple-600/40"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-purple-200 hover:text-white">
+                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="currentColor"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setShowSlippageModal(true)}
-                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-300">
-                      <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="currentColor"/>
-                      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
                 </div>
                 
-                <div 
-                  id="jupiter-terminal" 
-                  style={{ 
-                    width: '390px', 
-                    height: '540px',
-                    minHeight: '540px',
-                    backgroundColor: 'transparent'
-                  }}
-                />
+                {/* Jupiter Terminal with Custom Purple Background */}
+                <div className="bg-gradient-to-b from-purple-800/30 to-purple-900/50 p-4">
+                  <div 
+                    id="jupiter-terminal" 
+                    className="bg-transparent rounded-lg overflow-hidden"
+                    style={{ 
+                      width: '390px', 
+                      height: '540px',
+                      minHeight: '540px',
+                      backgroundColor: 'transparent'
+                    }}
+                  />
+                </div>
+                
+                {/* Custom Purple Footer */}
+                <div className="bg-gradient-to-r from-purple-800 to-purple-700 px-4 py-3 border-t border-purple-600/40">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 text-purple-200">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span>Powered by Jupiter</span>
+                    </div>
+                    <div className="text-purple-300">
+                      Best Routes • Zero Fees
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
