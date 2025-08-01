@@ -1402,28 +1402,57 @@ export default function SolRefund() {
                     <span className="text-yellow-400">⚡</span>
                     <span className="text-gray-400 text-sm">[SOL]</span>
                   </div>
-                  <div className="flex gap-2 mb-3 overflow-x-auto">
-                    {['Slow', 'Normal', 'Fast', 'Turbo'].map((priority) => (
-                      <button
-                        key={priority}
-                        onClick={() => setJitoPriority(priority)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                          jitoPriority === priority
-                            ? 'bg-white text-black'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
-                        }`}
-                      >
-                        {priority}
-                      </button>
-                    ))}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => setJitoPriority('Slow')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        jitoPriority === 'Slow'
+                          ? 'bg-white text-black'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                      }`}
+                    >
+                      Slow
+                    </button>
+                    <button
+                      onClick={() => setJitoPriority('Normal')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        jitoPriority === 'Normal'
+                          ? 'bg-white text-black'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                      }`}
+                    >
+                      Normal
+                    </button>
+                    <button
+                      onClick={() => setJitoPriority('Fast')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        jitoPriority === 'Fast'
+                          ? 'bg-white text-black'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                      }`}
+                    >
+                      Fast
+                    </button>
                     <input
                       type="number"
                       value={manualJitoFee}
-                      className="px-3 py-2 w-24 bg-gray-800 text-white rounded-lg text-sm border border-gray-600 flex-shrink-0"
+                      className="px-3 py-2 w-20 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
                       step="0.0001"
                       min="0"
                       onChange={(e) => setManualJitoFee(e.target.value)}
                     />
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => setJitoPriority('Turbo')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        jitoPriority === 'Turbo'
+                          ? 'bg-white text-black'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                      }`}
+                    >
+                      Turbo
+                    </button>
                   </div>
                 </div>
 
