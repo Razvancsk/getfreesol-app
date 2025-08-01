@@ -1192,95 +1192,194 @@ export default function SolRefund() {
 
           {/* Swap Interface */}
           {activeTab === 'swap' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Chart Section */}
+              <div className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-white font-medium">Show Chart</span>
+                      <div className="w-8 h-4 bg-green-500 rounded-full flex items-center px-1">
+                        <div className="w-3 h-3 bg-white rounded-full ml-auto"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-400 font-medium">Hide Tx</span>
+                      <div className="w-8 h-4 bg-green-500 rounded-full flex items-center px-1">
+                        <div className="w-3 h-3 bg-white rounded-full ml-auto"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chart Header */}
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                  <span className="text-blue-400 text-sm">USDC/USDT on Meteo... • 15 • dexscreener.c...</span>
+                  <span className="text-green-400 text-sm bg-green-500/20 px-2 py-1 rounded">1.0002</span>
+                </div>
+
+                {/* Time Controls */}
+                <div className="flex items-center space-x-2 mb-4 text-xs text-gray-400">
+                  <span>1s</span>
+                  <span>1m</span>
+                  <span>5m</span>
+                  <span className="bg-blue-500 text-white px-2 py-1 rounded">15m</span>
+                  <span>1h</span>
+                  <span>4h</span>
+                  <span>D</span>
+                </div>
+
+                {/* Chart Area */}
+                <div className="h-64 bg-gray-900/50 rounded-lg relative overflow-hidden">
+                  {/* Mock Chart */}
+                  <svg className="w-full h-full" viewBox="0 0 400 200">
+                    {/* Grid lines */}
+                    <defs>
+                      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#374151" strokeWidth="0.5"/>
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                    
+                    {/* Price lines */}
+                    <text x="380" y="20" fill="#6B7280" fontSize="10">1.0000</text>
+                    <text x="380" y="100" fill="#6B7280" fontSize="10">0.9998</text>
+                    <text x="380" y="180" fill="#6B7280" fontSize="10">0.9996</text>
+                    
+                    {/* Candlesticks */}
+                    {Array.from({length: 20}).map((_, i) => {
+                      const x = 20 + i * 18;
+                      const isGreen = Math.random() > 0.5;
+                      const high = 40 + Math.random() * 20;
+                      const low = high + 20 + Math.random() * 20;
+                      return (
+                        <g key={i}>
+                          <line x1={x} y1={high} x2={x} y2={low} stroke={isGreen ? "#10B981" : "#EF4444"} strokeWidth="1"/>
+                          <rect x={x-3} y={high} width="6" height={Math.abs(low-high)/2} fill={isGreen ? "#10B981" : "#EF4444"}/>
+                        </g>
+                      );
+                    })}
+                    
+                    {/* Volume bars at bottom */}
+                    {Array.from({length: 20}).map((_, i) => {
+                      const x = 20 + i * 18;
+                      const height = 5 + Math.random() * 15;
+                      return (
+                        <rect key={i} x={x-2} y={185-height} width="4" height={height} fill="#3B82F6" opacity="0.7"/>
+                      );
+                    })}
+                  </svg>
+                  
+                  {/* Time labels */}
+                  <div className="absolute bottom-2 left-4 text-xs text-gray-400">18:00</div>
+                  <div className="absolute bottom-2 right-4 text-xs text-gray-400">06:00</div>
+                </div>
+
+                {/* Bottom Info */}
+                <div className="mt-4 text-xs text-gray-400">
+                  <div className="flex justify-between">
+                    <span>Date Range</span>
+                    <span>04:35:13 (UTC+2)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trading Panel */}
+              <div className="space-y-4">
                 
-                {/* You're Selling Section */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-white">You're Selling</label>
+                {/* Header */}
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-white">Sell Tokens</h2>
+                    <Button
+                      onClick={swapTokens}
+                      size="sm"
+                      className="bg-transparent hover:bg-purple-600/20 text-purple-300 border border-purple-500/50"
+                    >
+                      <ArrowUpDown className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* You're Selling */}
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
+                  <h3 className="text-sm font-medium text-white mb-3">You're Selling</h3>
+                  
                   <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <img 
-                          src={swapInputToken.logoURI} 
-                          alt={swapInputToken.symbol}
-                          className="w-8 h-8 rounded-full"
-                        />
+                        <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">S</span>
+                        </div>
                         <div>
                           <div className="text-white font-medium">{swapInputToken.symbol}</div>
-                          <div className="text-purple-300 text-sm">Balance: 0.0524 MAX</div>
+                          <div className="text-purple-300 text-xs">Balance: 0.0524 MAX</div>
                         </div>
                       </div>
-                      <Button
-                        onClick={swapTokens}
-                        size="sm"
-                        className="bg-transparent hover:bg-purple-600/20 text-purple-300 border border-purple-500/50"
-                      >
-                        <ArrowUpDown className="h-4 w-4" />
-                      </Button>
+                      <input
+                        type="number"
+                        value={swapInputAmount}
+                        onChange={(e) => setSwapInputAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="bg-transparent text-right text-2xl font-bold text-white placeholder-gray-400 border-none outline-none w-24"
+                      />
                     </div>
-                    <input
-                      type="number"
-                      value={swapInputAmount}
-                      onChange={(e) => setSwapInputAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full bg-transparent text-right text-2xl font-bold text-white placeholder-gray-500 border-none outline-none"
-                    />
                   </div>
                 </div>
 
-                {/* You're Buying Section */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-white">You're Buying</label>
+                {/* You're Buying */}
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
+                  <h3 className="text-sm font-medium text-white mb-3">You're Buying</h3>
+                  
                   <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <img 
-                        src={swapOutputToken.logoURI} 
-                        alt={swapOutputToken.symbol}
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <div>
-                        <div className="text-white font-medium">{swapOutputToken.symbol}</div>
-                        <div className="text-purple-300 text-sm">Balance: 0</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">U</span>
+                        </div>
+                        <div>
+                          <div className="text-white font-medium">{swapOutputToken.symbol}</div>
+                          <div className="text-purple-300 text-xs">Balance: 0</div>
+                        </div>
+                      </div>
+                      <div className="text-right text-2xl font-bold text-white">
+                        {isSwapLoading ? '...' : swapOutputAmount || '0'}
                       </div>
                     </div>
-                    <div className="text-right text-2xl font-bold text-white">
-                      {isSwapLoading ? '...' : swapOutputAmount || '0'}
-                    </div>
                   </div>
                 </div>
 
-                {/* Price Information */}
-                {swapQuote && (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between text-purple-300">
-                      <span>Minimum Received</span>
-                      <span>{(parseInt(swapQuote.outAmount) / Math.pow(10, swapOutputToken.decimals) * 0.995).toFixed(6)} {swapOutputToken.symbol}</span>
-                    </div>
-                    <div className="flex justify-between text-purple-300">
-                      <span>Jito Fee ⚡</span>
-                      <span>0.0003 SOL</span>
-                    </div>
-                    <div className="flex justify-between text-purple-300">
-                      <span>Slippage Tolerance</span>
-                      <span>5%</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Swap Button */}
+                {/* Sell Button */}
                 <Button
                   onClick={executeSwap}
                   disabled={!swapQuote || !swapInputAmount || parseFloat(swapInputAmount) <= 0 || isSwapping}
-                  className="w-full bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                  className="w-full bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-lg font-semibold rounded-lg transition-all duration-200"
                 >
-                  {isSwapping ? (
-                    <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                  ) : (
-                    <ArrowLeftRight className="h-5 w-5 mr-2" />
-                  )}
-                  {isSwapping ? 'SWAPPING...' : 'SWAP'}
+                  {isSwapping ? 'Selling...' : 'Sell'}
                 </Button>
+
+                {/* Price Information */}
+                {swapQuote && (
+                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
+                    <h3 className="text-sm font-medium text-white mb-3">Price</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-purple-300">Minimum Received</span>
+                        <span className="text-white">{(parseInt(swapQuote.outAmount) / Math.pow(10, swapOutputToken.decimals) * 0.995).toFixed(6)} {swapOutputToken.symbol}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-purple-300">Jito Fee ⚡</span>
+                        <span className="text-white">0.0003 SOL</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-purple-300">Slippage Tolerance</span>
+                        <span className="text-white">5%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
