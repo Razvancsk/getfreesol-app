@@ -479,139 +479,116 @@ export default function SolRefund() {
             console.log('Jupiter screen transition prevention activated');
           }, 1000);
 
-          // EXTREME APPROACH - Force Jupiter to stay on swap interface by DOM manipulation
-          const enforceSwapView = () => {
+          // GENTLE ENFORCEMENT - Check if Jupiter needs reinitialization
+          const gentleEnforcement = () => {
             const terminal = document.getElementById('jupiter-terminal');
             if (!terminal) return;
 
-            // Store the original swap form if we haven't already
-            if (!(window as any).originalSwapForm) {
-              const swapForm = terminal.querySelector('form') || terminal.querySelector('[data-testid*="form"]');
-              if (swapForm) {
-                (window as any).originalSwapForm = swapForm.cloneNode(true);
-              }
+            // Check if terminal is completely empty (no Jupiter content at all)
+            const hasContent = terminal.querySelector('form, input, button, [data-testid], [class*="jupiter"]');
+            
+            if (!hasContent && terminal.children.length === 0) {
+              console.log('Jupiter Terminal empty, but avoiding reinitialization to prevent loops');
+              return;
             }
 
-            // Check for any overlay screens and completely remove them
-            const allElements = terminal.querySelectorAll('*');
-            allElements.forEach((element: Element) => {
+            // Only remove specific error screens, preserve everything else
+            const errorScreens = terminal.querySelectorAll('*');
+            errorScreens.forEach((element: Element) => {
               const htmlElement = element as HTMLElement;
               const content = htmlElement.textContent || '';
               
-              // Detect ANY transition screens
-              if (content.includes('Swapping') || 
-                  content.includes('Pending Approval') ||
-                  content.includes('Transaction pending') ||
-                  content.includes('Confirming') ||
-                  content.includes('Swap Failed') ||
-                  content.includes('User rejected') ||
-                  content.includes('unable to complete') ||
-                  content.includes('Retry') ||
-                  content.includes('Try Again') ||
-                  htmlElement.style.position === 'absolute' ||
-                  htmlElement.style.position === 'fixed' ||
-                  htmlElement.style.zIndex > '100') {
+              // Only remove if it's clearly an error/transition screen
+              if ((content === 'Swap Failed' || 
+                   content === 'Swapping' ||
+                   content === 'Pending Approval' ||
+                   content === 'Transaction pending' ||
+                   content.includes('unable to complete the swap')) &&
+                  content.length < 50) { // Only small error messages
                     
-                // Instead of hiding, completely remove the element
-                if (htmlElement.parentNode) {
-                  htmlElement.parentNode.removeChild(htmlElement);
-                  console.log('REMOVED Jupiter screen:', content.slice(0, 30));
-                }
+                htmlElement.remove();
+                console.log('GENTLE: Removed error screen:', content.slice(0, 20));
               }
             });
-
-            // If the terminal is empty or only has hidden content, restore the swap form
-            const visibleContent = terminal.querySelector('form, input, button');
-            if (!visibleContent && (window as any).originalSwapForm) {
-              terminal.innerHTML = '';
-              terminal.appendChild((window as any).originalSwapForm.cloneNode(true));
-              console.log('RESTORED original swap form');
-            }
           };
 
-          // NUCLEAR OPTION - Override Jupiter's screen rendering completely
-          const nuclearOverride = () => {
-            const terminal = document.getElementById('jupiter-terminal');
-            if (!terminal) return;
-
-            // Intercept any style changes that could indicate screen transitions
-            const observer = new MutationObserver((mutations) => {
-              mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                  mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) {
-                      const element = node as HTMLElement;
-                      const text = element.textContent || '';
-                      
-                      // Immediately remove any transition screens the moment they're added
-                      if (text.includes('Swapping') || 
-                          text.includes('Pending') || 
-                          text.includes('Confirming') ||
-                          text.includes('Loading') ||
-                          element.style.position === 'absolute' ||
-                          element.style.position === 'fixed') {
-                        element.remove();
-                        console.log('NUCLEAR: Immediately removed', text.slice(0, 20));
-                      }
-                    }
-                  });
-                }
-              });
-            });
-
-            observer.observe(terminal, {
-              childList: true,
-              subtree: true,
-              attributes: true,
-              attributeFilter: ['style', 'class']
-            });
-
-            // Clean up after 60 seconds
-            setTimeout(() => observer.disconnect(), 60000);
-          };
-
-          // Start nuclear override immediately  
-          nuclearOverride();
+          // Let Jupiter settle first, then start gentle monitoring
+          setTimeout(() => {
+            console.log('Starting gentle monitoring after Jupiter settlement');
+          }, 3000);
           
-          // IMMEDIATE DOM CLEANER - Remove error screens instantly
-          const immediateClean = () => {
+          // SELECTIVE DOM CLEANER - Remove only specific error screens, keep swap interface
+          const selectiveClean = () => {
             const terminal = document.getElementById('jupiter-terminal');
             if (!terminal) return;
             
-            const allElements = terminal.querySelectorAll('*');
+            // Find and remove only specific error overlays and transition screens
+            const errorSelectors = [
+              '[role="dialog"]', // Modal dialogs
+              '[data-testid*="error"]', // Error components
+              '[data-testid*="failed"]', // Failed state components
+              'div[style*="position: absolute"]', // Positioned overlays
+              'div[style*="position: fixed"]', // Fixed overlays
+            ];
+            
+            errorSelectors.forEach(selector => {
+              const elements = terminal.querySelectorAll(selector);
+              elements.forEach((el: Element) => {
+                const htmlEl = el as HTMLElement;
+                const text = htmlEl.textContent || '';
+                
+                // Only remove if it contains error/transition text
+                if (text.includes('Swap Failed') || 
+                    text.includes('unable to complete') ||
+                    text.includes('not been authorized') ||
+                    text.includes('Retry') ||
+                    text.includes('Try Again') ||
+                    text.includes('Swapping') ||
+                    text.includes('Pending Approval') ||
+                    text.includes('Transaction pending')) {
+                  
+                  htmlEl.remove();
+                  console.log('SELECTIVE CLEAN: Removed error screen');
+                }
+              });
+            });
+            
+            // Also check for text-based removal but be more careful
+            const allElements = terminal.querySelectorAll('div, span, p');
             allElements.forEach((el: Element) => {
               const htmlEl = el as HTMLElement;
-              const text = htmlEl.textContent || '';
-              const computedStyle = window.getComputedStyle(htmlEl);
+              const text = htmlEl.textContent?.trim() || '';
               
-              // Remove error screens, overlays, and positioned elements
-              if (text.includes('Swap Failed') || 
-                  text.includes('unable to complete') ||
-                  text.includes('not been authorized') ||
-                  text.includes('Retry') ||
-                  text.includes('Try Again') ||
-                  text.includes('Swapping') ||
-                  text.includes('Pending') ||
-                  computedStyle.position === 'absolute' ||
-                  computedStyle.position === 'fixed' ||
-                  computedStyle.zIndex === '9999' ||
-                  htmlEl.style.zIndex === '9999') {
+              // Only remove elements that are ONLY error text (not mixed content)
+              if ((text === 'Swap Failed' || 
+                   text === 'Swapping' ||
+                   text === 'Pending Approval' ||
+                   text === 'Transaction pending' ||
+                   text.includes('unable to complete the swap')) &&
+                  text.length < 100) { // Don't remove large content blocks
                 
-                htmlEl.remove();
-                console.log('IMMEDIATE CLEAN: Removed', text.slice(0, 20));
+                // Remove the closest container, not just the text
+                let container = htmlEl;
+                while (container.parentElement && 
+                       container.parentElement !== terminal &&
+                       container.parentElement.children.length === 1) {
+                  container = container.parentElement;
+                }
+                container.remove();
+                console.log('SELECTIVE CLEAN: Removed', text.slice(0, 30));
               }
             });
           };
           
-          // Run immediate cleaner continuously for first 10 seconds
-          const immediateCleanInterval = setInterval(immediateClean, 10);
-          setTimeout(() => clearInterval(immediateCleanInterval), 10000);
+          // Run selective cleaner continuously for first 10 seconds
+          const selectiveCleanInterval = setInterval(selectiveClean, 50);
+          setTimeout(() => clearInterval(selectiveCleanInterval), 10000);
           
-          // Run enforcement every 25ms for ultra-fast response
-          const enforcementInterval = setInterval(enforceSwapView, 25);
+          // Run gentle enforcement every 100ms to preserve Jupiter functionality
+          const enforcementInterval = setInterval(gentleEnforcement, 100);
           
           // Also run immediately when any DOM changes occur
-          const fastObserver = new MutationObserver(enforceSwapView);
+          const fastObserver = new MutationObserver(gentleEnforcement);
           const terminal = document.getElementById('jupiter-terminal');
           if (terminal) {
             fastObserver.observe(terminal, {
