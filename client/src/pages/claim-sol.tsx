@@ -1288,10 +1288,6 @@ export default function SolRefund() {
 
               {/* Jupiter Terminal */}
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden w-fit mx-auto">
-                <div className="p-4 border-b border-gray-700/50">
-                  <h3 className="text-white font-semibold">Jupiter Swap Terminal</h3>
-                  <p className="text-gray-400 text-sm">Swap any token on Solana</p>
-                </div>
                 <div 
                   id="jupiter-terminal" 
                   style={{ 
