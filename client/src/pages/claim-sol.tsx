@@ -371,7 +371,7 @@ export default function SolRefund() {
       // Start initialization with delay
       setTimeout(initTerminal, 1000);
     }
-  }, [activeTab, isConnected, publicKey]);
+  }, [activeTab, isConnected, publicKey, slippage]); // Add slippage as dependency
 
   // Scan wallet for empty token accounts
   const scanMutation = useMutation({
@@ -1430,7 +1430,11 @@ export default function SolRefund() {
                 {/* Close button */}
                 <div className="flex justify-end">
                   <button
-                    onClick={() => setShowSlippageModal(false)}
+                    onClick={() => {
+                      setShowSlippageModal(false);
+                      // Force Jupiter Terminal to reinitialize with new settings
+                      console.log('Applying settings - Slippage:', slippage, '%, Jito Priority:', jitoPriority);
+                    }}
                     className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                   >
                     Done
