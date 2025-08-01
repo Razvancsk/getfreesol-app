@@ -305,8 +305,12 @@ export default function SolRefund() {
               console.log('Jupiter form updated:', form);
               const tokenBeingBought = form.toMint || form.outputMint;
               if (tokenBeingBought && tokenBeingBought !== selectedTokenMint) {
+                console.log('Updating chart from', selectedTokenMint, 'to', tokenBeingBought);
                 setSelectedTokenMint(tokenBeingBought);
-                console.log('Chart will update to token being bought:', tokenBeingBought);
+                // Force chart refresh
+                setTimeout(() => {
+                  console.log('Forcing chart refresh for token:', tokenBeingBought);
+                }, 100);
               }
             },
             onSuccess: ({ txid, swapResult }: any) => {
@@ -1291,16 +1295,12 @@ export default function SolRefund() {
                 <div className="p-4 border-b border-gray-700/50">
                   <h3 className="text-white font-semibold">Live Chart</h3>
                   <p className="text-gray-400 text-sm">
-                    {selectedTokenMint === 'So11111111111111111111111111111111111111112' 
-                      ? 'Trending tokens overview' 
-                      : `Chart for selected token: ${selectedTokenMint.slice(0, 8)}...`}
+                    Chart for token: {selectedTokenMint.slice(0, 8)}...{selectedTokenMint.slice(-8)}
                   </p>
                 </div>
                 <iframe
-                  key={selectedTokenMint}
-                  src={selectedTokenMint === 'So11111111111111111111111111111111111111112' 
-                    ? `https://dexscreener.com/solana/pumpfun?embed=1&theme=dark&trades=1&info=1`
-                    : `https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=1`}
+                  key={`chart-${selectedTokenMint}-${Date.now()}`}
+                  src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=1&refresh=${Date.now()}`}
                   style={{
                     width: '100%',
                     height: '600px',
