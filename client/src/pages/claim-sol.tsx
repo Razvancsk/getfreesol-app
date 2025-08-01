@@ -1324,7 +1324,7 @@ export default function SolRefund() {
                 {/* Settings Button */}
                 <div className="p-3 border-b border-gray-700/50 flex justify-between items-center">
                   <div className="text-white text-sm">
-                    Slippage: {slippage}% | Priority: {jitoPriority}
+                    Slippage: {slippage}% | Priority: {jitoPriority} | Jito Fee: {manualJitoFee || '0'} SOL
                   </div>
                   <button
                     onClick={() => setShowSlippageModal(true)}
