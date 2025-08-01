@@ -252,6 +252,39 @@ export default function SolRefund() {
     }
   }, [isConnected, publicKey]);
 
+  // Initialize Jupiter Terminal when swap tab is active
+  useEffect(() => {
+    if (activeTab === 'swap' && typeof window !== 'undefined' && (window as any).Jupiter) {
+      const initTerminal = () => {
+        try {
+          (window as any).Jupiter.init({
+            displayMode: "integrated",
+            integratedTargetId: "jupiter-terminal",
+            endpoint: "https://api.mainnet-beta.solana.com",
+            referral: {
+              account: "EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji",
+              feeBps: 50
+            },
+            strictTokenList: false,
+            defaultExplorer: "SolanaFM",
+            formProps: {
+              fixedInputMint: false,
+              fixedOutputMint: false,
+              swapMode: "ExactIn",
+              initialInputMint: "So11111111111111111111111111111111111111112", // SOL
+              initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" // USDC
+            }
+          });
+        } catch (error) {
+          console.error('Jupiter Terminal initialization error:', error);
+        }
+      };
+
+      // Small delay to ensure the DOM element is ready
+      setTimeout(initTerminal, 100);
+    }
+  }, [activeTab]);
+
   // Scan wallet for empty token accounts
   const scanMutation = useMutation({
     mutationFn: async (address: string) => {
@@ -1212,17 +1245,12 @@ export default function SolRefund() {
 
               {/* Jupiter Terminal */}
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
-                <iframe
-                  src="https://terminal.jup.ag/?referral=EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji&feeAccount=EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji&feeBps=50"
-                  style={{
-                    width: '100%',
-                    height: '600px',
-                    border: 'none',
-                    backgroundColor: 'transparent'
+                <div 
+                  id="jupiter-terminal" 
+                  style={{ 
+                    width: '100%', 
+                    height: '600px' 
                   }}
-                  allow="clipboard-write"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  loading="lazy"
                 />
               </div>
             </div>
