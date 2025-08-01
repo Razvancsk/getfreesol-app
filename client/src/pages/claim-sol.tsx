@@ -57,6 +57,8 @@ export default function SolRefund() {
   const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'swap'>('reclaim');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
+  const [showSlippageModal, setShowSlippageModal] = useState<boolean>(false);
+  const [jitoPriority, setJitoPriority] = useState<string>('Normal'); // Jito fee priority
   const [tokenList, setTokenList] = useState<any[]>([]);
   
   // Selection states for bulk burning
@@ -1318,18 +1320,63 @@ export default function SolRefund() {
 
               {/* Jupiter Terminal */}
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden w-fit mx-auto">
-                {/* Slippage Controls */}
-                <div className="p-4 border-b border-gray-700/50">
-                  <h3 className="text-white font-semibold mb-3">Slippage Tolerance</h3>
+                {/* Settings Button */}
+                <div className="p-3 border-b border-gray-700/50 flex justify-between items-center">
+                  <div className="text-white text-sm">
+                    Slippage: {slippage}% | Priority: {jitoPriority}
+                  </div>
+                  <button
+                    onClick={() => setShowSlippageModal(true)}
+                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-300">
+                      <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="currentColor"/>
+                      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                
+                <div 
+                  id="jupiter-terminal" 
+                  style={{ 
+                    width: '390px', 
+                    height: '540px',
+                    minHeight: '540px',
+                    backgroundColor: 'transparent'
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Slippage Settings Modal */}
+          {showSlippageModal && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 w-96 max-w-[90vw]">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-white">Sell Setting</h2>
+                  <button
+                    onClick={() => setShowSlippageModal(false)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Slippage Tolerance */}
+                <div className="mb-6">
+                  <h3 className="text-white font-medium mb-4">Slippage Tolerance</h3>
                   <div className="flex gap-2 mb-3">
                     {[1, 3, 5, 10].map((value) => (
                       <button
                         key={value}
                         onClick={() => setSlippage(value)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           slippage === value
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            ? 'bg-white text-black'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
                         }`}
                       >
                         {value}%
@@ -1339,31 +1386,57 @@ export default function SolRefund() {
                       type="number"
                       value={slippage}
                       onChange={(e) => setSlippage(Number(e.target.value))}
-                      className="px-3 py-2 w-20 bg-gray-700 text-white rounded-lg text-sm"
+                      className="px-3 py-2 w-20 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
                       min="0.1"
                       max="50"
                       step="0.1"
                     />
                   </div>
-                  <p className="text-gray-400 text-xs">
-                    Current slippage: {slippage}% ({slippage * 100} basis points)
-                  </p>
                 </div>
-                
-                <div 
-                  id="jupiter-terminal" 
-                  style={{ 
-                    width: '390px', 
-                    height: '520px',
-                    minHeight: '520px',
-                    backgroundColor: 'transparent'
-                  }}
-                />
+
+                {/* Jito Fee */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-white font-medium">Jito Fee</h3>
+                    <span className="text-yellow-400">⚡</span>
+                    <span className="text-gray-400 text-sm">[SOL]</span>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    {['Slow', 'Normal', 'Fast', 'Turbo'].map((priority) => (
+                      <button
+                        key={priority}
+                        onClick={() => setJitoPriority(priority)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          jitoPriority === priority
+                            ? 'bg-white text-black'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                        }`}
+                      >
+                        {priority}
+                      </button>
+                    ))}
+                    <input
+                      type="number"
+                      placeholder="0.0003"
+                      className="px-3 py-2 w-24 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
+                      step="0.0001"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Close button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowSlippageModal(false)}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
           )}
-
-
 
           {/* Statistics Cards */}
           {stats && (
