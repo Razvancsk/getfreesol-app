@@ -255,23 +255,34 @@ export default function SolRefund() {
   // Initialize Jupiter Terminal when swap tab is active
   useEffect(() => {
     if (activeTab === 'swap' && typeof window !== 'undefined') {
+      let retryCount = 0;
+      const maxRetries = 10;
+      
       const initTerminal = () => {
         try {
+          console.log(`Attempting Jupiter initialization (${retryCount + 1}/${maxRetries})`);
+          
           // Wait for Jupiter to be available
-          if (!(window as any).Jupiter) {
-            console.log('Jupiter not loaded yet, retrying...');
-            setTimeout(initTerminal, 1000);
+          if (!(window as any).Jupiter || typeof (window as any).Jupiter.init !== 'function') {
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log('Jupiter not ready, retrying in 2 seconds...');
+              setTimeout(initTerminal, 2000);
+            } else {
+              console.error('Jupiter failed to load after maximum retries');
+            }
             return;
           }
 
-          // Clear any existing instance first
+          // Clear container and reset
           const targetElement = document.getElementById('jupiter-terminal');
           if (targetElement) {
             targetElement.innerHTML = '';
           }
 
-          console.log('Initializing Jupiter Terminal...');
+          console.log('Jupiter found, initializing terminal...');
           
+          // Initialize Jupiter with minimal config
           (window as any).Jupiter.init({
             displayMode: "integrated",
             integratedTargetId: "jupiter-terminal",
@@ -279,57 +290,54 @@ export default function SolRefund() {
             enableWalletPassthrough: true,
             containerStyles: {
               maxHeight: '800px',
-              height: '800px'
-            },
-            referral: {
-              account: "EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji",
-              feeBps: 50
+              height: '800px',
+              width: '100%'
             },
             defaultExplorer: "SolanaFM",
             formProps: {
               fixedInputMint: false,
               fixedOutputMint: false,
-              swapMode: "ExactIn",
-              initialInputMint: "So11111111111111111111111111111111111111112", // SOL
-              initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" // USDC
-            },
-            onSuccess: ({ txid, swapResult }: any) => {
-              console.log('Jupiter swap successful:', txid);
-            },
-            onSwapError: ({ error }: any) => {
-              console.error('Jupiter swap error:', error);
+              swapMode: "ExactIn"
             }
           });
 
-          // Sync wallet state if connected
-          if (isConnected && publicKey) {
-            const mockWalletContextState = {
-              connected: isConnected,
-              publicKey: { toString: () => publicKey },
-              wallet: window.solana,
-              signTransaction: window.solana?.signTransaction
-            };
-
+          console.log('Jupiter Terminal initialized successfully');
+          
+          // Sync wallet after initialization
+          if (isConnected && publicKey && window.solana) {
             setTimeout(() => {
               try {
-                if ((window as any).Jupiter.syncProps) {
-                  (window as any).Jupiter.syncProps({ 
-                    passthroughWalletContextState: mockWalletContextState 
-                  });
-                  console.log('Jupiter wallet synced');
-                }
+                console.log('Syncing wallet with Jupiter...');
+                (window as any).Jupiter.syncProps({
+                  passthroughWalletContextState: {
+                    connected: true,
+                    publicKey: publicKey,
+                    wallet: {
+                      adapter: {
+                        name: 'Phantom',
+                        publicKey: publicKey
+                      }
+                    }
+                  }
+                });
+                console.log('Wallet synced with Jupiter');
               } catch (syncError) {
-                console.error('Jupiter sync error:', syncError);
+                console.error('Jupiter wallet sync error:', syncError);
               }
-            }, 500);
+            }, 1000);
           }
+          
         } catch (error) {
-          console.error('Jupiter Terminal initialization error:', error);
+          console.error('Jupiter initialization error:', error);
+          retryCount++;
+          if (retryCount < maxRetries) {
+            setTimeout(initTerminal, 3000);
+          }
         }
       };
 
-      // Start initialization
-      setTimeout(initTerminal, 100);
+      // Start initialization with delay
+      setTimeout(initTerminal, 1000);
     }
   }, [activeTab, isConnected, publicKey]);
 
@@ -1280,12 +1288,17 @@ export default function SolRefund() {
 
               {/* Jupiter Terminal */}
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="p-4 border-b border-gray-700/50">
+                  <h3 className="text-white font-semibold">Jupiter Swap Terminal</h3>
+                  <p className="text-gray-400 text-sm">Swap any token on Solana</p>
+                </div>
                 <div 
                   id="jupiter-terminal" 
                   style={{ 
                     width: '100%', 
                     height: '800px',
-                    minHeight: '700px'
+                    minHeight: '700px',
+                    backgroundColor: 'transparent'
                   }}
                 />
               </div>
