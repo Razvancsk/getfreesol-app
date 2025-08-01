@@ -1194,96 +1194,20 @@ export default function SolRefund() {
           {activeTab === 'swap' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* Chart Section */}
-              <div className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-white font-medium">Show Chart</span>
-                      <div className="w-8 h-4 bg-green-500 rounded-full flex items-center px-1">
-                        <div className="w-3 h-3 bg-white rounded-full ml-auto"></div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-400 font-medium">Hide Tx</span>
-                      <div className="w-8 h-4 bg-green-500 rounded-full flex items-center px-1">
-                        <div className="w-3 h-3 bg-white rounded-full ml-auto"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Chart Header */}
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                  <span className="text-blue-400 text-sm">USDC/USDT on Meteo... • 15 • dexscreener.c...</span>
-                  <span className="text-green-400 text-sm bg-green-500/20 px-2 py-1 rounded">1.0002</span>
-                </div>
-
-                {/* Time Controls */}
-                <div className="flex items-center space-x-2 mb-4 text-xs text-gray-400">
-                  <span>1s</span>
-                  <span>1m</span>
-                  <span>5m</span>
-                  <span className="bg-blue-500 text-white px-2 py-1 rounded">15m</span>
-                  <span>1h</span>
-                  <span>4h</span>
-                  <span>D</span>
-                </div>
-
-                {/* Chart Area */}
-                <div className="h-64 bg-gray-900/50 rounded-lg relative overflow-hidden">
-                  {/* Mock Chart */}
-                  <svg className="w-full h-full" viewBox="0 0 400 200">
-                    {/* Grid lines */}
-                    <defs>
-                      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#374151" strokeWidth="0.5"/>
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#grid)" />
-                    
-                    {/* Price lines */}
-                    <text x="380" y="20" fill="#6B7280" fontSize="10">1.0000</text>
-                    <text x="380" y="100" fill="#6B7280" fontSize="10">0.9998</text>
-                    <text x="380" y="180" fill="#6B7280" fontSize="10">0.9996</text>
-                    
-                    {/* Candlesticks */}
-                    {Array.from({length: 20}).map((_, i) => {
-                      const x = 20 + i * 18;
-                      const isGreen = Math.random() > 0.5;
-                      const high = 40 + Math.random() * 20;
-                      const low = high + 20 + Math.random() * 20;
-                      return (
-                        <g key={i}>
-                          <line x1={x} y1={high} x2={x} y2={low} stroke={isGreen ? "#10B981" : "#EF4444"} strokeWidth="1"/>
-                          <rect x={x-3} y={high} width="6" height={Math.abs(low-high)/2} fill={isGreen ? "#10B981" : "#EF4444"}/>
-                        </g>
-                      );
-                    })}
-                    
-                    {/* Volume bars at bottom */}
-                    {Array.from({length: 20}).map((_, i) => {
-                      const x = 20 + i * 18;
-                      const height = 5 + Math.random() * 15;
-                      return (
-                        <rect key={i} x={x-2} y={185-height} width="4" height={height} fill="#3B82F6" opacity="0.7"/>
-                      );
-                    })}
-                  </svg>
-                  
-                  {/* Time labels */}
-                  <div className="absolute bottom-2 left-4 text-xs text-gray-400">18:00</div>
-                  <div className="absolute bottom-2 right-4 text-xs text-gray-400">06:00</div>
-                </div>
-
-                {/* Bottom Info */}
-                <div className="mt-4 text-xs text-gray-400">
-                  <div className="flex justify-between">
-                    <span>Date Range</span>
-                    <span>04:35:13 (UTC+2)</span>
-                  </div>
-                </div>
+              {/* DexScreener Chart */}
+              <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+                <iframe
+                  src="https://dexscreener.com/solana/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v_So11111111111111111111111111111111111111112?embed=1&theme=dark&trades=0&info=0"
+                  style={{
+                    width: '100%',
+                    height: '600px',
+                    border: 'none',
+                    backgroundColor: 'transparent'
+                  }}
+                  allow="clipboard-write"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  loading="lazy"
+                />
               </div>
 
               {/* Trading Panel */}
