@@ -314,9 +314,16 @@ export default function SolRefund() {
                     text.includes('Transaction confirmed') ||
                     text.includes('Success!') ||
                     text.includes('View Transaction') ||
+                    text.includes('Swap Failed') ||
+                    text.includes('We were unable to complete') ||
+                    text.includes('User rejected the request') ||
+                    text.includes('Retry') ||
+                    text.includes('Try Again') ||
                     htmlElement.tagName === 'H1' && text.trim() === 'Swapping' ||
                     htmlElement.tagName === 'H2' && text.includes('Pending') ||
-                    htmlElement.tagName === 'H1' && text.includes('Success')) {
+                    htmlElement.tagName === 'H1' && text.includes('Success') ||
+                    htmlElement.tagName === 'H1' && text.includes('Failed') ||
+                    htmlElement.tagName === 'BUTTON' && text.includes('Retry')) {
                   
                   // Hide the element and its parent containers
                   let currentElement = htmlElement;
@@ -415,6 +422,8 @@ export default function SolRefund() {
             disableWalletConfirmation: true,
             enableWalletModalConfirmation: false,
             hideScreenTransition: true,
+            enableResultPage: false,
+            enableErrorPage: false,
             defaultSlippageSettings: {
               slippageBps: slippage * 100,
               enableSlippageSettings: true
@@ -517,6 +526,49 @@ export default function SolRefund() {
             preventTransitions();
             console.log('Jupiter screen transition prevention activated');
           }, 1000);
+
+          // Additional aggressive approach - constantly ensure only swap form is visible
+          const enforceSwapView = () => {
+            const terminal = document.getElementById('jupiter-terminal');
+            if (!terminal) return;
+
+            // Find all child divs and hide any that contain error or success content
+            const allDivs = terminal.querySelectorAll('div');
+            allDivs.forEach((div: Element) => {
+              const htmlDiv = div as HTMLElement;
+              const content = htmlDiv.textContent || '';
+              
+              // If this div contains error or success screens, hide its entire parent container
+              if (content.includes('Swap Failed') || 
+                  content.includes('Swap Successful') ||
+                  content.includes('User rejected') ||
+                  content.includes('unable to complete') ||
+                  content.includes('Retry') ||
+                  content.includes('Try Again')) {
+                    
+                // Find the top-level container within terminal and hide it
+                let container = htmlDiv;
+                while (container.parentElement && container.parentElement !== terminal) {
+                  container = container.parentElement;
+                }
+                
+                if (container !== terminal) {
+                  container.style.display = 'none';
+                  container.style.visibility = 'hidden';
+                  container.style.opacity = '0';
+                  container.style.position = 'absolute';
+                  container.style.top = '-9999px';
+                  console.log('Force-hid Jupiter screen container:', content.slice(0, 30));
+                }
+              }
+            });
+          };
+
+          // Run enforcement every 100ms
+          const enforcementInterval = setInterval(enforceSwapView, 100);
+          
+          // Clean up after 30 seconds  
+          setTimeout(() => clearInterval(enforcementInterval), 30000);
 
           console.log('Jupiter Terminal initialized successfully');
           
