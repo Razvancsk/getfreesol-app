@@ -100,6 +100,52 @@ export default function SolRefund() {
   const [realSwapData, setRealSwapData] = useState<any>(null);
   const [showTokenSelector, setShowTokenSelector] = useState<string | null>(null);
 
+  // Popular tokens list with logos
+  const popularTokens = [
+    {
+      address: 'So11111111111111111111111111111111111111112',
+      symbol: 'SOL',
+      name: 'Solana',
+      decimals: 9,
+      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png'
+    },
+    {
+      address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      symbol: 'USDC',
+      name: 'USD Coin',
+      decimals: 6,
+      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png'
+    },
+    {
+      address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+      symbol: 'USDT',
+      name: 'Tether',
+      decimals: 6,
+      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.png'
+    },
+    {
+      address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
+      symbol: 'mSOL',
+      name: 'Marinade staked SOL',
+      decimals: 9,
+      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So/logo.png'
+    },
+    {
+      address: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
+      symbol: 'JUP',
+      name: 'Jupiter',
+      decimals: 6,
+      logoURI: 'https://static.jup.ag/jup/icon.png'
+    },
+    {
+      address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',
+      symbol: 'ETH',
+      name: 'Ethereum (Portal)',
+      decimals: 8,
+      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs/logo.png'
+    }
+  ];
+
   const REFERRAL_ACCOUNT = 'EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji';
 
   // Custom swap functions
@@ -157,6 +203,19 @@ export default function SolRefund() {
     } finally {
       setIsSwapping(false);
     }
+  };
+
+  const selectToken = (token: any, position: 'from' | 'to') => {
+    if (position === 'from') {
+      setSwapInputToken(token);
+      setRealTokens(prev => ({ ...prev, fromSymbol: token.symbol }));
+    } else {
+      setSwapOutputToken(token);
+      setRealTokens(prev => ({ ...prev, toSymbol: token.symbol }));
+    }
+    setShowTokenSelector(null);
+    setSwapForm({ fromValue: '', toValue: '' });
+    setRealSwapData(null);
   };
   
   // Wallet state synced with main navigation
@@ -1680,9 +1739,28 @@ export default function SolRefund() {
                       <span className="text-purple-300 text-xs">Balance: {realBalances?.fromBalance || '0.00'}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">{realTokens?.fromSymbol || 'USDC'}</span>
-                      </div>
+                      <button 
+                        onClick={() => setShowTokenSelector('from')}
+                        className="flex items-center gap-2 bg-purple-700/50 hover:bg-purple-600/70 rounded-lg px-3 py-2 transition-all duration-200 border border-purple-600/40"
+                      >
+                        <img 
+                          src={swapInputToken.logoURI} 
+                          alt={swapInputToken.symbol}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold hidden">
+                          {swapInputToken.symbol.charAt(0)}
+                        </div>
+                        <span className="text-white font-semibold">{swapInputToken.symbol}</span>
+                        <svg className="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
                       <div className="flex-1">
                         <input
                           type="number"
@@ -1696,14 +1774,6 @@ export default function SolRefund() {
                           }}
                         />
                       </div>
-                      <button 
-                        onClick={() => setShowTokenSelector('from')}
-                        className="text-purple-300 hover:text-white transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
                     </div>
                   </div>
 
@@ -1726,9 +1796,28 @@ export default function SolRefund() {
                       <span className="text-purple-300 text-xs">Balance: {realBalances?.toBalance || '0.00'}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">{realTokens?.toSymbol || 'SOL'}</span>
-                      </div>
+                      <button 
+                        onClick={() => setShowTokenSelector('to')}
+                        className="flex items-center gap-2 bg-purple-700/50 hover:bg-purple-600/70 rounded-lg px-3 py-2 transition-all duration-200 border border-purple-600/40"
+                      >
+                        <img 
+                          src={swapOutputToken.logoURI} 
+                          alt={swapOutputToken.symbol}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold hidden">
+                          {swapOutputToken.symbol.charAt(0)}
+                        </div>
+                        <span className="text-white font-semibold">{swapOutputToken.symbol}</span>
+                        <svg className="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
                       <div className="flex-1">
                         <input
                           type="number"
@@ -1738,14 +1827,6 @@ export default function SolRefund() {
                           readOnly
                         />
                       </div>
-                      <button 
-                        onClick={() => setShowTokenSelector('to')}
-                        className="text-purple-300 hover:text-white transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
                     </div>
                   </div>
 
@@ -1795,6 +1876,53 @@ export default function SolRefund() {
                     </div>
                   </div>
                 </div>
+
+                {/* Token Selection Modal */}
+                {showTokenSelector && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50 rounded-xl">
+                    <div className="bg-purple-900/95 backdrop-blur-sm border border-purple-600/40 rounded-xl p-4 w-80 max-h-96 overflow-y-auto">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-white font-semibold">Select Token</h3>
+                        <button 
+                          onClick={() => setShowTokenSelector(null)}
+                          className="text-purple-300 hover:text-white"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {popularTokens.map((token) => (
+                          <button
+                            key={token.address}
+                            onClick={() => selectToken(token, showTokenSelector as 'from' | 'to')}
+                            className="w-full flex items-center gap-3 p-3 bg-purple-800/50 hover:bg-purple-700/70 rounded-lg transition-all duration-200 border border-purple-600/30 hover:border-purple-500/50"
+                          >
+                            <img 
+                              src={token.logoURI} 
+                              alt={token.symbol}
+                              className="w-8 h-8 rounded-full"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold hidden">
+                              {token.symbol.charAt(0)}
+                            </div>
+                            <div className="flex-1 text-left">
+                              <div className="text-white font-semibold">{token.symbol}</div>
+                              <div className="text-purple-300 text-sm">{token.name}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Hidden Jupiter Terminal for API access */}
                 <div 
