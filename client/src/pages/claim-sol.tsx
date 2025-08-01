@@ -289,9 +289,9 @@ export default function SolRefund() {
             endpoint: "https://api.mainnet-beta.solana.com",
             enableWalletPassthrough: true,
             containerStyles: {
-              maxHeight: '800px',
-              height: '800px',
-              width: '100%'
+              maxHeight: '577px',
+              height: '577px',
+              width: '390px'
             },
             defaultExplorer: "SolanaFM",
             formProps: {
@@ -1287,7 +1287,7 @@ export default function SolRefund() {
               </div>
 
               {/* Jupiter Terminal */}
-              <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+              <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden w-fit mx-auto">
                 <div className="p-4 border-b border-gray-700/50">
                   <h3 className="text-white font-semibold">Jupiter Swap Terminal</h3>
                   <p className="text-gray-400 text-sm">Swap any token on Solana</p>
@@ -1295,9 +1295,9 @@ export default function SolRefund() {
                 <div 
                   id="jupiter-terminal" 
                   style={{ 
-                    width: '100%', 
-                    height: '800px',
-                    minHeight: '700px',
+                    width: '390px', 
+                    height: '577px',
+                    minHeight: '577px',
                     backgroundColor: 'transparent'
                   }}
                 />
