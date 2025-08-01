@@ -11,7 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
+import { Connection, VersionedTransaction } from '@solana/web3.js';
 
 interface EmptyTokenAccount {
   id: number;
@@ -1185,6 +1186,101 @@ export default function SolRefund() {
                 <Flame className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
                 <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Swap Interface */}
+          {activeTab === 'swap' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="space-y-6">
+                
+                {/* You're Selling Section */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-white">You're Selling</label>
+                  <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <img 
+                          src={swapInputToken.logoURI} 
+                          alt={swapInputToken.symbol}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <div className="text-white font-medium">{swapInputToken.symbol}</div>
+                          <div className="text-purple-300 text-sm">Balance: 0.0524 MAX</div>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={swapTokens}
+                        size="sm"
+                        className="bg-transparent hover:bg-purple-600/20 text-purple-300 border border-purple-500/50"
+                      >
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <input
+                      type="number"
+                      value={swapInputAmount}
+                      onChange={(e) => setSwapInputAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-transparent text-right text-2xl font-bold text-white placeholder-gray-500 border-none outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* You're Buying Section */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-white">You're Buying</label>
+                  <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <img 
+                        src={swapOutputToken.logoURI} 
+                        alt={swapOutputToken.symbol}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      <div>
+                        <div className="text-white font-medium">{swapOutputToken.symbol}</div>
+                        <div className="text-purple-300 text-sm">Balance: 0</div>
+                      </div>
+                    </div>
+                    <div className="text-right text-2xl font-bold text-white">
+                      {isSwapLoading ? '...' : swapOutputAmount || '0'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price Information */}
+                {swapQuote && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between text-purple-300">
+                      <span>Minimum Received</span>
+                      <span>{(parseInt(swapQuote.outAmount) / Math.pow(10, swapOutputToken.decimals) * 0.995).toFixed(6)} {swapOutputToken.symbol}</span>
+                    </div>
+                    <div className="flex justify-between text-purple-300">
+                      <span>Jito Fee ⚡</span>
+                      <span>0.0003 SOL</span>
+                    </div>
+                    <div className="flex justify-between text-purple-300">
+                      <span>Slippage Tolerance</span>
+                      <span>5%</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Swap Button */}
+                <Button
+                  onClick={executeSwap}
+                  disabled={!swapQuote || !swapInputAmount || parseFloat(swapInputAmount) <= 0 || isSwapping}
+                  className="w-full bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                >
+                  {isSwapping ? (
+                    <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                  ) : (
+                    <ArrowLeftRight className="h-5 w-5 mr-2" />
+                  )}
+                  {isSwapping ? 'SWAPPING...' : 'SWAP'}
+                </Button>
               </div>
             </div>
           )}
