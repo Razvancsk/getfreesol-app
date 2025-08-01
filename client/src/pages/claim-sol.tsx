@@ -1292,12 +1292,6 @@ export default function SolRefund() {
               
               {/* DexScreener Chart */}
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
-                <div className="p-4 border-b border-gray-700/50">
-                  <h3 className="text-white font-semibold">Live Chart</h3>
-                  <p className="text-gray-400 text-sm">
-                    Chart for token: {selectedTokenMint.slice(0, 8)}...{selectedTokenMint.slice(-8)}
-                  </p>
-                </div>
                 <iframe
                   key={`chart-${selectedTokenMint}-${Date.now()}`}
                   src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
