@@ -467,44 +467,102 @@ export default function SolRefund() {
             console.log('Jupiter screen transition prevention activated');
           }, 1000);
 
-          // Additional aggressive approach - constantly ensure only swap form is visible
+          // EXTREME APPROACH - Force Jupiter to stay on swap interface by DOM manipulation
           const enforceSwapView = () => {
             const terminal = document.getElementById('jupiter-terminal');
             if (!terminal) return;
 
-            // Find all child divs and hide any that contain error or success content
-            const allDivs = terminal.querySelectorAll('div');
-            allDivs.forEach((div: Element) => {
-              const htmlDiv = div as HTMLElement;
-              const content = htmlDiv.textContent || '';
+            // Store the original swap form if we haven't already
+            if (!(window as any).originalSwapForm) {
+              const swapForm = terminal.querySelector('form') || terminal.querySelector('[data-testid*="form"]');
+              if (swapForm) {
+                (window as any).originalSwapForm = swapForm.cloneNode(true);
+              }
+            }
+
+            // Check for any overlay screens and completely remove them
+            const allElements = terminal.querySelectorAll('*');
+            allElements.forEach((element: Element) => {
+              const htmlElement = element as HTMLElement;
+              const content = htmlElement.textContent || '';
               
-              // If this div contains error screens, hide its entire parent container
-              if (content.includes('Swap Failed') || 
+              // Detect ANY transition screens
+              if (content.includes('Swapping') || 
+                  content.includes('Pending Approval') ||
+                  content.includes('Transaction pending') ||
+                  content.includes('Confirming') ||
+                  content.includes('Swap Failed') ||
                   content.includes('User rejected') ||
                   content.includes('unable to complete') ||
                   content.includes('Retry') ||
-                  content.includes('Try Again')) {
+                  content.includes('Try Again') ||
+                  htmlElement.style.position === 'absolute' ||
+                  htmlElement.style.position === 'fixed' ||
+                  htmlElement.style.zIndex > '100') {
                     
-                // Find the top-level container within terminal and hide it
-                let container = htmlDiv;
-                while (container.parentElement && container.parentElement !== terminal) {
-                  container = container.parentElement;
-                }
-                
-                if (container !== terminal) {
-                  container.style.display = 'none';
-                  container.style.visibility = 'hidden';
-                  container.style.opacity = '0';
-                  container.style.position = 'absolute';
-                  container.style.top = '-9999px';
-                  console.log('Force-hid Jupiter screen container:', content.slice(0, 30));
+                // Instead of hiding, completely remove the element
+                if (htmlElement.parentNode) {
+                  htmlElement.parentNode.removeChild(htmlElement);
+                  console.log('REMOVED Jupiter screen:', content.slice(0, 30));
                 }
               }
             });
+
+            // If the terminal is empty or only has hidden content, restore the swap form
+            const visibleContent = terminal.querySelector('form, input, button');
+            if (!visibleContent && (window as any).originalSwapForm) {
+              terminal.innerHTML = '';
+              terminal.appendChild((window as any).originalSwapForm.cloneNode(true));
+              console.log('RESTORED original swap form');
+            }
           };
 
-          // Run enforcement every 50ms for ultra-fast response
-          const enforcementInterval = setInterval(enforceSwapView, 50);
+          // NUCLEAR OPTION - Override Jupiter's screen rendering completely
+          const nuclearOverride = () => {
+            const terminal = document.getElementById('jupiter-terminal');
+            if (!terminal) return;
+
+            // Intercept any style changes that could indicate screen transitions
+            const observer = new MutationObserver((mutations) => {
+              mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                  mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) {
+                      const element = node as HTMLElement;
+                      const text = element.textContent || '';
+                      
+                      // Immediately remove any transition screens the moment they're added
+                      if (text.includes('Swapping') || 
+                          text.includes('Pending') || 
+                          text.includes('Confirming') ||
+                          text.includes('Loading') ||
+                          element.style.position === 'absolute' ||
+                          element.style.position === 'fixed') {
+                        element.remove();
+                        console.log('NUCLEAR: Immediately removed', text.slice(0, 20));
+                      }
+                    }
+                  });
+                }
+              });
+            });
+
+            observer.observe(terminal, {
+              childList: true,
+              subtree: true,
+              attributes: true,
+              attributeFilter: ['style', 'class']
+            });
+
+            // Clean up after 60 seconds
+            setTimeout(() => observer.disconnect(), 60000);
+          };
+
+          // Start nuclear override immediately  
+          nuclearOverride();
+          
+          // Run enforcement every 25ms for ultra-fast response
+          const enforcementInterval = setInterval(enforceSwapView, 25);
           
           // Also run immediately when any DOM changes occur
           const fastObserver = new MutationObserver(enforceSwapView);
