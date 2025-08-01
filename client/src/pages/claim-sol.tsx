@@ -1403,7 +1403,7 @@ export default function SolRefund() {
                     <span className="text-gray-400 text-sm">[SOL]</span>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {['Slow', 'Normal', 'Fast', 'Turbo'].map((priority) => (
+                    {['Slow', 'Normal', 'Fast'].map((priority) => (
                       <button
                         key={priority}
                         onClick={() => setJitoPriority(priority)}
@@ -1424,6 +1424,16 @@ export default function SolRefund() {
                       min="0"
                       onChange={(e) => setManualJitoFee(e.target.value)}
                     />
+                    <button
+                      onClick={() => setJitoPriority('Turbo')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        jitoPriority === 'Turbo'
+                          ? 'bg-white text-black'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                      }`}
+                    >
+                      Turbo
+                    </button>
                   </div>
                 </div>
 
