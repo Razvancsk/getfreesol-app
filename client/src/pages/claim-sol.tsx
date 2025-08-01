@@ -455,8 +455,13 @@ export default function SolRefund() {
             }
           });
 
-          // Start preventing screen transitions immediately and with delay
+          // Start preventing screen transitions immediately and continuously
           preventTransitions();
+          
+          // Run prevention immediately every 25ms for the first 5 seconds
+          const immediateInterval = setInterval(preventTransitions, 25);
+          setTimeout(() => clearInterval(immediateInterval), 5000);
+          
           setTimeout(() => {
             preventTransitions();
             console.log('Jupiter screen transition prevention activated');
@@ -498,11 +503,27 @@ export default function SolRefund() {
             });
           };
 
-          // Run enforcement every 100ms
-          const enforcementInterval = setInterval(enforceSwapView, 100);
+          // Run enforcement every 50ms for ultra-fast response
+          const enforcementInterval = setInterval(enforceSwapView, 50);
           
-          // Clean up after 30 seconds  
-          setTimeout(() => clearInterval(enforcementInterval), 30000);
+          // Also run immediately when any DOM changes occur
+          const fastObserver = new MutationObserver(enforceSwapView);
+          const terminal = document.getElementById('jupiter-terminal');
+          if (terminal) {
+            fastObserver.observe(terminal, {
+              childList: true,
+              subtree: true,
+              attributes: true,
+              attributeOldValue: true,
+              characterData: true
+            });
+          }
+          
+          // Clean up after 60 seconds  
+          setTimeout(() => {
+            clearInterval(enforcementInterval);
+            fastObserver.disconnect();
+          }, 60000);
 
           console.log('Jupiter Terminal initialized successfully');
           

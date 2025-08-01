@@ -157,7 +157,12 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Jupiter Terminal: Force prevent ALL screen transitions and overlays */
+/* Jupiter Terminal: ULTRA AGGRESSIVE - Hide ALL screens except main swap form */
+#jupiter-terminal > div > div:not(:first-child),
+#jupiter-terminal > div > div > div:not(:first-child),
+#jupiter-terminal div[style*="position: absolute"],
+#jupiter-terminal div[style*="position: fixed"],
+#jupiter-terminal div[style*="z-index"],
 #jupiter-terminal div[class*="swapping"],
 #jupiter-terminal div[class*="pending"],
 #jupiter-terminal div[class*="loading"],
@@ -166,6 +171,9 @@ input[type="number"] {
 #jupiter-terminal div[class*="error"],
 #jupiter-terminal div[class*="success"],
 #jupiter-terminal div[class*="result"],
+#jupiter-terminal div[class*="overlay"],
+#jupiter-terminal div[class*="modal"],
+#jupiter-terminal div[class*="screen"],
 #jupiter-terminal div:has(> h1:contains("Swapping")),
 #jupiter-terminal div:has(> h2:contains("Pending")),
 #jupiter-terminal div:has(> div:contains("Pending Approval")),
@@ -197,6 +205,9 @@ input[type="number"] {
   top: -9999px !important;
   left: -9999px !important;
   z-index: -9999 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Force the main swap form to always be visible */
