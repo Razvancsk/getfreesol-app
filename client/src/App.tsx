@@ -5,12 +5,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import ClaimSol from "@/pages/claim-sol";
+import SwapPage from "@/pages/swap";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
+      <Route path="/swap" component={SwapPage} />
       <Route component={NotFound} />
     </Switch>
   );
