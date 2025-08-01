@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide Jupiter Terminal branding */
+#jupiter-terminal .flex.items-center.space-x-2 {
+  display: none !important;
+}
+
+#jupiter-terminal [src*="jupiter-logo"] {
+  display: none !important;
+}
+
+#jupiter-terminal .font-bold.text-sm.text-primary-text {
+  display: none !important;
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
