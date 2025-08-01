@@ -343,6 +343,10 @@ export default function SolRefund() {
               slippageBps: slippage * 100, // Convert percentage to basis points
               initialSlippageBps: slippage * 100
             },
+            simulateWalletPassthrough: true,
+            disableWalletConfirmation: true,
+            enableWalletModalConfirmation: false,
+            hideScreenTransition: true,
             defaultSlippageSettings: {
               slippageBps: slippage * 100,
               enableSlippageSettings: true

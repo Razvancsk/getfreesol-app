@@ -156,3 +156,52 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Jupiter Terminal: Prevent screen transitions and keep swap interface visible */
+#jupiter-terminal [data-testid="swapping-screen"],
+#jupiter-terminal [data-testid="pending-screen"],
+#jupiter-terminal .swapping-overlay,
+#jupiter-terminal .pending-overlay,
+#jupiter-terminal .loading-screen,
+#jupiter-terminal .transaction-screen {
+  display: none !important;
+}
+
+/* Ensure the main swap form stays visible during transactions */
+#jupiter-terminal [data-testid="jupiter-swap-form"],
+#jupiter-terminal .swap-form {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Jupiter Terminal size constraints */
+.jupiter-terminal-wrapper {
+  width: 390px !important;
+  height: 577px !important;
+  max-width: 390px !important;
+  max-height: 577px !important;
+  overflow: hidden !important;
+}
+
+#jupiter-terminal {
+  width: 390px !important;
+  height: 577px !important;
+  max-width: 390px !important;
+  max-height: 577px !important;
+  overflow: hidden !important;
+}
+
+#jupiter-terminal iframe {
+  width: 390px !important;
+  height: 577px !important;
+  max-width: 390px !important;
+  max-height: 577px !important;
+}
+
+#jupiter-terminal > div {
+  width: 390px !important;
+  height: 577px !important;
+  max-width: 390px !important;
+  max-height: 577px !important;
+}
