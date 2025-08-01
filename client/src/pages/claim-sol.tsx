@@ -1573,9 +1573,9 @@ export default function SolRefund() {
                 />
               </div>
 
-              {/* Custom Purple Swap Interface */}
+              {/* Custom Purple Jupiter Terminal Wrapper */}
               <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl border border-purple-600/30 shadow-2xl overflow-hidden w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
-                {/* Custom Header */}
+                {/* Custom Purple Header */}
                 <div className="bg-gradient-to-r from-purple-800 to-purple-700 p-4 border-b border-purple-600/40">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1601,113 +1601,21 @@ export default function SolRefund() {
                   </div>
                 </div>
                 
-                {/* Swap Form */}
-                <div className="p-6 space-y-4">
-                  {/* From Token */}
-                  <div className="bg-purple-800/50 rounded-lg p-4 border border-purple-600/40">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-purple-200 text-sm font-medium">From</span>
-                      <span className="text-purple-300 text-xs">Balance: 0.83</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">USDC</span>
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="number"
-                          placeholder="0.00"
-                          className="w-full bg-transparent text-white text-xl font-semibold outline-none placeholder-purple-400"
-                          defaultValue="0.828732"
-                        />
-                      </div>
-                      <button className="text-purple-300 hover:text-white transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Swap Arrow */}
-                  <div className="flex justify-center">
-                    <button className="bg-purple-700 hover:bg-purple-600 rounded-full p-3 transition-all duration-200 hover:scale-110 border border-purple-500">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* To Token */}
-                  <div className="bg-purple-800/50 rounded-lg p-4 border border-purple-600/40">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-purple-200 text-sm font-medium">To</span>
-                      <span className="text-purple-300 text-xs">Balance: 0.008</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">SOL</span>
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="number"
-                          placeholder="0.00"
-                          className="w-full bg-transparent text-white text-xl font-semibold outline-none placeholder-purple-400"
-                          defaultValue="0.005077"
-                          readOnly
-                        />
-                      </div>
-                      <button className="text-purple-300 hover:text-white transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Swap Details */}
-                  <div className="bg-purple-900/50 rounded-lg p-4 border border-purple-600/30">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between text-purple-200">
-                        <span>Rate</span>
-                        <span>1 USDC ≈ 0.0061 SOL</span>
-                      </div>
-                      <div className="flex justify-between text-purple-200">
-                        <span>Slippage</span>
-                        <span className="text-purple-300">{slippage}%</span>
-                      </div>
-                      <div className="flex justify-between text-purple-200">
-                        <span>Fee</span>
-                        <span className="text-purple-300">0 SOL</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Swap Button */}
-                  <button 
-                    className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg border border-purple-500/50"
-                    onClick={() => {
-                      console.log('Custom swap initiated');
+                {/* Real Jupiter Terminal - styled with purple theme */}
+                <div className="bg-gradient-to-b from-purple-800/30 to-purple-900/50 p-4">
+                  <div 
+                    id="jupiter-terminal" 
+                    className="bg-transparent rounded-lg overflow-hidden"
+                    style={{ 
+                      width: '390px', 
+                      height: '469px',
+                      minHeight: '469px',
+                      backgroundColor: 'transparent'
                     }}
-                  >
-                    Swap Tokens
-                  </button>
-
-                  {/* Settings Info */}
-                  <div className="flex justify-between items-center pt-2">
-                    <div className="flex items-center gap-2 text-purple-300 text-sm">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      <span>Priority: {jitoPriority}</span>
-                    </div>
-                    <div className="text-purple-300 text-xs">
-                      Jito Fee: {manualJitoFee || '0'} SOL
-                    </div>
-                  </div>
+                  />
                 </div>
-
-                {/* Footer */}
+                
+                {/* Custom Purple Footer */}
                 <div className="bg-gradient-to-r from-purple-800 to-purple-700 px-4 py-3 border-t border-purple-600/40">
                   <div className="flex items-center justify-center text-xs text-purple-200">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></div>

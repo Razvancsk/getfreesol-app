@@ -2,7 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hide Jupiter Terminal branding */
+/* Custom Purple Styling for Jupiter Terminal - Real Data with Purple Theme */
+#jupiter-terminal {
+  background: transparent !important;
+}
+
+/* Style Jupiter's main container with purple theme */
+#jupiter-terminal > div {
+  background: rgba(79, 70, 229, 0.1) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(147, 51, 234, 0.2) !important;
+}
+
+/* Style Jupiter input fields with purple theme */
+#jupiter-terminal input,
+#jupiter-terminal [role="textbox"] {
+  background: rgba(147, 51, 234, 0.15) !important;
+  border: 1px solid rgba(147, 51, 234, 0.4) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+#jupiter-terminal input:focus,
+#jupiter-terminal [role="textbox"]:focus {
+  border-color: rgba(147, 51, 234, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.3) !important;
+}
+
+/* Style Jupiter buttons with custom purple gradient */
+#jupiter-terminal button {
+  background: linear-gradient(135deg, rgb(147, 51, 234), rgb(126, 34, 206)) !important;
+  border: 1px solid rgba(147, 51, 234, 0.5) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+#jupiter-terminal button:hover {
+  background: linear-gradient(135deg, rgb(126, 34, 206), rgb(107, 33, 168)) !important;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Style Jupiter dropdown/select elements */
+#jupiter-terminal [role="button"],
+#jupiter-terminal select {
+  background: rgba(147, 51, 234, 0.15) !important;
+  border: 1px solid rgba(147, 51, 234, 0.4) !important;
+  color: white !important;
+  border-radius: 8px !important;
+}
+
+/* Style Jupiter text elements */
+#jupiter-terminal div,
+#jupiter-terminal span,
+#jupiter-terminal p {
+  color: white !important;
+}
+
+/* Style Jupiter cards/panels */
+#jupiter-terminal > div > div {
+  background: rgba(147, 51, 234, 0.08) !important;
+  border: 1px solid rgba(147, 51, 234, 0.25) !important;
+  border-radius: 12px !important;
+}
+
+/* Hide Jupiter Terminal branding but keep functionality */
 #jupiter-terminal .flex.items-center.space-x-2 {
   display: none !important;
 }
