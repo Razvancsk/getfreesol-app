@@ -257,15 +257,21 @@ export default function SolRefund() {
     if (activeTab === 'swap' && typeof window !== 'undefined' && (window as any).Jupiter) {
       const initTerminal = () => {
         try {
+          // Check if instance already exists
+          if ((window as any).Jupiter._instance) {
+            (window as any).Jupiter.resume();
+            return;
+          }
+
           (window as any).Jupiter.init({
             displayMode: "integrated",
             integratedTargetId: "jupiter-terminal",
             endpoint: "https://api.mainnet-beta.solana.com",
+            enableWalletPassthrough: true,
             referral: {
               account: "EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji",
               feeBps: 50
             },
-            strictTokenList: false,
             defaultExplorer: "SolanaFM",
             formProps: {
               fixedInputMint: false,
@@ -273,8 +279,34 @@ export default function SolRefund() {
               swapMode: "ExactIn",
               initialInputMint: "So11111111111111111111111111111111111111112", // SOL
               initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" // USDC
+            },
+            onSuccess: ({ txid, swapResult }: any) => {
+              console.log('Jupiter swap successful:', txid);
+            },
+            onSwapError: ({ error }: any) => {
+              console.error('Jupiter swap error:', error);
             }
           });
+
+          // Sync wallet state if connected
+          if (isConnected && publicKey) {
+            const mockWalletContextState = {
+              connected: isConnected,
+              publicKey: { toString: () => publicKey },
+              wallet: window.solana,
+              signTransaction: window.solana?.signTransaction,
+              signAllTransactions: window.solana?.signAllTransactions,
+              sendTransaction: window.solana?.sendTransaction
+            };
+
+            setTimeout(() => {
+              if ((window as any).Jupiter.syncProps) {
+                (window as any).Jupiter.syncProps({ 
+                  passthroughWalletContextState: mockWalletContextState 
+                });
+              }
+            }, 500);
+          }
         } catch (error) {
           console.error('Jupiter Terminal initialization error:', error);
         }
@@ -283,7 +315,7 @@ export default function SolRefund() {
       // Small delay to ensure the DOM element is ready
       setTimeout(initTerminal, 100);
     }
-  }, [activeTab]);
+  }, [activeTab, isConnected, publicKey]);
 
   // Scan wallet for empty token accounts
   const scanMutation = useMutation({
