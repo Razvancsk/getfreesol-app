@@ -1782,7 +1782,37 @@ export default function SolRefund() {
                     <div className="flex items-center gap-3">
                       <button 
                         onClick={() => {
-                          setShowTokenSelector('from');
+                          // Initialize Jupiter Terminal for token selection
+                          const terminalDiv = document.getElementById('integrated-terminal');
+                          if (terminalDiv && window.Jupiter) {
+                            terminalDiv.style.display = 'block';
+                            setShowTokenSelector('from');
+                            
+                            // Initialize Jupiter Terminal with token selection mode
+                            window.Jupiter.init({
+                              displayMode: "integrated",
+                              integratedTargetId: "integrated-terminal",
+                              endpoint: "https://mainnet.helius-rpc.com/?api-key=your-api-key",
+                              strictTokenList: false,
+                              defaultExplorer: "SolanaFM",
+                              formProps: {
+                                fixedInputMint: false,
+                                fixedOutputMint: true,
+                                swapMode: "ExactIn"
+                              },
+                              onSuccess: ({ txid, inputToken, outputToken }: any) => {
+                                console.log('Token selected:', inputToken);
+                                setSwapInputToken({
+                                  address: inputToken.address,
+                                  symbol: inputToken.symbol,
+                                  name: inputToken.name,
+                                  logoURI: inputToken.logoURI
+                                });
+                                setShowTokenSelector(null);
+                                terminalDiv.style.display = 'none';
+                              }
+                            });
+                          }
                         }}
                         className="flex items-center gap-2 bg-purple-700/50 hover:bg-purple-600/70 rounded-lg px-3 py-2 transition-all duration-200 border border-purple-600/40"
                       >
@@ -1841,7 +1871,37 @@ export default function SolRefund() {
                     <div className="flex items-center gap-3">
                       <button 
                         onClick={() => {
-                          setShowTokenSelector('to');
+                          // Initialize Jupiter Terminal for token selection
+                          const terminalDiv = document.getElementById('integrated-terminal');
+                          if (terminalDiv && window.Jupiter) {
+                            terminalDiv.style.display = 'block';
+                            setShowTokenSelector('to');
+                            
+                            // Initialize Jupiter Terminal with token selection mode
+                            window.Jupiter.init({
+                              displayMode: "integrated",
+                              integratedTargetId: "integrated-terminal",
+                              endpoint: "https://mainnet.helius-rpc.com/?api-key=your-api-key",
+                              strictTokenList: false,
+                              defaultExplorer: "SolanaFM",
+                              formProps: {
+                                fixedInputMint: true,
+                                fixedOutputMint: false,
+                                swapMode: "ExactIn"
+                              },
+                              onSuccess: ({ txid, inputToken, outputToken }: any) => {
+                                console.log('Token selected:', outputToken);
+                                setSwapOutputToken({
+                                  address: outputToken.address,
+                                  symbol: outputToken.symbol,
+                                  name: outputToken.name,
+                                  logoURI: outputToken.logoURI
+                                });
+                                setShowTokenSelector(null);
+                                terminalDiv.style.display = 'none';
+                              }
+                            });
+                          }
                         }}
                         className="flex items-center gap-2 bg-purple-700/50 hover:bg-purple-600/70 rounded-lg px-3 py-2 transition-all duration-200 border border-purple-600/40"
                       >
@@ -1924,142 +1984,56 @@ export default function SolRefund() {
 
 
                 
-                {/* Jupiter Token Search Modal */}
+                {/* Jupiter Terminal Token Selection Modal */}
                 {showTokenSelector && (
                   <div className="absolute inset-0 bg-black/90 z-50 rounded-xl overflow-hidden flex items-center justify-center">
-                    <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl border border-purple-600/30 shadow-2xl overflow-hidden w-full max-w-md mx-4" style={{ maxHeight: '80vh' }}>
-                      {/* Header */}
-                      <div className="flex items-center justify-between p-4 border-b border-purple-600/30">
+                    <div className="relative bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl border border-purple-600/30 shadow-2xl overflow-hidden" style={{ width: '400px', height: '568px' }}>
+                      {/* Header with close button */}
+                      <div className="absolute top-4 right-4 z-10">
                         <button 
-                          onClick={() => setShowTokenSelector(null)}
-                          className="text-gray-400 hover:text-white transition-colors"
+                          onClick={() => {
+                            setShowTokenSelector(null);
+                            // Hide the integrated terminal
+                            const terminal = document.getElementById('integrated-terminal');
+                            if (terminal) {
+                              terminal.style.display = 'none';
+                            }
+                          }}
+                          className="bg-purple-800/80 hover:bg-purple-700 text-white rounded-full p-2 transition-colors"
                         >
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
-                        <h3 className="text-white font-semibold text-lg">Select Token</h3>
-                        <div className="w-6"></div>
                       </div>
-
-                      {/* Search Bar */}
-                      <div className="p-4">
-                        <div className="relative">
-                          <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                          <input
-                            type="text"
-                            placeholder="Search tokens... (e.g. WIF)"
-                            value={tokenSearchQuery}
-                            onChange={async (e) => {
-                              const query = e.target.value;
-                              setTokenSearchQuery(query);
-                              
-                              if (query.length >= 2) {
-                                try {
-                                  setIsSearchingTokens(true);
-                                  const response = await fetch(`/api/jupiter/tokens/search?q=${encodeURIComponent(query)}`);
-                                  const data = await response.json();
-                                  if (data.success) {
-                                    console.log('Jupiter tokens received:', data.tokens);
-                                    setJupiterTokens(data.tokens);
-                                  } else {
-                                    console.error('Jupiter search failed:', data);
-                                  }
-                                } catch (error) {
-                                  console.error('Error searching tokens:', error);
-                                } finally {
-                                  setIsSearchingTokens(false);
-                                }
-                              } else {
-                                setJupiterTokens([]);
-                              }
-                            }}
-                            className="w-full bg-purple-800/50 text-white pl-10 pr-4 py-3 rounded-lg border border-purple-600/40 focus:border-purple-500 outline-none placeholder-purple-400"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Token List */}
-                      <div className="flex-1 overflow-y-auto max-h-96">
-                        {isSearchingTokens ? (
-                          <div className="flex items-center justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
-                          </div>
-                        ) : jupiterTokens.length > 0 ? (
-                          jupiterTokens.map((token) => (
-                            <button
-                              key={token.address}
-                              onClick={() => {
-                                const selectedToken = {
-                                  address: token.address,
-                                  symbol: token.symbol,
-                                  name: token.name,
-                                  logoURI: token.logoURI
-                                };
-                                
-                                if (showTokenSelector === 'from') {
-                                  setSwapInputToken(selectedToken);
-                                } else {
-                                  setSwapOutputToken(selectedToken);
-                                }
-                                
-                                setShowTokenSelector(null);
-                                setTokenSearchQuery('');
-                                setJupiterTokens([]);
-                              }}
-                              className="w-full flex items-center justify-between p-4 hover:bg-purple-800/50 transition-colors border-b border-purple-800/30"
-                            >
-                              <div className="flex items-center gap-3">
-                                {token.logoURI ? (
-                                  <img 
-                                    src={token.logoURI} 
-                                    alt={token.symbol}
-                                    className="w-10 h-10 rounded-full"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                      const fallback = target.nextElementSibling as HTMLElement;
-                                      if (fallback) {
-                                        fallback.classList.remove('hidden');
-                                      }
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                    {token.symbol.charAt(0)}
-                                  </div>
-                                )}
-                                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold hidden">
-                                  {token.symbol.charAt(0)}
-                                </div>
-                                <div className="text-left">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-white font-semibold">{token.symbol}</span>
-                                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                  </div>
-                                  <div className="text-purple-300 text-sm">{token.name}</div>
-                                  <div className="text-purple-500 text-xs">{token.address.slice(0, 8)}...</div>
-                                </div>
-                              </div>
-                            </button>
-                          ))
-                        ) : tokenSearchQuery.length >= 2 ? (
-                          <div className="text-center py-8 text-purple-400">
-                            No tokens found for "{tokenSearchQuery}"
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-purple-400">
-                            Type at least 2 characters to search tokens
-                          </div>
-                        )}
-                      </div>
+                      
+                      {/* Jupiter Terminal Container */}
+                      <div 
+                        id="integrated-terminal" 
+                        style={{ 
+                          width: '400px', 
+                          height: '568px',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          display: 'none'
+                        }}
+                      ></div>
                     </div>
                   </div>
                 )}
+
+                {/* Hidden Jupiter Terminal Container for initialization */}
+                <div 
+                  id="integrated-terminal" 
+                  style={{ 
+                    width: '400px', 
+                    height: '568px',
+                    display: 'none',
+                    position: 'absolute',
+                    top: '-9999px',
+                    left: '-9999px'
+                  }}
+                ></div>
 
                 {/* Jupiter Terminal for API access only (hidden) */}
                 <div 
