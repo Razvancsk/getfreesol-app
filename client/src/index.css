@@ -2,16 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Completely hide Jupiter Terminal visual interface */
+/* Show Jupiter Terminal properly */
 #jupiter-terminal {
-  display: none !important;
-  visibility: hidden !important;
-  position: absolute !important;
-  left: -9999px !important;
-  top: -9999px !important;
-  width: 0 !important;
-  height: 0 !important;
-  opacity: 0 !important;
+  display: block !important;
+  visibility: visible !important;
+  position: relative !important;
+  width: 390px !important;
+  height: 577px !important;
+  opacity: 1 !important;
 }
 
 :root {
