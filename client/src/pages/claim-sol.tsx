@@ -975,22 +975,12 @@ export default function SolRefund() {
                     {selectedTokens.size} selected
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-sm text-green-400 font-semibold">
-                    SOL {calculateTotalSOL(selectedTokens.size)}
-                  </div>
-                  <Button
-                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
-                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    <Flame className="h-4 w-4 mr-1" />
-                    {bulkBurnTokensMutation.isPending ? 'Burning...' : `Burn Selected (${selectedTokens.size})`}
-                  </Button>
+                <div className="text-sm text-green-400 font-semibold">
+                  SOL {calculateTotalSOL(selectedTokens.size)}
                 </div>
               </div>
               
-              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
+              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30 mb-6">
                 {tokenList.map((token, index) => (
                   <div 
                     key={index} 
@@ -1033,6 +1023,24 @@ export default function SolRefund() {
                   </div>
                 ))}
               </div>
+
+              {/* Burn Button at Bottom */}
+              {selectedTokens.size > 0 && (
+                <div className="mt-6">
+                  <Button
+                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                    className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                  >
+                    {bulkBurnTokensMutation.isPending ? (
+                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                    ) : (
+                      <Flame className="h-5 w-5 mr-2" />
+                    )}
+                    BURN SELECTED ({selectedTokens.size})
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
