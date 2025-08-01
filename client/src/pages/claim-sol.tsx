@@ -1341,32 +1341,11 @@ export default function SolRefund() {
                   id="jupiter-terminal" 
                   style={{ 
                     width: '390px', 
-                    height: '540px',
-                    minHeight: '540px',
+                    height: '577px',
+                    minHeight: '577px',
                     backgroundColor: 'transparent'
                   }}
                 />
-                
-                {/* Minimum Received and Jito Fee Information */}
-                <div className="p-4 border-t border-gray-700/50 bg-gray-900/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-300 text-sm">Minimum Received</span>
-                    </div>
-                    <span className="text-white font-mono text-sm">3.36 USDC</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-300 text-sm">Jito Fee</span>
-                      <span className="text-yellow-400">⚡</span>
-                      <div className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
-                        <span className="text-gray-300 text-xs">ⓘ</span>
-                      </div>
-                    </div>
-                    <span className="text-white font-mono text-sm">0.0003 SOL</span>
-                  </div>
-                </div>
               </div>
             </div>
           )}
