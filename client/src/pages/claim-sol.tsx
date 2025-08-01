@@ -1272,8 +1272,12 @@ export default function SolRefund() {
               
               {/* DexScreener Chart */}
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="p-4 border-b border-gray-700/50">
+                  <h3 className="text-white font-semibold">Live Chart</h3>
+                  <p className="text-gray-400 text-sm">Real-time price data</p>
+                </div>
                 <iframe
-                  src="https://dexscreener.com/solana/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v_So11111111111111111111111111111111111111112?embed=1&theme=dark&trades=0&info=0"
+                  src="https://dexscreener.com/solana/pumpfun?embed=1&theme=dark&trades=0&info=0"
                   style={{
                     width: '100%',
                     height: '600px',
