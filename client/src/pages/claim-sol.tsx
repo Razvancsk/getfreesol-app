@@ -1402,12 +1402,12 @@ export default function SolRefund() {
                     <span className="text-yellow-400">⚡</span>
                     <span className="text-gray-400 text-sm">[SOL]</span>
                   </div>
-                  <div className="flex items-center flex-wrap gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-3 overflow-x-auto">
                     {['Slow', 'Normal', 'Fast', 'Turbo'].map((priority) => (
                       <button
                         key={priority}
                         onClick={() => setJitoPriority(priority)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                           jitoPriority === priority
                             ? 'bg-white text-black'
                             : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
@@ -1419,7 +1419,7 @@ export default function SolRefund() {
                     <input
                       type="number"
                       value={manualJitoFee}
-                      className="px-3 py-2 w-24 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
+                      className="px-3 py-2 w-20 bg-gray-800 text-white rounded-lg text-sm border border-gray-600 flex-shrink-0"
                       step="0.0001"
                       min="0"
                       onChange={(e) => setManualJitoFee(e.target.value)}
