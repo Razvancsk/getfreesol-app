@@ -264,10 +264,10 @@ export default function SolRefund() {
             return;
           }
 
-          // Check if instance already exists
-          if ((window as any).Jupiter._instance) {
-            (window as any).Jupiter.resume();
-            return;
+          // Clear any existing instance first
+          const targetElement = document.getElementById('jupiter-terminal');
+          if (targetElement) {
+            targetElement.innerHTML = '';
           }
 
           console.log('Initializing Jupiter Terminal...');
@@ -278,8 +278,8 @@ export default function SolRefund() {
             endpoint: "https://api.mainnet-beta.solana.com",
             enableWalletPassthrough: true,
             containerStyles: {
-              maxHeight: '100%',
-              height: '100%'
+              maxHeight: '800px',
+              height: '800px'
             },
             referral: {
               account: "EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji",
