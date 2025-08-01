@@ -35,6 +35,14 @@
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
   --ring: hsl(271, 81%, 56%);
   --radius: 0.5rem;
+
+  /* Jupiter Terminal Custom CSS Variables */
+  --jupiter-terminal-primary: 199, 242, 132;
+  --jupiter-terminal-background: 0, 0, 0;
+  --jupiter-terminal-primary-text: 232, 249, 255;
+  --jupiter-terminal-warning: 251, 191, 36;
+  --jupiter-terminal-interactive: 33, 42, 54;
+  --jupiter-terminal-module: 16, 23, 31;
 }
 
 .dark {
@@ -58,6 +66,14 @@
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(271, 81%, 56%);
   --radius: 0.5rem;
+
+  /* Jupiter Terminal Custom CSS Variables for Dark Mode */
+  --jupiter-terminal-primary: 199, 242, 132;
+  --jupiter-terminal-background: 0, 0, 0;
+  --jupiter-terminal-primary-text: 232, 249, 255;
+  --jupiter-terminal-warning: 251, 191, 36;
+  --jupiter-terminal-interactive: 33, 42, 54;
+  --jupiter-terminal-module: 16, 23, 31;
 }
 
 @layer base {
