@@ -268,6 +268,10 @@ export default function SolRefund() {
             integratedTargetId: "jupiter-terminal",
             endpoint: "https://api.mainnet-beta.solana.com",
             enableWalletPassthrough: true,
+            containerStyles: {
+              maxHeight: '100%',
+              height: '100%'
+            },
             referral: {
               account: "EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji",
               feeBps: 50
@@ -1281,7 +1285,8 @@ export default function SolRefund() {
                   id="jupiter-terminal" 
                   style={{ 
                     width: '100%', 
-                    height: '600px' 
+                    height: '800px',
+                    minHeight: '700px'
                   }}
                 />
               </div>
