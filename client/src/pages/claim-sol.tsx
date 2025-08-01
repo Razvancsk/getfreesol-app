@@ -310,10 +310,6 @@ export default function SolRefund() {
                     text.includes('Pending Approval') ||
                     text.includes('Transaction pending') ||
                     text.includes('Confirming') ||
-                    text.includes('Swap Successful') ||
-                    text.includes('Transaction confirmed') ||
-                    text.includes('Success!') ||
-                    text.includes('View Transaction') ||
                     text.includes('Swap Failed') ||
                     text.includes('We were unable to complete') ||
                     text.includes('User rejected the request') ||
@@ -321,7 +317,6 @@ export default function SolRefund() {
                     text.includes('Try Again') ||
                     htmlElement.tagName === 'H1' && text.trim() === 'Swapping' ||
                     htmlElement.tagName === 'H2' && text.includes('Pending') ||
-                    htmlElement.tagName === 'H1' && text.includes('Success') ||
                     htmlElement.tagName === 'H1' && text.includes('Failed') ||
                     htmlElement.tagName === 'BUTTON' && text.includes('Retry')) {
                   
@@ -443,67 +438,7 @@ export default function SolRefund() {
             },
             onSuccess: ({ txid, swapResult }: any) => {
               console.log('Jupiter swap successful:', txid);
-              
-              // Show custom success notification
-              const showSuccessNotification = () => {
-                const notification = document.createElement('div');
-                notification.innerHTML = `
-                  <div style="
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: #22c55e;
-                    color: white;
-                    padding: 20px 30px;
-                    border-radius: 12px;
-                    box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
-                    z-index: 10000;
-                    font-family: sans-serif;
-                    min-width: 300px;
-                    text-align: center;
-                  ">
-                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
-                      Swap Successful!
-                    </div>
-                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 15px;">
-                      Transaction confirmed on Solana blockchain
-                    </div>
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                      background: rgba(255,255,255,0.2);
-                      border: 1px solid rgba(255,255,255,0.3);
-                      color: white;
-                      padding: 8px 16px;
-                      border-radius: 6px;
-                      cursor: pointer;
-                      font-size: 12px;
-                    ">
-                      View Transaction ↗
-                    </button>
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                      position: absolute;
-                      top: 10px;
-                      right: 15px;
-                      background: none;
-                      border: none;
-                      color: white;
-                      font-size: 20px;
-                      cursor: pointer;
-                      opacity: 0.7;
-                    ">×</button>
-                  </div>
-                `;
-                document.body.appendChild(notification);
-                
-                // Auto remove after 5 seconds
-                setTimeout(() => {
-                  if (notification.parentElement) {
-                    notification.remove();
-                  }
-                }, 5000);
-              };
-              
-              setTimeout(showSuccessNotification, 100);
+              // No notification - user doesn't want transaction messages
             },
             onSwapError: ({ error }: any) => {
               // Don't show error for user rejection/cancellation
@@ -538,9 +473,8 @@ export default function SolRefund() {
               const htmlDiv = div as HTMLElement;
               const content = htmlDiv.textContent || '';
               
-              // If this div contains error or success screens, hide its entire parent container
+              // If this div contains error screens, hide its entire parent container
               if (content.includes('Swap Failed') || 
-                  content.includes('Swap Successful') ||
                   content.includes('User rejected') ||
                   content.includes('unable to complete') ||
                   content.includes('Retry') ||
