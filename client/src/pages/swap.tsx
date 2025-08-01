@@ -249,16 +249,7 @@ export default function SwapPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black p-4">
       {/* Navigation Header */}
-      <div className="flex items-center justify-center space-x-4 pt-8 pb-4">
-        <Button asChild className="bg-slate-600 hover:bg-slate-700 text-white text-sm">
-          <Link href="/claim-sol">
-            <Coins className="h-4 w-4 mr-2" />
-            Claim SOL
-          </Link>
-        </Button>
-        <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white text-sm">
-          <Link href="/swap">Swap</Link>
-        </Button>
+      <div className="pt-8 pb-4">
       </div>
 
       <div className="max-w-md mx-auto pt-8">

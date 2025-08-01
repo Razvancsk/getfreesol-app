@@ -254,15 +254,24 @@ export default function SolRefund() {
 
   // Initialize Jupiter Terminal when swap tab is active
   useEffect(() => {
-    if (activeTab === 'swap' && typeof window !== 'undefined' && (window as any).Jupiter) {
+    if (activeTab === 'swap' && typeof window !== 'undefined') {
       const initTerminal = () => {
         try {
+          // Wait for Jupiter to be available
+          if (!(window as any).Jupiter) {
+            console.log('Jupiter not loaded yet, retrying...');
+            setTimeout(initTerminal, 1000);
+            return;
+          }
+
           // Check if instance already exists
           if ((window as any).Jupiter._instance) {
             (window as any).Jupiter.resume();
             return;
           }
 
+          console.log('Initializing Jupiter Terminal...');
+          
           (window as any).Jupiter.init({
             displayMode: "integrated",
             integratedTargetId: "jupiter-terminal",
@@ -298,16 +307,19 @@ export default function SolRefund() {
               connected: isConnected,
               publicKey: { toString: () => publicKey },
               wallet: window.solana,
-              signTransaction: window.solana?.signTransaction,
-              signAllTransactions: window.solana?.signAllTransactions,
-              sendTransaction: window.solana?.sendTransaction
+              signTransaction: window.solana?.signTransaction
             };
 
             setTimeout(() => {
-              if ((window as any).Jupiter.syncProps) {
-                (window as any).Jupiter.syncProps({ 
-                  passthroughWalletContextState: mockWalletContextState 
-                });
+              try {
+                if ((window as any).Jupiter.syncProps) {
+                  (window as any).Jupiter.syncProps({ 
+                    passthroughWalletContextState: mockWalletContextState 
+                  });
+                  console.log('Jupiter wallet synced');
+                }
+              } catch (syncError) {
+                console.error('Jupiter sync error:', syncError);
               }
             }, 500);
           }
@@ -316,7 +328,7 @@ export default function SolRefund() {
         }
       };
 
-      // Small delay to ensure the DOM element is ready
+      // Start initialization
       setTimeout(initTerminal, 100);
     }
   }, [activeTab, isConnected, publicKey]);
@@ -932,19 +944,6 @@ export default function SolRefund() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-6">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
-              
-              {/* Navigation */}
-              <div className="flex space-x-2">
-                <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white text-sm">
-                  <Link href="/claim-sol">Claim SOL</Link>
-                </Button>
-                <Button asChild className="bg-slate-600 hover:bg-slate-700 text-white text-sm">
-                  <Link href="/swap">
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Swap
-                  </Link>
-                </Button>
-              </div>
             </div>
             
             {/* Wallet Connection Button */}
