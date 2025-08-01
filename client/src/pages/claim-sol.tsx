@@ -53,18 +53,54 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'swap'>('reclaim');
   const [tokenList, setTokenList] = useState<any[]>([]);
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  // Swap state
+  const [swapInputToken, setSwapInputToken] = useState({
+    address: 'So11111111111111111111111111111111111111112',
+    symbol: 'SOL',
+    name: 'Solana',
+    decimals: 9,
+    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png'
+  });
+  const [swapOutputToken, setSwapOutputToken] = useState({
+    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    symbol: 'USDC',
+    name: 'USD Coin',
+    decimals: 6,
+    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png'
+  });
+  const [swapInputAmount, setSwapInputAmount] = useState<string>('');
+  const [swapOutputAmount, setSwapOutputAmount] = useState<string>('');
+  const [swapQuote, setSwapQuote] = useState<any>(null);
+  const [isSwapLoading, setIsSwapLoading] = useState(false);
+  const [isSwapping, setIsSwapping] = useState(false);
+
+  const REFERRAL_ACCOUNT = 'EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji';
   
   // Wallet state synced with main navigation
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [forceDisconnected, setForceDisconnected] = useState(false);
   const [hasCheckedInitialState, setHasCheckedInitialState] = useState(false);
+
+  // Auto-quote for swap when input changes
+  useEffect(() => {
+    if (activeTab === 'swap') {
+      const timer = setTimeout(() => {
+        if (swapInputAmount && parseFloat(swapInputAmount) > 0) {
+          getSwapQuote();
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [swapInputAmount, swapInputToken, swapOutputToken, activeTab]);
 
   // Sync with Phantom wallet state from main navigation
   useEffect(() => {
@@ -705,6 +741,78 @@ export default function SolRefund() {
 
   const refundCalc = calculateRefund();
 
+  // Swap functions
+  const getSwapQuote = async () => {
+    if (!swapInputAmount || !swapInputToken || !swapOutputToken) return;
+    
+    setIsSwapLoading(true);
+    try {
+      const amount = Math.floor(parseFloat(swapInputAmount) * Math.pow(10, swapInputToken.decimals));
+      
+      const response = await fetch(
+        `https://quote-api.jup.ag/v6/quote?inputMint=${swapInputToken.address}&outputMint=${swapOutputToken.address}&amount=${amount}&slippageBps=50&platformFeeBps=50`
+      );
+      
+      if (!response.ok) throw new Error('Failed to get quote');
+      
+      const quoteData = await response.json();
+      setSwapQuote(quoteData);
+      setSwapOutputAmount((parseInt(quoteData.outAmount) / Math.pow(10, swapOutputToken.decimals)).toFixed(6));
+    } catch (error) {
+      console.error('Quote error:', error);
+    } finally {
+      setIsSwapLoading(false);
+    }
+  };
+
+  const executeSwap = async () => {
+    if (!publicKey || !swapQuote || !window.solana) return;
+    
+    setIsSwapping(true);
+    try {
+      const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteResponse: swapQuote,
+          userPublicKey: publicKey,
+          wrapAndUnwrapSol: true,
+          feeAccount: REFERRAL_ACCOUNT,
+        }),
+      });
+
+      if (!swapResponse.ok) throw new Error('Failed to get swap transaction');
+      
+      const { swapTransaction } = await swapResponse.json();
+      const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+      const signedTransaction = await window.solana.signTransaction(transaction);
+      
+      const connection = new Connection(import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      // Reset form
+      setSwapInputAmount('');
+      setSwapOutputAmount('');
+      setSwapQuote(null);
+      
+    } catch (error) {
+      console.error('Swap error:', error);
+    } finally {
+      setIsSwapping(false);
+    }
+  };
+
+  const swapTokens = () => {
+    const temp = swapInputToken;
+    setSwapInputToken(swapOutputToken);
+    setSwapOutputToken(temp);
+    setSwapInputAmount('');
+    setSwapOutputAmount('');
+    setSwapQuote(null);
+  };
+
   // Connect wallet function
   const connectWallet = async () => {
     try {
@@ -828,6 +936,17 @@ export default function SolRefund() {
                   >
                     <Flame className="h-4 w-4 mr-2" />
                     Burn Tokens
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('swap')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'swap' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                  >
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Swap
                   </Button>
                 </div>
               </div>
