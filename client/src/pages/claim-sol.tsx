@@ -210,14 +210,18 @@ export default function SolRefund() {
   // Add comprehensive error handler to prevent ALL unhandled promise rejections from showing overlay
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      // Suppress all promise rejections that could be related to network/RPC issues
+      // Suppress all promise rejections that could be related to network/RPC issues or user cancellations
       const errorMessage = event.reason?.message || '';
       if (errorMessage.includes('Failed to fetch') || 
           errorMessage.includes('Connection timeout') ||
           errorMessage.includes('RPC failed') ||
           errorMessage.includes('sendRawTransaction') ||
           errorMessage.includes('Transaction failed') ||
+          errorMessage.includes('User rejected') ||
+          errorMessage.includes('rejected the request') ||
           event.reason?.code === 'NETWORK_ERROR' ||
+          event.reason?.code === 4001 ||
+          event.reason?.name === 'WalletNotConnectedError' ||
           !errorMessage) { // Also suppress empty/undefined errors
         event.preventDefault();
         console.log('Suppressed network/transaction error:', errorMessage || 'Unknown error');
@@ -227,7 +231,9 @@ export default function SolRefund() {
     
     const handleError = (event: ErrorEvent) => {
       if (event.message?.includes('Failed to fetch') || 
-          event.message?.includes('sendRawTransaction')) {
+          event.message?.includes('sendRawTransaction') ||
+          event.message?.includes('User rejected') ||
+          event.message?.includes('rejected the request')) {
         event.preventDefault();
         console.log('Suppressed error event:', event.message);
         return false;
@@ -358,6 +364,16 @@ export default function SolRefund() {
               console.log('Jupiter swap successful:', txid);
             },
             onSwapError: ({ error }: any) => {
+              // Don't show error for user rejection/cancellation
+              if (error && (
+                error.code === 4001 || 
+                error.message?.includes('User rejected') ||
+                error.message?.includes('rejected the request') ||
+                error.name === 'WalletNotConnectedError'
+              )) {
+                console.log('Swap cancelled by user');
+                return; // Silently handle user cancellation
+              }
               console.error('Jupiter swap error:', error);
             }
           });
