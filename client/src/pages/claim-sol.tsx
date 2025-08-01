@@ -1300,7 +1300,7 @@ export default function SolRefund() {
                 </div>
                 <iframe
                   key={`chart-${selectedTokenMint}-${Date.now()}`}
-                  src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=1&refresh=${Date.now()}`}
+                  src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
                   style={{
                     width: '100%',
                     height: '600px',
