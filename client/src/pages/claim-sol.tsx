@@ -298,7 +298,8 @@ export default function SolRefund() {
             formProps: {
               fixedInputMint: false,
               fixedOutputMint: false,
-              swapMode: "ExactIn"
+              swapMode: "ExactIn",
+              slippageBps: 300 // Default 3% slippage (300 basis points)
             },
             onFormUpdate: (form: any) => {
               // Update chart when user changes output token (the token being bought)
