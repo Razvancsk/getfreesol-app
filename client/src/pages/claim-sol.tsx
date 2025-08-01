@@ -301,10 +301,12 @@ export default function SolRefund() {
               swapMode: "ExactIn"
             },
             onFormUpdate: (form: any) => {
-              // Update chart when user changes output token
-              if (form.outputMint && form.outputMint !== selectedTokenMint) {
-                setSelectedTokenMint(form.outputMint);
-                console.log('Token changed to:', form.outputMint);
+              // Update chart when user changes output token (the token being bought)
+              console.log('Jupiter form updated:', form);
+              const tokenBeingBought = form.toMint || form.outputMint;
+              if (tokenBeingBought && tokenBeingBought !== selectedTokenMint) {
+                setSelectedTokenMint(tokenBeingBought);
+                console.log('Chart will update to token being bought:', tokenBeingBought);
               }
             },
             onSuccess: ({ txid, swapResult }: any) => {
@@ -1288,11 +1290,17 @@ export default function SolRefund() {
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
                 <div className="p-4 border-b border-gray-700/50">
                   <h3 className="text-white font-semibold">Live Chart</h3>
-                  <p className="text-gray-400 text-sm">Real-time price data</p>
+                  <p className="text-gray-400 text-sm">
+                    {selectedTokenMint === 'So11111111111111111111111111111111111111112' 
+                      ? 'Trending tokens overview' 
+                      : `Chart for selected token: ${selectedTokenMint.slice(0, 8)}...`}
+                  </p>
                 </div>
                 <iframe
                   key={selectedTokenMint}
-                  src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=1`}
+                  src={selectedTokenMint === 'So11111111111111111111111111111111111111112' 
+                    ? `https://dexscreener.com/solana/pumpfun?embed=1&theme=dark&trades=1&info=1`
+                    : `https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=1`}
                   style={{
                     width: '100%',
                     height: '600px',
