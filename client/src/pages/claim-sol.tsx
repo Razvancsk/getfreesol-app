@@ -59,6 +59,7 @@ export default function SolRefund() {
   const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
   const [showSlippageModal, setShowSlippageModal] = useState<boolean>(false);
   const [jitoPriority, setJitoPriority] = useState<string>('Normal'); // Jito fee priority
+  const [manualJitoFee, setManualJitoFee] = useState<number>(0); // Manual Jito fee amount
   const [tokenList, setTokenList] = useState<any[]>([]);
   
   // Selection states for bulk burning
@@ -1417,10 +1418,11 @@ export default function SolRefund() {
                     ))}
                     <input
                       type="number"
-                      placeholder="0.0003"
+                      value={manualJitoFee}
                       className="px-3 py-2 w-24 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
                       step="0.0001"
                       min="0"
+                      onChange={(e) => setManualJitoFee(Number(e.target.value))}
                     />
                   </div>
                 </div>
