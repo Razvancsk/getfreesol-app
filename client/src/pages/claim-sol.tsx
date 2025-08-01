@@ -1037,7 +1037,7 @@ export default function SolRefund() {
                     ) : (
                       <Flame className="h-5 w-5 mr-2" />
                     )}
-                    BURN SELECTED ({selectedTokens.size})
+                    BURN
                   </Button>
                 </div>
               )}
