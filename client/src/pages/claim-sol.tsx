@@ -56,6 +56,7 @@ export default function SolRefund() {
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'swap'>('reclaim');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
+  const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
   const [tokenList, setTokenList] = useState<any[]>([]);
   
   // Selection states for bulk burning
@@ -295,11 +296,18 @@ export default function SolRefund() {
               width: '390px'
             },
             defaultExplorer: "SolanaFM",
+            strictTokenList: false,
+            enableAdvancedRouting: true,
             formProps: {
               fixedInputMint: false,
               fixedOutputMint: false,
               swapMode: "ExactIn",
-              slippageBps: 300 // Default 3% slippage (300 basis points)
+              slippageBps: slippage * 100, // Convert percentage to basis points
+              initialSlippageBps: slippage * 100
+            },
+            defaultSlippageSettings: {
+              slippageBps: slippage * 100,
+              enableSlippageSettings: true
             },
             onFormUpdate: (form: any) => {
               // Update chart when user changes output token (the token being bought)
@@ -1310,12 +1318,44 @@ export default function SolRefund() {
 
               {/* Jupiter Terminal */}
               <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden w-fit mx-auto">
+                {/* Slippage Controls */}
+                <div className="p-4 border-b border-gray-700/50">
+                  <h3 className="text-white font-semibold mb-3">Slippage Tolerance</h3>
+                  <div className="flex gap-2 mb-3">
+                    {[1, 3, 5, 10].map((value) => (
+                      <button
+                        key={value}
+                        onClick={() => setSlippage(value)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          slippage === value
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        {value}%
+                      </button>
+                    ))}
+                    <input
+                      type="number"
+                      value={slippage}
+                      onChange={(e) => setSlippage(Number(e.target.value))}
+                      className="px-3 py-2 w-20 bg-gray-700 text-white rounded-lg text-sm"
+                      min="0.1"
+                      max="50"
+                      step="0.1"
+                    />
+                  </div>
+                  <p className="text-gray-400 text-xs">
+                    Current slippage: {slippage}% ({slippage * 100} basis points)
+                  </p>
+                </div>
+                
                 <div 
                   id="jupiter-terminal" 
                   style={{ 
                     width: '390px', 
-                    height: '577px',
-                    minHeight: '577px',
+                    height: '520px',
+                    minHeight: '520px',
                     backgroundColor: 'transparent'
                   }}
                 />
