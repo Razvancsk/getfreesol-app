@@ -109,7 +109,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### January 30, 2025 - Comprehensive Transaction Ledger Implementation
+### February 1, 2025 - Jupiter Terminal Integration Fixed
+- **Fixed Jupiter Terminal initialization** with proper retry logic and error handling
+- **Set Jupiter Terminal to exact 390x577 pixel dimensions** as requested by user
+- **Resolved JavaScript runtime errors** by removing problematic error overlay and improving script loading
+- **Enhanced wallet synchronization** between app and Jupiter Terminal
+- **Removed claim and swap navigation buttons** from top navigation area
+- **Fixed database connection issues** with proper WebSocket configuration for Neon database
+- **Jupiter Terminal now successfully initializes** with logs confirming proper functionality
+
+### January 30, 2025 - Comprehensive Transaction Ledger Implementation  
 - **Replaced memory storage with PostgreSQL database** for permanent transaction persistence
 - **Created comprehensive transaction ledger system** that logs ALL operations:
   - SOL reclaim transactions (closing empty token accounts)
