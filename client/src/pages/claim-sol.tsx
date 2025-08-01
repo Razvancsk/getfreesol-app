@@ -1781,25 +1781,7 @@ export default function SolRefund() {
                     </div>
                     <div className="flex items-center gap-3">
                       <button 
-                        onClick={() => {
-                          // Show Jupiter Terminal for token selection
-                          const jupiterContainer = document.querySelector('#jupiter-terminal') as HTMLElement;
-                          if (jupiterContainer) {
-                            // Position Jupiter terminal to cover exactly the swap area
-                            jupiterContainer.style.position = 'fixed';
-                            jupiterContainer.style.top = '50%';
-                            jupiterContainer.style.left = '50%';
-                            jupiterContainer.style.transform = 'translate(-50%, -50%)';
-                            jupiterContainer.style.width = '400px';
-                            jupiterContainer.style.height = '568px';
-                            jupiterContainer.style.zIndex = '9999';
-                            jupiterContainer.style.backgroundColor = '#6B46C1';
-                            jupiterContainer.style.borderRadius = '12px';
-                            jupiterContainer.style.display = 'block';
-                            jupiterContainer.style.border = '2px solid #7C3AED';
-                            jupiterContainer.style.boxShadow = '0 25px 50px -12px rgba(139, 92, 246, 0.5)';
-                          }
-                        }}
+                        onClick={() => setShowTokenSelector('from')}
                         className="flex items-center gap-2 bg-purple-700/50 hover:bg-purple-600/70 rounded-lg px-3 py-2 transition-all duration-200 border border-purple-600/40"
                       >
                         <img 
@@ -1856,25 +1838,7 @@ export default function SolRefund() {
                     </div>
                     <div className="flex items-center gap-3">
                       <button 
-                        onClick={() => {
-                          // Show Jupiter Terminal for token selection
-                          const jupiterContainer = document.querySelector('#jupiter-terminal') as HTMLElement;
-                          if (jupiterContainer) {
-                            // Position Jupiter terminal to cover exactly the swap area
-                            jupiterContainer.style.position = 'fixed';
-                            jupiterContainer.style.top = '50%';
-                            jupiterContainer.style.left = '50%';
-                            jupiterContainer.style.transform = 'translate(-50%, -50%)';
-                            jupiterContainer.style.width = '400px';
-                            jupiterContainer.style.height = '568px';
-                            jupiterContainer.style.zIndex = '9999';
-                            jupiterContainer.style.backgroundColor = '#6B46C1';
-                            jupiterContainer.style.borderRadius = '12px';
-                            jupiterContainer.style.display = 'block';
-                            jupiterContainer.style.border = '2px solid #7C3AED';
-                            jupiterContainer.style.boxShadow = '0 25px 50px -12px rgba(139, 92, 246, 0.5)';
-                          }
-                        }}
+                        onClick={() => setShowTokenSelector('to')}
                         className="flex items-center gap-2 bg-purple-700/50 hover:bg-purple-600/70 rounded-lg px-3 py-2 transition-all duration-200 border border-purple-600/40"
                       >
                         <img 
