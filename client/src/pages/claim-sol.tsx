@@ -1419,7 +1419,7 @@ export default function SolRefund() {
                     <input
                       type="number"
                       value={manualJitoFee}
-                      className="px-3 py-2 w-20 bg-gray-800 text-white rounded-lg text-sm border border-gray-600 flex-shrink-0"
+                      className="px-3 py-2 w-20 bg-gray-800 text-white rounded-lg text-sm border border-gray-600 flex-shrink-0 focus:border-white focus:outline-none focus:ring-1 focus:ring-white"
                       step="0.0001"
                       min="0"
                       onChange={(e) => setManualJitoFee(e.target.value)}
