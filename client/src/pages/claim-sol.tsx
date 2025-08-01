@@ -1210,100 +1210,20 @@ export default function SolRefund() {
                 />
               </div>
 
-              {/* Trading Panel */}
-              <div className="space-y-4">
-                
-                {/* Header */}
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-white">Sell Tokens</h2>
-                    <Button
-                      onClick={swapTokens}
-                      size="sm"
-                      className="bg-transparent hover:bg-purple-600/20 text-purple-300 border border-purple-500/50"
-                    >
-                      <ArrowUpDown className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* You're Selling */}
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
-                  <h3 className="text-sm font-medium text-white mb-3">You're Selling</h3>
-                  
-                  <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">S</span>
-                        </div>
-                        <div>
-                          <div className="text-white font-medium">{swapInputToken.symbol}</div>
-                          <div className="text-purple-300 text-xs">Balance: 0.0524 MAX</div>
-                        </div>
-                      </div>
-                      <input
-                        type="number"
-                        value={swapInputAmount}
-                        onChange={(e) => setSwapInputAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="bg-transparent text-right text-2xl font-bold text-white placeholder-gray-400 border-none outline-none w-24"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* You're Buying */}
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
-                  <h3 className="text-sm font-medium text-white mb-3">You're Buying</h3>
-                  
-                  <div className="bg-slate-800/50 border border-slate-600/50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">U</span>
-                        </div>
-                        <div>
-                          <div className="text-white font-medium">{swapOutputToken.symbol}</div>
-                          <div className="text-purple-300 text-xs">Balance: 0</div>
-                        </div>
-                      </div>
-                      <div className="text-right text-2xl font-bold text-white">
-                        {isSwapLoading ? '...' : swapOutputAmount || '0'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sell Button */}
-                <Button
-                  onClick={executeSwap}
-                  disabled={!swapQuote || !swapInputAmount || parseFloat(swapInputAmount) <= 0 || isSwapping}
-                  className="w-full bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-lg font-semibold rounded-lg transition-all duration-200"
-                >
-                  {isSwapping ? 'Selling...' : 'Sell'}
-                </Button>
-
-                {/* Price Information */}
-                {swapQuote && (
-                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
-                    <h3 className="text-sm font-medium text-white mb-3">Price</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-purple-300">Minimum Received</span>
-                        <span className="text-white">{(parseInt(swapQuote.outAmount) / Math.pow(10, swapOutputToken.decimals) * 0.995).toFixed(6)} {swapOutputToken.symbol}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-purple-300">Jito Fee ⚡</span>
-                        <span className="text-white">0.0003 SOL</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-purple-300">Slippage Tolerance</span>
-                        <span className="text-white">5%</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              {/* Jupiter Terminal */}
+              <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+                <iframe
+                  src="https://terminal.jup.ag/?referral=EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji&feeAccount=EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji&feeBps=50"
+                  style={{
+                    width: '100%',
+                    height: '600px',
+                    border: 'none',
+                    backgroundColor: 'transparent'
+                  }}
+                  allow="clipboard-write"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  loading="lazy"
+                />
               </div>
             </div>
           )}
