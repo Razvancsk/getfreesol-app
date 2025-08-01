@@ -109,17 +109,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### February 1, 2025 - Jupiter Terminal Integration Fixed
+### February 1, 2025 - Jupiter Terminal Integration and Real Token Search Modal
+- **Successfully implemented real Jupiter token search modal** using authentic Jupiter token database
+- **Token buttons now trigger custom purple search modal** with real Jupiter token data
+- **Real token search functionality working** - displays authentic logos, symbols, names, and addresses
+- **Custom purple design maintained** while using Jupiter's official token database via backend API
+- **Search works with real tokens** like WIF, SOL, USDC, WBTC with proper logo display
+- **Purple fallback design** for tokens without logos (showing first letter in purple circle)
+- **Added Jupiter Terminal CSS variables** for custom color theming with lime green primary (199, 242, 132)
 - **Fixed Jupiter Terminal initialization** with proper retry logic and error handling
 - **Set Jupiter Terminal to exact 390x577 pixel dimensions** as requested by user
-- **Resolved JavaScript runtime errors** by removing problematic error overlay and improving script loading
 - **Enhanced wallet synchronization** between app and Jupiter Terminal
-- **Removed claim and swap navigation buttons** from top navigation area
 - **Fixed database connection issues** with proper WebSocket configuration for Neon database
-- **Jupiter Terminal now successfully initializes** with logs confirming proper functionality
-- **Fixed Jupiter Terminal wallet connection** by implementing proper passthroughWalletContextState with complete wallet adapter
-- **Resolved swap failures** caused by wallet signing issues with comprehensive wallet passthrough configuration
-- **Added proper TypeScript error handling** for optional Phantom wallet methods (signAllTransactions, signMessage)
 - **Jupiter Terminal now properly recognizes connected wallet** and allows successful swaps
 
 ### January 30, 2025 - Comprehensive Transaction Ledger Implementation  
