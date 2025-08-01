@@ -1353,9 +1353,9 @@ export default function SolRefund() {
           {/* Slippage Settings Modal */}
           {showSlippageModal && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-              <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 w-96 max-w-[90vw]">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-white">Sell Setting</h2>
+              <div className="bg-gray-900 rounded-xl border border-gray-700 p-4" style={{width: '334px', height: '307.8px'}}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-semibold text-white">Sell Setting</h2>
                   <button
                     onClick={() => setShowSlippageModal(false)}
                     className="text-gray-400 hover:text-white transition-colors"
@@ -1367,14 +1367,14 @@ export default function SolRefund() {
                 </div>
 
                 {/* Slippage Tolerance */}
-                <div className="mb-6">
-                  <h3 className="text-white font-medium mb-4">Slippage Tolerance</h3>
-                  <div className="flex gap-2 mb-3">
+                <div className="mb-4">
+                  <h3 className="text-white font-medium mb-3">Slippage Tolerance</h3>
+                  <div className="flex gap-2 mb-2">
                     {[1, 3, 5, 10].map((value) => (
                       <button
                         key={value}
                         onClick={() => setSlippage(value)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                           slippage === value
                             ? 'bg-white text-black'
                             : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
@@ -1387,7 +1387,7 @@ export default function SolRefund() {
                       type="number"
                       value={slippage}
                       onChange={(e) => setSlippage(Number(e.target.value))}
-                      className="px-3 py-2 w-20 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
+                      className="px-3 py-1.5 w-16 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
                       min="0.1"
                       max="50"
                       step="0.1"
@@ -1396,18 +1396,18 @@ export default function SolRefund() {
                 </div>
 
                 {/* Jito Fee */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-4">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-3">
                     <h3 className="text-white font-medium">Jito Fee</h3>
                     <span className="text-yellow-400">⚡</span>
                     <span className="text-gray-400 text-sm">[SOL]</span>
                   </div>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex gap-2 mb-2">
                     {['Slow', 'Normal', 'Fast', 'Turbo'].map((priority) => (
                       <button
                         key={priority}
                         onClick={() => setJitoPriority(priority)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                           jitoPriority === priority
                             ? 'bg-white text-black'
                             : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
@@ -1419,7 +1419,7 @@ export default function SolRefund() {
                     <input
                       type="number"
                       value={manualJitoFee}
-                      className="px-3 py-2 w-24 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
+                      className="px-3 py-1.5 w-20 bg-gray-800 text-white rounded-lg text-sm border border-gray-600"
                       step="0.0001"
                       min="0"
                       onChange={(e) => setManualJitoFee(e.target.value)}
@@ -1428,10 +1428,10 @@ export default function SolRefund() {
                 </div>
 
                 {/* Close button */}
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-4">
                   <button
                     onClick={() => setShowSlippageModal(false)}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
                   >
                     Done
                   </button>
