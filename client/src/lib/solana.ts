@@ -113,6 +113,48 @@ export const getSolflareWallet = (): WalletAdapter | null => {
   };
 };
 
+// Wallet detection and management functions
+export const getAvailableWallets = (): { type: WalletType; adapter: WalletAdapter }[] => {
+  const wallets: { type: WalletType; adapter: WalletAdapter }[] = [];
+  
+  const phantom = getPhantomWallet();
+  if (phantom) {
+    wallets.push({ type: 'phantom', adapter: phantom });
+  }
+  
+  const solflare = getSolflareWallet();
+  if (solflare) {
+    wallets.push({ type: 'solflare', adapter: solflare });
+  }
+  
+  return wallets;
+};
+
+export const getConnectedWallet = (): { type: WalletType; adapter: WalletAdapter } | null => {
+  const phantom = getPhantomWallet();
+  if (phantom && phantom.connected) {
+    return { type: 'phantom', adapter: phantom };
+  }
+  
+  const solflare = getSolflareWallet();
+  if (solflare && solflare.connected) {
+    return { type: 'solflare', adapter: solflare };
+  }
+  
+  return null;
+};
+
+export const getWalletByType = (type: WalletType): WalletAdapter | null => {
+  switch (type) {
+    case 'phantom':
+      return getPhantomWallet();
+    case 'solflare':
+      return getSolflareWallet();
+    default:
+      return null;
+  }
+};
+
 export const truncateAddress = (address: string, chars = 4): string => {
   if (!address) return '';
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;

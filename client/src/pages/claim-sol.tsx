@@ -13,6 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
+import WalletSelectionModal from '@/components/WalletSelectionModal';
+import { getConnectedWallet, getWalletByType, WalletType } from '@/lib/solana';
 
 interface EmptyTokenAccount {
   id: number;
@@ -279,11 +281,13 @@ export default function SolRefund() {
     setRealSwapData(null);
   };
   
-  // Wallet state synced with main navigation
+  // Multi-wallet state synced with main navigation
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectedWalletType, setConnectedWalletType] = useState<WalletType | null>(null);
   const [forceDisconnected, setForceDisconnected] = useState(false);
   const [hasCheckedInitialState, setHasCheckedInitialState] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   // Auto-quote for swap when input changes
   useEffect(() => {
@@ -298,31 +302,31 @@ export default function SolRefund() {
     }
   }, [swapInputAmount, swapInputToken, swapOutputToken, activeTab]);
 
-  // Sync with Phantom wallet state from main navigation
+  // Multi-wallet connection logic
   useEffect(() => {
     const checkWalletConnection = () => {
       // If user manually disconnected from SOL Refund page, stay disconnected
       if (forceDisconnected) {
         setPublicKey(null);
         setIsConnected(false);
+        setConnectedWalletType(null);
         setScanResult(null);
         console.log('SOL Refund: Force disconnected by user');
         return;
       }
       
-      // Check if wallet is properly connected
-      const isPhantomInstalled = window.solana && window.solana.isPhantom;
-      
       // On first load, be extra strict - wallet must be truly connected
       if (!hasCheckedInitialState) {
         setHasCheckedInitialState(true);
-        // Only show as connected if wallet is actually connected
-        if (isPhantomInstalled && window.solana?.isConnected && window.solana?.publicKey) {
+        
+        const connectedWallet = getConnectedWallet();
+        if (connectedWallet) {
           try {
-            const currentKey = window.solana.publicKey.toString();
+            const currentKey = connectedWallet.adapter.publicKey?.toString();
             if (currentKey && currentKey.length > 40) {
               setPublicKey(currentKey);
               setIsConnected(true);
+              setConnectedWalletType(connectedWallet.type);
               console.log('SOL Refund: Initial wallet check - connected');
               return;
             }
@@ -330,21 +334,25 @@ export default function SolRefund() {
             console.log('SOL Refund: Initial wallet check - error');
           }
         }
+        
         // Default to disconnected on first load
         setPublicKey(null);
         setIsConnected(false);
+        setConnectedWalletType(null);
         setScanResult(null);
         console.log('SOL Refund: Initial wallet check - not connected');
         return;
       }
       
       // Regular checks after initial load
-      if (isPhantomInstalled && window.solana?.isConnected && window.solana?.publicKey) {
+      const connectedWallet = getConnectedWallet();
+      if (connectedWallet) {
         try {
-          const currentKey = window.solana.publicKey.toString();
+          const currentKey = connectedWallet.adapter.publicKey?.toString();
           if (currentKey && currentKey.length > 40) {
             setPublicKey(currentKey);
             setIsConnected(true);
+            setConnectedWalletType(connectedWallet.type);
             console.log('SOL Refund: Wallet verified as connected');
           } else {
             throw new Error('Invalid wallet key');
@@ -352,12 +360,14 @@ export default function SolRefund() {
         } catch (error) {
           setPublicKey(null);
           setIsConnected(false);
+          setConnectedWalletType(null);
           setScanResult(null);
           console.log('SOL Refund: Error validating wallet');
         }
       } else {
         setPublicKey(null);
         setIsConnected(false);
+        setConnectedWalletType(null);
         setScanResult(null);
         console.log('SOL Refund: Wallet not connected');
       }
@@ -376,13 +386,19 @@ export default function SolRefund() {
       console.log('Wallet disconnect event detected');
       setPublicKey(null);
       setIsConnected(false);
+      setConnectedWalletType(null);
       setScanResult(null);
     };
 
-    // Add event listeners if available
+    // Add event listeners for both wallets
     if (window.solana && typeof (window.solana as any).on === 'function') {
       (window.solana as any).on('connect', handleConnect);
       (window.solana as any).on('disconnect', handleDisconnect);
+    }
+
+    if (window.solflare && typeof (window.solflare as any).on === 'function') {
+      (window.solflare as any).on('connect', handleConnect);
+      (window.solflare as any).on('disconnect', handleDisconnect);
     }
 
     // Fallback: Check wallet state periodically
@@ -393,6 +409,10 @@ export default function SolRefund() {
       if (window.solana && typeof (window.solana as any).off === 'function') {
         (window.solana as any).off('connect', handleConnect);
         (window.solana as any).off('disconnect', handleDisconnect);
+      }
+      if (window.solflare && typeof (window.solflare as any).off === 'function') {
+        (window.solflare as any).off('connect', handleConnect);
+        (window.solflare as any).off('disconnect', handleDisconnect);
       }
     };
   }, []);
@@ -452,6 +472,61 @@ export default function SolRefund() {
       setScanResult(null);
     }
   }, [isConnected, publicKey]);
+
+  // Multi-wallet connection functions
+  const handleConnectWallet = () => {
+    setShowWalletModal(true);
+  };
+
+  const connectToWallet = async (walletType: WalletType) => {
+    try {
+      const wallet = getWalletByType(walletType);
+      if (!wallet) {
+        toast({
+          title: "Wallet Not Found",
+          description: `Please install ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet to continue.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await wallet.connect();
+      toast({
+        title: "Wallet Connected",
+        description: `Successfully connected to ${wallet.name} wallet.`,
+      });
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      toast({
+        title: "Connection Failed",
+        description: `Failed to connect to ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const disconnectWallet = async () => {
+    try {
+      if (connectedWalletType) {
+        const wallet = getWalletByType(connectedWalletType);
+        if (wallet) {
+          await wallet.disconnect();
+          setForceDisconnected(true);
+          toast({
+            title: "Wallet Disconnected",
+            description: "Wallet has been disconnected successfully.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+      toast({
+        title: "Disconnection Failed",
+        description: "Failed to disconnect wallet.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Initialize Jupiter Terminal when swap tab is active
   useEffect(() => {
@@ -1379,46 +1454,7 @@ export default function SolRefund() {
     setSwapQuote(null);
   };
 
-  // Connect wallet function
-  const connectWallet = async () => {
-    try {
-      // Clear force disconnected state first
-      setForceDisconnected(false);
-      
-      if (!window.solana?.isPhantom) {
-        toast({
-          title: "Phantom Wallet Required",
-          description: "Please install Phantom wallet to continue.",
-          variant: "destructive",
-        });
-        return;
-      }
 
-      await window.solana.connect();
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      toast({
-        title: "Connection Failed",
-        description: "Failed to connect to Phantom wallet.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Disconnect wallet function
-  const disconnectWallet = async () => {
-    try {
-      if (window.solana) {
-        await window.solana.disconnect();
-      }
-      setForceDisconnected(true);
-      setPublicKey(null);
-      setIsConnected(false);
-      setScanResult(null);
-    } catch (error) {
-      console.error('Failed to disconnect wallet:', error);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -1446,7 +1482,7 @@ export default function SolRefund() {
                 </>
               ) : (
                 <Button
-                  onClick={connectWallet}
+                  onClick={handleConnectWallet}
                   className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
                 >
                   <Wallet className="h-4 w-4 mr-2" />
@@ -1822,6 +1858,13 @@ export default function SolRefund() {
           )}
         </div>
       </div>
+
+      {/* Wallet Selection Modal */}
+      <WalletSelectionModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onSelectWallet={connectToWallet}
+      />
     </div>
   );
 }

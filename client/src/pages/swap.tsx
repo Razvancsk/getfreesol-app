@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Link } from 'wouter';
 import { ArrowUpDown, RefreshCw, Coins, Wallet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import WalletSelectionModal from '@/components/WalletSelectionModal';
+import { getConnectedWallet, getWalletByType, WalletType } from '@/lib/solana';
 
 const connection = new Connection(
   import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
@@ -64,6 +66,8 @@ export default function SwapPage() {
   // Wallet state management (similar to claim-sol page)
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectedWalletType, setConnectedWalletType] = useState<WalletType | null>(null);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   
   const [inputToken, setInputToken] = useState<Token>(popularTokens[0]);
   const [outputToken, setOutputToken] = useState<Token>(popularTokens[1]);
@@ -73,40 +77,63 @@ export default function SwapPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
 
-  // Wallet connection logic
+  // Multi-wallet connection logic
   useEffect(() => {
     const checkWalletConnection = () => {
-      if (window.solana?.isConnected) {
-        const pubKey = window.solana.publicKey?.toString();
+      const connectedWallet = getConnectedWallet();
+      if (connectedWallet) {
+        const pubKey = connectedWallet.adapter.publicKey?.toString();
         if (pubKey) {
           setPublicKey(pubKey);
           setIsConnected(true);
+          setConnectedWalletType(connectedWallet.type);
         }
+      } else {
+        setPublicKey(null);
+        setIsConnected(false);
+        setConnectedWalletType(null);
       }
     };
 
     checkWalletConnection();
     
-    if (window.solana) {
-      window.solana.on('connect', () => {
-        const pubKey = window.solana?.publicKey?.toString();
-        if (pubKey) {
-          setPublicKey(pubKey);
-          setIsConnected(true);
-        }
-      });
+    // Set up event listeners for both wallets
+    const handleConnect = () => {
+      setTimeout(checkWalletConnection, 100); // Small delay to ensure state is updated
+    };
+    
+    const handleDisconnect = () => {
+      setPublicKey(null);
+      setIsConnected(false);
+      setConnectedWalletType(null);
+    };
 
-      window.solana.on('disconnect', () => {
-        setPublicKey(null);
-        setIsConnected(false);
-      });
+    // Phantom wallet events
+    if (window.solana) {
+      window.solana.on('connect', handleConnect);
+      window.solana.on('disconnect', handleDisconnect);
+    }
+
+    // Solflare wallet events
+    if (window.solflare) {
+      window.solflare.on('connect', handleConnect);
+      window.solflare.on('disconnect', handleDisconnect);
     }
 
     return () => {
+      // Cleanup event listeners
       if (window.solana) {
         try {
-          window.solana.off('connect', () => {});
-          window.solana.off('disconnect', () => {});
+          window.solana.off('connect', handleConnect);
+          window.solana.off('disconnect', handleDisconnect);
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+      if (window.solflare) {
+        try {
+          window.solflare.off('connect', handleConnect);
+          window.solflare.off('disconnect', handleDisconnect);
         } catch (e) {
           // Ignore cleanup errors
         }
@@ -114,24 +141,57 @@ export default function SwapPage() {
     };
   }, []);
 
-  // Connect wallet function
-  const connectWallet = async () => {
+  // Show wallet selection modal
+  const handleConnectWallet = () => {
+    setShowWalletModal(true);
+  };
+
+  // Connect to selected wallet
+  const connectToWallet = async (walletType: WalletType) => {
     try {
-      if (!window.solana?.isPhantom) {
+      const wallet = getWalletByType(walletType);
+      if (!wallet) {
         toast({
-          title: "Phantom Wallet Required",
-          description: "Please install Phantom wallet to continue.",
+          title: "Wallet Not Found",
+          description: `Please install ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet to continue.`,
           variant: "destructive",
         });
         return;
       }
 
-      await window.solana.connect();
+      await wallet.connect();
+      toast({
+        title: "Wallet Connected",
+        description: `Successfully connected to ${wallet.name} wallet.`,
+      });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       toast({
-        title: "Connection Failed", 
-        description: "Failed to connect to Phantom wallet.",
+        title: "Connection Failed",
+        description: `Failed to connect to ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Disconnect current wallet
+  const disconnectWallet = async () => {
+    try {
+      if (connectedWalletType) {
+        const wallet = getWalletByType(connectedWalletType);
+        if (wallet) {
+          await wallet.disconnect();
+          toast({
+            title: "Wallet Disconnected",
+            description: "Wallet has been disconnected successfully.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+      toast({
+        title: "Disconnection Failed",
+        description: "Failed to disconnect wallet.",
         variant: "destructive",
       });
     }
@@ -168,10 +228,16 @@ export default function SwapPage() {
 
   // Execute swap
   const executeSwap = async () => {
-    if (!publicKey || !quote || !window.solana) return;
+    if (!publicKey || !quote || !connectedWalletType) return;
     
     setIsSwapping(true);
     try {
+      // Get the connected wallet adapter
+      const wallet = getWalletByType(connectedWalletType);
+      if (!wallet) {
+        throw new Error('Wallet not found');
+      }
+
       // Get swap transaction
       const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
         method: 'POST',
@@ -194,8 +260,8 @@ export default function SwapPage() {
       const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
       const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
       
-      // Sign with Phantom wallet
-      const signedTransaction = await window.solana.signTransaction(transaction);
+      // Sign with connected wallet (works with both Phantom and Solflare)
+      const signedTransaction = await wallet.signTransaction(transaction);
       
       // Send transaction
       const signature = await connection.sendRawTransaction(signedTransaction.serialize());
@@ -260,7 +326,7 @@ export default function SwapPage() {
             {!isConnected && (
               <div className="text-center pt-4">
                 <Button
-                  onClick={connectWallet}
+                  onClick={handleConnectWallet}
                   className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   <Wallet className="h-4 w-4 mr-2" />
@@ -269,9 +335,22 @@ export default function SwapPage() {
               </div>
             )}
             {isConnected && publicKey && (
-              <div className="text-center pt-2">
+              <div className="text-center pt-2 space-y-2">
                 <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-3 py-1 text-white font-mono text-xs">
                   {publicKey.slice(0, 6)}...{publicKey.slice(-6)}
+                </div>
+                <div className="flex justify-center gap-2">
+                  <span className="text-xs text-purple-300 capitalize">
+                    {connectedWalletType} Wallet
+                  </span>
+                  <Button
+                    onClick={disconnectWallet}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-400 hover:text-red-300 h-auto p-1"
+                  >
+                    Disconnect
+                  </Button>
                 </div>
               </div>
             )}
@@ -403,6 +482,13 @@ export default function SwapPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Wallet Selection Modal */}
+      <WalletSelectionModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onWalletSelect={connectToWallet}
+      />
     </div>
   );
 }
