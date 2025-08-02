@@ -1734,17 +1734,16 @@ export default function SolRefund() {
                           }}
                         />
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white">
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="text-sm font-medium text-white truncate">
                           {token.symbol || 'TOKEN'}
                         </div>
-                        <div className="text-xs text-purple-300 font-mono truncate">
+                        <div className="text-xs text-purple-300 font-mono truncate w-full overflow-hidden">
                           {token.mint}
                         </div>
-                        <div className="text-xs text-white">
+                        <div className="text-xs text-white truncate">
                           Balance: {token.balance} {token.symbol || 'TOKENS'}
                         </div>
-                        {/* SOL recovery info removed */}
                       </div>
                     </div>
                   </div>
