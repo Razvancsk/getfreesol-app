@@ -292,11 +292,7 @@ export default function SolRefund() {
     walletName,
     connection,
     isMagicEdenAvailable,
-    connectMagicEden,
-    isTrustWalletAvailable,
-    connectTrustWallet,
-    setVisible,
-    select
+    connectMagicEden
   } = useWalletAdapter();
 
   // Auto-quote for swap when input changes
@@ -1368,21 +1364,23 @@ export default function SolRefund() {
                   </Button>
                 </>
               ) : (
-                <div className="flex flex-col items-center space-y-3">
+                <div className="flex items-center space-x-2">
                   <Button
-                    onClick={() => {
-                      select(null);
-                      setVisible(true);
-                    }}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
-                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Trust Wallet"
+                    onClick={handleConnectWallet}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
                   >
-                    <Wallet className="h-5 w-5 mr-2" />
+                    <Wallet className="h-4 w-4 mr-2" />
                     Connect Wallet
                   </Button>
-                  <p className="text-purple-300 text-sm text-center">
-                    Supports Phantom, Magic Eden, Solflare, and Coin98 wallets
-                  </p>
+                  {isMagicEdenAvailable && (
+                    <Button
+                      onClick={connectMagicEden}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                      title="Connect directly to Magic Eden wallet"
+                    >
+                      Magic Eden
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
