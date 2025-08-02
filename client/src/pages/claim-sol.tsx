@@ -1366,29 +1366,7 @@ export default function SolRefund() {
                 </>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium" />
-                  {isMagicEdenAvailable ? (
-                    <Button
-                      onClick={connectMagicEden}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                      title="Connect directly to Magic Eden wallet"
-                    >
-                      Magic Eden
-                    </Button>
-                  ) : (
-                    <div className="text-xs text-purple-300 bg-purple-900/20 px-3 py-2 rounded border border-purple-500/20">
-                      Magic Eden not installed
-                      <br />
-                      <a 
-                        href="https://wallet.magiceden.io/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-purple-400 hover:text-purple-300 underline"
-                      >
-                        Install here
-                      </a>
-                    </div>
-                  )}
+                  <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium !border-0" />
                 </div>
               )}
             </div>
