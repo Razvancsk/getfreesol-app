@@ -104,6 +104,26 @@ export default function SolRefund() {
   const [jupiterTokens, setJupiterTokens] = useState<any[]>([]);
   const [isSearchingTokens, setIsSearchingTokens] = useState(false);
 
+  // Function to get the correct trading pair address for DexScreener
+  const getTradingPairAddress = (tokenMint: string): string => {
+    // Map common tokens to their most liquid trading pairs on Solana
+    const tradingPairs: { [key: string]: string } = {
+      // SOL pairs
+      'So11111111111111111111111111111111111111112': 'So11111111111111111111111111111111111111112', // SOL itself
+      // USDC pairs - show USDC/SOL (most liquid USDC pair)
+      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': '58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2', // USDC/SOL pair
+      // USDT pairs
+      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'HWHvQhFmJB6gPtqJx3gjxHWnJsZFa5anEhNMC1RmYgcx', // USDT/SOL pair
+      // BONK pairs
+      'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': '8BnEgHoWFysVcuFFX7QztDmzuH8r5ZFvyP3sYwn1XTh6', // BONK/SOL pair
+      // WIF pairs
+      'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm': 'HWHvQhFmJB6gPtqJx3gjxHWnJsZFa5anEhNMC1RmYgcx', // WIF/SOL pair
+    };
+    
+    // Return the trading pair address if we have a mapping, otherwise use the token itself
+    return tradingPairs[tokenMint] || tokenMint;
+  };
+
   // Popular tokens list with logos
   const popularTokens = [
     {
@@ -1743,7 +1763,7 @@ export default function SolRefund() {
                 <div className="order-2 lg:order-1 bg-black rounded-xl border border-gray-700/50 overflow-hidden">
                   <iframe
                     key={`chart-${selectedTokenMint}-${Date.now()}`}
-                    src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
+                    src={`https://dexscreener.com/solana/${getTradingPairAddress(selectedTokenMint)}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
                     style={{
                       width: '100%',
                       height: '600px',
