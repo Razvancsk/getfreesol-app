@@ -38,23 +38,35 @@ export const useBitgetWallet = () => {
         (window as any).solana?.isBitKeep && (window as any).solana,
         (window as any).solana?.isBitget && (window as any).solana,
         (window as any).solana?.name === 'BitKeep' && (window as any).solana,
+        (window as any).solana?.name === 'Bitget' && (window as any).solana,
       ].filter(Boolean);
 
       const hasBitgetWallet = bitgetProviders.length > 0;
       
-      console.log('🔍 Bitget wallet detection:', {
+      // Enhanced detection for newer Bitget wallet versions
+      const detectionDetails = {
         hasWindow: typeof window !== 'undefined',
         hasBitKeep: !!(window as any).bitkeep,
         hasBitget: !!(window as any).bitget,
         hasBitgetWallet,
         bitgetProviders: bitgetProviders.length,
         solanaProvider: {
+          available: !!(window as any).solana,
           isBitKeep: (window as any).solana?.isBitKeep,
           isBitget: (window as any).solana?.isBitget,
           name: (window as any).solana?.name,
+          isPhantom: (window as any).solana?.isPhantom,
+          isSolflare: (window as any).solana?.isSolflare,
         },
         userAgent: navigator.userAgent.includes('BitKeep') || navigator.userAgent.includes('Bitget'),
-      });
+        extensionCheck: {
+          bitkeepExists: typeof (window as any).bitkeep !== 'undefined',
+          bitgetExists: typeof (window as any).bitget !== 'undefined',
+          methods: bitgetProviders.length > 0 ? Object.keys(bitgetProviders[0] || {}) : [],
+        }
+      };
+      
+      console.log('🔍 Enhanced Bitget wallet detection:', detectionDetails);
 
       setIsAvailable(hasBitgetWallet);
       
@@ -64,6 +76,7 @@ export const useBitgetWallet = () => {
         if (provider?.isConnected && provider?.publicKey) {
           setIsConnected(true);
           setPublicKey(provider.publicKey);
+          console.log('✅ Bitget wallet already connected:', provider.publicKey.toString());
         }
       }
     };

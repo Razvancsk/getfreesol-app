@@ -332,6 +332,8 @@ export default function SolRefund() {
     connection,
     isMagicEdenAvailable,
     connectMagicEden,
+    isBitgetAvailable,
+    connectBitget,
 
     setVisible,
     select
