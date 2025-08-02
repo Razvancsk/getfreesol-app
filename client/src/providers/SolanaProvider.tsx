@@ -10,6 +10,7 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { Coin98WalletAdapter } from "@solana/wallet-adapter-coin98";
+import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 
 import { clusterApiUrl } from "@solana/web3.js";
 import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
@@ -36,6 +37,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   // Configure wallets - reliable wallets only (removed Trust Wallet due to frame restrictions)
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
+    new BackpackWalletAdapter(),
     new MagicEdenWalletAdapter(),
     new SolflareWalletAdapter(),
     new Coin98WalletAdapter(),

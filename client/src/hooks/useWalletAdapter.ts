@@ -4,6 +4,7 @@ import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { useMagicEdenWallet } from './useMagicEdenWallet';
 import { useTrustWallet } from './useTrustWallet';
+import { useBackpackWallet } from './useBackpackWallet';
 
 
 
@@ -25,6 +26,8 @@ export interface WalletAdapterHook {
   connectMagicEden: () => Promise<void>;
   isTrustWalletAvailable: boolean;
   connectTrustWallet: () => Promise<void>;
+  isBackpackAvailable: boolean;
+  connectBackpack: () => Promise<void>;
 }
 
 export const useWalletAdapter = (): WalletAdapterHook => {
@@ -47,9 +50,20 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   // Direct wallet integrations
   const magicEdenWallet = useMagicEdenWallet();
   const trustWallet = useTrustWallet();
+  const backpackWallet = useBackpackWallet();
 
   const handleConnect = async () => {
-    // Priority: If Magic Eden is available and not using standard adapter, use direct connection
+    // Priority 1: If Backpack is available and not using standard adapter, use direct connection
+    if (backpackWallet.isAvailable && !connected && !backpackWallet.isConnected) {
+      try {
+        await backpackWallet.connect();
+        return;
+      } catch (error) {
+        console.error('Direct Backpack connection failed, falling back to adapter:', error);
+      }
+    }
+    
+    // Priority 2: If Magic Eden is available and not using standard adapter, use direct connection
     if (magicEdenWallet.isAvailable && !connected && !magicEdenWallet.isConnected) {
       try {
         await magicEdenWallet.connect();
@@ -79,6 +93,11 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   };
 
   const handleDisconnect = async () => {
+    // Disconnect Backpack direct connection if active
+    if (backpackWallet.isConnected) {
+      await backpackWallet.disconnect();
+    }
+    
     // Disconnect Magic Eden direct connection if active
     if (magicEdenWallet.isConnected) {
       await magicEdenWallet.disconnect();
@@ -159,21 +178,61 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     }
   };
 
-  // Use Magic Eden wallet state if connected, otherwise fall back to standard adapter
-  const effectivePublicKey = magicEdenWallet.isConnected ? magicEdenWallet.publicKey : publicKey;
-  const effectiveConnected = magicEdenWallet.isConnected || connected;
-  const effectiveWalletName = magicEdenWallet.isConnected ? 'Magic Eden' : (wallet?.adapter?.name || null);
+  const connectBackpack = async () => {
+    if (backpackWallet.isAvailable) {
+      try {
+        await backpackWallet.connect();
+        console.log('Connected to Backpack wallet directly');
+      } catch (error) {
+        console.error('Failed to connect to Backpack wallet:', error);
+        // Fallback to standard wallet adapter modal
+        setVisible(true);
+      }
+    } else {
+      // Backpack not installed, redirect to download
+      window.open('https://backpack.app/', '_blank');
+    }
+  };
+
+  // Use direct wallet connections if available, otherwise fall back to standard adapter
+  const effectivePublicKey = backpackWallet.isConnected ? backpackWallet.publicKey : 
+                           magicEdenWallet.isConnected ? magicEdenWallet.publicKey : publicKey;
+  const effectiveConnected = backpackWallet.isConnected || magicEdenWallet.isConnected || connected;
+  const effectiveWalletName = backpackWallet.isConnected ? 'Backpack' : 
+                            magicEdenWallet.isConnected ? 'Magic Eden' : (wallet?.adapter?.name || null);
 
   // Enhanced signTransaction wrapper with comprehensive error handling
   const wrappedSignTransaction = useCallback(async (transaction: any) => {
     console.log('🔐 WalletAdapter signTransaction called', {
+      backpackConnected: backpackWallet.isConnected,
       magicEdenConnected: magicEdenWallet.isConnected,
       standardConnected: connected,
       effectiveWallet: effectiveWalletName,
       hasTransaction: !!transaction
     });
 
-    if (magicEdenWallet.isConnected) {
+    if (backpackWallet.isConnected) {
+      try {
+        console.log('🔄 Using Backpack wallet for signing...');
+        return await backpackWallet.signTransaction(transaction);
+      } catch (error) {
+        console.error('❌ Backpack signing failed, attempting fallback to Magic Eden:', error);
+        
+        // If Backpack fails, try fallback to Magic Eden if available
+        if (magicEdenWallet.isConnected) {
+          console.log('🔄 Falling back to Magic Eden wallet...');
+          return await magicEdenWallet.signTransaction(transaction);
+        }
+        
+        // If Magic Eden not available, try standard adapter
+        if (connected && signTransaction) {
+          console.log('🔄 Falling back to standard wallet adapter...');
+          return await signTransaction(transaction);
+        }
+        
+        throw error;
+      }
+    } else if (magicEdenWallet.isConnected) {
       try {
         console.log('🔄 Using Magic Eden wallet for signing...');
         return await magicEdenWallet.signTransaction(transaction);
@@ -196,18 +255,40 @@ export const useWalletAdapter = (): WalletAdapterHook => {
       console.error('❌ Wallet signing failed:', error.message);
       throw error;
     }
-  }, [magicEdenWallet.isConnected, magicEdenWallet.signTransaction, connected, signTransaction, effectiveWalletName]);
+  }, [backpackWallet.isConnected, backpackWallet.signTransaction, magicEdenWallet.isConnected, magicEdenWallet.signTransaction, connected, signTransaction, effectiveWalletName]);
 
   // Enhanced signAllTransactions wrapper with comprehensive error handling
   const wrappedSignAllTransactions = useCallback(async (transactions: any[]) => {
     console.log('🔐 WalletAdapter signAllTransactions called', {
+      backpackConnected: backpackWallet.isConnected,
       magicEdenConnected: magicEdenWallet.isConnected,
       standardConnected: connected,
       effectiveWallet: effectiveWalletName,
       transactionCount: transactions.length
     });
 
-    if (magicEdenWallet.isConnected) {
+    if (backpackWallet.isConnected) {
+      try {
+        console.log('🔄 Using Backpack wallet for batch signing...');
+        return await backpackWallet.signAllTransactions(transactions);
+      } catch (error) {
+        console.error('❌ Backpack batch signing failed, attempting fallback to Magic Eden:', error);
+        
+        // If Backpack fails, try fallback to Magic Eden if available
+        if (magicEdenWallet.isConnected) {
+          console.log('🔄 Falling back to Magic Eden wallet...');
+          return await magicEdenWallet.signAllTransactions(transactions);
+        }
+        
+        // If Magic Eden not available, try standard adapter
+        if (connected && signAllTransactions) {
+          console.log('🔄 Falling back to standard wallet adapter...');
+          return await signAllTransactions(transactions);
+        }
+        
+        throw error;
+      }
+    } else if (magicEdenWallet.isConnected) {
       try {
         console.log('🔄 Using Magic Eden wallet for batch signing...');
         return await magicEdenWallet.signAllTransactions(transactions);
@@ -230,7 +311,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
       console.error('❌ Wallet batch signing failed:', error.message);
       throw error;
     }
-  }, [magicEdenWallet.isConnected, magicEdenWallet.signAllTransactions, connected, signAllTransactions, effectiveWalletName]);
+  }, [backpackWallet.isConnected, backpackWallet.signAllTransactions, magicEdenWallet.isConnected, magicEdenWallet.signAllTransactions, connected, signAllTransactions, effectiveWalletName]);
 
   // Wrap select function to handle type conversion
   const handleSelect = useCallback((walletName: string | null) => {
@@ -240,7 +321,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   return {
     publicKey: effectivePublicKey,
     connected: effectiveConnected,
-    connecting: connecting || magicEdenWallet.connecting,
+    connecting: connecting || backpackWallet.connecting || magicEdenWallet.connecting,
     disconnecting,
     connect: handleConnect,
     disconnect: handleDisconnect,
@@ -253,6 +334,8 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     isMagicEdenAvailable: magicEdenWallet.isAvailable,
     connectMagicEden,
     isTrustWalletAvailable: trustWallet.isAvailable,
-    connectTrustWallet
+    connectTrustWallet,
+    isBackpackAvailable: backpackWallet.isAvailable,
+    connectBackpack
   };
 };
