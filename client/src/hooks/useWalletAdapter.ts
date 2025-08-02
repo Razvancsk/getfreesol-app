@@ -246,7 +246,9 @@ export const useWalletAdapter = (): WalletAdapterHook => {
       magicEdenConnected: magicEdenWallet.isConnected,
       standardConnected: connected,
       effectiveWallet: effectiveWalletName,
-      hasTransaction: !!transaction
+      standardWalletName: wallet?.adapter?.name,
+      hasTransaction: !!transaction,
+      publicKey: publicKey?.toString().slice(0, 8) + '...'
     });
 
     if (backpackWallet.isConnected) {
@@ -310,19 +312,23 @@ export const useWalletAdapter = (): WalletAdapterHook => {
         // This prevents opening Phantom when user chose Magic Eden
         throw new Error(`Magic Eden wallet signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-    } else if (connected && signTransaction) {
+    } else if (connected && signTransaction && wallet?.adapter) {
+      const walletName = wallet.adapter.name;
       console.log('🔄 Using standard wallet adapter for signing...', {
-        walletName: wallet?.adapter?.name,
+        walletName,
         publicKey: publicKey?.toString().slice(0, 8) + '...',
-        readyState: wallet?.readyState
+        readyState: wallet?.readyState,
+        adapterType: wallet?.adapter?.constructor?.name
       });
       
       try {
+        // Use the hook's signTransaction method which should route to the correct wallet
+        console.log('🔄 Calling signTransaction for', walletName);
         const signedTx = await signTransaction(transaction);
-        console.log('✅ Standard wallet adapter signing successful');
+        console.log('✅ Standard wallet adapter signing successful for', walletName);
         return signedTx;
       } catch (error) {
-        console.error('❌ Standard wallet adapter signing failed:', error);
+        console.error('❌ Wallet adapter signing failed for', walletName, ':', error);
         throw error;
       }
     } else {
@@ -404,19 +410,21 @@ export const useWalletAdapter = (): WalletAdapterHook => {
         // This prevents opening Phantom when user chose Magic Eden
         throw new Error(`Magic Eden wallet batch signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
-    } else if (connected && signAllTransactions) {
+    } else if (connected && signAllTransactions && wallet?.adapter) {
+      const walletName = wallet.adapter.name;
       console.log('🔄 Using standard wallet adapter for batch signing...', {
-        walletName: wallet?.adapter?.name,
+        walletName,
         publicKey: publicKey?.toString().slice(0, 8) + '...',
         transactionCount: transactions.length
       });
       
       try {
+        console.log('🔄 Calling signAllTransactions for', walletName);
         const signedTxs = await signAllTransactions(transactions);
-        console.log('✅ Standard wallet adapter batch signing successful');
+        console.log('✅ Standard wallet adapter batch signing successful for', walletName);
         return signedTxs;
       } catch (error) {
-        console.error('❌ Standard wallet adapter batch signing failed:', error);
+        console.error('❌ Standard wallet adapter batch signing failed for', walletName, ':', error);
         throw error;
       }
     } else {
