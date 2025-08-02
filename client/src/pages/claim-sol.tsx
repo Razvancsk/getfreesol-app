@@ -821,7 +821,7 @@ export default function SolRefund() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          walletAddress: publicKey,
+          walletAddress: publicKey?.toString(),
           tokenMint
         })
       });
@@ -867,7 +867,7 @@ export default function SolRefund() {
       });
       // Refresh token list
       if (publicKey) {
-        scanTokensMutation.mutate(publicKey);
+        scanTokensMutation.mutate(publicKey.toString());
       }
     },
     onError: (error) => {
@@ -902,7 +902,7 @@ export default function SolRefund() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          walletAddress: publicKey,
+          walletAddress: publicKey?.toString(),
           tokenMints
         })
       });
@@ -946,7 +946,7 @@ export default function SolRefund() {
       // Clear selections and refresh
       setSelectedTokens(new Set());
       if (publicKey) {
-        scanTokensMutation.mutate(publicKey);
+        scanTokensMutation.mutate(publicKey.toString());
       }
     },
     onError: (error) => {
@@ -1183,8 +1183,8 @@ export default function SolRefund() {
       
       // Invalidate user profile to update total points
       if (publicKey) {
-        queryClient.invalidateQueries({ queryKey: ['/api/user/profile', publicKey] });
-        queryClient.refetchQueries({ queryKey: ['/api/user/profile', publicKey] });
+        queryClient.invalidateQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
+        queryClient.refetchQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
       }
       
       // Also invalidate leaderboard to update rankings
@@ -1216,7 +1216,7 @@ export default function SolRefund() {
     const allAccountAddresses = scanResult.accounts.map(acc => acc.accountAddress);
     
     refundMutation.mutate({
-      walletAddress: publicKey || "",
+      walletAddress: publicKey?.toString() || "",
       selectedAccounts: allAccountAddresses,
       donationPercentage,
     });
@@ -1292,7 +1292,7 @@ export default function SolRefund() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quoteResponse: swapQuote,
-          userPublicKey: publicKey,
+          userPublicKey: publicKey?.toString(),
           wrapAndUnwrapSol: true,
           feeAccount: REFERRAL_ACCOUNT,
         }),
@@ -1347,7 +1347,7 @@ export default function SolRefund() {
               {isConnected && publicKey ? (
                 <>
                   <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
-                    {publicKey.slice(0, 6)}...{publicKey.slice(-6)}
+                    {publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}
                   </div>
                   <Button
                     onClick={disconnectWallet}
@@ -1428,9 +1428,9 @@ export default function SolRefund() {
                 onClick={() => {
                   if (publicKey) {
                     if (activeTab === 'reclaim') {
-                      scanMutation.mutate(publicKey);
+                      scanMutation.mutate(publicKey.toString());
                     } else if (activeTab === 'burnTokens') {
-                      scanTokensMutation.mutate(publicKey);
+                      scanTokensMutation.mutate(publicKey.toString());
                     }
                   }
                 }}
