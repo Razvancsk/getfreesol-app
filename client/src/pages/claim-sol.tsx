@@ -1480,6 +1480,51 @@ export default function SolRefund() {
             </p>
           </div>
 
+
+
+
+
+          {/* Scan Wallet Section - Hidden on swap tab */}
+          {isConnected && activeTab !== 'swap' && (
+            <div className="text-center">
+              <Button 
+                onClick={() => {
+                  if (publicKey) {
+                    if (activeTab === 'reclaim') {
+                      scanMutation.mutate(publicKey.toString());
+                    } else if (activeTab === 'burnTokens') {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }
+                }}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
+                size="lg"
+                className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
+              >
+                {(scanMutation.isPending || scanTokensMutation.isPending) ? (
+                  <RefreshCw className="h-6 w-6 animate-spin mr-3" />
+                ) : (
+                  <Search className="h-6 w-6 mr-3" />
+                )}
+                {(scanMutation.isPending || scanTokensMutation.isPending) 
+                  ? 'Scanning Wallet...' 
+                  : `Scan ${activeTab === 'reclaim' ? 'Empty Accounts' : 'Tokens'}`
+                }
+              </Button>
+            </div>
+          )}
+
+          {/* Connect Wallet Message */}
+          {!isConnected && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="text-center space-y-4">
+                <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
+                <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
+                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to get your SOL back!</p>
+              </div>
+            </div>
+          )}
+
           {/* Safety & Security Section - Only show on reclaim tab */}
           {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
@@ -1527,49 +1572,6 @@ export default function SolRefund() {
                 <p className="font-medium text-white">
                   Only accounts with 0 tokens are eligible for closure - your funds are completely safe.
                 </p>
-              </div>
-            </div>
-          )}
-
-
-
-          {/* Scan Wallet Section - Hidden on swap tab */}
-          {isConnected && activeTab !== 'swap' && (
-            <div className="text-center">
-              <Button 
-                onClick={() => {
-                  if (publicKey) {
-                    if (activeTab === 'reclaim') {
-                      scanMutation.mutate(publicKey.toString());
-                    } else if (activeTab === 'burnTokens') {
-                      scanTokensMutation.mutate(publicKey.toString());
-                    }
-                  }
-                }}
-                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
-                size="lg"
-                className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
-              >
-                {(scanMutation.isPending || scanTokensMutation.isPending) ? (
-                  <RefreshCw className="h-6 w-6 animate-spin mr-3" />
-                ) : (
-                  <Search className="h-6 w-6 mr-3" />
-                )}
-                {(scanMutation.isPending || scanTokensMutation.isPending) 
-                  ? 'Scanning Wallet...' 
-                  : `Scan ${activeTab === 'reclaim' ? 'Empty Accounts' : 'Tokens'}`
-                }
-              </Button>
-            </div>
-          )}
-
-          {/* Connect Wallet Message */}
-          {!isConnected && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="text-center space-y-4">
-                <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
-                <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
-                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to get your SOL back!</p>
               </div>
             </div>
           )}
