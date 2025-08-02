@@ -1331,13 +1331,12 @@ export default function SolRefund() {
           {/* Header with Navigation and Wallet Connection */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center">
                 <img 
                   src={logoImage}
-                  alt="Get Your Sol Logo"
-                  className="h-12 w-auto"
+                  alt="Get Your Sol"
+                  className="h-16 w-auto"
                 />
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
               </div>
             </div>
             
