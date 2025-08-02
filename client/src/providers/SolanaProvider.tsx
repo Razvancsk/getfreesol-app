@@ -13,7 +13,7 @@ import { Coin98WalletAdapter } from "@solana/wallet-adapter-coin98";
 import { TrustWalletAdapter } from "@solana/wallet-adapter-trust";
 
 import { clusterApiUrl } from "@solana/web3.js";
-import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
+import { MagicEdenWalletAdapter } from "@solana/wallet-adapter-magiceden";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 interface SolanaProviderProps {
