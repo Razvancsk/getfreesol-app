@@ -11,13 +11,23 @@ export function useMagicEdenWallet() {
   // Check if Magic Eden wallet is available
   useEffect(() => {
     const checkProvider = () => {
-      if (typeof window !== 'undefined' && window.magicEden?.solana) {
-        const magicEdenProvider = window.magicEden.solana;
+      // Check multiple potential Magic Eden injection patterns
+      const potentialProviders = [
+        window.magicEden?.solana,
+        (window as any).solana && (window as any).solana.isMagicEden ? (window as any).solana : null,
+        // Check if Magic Eden is in the window.solana providers array
+        (window as any).solana?.providers?.find?.((p: any) => p.isMagicEden || p.name === 'Magic Eden'),
+      ].filter(Boolean);
+
+      const magicEdenProvider = potentialProviders[0];
+      
+      if (magicEdenProvider) {
         console.log('🔍 Magic Eden provider detected', {
           hasProvider: !!magicEdenProvider,
           isConnected: magicEdenProvider.isConnected,
           publicKey: magicEdenProvider.publicKey?.toString(),
           isMagicEden: magicEdenProvider.isMagicEden,
+          name: magicEdenProvider.name,
           hasSignTransaction: typeof magicEdenProvider.signTransaction === 'function',
           hasSignAllTransactions: typeof magicEdenProvider.signAllTransactions === 'function'
         });
@@ -29,7 +39,11 @@ export function useMagicEdenWallet() {
         console.log('🔍 Magic Eden wallet not detected', {
           hasWindow: typeof window !== 'undefined',
           hasMagicEden: !!window?.magicEden,
-          hasSolana: !!window?.magicEden?.solana
+          hasSolana: !!window?.magicEden?.solana,
+          windowSolana: !!(window as any).solana,
+          windowSolanaName: (window as any).solana?.name,
+          windowSolanaIsMagicEden: (window as any).solana?.isMagicEden,
+          providers: (window as any).solana?.providers?.map?.((p: any) => p.name || 'unnamed')
         });
       }
     };
@@ -122,7 +136,8 @@ export function useMagicEdenWallet() {
       hasProvider: !!provider,
       isConnected,
       publicKey: publicKey?.toString(),
-      transactionType: transaction.constructor.name
+      transactionType: transaction.constructor.name,
+      hasSignTransaction: !!provider?.signTransaction
     });
 
     if (!provider) {
@@ -139,6 +154,12 @@ export function useMagicEdenWallet() {
 
     if (!publicKey) {
       const error = new Error('Magic Eden wallet public key not available');
+      console.error('❌ Magic Eden signTransaction failed:', error.message);
+      throw error;
+    }
+
+    if (!provider.signTransaction) {
+      const error = new Error('Magic Eden wallet does not support signTransaction');
       console.error('❌ Magic Eden signTransaction failed:', error.message);
       throw error;
     }

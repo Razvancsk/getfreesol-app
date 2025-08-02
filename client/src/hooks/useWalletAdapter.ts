@@ -300,21 +300,31 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     } else if (magicEdenWallet.isConnected) {
       try {
         console.log('🔄 Using Magic Eden wallet for signing...');
-        return await magicEdenWallet.signTransaction(transaction);
+        const signedTx = await magicEdenWallet.signTransaction(transaction);
+        console.log('✅ Magic Eden signing successful');
+        return signedTx;
       } catch (error) {
-        console.error('❌ Magic Eden signing failed, attempting fallback to standard adapter:', error);
+        console.error('❌ Magic Eden signing failed:', error);
         
-        // If Magic Eden fails, try fallback to standard adapter if available
-        if (connected && signTransaction) {
-          console.log('🔄 Falling back to standard wallet adapter...');
-          return await signTransaction(transaction);
-        }
-        
-        throw error;
+        // Don't fallback to standard adapter when Magic Eden is explicitly connected
+        // This prevents opening Phantom when user chose Magic Eden
+        throw new Error(`Magic Eden wallet signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     } else if (connected && signTransaction) {
-      console.log('🔄 Using standard wallet adapter for signing...');
-      return await signTransaction(transaction);
+      console.log('🔄 Using standard wallet adapter for signing...', {
+        walletName: wallet?.adapter?.name,
+        publicKey: publicKey?.toString().slice(0, 8) + '...',
+        readyState: wallet?.readyState
+      });
+      
+      try {
+        const signedTx = await signTransaction(transaction);
+        console.log('✅ Standard wallet adapter signing successful');
+        return signedTx;
+      } catch (error) {
+        console.error('❌ Standard wallet adapter signing failed:', error);
+        throw error;
+      }
     } else {
       const error = new Error('No wallet connected for signing');
       console.error('❌ Wallet signing failed:', error.message);
@@ -384,21 +394,31 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     } else if (magicEdenWallet.isConnected) {
       try {
         console.log('🔄 Using Magic Eden wallet for batch signing...');
-        return await magicEdenWallet.signAllTransactions(transactions);
+        const signedTxs = await magicEdenWallet.signAllTransactions(transactions);
+        console.log('✅ Magic Eden batch signing successful');
+        return signedTxs;
       } catch (error) {
-        console.error('❌ Magic Eden batch signing failed, attempting fallback to standard adapter:', error);
+        console.error('❌ Magic Eden batch signing failed:', error);
         
-        // If Magic Eden fails, try fallback to standard adapter if available
-        if (connected && signAllTransactions) {
-          console.log('🔄 Falling back to standard wallet adapter...');
-          return await signAllTransactions(transactions);
-        }
-        
-        throw error;
+        // Don't fallback to standard adapter when Magic Eden is explicitly connected
+        // This prevents opening Phantom when user chose Magic Eden
+        throw new Error(`Magic Eden wallet batch signing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     } else if (connected && signAllTransactions) {
-      console.log('🔄 Using standard wallet adapter for batch signing...');
-      return await signAllTransactions(transactions);
+      console.log('🔄 Using standard wallet adapter for batch signing...', {
+        walletName: wallet?.adapter?.name,
+        publicKey: publicKey?.toString().slice(0, 8) + '...',
+        transactionCount: transactions.length
+      });
+      
+      try {
+        const signedTxs = await signAllTransactions(transactions);
+        console.log('✅ Standard wallet adapter batch signing successful');
+        return signedTxs;
+      } catch (error) {
+        console.error('❌ Standard wallet adapter batch signing failed:', error);
+        throw error;
+      }
     } else {
       const error = new Error('No wallet connected for batch signing');
       console.error('❌ Wallet batch signing failed:', error.message);
