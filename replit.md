@@ -141,6 +141,15 @@ Preferred communication style: Simple, everyday language.
 - **Improved wallet connection errors** - automatically resets selection and shows modal when unavailable wallets are clicked
 - **Added Trust Wallet deep linking** for mobile devices with app store fallbacks
 
+### February 2, 2025 - Fixed Wallet Isolation and Deployment Configuration
+- **Fixed critical wallet routing issue** where Solflare transactions were being sent to Phantom
+- **Implemented strict wallet isolation** in signTransaction and signAllTransactions functions
+- **Removed fallback logic** that caused wallet cross-contamination during transaction signing
+- **Each wallet now handles only its own transactions** with no interference from other wallets
+- **Added comprehensive logging** to track which wallet is being used for each transaction
+- **Created deployment build script** to properly copy static files for production deployment
+- **Fixed deployment configuration** to ensure serveStatic function finds built files correctly
+
 ### February 2, 2025 - Complete Statistics and Transaction Ledger Implementation
 - **Successfully implemented comprehensive All Time Ledger** with transaction history table showing clickable rows
 - **Added real-time statistics display** with Total SOL Recovered and Total Accounts Closed cards
