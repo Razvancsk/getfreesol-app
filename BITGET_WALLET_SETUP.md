@@ -2,13 +2,20 @@
 
 ## Why Bitget Wallet is Not Connecting
 
-The enhanced detection logs show:
+The official detection logs show:
 ```
-"hasBitKeep": false, "hasBitget": false, "bitgetWallet": false
-"extensionCheck": {"bitkeepExists": false, "bitgetExists": false}
+"officialDetection": {"isBitKeep": false, "bitkeepSolana": false}
+"finalResult": {"hasBitgetWallet": false, "detectedProvider": false}
 ```
 
 This means **Bitget wallet extension is not installed** in your browser.
+
+## Official Detection Method
+
+We now use the official Bitget detection method from their documentation:
+```javascript
+const isBitKeepInstalled = window.isBitKeep && window.bitkeep.solana;
+```
 
 ## How to Install Bitget Wallet
 
@@ -43,10 +50,12 @@ Once installed, the app will automatically detect it:
 ## Current Integration Status
 
 ✅ **BitKeepWalletAdapter installed** (@solana/wallet-adapter-bitkeep)
-✅ **Custom Bitget hook created** (useBitgetWallet.ts)
+✅ **Custom Bitget hook created** (useBitgetWallet.ts) 
+✅ **Official detection method implemented** (window.isBitKeep && window.bitkeep.solana)
+✅ **Official API methods used** (connect(), getAccount(), signTransaction())
 ✅ **Full wallet isolation** - no cross-contamination with other wallets
-✅ **Enhanced detection** - multiple injection patterns supported
-✅ **Error handling** - proper fallbacks and user guidance
+✅ **Proper error handling** - guides users to official download page
+✅ **Trust Wallet completely removed** from selection modal
 
 ## What Works Right Now
 

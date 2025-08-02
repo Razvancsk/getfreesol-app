@@ -31,49 +31,47 @@ export const useBitgetWallet = () => {
 
   useEffect(() => {
     const checkBitgetWallet = () => {
-      // Check multiple possible Bitget wallet injection patterns
-      const bitgetProviders = [
-        (window as any).bitkeep?.solana,
-        (window as any).bitget?.solana,
-        (window as any).solana?.isBitKeep && (window as any).solana,
-        (window as any).solana?.isBitget && (window as any).solana,
+      // Official Bitget detection method from their docs: https://docs.bitkeep.io/en/docs/guide/wallet/solana.html#installed-or-not
+      const isBitKeepInstalled = (window as any).isBitKeep && (window as any).bitkeep?.solana;
+      
+      // Also check for alternative injection patterns for backward compatibility
+      const alternativeProviders = [
+        (window as any).bitget?.solana, // Alternative namespace
+        (window as any).solana?.isBitKeep && (window as any).solana, // Standard adapter detection
         (window as any).solana?.name === 'BitKeep' && (window as any).solana,
-        (window as any).solana?.name === 'Bitget' && (window as any).solana,
       ].filter(Boolean);
 
-      const hasBitgetWallet = bitgetProviders.length > 0;
+      const hasBitgetWallet = isBitKeepInstalled || alternativeProviders.length > 0;
+      const provider = isBitKeepInstalled ? (window as any).bitkeep.solana : alternativeProviders[0];
       
-      // Enhanced detection for newer Bitget wallet versions
+      // Enhanced detection using official methods
       const detectionDetails = {
         hasWindow: typeof window !== 'undefined',
-        hasBitKeep: !!(window as any).bitkeep,
-        hasBitget: !!(window as any).bitget,
-        hasBitgetWallet,
-        bitgetProviders: bitgetProviders.length,
-        solanaProvider: {
-          available: !!(window as any).solana,
-          isBitKeep: (window as any).solana?.isBitKeep,
-          isBitget: (window as any).solana?.isBitget,
-          name: (window as any).solana?.name,
-          isPhantom: (window as any).solana?.isPhantom,
-          isSolflare: (window as any).solana?.isSolflare,
+        officialDetection: {
+          isBitKeep: !!(window as any).isBitKeep,
+          bitkeepSolana: !!(window as any).bitkeep?.solana,
+          official: isBitKeepInstalled,
+        },
+        alternativeDetection: {
+          bitgetSolana: !!(window as any).bitget?.solana,
+          standardAdapter: !!(window as any).solana?.isBitKeep,
+          alternatives: alternativeProviders.length,
+        },
+        finalResult: {
+          hasBitgetWallet,
+          detectedProvider: !!provider,
+          providerMethods: provider ? Object.keys(provider).slice(0, 10) : [], // Show first 10 methods
         },
         userAgent: navigator.userAgent.includes('BitKeep') || navigator.userAgent.includes('Bitget'),
-        extensionCheck: {
-          bitkeepExists: typeof (window as any).bitkeep !== 'undefined',
-          bitgetExists: typeof (window as any).bitget !== 'undefined',
-          methods: bitgetProviders.length > 0 ? Object.keys(bitgetProviders[0] || {}) : [],
-        }
       };
       
-      console.log('🔍 Enhanced Bitget wallet detection:', detectionDetails);
+      console.log('🔍 Official Bitget wallet detection:', detectionDetails);
 
       setIsAvailable(hasBitgetWallet);
       
       // Check if already connected
-      if (hasBitgetWallet) {
-        const provider = bitgetProviders[0];
-        if (provider?.isConnected && provider?.publicKey) {
+      if (hasBitgetWallet && provider) {
+        if (provider.connected && provider.publicKey) {
           setIsConnected(true);
           setPublicKey(provider.publicKey);
           console.log('✅ Bitget wallet already connected:', provider.publicKey.toString());
@@ -97,30 +95,25 @@ export const useBitgetWallet = () => {
     try {
       setConnecting(true);
       
-      const provider = 
-        (window as any).bitkeep?.solana ||
+      // Use official detection method first
+      const provider = (window as any).isBitKeep && (window as any).bitkeep?.solana ? 
+        (window as any).bitkeep.solana :
         (window as any).bitget?.solana ||
-        ((window as any).solana?.isBitKeep || (window as any).solana?.isBitget || (window as any).solana?.name === 'BitKeep') && (window as any).solana;
+        ((window as any).solana?.isBitKeep && (window as any).solana);
 
       if (!provider) {
-        console.log('❌ Bitget wallet provider not found, trying alternative connection methods...');
+        console.log('❌ Bitget wallet not detected using official method');
         
-        // Check if we're in Bitget wallet browser
-        const isBitgetWalletBrowser = navigator.userAgent.includes('BitKeep') || navigator.userAgent.includes('Bitget');
-        if (isBitgetWalletBrowser) {
-          // If in Bitget wallet browser, the provider should be available
-          throw new Error('Bitget wallet browser detected but Solana provider not found. Please refresh the page.');
+        // Guide user to install Bitget wallet using official download link
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          // Mobile: try deep link first, then fallback to download
+          window.open('https://web3.bitget.com/en/wallet-download?type=2', '_blank');
+          throw new Error('Bitget wallet not installed. Please download from the official website.');
         } else {
-          // Not in browser, try deep link or download
-          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-          if (isMobile) {
-            const deepLink = `bitkeep://wallet/solana`;
-            console.log('📱 Opening Bitget wallet app via deep link:', deepLink);
-            window.location.href = deepLink;
-            throw new Error('Opening Bitget wallet app. If not installed, you will be redirected to download.');
-          } else {
-            throw new Error('Bitget wallet not installed. Please download Bitget wallet for desktop or use the Bitget wallet mobile app.');
-          }
+          // Desktop: direct to download page as per docs
+          window.open('https://web3.bitget.com/en/wallet-download?type=2', '_blank');
+          throw new Error('Bitget wallet not installed. Please download the browser extension from the official website.');
         }
       }
 
@@ -131,22 +124,20 @@ export const useBitgetWallet = () => {
         name: provider.name || 'Unknown',
       });
 
-      // Check for iframe/frame restrictions
-      if (window.self !== window.top) {
-        console.log('🚫 Detected iframe/frame context - Bitget wallet may block connection');
-        throw new Error('Bitget wallet blocks connections in embedded frames. Please open this page directly in Bitget wallet browser or use the Bitget wallet app.');
-      }
+      console.log('🔗 Connecting to Bitget wallet using official API...');
 
-      const response = await provider.connect();
+      // Use official connection method from docs
+      await provider.connect();
+      const publicKey = await provider.getAccount();
       
-      if (response?.publicKey) {
-        console.log('✅ Bitget wallet connected successfully:', response.publicKey.toString());
+      if (publicKey) {
+        console.log('✅ Bitget wallet connected successfully:', publicKey.toString());
         setIsConnected(true);
-        setPublicKey(response.publicKey);
-        return response.publicKey;
+        setPublicKey(publicKey);
+        return publicKey;
       }
       
-      throw new Error('Bitget wallet connection returned no public key');
+      throw new Error('Bitget wallet connection successful but no public key returned');
     } catch (error: any) {
       console.error('❌ Bitget wallet connection failed:', error);
       setIsConnected(false);
@@ -159,10 +150,11 @@ export const useBitgetWallet = () => {
 
   const disconnect = useCallback(async () => {
     try {
-      const provider = 
-        (window as any).bitkeep?.solana ||
+      // Use official detection method
+      const provider = (window as any).isBitKeep && (window as any).bitkeep?.solana ? 
+        (window as any).bitkeep.solana :
         (window as any).bitget?.solana ||
-        ((window as any).solana?.isBitKeep || (window as any).solana?.isBitget) && (window as any).solana;
+        ((window as any).solana?.isBitKeep && (window as any).solana);
 
       if (provider && provider.disconnect) {
         await provider.disconnect();
@@ -183,16 +175,17 @@ export const useBitgetWallet = () => {
         throw new Error('Bitget wallet not connected');
       }
 
-      const provider = 
-        (window as any).bitkeep?.solana ||
+      // Use official detection method
+      const provider = (window as any).isBitKeep && (window as any).bitkeep?.solana ? 
+        (window as any).bitkeep.solana :
         (window as any).bitget?.solana ||
-        ((window as any).solana?.isBitKeep || (window as any).solana?.isBitget) && (window as any).solana;
+        ((window as any).solana?.isBitKeep && (window as any).solana);
 
       if (!provider) {
         throw new Error('Bitget wallet provider not available');
       }
 
-      console.log('📝 Signing transaction with Bitget wallet...');
+      console.log('📝 Signing transaction with Bitget wallet using official API...');
       const signedTransaction = await provider.signTransaction(transaction);
       console.log('✅ Transaction signed with Bitget wallet');
       return signedTransaction;
@@ -208,16 +201,17 @@ export const useBitgetWallet = () => {
         throw new Error('Bitget wallet not connected');
       }
 
-      const provider = 
-        (window as any).bitkeep?.solana ||
+      // Use official detection method
+      const provider = (window as any).isBitKeep && (window as any).bitkeep?.solana ? 
+        (window as any).bitkeep.solana :
         (window as any).bitget?.solana ||
-        ((window as any).solana?.isBitKeep || (window as any).solana?.isBitget) && (window as any).solana;
+        ((window as any).solana?.isBitKeep && (window as any).solana);
 
       if (!provider) {
         throw new Error('Bitget wallet provider not available');
       }
 
-      console.log(`📝 Signing ${transactions.length} transactions with Bitget wallet...`);
+      console.log(`📝 Signing ${transactions.length} transactions with Bitget wallet using official API...`);
       const signedTransactions = await provider.signAllTransactions(transactions);
       console.log('✅ All transactions signed with Bitget wallet');
       return signedTransactions;
