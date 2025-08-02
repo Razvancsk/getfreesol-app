@@ -3,6 +3,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { useMagicEdenWallet } from './useMagicEdenWallet';
+import { useTrustWallet } from './useTrustWallet';
 
 
 
@@ -22,6 +23,8 @@ export interface WalletAdapterHook {
   select: (walletName: string | null) => void;
   isMagicEdenAvailable: boolean;
   connectMagicEden: () => Promise<void>;
+  isTrustWalletAvailable: boolean;
+  connectTrustWallet: () => Promise<void>;
 }
 
 export const useWalletAdapter = (): WalletAdapterHook => {
@@ -229,6 +232,11 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     }
   }, [magicEdenWallet.isConnected, magicEdenWallet.signAllTransactions, connected, signAllTransactions, effectiveWalletName]);
 
+  // Wrap select function to handle type conversion
+  const handleSelect = useCallback((walletName: string | null) => {
+    select(walletName as any); // Type conversion needed for wallet adapter compatibility
+  }, [select]);
+
   return {
     publicKey: effectivePublicKey,
     connected: effectiveConnected,
@@ -241,7 +249,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     walletName: effectiveWalletName,
     connection,
     setVisible,
-    select,
+    select: handleSelect,
     isMagicEdenAvailable: magicEdenWallet.isAvailable,
     connectMagicEden,
     isTrustWalletAvailable: trustWallet.isAvailable,
