@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
+import { useMobileWallet } from '@/hooks/useMobileWallet';
+import { isMobileDevice, isInWalletBrowser, openWalletForSigning } from '@/utils/mobileWalletUtils';
 import logoImage from '@assets/get free new logo_1754172568183.png';
 
 interface EmptyTokenAccount {
@@ -69,7 +71,7 @@ export default function SolRefund() {
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
-    if (activeTab !== 'burn') {
+    if (activeTab !== 'burnTokens') {
       setSelectedTokens(new Set());
     }
   }, [activeTab]);
@@ -82,7 +84,7 @@ export default function SolRefund() {
       // Remove any selected tokens that are no longer in the current token list
       const currentTokenMints = new Set(tokenList.map(token => token.mint));
       setSelectedTokens(prev => {
-        const filteredSelection = new Set();
+        const filteredSelection = new Set<string>();
         prev.forEach(mint => {
           if (currentTokenMints.has(mint)) {
             filteredSelection.add(mint);
@@ -337,6 +339,14 @@ export default function SolRefund() {
     setVisible,
     select
   } = useWalletAdapter();
+
+  // Mobile wallet functionality
+  const { 
+    isMobile, 
+    handleMobileTransaction, 
+    openWalletApp, 
+    showMobileInstructions 
+  } = useMobileWallet();
 
   // Auto-quote for swap when input changes
   useEffect(() => {
@@ -1127,14 +1137,40 @@ export default function SolRefund() {
         console.log('Starting DIRECT transaction processing - NO SIMULATION...');
         
         // Wrap all async operations to prevent unhandled rejections
-        let transactionBuffer, deserializedTransaction, signedTransaction;
+        let transactionBuffer: Buffer;
+        let deserializedTransaction: any;
+        let signedTransaction: any;
         
         try {
           transactionBuffer = Buffer.from(transaction, 'base64');
           deserializedTransaction = (await import('@solana/web3.js')).Transaction.from(transactionBuffer);
           
-          console.log('Transaction deserialized, signing with Phantom...');
-          signedTransaction = await window.solana!.signTransaction!(deserializedTransaction);
+          console.log('Transaction deserialized, signing with', walletName || 'connected wallet', '...');
+          
+          // Use mobile-aware transaction signing
+          if (isMobile && walletName) {
+            console.log('📱 Mobile device detected, using mobile transaction flow for', walletName);
+            
+            // Show toast to user
+            toast({
+              title: "Opening Wallet App",
+              description: `Please complete the transaction in your ${walletName} app and return here.`,
+              duration: 8000,
+            });
+            
+            // Use the mobile transaction handler from the hook
+            signedTransaction = await handleMobileTransaction(
+              walletName,
+              async () => await signTransaction(deserializedTransaction),
+              () => {
+                console.log('📱 Redirecting to wallet app...');
+              }
+            );
+          } else {
+            // Desktop or in-wallet browser - use standard signing
+            console.log('🖥️ Desktop or in-wallet browser, using standard signing');
+            signedTransaction = await signTransaction(deserializedTransaction);
+          }
         } catch (prepError: any) {
           console.log('Transaction preparation error:', prepError.message);
           throw new Error(`Transaction preparation failed: ${prepError.message}`);
