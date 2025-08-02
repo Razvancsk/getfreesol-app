@@ -1480,40 +1480,7 @@ export default function SolRefund() {
             </p>
           </div>
 
-          {/* Statistics Section - Only show on reclaim tab */}
-          {activeTab === 'reclaim' && stats && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {/* Total SOL Recovered */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
-                  {stats.totalSolRecovered.toFixed(6)}
-                </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  TOTAL SOL RECOVERED
-                </div>
-              </div>
 
-              {/* Total Accounts Closed */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
-                  {stats.totalAccountsClaimed}
-                </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  TOTAL ACCOUNTS CLOSED
-                </div>
-              </div>
-
-              {/* All Time Transactions */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
-                  {stats.recentTransactions.length}
-                </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  ALL TIME TRANSACTIONS
-                </div>
-              </div>
-            </div>
-          )}
 
 
 
@@ -1851,6 +1818,41 @@ export default function SolRefund() {
                       </button>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
+          {activeTab === 'reclaim' && stats && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Total SOL Recovered */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {stats.totalSolRecovered.toFixed(6)}
+                </div>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  TOTAL SOL RECOVERED
+                </div>
+              </div>
+
+              {/* Total Accounts Closed */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {stats.totalAccountsClaimed}
+                </div>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  TOTAL ACCOUNTS CLOSED
+                </div>
+              </div>
+
+              {/* All Time Transactions */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {stats.recentTransactions.length}
+                </div>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  ALL TIME TRANSACTIONS
                 </div>
               </div>
             </div>
