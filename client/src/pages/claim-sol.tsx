@@ -1338,6 +1338,45 @@ export default function SolRefund() {
                   className="h-32 w-auto"
                 />
               </div>
+              
+              {/* Header Navigation Buttons */}
+              {isConnected && (
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={() => setActiveTab('reclaim')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'reclaim' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <Coins className="h-4 w-4 mr-2" />
+                    Reclaim SOL
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('burnTokens')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'burnTokens' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <Flame className="h-4 w-4 mr-2" />
+                    Burn Tokens
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('swap')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'swap' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Swap
+                  </Button>
+                </div>
+              )}
             </div>
             
             {/* Wallet Connection Button */}
@@ -1384,48 +1423,7 @@ export default function SolRefund() {
             </p>
           </div>
 
-          {/* Action Tabs */}
-          {isConnected && (
-            <div className="flex justify-center mb-6">
-              <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1">
-                <div className="flex space-x-1">
-                  <Button
-                    onClick={() => setActiveTab('reclaim')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'reclaim' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
-                    }`}
-                  >
-                    <Coins className="h-4 w-4 mr-2" />
-                    Reclaim SOL
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('burnTokens')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'burnTokens' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
-                    }`}
-                  >
-                    <Flame className="h-4 w-4 mr-2" />
-                    Burn Tokens
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('swap')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'swap' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
-                    }`}
-                  >
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Swap
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {/* Scan Wallet Section - Hidden on swap tab */}
           {isConnected && activeTab !== 'swap' && (
