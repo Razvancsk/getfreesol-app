@@ -1326,10 +1326,10 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="space-y-6">
+      <div className="container mx-auto px-4 py-2 max-w-6xl">
+        <div className="space-y-4">
           {/* Header with Navigation and Wallet Connection */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-6">
               <div className="flex items-center">
                 <img 
