@@ -556,41 +556,11 @@ export default function SolRefund() {
             }, 30000);
           };
           
-          // Initialize Jupiter with wallet passthrough
+          // Initialize Jupiter with minimal configuration
           (window as any).Jupiter.init({
             displayMode: "integrated",
             integratedTargetId: "jupiter-terminal",
             endpoint: "https://api.mainnet-beta.solana.com",
-            enableWalletPassthrough: true,
-            passthroughWalletContextState: isConnected && publicKey && window.solana ? {
-              connected: true,
-              connecting: false,
-              disconnecting: false,
-              publicKey: {
-                toString: () => publicKey,
-                toBase58: () => publicKey
-              },
-              wallet: {
-                adapter: {
-                  name: 'Phantom',
-                  icon: '',
-                  url: '',
-                  publicKey: {
-                    toString: () => publicKey,
-                    toBase58: () => publicKey
-                  },
-                  connected: true,
-                  connecting: false,
-                  disconnecting: false,
-                  signTransaction: window.solana.signTransaction,
-                  signAllTransactions: (window.solana as any).signAllTransactions || window.solana.signTransaction,
-                  signMessage: (window.solana as any).signMessage || (() => Promise.reject('SignMessage not supported'))
-                }
-              },
-              signTransaction: window.solana.signTransaction,
-              signAllTransactions: (window.solana as any).signAllTransactions || window.solana.signTransaction,
-              signMessage: (window.solana as any).signMessage || (() => Promise.reject('SignMessage not supported'))
-            } : undefined,
             containerStyles: {
               maxHeight: '577px',
               height: '577px',
@@ -598,24 +568,6 @@ export default function SolRefund() {
             },
             defaultExplorer: "SolanaFM",
             strictTokenList: false,
-            enableAdvancedRouting: true,
-            formProps: {
-              fixedInputMint: false,
-              fixedOutputMint: false,
-              swapMode: "ExactIn",
-              slippageBps: slippage * 100, // Convert percentage to basis points
-              initialSlippageBps: slippage * 100
-            },
-            simulateWalletPassthrough: true,
-            disableWalletConfirmation: true,
-            enableWalletModalConfirmation: false,
-            hideScreenTransition: true,
-            enableResultPage: false,
-            enableErrorPage: false,
-            defaultSlippageSettings: {
-              slippageBps: slippage * 100,
-              enableSlippageSettings: true
-            },
             onFormUpdate: (form: any) => {
               // Update chart when user changes output token (the token being bought)
               console.log('Jupiter form updated:', form);
