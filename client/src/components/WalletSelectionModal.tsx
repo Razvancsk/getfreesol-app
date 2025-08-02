@@ -31,12 +31,7 @@ const WalletSelectionModal: React.FC<WalletSelectionModalProps> = ({
             <span className="text-white font-bold text-sm">P</span>
           </div>
         );
-      case 'solflare':
-        return (
-          <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">S</span>
-          </div>
-        );
+
       default:
         return <Wallet className="w-8 h-8 text-gray-400" />;
     }
@@ -46,8 +41,7 @@ const WalletSelectionModal: React.FC<WalletSelectionModalProps> = ({
     switch (walletType) {
       case 'phantom':
         return 'A friendly crypto wallet built for DeFi & NFTs';
-      case 'solflare':
-        return 'The safest way to store, buy, send, receive & swap tokens on Solana';
+
       default:
         return 'Connect your wallet to continue';
     }
@@ -72,9 +66,9 @@ const WalletSelectionModal: React.FC<WalletSelectionModalProps> = ({
                 <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-300 mb-2">No wallets detected</p>
                 <p className="text-gray-500 text-sm">
-                  Please install Phantom or Solflare wallet to continue
+                  Please install Phantom wallet to continue
                 </p>
-                <div className="flex gap-3 mt-4 justify-center">
+                <div className="flex mt-4 justify-center">
                   <Button
                     variant="outline"
                     size="sm"
@@ -82,14 +76,6 @@ const WalletSelectionModal: React.FC<WalletSelectionModalProps> = ({
                     className="border-purple-600 text-purple-400 hover:bg-purple-600/10"
                   >
                     Install Phantom
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open('https://solflare.com/', '_blank')}
-                    className="border-orange-500 text-orange-400 hover:bg-orange-500/10"
-                  >
-                    Install Solflare
                   </Button>
                 </div>
               </CardContent>

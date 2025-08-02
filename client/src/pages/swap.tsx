@@ -114,11 +114,7 @@ export default function SwapPage() {
       window.solana.on('disconnect', handleDisconnect);
     }
 
-    // Solflare wallet events
-    if (window.solflare) {
-      window.solflare.on('connect', handleConnect);
-      window.solflare.on('disconnect', handleDisconnect);
-    }
+
 
     return () => {
       // Cleanup event listeners
@@ -130,14 +126,7 @@ export default function SwapPage() {
           // Ignore cleanup errors
         }
       }
-      if (window.solflare) {
-        try {
-          window.solflare.off('connect', handleConnect);
-          window.solflare.off('disconnect', handleDisconnect);
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-      }
+
     };
   }, []);
 

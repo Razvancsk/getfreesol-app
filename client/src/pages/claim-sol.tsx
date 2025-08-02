@@ -396,10 +396,7 @@ export default function SolRefund() {
       (window.solana as any).on('disconnect', handleDisconnect);
     }
 
-    if (window.solflare && typeof (window.solflare as any).on === 'function') {
-      (window.solflare as any).on('connect', handleConnect);
-      (window.solflare as any).on('disconnect', handleDisconnect);
-    }
+
 
     // Fallback: Check wallet state periodically
     const interval = setInterval(checkWalletConnection, 2000);
@@ -410,10 +407,7 @@ export default function SolRefund() {
         (window.solana as any).off('connect', handleConnect);
         (window.solana as any).off('disconnect', handleDisconnect);
       }
-      if (window.solflare && typeof (window.solflare as any).off === 'function') {
-        (window.solflare as any).off('connect', handleConnect);
-        (window.solflare as any).off('disconnect', handleDisconnect);
-      }
+
     };
   }, []);
 
