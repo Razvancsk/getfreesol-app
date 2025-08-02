@@ -207,7 +207,7 @@ export function WalletDebugger() {
               <div className="flex items-center gap-2">
                 {getStatusIcon(testResults.signTransaction)}
                 <span className="text-sm">Single Transaction</span>
-                <Badge variant={getStatusColor(testResults.signTransaction)} size="sm">
+                <Badge variant={getStatusColor(testResults.signTransaction)}>
                   {testResults.signTransaction === undefined ? 'Not Tested' : 
                    testResults.signTransaction ? 'Pass' : 'Fail'}
                 </Badge>
@@ -215,7 +215,7 @@ export function WalletDebugger() {
               <div className="flex items-center gap-2">
                 {getStatusIcon(testResults.signAllTransactions)}
                 <span className="text-sm">Batch Transactions</span>
-                <Badge variant={getStatusColor(testResults.signAllTransactions)} size="sm">
+                <Badge variant={getStatusColor(testResults.signAllTransactions)}>
                   {testResults.signAllTransactions === undefined ? 'Not Tested' : 
                    testResults.signAllTransactions ? 'Pass' : 'Fail'}
                 </Badge>
