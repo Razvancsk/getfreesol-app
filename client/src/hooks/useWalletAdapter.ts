@@ -6,6 +6,7 @@ import { useMagicEdenWallet } from './useMagicEdenWallet';
 
 
 
+
 export interface WalletAdapterHook {
   publicKey: PublicKey | null;
   connected: boolean;
@@ -18,6 +19,7 @@ export interface WalletAdapterHook {
   walletName: string | null;
   connection: any;
   setVisible: (visible: boolean) => void;
+  select: (walletName: string | null) => void;
   isMagicEdenAvailable: boolean;
   connectMagicEden: () => Promise<void>;
 }
@@ -39,8 +41,9 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   const { connection } = useConnection();
   const { setVisible } = useWalletModal();
   
-  // Magic Eden direct wallet integration
+  // Direct wallet integrations
   const magicEdenWallet = useMagicEdenWallet();
+  const trustWallet = useTrustWallet();
 
   const handleConnect = async () => {
     // Priority: If Magic Eden is available and not using standard adapter, use direct connection
@@ -97,6 +100,59 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     } else {
       // Magic Eden not installed, redirect to download
       window.open('https://wallet.magiceden.io/', '_blank');
+    }
+  };
+
+  const connectTrustWallet = async () => {
+    if (trustWallet.isAvailable) {
+      try {
+        await trustWallet.connect();
+        console.log('Connected to Trust Wallet directly');
+      } catch (error: any) {
+        console.error('Failed to connect to Trust Wallet:', error);
+        
+        // Handle specific Trust Wallet errors
+        if (error.message?.includes('frames') || error.message?.includes('embedded')) {
+          // Guide user to proper Trust Wallet usage
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          
+          if (isMobile) {
+            // Mobile: redirect to Trust Wallet app
+            const appUrl = `trust://wallet_connect?coin_id=501&url=${encodeURIComponent(window.location.href)}`;
+            window.location.href = appUrl;
+          } else {
+            // Desktop: show guidance
+            alert('Trust Wallet requires opening this page directly in the Trust Wallet browser or extension. Please copy this URL and paste it into Trust Wallet browser.');
+            // Also try fallback to wallet modal
+            setVisible(true);
+          }
+        } else {
+          // Other errors: fallback to wallet modal
+          setVisible(true);
+        }
+      }
+    } else {
+      // Trust Wallet not installed, try deep linking or redirect to download
+      console.log('Trust Wallet not available, attempting deep link');
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // Try deep link for mobile
+        const deepLink = `trust://wallet_connect?coin_id=501&redirect_url=${encodeURIComponent(window.location.href)}`;
+        window.location.href = deepLink;
+        
+        // Fallback to store if deep link fails
+        setTimeout(() => {
+          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+          const storeUrl = isIOS 
+            ? 'https://apps.apple.com/app/trust-crypto-bitcoin-wallet/id1288339409'
+            : 'https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp';
+          window.open(storeUrl, '_blank');
+        }, 2000);
+      } else {
+        // Desktop - redirect to download page
+        window.open('https://trustwallet.com/download', '_blank');
+      }
     }
   };
 
@@ -185,7 +241,10 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     walletName: effectiveWalletName,
     connection,
     setVisible,
+    select,
     isMagicEdenAvailable: magicEdenWallet.isAvailable,
-    connectMagicEden
+    connectMagicEden,
+    isTrustWalletAvailable: trustWallet.isAvailable,
+    connectTrustWallet
   };
 };
