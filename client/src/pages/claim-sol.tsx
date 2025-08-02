@@ -573,11 +573,17 @@ export default function SolRefund() {
               const tokenBeingBought = form.toMint || form.outputMint;
               if (tokenBeingBought && tokenBeingBought !== selectedTokenMint) {
                 console.log('Updating chart from', selectedTokenMint, 'to', tokenBeingBought);
+                
+                // Show loading overlay immediately
+                const overlay = document.querySelector('.absolute.inset-0.bg-black\\/90');
+                if (overlay) {
+                  (overlay as HTMLElement).style.opacity = '1';
+                  (overlay as HTMLElement).style.pointerEvents = 'auto';
+                }
+                
+                // Update token mint to trigger immediate iframe refresh
                 setSelectedTokenMint(tokenBeingBought);
-                // Force chart refresh
-                setTimeout(() => {
-                  console.log('Forcing chart refresh for token:', tokenBeingBought);
-                }, 100);
+                console.log('Forcing immediate chart refresh for token:', tokenBeingBought);
               }
             },
             onSuccess: ({ txid, swapResult }: any) => {
@@ -1734,19 +1740,36 @@ export default function SolRefund() {
                 </div>
 
                 {/* DexScreener Chart - Hidden on mobile, visible on desktop */}
-                <div className="hidden lg:block order-2 lg:order-1 bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+                <div className="hidden lg:block order-2 lg:order-1 bg-black rounded-xl border border-gray-700/50 overflow-hidden relative">
+                  {/* Loading overlay for chart transitions */}
+                  <div className="absolute inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-10 transition-opacity duration-200" 
+                       style={{ opacity: selectedTokenMint ? 0 : 1, pointerEvents: selectedTokenMint ? 'none' : 'auto' }}>
+                    <div className="text-center space-y-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mx-auto"></div>
+                      <p className="text-purple-300 text-xs">Loading chart...</p>
+                    </div>
+                  </div>
+                  
                   <iframe
                     key={`chart-${selectedTokenMint}-${Date.now()}`}
-                    src={`https://dexscreener.com/solana/${getTradingPairAddress(selectedTokenMint)}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
+                    src={`https://dexscreener.com/solana/${getTradingPairAddress(selectedTokenMint)}?embed=1&theme=dark&trades=1&info=0&controls=0&autorefresh=5&cache=${Date.now()}`}
                     style={{
                       width: '100%',
                       height: '600px',
                       border: 'none',
-                      backgroundColor: 'transparent'
+                      backgroundColor: 'black'
                     }}
                     allow="clipboard-write"
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                    loading="lazy"
+                    loading="eager"
+                    onLoad={() => {
+                      // Hide loading overlay when chart loads
+                      const overlay = document.querySelector('.absolute.inset-0.bg-black\\/90');
+                      if (overlay) {
+                        (overlay as HTMLElement).style.opacity = '0';
+                        (overlay as HTMLElement).style.pointerEvents = 'none';
+                      }
+                    }}
                   />
                 </div>
               </div>
