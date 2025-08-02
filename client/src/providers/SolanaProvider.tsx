@@ -56,9 +56,14 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     return walletList;
   }, []);
 
-  // Handle wallet errors
+  // Handle wallet errors - filter out expected WalletNotReadyError messages
   const onError = useCallback((error: WalletError) => {
-    console.error('Wallet error:', error);
+    // Don't log WalletNotReadyError as these are expected when wallets aren't connected
+    if (error.name === 'WalletNotReadyError') {
+      console.log('🔮 Wallet not ready - expected behavior for uninstalled wallets');
+      return;
+    }
+    console.error('Unhandled wallet error:', error.name, error.message);
   }, []);
 
   return (
@@ -66,7 +71,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
       <WalletProvider 
         wallets={wallets} 
         onError={onError}
-        autoConnect
+        autoConnect={false}
       >
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
