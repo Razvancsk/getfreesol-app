@@ -868,6 +868,25 @@ export default function SolRefund() {
       // Wait for confirmation
       await connection.confirmTransaction(signature, 'confirmed');
       
+      // Record the successful transaction
+      const recordResponse = await fetch('/api/tokens/record-burn-success', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signature,
+          walletAddress: publicKey?.toString(),
+          tokenMints: [tokenMint],
+          tokensProcessed: 1,
+          solRecovered: parseFloat(solRecovered),
+          netAmount: parseFloat(solRecovered) * 0.85, // 15% fee
+          feeAmount: parseFloat(solRecovered) * 0.15
+        })
+      });
+      
+      if (!recordResponse.ok) {
+        console.error('Failed to record burn success:', await recordResponse.text());
+      }
+      
       return { signature, solRecovered };
     },
     onSuccess: (data) => {
@@ -879,6 +898,8 @@ export default function SolRefund() {
       if (publicKey) {
         scanTokensMutation.mutate(publicKey.toString());
       }
+      // Refresh stats to show updated totals
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
     },
     onError: (error) => {
       console.error('Error burning token:', error);
@@ -948,6 +969,25 @@ export default function SolRefund() {
       
       await connection.confirmTransaction(signature, 'confirmed');
       
+      // Record the successful transaction
+      const recordResponse = await fetch('/api/tokens/record-burn-success', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signature,
+          walletAddress: publicKey?.toString(),
+          tokenMints,
+          tokensProcessed,
+          solRecovered,
+          netAmount,
+          feeAmount
+        })
+      });
+      
+      if (!recordResponse.ok) {
+        console.error('Failed to record burn success:', await recordResponse.text());
+      }
+      
       return { tokensProcessed, solRecovered, netAmount, feeAmount, signature };
     },
     onSuccess: (result) => {
@@ -960,6 +1000,8 @@ export default function SolRefund() {
       if (publicKey) {
         scanTokensMutation.mutate(publicKey.toString());
       }
+      // Refresh stats to show updated totals
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
     },
     onError: (error) => {
       console.error('Error bulk burning tokens:', error);
