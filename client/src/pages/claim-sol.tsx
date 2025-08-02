@@ -1679,32 +1679,32 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">{selectedTokens.size} selected</h3>
-                <div className="flex items-center space-x-3">
-                  <div className="text-sm text-green-400 font-semibold">
-                    {calculateTotalSOL(selectedTokens.size)}
-                  </div>
-                  <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
-                    {tokenList.length} Tokens Found
-                  </div>
+                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                  {tokenList.length} Tokens Found
                 </div>
               </div>
 
               {/* Selection Controls */}
-              <div className="flex items-center space-x-3 mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
-                <Button
-                  onClick={selectAllTokens}
-                  size="sm"
-                  className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
-                >
-                  Select All
-                </Button>
-                <Button
-                  onClick={clearTokenSelection}
-                  size="sm"
-                  className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
-                >
-                  Clear
-                </Button>
+              <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                <div className="flex items-center space-x-3">
+                  <Button
+                    onClick={selectAllTokens}
+                    size="sm"
+                    className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    onClick={clearTokenSelection}
+                    size="sm"
+                    className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <div className="text-sm text-green-400 font-semibold">
+                  {calculateTotalSOL(selectedTokens.size)}
+                </div>
               </div>
               
               <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30 mb-6">
