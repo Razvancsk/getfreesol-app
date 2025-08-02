@@ -57,10 +57,10 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   const onError = useCallback((error: WalletError) => {
     console.error('Wallet error:', error);
     
-    // Don't show error toast for Magic Eden "not ready" errors - these are expected
-    if (error.name === 'WalletNotReadyError' && error.message?.includes('Magic Eden')) {
-      console.log('🔮 Magic Eden installation redirect handled');
-      return; // Suppress error for Magic Eden not installed
+    // Don't show error for Magic Eden "not ready" errors - these are expected when not installed
+    if (error.name === 'WalletNotReadyError') {
+      console.log('🔮 Wallet not ready - expected behavior for uninstalled wallets');
+      return; // Suppress error for wallets not installed
     }
     
     // Log other errors but don't crash the app
