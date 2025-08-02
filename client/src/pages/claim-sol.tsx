@@ -106,6 +106,7 @@ export default function SolRefund() {
   const [jupiterTokens, setJupiterTokens] = useState<any[]>([]);
 
   const [isSearchingTokens, setIsSearchingTokens] = useState(false);
+  const [isJupiterLoading, setIsJupiterLoading] = useState(false);
 
   // Function to get the correct trading pair address for DexScreener
   const getTradingPairAddress = (tokenMint: string): string => {
@@ -245,9 +246,19 @@ export default function SolRefund() {
     }
   };
 
-  // Load tokens on component mount
+  // Load tokens on component mount and preload Jupiter
   useEffect(() => {
     fetchJupiterTokens();
+    
+    // Preload Jupiter script for faster initialization
+    if (typeof window !== 'undefined' && !document.getElementById('jupiter-preload')) {
+      const preloadScript = document.createElement('link');
+      preloadScript.id = 'jupiter-preload';
+      preloadScript.rel = 'preload';
+      preloadScript.href = 'https://terminal.jup.ag/main-v2.js';
+      preloadScript.as = 'script';
+      document.head.appendChild(preloadScript);
+    }
   }, []);
 
   // Filter tokens based on search query
@@ -397,6 +408,7 @@ export default function SolRefund() {
   // Initialize Jupiter Terminal when swap tab is active
   useEffect(() => {
     if (activeTab === 'swap' && typeof window !== 'undefined') {
+      setIsJupiterLoading(true);
       let retryCount = 0;
       const maxRetries = 10;
       
@@ -408,10 +420,11 @@ export default function SolRefund() {
           if (!(window as any).Jupiter || typeof (window as any).Jupiter.init !== 'function') {
             retryCount++;
             if (retryCount < maxRetries) {
-              console.log('Jupiter not ready, retrying in 2 seconds...');
-              setTimeout(initTerminal, 2000);
+              console.log('Jupiter not ready, retrying in 500ms...');
+              setTimeout(initTerminal, 500);
             } else {
               console.error('Jupiter failed to load after maximum retries');
+              setIsJupiterLoading(false);
             }
             return;
           }
@@ -601,9 +614,9 @@ export default function SolRefund() {
           // Start preventing screen transitions immediately and continuously
           preventTransitions();
           
-          // Run prevention immediately every 25ms for the first 5 seconds
+          // Run prevention immediately every 25ms for the first 3 seconds (faster)
           const immediateInterval = setInterval(preventTransitions, 25);
-          setTimeout(() => clearInterval(immediateInterval), 5000);
+          setTimeout(() => clearInterval(immediateInterval), 3000);
           
           setTimeout(() => {
             preventTransitions();
@@ -646,7 +659,7 @@ export default function SolRefund() {
           // Let Jupiter settle first, then start gentle monitoring
           setTimeout(() => {
             console.log('Starting gentle monitoring after Jupiter settlement');
-          }, 3000);
+          }, 1500); // Faster monitoring start
           
           // SELECTIVE DOM CLEANER - Remove only specific error screens, keep swap interface
           const selectiveClean = () => {
@@ -738,6 +751,7 @@ export default function SolRefund() {
           }, 60000);
 
           console.log('Jupiter Terminal initialized successfully');
+          setIsJupiterLoading(false);
           
           // Wallet state is now passed directly in initialization
           if (isConnected && publicKey && window.solana) {
@@ -1701,11 +1715,20 @@ export default function SolRefund() {
                 
                 {/* Jupiter Terminal - Single container for all screen sizes */}
                 <div className="order-1 lg:order-2 w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
+                  {isJupiterLoading && (
+                    <div className="flex items-center justify-center bg-purple-900/20 backdrop-blur-sm border border-purple-500/30 rounded-lg" style={{ width: '390px', height: '577px' }}>
+                      <div className="text-center space-y-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                        <p className="text-purple-300 text-sm">Loading Jupiter Terminal...</p>
+                      </div>
+                    </div>
+                  )}
                   <div 
                     id="jupiter-terminal" 
                     style={{ 
                       width: '390px', 
-                      height: '577px'
+                      height: '577px',
+                      display: isJupiterLoading ? 'none' : 'block'
                     }}
                   ></div>
                 </div>
