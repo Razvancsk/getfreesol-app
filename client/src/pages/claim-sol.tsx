@@ -1858,6 +1858,63 @@ export default function SolRefund() {
             </div>
           )}
 
+          {/* All Time Ledger Section - Only show on reclaim tab */}
+          {activeTab === 'reclaim' && stats && stats.recentTransactions.length > 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+              <div className="flex items-center mb-6">
+                <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <div className="min-w-full">
+                  {/* Header */}
+                  <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                      WALLET/TX
+                    </div>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                      ACCTS
+                    </div>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                      CLAIMED SOL
+                    </div>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                      DATE
+                    </div>
+                  </div>
+                  
+                  {/* Transaction Rows */}
+                  <div className="space-y-3">
+                    {stats.recentTransactions.map((tx, index) => (
+                      <div key={tx.signature} className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/10 rounded-lg transition-colors">
+                        <div className="text-white font-mono text-sm">
+                          <div className="truncate" title={tx.signature}>
+                            {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                          </div>
+                        </div>
+                        <div className="text-white text-center text-lg font-semibold">
+                          {tx.accountsClosed}
+                        </div>
+                        <div className="text-white text-center text-sm font-medium">
+                          {tx.solRecovered.toFixed(6)}
+                        </div>
+                        <div className="text-white text-center text-sm">
+                          {new Date(tx.processedAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Safety & Security Section - Only show on reclaim tab - Bottom of page */}
           {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
