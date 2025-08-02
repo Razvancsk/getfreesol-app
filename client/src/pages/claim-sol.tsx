@@ -103,19 +103,20 @@ export default function SolRefund() {
   const [tokenSearchQuery, setTokenSearchQuery] = useState('');
   const [allTokens, setAllTokens] = useState<any[]>([]);
   const [jupiterTokens, setJupiterTokens] = useState<any[]>([]);
+  const [walletIconLoaded, setWalletIconLoaded] = useState<boolean>(false);
 
-  // Wallet icon mapping
+  // Wallet icon mapping - Using data URLs for better reliability
   const getWalletIcon = (walletName: string | null): string | null => {
     if (!walletName) return null;
     
     const iconMap: Record<string, string> = {
-      'Phantom': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/phantom/icon.svg',
-      'Magic Eden': 'https://magiceden.io/icons/me_logo.svg',
-      'Backpack': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/backpack/icon.svg',
-      'Solflare': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/solflare/icon.svg',
-      'Coin98': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/coin98/icon.svg',
-      'Coinbase Wallet': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/coinbase/icon.svg',
-      'Trust Wallet': 'https://trustwallet.com/assets/images/trust_logotype_blue.svg'
+      'Phantom': 'https://phantom.app/img/phantom-logo.png',
+      'Magic Eden': 'https://www.magiceden.io/img/me-logo.svg',
+      'Backpack': 'https://backpack.app/backpack-logo.svg',
+      'Solflare': 'https://solflare.com/assets/logo.svg',
+      'Coin98': 'https://coin98.s3.ap-southeast-1.amazonaws.com/wallet-connect/coin98.png',
+      'Coinbase Wallet': 'https://images.ctfassets.net/q5ulk4bp65r7/3TBS4oVkD1ghowTqVQJlqj/2dfd4ea3b623a7c0d8deb2ff445dee9e/Consumer_Wordmark_White_RGB.png',
+      'Trust Wallet': 'https://trustwallet.com/assets/images/logo_only.svg'
     };
     
     return iconMap[walletName] || null;
@@ -1374,23 +1375,20 @@ export default function SolRefund() {
                   <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
                     <div className="flex items-center space-x-3">
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
-                      {walletName && getWalletIcon(walletName) ? (
-                        <img 
-                          src={getWalletIcon(walletName)!} 
-                          alt={walletName}
-                          className="w-5 h-5 rounded-full"
-                          onError={(e) => {
-                            // Fallback to text if image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.nextElementSibling!.style.display = 'inline';
-                          }}
-                        />
-                      ) : null}
                       {walletName && (
-                        <span className="text-purple-300 text-xs" style={{display: getWalletIcon(walletName) ? 'none' : 'inline'}}>
-                          ({walletName})
-                        </span>
+                        <div className="flex items-center">
+                          {getWalletIcon(walletName) ? (
+                            <img 
+                              src={getWalletIcon(walletName)!} 
+                              alt={walletName}
+                              className="w-6 h-6 rounded-full object-contain"
+                              onError={() => setWalletIconLoaded(false)}
+                              onLoad={() => setWalletIconLoaded(true)}
+                            />
+                          ) : (
+                            <span className="text-purple-300 text-xs">({walletName})</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
