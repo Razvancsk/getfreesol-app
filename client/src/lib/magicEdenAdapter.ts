@@ -87,7 +87,17 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
   async connect(): Promise<void> {
     try {
       if (this.connected || this.connecting) return;
-      if (this._readyState !== WalletReadyState.Installed) throw new WalletNotReadyError();
+      
+      // If Magic Eden is not detected, redirect to installation
+      if (this._readyState === WalletReadyState.NotDetected) {
+        console.log('🔮 Magic Eden not detected, redirecting to install page...');
+        window.open('https://wallet.magiceden.io/', '_blank');
+        throw new WalletNotReadyError('Magic Eden wallet not installed. Please install it and refresh the page.');
+      }
+      
+      if (this._readyState !== WalletReadyState.Installed) {
+        throw new WalletNotReadyError('Magic Eden wallet not ready');
+      }
 
       this._connecting = true;
 
@@ -99,6 +109,7 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
         const { publicKey } = await wallet.connect();
         this._wallet = wallet;
         this._publicKey = publicKey;
+        console.log('🔮 Magic Eden wallet connected successfully');
       } catch (error: any) {
         throw new WalletConnectionError(error?.message, error);
       }
