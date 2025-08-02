@@ -1724,34 +1724,37 @@ export default function SolRefund() {
 
           {/* Swap Interface */}
           {activeTab === 'swap' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* DexScreener Chart */}
-              <div className="bg-black rounded-xl border border-gray-700/50 overflow-hidden">
-                <iframe
-                  key={`chart-${selectedTokenMint}-${Date.now()}`}
-                  src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
-                  style={{
-                    width: '100%',
-                    height: '600px',
-                    border: 'none',
-                    backgroundColor: 'transparent'
-                  }}
-                  allow="clipboard-write"
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  loading="lazy"
-                />
-              </div>
+            <div className="space-y-6">
+              {/* Mobile Layout: Jupiter Terminal First */}
+              <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-6">
+                
+                {/* Real Jupiter Terminal - First on mobile, right side on desktop */}
+                <div className="order-1 lg:order-2 w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
+                  <div 
+                    id="jupiter-terminal" 
+                    style={{ 
+                      width: '390px', 
+                      height: '577px'
+                    }}
+                  ></div>
+                </div>
 
-              {/* Real Jupiter Terminal Only */}
-              <div className="w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
-                <div 
-                  id="jupiter-terminal" 
-                  style={{ 
-                    width: '390px', 
-                    height: '577px'
-                  }}
-                ></div>
+                {/* DexScreener Chart - Second on mobile, left side on desktop */}
+                <div className="order-2 lg:order-1 bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+                  <iframe
+                    key={`chart-${selectedTokenMint}-${Date.now()}`}
+                    src={`https://dexscreener.com/solana/${selectedTokenMint}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
+                    style={{
+                      width: '100%',
+                      height: '600px',
+                      border: 'none',
+                      backgroundColor: 'transparent'
+                    }}
+                    allow="clipboard-write"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                    loading="lazy"
+                  />
+                </div>
               </div>
             </div>
           )}
