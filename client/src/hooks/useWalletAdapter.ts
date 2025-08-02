@@ -3,6 +3,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { useMagicEdenWallet } from './useMagicEdenWallet';
+import { useTrustWallet } from './useTrustWallet';
 
 
 
@@ -20,6 +21,8 @@ export interface WalletAdapterHook {
   setVisible: (visible: boolean) => void;
   isMagicEdenAvailable: boolean;
   connectMagicEden: () => Promise<void>;
+  isTrustWalletAvailable: boolean;
+  connectTrustWallet: () => Promise<void>;
 }
 
 export const useWalletAdapter = (): WalletAdapterHook => {
@@ -39,8 +42,9 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   const { connection } = useConnection();
   const { setVisible } = useWalletModal();
   
-  // Magic Eden direct wallet integration
+  // Direct wallet integrations
   const magicEdenWallet = useMagicEdenWallet();
+  const trustWallet = useTrustWallet();
 
   const handleConnect = async () => {
     // Priority: If Magic Eden is available and not using standard adapter, use direct connection
@@ -97,6 +101,41 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     } else {
       // Magic Eden not installed, redirect to download
       window.open('https://wallet.magiceden.io/', '_blank');
+    }
+  };
+
+  const connectTrustWallet = async () => {
+    if (trustWallet.isAvailable) {
+      try {
+        await trustWallet.connect();
+        console.log('Connected to Trust Wallet directly');
+      } catch (error) {
+        console.error('Failed to connect to Trust Wallet:', error);
+        // Fallback to standard wallet adapter modal
+        setVisible(true);
+      }
+    } else {
+      // Trust Wallet not installed, try deep linking or redirect to download
+      console.log('Trust Wallet not available, attempting deep link');
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // Try deep link for mobile
+        const deepLink = `trust://wallet_connect?redirect_url=${encodeURIComponent(window.location.href)}`;
+        window.location.href = deepLink;
+        
+        // Fallback to store if deep link fails
+        setTimeout(() => {
+          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+          const storeUrl = isIOS 
+            ? 'https://apps.apple.com/app/trust-crypto-bitcoin-wallet/id1288339409'
+            : 'https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp';
+          window.open(storeUrl, '_blank');
+        }, 2000);
+      } else {
+        // Desktop - redirect to download page
+        window.open('https://trustwallet.com/download', '_blank');
+      }
     }
   };
 
@@ -186,6 +225,8 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     connection,
     setVisible,
     isMagicEdenAvailable: magicEdenWallet.isAvailable,
-    connectMagicEden
+    connectMagicEden,
+    isTrustWalletAvailable: trustWallet.isAvailable,
+    connectTrustWallet
   };
 };

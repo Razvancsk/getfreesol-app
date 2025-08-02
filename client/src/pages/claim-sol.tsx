@@ -292,7 +292,9 @@ export default function SolRefund() {
     walletName,
     connection,
     isMagicEdenAvailable,
-    connectMagicEden
+    connectMagicEden,
+    isTrustWalletAvailable,
+    connectTrustWallet
   } = useWalletAdapter();
 
   // Auto-quote for swap when input changes
@@ -1379,6 +1381,15 @@ export default function SolRefund() {
                       title="Connect directly to Magic Eden wallet"
                     >
                       Magic Eden
+                    </Button>
+                  )}
+                  {isTrustWalletAvailable && (
+                    <Button
+                      onClick={connectTrustWallet}
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-blue-500/30"
+                      title="Connect directly to Trust Wallet"
+                    >
+                      Trust Wallet
                     </Button>
                   )}
                 </div>
