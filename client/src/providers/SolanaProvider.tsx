@@ -33,38 +33,18 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     return clusterApiUrl(network);
   }, [network]);
 
-  // Configure wallets - prioritize Magic Eden and ensure it shows even when not detected
-  const wallets = useMemo(() => {
-    const walletList = [
-      new MagicEdenWalletAdapter(),
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new Coin98WalletAdapter(),
-      new TrustWalletAdapter(),
-    ];
-    
-    console.log('🔧 Configured wallets:', walletList.map(w => ({ 
-      name: w.name, 
-      readyState: w.readyState,
-      url: w.url,
-      icon: w.icon ? 'present' : 'missing'
-    })));
-    
-    return walletList;
-  }, []);
+  // Configure wallets - include Magic Eden alongside standard wallets
+  const wallets = useMemo(() => [
+    new PhantomWalletAdapter(),
+    new MagicEdenWalletAdapter(),
+    new SolflareWalletAdapter(),
+    new Coin98WalletAdapter(),
+    new TrustWalletAdapter(),
+  ], []);
 
-  // Handle wallet errors with specific handling for Magic Eden
+  // Handle wallet errors
   const onError = useCallback((error: WalletError) => {
     console.error('Wallet error:', error);
-    
-    // Don't show error for Magic Eden "not ready" errors - these are expected when not installed
-    if (error.name === 'WalletNotReadyError') {
-      console.log('🔮 Wallet not ready - expected behavior for uninstalled wallets');
-      return; // Suppress error for wallets not installed
-    }
-    
-    // Log other errors but don't crash the app
-    console.error('Unhandled wallet error:', error.name, error.message);
   }, []);
 
   return (
@@ -72,7 +52,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
       <WalletProvider 
         wallets={wallets} 
         onError={onError}
-        autoConnect={false}
+        autoConnect
       >
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>

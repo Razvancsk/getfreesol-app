@@ -31,7 +31,7 @@ export const MagicEdenWalletName = 'Magic Eden' as WalletName<'Magic Eden'>;
 export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
   name = MagicEdenWalletName;
   url = 'https://wallet.magiceden.io';
-  icon = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiByeD0iMjAiIGZpbGw9IiMxNDEzMjQiLz4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjAsMjApIj4KPHA+QGQ9Ik0zMCAyMEwyMCAzMGgxMFYyMHoiIGZpbGw9IiNGN0Y3RjciLz4KPHA+QGQ9Ik0zMCAyMEw0MCAzMGgtMTBWMjB6IiBmaWxsPSIjRjdGN0Y3Ii8+CjxwYXRoIGQ9Ik0yMCAzMEwzMCA0MEgzMFYzMEgyMHoiIGZpbGw9IiNGN0Y3RjciLz4KPHA+QGQ9Ik00MCAzMEwzMCA0MFYzMGgxMHoiIGZpbGw9IiNGN0Y3RjciLz4KPC9nPgo8L3N2Zz4K';
+  icon = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzEwMTAxMCIvPgo8cGF0aCBkPSJNMTYgNkw2IDE2SDE2VjZaIiBmaWxsPSIjRjBGMEYwIi8+CjxwYXRoIGQ9Ik0xNiA2TDI2IDE2SDE2VjZaIiBmaWxsPSIjRjBGMEYwIi8+CjxwYXRoIGQ9Ik02IDE2TDE2IDI2SDE2VjE2SDZaIiBmaWxsPSIjRjBGMEYwIi8+CjxwYXRoIGQ9Ik0yNiAxNkwxNiAyNlYxNkgyNloiIGZpbGw9IiNGMEYwRjAiLz4KPC9zdmc+Cg==';
 
   readonly supportedTransactionVersions: ReadonlySet<TransactionVersion> = new Set(['legacy', 0]);
 
@@ -39,11 +39,9 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
   private _wallet: MagicEdenWallet | null;
   private _publicKey: PublicKey | null;
   private _readyState: WalletReadyState = 
-    typeof window === 'undefined'
+    typeof window === 'undefined' || typeof (window as unknown as MagicEdenWindow).magicEden === 'undefined'
       ? WalletReadyState.Unsupported
-      : typeof (window as unknown as MagicEdenWindow).magicEden?.solana !== 'undefined'
-      ? WalletReadyState.Installed
-      : WalletReadyState.NotDetected;
+      : WalletReadyState.Installed;
 
   constructor() {
     super();
@@ -51,20 +49,10 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
     this._wallet = null;
     this._publicKey = null;
 
-    try {
-      if (this._readyState !== WalletReadyState.Unsupported) {
-        const magicEdenWindow = window as unknown as MagicEdenWindow;
-        this._wallet = magicEdenWindow.magicEden?.solana || null;
-        this._publicKey = this._wallet?.publicKey || null;
-        
-        console.log('🔮 Magic Eden adapter initialized:', {
-          readyState: this._readyState,
-          hasWallet: !!this._wallet,
-          hasPublicKey: !!this._publicKey
-        });
-      }
-    } catch (error) {
-      console.error('🔮 Magic Eden adapter initialization error:', error);
+    if (this._readyState !== WalletReadyState.Unsupported) {
+      const magicEdenWindow = window as unknown as MagicEdenWindow;
+      this._wallet = magicEdenWindow.magicEden?.solana || null;
+      this._publicKey = this._wallet?.publicKey || null;
     }
   }
 
@@ -87,17 +75,7 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
   async connect(): Promise<void> {
     try {
       if (this.connected || this.connecting) return;
-      
-      // If Magic Eden is not detected, redirect to installation
-      if (this._readyState === WalletReadyState.NotDetected) {
-        console.log('🔮 Magic Eden not detected, redirecting to install page...');
-        window.open('https://wallet.magiceden.io/', '_blank');
-        throw new WalletNotReadyError('Magic Eden wallet not installed. Please install it and refresh the page.');
-      }
-      
-      if (this._readyState !== WalletReadyState.Installed) {
-        throw new WalletNotReadyError('Magic Eden wallet not ready');
-      }
+      if (this._readyState !== WalletReadyState.Installed) throw new WalletNotReadyError();
 
       this._connecting = true;
 
@@ -109,7 +87,6 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
         const { publicKey } = await wallet.connect();
         this._wallet = wallet;
         this._publicKey = publicKey;
-        console.log('🔮 Magic Eden wallet connected successfully');
       } catch (error: any) {
         throw new WalletConnectionError(error?.message, error);
       }
