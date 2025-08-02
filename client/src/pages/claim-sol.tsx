@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 interface EmptyTokenAccount {
   id: number;
@@ -1365,13 +1366,7 @@ export default function SolRefund() {
                 </>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={handleConnectWallet}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
-                  >
-                    <Wallet className="h-4 w-4 mr-2" />
-                    Connect Wallet
-                  </Button>
+                  <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium" />
                   {isMagicEdenAvailable ? (
                     <Button
                       onClick={connectMagicEden}
