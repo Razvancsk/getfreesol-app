@@ -381,6 +381,29 @@ export default function SolRefund() {
     staleTime: 0, // Always consider data stale for immediate updates
   });
 
+  // Fetch complete transaction history for All Time Ledger
+  const { data: transactionHistory } = useQuery<{
+    success: boolean;
+    transactions: Array<{
+      id: string;
+      signature: string;
+      walletAddress: string;
+      type: string;
+      solRecovered: number;
+      netAmount: number;
+      feeAmount: number;
+      itemsProcessed: number;
+      details: any;
+      processedAt: string;
+    }>;
+    count: number;
+  }>({
+    queryKey: ['/api/transactions/history'],
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refresh when window gets focus
+    staleTime: 0, // Always consider data stale for immediate updates
+  });
+
   // Clear scan results when wallet disconnects
   useEffect(() => {
     if (!isConnected || !publicKey) {
@@ -1891,7 +1914,7 @@ export default function SolRefund() {
           )}
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
-          {activeTab === 'reclaim' && stats && stats.recentTransactions.length > 0 && (
+          {activeTab === 'reclaim' && transactionHistory && transactionHistory.transactions.length > 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-6">
                 <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
@@ -1917,7 +1940,7 @@ export default function SolRefund() {
                   
                   {/* Transaction Rows */}
                   <div>
-                    {stats.recentTransactions.map((tx, index) => (
+                    {transactionHistory.transactions.map((tx, index) => (
                       <div key={tx.signature}>
                         <div 
                           className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
@@ -1930,7 +1953,7 @@ export default function SolRefund() {
                             </div>
                           </div>
                           <div className="text-white text-center text-lg font-semibold">
-                            {tx.accountsClosed}
+                            {tx.itemsProcessed}
                           </div>
                           <div className="text-white text-center text-sm font-medium">
                             {tx.solRecovered.toFixed(6)}
@@ -1946,7 +1969,7 @@ export default function SolRefund() {
                           </div>
                         </div>
                         {/* Separator line between rows - don't show after last row */}
-                        {index < stats.recentTransactions.length - 1 && (
+                        {index < transactionHistory.transactions.length - 1 && (
                           <div className="border-b border-purple-500/20 my-2"></div>
                         )}
                       </div>

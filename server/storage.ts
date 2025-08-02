@@ -22,7 +22,7 @@ import {
   nftBurnRecords
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, or } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -263,7 +263,10 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ total: sql<string>`sum(${transactionLedger.itemsProcessed})` })
       .from(transactionLedger)
-      .where(eq(transactionLedger.transactionType, 'sol_reclaim'));
+      .where(or(
+        eq(transactionLedger.transactionType, 'sol_reclaim'),
+        eq(transactionLedger.transactionType, 'token_burn')
+      ));
     return parseInt(result[0]?.total || "0");
   }
 
