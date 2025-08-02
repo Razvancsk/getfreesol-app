@@ -61,7 +61,11 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
         onError={onError}
         autoConnect
       >
-        <WalletModalProvider>{children}</WalletModalProvider>
+        <WalletModalProvider 
+          featuredWallets={5}
+        >
+          {children}
+        </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
