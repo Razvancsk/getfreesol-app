@@ -32,16 +32,8 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     return clusterApiUrl(network);
   }, [network]);
 
-  // Configure supported wallets
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new TrustWalletAdapter(),
-      new Coin98WalletAdapter(),
-      new MagicEdenWalletAdapter(),
-    ],
-    [network]
-  );
+  // Configure supported wallets - using empty array for auto-detection
+  const wallets = useMemo(() => [], []);
 
   // Handle wallet errors
   const onError = useCallback((error: WalletError) => {
