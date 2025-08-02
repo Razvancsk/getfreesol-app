@@ -34,13 +34,22 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   }, [network]);
 
   // Configure wallets - include Magic Eden alongside standard wallets
-  const wallets = useMemo(() => [
-    new PhantomWalletAdapter(),
-    new MagicEdenWalletAdapter(),
-    new SolflareWalletAdapter(),
-    new Coin98WalletAdapter(),
-    new TrustWalletAdapter(),
-  ], []);
+  const wallets = useMemo(() => {
+    const walletList = [
+      new PhantomWalletAdapter(),
+      new MagicEdenWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new Coin98WalletAdapter(),
+      new TrustWalletAdapter(),
+    ];
+    
+    console.log('🔧 Configured wallets:', walletList.map(w => ({ 
+      name: w.name, 
+      readyState: w.readyState 
+    })));
+    
+    return walletList;
+  }, []);
 
   // Handle wallet errors
   const onError = useCallback((error: WalletError) => {

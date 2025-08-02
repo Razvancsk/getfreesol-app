@@ -39,9 +39,11 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
   private _wallet: MagicEdenWallet | null;
   private _publicKey: PublicKey | null;
   private _readyState: WalletReadyState = 
-    typeof window === 'undefined' || typeof (window as unknown as MagicEdenWindow).magicEden === 'undefined'
+    typeof window === 'undefined'
       ? WalletReadyState.Unsupported
-      : WalletReadyState.Installed;
+      : typeof (window as unknown as MagicEdenWindow).magicEden?.solana !== 'undefined'
+      ? WalletReadyState.Installed
+      : WalletReadyState.NotDetected;
 
   constructor() {
     super();
@@ -49,10 +51,20 @@ export class MagicEdenWalletAdapter extends BaseMessageSignerWalletAdapter {
     this._wallet = null;
     this._publicKey = null;
 
-    if (this._readyState !== WalletReadyState.Unsupported) {
-      const magicEdenWindow = window as unknown as MagicEdenWindow;
-      this._wallet = magicEdenWindow.magicEden?.solana || null;
-      this._publicKey = this._wallet?.publicKey || null;
+    try {
+      if (this._readyState !== WalletReadyState.Unsupported) {
+        const magicEdenWindow = window as unknown as MagicEdenWindow;
+        this._wallet = magicEdenWindow.magicEden?.solana || null;
+        this._publicKey = this._wallet?.publicKey || null;
+        
+        console.log('🔮 Magic Eden adapter initialized:', {
+          readyState: this._readyState,
+          hasWallet: !!this._wallet,
+          hasPublicKey: !!this._publicKey
+        });
+      }
+    } catch (error) {
+      console.error('🔮 Magic Eden adapter initialization error:', error);
     }
   }
 
