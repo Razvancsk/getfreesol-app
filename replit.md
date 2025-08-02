@@ -1,8 +1,8 @@
-# Get Your Sol Application
+# Get Your SOL Back! Application
 
 ## Overview
 
-This is a full-stack TypeScript application called "Get Your Sol" that helps Solana users reclaim SOL from empty token accounts. The application consists of a React frontend built with Vite and a Node.js Express backend, using PostgreSQL for data persistence. It integrates with the Solana blockchain to scan wallets, identify empty token accounts, and facilitate the reclamation of rent deposits.
+This is a full-stack TypeScript application called "Get your SOL back!" that helps Solana users reclaim SOL from empty token accounts. The application consists of a React frontend built with Vite and a Node.js Express backend, using PostgreSQL for data persistence. It integrates with the Solana blockchain to scan wallets, identify empty token accounts, and facilitate the reclamation of rent deposits.
 
 ## User Preferences
 
@@ -140,6 +140,12 @@ Preferred communication style: Simple, everyday language.
 - **Added automatic fallback logic** when wallet signing fails, maintains transaction reliability
 - **Improved wallet connection errors** - automatically resets selection and shows modal when unavailable wallets are clicked
 - **Added Trust Wallet deep linking** for mobile devices with app store fallbacks
+
+### February 2, 2025 - Updated Application Branding
+- **Changed app title from "Get Your Sol" to "Get your SOL back!"** across all instances
+- **Updated page title, logo alt text, and connect wallet message** to reflect new branding
+- **Updated description text** to focus specifically on SOL rent recovery details
+- **Enhanced messaging clarity** - now explains each empty token account holds ~0.002 SOL
 
 ### January 30, 2025 - Comprehensive Transaction Ledger Implementation  
 - **Replaced memory storage with PostgreSQL database** for permanent transaction persistence

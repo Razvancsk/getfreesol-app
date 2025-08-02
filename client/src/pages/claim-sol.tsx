@@ -1356,7 +1356,7 @@ export default function SolRefund() {
               <div className="flex items-center">
                 <img 
                   src={logoImage}
-                  alt="Get Your Sol"
+                  alt="Get your SOL back!"
                   className="h-32 w-auto"
                 />
               </div>
@@ -1518,7 +1518,7 @@ export default function SolRefund() {
               <div className="text-center space-y-4">
                 <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
-                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to access the Get Your Sol utility.</p>
+                <p className="text-purple-200">Please connect your Phantom wallet using the "Connect Wallet" button above to get your SOL back!</p>
               </div>
             </div>
           )}
