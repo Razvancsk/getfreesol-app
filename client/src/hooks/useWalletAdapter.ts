@@ -32,7 +32,8 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     disconnect,
     signTransaction,
     signAllTransactions,
-    wallet
+    wallet,
+    select
   } = useWallet();
   
   const { connection } = useConnection();
@@ -54,9 +55,18 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     
     // Standard wallet adapter flow
     if (!connected && !connecting) {
-      if (wallet) {
-        await connect();
+      if (wallet?.readyState === 'Installed') {
+        try {
+          await connect();
+        } catch (error) {
+          console.error('Failed to connect wallet:', error);
+          // If connection fails, reset selection and show the modal to let user choose another wallet
+          select(null);
+          setVisible(true);
+        }
       } else {
+        // No wallet selected or wallet not ready, reset selection and show modal
+        select(null);
         setVisible(true);
       }
     }
