@@ -1335,7 +1335,7 @@ export default function SolRefund() {
                 <img 
                   src={logoImage}
                   alt="Get Your Sol"
-                  className="h-16 w-auto"
+                  className="h-32 w-auto"
                 />
               </div>
             </div>
