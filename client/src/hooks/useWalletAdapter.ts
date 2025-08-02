@@ -6,6 +6,7 @@ import { useMagicEdenWallet } from './useMagicEdenWallet';
 
 import { useBackpackWallet } from './useBackpackWallet';
 import { useCoinbaseWallet } from './useCoinbaseWallet';
+import { useBitgetWallet } from './useBitgetWallet';
 
 
 
@@ -53,6 +54,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   const magicEdenWallet = useMagicEdenWallet();
   const backpackWallet = useBackpackWallet();
   const coinbaseWallet = useCoinbaseWallet();
+  const bitgetWallet = useBitgetWallet();
 
   const handleConnect = async () => {
     // Priority 1: If Backpack is available and not using standard adapter, use direct connection
@@ -82,6 +84,16 @@ export const useWalletAdapter = (): WalletAdapterHook => {
         return;
       } catch (error) {
         console.error('Direct Magic Eden connection failed, falling back to adapter:', error);
+      }
+    }
+    
+    // Priority 4: If Bitget is available and not using standard adapter, use direct connection
+    if (bitgetWallet.isAvailable && !connected && !bitgetWallet.isConnected) {
+      try {
+        await bitgetWallet.connect();
+        return;
+      } catch (error) {
+        console.error('Direct Bitget connection failed, falling back to adapter:', error);
       }
     }
     
@@ -118,6 +130,11 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     // Disconnect Magic Eden direct connection if active
     if (magicEdenWallet.isConnected) {
       await magicEdenWallet.disconnect();
+    }
+    
+    // Disconnect Bitget direct connection if active
+    if (bitgetWallet.isConnected) {
+      await bitgetWallet.disconnect();
     }
     
     // Disconnect standard wallet adapter if connected
@@ -176,14 +193,32 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     }
   };
 
+  const connectBitget = async () => {
+    if (bitgetWallet.isAvailable) {
+      try {
+        await bitgetWallet.connect();
+        console.log('Connected to Bitget wallet directly');
+      } catch (error) {
+        console.error('Failed to connect to Bitget wallet:', error);
+        // Fallback to standard wallet adapter modal
+        setVisible(true);
+      }
+    } else {
+      // Bitget Wallet not installed, redirect to download
+      window.open('https://web3.bitget.com/en/wallet-download', '_blank');
+    }
+  };
+
   // Use direct wallet connections if available, otherwise fall back to standard adapter
   const effectivePublicKey = backpackWallet.isConnected ? backpackWallet.publicKey : 
                            coinbaseWallet.isConnected ? coinbaseWallet.publicKey :
-                           magicEdenWallet.isConnected ? magicEdenWallet.publicKey : publicKey;
-  const effectiveConnected = backpackWallet.isConnected || coinbaseWallet.isConnected || magicEdenWallet.isConnected || connected;
+                           magicEdenWallet.isConnected ? magicEdenWallet.publicKey : 
+                           bitgetWallet.isConnected ? bitgetWallet.publicKey : publicKey;
+  const effectiveConnected = backpackWallet.isConnected || coinbaseWallet.isConnected || magicEdenWallet.isConnected || bitgetWallet.isConnected || connected;
   const effectiveWalletName = backpackWallet.isConnected ? 'Backpack' : 
                             coinbaseWallet.isConnected ? 'Coinbase' :
-                            magicEdenWallet.isConnected ? 'Magic Eden' : (wallet?.adapter?.name || null);
+                            magicEdenWallet.isConnected ? 'Magic Eden' : 
+                            bitgetWallet.isConnected ? 'Bitget' : (wallet?.adapter?.name || null);
 
   // Enhanced signTransaction wrapper with strict wallet isolation
   const wrappedSignTransaction = useCallback(async (transaction: any) => {
@@ -214,6 +249,11 @@ export const useWalletAdapter = (): WalletAdapterHook => {
       return await magicEdenWallet.signTransaction(transaction);
     }
     
+    if (bitgetWallet.isConnected) {
+      console.log('🔄 Using Bitget wallet for signing...');
+      return await bitgetWallet.signTransaction(transaction);
+    }
+    
     // Priority 2: Standard wallet adapter (Phantom, Solflare, etc.) - STRICT ISOLATION
     if (connected && signTransaction && wallet?.adapter) {
       const walletName = wallet.adapter.name;
@@ -235,7 +275,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     const error = new Error('No wallet connected for signing');
     console.error('❌ Wallet signing failed:', error.message);
     throw error;
-  }, [backpackWallet.isConnected, backpackWallet.signTransaction, coinbaseWallet.isConnected, coinbaseWallet.signTransaction, magicEdenWallet.isConnected, magicEdenWallet.signTransaction, connected, signTransaction, wallet?.adapter?.name, publicKey]);
+  }, [backpackWallet.isConnected, backpackWallet.signTransaction, coinbaseWallet.isConnected, coinbaseWallet.signTransaction, magicEdenWallet.isConnected, magicEdenWallet.signTransaction, bitgetWallet.isConnected, bitgetWallet.signTransaction, connected, signTransaction, wallet?.adapter?.name, publicKey]);
 
   // Enhanced signAllTransactions wrapper with strict wallet isolation
   const wrappedSignAllTransactions = useCallback(async (transactions: any[]) => {
@@ -264,6 +304,11 @@ export const useWalletAdapter = (): WalletAdapterHook => {
       return await magicEdenWallet.signAllTransactions(transactions);
     }
     
+    if (bitgetWallet.isConnected) {
+      console.log('🔄 Using Bitget wallet for batch signing...');
+      return await bitgetWallet.signAllTransactions(transactions);
+    }
+    
     // Priority 2: Standard wallet adapter (Phantom, Solflare, etc.) - STRICT ISOLATION
     if (connected && signAllTransactions && wallet?.adapter) {
       const walletName = wallet.adapter.name;
@@ -284,7 +329,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     const error = new Error('No wallet connected for batch signing');
     console.error('❌ Wallet batch signing failed:', error.message);
     throw error;
-  }, [backpackWallet.isConnected, backpackWallet.signAllTransactions, coinbaseWallet.isConnected, coinbaseWallet.signAllTransactions, magicEdenWallet.isConnected, magicEdenWallet.signAllTransactions, connected, signAllTransactions, wallet?.adapter?.name, publicKey]);
+  }, [backpackWallet.isConnected, backpackWallet.signAllTransactions, coinbaseWallet.isConnected, coinbaseWallet.signAllTransactions, magicEdenWallet.isConnected, magicEdenWallet.signAllTransactions, bitgetWallet.isConnected, bitgetWallet.signAllTransactions, connected, signAllTransactions, wallet?.adapter?.name, publicKey]);
 
   // Wrap select function to handle type conversion
   const handleSelect = useCallback((walletName: string | null) => {
@@ -294,7 +339,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   return {
     publicKey: effectivePublicKey,
     connected: effectiveConnected,
-    connecting: connecting || backpackWallet.connecting || coinbaseWallet.connecting || magicEdenWallet.connecting,
+    connecting: connecting || backpackWallet.connecting || coinbaseWallet.connecting || magicEdenWallet.connecting || bitgetWallet.connecting,
     disconnecting,
     connect: handleConnect,
     disconnect: handleDisconnect,
@@ -309,6 +354,8 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     isBackpackAvailable: backpackWallet.isAvailable,
     connectBackpack,
     isCoinbaseAvailable: coinbaseWallet.isAvailable,
-    connectCoinbase
+    connectCoinbase,
+    isBitgetAvailable: bitgetWallet.isAvailable,
+    connectBitget
   };
 };
