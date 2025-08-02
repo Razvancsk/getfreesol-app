@@ -175,11 +175,13 @@ Preferred communication style: Simple, everyday language.
 - **Enhanced error handling** - directs users to official download page when wallet not installed
 - **Created comprehensive setup guide** (BITGET_WALLET_SETUP.md) for wallet installation and testing
 
-### February 2, 2025 - Updated Application Branding
+### February 2, 2025 - Updated Application Branding and Favicon
 - **Changed app title from "Get Your Sol" to "Get your SOL back!"** across all instances
 - **Updated page title, logo alt text, and connect wallet message** to reflect new branding
 - **Updated description text** to focus specifically on SOL rent recovery details
 - **Enhanced messaging clarity** - now explains each empty token account holds ~0.002 SOL
+- **Updated favicon with new purple SOL recovery logo** - browser tab now displays custom parachuting SOL icon
+- **Fixed favicon paths and added cache-busting** to ensure proper logo display across all browsers
 
 ### January 30, 2025 - Comprehensive Transaction Ledger Implementation  
 - **Replaced memory storage with PostgreSQL database** for permanent transaction persistence
