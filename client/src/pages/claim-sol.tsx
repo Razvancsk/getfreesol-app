@@ -1738,9 +1738,6 @@ export default function SolRefund() {
                         <div className="text-sm font-medium text-white truncate">
                           {token.symbol || 'TOKEN'}
                         </div>
-                        <div className="text-xs text-purple-300 font-mono truncate w-full overflow-hidden whitespace-nowrap">
-                          Mint: {token.mint}
-                        </div>
                         <div className="text-xs text-white truncate">
                           Balance: {token.balance} {token.symbol || 'TOKENS'}
                         </div>
