@@ -3,7 +3,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
 import { useMagicEdenWallet } from './useMagicEdenWallet';
-import { useTrustWallet } from './useTrustWallet';
+
 
 
 
@@ -22,8 +22,6 @@ export interface WalletAdapterHook {
   select: (walletName: string | null) => void;
   isMagicEdenAvailable: boolean;
   connectMagicEden: () => Promise<void>;
-  isTrustWalletAvailable: boolean;
-  connectTrustWallet: () => Promise<void>;
 }
 
 export const useWalletAdapter = (): WalletAdapterHook => {

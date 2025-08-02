@@ -10,7 +10,7 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { Coin98WalletAdapter } from "@solana/wallet-adapter-coin98";
-import { TrustWalletAdapter } from "@solana/wallet-adapter-trust";
+
 import { clusterApiUrl } from "@solana/web3.js";
 import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -33,13 +33,12 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     return clusterApiUrl(network);
   }, [network]);
 
-  // Configure wallets - include Magic Eden alongside standard wallets
+  // Configure wallets - reliable wallets only (removed Trust Wallet due to frame restrictions)
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
     new MagicEdenWalletAdapter(),
     new SolflareWalletAdapter(),
     new Coin98WalletAdapter(),
-    new TrustWalletAdapter(),
   ], []);
 
   // Handle wallet errors

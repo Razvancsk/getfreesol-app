@@ -1380,28 +1380,9 @@ export default function SolRefund() {
                     <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
                   </Button>
-                  <div className="text-center space-y-2">
-                    <p className="text-purple-300 text-sm">
-                      Trust Wallet blocked? Copy this URL and open in Trust Wallet browser:
-                    </p>
-                    <div className="flex items-center justify-center space-x-2">
-                      <input 
-                        type="text" 
-                        value={window.location.href} 
-                        readOnly 
-                        className="bg-purple-900/20 border border-purple-500/30 text-purple-200 px-3 py-1 rounded text-xs font-mono w-64"
-                      />
-                      <Button
-                        onClick={() => {
-                          navigator.clipboard.writeText(window.location.href);
-                          toast({ title: "URL copied!", description: "Open this in Trust Wallet browser" });
-                        }}
-                        className="bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 text-xs rounded"
-                      >
-                        Copy
-                      </Button>
-                    </div>
-                  </div>
+                  <p className="text-purple-300 text-sm text-center">
+                    Supports Phantom, Magic Eden, Solflare, and Coin98 wallets
+                  </p>
                 </div>
               )}
             </div>
