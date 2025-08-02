@@ -1486,8 +1486,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Scan Wallet Section */}
-          {isConnected && (
+          {/* Scan Wallet Section - Hidden on swap tab */}
+          {isConnected && activeTab !== 'swap' && (
             <div className="text-center">
               <Button 
                 onClick={() => {
