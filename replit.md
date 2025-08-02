@@ -149,6 +149,9 @@ Preferred communication style: Simple, everyday language.
 - **Added comprehensive logging** to track which wallet is being used for each transaction
 - **Created deployment build script** to properly copy static files for production deployment
 - **Fixed deployment configuration** to ensure serveStatic function finds built files correctly
+- **Removed all hardcoded window.solana references** from transaction signing logic
+- **Replaced Phantom-specific code** with proper wallet adapter signTransaction calls
+- **Fixed transaction routing** so all wallets (Solflare, Phantom, Magic Eden, etc.) use correct signing methods
 
 ### February 2, 2025 - Complete Statistics and Transaction Ledger Implementation
 - **Successfully implemented comprehensive All Time Ledger** with transaction history table showing clickable rows

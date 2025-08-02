@@ -761,7 +761,7 @@ export default function SolRefund() {
           setIsJupiterLoading(false);
           
           // Wallet state is now passed directly in initialization
-          if (isConnected && publicKey && window.solana) {
+          if (isConnected && publicKey) {
             console.log('Wallet passed through Jupiter initialization');
           }
           
@@ -845,9 +845,9 @@ export default function SolRefund() {
       
       const { transaction, solRecovered } = await response.json();
       
-      // Sign and send transaction using Phantom wallet
-      if (!window.solana || !window.solana.isPhantom) {
-        throw new Error('Phantom wallet not found');
+      // Sign and send transaction using connected wallet
+      if (!isConnected || !publicKey) {
+        throw new Error('Wallet not connected');
       }
 
       const { Connection, Transaction } = await import('@solana/web3.js');
@@ -861,11 +861,11 @@ export default function SolRefund() {
         'confirmed'
       );
       
-      // Deserialize and sign transaction
+      // Deserialize and sign transaction with connected wallet
       const txBuffer = Buffer.from(transaction, 'base64');
       const tx = Transaction.from(txBuffer);
       
-      const signedTx = await window.solana.signTransaction(tx);
+      const signedTx = await signTransaction(tx);
       const signature = await connection.sendRawTransaction(signedTx.serialize());
       
       // Wait for confirmation
@@ -1060,8 +1060,8 @@ export default function SolRefund() {
       
       const { transaction, message, totalSolReclaimed, feeAmount, netAmount } = await response.json();
       
-      if (!window.solana || !window.solana.isPhantom) {
-        throw new Error('Phantom wallet not found');
+      if (!isConnected || !publicKey) {
+        throw new Error('Wallet not connected');
       }
 
       const { Connection } = await import('@solana/web3.js');
@@ -1133,8 +1133,8 @@ export default function SolRefund() {
           transactionBuffer = Buffer.from(transaction, 'base64');
           deserializedTransaction = (await import('@solana/web3.js')).Transaction.from(transactionBuffer);
           
-          console.log('Transaction deserialized, signing with Phantom...');
-          signedTransaction = await window.solana!.signTransaction!(deserializedTransaction);
+          console.log(`Transaction deserialized, signing with ${walletName || 'connected wallet'}...`);
+          signedTransaction = await signTransaction(deserializedTransaction);
         } catch (prepError: any) {
           console.log('Transaction preparation error:', prepError.message);
           throw new Error(`Transaction preparation failed: ${prepError.message}`);
@@ -1340,7 +1340,7 @@ export default function SolRefund() {
   };
 
   const executeSwap = async () => {
-    if (!publicKey || !swapQuote || !window.solana) return;
+    if (!publicKey || !swapQuote || !isConnected) return;
     
     setIsSwapping(true);
     try {
@@ -1360,7 +1360,7 @@ export default function SolRefund() {
       const { swapTransaction } = await swapResponse.json();
       const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
       const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-      const signedTransaction = await window.solana.signTransaction(transaction);
+      const signedTransaction = await signTransaction(transaction);
       
       const connection = new Connection(import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
       const signature = await connection.sendRawTransaction(signedTransaction.serialize());
