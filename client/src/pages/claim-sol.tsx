@@ -919,10 +919,8 @@ export default function SolRefund() {
       
       const { transaction, tokensProcessed, solRecovered, netAmount, feeAmount } = await response.json();
       
-      // Sign and send transaction
-      if (!window.solana || !window.solana.isPhantom) {
-        throw new Error('Phantom wallet not found');
-      }
+      // Sign and send transaction using the connected wallet
+      console.log('🔐 About to sign bulk burn transaction with:', walletName || 'unknown wallet');
 
       const { Connection, Transaction } = await import('@solana/web3.js');
       
@@ -937,8 +935,12 @@ export default function SolRefund() {
       const txBuffer = Buffer.from(transaction, 'base64');
       const tx = Transaction.from(txBuffer);
       
-      const signedTx = await window.solana.signTransaction(tx);
+      // Use the wallet adapter's signTransaction instead of hardcoded window.solana
+      const signedTx = await signTransaction(tx);
+      console.log('✅ Transaction signed successfully with:', walletName);
+      
       const signature = await connection.sendRawTransaction(signedTx.serialize());
+      console.log('📡 Transaction sent to network:', signature);
       
       await connection.confirmTransaction(signature, 'confirmed');
       
