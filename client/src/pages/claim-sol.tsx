@@ -1697,8 +1697,8 @@ export default function SolRefund() {
           {/* Swap Interface */}
           {activeTab === 'swap' && (
             <div className="space-y-6">
-              {/* Jupiter Terminal - Centered for all screen sizes */}
-              <div className="flex justify-center">
+              {/* Mobile Layout: Jupiter Terminal Only */}
+              <div className="lg:hidden flex justify-center">
                 <div className="w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
                   <div 
                     id="jupiter-terminal" 
@@ -1707,6 +1707,40 @@ export default function SolRefund() {
                       height: '577px'
                     }}
                   ></div>
+                </div>
+              </div>
+              
+              {/* Desktop Layout: Jupiter Terminal + DexScreener Chart */}
+              <div className="hidden lg:flex lg:flex-col lg:space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  
+                  {/* Jupiter Terminal - Right side on desktop */}
+                  <div className="order-1 lg:order-2 w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
+                    <div 
+                      id="jupiter-terminal" 
+                      style={{ 
+                        width: '390px', 
+                        height: '577px'
+                      }}
+                    ></div>
+                  </div>
+
+                  {/* DexScreener Chart - Left side on desktop only */}
+                  <div className="order-2 lg:order-1 bg-black rounded-xl border border-gray-700/50 overflow-hidden">
+                    <iframe
+                      key={`chart-${selectedTokenMint}-${Date.now()}`}
+                      src={`https://dexscreener.com/solana/${getTradingPairAddress(selectedTokenMint)}?embed=1&theme=dark&trades=1&info=0&controls=0&refresh=${Date.now()}`}
+                      style={{
+                        width: '100%',
+                        height: '600px',
+                        border: 'none',
+                        backgroundColor: 'transparent'
+                      }}
+                      allow="clipboard-write"
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
