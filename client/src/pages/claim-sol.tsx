@@ -1363,7 +1363,7 @@ export default function SolRefund() {
                       select(null);
                       setVisible(true);
                     }}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
                     title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Trust Wallet"
                   >
                     <Wallet className="h-5 w-5 mr-2" />
