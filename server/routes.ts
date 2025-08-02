@@ -343,92 +343,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Using RPC endpoint: ${workingEndpoint}`);
 
       const walletPublicKey = new PublicKey(address);
-      
-      // Get all token accounts with balances > 0
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
-        programId: TOKEN_PROGRAM_ID,
-      });
 
       // Use Helius DAS API to get all assets with metadata
       let tokens = [];
-      if (heliusApiKey) {
-        try {
-          const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-          const heliusResponse = await fetch(heliusRpcUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              id: 'token-scan',
-              method: 'getAssetsByOwner',
-              params: {
-                ownerAddress: address,
-                page: 1,
-                limit: 1000,
-                displayOptions: {
-                  showFungible: true,
-                  showNativeBalance: false
-                }
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: "Helius API key is required for token scanning" });
+      }
+
+      try {
+        const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+        const heliusResponse = await fetch(heliusRpcUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 'token-scan',
+            method: 'getAssetsByOwner',
+            params: {
+              ownerAddress: address,
+              page: 1,
+              limit: 1000,
+              displayOptions: {
+                showFungible: true,
+                showNativeBalance: false
               }
-            })
-          });
-          
-          if (heliusResponse.ok) {
-            const heliusData = await heliusResponse.json();
-            console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
-            
-            if (heliusData.result?.items) {
-              // Filter for fungible tokens with balance > 0
-              tokens = heliusData.result.items
-                .filter((asset: any) => 
-                  asset.interface === 'FungibleToken' || 
-                  asset.interface === 'FungibleAsset'
-                )
-                .filter((asset: any) => {
-                  const balance = asset.token_info?.balance || 0;
-                  return balance > 0;
-                })
-                .map((asset: any) => ({
-                  mint: asset.id,
-                  balance: (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0),
-                  decimals: asset.token_info?.decimals || 0,
-                  name: asset.content?.metadata?.name || 'Unknown Token',
-                  symbol: asset.content?.metadata?.symbol || 'TOKEN',
-                  logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null
-                }));
-              
-              console.log(`Processed ${tokens.length} fungible tokens with balances`);
             }
-          }
-        } catch (error) {
-          console.log(`Failed to fetch assets from Helius DAS:`, error instanceof Error ? error.message : String(error));
-        }
-      }
-
-      // Fallback to RPC if Helius didn't work or returned no tokens
-      if (tokens.length === 0 && tokenAccounts.value.length > 0) {
-        console.log('Falling back to RPC token scanning...');
-        for (const account of tokenAccounts.value) {
-          const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
-          const rawBalance = account.account.data.parsed?.info?.tokenAmount?.amount || '0';
+          })
+        });
+        
+        if (heliusResponse.ok) {
+          const heliusData = await heliusResponse.json();
+          console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
-          // Only include tokens with actual positive balance
-          if (balance <= 0 || rawBalance === '0') continue;
-
-          const info = account.account.data.parsed?.info;
-          tokens.push({
-            mint: info?.mint || 'Unknown',
-            balance: balance,
-            decimals: info?.tokenAmount?.decimals || 0,
-            name: 'Unknown Token',
-            symbol: 'TOKEN',
-            logo: null
-          });
+          if (heliusData.result?.items) {
+            // Filter for fungible tokens with balance > 0
+            tokens = heliusData.result.items
+              .filter((asset: any) => 
+                asset.interface === 'FungibleToken' || 
+                asset.interface === 'FungibleAsset'
+              )
+              .filter((asset: any) => {
+                const balance = asset.token_info?.balance || 0;
+                return balance > 0;
+              })
+              .map((asset: any) => ({
+                mint: asset.id,
+                balance: (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0),
+                decimals: asset.token_info?.decimals || 0,
+                name: asset.content?.metadata?.name || 'Unknown Token',
+                symbol: asset.content?.metadata?.symbol || 'TOKEN',
+                logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null
+              }));
+            
+            console.log(`Processed ${tokens.length} fungible tokens with balances`);
+          }
         }
+      } catch (error) {
+        console.log(`Failed to fetch assets from Helius DAS:`, error instanceof Error ? error.message : String(error));
+        return res.status(500).json({ error: "Failed to fetch tokens from Helius API" });
       }
 
-      // Final filter to ensure no zero-balance tokens
-      tokens = tokens.filter((token: any) => token.balance > 0);
+      // No fallback - only use Helius DAS API results
+      console.log(`Final token count: ${tokens.length}`);
 
       res.json(tokens);
     } catch (error) {
