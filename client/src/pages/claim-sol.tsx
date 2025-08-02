@@ -332,8 +332,7 @@ export default function SolRefund() {
     connection,
     isMagicEdenAvailable,
     connectMagicEden,
-    isTrustWalletAvailable,
-    connectTrustWallet,
+
     setVisible,
     select
   } = useWalletAdapter();
@@ -1505,7 +1504,7 @@ export default function SolRefund() {
                       setVisible(true);
                     }}
                     className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
-                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Trust Wallet"
+                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase"
                   >
                     <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
