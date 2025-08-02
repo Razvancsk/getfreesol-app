@@ -121,6 +121,12 @@ export const useTrustWallet = () => {
         isTrustWallet: provider.isTrustWallet,
       });
       
+      // Check for frames restriction and provide specific guidance
+      if (window.top !== window.self) {
+        console.log('🚫 Detected iframe/frame context - Trust Wallet may block connection');
+        throw new Error('Trust Wallet blocks connections in embedded frames. Please open this page directly in Trust Wallet browser or use the Trust Wallet app.');
+      }
+      
       const response = await provider.connect();
       
       if (response?.publicKey) {

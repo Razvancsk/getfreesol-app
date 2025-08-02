@@ -109,10 +109,28 @@ export const useWalletAdapter = (): WalletAdapterHook => {
       try {
         await trustWallet.connect();
         console.log('Connected to Trust Wallet directly');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to connect to Trust Wallet:', error);
-        // Fallback to standard wallet adapter modal
-        setVisible(true);
+        
+        // Handle specific Trust Wallet errors
+        if (error.message?.includes('frames') || error.message?.includes('embedded')) {
+          // Guide user to proper Trust Wallet usage
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          
+          if (isMobile) {
+            // Mobile: redirect to Trust Wallet app
+            const appUrl = `trust://wallet_connect?coin_id=501&url=${encodeURIComponent(window.location.href)}`;
+            window.location.href = appUrl;
+          } else {
+            // Desktop: show guidance
+            alert('Trust Wallet requires opening this page directly in the Trust Wallet browser or extension. Please copy this URL and paste it into Trust Wallet browser.');
+            // Also try fallback to wallet modal
+            setVisible(true);
+          }
+        } else {
+          // Other errors: fallback to wallet modal
+          setVisible(true);
+        }
       }
     } else {
       // Trust Wallet not installed, try deep linking or redirect to download
@@ -121,7 +139,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
       
       if (isMobile) {
         // Try deep link for mobile
-        const deepLink = `trust://wallet_connect?redirect_url=${encodeURIComponent(window.location.href)}`;
+        const deepLink = `trust://wallet_connect?coin_id=501&redirect_url=${encodeURIComponent(window.location.href)}`;
         window.location.href = deepLink;
         
         // Fallback to store if deep link fails
