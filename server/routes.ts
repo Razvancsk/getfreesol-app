@@ -405,12 +405,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fallback to RPC if Helius didn't work
-      if (tokens.length === 0) {
+      // Fallback to RPC if Helius didn't work or returned no tokens
+      if (tokens.length === 0 && tokenAccounts.value.length > 0) {
         console.log('Falling back to RPC token scanning...');
         for (const account of tokenAccounts.value) {
           const balance = account.account.data.parsed?.info?.tokenAmount?.uiAmount || 0;
-          if (balance <= 0) continue;
+          const rawBalance = account.account.data.parsed?.info?.tokenAmount?.amount || '0';
+          
+          // Only include tokens with actual positive balance
+          if (balance <= 0 || rawBalance === '0') continue;
 
           const info = account.account.data.parsed?.info;
           tokens.push({
@@ -423,6 +426,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
+
+      // Final filter to ensure no zero-balance tokens
+      tokens = tokens.filter((token: any) => token.balance > 0);
 
       res.json(tokens);
     } catch (error) {
