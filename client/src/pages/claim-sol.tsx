@@ -103,6 +103,23 @@ export default function SolRefund() {
   const [tokenSearchQuery, setTokenSearchQuery] = useState('');
   const [allTokens, setAllTokens] = useState<any[]>([]);
   const [jupiterTokens, setJupiterTokens] = useState<any[]>([]);
+
+  // Wallet icon mapping
+  const getWalletIcon = (walletName: string | null): string | null => {
+    if (!walletName) return null;
+    
+    const iconMap: Record<string, string> = {
+      'Phantom': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/phantom/icon.svg',
+      'Magic Eden': 'https://magiceden.io/icons/me_logo.svg',
+      'Backpack': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/backpack/icon.svg',
+      'Solflare': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/solflare/icon.svg',
+      'Coin98': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/coin98/icon.svg',
+      'Coinbase Wallet': 'https://cdn.jsdelivr.net/gh/solana-labs/wallet-adapter@master/packages/wallets/coinbase/icon.svg',
+      'Trust Wallet': 'https://trustwallet.com/assets/images/trust_logotype_blue.svg'
+    };
+    
+    return iconMap[walletName] || null;
+  };
   const [isSearchingTokens, setIsSearchingTokens] = useState(false);
 
   // Function to get the correct trading pair address for DexScreener
@@ -1355,10 +1372,25 @@ export default function SolRefund() {
               {isConnected && publicKey ? (
                 <>
                   <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
+                      {walletName && getWalletIcon(walletName) ? (
+                        <img 
+                          src={getWalletIcon(walletName)!} 
+                          alt={walletName}
+                          className="w-5 h-5 rounded-full"
+                          onError={(e) => {
+                            // Fallback to text if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling!.style.display = 'inline';
+                          }}
+                        />
+                      ) : null}
                       {walletName && (
-                        <span className="text-purple-300 text-xs">({walletName})</span>
+                        <span className="text-purple-300 text-xs" style={{display: getWalletIcon(walletName) ? 'none' : 'inline'}}>
+                          ({walletName})
+                        </span>
                       )}
                     </div>
                   </div>
