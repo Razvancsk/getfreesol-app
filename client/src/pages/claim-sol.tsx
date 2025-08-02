@@ -1702,7 +1702,7 @@ export default function SolRefund() {
                     Clear
                   </Button>
                 </div>
-                <div className="text-sm text-green-400 font-semibold">
+                <div className="text-2xl text-green-400 font-bold">
                   {calculateTotalSOL(selectedTokens.size)}
                 </div>
               </div>
