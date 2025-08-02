@@ -9,6 +9,7 @@ import { WalletAdapterNetwork, WalletError } from "@solana/wallet-adapter-base";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { useStandardWalletAdapters } from "@solana/wallet-standard-wallet-adapter-react";
 import { clusterApiUrl } from "@solana/web3.js";
+import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 interface SolanaProviderProps {
@@ -29,10 +30,12 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     return clusterApiUrl(network);
   }, [network]);
 
-  // Configure base wallets
-  const baseWallets = useMemo(() => [], []);
+  // Configure base wallets including Magic Eden
+  const baseWallets = useMemo(() => [
+    new MagicEdenWalletAdapter(),
+  ], []);
   
-  // Add standard wallet adapters (includes Magic Eden)
+  // Add standard wallet adapters
   const wallets = useStandardWalletAdapters(baseWallets);
 
   // Handle wallet errors
