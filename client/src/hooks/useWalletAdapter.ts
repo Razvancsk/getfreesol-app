@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
@@ -94,6 +95,74 @@ export const useWalletAdapter = (): WalletAdapterHook => {
   const effectiveConnected = magicEdenWallet.isConnected || connected;
   const effectiveWalletName = magicEdenWallet.isConnected ? 'Magic Eden' : (wallet?.adapter?.name || null);
 
+  // Enhanced signTransaction wrapper with comprehensive error handling
+  const wrappedSignTransaction = useCallback(async (transaction: any) => {
+    console.log('🔐 WalletAdapter signTransaction called', {
+      magicEdenConnected: magicEdenWallet.isConnected,
+      standardConnected: connected,
+      effectiveWallet: effectiveWalletName,
+      hasTransaction: !!transaction
+    });
+
+    if (magicEdenWallet.isConnected) {
+      try {
+        console.log('🔄 Using Magic Eden wallet for signing...');
+        return await magicEdenWallet.signTransaction(transaction);
+      } catch (error) {
+        console.error('❌ Magic Eden signing failed, attempting fallback to standard adapter:', error);
+        
+        // If Magic Eden fails, try fallback to standard adapter if available
+        if (connected && signTransaction) {
+          console.log('🔄 Falling back to standard wallet adapter...');
+          return await signTransaction(transaction);
+        }
+        
+        throw error;
+      }
+    } else if (connected && signTransaction) {
+      console.log('🔄 Using standard wallet adapter for signing...');
+      return await signTransaction(transaction);
+    } else {
+      const error = new Error('No wallet connected for signing');
+      console.error('❌ Wallet signing failed:', error.message);
+      throw error;
+    }
+  }, [magicEdenWallet.isConnected, magicEdenWallet.signTransaction, connected, signTransaction, effectiveWalletName]);
+
+  // Enhanced signAllTransactions wrapper with comprehensive error handling
+  const wrappedSignAllTransactions = useCallback(async (transactions: any[]) => {
+    console.log('🔐 WalletAdapter signAllTransactions called', {
+      magicEdenConnected: magicEdenWallet.isConnected,
+      standardConnected: connected,
+      effectiveWallet: effectiveWalletName,
+      transactionCount: transactions.length
+    });
+
+    if (magicEdenWallet.isConnected) {
+      try {
+        console.log('🔄 Using Magic Eden wallet for batch signing...');
+        return await magicEdenWallet.signAllTransactions(transactions);
+      } catch (error) {
+        console.error('❌ Magic Eden batch signing failed, attempting fallback to standard adapter:', error);
+        
+        // If Magic Eden fails, try fallback to standard adapter if available
+        if (connected && signAllTransactions) {
+          console.log('🔄 Falling back to standard wallet adapter...');
+          return await signAllTransactions(transactions);
+        }
+        
+        throw error;
+      }
+    } else if (connected && signAllTransactions) {
+      console.log('🔄 Using standard wallet adapter for batch signing...');
+      return await signAllTransactions(transactions);
+    } else {
+      const error = new Error('No wallet connected for batch signing');
+      console.error('❌ Wallet batch signing failed:', error.message);
+      throw error;
+    }
+  }, [magicEdenWallet.isConnected, magicEdenWallet.signAllTransactions, connected, signAllTransactions, effectiveWalletName]);
+
   return {
     publicKey: effectivePublicKey,
     connected: effectiveConnected,
@@ -101,8 +170,8 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     disconnecting,
     connect: handleConnect,
     disconnect: handleDisconnect,
-    signTransaction: magicEdenWallet.isConnected ? magicEdenWallet.signTransaction : (signTransaction || (() => Promise.reject(new Error('Wallet not connected')))),
-    signAllTransactions: magicEdenWallet.isConnected ? magicEdenWallet.signAllTransactions : (signAllTransactions || (() => Promise.reject(new Error('Wallet not connected')))),
+    signTransaction: wrappedSignTransaction,
+    signAllTransactions: wrappedSignAllTransactions,
     walletName: effectiveWalletName,
     connection,
     setVisible,
