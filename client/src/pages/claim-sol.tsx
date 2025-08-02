@@ -1380,9 +1380,6 @@ export default function SolRefund() {
                     <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
                   </Button>
-                  <p className="text-purple-300 text-sm text-center">
-                    Supports Phantom, Magic Eden, Solflare, and Coin98 wallets
-                  </p>
                 </div>
               )}
             </div>
