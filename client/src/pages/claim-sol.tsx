@@ -12,7 +12,6 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
-import { TrustWalletGuidance } from '@/components/TrustWalletGuidance';
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 
@@ -1369,35 +1368,21 @@ export default function SolRefund() {
                   </Button>
                 </>
               ) : (
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={handleConnectWallet}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
-                  >
-                    <Wallet className="h-4 w-4 mr-2" />
-                    Connect Wallet
-                  </Button>
-                  {isMagicEdenAvailable && (
-                    <Button
-                      onClick={connectMagicEden}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                      title="Connect directly to Magic Eden wallet"
-                    >
-                      Magic Eden
-                    </Button>
-                  )}
+                <div className="flex flex-col items-center space-y-3">
                   <Button
                     onClick={() => {
                       select(null);
                       setVisible(true);
                     }}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                    title="Open wallet selection modal"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
+                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Trust Wallet"
                   >
-                    <Wallet className="h-4 w-4 mr-2" />
+                    <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
                   </Button>
-                  <TrustWalletGuidance />
+                  <p className="text-purple-300 text-sm text-center max-w-md">
+                    Trust Wallet users: If connection fails, open this page directly in Trust Wallet browser (mobile) or install Trust Wallet extension (desktop)
+                  </p>
                 </div>
               )}
             </div>
