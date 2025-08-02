@@ -74,6 +74,19 @@
   --jupiter-terminal-module: 16, 23, 31;
 }
 
+/* Hide Trust Wallet from Solana wallet adapter modal - Simple approach */
+.wallet-adapter-modal-list button:nth-child(2),
+.wallet-adapter-modal-list .wallet-adapter-button:nth-child(2) {
+  display: none !important;
+}
+
+/* Hide any element containing "Trust" text */
+.wallet-adapter-modal button:contains("Trust"),
+.wallet-adapter-modal [title*="Trust"],
+.wallet-adapter-modal [alt*="Trust"] {
+  display: none !important;
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -15,6 +15,7 @@ import { CoinbaseWalletAdapter } from "@solana/wallet-adapter-coinbase";
 
 import { clusterApiUrl } from "@solana/web3.js";
 import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
+import { startTrustWalletHiding } from "@/utils/hideTrustWallet";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 interface SolanaProviderProps {
@@ -22,6 +23,11 @@ interface SolanaProviderProps {
 }
 
 export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
+  // Start Trust Wallet hiding utility
+  React.useEffect(() => {
+    startTrustWalletHiding();
+  }, []);
+
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Mainnet;
   
