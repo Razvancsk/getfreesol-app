@@ -1,10 +1,20 @@
 import { PublicKey } from '@solana/web3.js';
 
-// Phantom wallet types
+// Wallet types
 declare global {
   interface Window {
     solana?: {
       isPhantom?: boolean;
+      publicKey?: PublicKey;
+      isConnected?: boolean;
+      connect: () => Promise<{ publicKey: PublicKey }>;
+      disconnect: () => Promise<void>;
+      signTransaction: (transaction: any) => Promise<any>;
+      on: (event: string, callback: () => void) => void;
+      off: (event: string, callback: () => void) => void;
+    };
+    solflare?: {
+      isSolflare?: boolean;
       publicKey?: PublicKey;
       isConnected?: boolean;
       connect: () => Promise<{ publicKey: PublicKey }>;
@@ -22,7 +32,10 @@ export interface WalletAdapter {
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   signTransaction: (transaction: any) => Promise<any>;
+  name: string;
 }
+
+export type WalletType = 'phantom' | 'solflare';
 
 export const getPhantomWallet = (): WalletAdapter | null => {
   if (typeof window === 'undefined' || !window.solana?.isPhantom) {
@@ -30,6 +43,7 @@ export const getPhantomWallet = (): WalletAdapter | null => {
   }
 
   return {
+    name: 'Phantom',
     publicKey: window.solana.publicKey || null,
     connected: window.solana.isConnected || false,
     connect: async () => {
@@ -53,6 +67,44 @@ export const getPhantomWallet = (): WalletAdapter | null => {
     signTransaction: async (transaction: any) => {
       try {
         return await window.solana!.signTransaction(transaction);
+      } catch (error) {
+        console.error('Failed to sign transaction:', error);
+        throw error;
+      }
+    }
+  };
+};
+
+export const getSolflareWallet = (): WalletAdapter | null => {
+  if (typeof window === 'undefined' || !window.solflare?.isSolflare) {
+    return null;
+  }
+
+  return {
+    name: 'Solflare',
+    publicKey: window.solflare.publicKey || null,
+    connected: window.solflare.isConnected || false,
+    connect: async () => {
+      try {
+        const response = await window.solflare!.connect();
+        console.log('Solflare wallet connected:', response.publicKey.toString());
+      } catch (error) {
+        console.error('Failed to connect wallet:', error);
+        throw error;
+      }
+    },
+    disconnect: async () => {
+      try {
+        await window.solflare!.disconnect();
+        console.log('Solflare wallet disconnected');
+      } catch (error) {
+        console.error('Failed to disconnect wallet:', error);
+        throw error;
+      }
+    },
+    signTransaction: async (transaction: any) => {
+      try {
+        return await window.solflare!.signTransaction(transaction);
       } catch (error) {
         console.error('Failed to sign transaction:', error);
         throw error;
