@@ -13,8 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
-import WalletSelectionModal from '@/components/WalletSelectionModal';
-import { getConnectedWallet, getWalletByType, WalletType } from '@/lib/solana';
+import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 
 interface EmptyTokenAccount {
   id: number;
@@ -281,13 +280,18 @@ export default function SolRefund() {
     setRealSwapData(null);
   };
   
-  // Multi-wallet state synced with main navigation
-  const [publicKey, setPublicKey] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectedWalletType, setConnectedWalletType] = useState<WalletType | null>(null);
-  const [forceDisconnected, setForceDisconnected] = useState(false);
-  const [hasCheckedInitialState, setHasCheckedInitialState] = useState(false);
-  const [showWalletModal, setShowWalletModal] = useState(false);
+  // Wallet adapter state
+  const { 
+    publicKey, 
+    connected: isConnected, 
+    connecting, 
+    connect, 
+    disconnect, 
+    signTransaction, 
+    signAllTransactions,
+    walletName,
+    connection
+  } = useWalletAdapter();
 
   // Auto-quote for swap when input changes
   useEffect(() => {
@@ -302,114 +306,12 @@ export default function SolRefund() {
     }
   }, [swapInputAmount, swapInputToken, swapOutputToken, activeTab]);
 
-  // Multi-wallet connection logic
+  // Clear scan result when wallet disconnects
   useEffect(() => {
-    const checkWalletConnection = () => {
-      // If user manually disconnected from SOL Refund page, stay disconnected
-      if (forceDisconnected) {
-        setPublicKey(null);
-        setIsConnected(false);
-        setConnectedWalletType(null);
-        setScanResult(null);
-        console.log('SOL Refund: Force disconnected by user');
-        return;
-      }
-      
-      // On first load, be extra strict - wallet must be truly connected
-      if (!hasCheckedInitialState) {
-        setHasCheckedInitialState(true);
-        
-        const connectedWallet = getConnectedWallet();
-        if (connectedWallet) {
-          try {
-            const currentKey = connectedWallet.adapter.publicKey?.toString();
-            if (currentKey && currentKey.length > 40) {
-              setPublicKey(currentKey);
-              setIsConnected(true);
-              setConnectedWalletType(connectedWallet.type);
-              console.log('SOL Refund: Initial wallet check - connected');
-              return;
-            }
-          } catch (error) {
-            console.log('SOL Refund: Initial wallet check - error');
-          }
-        }
-        
-        // Default to disconnected on first load
-        setPublicKey(null);
-        setIsConnected(false);
-        setConnectedWalletType(null);
-        setScanResult(null);
-        console.log('SOL Refund: Initial wallet check - not connected');
-        return;
-      }
-      
-      // Regular checks after initial load
-      const connectedWallet = getConnectedWallet();
-      if (connectedWallet) {
-        try {
-          const currentKey = connectedWallet.adapter.publicKey?.toString();
-          if (currentKey && currentKey.length > 40) {
-            setPublicKey(currentKey);
-            setIsConnected(true);
-            setConnectedWalletType(connectedWallet.type);
-            console.log('SOL Refund: Wallet verified as connected');
-          } else {
-            throw new Error('Invalid wallet key');
-          }
-        } catch (error) {
-          setPublicKey(null);
-          setIsConnected(false);
-          setConnectedWalletType(null);
-          setScanResult(null);
-          console.log('SOL Refund: Error validating wallet');
-        }
-      } else {
-        setPublicKey(null);
-        setIsConnected(false);
-        setConnectedWalletType(null);
-        setScanResult(null);
-        console.log('SOL Refund: Wallet not connected');
-      }
-    };
-
-    // Check initial connection state
-    checkWalletConnection();
-
-    // Listen for wallet connection events
-    const handleConnect = () => {
-      console.log('Wallet connect event detected');
-      checkWalletConnection();
-    };
-    
-    const handleDisconnect = () => {
-      console.log('Wallet disconnect event detected');
-      setPublicKey(null);
-      setIsConnected(false);
-      setConnectedWalletType(null);
+    if (!isConnected) {
       setScanResult(null);
-    };
-
-    // Add event listeners for both wallets
-    if (window.solana && typeof (window.solana as any).on === 'function') {
-      (window.solana as any).on('connect', handleConnect);
-      (window.solana as any).on('disconnect', handleDisconnect);
     }
-
-
-
-    // Fallback: Check wallet state periodically
-    const interval = setInterval(checkWalletConnection, 2000);
-
-    return () => {
-      clearInterval(interval);
-      if (window.solana && typeof (window.solana as any).off === 'function') {
-        (window.solana as any).off('connect', handleConnect);
-        (window.solana as any).off('disconnect', handleDisconnect);
-      }
-
-    };
-  }, []);
+  }, [isConnected]);
 
   // Add comprehensive error handler to prevent ALL unhandled promise rejections from showing overlay
   useEffect(() => {
@@ -467,55 +369,31 @@ export default function SolRefund() {
     }
   }, [isConnected, publicKey]);
 
-  // Multi-wallet connection functions
-  const handleConnectWallet = () => {
-    setShowWalletModal(true);
-  };
-
-  const connectToWallet = async (walletType: WalletType) => {
+  // Wallet connection functions using wallet adapter
+  const handleConnectWallet = async () => {
     try {
-      setForceDisconnected(false); // Clear force disconnected state
-      const wallet = getWalletByType(walletType);
-      if (!wallet) {
-        toast({
-          title: "Wallet Not Found",
-          description: `Please install ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet to continue.`,
-          variant: "destructive",
-        });
-        setShowWalletModal(false);
-        return;
-      }
-
-      await wallet.connect();
-      setShowWalletModal(false); // Close modal on successful connection
+      await connect();
       toast({
         title: "Wallet Connected",
-        description: `Successfully connected to ${wallet.name} wallet.`,
+        description: `Successfully connected to ${walletName || 'wallet'}.`,
       });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       toast({
         title: "Connection Failed",
-        description: `Failed to connect to ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet.`,
+        description: "Failed to connect wallet. Please try again.",
         variant: "destructive",
       });
-      setShowWalletModal(false);
     }
   };
 
   const disconnectWallet = async () => {
     try {
-      if (connectedWalletType) {
-        const wallet = getWalletByType(connectedWalletType);
-        if (wallet) {
-          await wallet.disconnect();
-          setForceDisconnected(true);
-          toast({
-            title: "Wallet Disconnected",
-            description: "Wallet has been disconnected successfully.",
-          });
-        }
-      }
+      await disconnect();
+      toast({
+        title: "Wallet Disconnected",
+        description: "Wallet has been disconnected successfully.",
+      });
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
       toast({
@@ -1858,11 +1736,7 @@ export default function SolRefund() {
       </div>
 
       {/* Wallet Selection Modal */}
-      <WalletSelectionModal
-        isOpen={showWalletModal}
-        onClose={() => setShowWalletModal(false)}
-        onWalletSelect={connectToWallet}
-      />
+
     </div>
   );
 }
