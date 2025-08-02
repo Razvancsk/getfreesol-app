@@ -1380,9 +1380,28 @@ export default function SolRefund() {
                     <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
                   </Button>
-                  <p className="text-purple-300 text-sm text-center max-w-md">
-                    Trust Wallet users: If connection fails, open this page directly in Trust Wallet browser (mobile) or install Trust Wallet extension (desktop)
-                  </p>
+                  <div className="text-center space-y-2">
+                    <p className="text-purple-300 text-sm">
+                      Trust Wallet blocked? Copy this URL and open in Trust Wallet browser:
+                    </p>
+                    <div className="flex items-center justify-center space-x-2">
+                      <input 
+                        type="text" 
+                        value={window.location.href} 
+                        readOnly 
+                        className="bg-purple-900/20 border border-purple-500/30 text-purple-200 px-3 py-1 rounded text-xs font-mono w-64"
+                      />
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast({ title: "URL copied!", description: "Open this in Trust Wallet browser" });
+                        }}
+                        className="bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 text-xs rounded"
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
