@@ -12,7 +12,7 @@ import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { Coin98WalletAdapter } from "@solana/wallet-adapter-coin98";
 import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import { CoinbaseWalletAdapter } from "@solana/wallet-adapter-coinbase";
-import { BitKeepWalletAdapter } from "@solana/wallet-adapter-bitkeep";
+// Removed BitKeepWalletAdapter - using custom Bitget integration instead
 
 import { clusterApiUrl } from "@solana/web3.js";
 import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
@@ -43,6 +43,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   }, [network]);
 
   // Configure wallets - reliable wallets only (removed Trust Wallet due to frame restrictions)
+  // Note: Bitget wallet handled by custom hook, not standard adapter
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
     new BackpackWalletAdapter(),
@@ -50,7 +51,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     new MagicEdenWalletAdapter(),
     new SolflareWalletAdapter(),
     new Coin98WalletAdapter(),
-    new BitKeepWalletAdapter(),
+    // BitKeepWalletAdapter removed - using custom Bitget integration in useBitgetWallet.ts
   ], []);
 
   // Handle wallet errors

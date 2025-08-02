@@ -26,11 +26,12 @@ export interface WalletAdapterHook {
   select: (walletName: string | null) => void;
   isMagicEdenAvailable: boolean;
   connectMagicEden: () => Promise<void>;
-
   isBackpackAvailable: boolean;
   connectBackpack: () => Promise<void>;
   isCoinbaseAvailable: boolean;
   connectCoinbase: () => Promise<void>;
+  isBitgetAvailable: boolean;
+  connectBitget: () => Promise<void>;
 }
 
 export const useWalletAdapter = (): WalletAdapterHook => {
