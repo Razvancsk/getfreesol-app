@@ -480,6 +480,7 @@ export default function SolRefund() {
 
   const connectToWallet = async (walletType: WalletType) => {
     try {
+      setForceDisconnected(false); // Clear force disconnected state
       const wallet = getWalletByType(walletType);
       if (!wallet) {
         toast({
@@ -487,10 +488,12 @@ export default function SolRefund() {
           description: `Please install ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet to continue.`,
           variant: "destructive",
         });
+        setShowWalletModal(false);
         return;
       }
 
       await wallet.connect();
+      setShowWalletModal(false); // Close modal on successful connection
       toast({
         title: "Wallet Connected",
         description: `Successfully connected to ${wallet.name} wallet.`,
@@ -502,6 +505,7 @@ export default function SolRefund() {
         description: `Failed to connect to ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet.`,
         variant: "destructive",
       });
+      setShowWalletModal(false);
     }
   };
 
@@ -1863,7 +1867,7 @@ export default function SolRefund() {
       <WalletSelectionModal
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}
-        onSelectWallet={connectToWallet}
+        onWalletSelect={connectToWallet}
       />
     </div>
   );
