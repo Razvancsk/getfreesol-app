@@ -56,14 +56,17 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     return walletList;
   }, []);
 
-  // Handle wallet errors - filter out expected WalletNotReadyError messages
+  // Handle wallet errors - provide helpful messages for installation
   const onError = useCallback((error: WalletError) => {
-    // Don't log WalletNotReadyError as these are expected when wallets aren't connected
     if (error.name === 'WalletNotReadyError') {
-      console.log('🔮 Wallet not ready - expected behavior for uninstalled wallets');
+      console.log('💡 Wallet needs to be installed - users should be redirected to wallet download page');
       return;
     }
-    console.error('Unhandled wallet error:', error.name, error.message);
+    if (error.name === 'WalletConnectionError') {
+      console.log('🔗 Wallet connection failed - user may have cancelled or wallet is not available');
+      return;
+    }
+    console.error('Wallet error:', error.name, error.message);
   }, []);
 
   return (
