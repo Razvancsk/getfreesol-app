@@ -66,6 +66,32 @@ export default function SolRefund() {
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+
+  // Clean up selected tokens when switching tabs or when token list changes
+  useEffect(() => {
+    if (activeTab !== 'burn') {
+      setSelectedTokens(new Set());
+    }
+  }, [activeTab]);
+
+  // Clean up stale selections when token list changes
+  useEffect(() => {
+    if (tokenList.length === 0) {
+      setSelectedTokens(new Set());
+    } else {
+      // Remove any selected tokens that are no longer in the current token list
+      const currentTokenMints = new Set(tokenList.map(token => token.mint));
+      setSelectedTokens(prev => {
+        const filteredSelection = new Set();
+        prev.forEach(mint => {
+          if (currentTokenMints.has(mint)) {
+            filteredSelection.add(mint);
+          }
+        });
+        return filteredSelection;
+      });
+    }
+  }, [tokenList]);
   const { toast } = useToast();
 
   // Swap state
@@ -834,6 +860,8 @@ export default function SolRefund() {
     },
     onSuccess: (data: any[]) => {
       setTokenList(data);
+      // Clear selection when token list changes to prevent stale selections
+      setSelectedTokens(new Set());
     },
     onError: (error: any) => {
       toast({
