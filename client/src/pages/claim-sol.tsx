@@ -1677,20 +1677,15 @@ export default function SolRefund() {
           {/* Burn Tokens Results */}
           {activeTab === 'burnTokens' && tokenList.length > 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              {/* Selection Count and Total SOL - Above Header */}
               <div className="flex items-center justify-between mb-4">
-                <div className="text-sm text-purple-300">
-                  {selectedTokens.size} selected
-                </div>
-                <div className="text-sm text-green-400 font-semibold">
-                  {calculateTotalSOL(selectedTokens.size)}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Your Tokens</h3>
-                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
-                  {tokenList.length} Tokens Found
+                <h3 className="text-lg font-semibold text-white">{selectedTokens.size} selected</h3>
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-green-400 font-semibold">
+                    {calculateTotalSOL(selectedTokens.size)}
+                  </div>
+                  <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                    {tokenList.length} Tokens Found
+                  </div>
                 </div>
               </div>
 
