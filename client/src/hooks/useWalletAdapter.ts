@@ -19,6 +19,7 @@ export interface WalletAdapterHook {
   walletName: string | null;
   connection: any;
   setVisible: (visible: boolean) => void;
+  select: (walletName: string | null) => void;
   isMagicEdenAvailable: boolean;
   connectMagicEden: () => Promise<void>;
   isTrustWalletAvailable: boolean;
@@ -242,6 +243,7 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     walletName: effectiveWalletName,
     connection,
     setVisible,
+    select,
     isMagicEdenAvailable: magicEdenWallet.isAvailable,
     connectMagicEden,
     isTrustWalletAvailable: trustWallet.isAvailable,
