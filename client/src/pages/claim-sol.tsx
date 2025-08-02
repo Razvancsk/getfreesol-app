@@ -1330,54 +1330,53 @@ export default function SolRefund() {
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center">
-                <img 
-                  src={logoImage}
-                  alt="Get Your Sol"
-                  className="h-32 w-auto"
-                />
-              </div>
-              
-              {/* Header Navigation Buttons */}
-              {isConnected && (
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={() => setActiveTab('reclaim')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'reclaim' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <Coins className="h-4 w-4 mr-2" />
-                    Reclaim SOL
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('burnTokens')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'burnTokens' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <Flame className="h-4 w-4 mr-2" />
-                    Burn Tokens
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('swap')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'swap' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Swap
-                  </Button>
-                </div>
-              )}
+            {/* Logo */}
+            <div className="flex items-center">
+              <img 
+                src={logoImage}
+                alt="Get Your Sol"
+                className="h-32 w-auto"
+              />
             </div>
+            
+            {/* Center Navigation Buttons */}
+            {isConnected && (
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={() => setActiveTab('reclaim')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'reclaim' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                >
+                  <Coins className="h-4 w-4 mr-2" />
+                  Reclaim SOL
+                </Button>
+                <Button
+                  onClick={() => setActiveTab('burnTokens')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'burnTokens' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                >
+                  <Flame className="h-4 w-4 mr-2" />
+                  Burn Tokens
+                </Button>
+                <Button
+                  onClick={() => setActiveTab('swap')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'swap' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                >
+                  <ArrowLeftRight className="h-4 w-4 mr-2" />
+                  Swap
+                </Button>
+              </div>
+            )}
             
             {/* Wallet Connection Button */}
             <div className="flex items-center space-x-3">
