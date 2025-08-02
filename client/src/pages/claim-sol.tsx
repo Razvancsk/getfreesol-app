@@ -1825,7 +1825,7 @@ export default function SolRefund() {
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
           {activeTab === 'reclaim' && stats && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Total SOL Recovered */}
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                 <div className="text-3xl font-bold text-white mb-2">
@@ -1843,16 +1843,6 @@ export default function SolRefund() {
                 </div>
                 <div className="text-sm text-purple-200 uppercase tracking-wider">
                   TOTAL ACCOUNTS CLOSED
-                </div>
-              </div>
-
-              {/* All Time Transactions */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
-                  {stats.recentTransactions.length}
-                </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  ALL TIME TRANSACTIONS
                 </div>
               </div>
             </div>
