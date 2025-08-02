@@ -1329,57 +1329,91 @@ export default function SolRefund() {
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
-          <div className="flex items-center justify-between mb-2">
-            {/* Logo */}
-            <div className="flex items-center">
-              <img 
-                src={logoImage}
-                alt="Get Your Sol"
-                className="h-32 w-auto"
-              />
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
+            {/* Top row: Logo and Wallet Connection (mobile) */}
+            <div className="flex items-center justify-between">
+              {/* Logo */}
+              <div className="flex items-center">
+                <img 
+                  src={logoImage}
+                  alt="Get Your Sol"
+                  className="h-32 w-auto"
+                />
+              </div>
+              
+              {/* Mobile Wallet Connection */}
+              <div className="lg:hidden flex items-center space-x-3">
+                {isConnected && publicKey ? (
+                  <>
+                    <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-3 py-1 text-white font-mono text-xs border border-purple-500/30">
+                      <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
+                    </div>
+                    <Button
+                      onClick={disconnectWallet}
+                      className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-3 py-1 text-xs font-medium border border-purple-500/30"
+                    >
+                      Disconnect
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      select(null);
+                      setVisible(true);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                    title="Connect your wallet"
+                  >
+                    <Wallet className="h-4 w-4 mr-1" />
+                    Connect
+                  </Button>
+                )}
+              </div>
             </div>
             
-            {/* Center Navigation Buttons */}
+            {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
             {isConnected && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => setActiveTab('reclaim')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    activeTab === 'reclaim' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                >
-                  <Coins className="h-4 w-4 mr-2" />
-                  Reclaim SOL
-                </Button>
-                <Button
-                  onClick={() => setActiveTab('burnTokens')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    activeTab === 'burnTokens' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                >
-                  <Flame className="h-4 w-4 mr-2" />
-                  Burn Tokens
-                </Button>
-                <Button
-                  onClick={() => setActiveTab('swap')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    activeTab === 'swap' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                >
-                  <ArrowLeftRight className="h-4 w-4 mr-2" />
-                  Swap
-                </Button>
+              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={() => setActiveTab('reclaim')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'reclaim' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <Coins className="h-4 w-4 mr-2" />
+                    Reclaim SOL
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('burnTokens')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'burnTokens' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <Flame className="h-4 w-4 mr-2" />
+                    Burn Tokens
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('swap')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'swap' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Swap
+                  </Button>
+                </div>
               </div>
             )}
             
-            {/* Wallet Connection Button */}
-            <div className="flex items-center space-x-3">
+            {/* Desktop Wallet Connection - hidden on mobile */}
+            <div className="hidden lg:flex items-center space-x-3">
               {isConnected && publicKey ? (
                 <>
                   <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
