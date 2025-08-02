@@ -1330,7 +1330,14 @@ export default function SolRefund() {
           {/* Header with Navigation and Wallet Connection */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-6">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/attached_assets/Parachuting_Solana_Token_Logo-removebg-preview_1754155843750.png" 
+                  alt="Get Your Sol Logo"
+                  className="h-12 w-auto"
+                />
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">Get Your Sol</h1>
+              </div>
             </div>
             
             {/* Wallet Connection Button */}
