@@ -1874,34 +1874,39 @@ export default function SolRefund() {
                   </div>
                   
                   {/* Transaction Rows */}
-                  <div className="space-y-3">
+                  <div>
                     {stats.recentTransactions.map((tx, index) => (
-                      <div 
-                        key={tx.signature} 
-                        className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
-                        onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
-                        title="Click to view transaction on Solscan"
-                      >
-                        <div className="text-white font-mono text-sm">
-                          <div className="truncate" title={tx.signature}>
-                            {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                      <div key={tx.signature}>
+                        <div 
+                          className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                          onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
+                          title="Click to view transaction on Solscan"
+                        >
+                          <div className="text-white font-mono text-sm">
+                            <div className="truncate" title={tx.signature}>
+                              {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                            </div>
+                          </div>
+                          <div className="text-white text-center text-lg font-semibold">
+                            {tx.accountsClosed}
+                          </div>
+                          <div className="text-white text-center text-sm font-medium">
+                            {tx.solRecovered.toFixed(6)}
+                          </div>
+                          <div className="text-white text-center text-sm">
+                            {new Date(tx.processedAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
                           </div>
                         </div>
-                        <div className="text-white text-center text-lg font-semibold">
-                          {tx.accountsClosed}
-                        </div>
-                        <div className="text-white text-center text-sm font-medium">
-                          {tx.solRecovered.toFixed(6)}
-                        </div>
-                        <div className="text-white text-center text-sm">
-                          {new Date(tx.processedAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                        </div>
+                        {/* Separator line between rows - don't show after last row */}
+                        {index < stats.recentTransactions.length - 1 && (
+                          <div className="border-b border-purple-500/20 my-2"></div>
+                        )}
                       </div>
                     ))}
                   </div>
