@@ -1876,7 +1876,12 @@ export default function SolRefund() {
                   {/* Transaction Rows */}
                   <div className="space-y-3">
                     {stats.recentTransactions.map((tx, index) => (
-                      <div key={tx.signature} className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/10 rounded-lg transition-colors">
+                      <div 
+                        key={tx.signature} 
+                        className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                        onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
+                        title="Click to view transaction on Solscan"
+                      >
                         <div className="text-white font-mono text-sm">
                           <div className="truncate" title={tx.signature}>
                             {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
