@@ -1372,15 +1372,7 @@ export default function SolRefund() {
                     <Wallet className="h-4 w-4 mr-2" />
                     Connect Wallet
                   </Button>
-                  {isMagicEdenAvailable && (
-                    <Button
-                      onClick={connectMagicEden}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                      title="Connect directly to Magic Eden wallet"
-                    >
-                      Magic Eden
-                    </Button>
-                  )}
+
                 </div>
               )}
             </div>
