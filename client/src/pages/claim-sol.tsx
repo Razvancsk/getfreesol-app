@@ -1475,7 +1475,7 @@ export default function SolRefund() {
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
               {activeTab === 'swap' 
                 ? 'Swap with no fees!' 
-                : 'Reclaim your SOL rent from empty token accounts and burn unwanted tokens.'
+                : 'Reclaim your SOL rent from empty token accounts. Each empty token account holds ~0.002 SOL that can be recovered by closing the account.'
               }
             </p>
           </div>
