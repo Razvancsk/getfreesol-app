@@ -380,34 +380,16 @@ export default function SolRefund() {
   const handleConnectWallet = async () => {
     try {
       await connect();
-      toast({
-        title: "Wallet Connected",
-        description: `Successfully connected to ${walletName || 'wallet'}.`,
-      });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
-      toast({
-        title: "Connection Failed",
-        description: "Failed to connect wallet. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
   const disconnectWallet = async () => {
     try {
       await disconnect();
-      toast({
-        title: "Wallet Disconnected",
-        description: "Wallet has been disconnected successfully.",
-      });
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
-      toast({
-        title: "Disconnection Failed",
-        description: "Failed to disconnect wallet.",
-        variant: "destructive",
-      });
     }
   };
 

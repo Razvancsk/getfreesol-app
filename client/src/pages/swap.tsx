@@ -149,17 +149,8 @@ export default function SwapPage() {
       }
 
       await wallet.connect();
-      toast({
-        title: "Wallet Connected",
-        description: `Successfully connected to ${wallet.name} wallet.`,
-      });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
-      toast({
-        title: "Connection Failed",
-        description: `Failed to connect to ${walletType === 'phantom' ? 'Phantom' : 'Solflare'} wallet.`,
-        variant: "destructive",
-      });
     }
   };
 
@@ -170,19 +161,10 @@ export default function SwapPage() {
         const wallet = getWalletByType(connectedWalletType);
         if (wallet) {
           await wallet.disconnect();
-          toast({
-            title: "Wallet Disconnected",
-            description: "Wallet has been disconnected successfully.",
-          });
         }
       }
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
-      toast({
-        title: "Disconnection Failed",
-        description: "Failed to disconnect wallet.",
-        variant: "destructive",
-      });
     }
   };
   
