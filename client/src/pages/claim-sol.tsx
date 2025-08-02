@@ -1631,9 +1631,6 @@ export default function SolRefund() {
                             <div className="font-mono text-sm text-white truncate">
                               {account.accountAddress}
                             </div>
-                            <div className="text-xs text-white">
-                              Mint: {account.mintAddress.substring(0, 8)}...{account.mintAddress.substring(-8)}
-                            </div>
                           </div>
                           <div className="px-2 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded text-xs text-purple-400">
                             {account.rentAmount} SOL
