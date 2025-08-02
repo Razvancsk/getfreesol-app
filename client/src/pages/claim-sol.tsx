@@ -1706,7 +1706,7 @@ export default function SolRefund() {
                   </div>
                 </div>
                 <div className="text-sm text-green-400 font-semibold">
-                  SOL {calculateTotalSOL(selectedTokens.size)}
+                  {calculateTotalSOL(selectedTokens.size)}
                 </div>
               </div>
               
