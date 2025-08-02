@@ -105,18 +105,18 @@ export default function SolRefund() {
   const [jupiterTokens, setJupiterTokens] = useState<any[]>([]);
   const [walletIconLoaded, setWalletIconLoaded] = useState<boolean>(false);
 
-  // Wallet icon mapping with base64 embedded icons for reliability  
+  // Wallet icon mapping with simple inline SVG
   const getWalletIcon = (walletName: string | null): string | null => {
     if (!walletName) return null;
     
     const iconMap: Record<string, string> = {
-      'Phantom': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF85XzUpIj4KPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiM0Qzk2RkYiLz4KPHBhdGggZD0iTTI1IDQyQzI1IDM2IDMwIDMyIDM2IDMySDY0QzcwIDMyIDc1IDM2IDc1IDQyVjU4QzY4IDYwIDU4IDU4IDUwIDU4QzQyIDU4IDMyIDYwIDI1IDU4VjQyWiIgZmlsbD0id2hpdGUiLz4KPGNpcmNsZSBjeD0iNDAiIGN5PSI0NSIgcj0iMyIgZmlsbD0iIzRDOTZGRiIvPgo8Y2lyY2xlIGN4PSI2MCIgY3k9IjQ1IiByPSIzIiBmaWxsPSIjNEM5NkZGIi8+CjxwYXRoIGQ9Ik00MCA1NEMzOCA1NCA0MCA1MCA0MiA1MEg1OEM2MCA1MCA2MiA1NCA2MCA1NEM1OSA1NyA1MSA1NyA1MCA1N0M0OSA1NyA0MSA1NyA0MCA1NFoiIGZpbGw9IiM0Qzk2RkYiLz4KPC9nPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSJjbGlwMF85XzUiPgo8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0id2hpdGUiLz4KPC9jbGlwUGF0aD4KPC9kZWZzPgo8L3N2Zz4K',
-      'Magic Eden': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjRTQyNTc1Ii8+CjxwYXRoIGQ9Ik0zMCAzMEM0MCAyNSA2MCAyNSA3MCAzMEM3MCA0MCA3MCA2MCA3MCA3MEw1MCA3MEwzMCA3MEMzMCA2MCAzMCA0MCAzMCAzMFoiIGZpbGw9IndoaXRlIi8+CjxjaXJjbGUgY3g9IjQwIiBjeT0iNDUiIHI9IjUiIGZpbGw9IiNFNDI1NzUiLz4KPGNpcmNsZSBjeD0iNjAiIGN5PSI0NSIgcj0iNSIgZmlsbD0iI0U0MjU3NSIvPgo8L3N2Zz4K',
-      'Backpack': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjRkY2QkZGIi8+CjxwYXRoIGQ9Ik0zNSAzMEg2NUw3MCA0MEg2NVY2MEgzNVY0MEgzMEwzNSAzMFoiIGZpbGw9ImJsYWNrIi8+CjxwYXRoIGQ9Ik00MCA1MEg0NVY1NUg0MFY1MFoiIGZpbGw9IiNGRjZCRkYiLz4KPHA+CjxyZWN0IHg9IjU1IiB5PSI1MCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0iI0ZGNkJGRiIvPgo8L3N2Zz4K',
-      'Solflare': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjRkNBMzExIi8+CjxwYXRoIGQ9Ik0zMCA1MEwyNSA0NUgzNUwzMCA1MFoiIGZpbGw9ImJsYWNrIi8+CjxwYXRoIGQ9Ik03MCA1MEw3NSA1NUg2NUw3MCA1MFoiIGZpbGw9ImJsYWNrIi8+CjxwYXRoIGQ9Ik01MCAzMEw2MCAzNUg0MEw1MCAzMFoiIGZpbGw9ImJsYWNrIi8+CjxwYXRoIGQ9Ik01MCA3MEw0MCA2NUg2MEw1MCA3MFoiIGZpbGw9ImJsYWNrIi8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjEwIiBmaWxsPSJibGFjayIvPgo8L3N2Zz4K',
-      'Coin98': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjRkREMzNEIi8+CjxwYXRoIGQ9Ik0zNSAzNUg2NUw2MCA0MEw0MCA0MEwzNSAzNVoiIGZpbGw9ImJsYWNrIi8+CjxwYXRoIGQ9Ik0zNSA2NUg2NUw2MCA2MEw0MCA2MEwzNSA2NVoiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjQwIiB5PSI0NSIgd2lkdGg9IjIwIiBoZWlnaHQ9IjEwIiBmaWxsPSJibGFjayIvPgo8L3N2Zz4K',
-      'Coinbase Wallet': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjMDA1MkZGIi8+CjxyZWN0IHg9IjM1IiB5PSIzNSIgd2lkdGg9IjMwIiBoZWlnaHQ9IjMwIiByeD0iNSIgZmlsbD0id2hpdGUiLz4KPHJlY3QgeD0iNDIiIHk9IjQyIiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHJ4PSIyIiBmaWxsPSIjMDA1MkZGIi8+CjwvZz4KPC9zdmc+',
-      'Trust Wallet': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjMzM3NUJCIi8+CjxwYXRoIGQ9Ik01MCAyNUw2NSAzNVY1NUw1MCA3NUwzNSA1NVYzNUw1MCAyNVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik01MCAzNUw1OCA0Mkw1MCA1MEw0MiA0Mkw1MCAzNVoiIGZpbGw9IiMzMzc1QkIiLz4KPC9zdmc+'
+      'Phantom': `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#4C96FF"/><path d="M5 8.5C5 7.5 6 7 7 7H13C14 7 15 7.5 15 8.5V11.5C13.5 12 11.5 11.5 10 11.5C8.5 11.5 6.5 12 5 11.5V8.5Z" fill="white"/><circle cx="8" cy="9" r="0.5" fill="#4C96FF"/><circle cx="12" cy="9" r="0.5" fill="#4C96FF"/></svg>')}`,
+      'Magic Eden': `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#E42575"/><path d="M6 6C8 5 12 5 14 6C14 8 14 12 14 14H10H6C6 12 6 8 6 6Z" fill="white"/><circle cx="8" cy="9" r="1" fill="#E42575"/><circle cx="12" cy="9" r="1" fill="#E42575"/></svg>')}`,
+      'Backpack': `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#FF6BFF"/><path d="M7 6H13L14 8H13V12H7V8H6L7 6Z" fill="black"/><rect x="8" y="10" width="1" height="1" fill="#FF6BFF"/><rect x="11" y="10" width="1" height="1" fill="#FF6BFF"/></svg>')}`,
+      'Solflare': `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#FCA311"/><path d="M6 10L5 9H7L6 10Z" fill="black"/><path d="M14 10L15 11H13L14 10Z" fill="black"/><path d="M10 6L12 7H8L10 6Z" fill="black"/><path d="M10 14L8 13H12L10 14Z" fill="black"/><circle cx="10" cy="10" r="2" fill="black"/></svg>')}`,
+      'Coin98': `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#FDD33D"/><path d="M7 7H13L12 8L8 8L7 7Z" fill="black"/><path d="M7 13H13L12 12L8 12L7 13Z" fill="black"/><rect x="8" y="9" width="4" height="2" fill="black"/></svg>')}`,
+      'Coinbase Wallet': `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#0052FF"/><rect x="7" y="7" width="6" height="6" rx="1" fill="white"/><rect x="8.5" y="8.5" width="3" height="3" rx="0.5" fill="#0052FF"/></svg>')}`,
+      'Trust Wallet': `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#3375BB"/><path d="M10 5L13 7V11L10 15L7 11V7L10 5Z" fill="white"/><path d="M10 7L11.5 8.5L10 10L8.5 8.5L10 7Z" fill="#3375BB"/></svg>')}`
     };
     
     return iconMap[walletName] || null;
@@ -1376,12 +1376,22 @@ export default function SolRefund() {
                     <div className="flex items-center space-x-3">
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
                       {walletName && (
-                        <img 
-                          src={getWalletIcon(walletName) || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMTAiIGZpbGw9IiM5RjdBRUEiLz4KPHRleHQgeD0iMTAiIHk9IjE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjEwIiBmaWxsPSJ3aGl0ZSI+VzwvdGV4dD4KICA8L3N2Zz4='} 
-                          alt={walletName}
-                          className="w-5 h-5 rounded-full object-contain bg-white/10 p-0.5"
-                          title={walletName}
-                        />
+                        <div className="flex items-center">
+                          <img 
+                            src={getWalletIcon(walletName) || `data:image/svg+xml,${encodeURIComponent('<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#9F7AEA"/><text x="10" y="14" text-anchor="middle" font-size="10" fill="white">W</text></svg>')}`} 
+                            alt={walletName}
+                            className="w-5 h-5 rounded-full object-contain"
+                            title={walletName}
+                            onError={(e) => {
+                              // If image fails, hide it and show text fallback
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `<span class="text-purple-300 text-xs">(${walletName})</span>`;
+                              }
+                            }}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
