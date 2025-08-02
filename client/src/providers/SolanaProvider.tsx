@@ -5,12 +5,13 @@ import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletAdapterNetwork, WalletError } from "@solana/wallet-adapter-base";
+import { WalletAdapterNetwork, WalletError, WalletReadyState } from "@solana/wallet-adapter-base";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { Coin98WalletAdapter } from "@solana/wallet-adapter-coin98";
 import { TrustWalletAdapter } from "@solana/wallet-adapter-trust";
+
 import { clusterApiUrl } from "@solana/web3.js";
 import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -46,7 +47,8 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     // Debug log all configured wallets
     console.log('🔧 Configured wallets:', walletList.map(w => ({
       name: w.name,
-      readyState: w.readyState === 1 ? 'Installed' : w.readyState === 2 ? 'NotDetected' : 'Unsupported',
+      readyState: w.readyState === WalletReadyState.Installed ? 'Installed' : 
+                 w.readyState === WalletReadyState.NotDetected ? 'NotDetected' : 'Unsupported',
       url: w.url,
       icon: w.icon ? 'present' : 'missing'
     })));
