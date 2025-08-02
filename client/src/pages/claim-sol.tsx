@@ -290,7 +290,9 @@ export default function SolRefund() {
     signTransaction, 
     signAllTransactions,
     walletName,
-    connection
+    connection,
+    isMagicEdenAvailable,
+    connectMagicEden
   } = useWalletAdapter();
 
   // Auto-quote for swap when input changes
@@ -1347,7 +1349,12 @@ export default function SolRefund() {
               {isConnected && publicKey ? (
                 <>
                   <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
-                    {publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}
+                    <div className="flex items-center space-x-2">
+                      <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
+                      {walletName && (
+                        <span className="text-purple-300 text-xs">({walletName})</span>
+                      )}
+                    </div>
                   </div>
                   <Button
                     onClick={disconnectWallet}
@@ -1357,13 +1364,24 @@ export default function SolRefund() {
                   </Button>
                 </>
               ) : (
-                <Button
-                  onClick={handleConnectWallet}
-                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Connect Wallet
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={handleConnectWallet}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium"
+                  >
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Connect Wallet
+                  </Button>
+                  {isMagicEdenAvailable && (
+                    <Button
+                      onClick={connectMagicEden}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                      title="Connect directly to Magic Eden wallet"
+                    >
+                      Magic Eden
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
