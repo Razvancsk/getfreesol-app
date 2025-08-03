@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Favicon Generator</title>
+</head>
+<body>
+    <canvas id="favicon" width="32" height="32" style="border: 1px solid #ccc; image-rendering: pixelated; width: 320px; height: 320px;"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('favicon');
+        const ctx = canvas.getContext('2d');
+        
+        // Clear canvas with transparent background
+        ctx.clearRect(0, 0, 32, 32);
+        
+        // Create a high-contrast, simplified version of the parachuting SOL logo
+        // Purple gradient background
+        const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        gradient.addColorStop(0, '#9333EA'); // bright purple
+        gradient.addColorStop(1, '#6B21A8'); // darker purple
+        
+        // Fill background with gradient
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 32, 32);
+        
+        // Draw parachute (simplified)
+        ctx.strokeStyle = '#E9D5FF'; // light purple
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(16, 12, 8, 0, Math.PI, false); // parachute arc
+        ctx.stroke();
+        
+        // Draw parachute lines
+        ctx.beginPath();
+        ctx.moveTo(8, 12);
+        ctx.lineTo(14, 22);
+        ctx.moveTo(24, 12);
+        ctx.lineTo(18, 22);
+        ctx.moveTo(16, 12);
+        ctx.lineTo(16, 22);
+        ctx.stroke();
+        
+        // Draw SOL coin (simplified circle with S)
+        ctx.fillStyle = '#E9D5FF'; // light purple
+        ctx.beginPath();
+        ctx.arc(16, 24, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Draw S inside coin
+        ctx.fillStyle = '#6B21A8'; // dark purple
+        ctx.font = 'bold 6px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('S', 16, 24);
+        
+        // Convert to data URL and download
+        const link = document.createElement('a');
+        link.download = 'favicon-32x32.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        
+        // Also create 16x16 version
+        const canvas16 = document.createElement('canvas');
+        canvas16.width = 16;
+        canvas16.height = 16;
+        const ctx16 = canvas16.getContext('2d');
+        
+        // Scale down the design for 16x16
+        const gradient16 = ctx16.createRadialGradient(8, 8, 0, 8, 8, 8);
+        gradient16.addColorStop(0, '#9333EA');
+        gradient16.addColorStop(1, '#6B21A8');
+        
+        ctx16.fillStyle = gradient16;
+        ctx16.fillRect(0, 0, 16, 16);
+        
+        // Simplified design for 16x16
+        ctx16.strokeStyle = '#E9D5FF';
+        ctx16.lineWidth = 1;
+        ctx16.beginPath();
+        ctx16.arc(8, 6, 4, 0, Math.PI, false);
+        ctx16.stroke();
+        
+        // Simple lines
+        ctx16.beginPath();
+        ctx16.moveTo(4, 6);
+        ctx16.lineTo(7, 11);
+        ctx16.moveTo(12, 6);
+        ctx16.lineTo(9, 11);
+        ctx16.stroke();
+        
+        // Coin
+        ctx16.fillStyle = '#E9D5FF';
+        ctx16.beginPath();
+        ctx16.arc(8, 12, 2, 0, 2 * Math.PI);
+        ctx16.fill();
+        
+        // S
+        ctx16.fillStyle = '#6B21A8';
+        ctx16.font = 'bold 3px Arial';
+        ctx16.textAlign = 'center';
+        ctx16.textBaseline = 'middle';
+        ctx16.fillText('S', 8, 12);
+        
+        const link16 = document.createElement('a');
+        link16.download = 'favicon-16x16.png';
+        link16.href = canvas16.toDataURL();
+        link16.click();
+    </script>
+</body>
+</html>
