@@ -7,22 +7,25 @@
     </radialGradient>
   </defs>
   
-  <!-- Background -->
-  <rect width="32" height="32" fill="url(#bg)" rx="4"/>
+  <!-- Background with better contrast -->
+  <rect width="32" height="32" fill="url(#bg)" rx="6"/>
   
-  <!-- Parachute canopy -->
-  <path d="M 6 14 Q 16 6 26 14" stroke="#e9d5ff" stroke-width="1.5" fill="none"/>
-  <path d="M 8 14 Q 16 10 24 14" stroke="#e9d5ff" stroke-width="1" fill="none"/>
+  <!-- White outline for better visibility -->
+  <rect width="32" height="32" fill="none" stroke="white" stroke-width="1" rx="6"/>
   
-  <!-- Parachute lines -->
-  <line x1="6" y1="14" x2="13" y2="22" stroke="#e9d5ff" stroke-width="1"/>
-  <line x1="16" y1="10" x2="16" y2="22" stroke="#e9d5ff" stroke-width="1"/>
-  <line x1="26" y1="14" x2="19" y2="22" stroke="#e9d5ff" stroke-width="1"/>
+  <!-- Parachute canopy - thicker and more visible -->
+  <path d="M 6 12 Q 16 4 26 12" stroke="white" stroke-width="2.5" fill="none"/>
+  <path d="M 8 12 Q 16 8 24 12" stroke="white" stroke-width="1.5" fill="none"/>
   
-  <!-- SOL coin -->
-  <circle cx="16" cy="24" r="4" fill="#e9d5ff"/>
-  <circle cx="16" cy="24" r="3" fill="#a855f7"/>
+  <!-- Parachute lines - thicker -->
+  <line x1="6" y1="12" x2="13" y2="20" stroke="white" stroke-width="1.5"/>
+  <line x1="16" y1="8" x2="16" y2="20" stroke="white" stroke-width="1.5"/>
+  <line x1="26" y1="12" x2="19" y2="20" stroke="white" stroke-width="1.5"/>
   
-  <!-- SOL symbol (stylized S) -->
-  <path d="M 13 22.5 L 19 22.5 M 13 24 L 19 24 M 13 25.5 L 19 25.5" stroke="#e9d5ff" stroke-width="0.8"/>
+  <!-- SOL coin - larger and more prominent -->
+  <circle cx="16" cy="23" r="5" fill="white"/>
+  <circle cx="16" cy="23" r="4" fill="#7c3aed"/>
+  
+  <!-- SOL symbol - bold and clear -->
+  <text x="16" y="27" font-family="Arial, sans-serif" font-size="6" font-weight="bold" text-anchor="middle" fill="white">SOL</text>
 </svg>
