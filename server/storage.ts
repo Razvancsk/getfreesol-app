@@ -37,9 +37,9 @@ export interface IStorage {
   
   // Comprehensive Transaction Ledger
   createTransactionLedgerEntry(entry: InsertTransactionLedger): Promise<TransactionLedger>;
-  getTransactionLedger(limit?: number): Promise<TransactionLedger[]>;
+  getTransactionLedger(limit?: number, offset?: number): Promise<TransactionLedger[]>;
   getTransactionLedgerBySignature(signature: string): Promise<TransactionLedger | undefined>;
-  getTransactionLedgerByWallet(walletAddress: string, limit?: number): Promise<TransactionLedger[]>;
+  getTransactionLedgerByWallet(walletAddress: string, limit?: number, offset?: number): Promise<TransactionLedger[]>;
   
   // Token Burn Records
   createTokenBurnRecord(record: InsertTokenBurnRecord): Promise<TokenBurnRecord>;
@@ -120,12 +120,13 @@ export class DatabaseStorage implements IStorage {
     return ledgerEntry;
   }
 
-  async getTransactionLedger(limit: number = 100): Promise<TransactionLedger[]> {
+  async getTransactionLedger(limit: number = 100, offset: number = 0): Promise<TransactionLedger[]> {
     return await db
       .select()
       .from(transactionLedger)
       .orderBy(desc(transactionLedger.processedAt))
-      .limit(limit);
+      .limit(limit)
+      .offset(offset);
   }
 
   async getTransactionLedgerBySignature(signature: string): Promise<TransactionLedger | undefined> {
@@ -136,13 +137,14 @@ export class DatabaseStorage implements IStorage {
     return entry || undefined;
   }
 
-  async getTransactionLedgerByWallet(walletAddress: string, limit: number = 50): Promise<TransactionLedger[]> {
+  async getTransactionLedgerByWallet(walletAddress: string, limit: number = 50, offset: number = 0): Promise<TransactionLedger[]> {
     return await db
       .select()
       .from(transactionLedger)
       .where(eq(transactionLedger.walletAddress, walletAddress))
       .orderBy(desc(transactionLedger.processedAt))
-      .limit(limit);
+      .limit(limit)
+      .offset(offset);
   }
 
   // Token Burn Records

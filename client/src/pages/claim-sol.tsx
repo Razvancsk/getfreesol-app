@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -408,8 +408,24 @@ export default function SolRefund() {
     staleTime: 0, // Always consider data stale for immediate updates
   });
 
-  // Fetch complete transaction history for All Time Ledger
-  const { data: transactionHistory } = useQuery<{
+  // Pagination state for All Time Ledger
+  const [transactionOffset, setTransactionOffset] = useState(0);
+  const [allTransactions, setAllTransactions] = useState<Array<{
+    id: string;
+    signature: string;
+    walletAddress: string;
+    type: string;
+    solRecovered: number;
+    netAmount: number;
+    feeAmount: number;
+    itemsProcessed: number;
+    details: any;
+    processedAt: string;
+  }>>([]);
+  const [hasMoreTransactions, setHasMoreTransactions] = useState(true);
+
+  // Fetch transaction history with pagination (10 transactions per page)
+  const { data: transactionHistory, isLoading: isLoadingTransactions } = useQuery<{
     success: boolean;
     transactions: Array<{
       id: string;
@@ -424,12 +440,42 @@ export default function SolRefund() {
       processedAt: string;
     }>;
     count: number;
+    hasMore: boolean;
   }>({
-    queryKey: ['/api/transactions/history'],
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
-    refetchOnWindowFocus: true, // Refresh when window gets focus
-    staleTime: 0, // Always consider data stale for immediate updates
+    queryKey: ['/api/transactions/history', { offset: transactionOffset }],
+    queryFn: ({ queryKey }) => {
+      const [url, params] = queryKey as [string, { offset: number }];
+      return fetch(`${url}?limit=10&offset=${params.offset}`).then(res => res.json());
+    },
+    refetchInterval: transactionOffset === 0 ? 5000 : false, // Only auto-refresh first page
+    refetchOnWindowFocus: transactionOffset === 0, // Only auto-refresh first page
+    staleTime: 0,
   });
+
+  // Update accumulated transactions when new data arrives
+  useEffect(() => {
+    if (transactionHistory?.transactions) {
+      if (transactionOffset === 0) {
+        // First load or refresh - replace all transactions
+        setAllTransactions(transactionHistory.transactions);
+      } else {
+        // Load more - append new transactions
+        setAllTransactions(prev => {
+          const existingIds = new Set(prev.map(tx => tx.id));
+          const newTransactions = transactionHistory.transactions.filter(tx => !existingIds.has(tx.id));
+          return [...prev, ...newTransactions];
+        });
+      }
+      setHasMoreTransactions(transactionHistory.hasMore || false);
+    }
+  }, [transactionHistory, transactionOffset]);
+
+  // Load more transactions
+  const loadMoreTransactions = useCallback(() => {
+    if (hasMoreTransactions && !isLoadingTransactions) {
+      setTransactionOffset(prev => prev + 10);
+    }
+  }, [hasMoreTransactions, isLoadingTransactions]);
 
   // Clear scan results when wallet disconnects
   useEffect(() => {
@@ -1885,7 +1931,7 @@ export default function SolRefund() {
           )}
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
-          {activeTab === 'reclaim' && transactionHistory && transactionHistory.transactions.length > 0 && (
+          {activeTab === 'reclaim' && allTransactions.length > 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-6">
                 <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
@@ -1911,7 +1957,7 @@ export default function SolRefund() {
                   
                   {/* Transaction Rows */}
                   <div>
-                    {transactionHistory.transactions.map((tx, index) => (
+                    {allTransactions.map((tx, index) => (
                       <div key={tx.signature}>
                         <div 
                           className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
@@ -1940,12 +1986,25 @@ export default function SolRefund() {
                           </div>
                         </div>
                         {/* Separator line between rows - don't show after last row */}
-                        {index < transactionHistory.transactions.length - 1 && (
+                        {index < allTransactions.length - 1 && (
                           <div className="border-b border-purple-500/20 my-2"></div>
                         )}
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Load More Button */}
+                  {hasMoreTransactions && (
+                    <div className="flex justify-center mt-6">
+                      <button
+                        onClick={loadMoreTransactions}
+                        disabled={isLoadingTransactions}
+                        className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoadingTransactions ? 'Loading...' : 'Load More'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -713,13 +713,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get comprehensive transaction history
   app.get("/api/transactions/history", async (req, res) => {
     try {
-      const { wallet, limit = 50 } = req.query;
+      const { wallet, limit = 10, offset = 0 } = req.query;
       
       let transactionHistory;
       if (wallet) {
-        transactionHistory = await storage.getTransactionLedgerByWallet(wallet as string, parseInt(limit as string));
+        transactionHistory = await storage.getTransactionLedgerByWallet(
+          wallet as string, 
+          parseInt(limit as string), 
+          parseInt(offset as string)
+        );
       } else {
-        transactionHistory = await storage.getTransactionLedger(parseInt(limit as string));
+        transactionHistory = await storage.getTransactionLedger(
+          parseInt(limit as string), 
+          parseInt(offset as string)
+        );
       }
 
       const formattedHistory = transactionHistory.map(tx => ({
@@ -738,7 +745,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         transactions: formattedHistory,
-        count: formattedHistory.length
+        count: formattedHistory.length,
+        hasMore: formattedHistory.length === parseInt(limit as string)
       });
 
     } catch (error) {
