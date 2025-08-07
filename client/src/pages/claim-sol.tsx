@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import logoImage from '@assets/get free new logo_1754172568183.png';
+import logoImage from '@assets/image_1754527057994.png';
 
 interface EmptyTokenAccount {
   id: number;
