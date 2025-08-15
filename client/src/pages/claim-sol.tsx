@@ -1630,7 +1630,7 @@ export default function SolRefund() {
                 </div>
               </div>
               <p className="text-white text-sm mb-6">
-                Found {scanResult.emptyAccounts} empty token accounts out of {scanResult.totalAccounts} total accounts
+                Found {scanResult.emptyAccounts} empty token accounts
               </p>
               
               {scanResult.emptyAccounts > 0 ? (
