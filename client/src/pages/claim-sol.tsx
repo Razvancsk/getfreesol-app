@@ -1625,9 +1625,6 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
-                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
-                  {scanResult.emptyAccounts} Empty Accounts
-                </div>
               </div>
               <p className="text-white text-sm mb-6">
                 Found {scanResult.emptyAccounts} empty token accounts
