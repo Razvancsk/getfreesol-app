@@ -12,6 +12,7 @@ import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { Coin98WalletAdapter } from "@solana/wallet-adapter-coin98";
 import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import { CoinbaseWalletAdapter } from "@solana/wallet-adapter-coinbase";
+import { LedgerWalletAdapter } from "@solana/wallet-adapter-ledger";
 // Removed BitKeepWalletAdapter - using custom Bitget integration instead
 
 import { clusterApiUrl } from "@solana/web3.js";
@@ -51,6 +52,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     new MagicEdenWalletAdapter(),
     new SolflareWalletAdapter(),
     new Coin98WalletAdapter(),
+    new LedgerWalletAdapter(),
     // BitKeepWalletAdapter removed - using custom Bitget integration in useBitgetWallet.ts
   ], []);
 
