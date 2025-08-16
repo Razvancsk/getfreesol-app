@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema } from "@shared/schema";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -165,16 +165,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = new Transaction();
       
       // Add close account instructions for each empty account
-      const { createCloseAccountInstruction } = await import('@solana/spl-token');
+      const { Token } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = createCloseAccountInstruction(
+        const closeInstruction = Token.createCloseAccountInstruction(
+          TOKEN_PROGRAM_ID,
           accountPublicKey,
           ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey  // owner
+          ownerPublicKey,  // owner
+          []
         );
         
         transaction.add(closeInstruction);
@@ -427,9 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
-        createBurnCheckedInstruction, 
-        createCloseAccountInstruction, 
-        getAssociatedTokenAddress 
+        Token 
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -452,7 +452,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const mintPublicKey = new PublicKey(tokenMint);
           
           // Get associated token account
-          const tokenAccount = await getAssociatedTokenAddress(
+          const tokenAccount = await Token.getAssociatedTokenAddress(
+            TOKEN_PROGRAM_ID, // associatedProgramId
+            TOKEN_PROGRAM_ID, // programId
             mintPublicKey,
             ownerPublicKey
           );
@@ -471,23 +473,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
-            const burnInstruction = createBurnCheckedInstruction(
-              tokenAccount,     // Token account to burn from
+            const burnInstruction = Token.createBurnInstruction(
+              TOKEN_PROGRAM_ID, // Token program ID
               mintPublicKey,    // Token mint
+              tokenAccount,     // Token account to burn from
               ownerPublicKey,   // Owner
-              balance,          // Amount to burn (full balance)
-              decimals,         // Decimals
               [],               // Additional signers
-              TOKEN_PROGRAM_ID  // Token program ID
+              balance           // Amount to burn (full balance)
             );
             transaction.add(burnInstruction);
           }
           
           // Step 2: Close the now-empty account to reclaim SOL
-          const closeInstruction = createCloseAccountInstruction(
+          const closeInstruction = Token.createCloseAccountInstruction(
+            TOKEN_PROGRAM_ID,
             tokenAccount,
             ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey  // owner
+            ownerPublicKey,  // owner
+            []
           );
           
           transaction.add(closeInstruction);
@@ -563,9 +566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
-        createBurnCheckedInstruction, 
-        createCloseAccountInstruction, 
-        getAssociatedTokenAddress 
+        Token 
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -581,7 +582,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintPublicKey = new PublicKey(tokenMint);
       
       // Get associated token account
-      const tokenAccount = await getAssociatedTokenAddress(
+      const tokenAccount = await Token.getAssociatedTokenAddress(
+        TOKEN_PROGRAM_ID, // associatedProgramId
+        TOKEN_PROGRAM_ID, // programId
         mintPublicKey,
         ownerPublicKey
       );
@@ -602,23 +605,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = createBurnCheckedInstruction(
-          tokenAccount,     // Token account to burn from
+        const burnInstruction = Token.createBurnInstruction(
+          TOKEN_PROGRAM_ID, // Token program ID
           mintPublicKey,    // Token mint
+          tokenAccount,     // Token account to burn from
           ownerPublicKey,   // Owner
-          balance,          // Amount to burn (full balance)
-          decimals,         // Decimals
           [],               // Additional signers
-          TOKEN_PROGRAM_ID  // Token program ID
+          balance           // Amount to burn (full balance)
         );
         transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = createCloseAccountInstruction(
+      const closeInstruction = Token.createCloseAccountInstruction(
+        TOKEN_PROGRAM_ID,
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey  // owner
+        ownerPublicKey,  // owner
+        []
       );
       
       transaction.add(closeInstruction);
