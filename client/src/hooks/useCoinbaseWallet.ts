@@ -53,16 +53,6 @@ export const useCoinbaseWallet = (): CoinbaseWalletHook => {
       const provider = getProvider();
       const hasCoinbase = !!provider;
       
-      console.log('🔍 Coinbase Wallet detection:', {
-        hasWindow: typeof window !== 'undefined',
-        hasCoinbase,
-        coinbaseSolana: !!window.coinbaseSolana,
-        solanaProvider: (window as any).solana ? {
-          name: (window as any).solana?.name,
-          isCoinbaseWallet: (window as any).solana?.isCoinbaseWallet,
-        } : null,
-        userAgent: navigator.userAgent.includes('CoinbaseWallet'),
-      });
       
       setIsAvailable(hasCoinbase);
       
@@ -93,14 +83,12 @@ export const useCoinbaseWallet = (): CoinbaseWalletHook => {
 
     try {
       setConnecting(true);
-      console.log('🔄 Connecting to Coinbase Wallet...');
       
       const result = await provider.connect();
       
       setIsConnected(true);
       setPublicKey(result.publicKey);
       
-      console.log('✅ Connected to Coinbase Wallet:', result.publicKey.toString());
     } catch (error) {
       console.error('❌ Failed to connect to Coinbase Wallet:', error);
       throw error;
@@ -114,13 +102,11 @@ export const useCoinbaseWallet = (): CoinbaseWalletHook => {
     if (!provider) return;
 
     try {
-      console.log('🔄 Disconnecting from Coinbase Wallet...');
       await provider.disconnect();
       
       setIsConnected(false);
       setPublicKey(null);
       
-      console.log('✅ Disconnected from Coinbase Wallet');
     } catch (error) {
       console.error('❌ Failed to disconnect from Coinbase Wallet:', error);
       throw error;
@@ -134,9 +120,7 @@ export const useCoinbaseWallet = (): CoinbaseWalletHook => {
     }
 
     try {
-      console.log('🔐 Signing transaction with Coinbase Wallet...');
       const signedTransaction = await provider.signTransaction(transaction);
-      console.log('✅ Transaction signed with Coinbase Wallet');
       return signedTransaction;
     } catch (error) {
       console.error('❌ Failed to sign transaction with Coinbase Wallet:', error);
@@ -151,9 +135,7 @@ export const useCoinbaseWallet = (): CoinbaseWalletHook => {
     }
 
     try {
-      console.log(`🔐 Signing ${transactions.length} transactions with Coinbase Wallet...`);
       const signedTransactions = await provider.signAllTransactions(transactions);
-      console.log('✅ All transactions signed with Coinbase Wallet');
       return signedTransactions;
     } catch (error) {
       console.error('❌ Failed to sign transactions with Coinbase Wallet:', error);

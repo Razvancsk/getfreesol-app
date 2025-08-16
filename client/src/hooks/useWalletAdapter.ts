@@ -148,7 +148,6 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     if (magicEdenWallet.isAvailable) {
       try {
         await magicEdenWallet.connect();
-        console.log('Connected to Magic Eden wallet directly');
       } catch (error) {
         console.error('Failed to connect to Magic Eden wallet:', error);
         // Fallback to standard wallet adapter modal
@@ -166,7 +165,6 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     if (backpackWallet.isAvailable) {
       try {
         await backpackWallet.connect();
-        console.log('Connected to Backpack wallet directly');
       } catch (error) {
         console.error('Failed to connect to Backpack wallet:', error);
         // Fallback to standard wallet adapter modal
@@ -182,7 +180,6 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     if (coinbaseWallet.isAvailable) {
       try {
         await coinbaseWallet.connect();
-        console.log('Connected to Coinbase Wallet directly');
       } catch (error) {
         console.error('Failed to connect to Coinbase Wallet:', error);
         // Fallback to standard wallet adapter modal
@@ -198,7 +195,6 @@ export const useWalletAdapter = (): WalletAdapterHook => {
     if (bitgetWallet.isAvailable) {
       try {
         await bitgetWallet.connect();
-        console.log('Connected to Bitget wallet directly');
       } catch (error) {
         console.error('Failed to connect to Bitget wallet:', error);
         // Fallback to standard wallet adapter modal
@@ -223,52 +219,30 @@ export const useWalletAdapter = (): WalletAdapterHook => {
 
   // Enhanced signTransaction wrapper with strict wallet isolation
   const wrappedSignTransaction = useCallback(async (transaction: any) => {
-    console.log('🔐 WalletAdapter signTransaction called', {
-      backpackConnected: backpackWallet.isConnected,
-      coinbaseConnected: coinbaseWallet.isConnected,
-      magicEdenConnected: magicEdenWallet.isConnected,
-      standardConnected: connected,
-      effectiveWallet: effectiveWalletName,
-      standardWalletName: wallet?.adapter?.name,
-      hasTransaction: !!transaction,
-      publicKey: publicKey?.toString().slice(0, 8) + '...'
-    });
 
     // Priority 1: Direct wallet integrations (no fallbacks to maintain wallet isolation)
     if (backpackWallet.isConnected) {
-      console.log('🔄 Using Backpack wallet for signing...');
       return await backpackWallet.signTransaction(transaction);
     } 
     
     if (coinbaseWallet.isConnected) {
-      console.log('🔄 Using Coinbase wallet for signing...');
       return await coinbaseWallet.signTransaction(transaction);
     }
     
     if (magicEdenWallet.isConnected) {
-      console.log('🔄 Using Magic Eden wallet for signing...');
       return await magicEdenWallet.signTransaction(transaction);
     }
     
     if (bitgetWallet.isConnected) {
-      console.log('🔄 Using Bitget wallet for signing...');
       return await bitgetWallet.signTransaction(transaction);
     }
     
     // Priority 2: Standard wallet adapter (Phantom, Solflare, etc.) - STRICT ISOLATION
     if (connected && signTransaction && wallet?.adapter) {
       const walletName = wallet.adapter.name;
-      console.log('🔄 Using standard wallet adapter for signing...', {
-        walletName,
-        publicKey: publicKey?.toString().slice(0, 8) + '...',
-        readyState: wallet?.readyState,
-        adapterType: wallet?.adapter?.constructor?.name
-      });
       
       // IMPORTANT: No fallbacks here - each wallet must handle its own transactions
-      console.log(`🔒 STRICT ROUTING: Transaction will be sent to ${walletName} ONLY`);
       const signedTx = await signTransaction(transaction);
-      console.log(`✅ ${walletName} signing successful - no fallbacks used`);
       return signedTx;
     } 
     
@@ -280,49 +254,30 @@ export const useWalletAdapter = (): WalletAdapterHook => {
 
   // Enhanced signAllTransactions wrapper with strict wallet isolation
   const wrappedSignAllTransactions = useCallback(async (transactions: any[]) => {
-    console.log('🔐 WalletAdapter signAllTransactions called', {
-      backpackConnected: backpackWallet.isConnected,
-      coinbaseConnected: coinbaseWallet.isConnected,
-      magicEdenConnected: magicEdenWallet.isConnected,
-      standardConnected: connected,
-      effectiveWallet: effectiveWalletName,
-      transactionCount: transactions.length
-    });
 
     // Priority 1: Direct wallet integrations (no fallbacks to maintain wallet isolation)
     if (backpackWallet.isConnected) {
-      console.log('🔄 Using Backpack wallet for batch signing...');
       return await backpackWallet.signAllTransactions(transactions);
     }
     
     if (coinbaseWallet.isConnected) {
-      console.log('🔄 Using Coinbase wallet for batch signing...');
       return await coinbaseWallet.signAllTransactions(transactions);
     }
     
     if (magicEdenWallet.isConnected) {
-      console.log('🔄 Using Magic Eden wallet for batch signing...');
       return await magicEdenWallet.signAllTransactions(transactions);
     }
     
     if (bitgetWallet.isConnected) {
-      console.log('🔄 Using Bitget wallet for batch signing...');
       return await bitgetWallet.signAllTransactions(transactions);
     }
     
     // Priority 2: Standard wallet adapter (Phantom, Solflare, etc.) - STRICT ISOLATION
     if (connected && signAllTransactions && wallet?.adapter) {
       const walletName = wallet.adapter.name;
-      console.log('🔄 Using standard wallet adapter for batch signing...', {
-        walletName,
-        publicKey: publicKey?.toString().slice(0, 8) + '...',
-        transactionCount: transactions.length
-      });
       
       // IMPORTANT: No fallbacks here - each wallet must handle its own transactions
-      console.log(`🔒 STRICT ROUTING: Batch transactions will be sent to ${walletName} ONLY`);
       const signedTxs = await signAllTransactions(transactions);
-      console.log(`✅ ${walletName} batch signing successful - no fallbacks used`);
       return signedTxs;
     }
     

@@ -22,29 +22,11 @@ export function useMagicEdenWallet() {
       const magicEdenProvider = potentialProviders[0];
       
       if (magicEdenProvider) {
-        console.log('🔍 Magic Eden provider detected', {
-          hasProvider: !!magicEdenProvider,
-          isConnected: magicEdenProvider.isConnected,
-          publicKey: magicEdenProvider.publicKey?.toString(),
-          isMagicEden: magicEdenProvider.isMagicEden,
-          name: magicEdenProvider.name,
-          hasSignTransaction: typeof magicEdenProvider.signTransaction === 'function',
-          hasSignAllTransactions: typeof magicEdenProvider.signAllTransactions === 'function'
-        });
         
         setProvider(magicEdenProvider);
         setIsConnected(magicEdenProvider.isConnected || false);
         setPublicKey(magicEdenProvider.publicKey);
       } else {
-        console.log('🔍 Magic Eden wallet not detected', {
-          hasWindow: typeof window !== 'undefined',
-          hasMagicEden: !!window?.magicEden,
-          hasSolana: !!window?.magicEden?.solana,
-          windowSolana: !!(window as any).solana,
-          windowSolanaName: (window as any).solana?.name,
-          windowSolanaIsMagicEden: (window as any).solana?.isMagicEden,
-          providers: (window as any).solana?.providers?.map?.((p: any) => p.name || 'unnamed')
-        });
       }
     };
 
@@ -73,11 +55,6 @@ export function useMagicEdenWallet() {
   }, []);
 
   const connect = useCallback(async () => {
-    console.log('🔗 Magic Eden connect called', {
-      hasProvider: !!provider,
-      connecting,
-      alreadyConnected: isConnected
-    });
 
     if (!provider) {
       const error = new Error('Magic Eden wallet provider not available');
@@ -86,13 +63,11 @@ export function useMagicEdenWallet() {
     }
 
     if (connecting) {
-      console.log('⏳ Magic Eden connection already in progress');
       return;
     }
 
     try {
       setConnecting(true);
-      console.log('🔄 Calling Magic Eden provider.connect...');
       
       const response = await provider.connect();
       
@@ -100,10 +75,6 @@ export function useMagicEdenWallet() {
         throw new Error('Magic Eden wallet returned invalid connection response');
       }
 
-      console.log('✅ Magic Eden connect successful', {
-        publicKey: response.publicKey.toString(),
-        hasProvider: !!provider
-      });
 
       setIsConnected(true);
       setPublicKey(response.publicKey);
@@ -132,13 +103,6 @@ export function useMagicEdenWallet() {
   }, [provider]);
 
   const signTransaction = useCallback(async (transaction: Transaction) => {
-    console.log('🔐 Magic Eden signTransaction called', {
-      hasProvider: !!provider,
-      isConnected,
-      publicKey: publicKey?.toString(),
-      transactionType: transaction.constructor.name,
-      hasSignTransaction: !!provider?.signTransaction
-    });
 
     if (!provider) {
       const error = new Error('Magic Eden wallet provider not available');
@@ -172,17 +136,12 @@ export function useMagicEdenWallet() {
     }
 
     try {
-      console.log('🔄 Calling Magic Eden provider.signTransaction...');
       const signedTransaction = await provider.signTransaction(transaction);
       
       if (!signedTransaction) {
         throw new Error('Magic Eden wallet returned null/undefined signed transaction');
       }
 
-      console.log('✅ Magic Eden signTransaction successful', {
-        hasSignedTransaction: !!signedTransaction,
-        signatureCount: signedTransaction.signatures?.length || 0
-      });
 
       return signedTransaction;
     } catch (error) {
@@ -192,12 +151,6 @@ export function useMagicEdenWallet() {
   }, [provider, isConnected, publicKey]);
 
   const signAllTransactions = useCallback(async (transactions: Transaction[]) => {
-    console.log('🔐 Magic Eden signAllTransactions called', {
-      hasProvider: !!provider,
-      isConnected,
-      publicKey: publicKey?.toString(),
-      transactionCount: transactions.length
-    });
 
     if (!provider) {
       const error = new Error('Magic Eden wallet provider not available');
@@ -230,7 +183,6 @@ export function useMagicEdenWallet() {
     }
 
     try {
-      console.log('🔄 Calling Magic Eden provider.signAllTransactions...');
       const signedTransactions = await provider.signAllTransactions(transactions);
       
       if (!signedTransactions || !Array.isArray(signedTransactions)) {
@@ -241,10 +193,6 @@ export function useMagicEdenWallet() {
         throw new Error(`Magic Eden wallet returned ${signedTransactions.length} signed transactions, expected ${transactions.length}`);
       }
 
-      console.log('✅ Magic Eden signAllTransactions successful', {
-        signedCount: signedTransactions.length,
-        originalCount: transactions.length
-      });
 
       return signedTransactions;
     } catch (error) {

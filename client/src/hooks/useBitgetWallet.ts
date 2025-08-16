@@ -65,7 +65,6 @@ export const useBitgetWallet = () => {
         userAgent: navigator.userAgent.includes('BitKeep') || navigator.userAgent.includes('Bitget'),
       };
       
-      console.log('🔍 Official Bitget wallet detection:', detectionDetails);
 
       setIsAvailable(hasBitgetWallet);
       
@@ -74,7 +73,6 @@ export const useBitgetWallet = () => {
         if (provider.connected && provider.publicKey) {
           setIsConnected(true);
           setPublicKey(provider.publicKey);
-          console.log('✅ Bitget wallet already connected:', provider.publicKey.toString());
         }
       }
     };
@@ -117,21 +115,13 @@ export const useBitgetWallet = () => {
         }
       }
 
-      console.log('🔗 Connecting to Bitget wallet provider...', {
-        provider: provider.constructor?.name,
-        isBitKeep: provider.isBitKeep,
-        isBitget: provider.isBitget,
-        name: provider.name || 'Unknown',
-      });
 
-      console.log('🔗 Connecting to Bitget wallet using official API...');
 
       // Use official connection method from docs
       await provider.connect();
       const publicKey = await provider.getAccount();
       
       if (publicKey) {
-        console.log('✅ Bitget wallet connected successfully:', publicKey.toString());
         setIsConnected(true);
         setPublicKey(publicKey);
         return publicKey;
@@ -162,7 +152,6 @@ export const useBitgetWallet = () => {
       
       setIsConnected(false);
       setPublicKey(null);
-      console.log('🔌 Bitget wallet disconnected');
     } catch (error: any) {
       console.error('❌ Bitget wallet disconnect failed:', error);
       throw error;
@@ -185,9 +174,7 @@ export const useBitgetWallet = () => {
         throw new Error('Bitget wallet provider not available');
       }
 
-      console.log('📝 Signing transaction with Bitget wallet using official API...');
       const signedTransaction = await provider.signTransaction(transaction);
-      console.log('✅ Transaction signed with Bitget wallet');
       return signedTransaction;
     } catch (error: any) {
       console.error('❌ Bitget wallet transaction signing failed:', error);
@@ -211,9 +198,7 @@ export const useBitgetWallet = () => {
         throw new Error('Bitget wallet provider not available');
       }
 
-      console.log(`📝 Signing ${transactions.length} transactions with Bitget wallet using official API...`);
       const signedTransactions = await provider.signAllTransactions(transactions);
-      console.log('✅ All transactions signed with Bitget wallet');
       return signedTransactions;
     } catch (error: any) {
       console.error('❌ Bitget wallet bulk transaction signing failed:', error);
