@@ -3,7 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema } from "@shared/schema";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
+// Token-2022 Program ID (as it's not exported in older versions)
+const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -69,41 +72,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const walletPublicKey = new PublicKey(address);
       
-      // Get all token accounts for the wallet
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
-        programId: TOKEN_PROGRAM_ID,
-      });
+      // Get all token accounts for both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID
+      const [tokenAccounts, token2022Accounts] = await Promise.all([
+        connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+          programId: TOKEN_2022_PROGRAM_ID,
+        })
+      ]);
+
+      // Combine both sets of accounts
+      const allTokenAccounts = [
+        ...tokenAccounts.value,
+        ...token2022Accounts.value
+      ];
+
+      console.log(`Found ${tokenAccounts.value.length} TOKEN_PROGRAM accounts and ${token2022Accounts.value.length} TOKEN_2022_PROGRAM accounts`);
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
 
-      for (const accountInfo of tokenAccounts.value) {
+      for (const accountInfo of allTokenAccounts) {
         const account = accountInfo.account;
         const parsedInfo = account.data.parsed.info;
         
-        // Check if account has zero balance
-        if (parseFloat(parsedInfo.tokenAmount.amount) === 0) {
+        // Check if account has zero balance or very small balance (dust)
+        const balance = parseFloat(parsedInfo.tokenAmount.amount);
+        const decimals = parsedInfo.tokenAmount.decimals;
+        
+        // Consider accounts empty if:
+        // 1. Balance is exactly 0
+        // 2. Balance is dust (less than 0.01 of the smallest unit for that token)
+        // 3. Balance is extremely small (less than 1e-6 in UI terms)
+        const dustThreshold = Math.pow(10, -decimals + 2); // 0.01 of smallest unit
+        const uiAmount = parseFloat(parsedInfo.tokenAmount.uiAmountString || "0");
+        
+        const isEffectivelyEmpty = balance === 0 || 
+          (balance > 0 && balance < dustThreshold) ||
+          (uiAmount > 0 && uiAmount < 0.000001); // Very small UI amounts
+        
+        if (isEffectivelyEmpty) {
           const rentAmount = account.lamports / 1e9; // Convert lamports to SOL
           
-          emptyAccounts.push({
-            accountAddress: accountInfo.pubkey.toString(),
-            mintAddress: parsedInfo.mint,
-            walletAddress: address,
-            tokenSymbol: parsedInfo.mint.substring(0, 8) + "...", // Simplified symbol
-            tokenName: null,
-            rentAmount: rentAmount.toString(),
-            balance: "0",
-            decimals: parsedInfo.tokenAmount.decimals
-          });
+          // Only include accounts with meaningful rent amounts (most token accounts have ~0.00203928 SOL rent)
+          if (rentAmount >= 0.0015) { // At least 0.0015 SOL rent to filter out system accounts
+            emptyAccounts.push({
+              accountAddress: accountInfo.pubkey.toString(),
+              mintAddress: parsedInfo.mint,
+              walletAddress: address,
+              tokenSymbol: parsedInfo.mint.substring(0, 8) + "...", // Simplified symbol
+              tokenName: null,
+              rentAmount: rentAmount.toString(),
+              balance: parsedInfo.tokenAmount.uiAmountString || "0",
+              decimals: parsedInfo.tokenAmount.decimals,
+              programId: account.owner.toString() // Track which program ID this account belongs to
+            });
 
-          totalReclaimable += rentAmount;
+            totalReclaimable += rentAmount;
+            console.log(`Found empty account: ${accountInfo.pubkey.toString()} (${parsedInfo.mint.substring(0, 8)}...) with ${rentAmount} SOL rent, balance: ${balance}, uiAmount: ${uiAmount}`);
+          }
         }
       }
+
+      console.log(`Total empty accounts found: ${emptyAccounts.length}, Total reclaimable: ${totalReclaimable.toFixed(9)} SOL`);
 
       // Store scan result
       const scanResult = await storage.createScanResult({
         walletAddress: address,
-        totalAccounts: tokenAccounts.value.length,
+        totalAccounts: allTokenAccounts.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toString()
       });
@@ -116,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = {
         success: true,
         walletAddress: address,
-        totalAccounts: tokenAccounts.value.length,
+        totalAccounts: allTokenAccounts.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toFixed(9),
         accounts: emptyAccounts,

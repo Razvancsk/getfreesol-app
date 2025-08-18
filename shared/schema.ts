@@ -30,6 +30,7 @@ export const emptyTokenAccounts = pgTable("empty_token_accounts", {
   rentAmount: decimal("rent_amount", { precision: 18, scale: 9 }).notNull(),
   balance: decimal("balance", { precision: 18, scale: 9 }).notNull().default("0"),
   decimals: integer("decimals").notNull(),
+  programId: text("program_id"), // Track which token program (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
   scannedAt: timestamp("scanned_at").notNull().defaultNow(),
   claimed: boolean("claimed").notNull().default(false),
 });
