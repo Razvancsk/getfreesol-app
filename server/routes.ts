@@ -602,8 +602,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
-        TOKEN_PROGRAM_ID, 
-        Token 
+        TOKEN_PROGRAM_ID,
+        getAssociatedTokenAddress,
+        createBurnInstruction,
+        createCloseAccountInstruction
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -612,51 +614,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
         : 'https://api.mainnet-beta.solana.com';
       
-      console.log('Creating token burn transaction...');
+      console.log('Creating enhanced token burn transaction...');
       
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
       const mintPublicKey = new PublicKey(tokenMint);
       
-      // Get associated token account
-      const tokenAccount = await Token.getAssociatedTokenAddress(
-        TOKEN_PROGRAM_ID, // associatedProgramId
-        TOKEN_PROGRAM_ID, // programId
-        mintPublicKey,
-        ownerPublicKey
-      );
+      // Try both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID
+      const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
+      let tokenAccount = null;
+      let tokenAccountInfo = null;
+      let programId = null;
       
-      // Get token account info to determine balance and decimals
-      const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+      // Find which program this token uses
+      for (const progId of programIds) {
+        try {
+          const testTokenAccount = await getAssociatedTokenAddress(
+            mintPublicKey,
+            ownerPublicKey,
+            false,
+            progId
+          );
+          
+          const testAccountInfo = await connection.getParsedAccountInfo(testTokenAccount);
+          if (testAccountInfo.value?.data) {
+            tokenAccount = testTokenAccount;
+            tokenAccountInfo = testAccountInfo;
+            programId = progId;
+            console.log(`Found token account using ${progId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`);
+            break;
+          }
+        } catch (error) {
+          // Continue to next program ID
+        }
+      }
+      
+      if (!tokenAccount || !tokenAccountInfo || !programId) {
+        throw new Error('Token account not found for either TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID');
+      }
+      
       const parsedInfo = tokenAccountInfo.value?.data as any;
-      
       if (!parsedInfo?.parsed?.info) {
-        throw new Error('Token account not found or invalid');
+        throw new Error('Invalid token account data');
       }
       
       const balance = parsedInfo.parsed.info.tokenAmount.amount;
       const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
+      
+      console.log(`Token: ${tokenMint}, Balance: ${balance}, Program: ${programId.toString()}`);
       
       // Create transaction
       const transaction = new Transaction();
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = Token.createBurnInstruction(
-          TOKEN_PROGRAM_ID, // Token program ID
-          mintPublicKey,    // Token mint
+        const burnInstruction = createBurnInstruction(
           tokenAccount,     // Token account to burn from
+          mintPublicKey,    // Token mint
           ownerPublicKey,   // Owner
+          balance,          // Amount to burn (full balance)
           [],               // Additional signers
-          balance           // Amount to burn (full balance)
+          programId         // Token program ID
         );
         transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = Token.createCloseAccountInstruction(
-        TOKEN_PROGRAM_ID,
+      const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
+        ownerPublicKey,   // Destination (where SOL goes)
+        ownerPublicKey,   // Owner
+        [],               // Additional signers
+        programId         // Token program ID
+      );
+      transaction.add(closeInstruction);
+
+      // Get recent blockhash and set fee payer
+      const latestBlockhash = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = latestBlockhash.blockhash;
+      transaction.feePayer = ownerPublicKey;
+
+      // Calculate estimated SOL that will be recovered
+      const tokenAccountBalance = await connection.getBalance(tokenAccount);
+      const solRecovered = tokenAccountBalance / 1e9; // Convert lamports to SOL
+
+      // Serialize transaction for frontend
+      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = Buffer.from(serializedTransaction).toString('base64');
+
+      res.json({
+        success: true,
+        transaction: transactionBase64,
+        solRecovered: solRecovered.toFixed(9),
+        balance: balance,
+        decimals: decimals,
+        programUsed: programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID',
         ownerPublicKey, // destination (receives SOL)
         ownerPublicKey,  // owner
         []
