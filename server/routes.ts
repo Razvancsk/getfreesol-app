@@ -480,38 +480,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
       
+      // Import TOKEN_2022_PROGRAM_ID
+      const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+      
       // Create single transaction with multiple burn+close instructions
       const transaction = new Transaction();
       let totalTokensProcessed = 0;
+      const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
       
       for (const tokenMint of tokenMints) {
         try {
           const mintPublicKey = new PublicKey(tokenMint);
           
-          // Get associated token account
-          const tokenAccount = await Token.getAssociatedTokenAddress(
-            TOKEN_PROGRAM_ID, // associatedProgramId
-            TOKEN_PROGRAM_ID, // programId
-            mintPublicKey,
-            ownerPublicKey
-          );
+          let tokenAccount = null;
+          let tokenAccountInfo = null;
+          let programId = null;
           
-          // Get token account info to determine balance and decimals
-          const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+          // Try both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID to find the correct one
+          for (const progId of programIds) {
+            try {
+              const testTokenAccount = await Token.getAssociatedTokenAddress(
+                progId, // associatedProgramId
+                progId, // programId
+                mintPublicKey,
+                ownerPublicKey
+              );
+              
+              const testAccountInfo = await connection.getParsedAccountInfo(testTokenAccount);
+              if (testAccountInfo.value?.data) {
+                tokenAccount = testTokenAccount;
+                tokenAccountInfo = testAccountInfo;
+                programId = progId;
+                break;
+              }
+            } catch (error) {
+              // Continue to next program ID
+            }
+          }
+          
+          if (!tokenAccount || !tokenAccountInfo || !programId) {
+            console.log(`Skipping ${tokenMint} - token account not found for either token program`);
+            continue;
+          }
+          
           const parsedInfo = tokenAccountInfo.value?.data as any;
           
           if (!parsedInfo?.parsed?.info) {
-            console.log(`Skipping ${tokenMint} - token account not found`);
+            console.log(`Skipping ${tokenMint} - invalid token account data`);
             continue;
           }
           
           const balance = parsedInfo.parsed.info.tokenAmount.amount;
           const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
           
+          console.log(`Processing ${tokenMint} with balance ${balance} using ${programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`);
+          
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
             const burnInstruction = Token.createBurnInstruction(
-              TOKEN_PROGRAM_ID, // Token program ID
+              programId,        // Dynamic token program ID based on which program the token uses
               mintPublicKey,    // Token mint
               tokenAccount,     // Token account to burn from
               ownerPublicKey,   // Owner
@@ -523,11 +550,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 2: Close the now-empty account to reclaim SOL
           const closeInstruction = Token.createCloseAccountInstruction(
-            TOKEN_PROGRAM_ID,
-            tokenAccount,
-            ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey,  // owner
-            []
+            programId,        // Dynamic token program ID based on which program the token uses
+            tokenAccount,     // Account to close
+            ownerPublicKey,   // destination (receives SOL)
+            ownerPublicKey,   // owner
+            []                // Additional signers
           );
           
           transaction.add(closeInstruction);
@@ -591,10 +618,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Single Burn Token API (for individual burns)
+  // Enhanced Single Burn Token API (handles scam tokens and both token programs)
   app.post("/api/tokens/burn", async (req, res) => {
     try {
-      const { walletAddress, tokenMint } = req.body;
+      const { walletAddress, tokenMint, forceCloseOnly } = req.body;
       
       if (!walletAddress || !tokenMint) {
         return res.status(400).json({ error: "Wallet address and token mint are required" });
@@ -603,9 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID,
-        getAssociatedTokenAddress,
-        createBurnInstruction,
-        createCloseAccountInstruction
+        Token
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -620,6 +645,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ownerPublicKey = new PublicKey(walletAddress);
       const mintPublicKey = new PublicKey(tokenMint);
       
+      // Import TOKEN_2022_PROGRAM_ID
+      const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+      
       // Try both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID
       const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
       let tokenAccount = null;
@@ -629,11 +657,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find which program this token uses
       for (const progId of programIds) {
         try {
-          const testTokenAccount = await getAssociatedTokenAddress(
+          const testTokenAccount = await Token.getAssociatedTokenAddress(
+            progId, // associatedProgramId
+            progId, // programId
             mintPublicKey,
-            ownerPublicKey,
-            false,
-            progId
+            ownerPublicKey
           );
           
           const testAccountInfo = await connection.getParsedAccountInfo(testTokenAccount);
@@ -666,26 +694,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction
       const transaction = new Transaction();
       
-      // Step 1: Burn all tokens (if balance > 0)
-      if (balance > 0) {
-        const burnInstruction = createBurnInstruction(
-          tokenAccount,     // Token account to burn from
-          mintPublicKey,    // Token mint
-          ownerPublicKey,   // Owner
-          balance,          // Amount to burn (full balance)
-          [],               // Additional signers
-          programId         // Token program ID
-        );
-        transaction.add(burnInstruction);
+      // Step 1: Burn all tokens (if balance > 0 and not forcing close-only)
+      let burnAttempted = false;
+      if (balance > 0 && !forceCloseOnly) {
+        try {
+          const burnInstruction = Token.createBurnInstruction(
+            programId,        // Token program ID
+            mintPublicKey,    // Token mint
+            tokenAccount,     // Token account to burn from
+            ownerPublicKey,   // Owner
+            [],               // Additional signers
+            balance           // Amount to burn (full balance)
+          );
+          transaction.add(burnInstruction);
+          burnAttempted = true;
+          console.log(`Added burn instruction for ${balance} tokens`);
+        } catch (error) {
+          console.log(`Failed to create burn instruction, will try close-only approach: ${error instanceof Error ? error.message : String(error)}`);
+          // Clear transaction and proceed with close-only approach
+          transaction.instructions = [];
+        }
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = createCloseAccountInstruction(
-        tokenAccount,
+      const closeInstruction = Token.createCloseAccountInstruction(
+        programId,        // Token program ID
+        tokenAccount,     // Account to close
         ownerPublicKey,   // Destination (where SOL goes)
         ownerPublicKey,   // Owner
-        [],               // Additional signers
-        programId         // Token program ID
+        []                // Additional signers
       );
       transaction.add(closeInstruction);
 
@@ -699,43 +736,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const solRecovered = tokenAccountBalance / 1e9; // Convert lamports to SOL
 
       // Serialize transaction for frontend
-      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
-      const transactionBase64 = Buffer.from(serializedTransaction).toString('base64');
+      const serializedTxn = transaction.serialize({ requireAllSignatures: false });
+      const transactionB64 = Buffer.from(serializedTxn).toString('base64');
 
       res.json({
         success: true,
-        transaction: transactionBase64,
+        transaction: transactionB64,
         solRecovered: solRecovered.toFixed(9),
         balance: balance,
         decimals: decimals,
         programUsed: programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID',
-        ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey,  // owner
-        []
-      );
-      
-      transaction.add(closeInstruction);
-      
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = ownerPublicKey;
-      
-      // Serialize transaction
-      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
-      const transactionBase64 = serializedTransaction.toString('base64');
-      
-      console.log(`Token burn transaction prepared: ${balance > 0 ? 'burn + close' : 'close only'} for mint ${tokenMint}`);
-      
-      res.json({
-        transaction: transactionBase64,
-        solRecovered: '0.00203928', // Standard rent-exempt amount
-        message: `Token burn transaction prepared successfully (${balance > 0 ? 'burn + close' : 'close only'})`
+        method: forceCloseOnly ? 'close-only' : (burnAttempted ? 'burn+close' : 'close-only'),
+        message: `Enhanced token burn transaction prepared (${forceCloseOnly ? 'forced close-only' : (burnAttempted ? 'burn + close' : 'close-only fallback')}) using ${programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`
       });
       
     } catch (error) {
       console.error('Error preparing token burn:', error);
-      res.status(500).json({ error: "Failed to prepare token burn transaction" });
+      
+      // If it's a specific token program error, suggest alternative approaches
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('InvalidAccountOwner') || errorMessage.includes('IncorrectTokenProgramId')) {
+        return res.status(400).json({ 
+          error: "Token program mismatch detected",
+          suggestion: "This might be a TOKEN_2022 or custom program token. Try using the enhanced scanner.",
+          technicalDetails: errorMessage
+        });
+      }
+      
+      res.status(500).json({ 
+        error: "Failed to prepare token burn transaction",
+        details: errorMessage
+      });
     }
   });
 
