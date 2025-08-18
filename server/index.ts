@@ -1,10 +1,21 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Health check endpoint for deployment verification
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown'
+  });
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -38,7 +49,30 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    log(`Initializing server...`);
+    log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    log(`PORT: ${process.env.PORT || '5000'}`);
+    log(`DATABASE_URL exists: ${!!process.env.DATABASE_URL}`);
+    
+    // Validate critical environment variables
+    const requiredEnvVars = ['DATABASE_URL'];
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missingVars.length > 0) {
+      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    }
+    
+    // Test database connectivity during startup
+    try {
+      log(`Testing database connection...`);
+      await db.execute(sql`SELECT 1`);
+      log(`Database connection successful`);
+    } catch (dbError) {
+      console.error(`Database connection failed:`, dbError);
+      throw new Error(`Database initialization failed: ${dbError}`);
+    }
+    
     const server = await registerRoutes(app);
+    log(`Routes registered successfully`);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
@@ -52,14 +86,20 @@ app.use((req, res, next) => {
     if (!process.env.NODE_ENV) {
       process.env.NODE_ENV = 'production';
     }
+    
+    log(`Starting server in ${process.env.NODE_ENV} mode...`);
 
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes
     if (app.get("env") === "development" || process.env.NODE_ENV === "development") {
+      log(`Setting up Vite for development mode...`);
       await setupVite(app, server);
+      log(`Vite setup completed`);
     } else {
+      log(`Setting up static file serving for production mode...`);
       serveStatic(app);
+      log(`Static file serving setup completed`);
     }
 
     // ALWAYS serve the app on the port specified in the environment variable PORT
@@ -69,16 +109,33 @@ app.use((req, res, next) => {
     const port = parseInt(process.env.PORT || '5000', 10);
     
     // Update server listening configuration to use port from environment variable without object parameter
-    server.listen(port, "0.0.0.0", () => {
+    server.listen(port, "0.0.0.0", (error?: Error) => {
+      if (error) {
+        console.error(`Failed to start server on port ${port}:`, error);
+        process.exit(1);
+      }
       log(`Server started successfully on port ${port}`);
       log(`Environment: ${process.env.NODE_ENV}`);
     });
 
   } catch (error) {
     console.error("Failed to start server:", error);
+    console.error("Error details:", JSON.stringify(error, null, 2));
     process.exit(1);
   }
 })().catch((error) => {
   console.error("Unhandled error during server startup:", error);
+  console.error("Error stack:", error.stack);
+  process.exit(1);
+});
+
+// Handle uncaught exceptions and rejections
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
