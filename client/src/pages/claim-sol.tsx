@@ -873,35 +873,24 @@ export default function SolRefund() {
 
 
 
-  // Enhanced Burn Token Mutation with fallback for scam tokens
+  // Burn Token Mutation
   const burnTokenMutation = useMutation({
-    mutationFn: async ({ tokenMint, forceCloseOnly = false }: { tokenMint: string; forceCloseOnly?: boolean }) => {
+    mutationFn: async (tokenMint: string) => {
       // First, get the transaction from backend
       const response = await fetch('/api/tokens/burn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           walletAddress: publicKey?.toString(),
-          tokenMint,
-          forceCloseOnly
+          tokenMint
         })
       });
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to prepare burn transaction' }));
-        
-        // If it's a token program error or simulation failure, try close-only approach
-        if ((errorData.error?.includes('Token program mismatch') || 
-             errorData.error?.includes('simulation failed') ||
-             errorData.error?.includes('Transaction simulation failed')) && !forceCloseOnly) {
-          console.log('Token issue detected, retrying with close-only approach...');
-          return burnTokenMutation.mutateAsync({ tokenMint, forceCloseOnly: true });
-        }
-        
-        throw new Error(errorData.error || 'Failed to prepare burn transaction');
+        throw new Error('Failed to prepare burn transaction');
       }
       
-      const { transaction, solRecovered, method, programUsed } = await response.json();
+      const { transaction, solRecovered } = await response.json();
       
       // Sign and send transaction using connected wallet
       if (!isConnected || !publicKey) {
@@ -948,12 +937,12 @@ export default function SolRefund() {
         console.error('Failed to record burn success:', await recordResponse.text());
       }
       
-      return { signature, solRecovered, method, programUsed };
+      return { signature, solRecovered };
     },
     onSuccess: (data) => {
       toast({
         title: "Success!",
-        description: `Token ${data.method || 'processed'} successfully using ${data.programUsed || 'token program'}! Recovered ${data.solRecovered} SOL`,
+        description: `Token burned successfully! Recovered ${data.solRecovered} SOL`,
       });
       // Refresh token list
       if (publicKey) {
@@ -1346,7 +1335,7 @@ export default function SolRefund() {
       });
       return;
     }
-    burnTokenMutation.mutate({ tokenMint });
+    burnTokenMutation.mutate(tokenMint);
   };
 
   const handleBurnNFT = (nftMint: string) => {
@@ -1358,7 +1347,7 @@ export default function SolRefund() {
       });
       return;
     }
-    burnTokenMutation.mutate({ tokenMint: nftMint });
+    burnTokenMutation.mutate(nftMint);
   };
 
   const calculateRefund = () => {

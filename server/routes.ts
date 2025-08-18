@@ -3,10 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema } from "@shared/schema";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-
-// Token-2022 Program ID (as it's not exported in older versions)
-const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -72,75 +69,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const walletPublicKey = new PublicKey(address);
       
-      // Get all token accounts for both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID
-      const [tokenAccounts, token2022Accounts] = await Promise.all([
-        connection.getParsedTokenAccountsByOwner(walletPublicKey, {
-          programId: TOKEN_PROGRAM_ID,
-        }),
-        connection.getParsedTokenAccountsByOwner(walletPublicKey, {
-          programId: TOKEN_2022_PROGRAM_ID,
-        })
-      ]);
-
-      // Combine both sets of accounts
-      const allTokenAccounts = [
-        ...tokenAccounts.value,
-        ...token2022Accounts.value
-      ];
-
-      console.log(`Found ${tokenAccounts.value.length} TOKEN_PROGRAM accounts and ${token2022Accounts.value.length} TOKEN_2022_PROGRAM accounts`);
+      // Get all token accounts for the wallet
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+        programId: TOKEN_PROGRAM_ID,
+      });
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
 
-      for (const accountInfo of allTokenAccounts) {
+      for (const accountInfo of tokenAccounts.value) {
         const account = accountInfo.account;
         const parsedInfo = account.data.parsed.info;
         
-        // Check if account has zero balance or very small balance (dust)
-        const balance = parseFloat(parsedInfo.tokenAmount.amount);
-        const decimals = parsedInfo.tokenAmount.decimals;
-        
-        // Consider accounts empty if:
-        // 1. Balance is exactly 0
-        // 2. Balance is dust (less than 0.01 of the smallest unit for that token)
-        // 3. Balance is extremely small (less than 1e-6 in UI terms)
-        const dustThreshold = Math.pow(10, -decimals + 2); // 0.01 of smallest unit
-        const uiAmount = parseFloat(parsedInfo.tokenAmount.uiAmountString || "0");
-        
-        const isEffectivelyEmpty = balance === 0 || 
-          (balance > 0 && balance < dustThreshold) ||
-          (uiAmount > 0 && uiAmount < 0.000001); // Very small UI amounts
-        
-        if (isEffectivelyEmpty) {
+        // Check if account has zero balance
+        if (parseFloat(parsedInfo.tokenAmount.amount) === 0) {
           const rentAmount = account.lamports / 1e9; // Convert lamports to SOL
           
-          // Only include accounts with meaningful rent amounts (most token accounts have ~0.00203928 SOL rent)
-          if (rentAmount >= 0.0015) { // At least 0.0015 SOL rent to filter out system accounts
-            emptyAccounts.push({
-              accountAddress: accountInfo.pubkey.toString(),
-              mintAddress: parsedInfo.mint,
-              walletAddress: address,
-              tokenSymbol: parsedInfo.mint.substring(0, 8) + "...", // Simplified symbol
-              tokenName: null,
-              rentAmount: rentAmount.toString(),
-              balance: parsedInfo.tokenAmount.uiAmountString || "0",
-              decimals: parsedInfo.tokenAmount.decimals,
-              programId: account.owner.toString() // Track which program ID this account belongs to
-            });
+          emptyAccounts.push({
+            accountAddress: accountInfo.pubkey.toString(),
+            mintAddress: parsedInfo.mint,
+            walletAddress: address,
+            tokenSymbol: parsedInfo.mint.substring(0, 8) + "...", // Simplified symbol
+            tokenName: null,
+            rentAmount: rentAmount.toString(),
+            balance: "0",
+            decimals: parsedInfo.tokenAmount.decimals
+          });
 
-            totalReclaimable += rentAmount;
-            console.log(`Found empty account: ${accountInfo.pubkey.toString()} (${parsedInfo.mint.substring(0, 8)}...) with ${rentAmount} SOL rent, balance: ${balance}, uiAmount: ${uiAmount}`);
-          }
+          totalReclaimable += rentAmount;
         }
       }
-
-      console.log(`Total empty accounts found: ${emptyAccounts.length}, Total reclaimable: ${totalReclaimable.toFixed(9)} SOL`);
 
       // Store scan result
       const scanResult = await storage.createScanResult({
         walletAddress: address,
-        totalAccounts: allTokenAccounts.length,
+        totalAccounts: tokenAccounts.value.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toString()
       });
@@ -153,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = {
         success: true,
         walletAddress: address,
-        totalAccounts: allTokenAccounts.length,
+        totalAccounts: tokenAccounts.value.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toFixed(9),
         accounts: emptyAccounts,
@@ -480,65 +443,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
       
-      // Import TOKEN_2022_PROGRAM_ID
-      const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
-      
       // Create single transaction with multiple burn+close instructions
       const transaction = new Transaction();
       let totalTokensProcessed = 0;
-      const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
       
       for (const tokenMint of tokenMints) {
         try {
           const mintPublicKey = new PublicKey(tokenMint);
           
-          let tokenAccount = null;
-          let tokenAccountInfo = null;
-          let programId = null;
+          // Get associated token account
+          const tokenAccount = await Token.getAssociatedTokenAddress(
+            TOKEN_PROGRAM_ID, // associatedProgramId
+            TOKEN_PROGRAM_ID, // programId
+            mintPublicKey,
+            ownerPublicKey
+          );
           
-          // Try both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID to find the correct one
-          for (const progId of programIds) {
-            try {
-              const testTokenAccount = await Token.getAssociatedTokenAddress(
-                progId, // associatedProgramId
-                progId, // programId
-                mintPublicKey,
-                ownerPublicKey
-              );
-              
-              const testAccountInfo = await connection.getParsedAccountInfo(testTokenAccount);
-              if (testAccountInfo.value?.data) {
-                tokenAccount = testTokenAccount;
-                tokenAccountInfo = testAccountInfo;
-                programId = progId;
-                break;
-              }
-            } catch (error) {
-              // Continue to next program ID
-            }
-          }
-          
-          if (!tokenAccount || !tokenAccountInfo || !programId) {
-            console.log(`Skipping ${tokenMint} - token account not found for either token program`);
-            continue;
-          }
-          
+          // Get token account info to determine balance and decimals
+          const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
           const parsedInfo = tokenAccountInfo.value?.data as any;
           
           if (!parsedInfo?.parsed?.info) {
-            console.log(`Skipping ${tokenMint} - invalid token account data`);
+            console.log(`Skipping ${tokenMint} - token account not found`);
             continue;
           }
           
           const balance = parsedInfo.parsed.info.tokenAmount.amount;
           const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
           
-          console.log(`Processing ${tokenMint} with balance ${balance} using ${programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`);
-          
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
             const burnInstruction = Token.createBurnInstruction(
-              programId,        // Dynamic token program ID based on which program the token uses
+              TOKEN_PROGRAM_ID, // Token program ID
               mintPublicKey,    // Token mint
               tokenAccount,     // Token account to burn from
               ownerPublicKey,   // Owner
@@ -550,11 +486,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 2: Close the now-empty account to reclaim SOL
           const closeInstruction = Token.createCloseAccountInstruction(
-            programId,        // Dynamic token program ID based on which program the token uses
-            tokenAccount,     // Account to close
-            ownerPublicKey,   // destination (receives SOL)
-            ownerPublicKey,   // owner
-            []                // Additional signers
+            TOKEN_PROGRAM_ID,
+            tokenAccount,
+            ownerPublicKey, // destination (receives SOL)
+            ownerPublicKey,  // owner
+            []
           );
           
           transaction.add(closeInstruction);
@@ -618,10 +554,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Enhanced Single Burn Token API (handles scam tokens and both token programs)
+  // Single Burn Token API (for individual burns)
   app.post("/api/tokens/burn", async (req, res) => {
     try {
-      const { walletAddress, tokenMint, forceCloseOnly } = req.body;
+      const { walletAddress, tokenMint } = req.body;
       
       if (!walletAddress || !tokenMint) {
         return res.status(400).json({ error: "Wallet address and token mint are required" });
@@ -629,8 +565,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
-        TOKEN_PROGRAM_ID,
-        Token
+        TOKEN_PROGRAM_ID, 
+        Token 
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -639,190 +575,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
         : 'https://api.mainnet-beta.solana.com';
       
-      console.log('Creating enhanced token burn transaction...');
+      console.log('Creating token burn transaction...');
       
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
       const mintPublicKey = new PublicKey(tokenMint);
       
-      // Import TOKEN_2022_PROGRAM_ID
-      const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+      // Get associated token account
+      const tokenAccount = await Token.getAssociatedTokenAddress(
+        TOKEN_PROGRAM_ID, // associatedProgramId
+        TOKEN_PROGRAM_ID, // programId
+        mintPublicKey,
+        ownerPublicKey
+      );
       
-      // Try both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID
-      const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
-      let tokenAccount = null;
-      let tokenAccountInfo = null;
-      let programId = null;
-      
-      // Find which program this token uses
-      for (const progId of programIds) {
-        try {
-          const testTokenAccount = await Token.getAssociatedTokenAddress(
-            progId, // associatedProgramId
-            progId, // programId
-            mintPublicKey,
-            ownerPublicKey
-          );
-          
-          const testAccountInfo = await connection.getParsedAccountInfo(testTokenAccount);
-          if (testAccountInfo.value?.data) {
-            tokenAccount = testTokenAccount;
-            tokenAccountInfo = testAccountInfo;
-            programId = progId;
-            console.log(`Found token account using ${progId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`);
-            break;
-          }
-        } catch (error) {
-          // Continue to next program ID
-        }
-      }
-      
-      if (!tokenAccount || !tokenAccountInfo || !programId) {
-        throw new Error('Token account not found for either TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID');
-      }
-      
+      // Get token account info to determine balance and decimals
+      const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
       const parsedInfo = tokenAccountInfo.value?.data as any;
+      
       if (!parsedInfo?.parsed?.info) {
-        throw new Error('Invalid token account data');
+        throw new Error('Token account not found or invalid');
       }
       
       const balance = parsedInfo.parsed.info.tokenAmount.amount;
       const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
       
-      console.log(`Token: ${tokenMint}, Balance: ${balance}, Program: ${programId.toString()}`);
-      
       // Create transaction
       const transaction = new Transaction();
       
-      // Step 1: Burn all tokens (if balance > 0 and not forcing close-only)
-      let burnAttempted = false;
-      if (balance > 0 && !forceCloseOnly) {
-        try {
-          const burnInstruction = Token.createBurnInstruction(
-            programId,        // Token program ID
-            mintPublicKey,    // Token mint
-            tokenAccount,     // Token account to burn from
-            ownerPublicKey,   // Owner
-            [],               // Additional signers
-            balance           // Amount to burn (full balance)
-          );
-          transaction.add(burnInstruction);
-          burnAttempted = true;
-          console.log(`Added burn instruction for ${balance} tokens`);
-        } catch (error) {
-          console.log(`Failed to create burn instruction, will try close-only approach: ${error instanceof Error ? error.message : String(error)}`);
-          // Clear transaction and proceed with close-only approach
-          transaction.instructions = [];
-        }
+      // Step 1: Burn all tokens (if balance > 0)
+      if (balance > 0) {
+        const burnInstruction = Token.createBurnInstruction(
+          TOKEN_PROGRAM_ID, // Token program ID
+          mintPublicKey,    // Token mint
+          tokenAccount,     // Token account to burn from
+          ownerPublicKey,   // Owner
+          [],               // Additional signers
+          balance           // Amount to burn (full balance)
+        );
+        transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
       const closeInstruction = Token.createCloseAccountInstruction(
-        programId,        // Token program ID
-        tokenAccount,     // Account to close
-        ownerPublicKey,   // Destination (where SOL goes)
-        ownerPublicKey,   // Owner
-        []                // Additional signers
+        TOKEN_PROGRAM_ID,
+        tokenAccount,
+        ownerPublicKey, // destination (receives SOL)
+        ownerPublicKey,  // owner
+        []
       );
+      
       transaction.add(closeInstruction);
-
-      // Get recent blockhash and set fee payer
-      const latestBlockhash = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = latestBlockhash.blockhash;
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
       transaction.feePayer = ownerPublicKey;
-
-      // Calculate estimated SOL that will be recovered
-      const tokenAccountBalance = await connection.getBalance(tokenAccount);
-      const solRecovered = tokenAccountBalance / 1e9; // Convert lamports to SOL
-
-      // Enhanced transaction validation and simulation
-      try {
-        // Test transaction simulation before sending to frontend
-        const simulationResult = await connection.simulateTransaction(transaction);
-        
-        if (simulationResult.value.err) {
-          console.log(`Transaction simulation failed: ${JSON.stringify(simulationResult.value.err)}`);
-          
-          // If burn fails, try close-only approach automatically
-          if (balance > 0 && !forceCloseOnly) {
-            console.log('Retrying with close-only approach due to simulation failure...');
-            
-            // Create new transaction with only close instruction
-            const closeOnlyTransaction = new Transaction();
-            const closeInstruction = Token.createCloseAccountInstruction(
-              programId,        // Token program ID
-              tokenAccount,     // Account to close
-              ownerPublicKey,   // Destination (where SOL goes)
-              ownerPublicKey,   // Owner
-              []                // Additional signers
-            );
-            closeOnlyTransaction.add(closeInstruction);
-            closeOnlyTransaction.recentBlockhash = latestBlockhash.blockhash;
-            closeOnlyTransaction.feePayer = ownerPublicKey;
-            
-            // Test close-only simulation
-            const closeSimulation = await connection.simulateTransaction(closeOnlyTransaction);
-            if (closeSimulation.value.err) {
-              throw new Error(`Both burn+close and close-only approaches failed simulation: ${JSON.stringify(closeSimulation.value.err)}`);
-            }
-            
-            // Use close-only transaction
-            const serializedTxn = closeOnlyTransaction.serialize({ requireAllSignatures: false });
-            const transactionB64 = Buffer.from(serializedTxn).toString('base64');
-            
-            return res.json({
-              success: true,
-              transaction: transactionB64,
-              solRecovered: solRecovered.toFixed(9),
-              balance: balance,
-              decimals: decimals,
-              programUsed: programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID',
-              method: 'close-only-fallback',
-              message: `Close-only transaction prepared (simulation fallback) using ${programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`,
-              warning: 'Token balance will remain but account will be closed to recover SOL rent'
-            });
-          }
-          
-          throw new Error(`Transaction simulation failed: ${JSON.stringify(simulationResult.value.err)}`);
-        }
-        
-        console.log('Transaction simulation successful');
-      } catch (simulationError) {
-        console.log('Simulation check failed, proceeding without validation:', simulationError instanceof Error ? simulationError.message : String(simulationError));
-      }
-
-      // Serialize transaction for frontend
-      const serializedTxn = transaction.serialize({ requireAllSignatures: false });
-      const transactionB64 = Buffer.from(serializedTxn).toString('base64');
-
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = serializedTransaction.toString('base64');
+      
+      console.log(`Token burn transaction prepared: ${balance > 0 ? 'burn + close' : 'close only'} for mint ${tokenMint}`);
+      
       res.json({
-        success: true,
-        transaction: transactionB64,
-        solRecovered: solRecovered.toFixed(9),
-        balance: balance,
-        decimals: decimals,
-        programUsed: programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID',
-        method: forceCloseOnly ? 'close-only' : (burnAttempted ? 'burn+close' : 'close-only'),
-        message: `Enhanced token burn transaction prepared (${forceCloseOnly ? 'forced close-only' : (burnAttempted ? 'burn + close' : 'close-only fallback')}) using ${programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`
+        transaction: transactionBase64,
+        solRecovered: '0.00203928', // Standard rent-exempt amount
+        message: `Token burn transaction prepared successfully (${balance > 0 ? 'burn + close' : 'close only'})`
       });
       
     } catch (error) {
       console.error('Error preparing token burn:', error);
-      
-      // If it's a specific token program error, suggest alternative approaches
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('InvalidAccountOwner') || errorMessage.includes('IncorrectTokenProgramId')) {
-        return res.status(400).json({ 
-          error: "Token program mismatch detected",
-          suggestion: "This might be a TOKEN_2022 or custom program token. Try using the enhanced scanner.",
-          technicalDetails: errorMessage
-        });
-      }
-      
-      res.status(500).json({ 
-        error: "Failed to prepare token burn transaction",
-        details: errorMessage
-      });
+      res.status(500).json({ error: "Failed to prepare token burn transaction" });
     }
   });
 
