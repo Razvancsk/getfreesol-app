@@ -165,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = new Transaction();
       
       // Add close account instructions for each empty account
-      const { Token } = await import('@solana/spl-token');
+      const { TOKEN_PROGRAM_ID, Token } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
@@ -429,6 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
+        ASSOCIATED_TOKEN_PROGRAM_ID,
         Token 
       } = await import('@solana/spl-token');
       
@@ -453,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Get associated token account
           const tokenAccount = await Token.getAssociatedTokenAddress(
-            TOKEN_PROGRAM_ID, // associatedProgramId
+            ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
             TOKEN_PROGRAM_ID, // programId
             mintPublicKey,
             ownerPublicKey
@@ -566,6 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
+        ASSOCIATED_TOKEN_PROGRAM_ID,
         Token 
       } = await import('@solana/spl-token');
       
@@ -583,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get associated token account
       const tokenAccount = await Token.getAssociatedTokenAddress(
-        TOKEN_PROGRAM_ID, // associatedProgramId
+        ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
         TOKEN_PROGRAM_ID, // programId
         mintPublicKey,
         ownerPublicKey
