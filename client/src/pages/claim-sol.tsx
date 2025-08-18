@@ -890,9 +890,11 @@ export default function SolRefund() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to prepare burn transaction' }));
         
-        // If it's a token program error, try close-only approach
-        if (errorData.error?.includes('Token program mismatch') && !forceCloseOnly) {
-          console.log('Token program mismatch detected, retrying with close-only approach...');
+        // If it's a token program error or simulation failure, try close-only approach
+        if ((errorData.error?.includes('Token program mismatch') || 
+             errorData.error?.includes('simulation failed') ||
+             errorData.error?.includes('Transaction simulation failed')) && !forceCloseOnly) {
+          console.log('Token issue detected, retrying with close-only approach...');
           return burnTokenMutation.mutateAsync({ tokenMint, forceCloseOnly: true });
         }
         

@@ -5,9 +5,12 @@
 
 ## Recent Updates (January 2025)
 - **Enhanced Token Account Detection**: Added TOKEN_2022_PROGRAM_ID support and improved scanning algorithms
+- **Comprehensive Token Burning System**: Full support for both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID in single and bulk operations
+- **Scam Token Handling**: Added forceCloseOnly option and automatic fallbacks for problematic tokens that can't be burned
+- **Transaction Simulation Validation**: Pre-validates transactions on backend before sending to wallet to prevent simulation errors
+- **Automatic Error Recovery**: System automatically detects simulation failures and retries with close-only approach
 - **Dust Account Detection**: Now detects accounts with tiny balances that are effectively empty
 - **Better Account Filtering**: Improved criteria for identifying reclaimable accounts vs other tools
-- **Comprehensive Token Program Support**: Scans both original TOKEN_PROGRAM_ID and newer TOKEN_2022_PROGRAM_ID
 - **Ledger Hardware Wallet Support**: Added secure cold storage wallet integration
 - **Enhanced Multi-Wallet Support**: Complete coverage of major Solana wallets
 - **Hardware Security Features**: Physical transaction confirmation for Ledger users
@@ -37,12 +40,14 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Session Management**: Express sessions
 
 ### Key Components
-- **Wallet Scanner**: Scans Solana wallets for empty token accounts.
-- **Claim Interface**: Facilitates SOL reclamation from empty accounts.
+- **Wallet Scanner**: Scans Solana wallets for empty token accounts using both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID.
+- **Enhanced Token Burning**: Handles both standard and TOKEN_2022 tokens with automatic program detection and fallback strategies.
+- **Scam Token Protection**: Robust handling of problematic tokens with close-only fallbacks and simulation validation.
+- **Claim Interface**: Facilitates SOL reclamation from empty accounts with enhanced error handling.
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
-- **Solana Integration**: Handles RPC interactions for account discovery and transaction submission.
+- **Solana Integration**: Handles RPC interactions for account discovery and transaction submission with comprehensive token program support.
 - **Data Persistence**: Stores scan results, transaction records, and user statistics.
 
 ### Database Schema

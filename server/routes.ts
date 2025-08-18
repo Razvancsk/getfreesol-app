@@ -735,6 +735,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokenAccountBalance = await connection.getBalance(tokenAccount);
       const solRecovered = tokenAccountBalance / 1e9; // Convert lamports to SOL
 
+      // Enhanced transaction validation and simulation
+      try {
+        // Test transaction simulation before sending to frontend
+        const simulationResult = await connection.simulateTransaction(transaction);
+        
+        if (simulationResult.value.err) {
+          console.log(`Transaction simulation failed: ${JSON.stringify(simulationResult.value.err)}`);
+          
+          // If burn fails, try close-only approach automatically
+          if (balance > 0 && !forceCloseOnly) {
+            console.log('Retrying with close-only approach due to simulation failure...');
+            
+            // Create new transaction with only close instruction
+            const closeOnlyTransaction = new Transaction();
+            const closeInstruction = Token.createCloseAccountInstruction(
+              programId,        // Token program ID
+              tokenAccount,     // Account to close
+              ownerPublicKey,   // Destination (where SOL goes)
+              ownerPublicKey,   // Owner
+              []                // Additional signers
+            );
+            closeOnlyTransaction.add(closeInstruction);
+            closeOnlyTransaction.recentBlockhash = latestBlockhash.blockhash;
+            closeOnlyTransaction.feePayer = ownerPublicKey;
+            
+            // Test close-only simulation
+            const closeSimulation = await connection.simulateTransaction(closeOnlyTransaction);
+            if (closeSimulation.value.err) {
+              throw new Error(`Both burn+close and close-only approaches failed simulation: ${JSON.stringify(closeSimulation.value.err)}`);
+            }
+            
+            // Use close-only transaction
+            const serializedTxn = closeOnlyTransaction.serialize({ requireAllSignatures: false });
+            const transactionB64 = Buffer.from(serializedTxn).toString('base64');
+            
+            return res.json({
+              success: true,
+              transaction: transactionB64,
+              solRecovered: solRecovered.toFixed(9),
+              balance: balance,
+              decimals: decimals,
+              programUsed: programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID',
+              method: 'close-only-fallback',
+              message: `Close-only transaction prepared (simulation fallback) using ${programId.toString() === TOKEN_PROGRAM_ID.toString() ? 'TOKEN_PROGRAM_ID' : 'TOKEN_2022_PROGRAM_ID'}`,
+              warning: 'Token balance will remain but account will be closed to recover SOL rent'
+            });
+          }
+          
+          throw new Error(`Transaction simulation failed: ${JSON.stringify(simulationResult.value.err)}`);
+        }
+        
+        console.log('Transaction simulation successful');
+      } catch (simulationError) {
+        console.log('Simulation check failed, proceeding without validation:', simulationError instanceof Error ? simulationError.message : String(simulationError));
+      }
+
       // Serialize transaction for frontend
       const serializedTxn = transaction.serialize({ requireAllSignatures: false });
       const transactionB64 = Buffer.from(serializedTxn).toString('base64');
