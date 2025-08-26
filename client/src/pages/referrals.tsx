@@ -277,14 +277,6 @@ export default function Referrals() {
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => window.open(getReferralLink(referralCode.code), "_blank")}
-                      data-testid="button-open-link"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
 
