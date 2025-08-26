@@ -1,8 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes } from "@shared/schema";
 import { nanoid } from "nanoid";
+import { eq } from 'drizzle-orm';
+import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
@@ -375,6 +377,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user already has a referral code
       const existingCode = await storage.getReferralCodeByWallet(walletAddress);
       if (existingCode) {
+        // Check if existing code is old format (8 chars, all uppercase) - if so, update it
+        const isOldFormat = existingCode.code.length === 8 && existingCode.code === existingCode.code.toUpperCase();
+        
+        if (isOldFormat) {
+          // Generate new random code and update the existing record
+          const newCode = nanoid(16); // 16 characters, mixed case letters and numbers
+          
+          // Update the code in database
+          await db.update(referralCodes)
+            .set({ code: newCode })
+            .where(eq(referralCodes.id, existingCode.id));
+          
+          // Return updated code
+          const updatedCode = { ...existingCode, code: newCode };
+          return res.json({ 
+            success: true, 
+            referralCode: updatedCode,
+            message: "Referral code updated to new format" 
+          });
+        }
+        
         return res.json({ 
           success: true, 
           referralCode: existingCode,
