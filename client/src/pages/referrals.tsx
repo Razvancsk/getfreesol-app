@@ -227,29 +227,23 @@ export default function Referrals() {
           <>
             {/* Stats Cards */}
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="w-8 h-8 text-green-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{parseFloat(stats.totalEarnings).toFixed(6)} SOL</p>
-                      <p className="text-sm text-muted-foreground">Total Earnings</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {parseFloat(stats.totalEarnings).toFixed(6)} SOL
+                </div>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  Total Earnings
+                </div>
+              </div>
               
-              <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-8 h-8 text-blue-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{stats.totalReferrals}</p>
-                      <p className="text-sm text-muted-foreground">Total Referrals</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {stats.totalReferrals}
+                </div>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  Total Referrals
+                </div>
+              </div>
             </div>
 
             {/* Referral Code & Link */}
