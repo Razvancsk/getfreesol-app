@@ -150,6 +150,13 @@ export default function SolRefund() {
     }
   });
 
+  // Clear referral code when wallet disconnects or changes
+  useEffect(() => {
+    if (!isConnected || !publicKey) {
+      setUserReferralCode('');
+    }
+  }, [isConnected, publicKey]);
+
   // Update userReferralCode when data changes - with auto-creation
   useEffect(() => {
     if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && userReferrals.success) {
