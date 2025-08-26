@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2 } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1754527057994.png';
@@ -1608,6 +1608,14 @@ export default function SolRefund() {
             {isConnected && (
               <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
                 <div className="flex items-center space-x-2">
+                  <Link
+                    to="/referrals"
+                    className="px-4 py-2 text-sm font-medium rounded transition-all bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 flex items-center"
+                    data-testid="link-referrals-nav"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Referrals
+                  </Link>
                   <Button
                     onClick={() => setActiveTab('reclaim')}
                     className={`px-4 py-2 text-sm font-medium rounded transition-all ${
@@ -1651,14 +1659,6 @@ export default function SolRefund() {
             
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
-              {/* Referrals Link */}
-              <Link 
-                to="/referrals"
-                className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 transition-all duration-200"
-                data-testid="link-referrals-desktop"
-              >
-                Referrals
-              </Link>
               {isConnected && publicKey ? (
                 <>
                   <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
