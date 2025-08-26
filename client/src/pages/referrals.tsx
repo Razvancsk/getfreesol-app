@@ -175,9 +175,6 @@ export default function Referrals() {
                 <p className="text-sm text-purple-200">
                   Share with your friends
                 </p>
-                <p className="text-sm text-purple-200">
-                  Share your link on your website, social media, or directly
-                </p>
               </div>
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
