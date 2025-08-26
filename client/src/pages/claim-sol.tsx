@@ -2002,6 +2002,27 @@ export default function SolRefund() {
                 </div>
               </div>
 
+              {/* Stats Cards */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-2">
+                    0.000245 SOL
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                    Total Earnings
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-2">
+                    3
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                    Total Referrals
+                  </div>
+                </div>
+              </div>
+
               {/* Referral Dashboard Content */}
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                 <div className="mb-6">
@@ -2039,6 +2060,56 @@ export default function SolRefund() {
                       </Button>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Recent Referral Transactions */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white">Recent Referral Transactions</h3>
+                  <p className="text-purple-200 text-sm mt-2">
+                    Track your recent referral earnings
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    { id: '9QQk8474...1qfyuawC', date: '26/08/2025, 22:46:59', transaction: '3ewHUSPJzccsE...', earnings: '+0.000061 SOL', fee: '0.000306 SOL' },
+                    { id: '9QQk8474...1qfyuawC', date: '26/08/2025, 22:43:12', transaction: '2QGpefeNWsb...', earnings: '+0.000122 SOL', fee: '0.000612 SOL' },
+                    { id: '9QQk8474...1qfyuawC', date: '26/08/2025, 22:39:21', transaction: '2bmL6yfg1KL...', earnings: '+0.000061 SOL', fee: '0.000306 SOL' }
+                  ].map((tx, index) => (
+                    <div key={index} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <p className="font-mono text-sm text-white">
+                            {tx.id}
+                          </p>
+                          <p className="text-xs text-purple-300">
+                            {tx.date}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-green-400">
+                            {tx.earnings}
+                          </p>
+                          <p className="text-xs text-purple-300">
+                            From {tx.fee} fee
+                          </p>
+                        </div>
+                      </div>
+                      <Separator className="bg-purple-500/30" />
+                      <div className="flex justify-between text-xs text-purple-300">
+                        <span>Transaction: {tx.transaction}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(`https://solscan.io/tx/${tx.transaction}`, "_blank")}
+                          className="text-purple-300 hover:text-white hover:bg-purple-700/30"
+                        >
+                          View on Solscan
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
