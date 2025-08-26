@@ -431,9 +431,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { address } = req.params;
       
-      const referralCode = await storage.getReferralCodeByWallet(address);
+      let referralCode = await storage.getReferralCodeByWallet(address);
       if (!referralCode) {
         return res.status(404).json({ error: "No referral code found for this wallet" });
+      }
+      
+      // Check if existing code is old format (8 chars, all uppercase) - if so, update it
+      const isOldFormat = referralCode.code.length === 8 && referralCode.code === referralCode.code.toUpperCase();
+      
+      if (isOldFormat) {
+        // Generate new random code and update the existing record
+        const newCode = nanoid(16); // 16 characters, mixed case letters and numbers
+        
+        // Update the code in database
+        await db.update(referralCodes)
+          .set({ code: newCode })
+          .where(eq(referralCodes.id, referralCode.id));
+        
+        // Update the local object
+        referralCode = { ...referralCode, code: newCode };
       }
       
       const stats = await storage.getReferralStats(referralCode.id);
