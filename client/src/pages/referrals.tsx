@@ -116,12 +116,14 @@ export default function Referrals() {
 
   if (!connected) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold">Referral Program</h1>
-          <p className="text-muted-foreground">
-            Connect your wallet to create and manage your referral codes
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl font-bold text-white">Referral Program</h1>
+            <p className="text-purple-200">
+              Connect your wallet to create and manage your referral codes
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -133,20 +135,21 @@ export default function Referrals() {
   const transactions = transactionsData?.transactions || [];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Referral Program
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-purple-200 max-w-2xl mx-auto">
             Earn 20% of fees from users you refer. Share your referral link and start earning SOL!
           </p>
         </div>
 
         {/* How It Works */}
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -188,7 +191,7 @@ export default function Referrals() {
 
         {!hasReferralCode ? (
           /* Create Referral Code */
-          <Card>
+          <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
             <CardHeader>
               <CardTitle>Create Your Referral Code</CardTitle>
               <CardDescription>
@@ -224,7 +227,7 @@ export default function Referrals() {
           <>
             {/* Stats Cards */}
             <div className="grid md:grid-cols-2 gap-6">
-              <Card>
+              <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
                     <DollarSign className="w-8 h-8 text-green-500" />
@@ -236,7 +239,7 @@ export default function Referrals() {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
                     <Users className="w-8 h-8 text-blue-500" />
@@ -250,7 +253,7 @@ export default function Referrals() {
             </div>
 
             {/* Referral Code & Link */}
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Globe className="w-5 h-5" />
@@ -284,7 +287,7 @@ export default function Referrals() {
             </Card>
 
             {/* Recent Transactions */}
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
               <CardHeader>
                 <CardTitle>Recent Referral Transactions</CardTitle>
                 <CardDescription>
@@ -342,6 +345,7 @@ export default function Referrals() {
             </Card>
           </>
         )}
+        </div>
       </div>
     </div>
   );
