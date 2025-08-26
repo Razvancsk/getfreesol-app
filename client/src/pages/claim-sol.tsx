@@ -150,12 +150,15 @@ export default function SolRefund() {
     }
   });
 
-  // Clear referral code when wallet disconnects or changes
+  // Clear referral code only when wallet disconnects, invalidate query when wallet changes  
   useEffect(() => {
-    if (!isConnected || !publicKey) {
+    if (!isConnected) {
       setUserReferralCode('');
+    } else if (publicKey) {
+      // Force refresh query for new wallet
+      queryClient.invalidateQueries({ queryKey: ['/api/referrals/wallet', publicKey.toString()] });
     }
-  }, [isConnected, publicKey]);
+  }, [isConnected, publicKey, queryClient]);
 
   // Update userReferralCode when data changes - with auto-creation
   useEffect(() => {
@@ -170,8 +173,11 @@ export default function SolRefund() {
       }
     }
     // No referral code found - create one automatically for THIS specific wallet
-    else if (isConnected && publicKey && userReferrals && !createReferralMutation.isPending && 
-             ((userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && !userReferrals.success) || !userReferrals)) {
+    else if (isConnected && publicKey && !createReferralMutation.isPending && 
+             (userReferrals === undefined || userReferrals === null || 
+              (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && !userReferrals.success) || 
+              (userReferrals && typeof userReferrals === 'object' && 'error' in userReferrals))) {
+      console.log('Creating referral code for wallet:', publicKey.toString());
       createReferralMutation.mutate(publicKey.toString());
     }
   }, [userReferrals, isConnected, publicKey]);
