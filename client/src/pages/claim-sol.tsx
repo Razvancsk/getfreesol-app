@@ -1688,36 +1688,30 @@ export default function SolRefund() {
             </p>
           </div>
 
-          {/* User's Referral Link - Clean display */}
+          {/* User's Referral Link - Simple display */}
           {isConnected && activeTab === 'reclaim' && userReferralCode && (
-            <div className="bg-black/20 rounded-lg p-4 border border-green-500/30 max-w-2xl mx-auto">
-              <div className="flex items-center justify-between space-x-3">
-                <div className="flex-1 min-w-0">
-                  <div className="text-blue-400 font-mono text-sm lg:text-base break-all">
-                    {window.location.origin}/{userReferralCode}
-                  </div>
-                </div>
-                <div className="flex space-x-2 flex-shrink-0">
-                  <Button
-                    onClick={copyReferralLink}
-                    size="sm"
-                    variant="outline"
-                    className="bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30"
-                    data-testid="button-copy-referral-link"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={shareReferralLink}
-                    size="sm"
-                    variant="outline"
-                    className="bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30"
-                    data-testid="button-share-referral-link"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </div>
+            <div className="flex items-center justify-center space-x-3 max-w-2xl mx-auto">
+              <div className="text-blue-400 font-mono text-sm lg:text-base break-all">
+                {window.location.origin}/{userReferralCode}
               </div>
+              <Button
+                onClick={copyReferralLink}
+                size="sm"
+                variant="outline"
+                className="bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30 flex-shrink-0"
+                data-testid="button-copy-referral-link"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={shareReferralLink}
+                size="sm"
+                variant="outline"
+                className="bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30 flex-shrink-0"
+                data-testid="button-share-referral-link"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
             </div>
           )}
 
