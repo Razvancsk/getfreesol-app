@@ -159,9 +159,9 @@ export default function Referrals() {
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto">
                   <span className="text-blue-600 dark:text-blue-400 font-bold">1</span>
                 </div>
-                <h3 className="font-semibold">Create Your Link</h3>
+                <h3 className="font-semibold">Connect Wallet</h3>
                 <p className="text-sm text-muted-foreground">
-                  Generate your unique referral code and link
+                  Connect your wallet to automatically generate your referral link
                 </p>
               </div>
               <div className="text-center space-y-2">
