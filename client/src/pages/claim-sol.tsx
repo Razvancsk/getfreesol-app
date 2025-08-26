@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link, useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { Link, useLocation } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1754527057994.png';
@@ -56,7 +56,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'reclaim' | 'burnTokens' | 'swap'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap'>('referrals');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
   const [showSlippageModal, setShowSlippageModal] = useState<boolean>(false);
@@ -65,6 +65,7 @@ export default function SolRefund() {
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
+  const [websiteUrl, setWebsiteUrl] = useState("");
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -1608,14 +1609,17 @@ export default function SolRefund() {
             {isConnected && (
               <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
                 <div className="flex items-center space-x-2">
-                  <Link
-                    to="/referrals"
-                    className="px-4 py-2 text-sm font-medium rounded transition-all bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 flex items-center"
-                    data-testid="link-referrals-nav"
+                  <Button
+                    onClick={() => setActiveTab('referrals')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'referrals' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
                   >
                     <Users className="h-4 w-4 mr-2" />
                     Referrals
-                  </Link>
+                  </Button>
                   <Button
                     onClick={() => setActiveTab('reclaim')}
                     className={`px-4 py-2 text-sm font-medium rounded transition-all ${
@@ -1950,6 +1954,92 @@ export default function SolRefund() {
                 <Flame className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
                 <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Referrals Tab Content */}
+          {activeTab === 'referrals' && (
+            <div className="space-y-8">
+              {/* How It Works */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    How It Works
+                  </h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <Wallet className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <h3 className="font-semibold text-white">Connect Wallet</h3>
+                      <p className="text-sm text-purple-200">
+                        Connect your wallet to automatically generate your referral link
+                      </p>
+                    </div>
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <Users className="w-6 h-6 text-green-400" />
+                      </div>
+                      <h3 className="font-semibold text-white">Share</h3>
+                      <p className="text-sm text-purple-200">
+                        Share with your friends
+                      </p>
+                    </div>
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <DollarSign className="w-6 h-6 text-purple-400" />
+                      </div>
+                      <h3 className="font-semibold text-white">Earn</h3>
+                      <p className="text-sm text-purple-200">
+                        Earn 20% of platform fee from every referral transaction
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Referral Dashboard Content */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Globe className="w-5 h-5" />
+                    Your Referral Information
+                  </h3>
+                </div>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-purple-200">Referral Link</Label>
+                    <div className="flex space-x-2">
+                      <Input 
+                        value={userReferralCode ? `${window.location.origin}/${userReferralCode}` : 'Generating referral link...'} 
+                        readOnly
+                        data-testid="input-referral-link"
+                        className="bg-purple-900/30 border-purple-500/30 text-white"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => {
+                          if (userReferralCode) {
+                            navigator.clipboard.writeText(`${window.location.origin}/${userReferralCode}`);
+                            toast({
+                              title: "Copied!",
+                              description: "Referral link copied to clipboard",
+                            });
+                          }
+                        }}
+                        data-testid="button-copy-link"
+                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30 hover:text-white"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
