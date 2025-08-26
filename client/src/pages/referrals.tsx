@@ -171,7 +171,7 @@ export default function Referrals() {
                 <div className="w-12 h-12 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto">
                   <Users className="w-6 h-6 text-green-400" />
                 </div>
-                <h3 className="font-semibold text-white">Share & Promote</h3>
+                <h3 className="font-semibold text-white">Share</h3>
                 <p className="text-sm text-purple-200">
                   Share with your friends
                 </p>
