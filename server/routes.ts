@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema } from "@shared/schema";
+import { nanoid } from "nanoid";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
@@ -133,7 +134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Prepare transaction for SOL refund
   app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
     try {
-      const { walletAddress, selectedAccounts, donationPercentage } = req.body;
+      const { walletAddress, selectedAccounts, donationPercentage, referralCode } = req.body;
+      
+      // Check if referral code exists
+      let referralCodeData = null;
+      if (referralCode) {
+        referralCodeData = await storage.getReferralCodeByCode(referralCode);
+      }
 
       // Get empty accounts from storage
       const emptyAccounts = await storage.getEmptyTokenAccountsByWallet(walletAddress);
@@ -146,12 +153,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid accounts to close" });
       }
 
-      // Calculate totals
+      // Calculate totals with referral fee splitting
       const totalSolReclaimed = accountsToClose.reduce((sum, account) => 
         sum + parseFloat(account.rentAmount), 0
       );
-      const feeAmount = totalSolReclaimed * (donationPercentage / 100);
-      const netAmount = totalSolReclaimed - feeAmount;
+      const totalFeeAmount = totalSolReclaimed * (donationPercentage / 100);
+      
+      let referralFeeAmount = 0;
+      let platformFeeAmount = totalFeeAmount;
+      
+      if (referralCodeData) {
+        // 20% of fee goes to referral (3% of total)
+        referralFeeAmount = totalFeeAmount * 0.2;
+        // 80% of fee stays with platform (12% of total)
+        platformFeeAmount = totalFeeAmount * 0.8;
+      }
+      
+      const netAmount = totalSolReclaimed - totalFeeAmount;
 
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
@@ -182,18 +200,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.add(closeInstruction);
       }
 
-      // Add service fee transfer if applicable
-      if (feeAmount > 0) {
-        const { SystemProgram } = await import('@solana/web3.js');
+      // Add service fee transfers
+      const { SystemProgram } = await import('@solana/web3.js');
+      
+      if (platformFeeAmount > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
-        const feeTransferInstruction = SystemProgram.transfer({
+        const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
           toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(feeAmount * 1e9), // Convert SOL to lamports
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
         });
         
-        transaction.add(feeTransferInstruction);
+        transaction.add(platformFeeTransferInstruction);
+      }
+      
+      // Add referral fee transfer if applicable
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: referralWalletPublicKey,
+          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(referralFeeTransferInstruction);
       }
 
       // Get recent blockhash
@@ -209,8 +241,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction: transactionBase64,
         message: `Prepared transaction to close ${accountsToClose.length} accounts`,
         totalSolReclaimed: totalSolReclaimed,
-        feeAmount: feeAmount,
-        netAmount: netAmount
+        feeAmount: totalFeeAmount,
+        platformFeeAmount: platformFeeAmount,
+        referralFeeAmount: referralFeeAmount,
+        netAmount: netAmount,
+        referralCodeUsed: referralCode || null
       });
 
     } catch (error) {
@@ -222,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Record successful transaction
   app.post("/api/sol-refund/record-success", async (req, res) => {
     try {
-      const { signature, walletAddress, accountsClosed, solRecovered, netAmount, feeAmount } = req.body;
+      const { signature, walletAddress, accountsClosed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount } = req.body;
 
       // Validate required fields
       if (!signature || !walletAddress || !accountsClosed || !solRecovered) {
@@ -260,9 +295,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         itemDetails: JSON.stringify({ 
           type: 'sol_reclaim',
           accountsClosed: accountsClosed,
-          description: `Closed ${accountsClosed} empty token accounts`
+          description: `Closed ${accountsClosed} empty token accounts`,
+          referralCodeUsed: referralCodeUsed || null
         })
       });
+      
+      // Record referral transaction if applicable
+      if (referralCodeUsed && referralFeeAmount > 0) {
+        const referralCodeData = await storage.getReferralCodeByCode(referralCodeUsed);
+        if (referralCodeData) {
+          await storage.createReferralTransaction({
+            referralCodeId: referralCodeData.id,
+            transactionSignature: signature,
+            referredWalletAddress: walletAddress,
+            originalFeeAmount: feeAmount.toString(),
+            referralFeeAmount: referralFeeAmount.toString(),
+            platformFeeAmount: platformFeeAmount.toString()
+          });
+          
+          // Update referral earnings
+          const stats = await storage.getReferralStats(referralCodeData.id);
+          await storage.updateReferralEarnings(
+            referralCodeData.id,
+            stats.totalEarnings,
+            stats.totalReferrals
+          );
+        }
+      }
 
       res.json({
         success: true,
@@ -299,6 +358,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Stats error:", error);
       res.status(500).json({ error: "Failed to get statistics" });
+    }
+  });
+
+  // === REFERRAL SYSTEM ENDPOINTS ===
+  
+  // Create referral code
+  app.post("/api/referrals/create", async (req, res) => {
+    try {
+      const { walletAddress, websiteUrl } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address is required" });
+      }
+      
+      // Check if user already has a referral code
+      const existingCode = await storage.getReferralCodeByWallet(walletAddress);
+      if (existingCode) {
+        return res.json({ 
+          success: true, 
+          referralCode: existingCode,
+          message: "Referral code already exists for this wallet" 
+        });
+      }
+      
+      // Generate unique referral code
+      const code = nanoid(8).toUpperCase();
+      
+      const referralCode = await storage.createReferralCode({
+        code,
+        walletAddress,
+        websiteUrl: websiteUrl || null
+      });
+      
+      res.json({
+        success: true,
+        referralCode,
+        message: "Referral code created successfully"
+      });
+      
+    } catch (error) {
+      console.error("Create referral code error:", error);
+      res.status(500).json({ error: "Failed to create referral code" });
+    }
+  });
+  
+  // Get referral code by wallet
+  app.get("/api/referrals/wallet/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      const referralCode = await storage.getReferralCodeByWallet(address);
+      if (!referralCode) {
+        return res.status(404).json({ error: "No referral code found for this wallet" });
+      }
+      
+      const stats = await storage.getReferralStats(referralCode.id);
+      
+      res.json({
+        success: true,
+        referralCode: {
+          ...referralCode,
+          stats
+        }
+      });
+      
+    } catch (error) {
+      console.error("Get referral code error:", error);
+      res.status(500).json({ error: "Failed to get referral code" });
+    }
+  });
+  
+  // Validate referral code
+  app.get("/api/referrals/validate/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      
+      const referralCode = await storage.getReferralCodeByCode(code);
+      if (!referralCode || !referralCode.isActive) {
+        return res.status(404).json({ 
+          success: false,
+          error: "Invalid or inactive referral code" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        referralCode: {
+          code: referralCode.code,
+          walletAddress: referralCode.walletAddress,
+          websiteUrl: referralCode.websiteUrl
+        }
+      });
+      
+    } catch (error) {
+      console.error("Validate referral code error:", error);
+      res.status(500).json({ error: "Failed to validate referral code" });
+    }
+  });
+  
+  // Get referral transactions
+  app.get("/api/referrals/:codeId/transactions", async (req, res) => {
+    try {
+      const { codeId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      const transactions = await storage.getReferralTransactionsByCode(codeId, limit);
+      
+      res.json({
+        success: true,
+        transactions
+      });
+      
+    } catch (error) {
+      console.error("Get referral transactions error:", error);
+      res.status(500).json({ error: "Failed to get referral transactions" });
+    }
+  });
+  
+  // Get all referral codes (admin)
+  app.get("/api/referrals/all", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      
+      const referralCodes = await storage.getAllReferralCodes(limit);
+      
+      res.json({
+        success: true,
+        referralCodes
+      });
+      
+    } catch (error) {
+      console.error("Get all referral codes error:", error);
+      res.status(500).json({ error: "Failed to get referral codes" });
     }
   });
 

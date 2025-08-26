@@ -32,6 +32,7 @@ export const emptyTokenAccounts = pgTable("empty_token_accounts", {
   decimals: integer("decimals").notNull(),
   scannedAt: timestamp("scanned_at").notNull().defaultNow(),
   claimed: boolean("claimed").notNull().default(false),
+  programId: text("program_id"),
 });
 
 export const scanResults = pgTable("scan_results", {
@@ -83,6 +84,29 @@ export const nftBurnRecords = pgTable("nft_burn_records", {
   burnedAt: timestamp("burned_at").notNull().defaultNow(),
 });
 
+// Referral system tables
+export const referralCodes = pgTable("referral_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  walletAddress: text("wallet_address").notNull(),
+  websiteUrl: text("website_url"),
+  totalEarnings: decimal("total_earnings", { precision: 18, scale: 9 }).notNull().default("0"),
+  totalReferrals: integer("total_referrals").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const referralTransactions = pgTable("referral_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referralCodeId: varchar("referral_code_id").notNull(),
+  transactionSignature: text("transaction_signature").notNull(),
+  referredWalletAddress: text("referred_wallet_address").notNull(),
+  originalFeeAmount: decimal("original_fee_amount", { precision: 18, scale: 9 }).notNull(),
+  referralFeeAmount: decimal("referral_fee_amount", { precision: 18, scale: 9 }).notNull(),
+  platformFeeAmount: decimal("platform_fee_amount", { precision: 18, scale: 9 }).notNull(),
+  paidAt: timestamp("paid_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -119,6 +143,19 @@ export const insertNftBurnRecordSchema = createInsertSchema(nftBurnRecords).omit
   burnedAt: true,
 });
 
+export const insertReferralCodeSchema = createInsertSchema(referralCodes).omit({
+  id: true,
+  totalEarnings: true,
+  totalReferrals: true,
+  isActive: true,
+  createdAt: true,
+});
+
+export const insertReferralTransactionSchema = createInsertSchema(referralTransactions).omit({
+  id: true,
+  paidAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -133,3 +170,7 @@ export type TokenBurnRecord = typeof tokenBurnRecords.$inferSelect;
 export type InsertTokenBurnRecord = z.infer<typeof insertTokenBurnRecordSchema>;
 export type NftBurnRecord = typeof nftBurnRecords.$inferSelect;
 export type InsertNftBurnRecord = z.infer<typeof insertNftBurnRecordSchema>;
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type InsertReferralCode = z.infer<typeof insertReferralCodeSchema>;
+export type ReferralTransaction = typeof referralTransactions.$inferSelect;
+export type InsertReferralTransaction = z.infer<typeof insertReferralTransactionSchema>;

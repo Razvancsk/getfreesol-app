@@ -63,13 +63,14 @@ export default function SolRefund() {
   const [jitoPriority, setJitoPriority] = useState<string>('Normal'); // Jito fee priority
   const [manualJitoFee, setManualJitoFee] = useState<string>('0'); // Manual Jito fee amount
   const [tokenList, setTokenList] = useState<any[]>([]);
+  const [referralCode, setReferralCode] = useState<string>('');
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
-    if (activeTab !== 'burn') {
+    if (activeTab !== 'burnTokens') {
       setSelectedTokens(new Set());
     }
   }, [activeTab]);
@@ -82,7 +83,7 @@ export default function SolRefund() {
       // Remove any selected tokens that are no longer in the current token list
       const currentTokenMints = new Set(tokenList.map(token => token.mint));
       setSelectedTokens(prev => {
-        const filteredSelection = new Set();
+        const filteredSelection = new Set<string>();
         prev.forEach(mint => {
           if (currentTokenMints.has(mint)) {
             filteredSelection.add(mint);
@@ -93,6 +94,20 @@ export default function SolRefund() {
     }
   }, [tokenList]);
   const { toast } = useToast();
+  const [location] = useLocation();
+
+  // Check for referral code in URL on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+      setReferralCode(refCode);
+      toast({
+        title: "Referral Code Applied",
+        description: `Using referral code: ${refCode}`,
+      });
+    }
+  }, [toast]);
 
   // Swap state
   const [swapInputToken, setSwapInputToken] = useState({
@@ -1093,7 +1108,7 @@ export default function SolRefund() {
 
   // Process SOL refund (15% service fee)
   const refundMutation = useMutation({
-    mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number }) => {
+    mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string }) => {
       // Get transaction (15% service fee)
       const response = await fetch('/api/sol-refund/prepare-transaction', {
         method: 'POST',
@@ -1105,7 +1120,7 @@ export default function SolRefund() {
         throw new Error('Failed to prepare transaction');
       }
       
-      const { transaction, message, totalSolReclaimed, feeAmount, netAmount } = await response.json();
+      const { transaction, message, totalSolReclaimed, feeAmount, netAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
       
       if (!isConnected || !publicKey) {
         throw new Error('Wallet not connected');
@@ -1229,7 +1244,10 @@ export default function SolRefund() {
               accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
               solRecovered: totalSolReclaimed,
               netAmount: netAmount,
-              feeAmount: feeAmount
+              feeAmount: feeAmount,
+              referralCodeUsed: referralCodeUsed,
+              platformFeeAmount: platformFeeAmount || feeAmount,
+              referralFeeAmount: referralFeeAmount || 0
             })
           });
           
@@ -1323,6 +1341,7 @@ export default function SolRefund() {
       walletAddress: publicKey?.toString() || "",
       selectedAccounts: allAccountAddresses,
       donationPercentage,
+      referralCode: referralCode || undefined,
     });
   };
 
@@ -1528,8 +1547,16 @@ export default function SolRefund() {
               </div>
             )}
             
-            {/* Desktop Wallet Connection - hidden on mobile */}
+            {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
+              {/* Referrals Link */}
+              <Link 
+                to="/referrals"
+                className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 transition-all duration-200"
+                data-testid="link-referrals-desktop"
+              >
+                Referrals
+              </Link>
               {isConnected && publicKey ? (
                 <>
                   <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">

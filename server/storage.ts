@@ -13,13 +13,19 @@ import {
   type InsertTokenBurnRecord,
   type NftBurnRecord,
   type InsertNftBurnRecord,
+  type ReferralCode,
+  type InsertReferralCode,
+  type ReferralTransaction,
+  type InsertReferralTransaction,
   users,
   transactionRecords,
   emptyTokenAccounts,
   scanResults,
   transactionLedger,
   tokenBurnRecords,
-  nftBurnRecords
+  nftBurnRecords,
+  referralCodes,
+  referralTransactions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or } from "drizzle-orm";
@@ -65,6 +71,16 @@ export interface IStorage {
   getTotalAccountsClaimed(): Promise<number>;
   getTotalTokensBurned(): Promise<number>;
   getTotalNftsBurned(): Promise<number>;
+  
+  // Referral System
+  createReferralCode(referral: InsertReferralCode): Promise<ReferralCode>;
+  getReferralCodeByCode(code: string): Promise<ReferralCode | undefined>;
+  getReferralCodeByWallet(walletAddress: string): Promise<ReferralCode | undefined>;
+  getAllReferralCodes(limit?: number): Promise<ReferralCode[]>;
+  updateReferralEarnings(codeId: string, earnings: string, totalReferrals: number): Promise<void>;
+  createReferralTransaction(transaction: InsertReferralTransaction): Promise<ReferralTransaction>;
+  getReferralTransactionsByCode(codeId: string, limit?: number): Promise<ReferralTransaction[]>;
+  getReferralStats(codeId: string): Promise<{ totalEarnings: string; totalReferrals: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -284,6 +300,81 @@ export class DatabaseStorage implements IStorage {
       .select({ total: sql<string>`count(*)` })
       .from(nftBurnRecords);
     return parseInt(result[0]?.total || "0");
+  }
+
+  // Referral System
+  async createReferralCode(referral: InsertReferralCode): Promise<ReferralCode> {
+    const [referralCode] = await db
+      .insert(referralCodes)
+      .values(referral)
+      .returning();
+    return referralCode;
+  }
+
+  async getReferralCodeByCode(code: string): Promise<ReferralCode | undefined> {
+    const [referral] = await db
+      .select()
+      .from(referralCodes)
+      .where(eq(referralCodes.code, code));
+    return referral || undefined;
+  }
+
+  async getReferralCodeByWallet(walletAddress: string): Promise<ReferralCode | undefined> {
+    const [referral] = await db
+      .select()
+      .from(referralCodes)
+      .where(eq(referralCodes.walletAddress, walletAddress));
+    return referral || undefined;
+  }
+
+  async getAllReferralCodes(limit: number = 100): Promise<ReferralCode[]> {
+    return await db
+      .select()
+      .from(referralCodes)
+      .orderBy(desc(referralCodes.createdAt))
+      .limit(limit);
+  }
+
+  async updateReferralEarnings(codeId: string, earnings: string, totalReferrals: number): Promise<void> {
+    await db
+      .update(referralCodes)
+      .set({ 
+        totalEarnings: earnings,
+        totalReferrals: totalReferrals
+      })
+      .where(eq(referralCodes.id, codeId));
+  }
+
+  async createReferralTransaction(transaction: InsertReferralTransaction): Promise<ReferralTransaction> {
+    const [referralTransaction] = await db
+      .insert(referralTransactions)
+      .values(transaction)
+      .returning();
+    return referralTransaction;
+  }
+
+  async getReferralTransactionsByCode(codeId: string, limit: number = 50): Promise<ReferralTransaction[]> {
+    return await db
+      .select()
+      .from(referralTransactions)
+      .where(eq(referralTransactions.referralCodeId, codeId))
+      .orderBy(desc(referralTransactions.paidAt))
+      .limit(limit);
+  }
+
+  async getReferralStats(codeId: string): Promise<{ totalEarnings: string; totalReferrals: number }> {
+    const [earnings] = await db
+      .select({ 
+        totalEarnings: sql<string>`sum(${referralTransactions.referralFeeAmount})`,
+        totalReferrals: sql<string>`count(*)` 
+      })
+      .from(referralTransactions)
+      .where(eq(referralTransactions.referralCodeId, codeId));
+    
+    return {
+      totalEarnings: earnings?.totalEarnings || "0",
+      totalReferrals: parseInt(earnings?.totalReferrals || "0")
+    };
   }
 }
 
