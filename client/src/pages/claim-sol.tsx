@@ -1708,7 +1708,7 @@ export default function SolRefund() {
                       </Link>
                     </div>
                   </div>
-                )
+                )}
                 
                 {/* Small section for entering someone else's referral code */}
                 <div className="mt-6 pt-4 border-t border-green-500/20">
