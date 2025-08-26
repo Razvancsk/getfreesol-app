@@ -125,19 +125,44 @@ export default function SolRefund() {
   });
 
 
-  // Update userReferralCode when data changes - simplified
+  // Mutation to create referral code automatically
+  const createReferralMutation = useMutation({
+    mutationFn: async (walletAddress: string) => {
+      const response = await apiRequest('POST', '/api/referrals/create', {
+        walletAddress,
+        websiteUrl: window.location.origin
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success && data.referralCode) {
+        setUserReferralCode(data.referralCode.code);
+        // Refetch user referrals to update the cache
+        queryClient.invalidateQueries({ queryKey: ['/api/referrals/wallet', publicKey?.toString()] });
+        toast({
+          title: "Referral Code Created!",
+          description: `Your referral code: ${data.referralCode.code}`,
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to create referral code:', error);
+    }
+  });
+
+  // Update userReferralCode when data changes - with auto-creation
   useEffect(() => {
     if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
         userReferrals.success && 'referralCodes' in userReferrals && 
         Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length > 0) {
       setUserReferralCode(userReferrals.referralCodes[0].code);
-    } else if (isConnected && userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
+    } else if (isConnected && publicKey && userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
                userReferrals.success && 'referralCodes' in userReferrals && 
                Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length === 0) {
-      // User has no referral code, show link to create one
-      setUserReferralCode(null);
+      // User has no referral code, automatically create one
+      createReferralMutation.mutate(publicKey.toString());
     }
-  }, [userReferrals, isConnected]);
+  }, [userReferrals, isConnected, publicKey]);
 
   // Copy referral link function
   const copyReferralLink = async () => {
@@ -1698,14 +1723,16 @@ export default function SolRefund() {
                 ) : (
                   <div className="bg-black/20 rounded-lg p-4 border border-green-500/30 text-center">
                     <div className="space-y-3">
-                      <p className="text-green-400">Get your referral link and start earning!</p>
-                      <Link 
-                        to="/referrals"
-                        className="inline-flex items-center px-4 py-2 bg-green-600/20 border border-green-500/30 text-green-400 hover:bg-green-600/30 rounded-lg transition-colors"
-                        data-testid="button-get-referral-link"
-                      >
-                        Create Referral Link →
-                      </Link>
+                      {createReferralMutation.isPending ? (
+                        <>
+                          <p className="text-green-400">Creating your referral link...</p>
+                          <div className="flex justify-center">
+                            <RefreshCw className="h-5 w-5 animate-spin text-green-400" />
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-green-400">Your referral link will be created automatically!</p>
+                      )}
                     </div>
                   </div>
                 )}
