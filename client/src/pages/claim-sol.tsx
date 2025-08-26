@@ -1688,89 +1688,34 @@ export default function SolRefund() {
             </p>
           </div>
 
-          {/* User's Referral Link - Show prominently when connected */}
-          {isConnected && activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-green-800/20 to-green-900/30 backdrop-blur-sm rounded-xl border border-green-500/20 p-6 max-w-2xl mx-auto">
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-xl font-bold text-white mb-2">Share with your friends and receive 20% of the included donation!</h3>
+          {/* User's Referral Link - Clean display */}
+          {isConnected && activeTab === 'reclaim' && userReferralCode && (
+            <div className="bg-black/20 rounded-lg p-4 border border-green-500/30 max-w-2xl mx-auto">
+              <div className="flex items-center justify-between space-x-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-blue-400 font-mono text-sm lg:text-base break-all">
+                    {window.location.origin}/{userReferralCode}
+                  </div>
                 </div>
-                {userReferralCode ? (
-                  <>
-                    <div className="bg-black/20 rounded-lg p-4 border border-green-500/30">
-                      <div className="flex items-center justify-between space-x-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-blue-400 font-mono text-sm lg:text-base break-all">
-                            {window.location.origin}/{userReferralCode}
-                          </div>
-                        </div>
-                        <div className="flex space-x-2 flex-shrink-0">
-                          <Button
-                            onClick={copyReferralLink}
-                            size="sm"
-                            variant="outline"
-                            className="bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30"
-                            data-testid="button-copy-referral-link"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={shareReferralLink}
-                            size="sm"
-                            variant="outline"
-                            className="bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30"
-                            data-testid="button-share-referral-link"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-green-300">
-                        Your referral code: <span className="font-bold text-green-400">{userReferralCode}</span> • Earn 3% of every transaction!
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="bg-black/20 rounded-lg p-4 border border-green-500/30 text-center">
-                    <div className="space-y-3">
-                      {createReferralMutation.isPending ? (
-                        <>
-                          <p className="text-green-400">Creating your referral link...</p>
-                          <div className="flex justify-center">
-                            <RefreshCw className="h-5 w-5 animate-spin text-green-400" />
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-green-400">Your referral link will be created automatically!</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Small section for entering someone else's referral code */}
-                <div className="mt-6 pt-4 border-t border-green-500/20">
-                  <div className="space-y-3">
-                    <div className="text-center">
-                      <p className="text-sm text-green-200">Or have someone else's referral code?</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter referral code"
-                        value={referralCode}
-                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                        className="bg-black/20 border-green-500/30 text-white placeholder-green-300 focus:border-green-400 text-sm"
-                        data-testid="input-referral-code-main"
-                      />
-                    </div>
-                    {referralCode && (
-                      <p className="text-xs text-center text-green-400">
-                        ✓ Referral code applied: {referralCode}
-                      </p>
-                    )}
-                  </div>
+                <div className="flex space-x-2 flex-shrink-0">
+                  <Button
+                    onClick={copyReferralLink}
+                    size="sm"
+                    variant="outline"
+                    className="bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30"
+                    data-testid="button-copy-referral-link"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={shareReferralLink}
+                    size="sm"
+                    variant="outline"
+                    className="bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30"
+                    data-testid="button-share-referral-link"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
