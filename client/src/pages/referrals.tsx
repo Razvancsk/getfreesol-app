@@ -247,52 +247,54 @@ export default function Referrals() {
             </div>
 
             {/* Referral Code & Link */}
-            <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
                   <Globe className="w-5 h-5" />
                   Your Referral Information
                   <Badge variant={referralCode.isActive ? "default" : "secondary"}>
                     {referralCode.isActive ? "Active" : "Inactive"}
                   </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                </h3>
+              </div>
+              <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Referral Link</Label>
+                  <Label className="text-purple-200">Referral Link</Label>
                   <div className="flex space-x-2">
                     <Input 
                       value={getReferralLink(referralCode.code)} 
                       readOnly
                       data-testid="input-referral-link"
+                      className="bg-purple-900/30 border-purple-500/30 text-white"
                     />
                     <Button 
                       variant="outline" 
                       size="icon"
                       onClick={() => copyToClipboard(getReferralLink(referralCode.code), "Referral link")}
                       data-testid="button-copy-link"
+                      className="border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
 
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Recent Transactions */}
-            <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
-              <CardHeader>
-                <CardTitle>Recent Referral Transactions</CardTitle>
-                <CardDescription>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white">Recent Referral Transactions</h3>
+                <p className="text-purple-200 text-sm mt-2">
                   Track your recent referral earnings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </p>
+              </div>
+              <div>
                 {isLoadingTransactions ? (
-                  <div className="text-center py-4">Loading transactions...</div>
+                  <div className="text-center py-4 text-purple-200">Loading transactions...</div>
                 ) : transactions.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-purple-200">
                     <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>No referral transactions yet</p>
                     <p className="text-sm">Share your referral link to start earning!</p>
@@ -300,33 +302,34 @@ export default function Referrals() {
                 ) : (
                   <div className="space-y-4">
                     {transactions.map((tx: ReferralTransaction, index: number) => (
-                      <div key={tx.id} className="border rounded-lg p-4 space-y-2">
+                      <div key={tx.id} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
-                            <p className="font-mono text-sm">
+                            <p className="font-mono text-sm text-white">
                               {tx.referredWalletAddress.slice(0, 8)}...{tx.referredWalletAddress.slice(-8)}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-purple-300">
                               {new Date(tx.paidAt).toLocaleString()}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-green-600">
+                            <p className="font-semibold text-green-400">
                               +{parseFloat(tx.referralFeeAmount).toFixed(6)} SOL
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-purple-300">
                               From {parseFloat(tx.originalFeeAmount).toFixed(6)} SOL fee
                             </p>
                           </div>
                         </div>
-                        <Separator />
-                        <div className="flex justify-between text-xs text-muted-foreground">
+                        <Separator className="bg-purple-500/30" />
+                        <div className="flex justify-between text-xs text-purple-300">
                           <span>Transaction: {tx.transactionSignature.slice(0, 12)}...</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(`https://solscan.io/tx/${tx.transactionSignature}`, "_blank")}
                             data-testid={`button-view-transaction-${index}`}
+                            className="text-purple-300 hover:text-white hover:bg-purple-700/30"
                           >
                             View on Solscan
                           </Button>
@@ -335,8 +338,8 @@ export default function Referrals() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </>
         )}
         </div>
