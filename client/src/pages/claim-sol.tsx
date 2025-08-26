@@ -152,15 +152,25 @@ export default function SolRefund() {
 
   // Update userReferralCode when data changes - with auto-creation
   useEffect(() => {
-    if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
-        userReferrals.success && 'referralCodes' in userReferrals && 
-        Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length > 0) {
-      setUserReferralCode(userReferrals.referralCodes[0].code);
-    } else if (isConnected && publicKey && userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
-               userReferrals.success && 'referralCodes' in userReferrals && 
-               Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length === 0) {
-      // User has no referral code, automatically create one
-      createReferralMutation.mutate(publicKey.toString());
+    console.log('Referral data received:', userReferrals);
+    console.log('Is connected:', isConnected, 'Public key:', publicKey?.toString());
+    
+    if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && userReferrals.success) {
+      // Check if referralCodes exists and has data
+      if ('referralCodes' in userReferrals && Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length > 0) {
+        console.log('Setting referral code:', userReferrals.referralCodes[0].code);
+        setUserReferralCode(userReferrals.referralCodes[0].code);
+      } 
+      // Check if it's a single referralCode object (different API response format)
+      else if ('referralCode' in userReferrals && userReferrals.referralCode && typeof userReferrals.referralCode === 'object' && 'code' in userReferrals.referralCode) {
+        console.log('Setting referral code from single object:', userReferrals.referralCode.code);
+        setUserReferralCode(userReferrals.referralCode.code);
+      }
+      // No referral code found - create one automatically
+      else if (isConnected && publicKey && !createReferralMutation.isPending) {
+        console.log('No referral code found, creating one automatically...');
+        createReferralMutation.mutate(publicKey.toString());
+      }
     }
   }, [userReferrals, isConnected, publicKey]);
 
