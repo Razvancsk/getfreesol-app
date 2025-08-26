@@ -382,8 +382,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Generate unique referral code
-      const code = nanoid(8).toUpperCase();
+      // Generate unique referral code - truly random mix of letters and numbers
+      const code = nanoid(16); // 16 characters, mixed case letters and numbers
       
       const referralCode = await storage.createReferralCode({
         code,
