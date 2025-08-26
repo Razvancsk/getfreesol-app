@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, ExternalLink, Users, DollarSign, TrendingUp, Globe } from "lucide-react";
+import { Copy, ExternalLink, Users, DollarSign, TrendingUp, Globe, Wallet } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -160,7 +160,7 @@ export default function Referrals() {
             <div className="grid md:grid-cols-3 gap-4">
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-blue-400 font-bold">1</span>
+                  <Wallet className="w-6 h-6 text-blue-400" />
                 </div>
                 <h3 className="font-semibold text-white">Connect Wallet</h3>
                 <p className="text-sm text-purple-200">
@@ -169,7 +169,7 @@ export default function Referrals() {
               </div>
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-green-400 font-bold">2</span>
+                  <Users className="w-6 h-6 text-green-400" />
                 </div>
                 <h3 className="font-semibold text-white">Share & Promote</h3>
                 <p className="text-sm text-purple-200">
@@ -178,7 +178,7 @@ export default function Referrals() {
               </div>
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-purple-400 font-bold">3</span>
+                  <DollarSign className="w-6 h-6 text-purple-400" />
                 </div>
                 <h3 className="font-semibold text-white">Earn 20%</h3>
                 <p className="text-sm text-purple-200">
@@ -275,15 +275,6 @@ export default function Referrals() {
                       className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30 hover:text-white"
                     >
                       <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => window.open(getReferralLink(referralCode.code), "_blank")}
-                      data-testid="button-open-link"
-                      className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30 hover:text-white"
-                    >
-                      <ExternalLink className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
