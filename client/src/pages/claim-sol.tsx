@@ -152,32 +152,27 @@ export default function SolRefund() {
 
   // Update userReferralCode when data changes - with auto-creation
   useEffect(() => {
-    console.log('Referral data received:', userReferrals);
-    console.log('Is connected:', isConnected, 'Public key:', publicKey?.toString());
-    
     if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && userReferrals.success) {
       // Check if referralCodes exists and has data
       if ('referralCodes' in userReferrals && Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length > 0) {
-        console.log('Setting referral code:', userReferrals.referralCodes[0].code);
-        setUserReferralCode(userReferrals.referralCodes[0].code);
+        setUserReferralCode(String(userReferrals.referralCodes[0].code));
       } 
       // Check if it's a single referralCode object (different API response format)
       else if ('referralCode' in userReferrals && userReferrals.referralCode && typeof userReferrals.referralCode === 'object' && 'code' in userReferrals.referralCode) {
-        console.log('Setting referral code from single object:', userReferrals.referralCode.code);
-        setUserReferralCode(userReferrals.referralCode.code);
+        setUserReferralCode(String(userReferrals.referralCode.code));
       }
-      // No referral code found - create one automatically
-      else if (isConnected && publicKey && !createReferralMutation.isPending) {
-        console.log('No referral code found, creating one automatically...');
-        createReferralMutation.mutate(publicKey.toString());
-      }
+    }
+    // No referral code found - create one automatically for THIS specific wallet
+    else if (isConnected && publicKey && userReferrals && !createReferralMutation.isPending && 
+             ((userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && !userReferrals.success) || !userReferrals)) {
+      createReferralMutation.mutate(publicKey.toString());
     }
   }, [userReferrals, isConnected, publicKey]);
 
   // Copy referral link function
   const copyReferralLink = async () => {
     if (userReferralCode) {
-      const referralLink = `${window.location.origin}?ref=${userReferralCode}`;
+      const referralLink = `${window.location.origin}/${userReferralCode}`;
       await navigator.clipboard.writeText(referralLink);
       toast({
         title: "Link Copied!",
@@ -189,7 +184,7 @@ export default function SolRefund() {
   // Share referral link function
   const shareReferralLink = async () => {
     if (userReferralCode && navigator.share) {
-      const referralLink = `${window.location.origin}?ref=${userReferralCode}`;
+      const referralLink = `${window.location.origin}/${userReferralCode}`;
       try {
         await navigator.share({
           title: 'Get Your SOL Back!',
@@ -203,10 +198,17 @@ export default function SolRefund() {
       copyReferralLink(); // Fallback to copy
     }
   };
-  // Check for referral code in URL on mount
+  // Check for referral code in URL on mount - support both formats
   useEffect(() => {
+    // Check for query parameter format: ?ref=CODE
     const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
+    const queryRefCode = urlParams.get('ref');
+    
+    // Check for path format: /CODE
+    const pathRefCode = window.location.pathname.replace('/', '');
+    
+    const refCode = queryRefCode || (pathRefCode && pathRefCode !== '' ? pathRefCode : null);
+    
     if (refCode) {
       setReferralCode(refCode);
       toast({
@@ -1699,7 +1701,7 @@ export default function SolRefund() {
                       <div className="flex items-center justify-between space-x-3">
                         <div className="flex-1 min-w-0">
                           <div className="text-blue-400 font-mono text-sm lg:text-base break-all">
-                            {window.location.origin}?ref={userReferralCode}
+                            {window.location.origin}/{userReferralCode}
                           </div>
                         </div>
                         <div className="flex space-x-2 flex-shrink-0">
