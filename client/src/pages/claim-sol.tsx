@@ -124,42 +124,20 @@ export default function SolRefund() {
     retry: false,
   });
 
-  // Mutation to create referral code
-  const createReferralMutation = useMutation({
-    mutationFn: async () => {
-      if (!publicKey) throw new Error('Wallet not connected');
-      return apiRequest('/api/referrals/create', {
-        method: 'POST',
-        body: {
-          walletAddress: publicKey.toString(),
-          websiteUrl: window.location.origin
-        }
-      });
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        setUserReferralCode(data.referralCode.code);
-        // Refetch user referrals to update the cache
-        queryClient.invalidateQueries({ queryKey: ['/api/referrals/wallet', publicKey?.toString()] });
-      }
-    },
-  });
 
-  // Update userReferralCode when data changes or create new one if needed
+  // Update userReferralCode when data changes - simplified
   useEffect(() => {
-    if (publicKey && userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals) {
-      if (userReferrals.success && 'referralCodes' in userReferrals && 
-          Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length > 0) {
-        // User has existing referral code
-        setUserReferralCode(userReferrals.referralCodes[0].code);
-      } else {
-        // User doesn't have a referral code, create one automatically
-        if (!createReferralMutation.isPending) {
-          createReferralMutation.mutate();
-        }
-      }
+    if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
+        userReferrals.success && 'referralCodes' in userReferrals && 
+        Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length > 0) {
+      setUserReferralCode(userReferrals.referralCodes[0].code);
+    } else if (isConnected && userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
+               userReferrals.success && 'referralCodes' in userReferrals && 
+               Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length === 0) {
+      // User has no referral code, show link to create one
+      setUserReferralCode(null);
     }
-  }, [userReferrals, publicKey]);
+  }, [userReferrals, isConnected]);
 
   // Copy referral link function
   const copyReferralLink = async () => {
@@ -1719,12 +1697,18 @@ export default function SolRefund() {
                   </>
                 ) : (
                   <div className="bg-black/20 rounded-lg p-4 border border-green-500/30 text-center">
-                    <div className="flex items-center justify-center space-x-2">
-                      <RefreshCw className="h-4 w-4 animate-spin text-green-400" />
-                      <p className="text-green-400">Creating your referral link...</p>
+                    <div className="space-y-3">
+                      <p className="text-green-400">Get your referral link and start earning!</p>
+                      <Link 
+                        to="/referrals"
+                        className="inline-flex items-center px-4 py-2 bg-green-600/20 border border-green-500/30 text-green-400 hover:bg-green-600/30 rounded-lg transition-colors"
+                        data-testid="button-get-referral-link"
+                      >
+                        Create Referral Link →
+                      </Link>
                     </div>
                   </div>
-                )}
+                )
                 
                 {/* Small section for entering someone else's referral code */}
                 <div className="mt-6 pt-4 border-t border-green-500/20">
