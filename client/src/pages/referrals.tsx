@@ -223,7 +223,7 @@ export default function Referrals() {
           /* Referral Dashboard */
           <>
             {/* Stats Cards */}
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -243,23 +243,6 @@ export default function Referrals() {
                     <div>
                       <p className="text-2xl font-bold">{stats.totalReferrals}</p>
                       <p className="text-sm text-muted-foreground">Total Referrals</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="w-8 h-8 text-purple-500" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {stats.totalReferrals > 0 
-                          ? (parseFloat(stats.totalEarnings) / stats.totalReferrals).toFixed(6)
-                          : "0.000000"
-                        } SOL
-                      </p>
-                      <p className="text-sm text-muted-foreground">Avg per Referral</p>
                     </div>
                   </div>
                 </CardContent>
