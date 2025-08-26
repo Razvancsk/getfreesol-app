@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2 } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1754527057994.png';
@@ -64,6 +64,7 @@ export default function SolRefund() {
   const [manualJitoFee, setManualJitoFee] = useState<string>('0'); // Manual Jito fee amount
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
+  const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -93,9 +94,74 @@ export default function SolRefund() {
       });
     }
   }, [tokenList]);
+  
   const { toast } = useToast();
   const [location] = useLocation();
 
+  // Wallet adapter state - Move this early so publicKey is available
+  const { 
+    publicKey, 
+    connected: isConnected, 
+    connecting, 
+    connect, 
+    disconnect, 
+    signTransaction, 
+    signAllTransactions,
+    walletName,
+    connection,
+    isMagicEdenAvailable,
+    connectMagicEden,
+    isBitgetAvailable,
+    connectBitget,
+    setVisible,
+    select
+  } = useWalletAdapter();
+
+  // Query to get user's referral code
+  const { data: userReferrals } = useQuery({
+    queryKey: ['/api/referrals/wallet', publicKey?.toString()],
+    enabled: !!publicKey,
+    retry: false,
+  });
+
+  // Update userReferralCode when data changes
+  useEffect(() => {
+    if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && 
+        userReferrals.success && 'referralCodes' in userReferrals && 
+        Array.isArray(userReferrals.referralCodes) && userReferrals.referralCodes.length > 0) {
+      setUserReferralCode(userReferrals.referralCodes[0].code);
+    }
+  }, [userReferrals]);
+
+  // Copy referral link function
+  const copyReferralLink = async () => {
+    if (userReferralCode) {
+      const referralLink = `${window.location.origin}?ref=${userReferralCode}`;
+      await navigator.clipboard.writeText(referralLink);
+      toast({
+        title: "Link Copied!",
+        description: "Your referral link has been copied to clipboard.",
+      });
+    }
+  };
+
+  // Share referral link function
+  const shareReferralLink = async () => {
+    if (userReferralCode && navigator.share) {
+      const referralLink = `${window.location.origin}?ref=${userReferralCode}`;
+      try {
+        await navigator.share({
+          title: 'Get Your SOL Back!',
+          text: 'Recover SOL from empty token accounts and help me earn rewards!',
+          url: referralLink,
+        });
+      } catch (err) {
+        copyReferralLink(); // Fallback to copy
+      }
+    } else {
+      copyReferralLink(); // Fallback to copy
+    }
+  };
   // Check for referral code in URL on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -333,26 +399,6 @@ export default function SolRefund() {
     setSwapForm({ fromValue: '', toValue: '' });
     setRealSwapData(null);
   };
-  
-  // Wallet adapter state
-  const { 
-    publicKey, 
-    connected: isConnected, 
-    connecting, 
-    connect, 
-    disconnect, 
-    signTransaction, 
-    signAllTransactions,
-    walletName,
-    connection,
-    isMagicEdenAvailable,
-    connectMagicEden,
-    isBitgetAvailable,
-    connectBitget,
-
-    setVisible,
-    select
-  } = useWalletAdapter();
 
   // Auto-quote for swap when input changes
   useEffect(() => {
@@ -1599,8 +1645,53 @@ export default function SolRefund() {
             </p>
           </div>
 
-          {/* Referral Code Section - Show when connected */}
-          {isConnected && activeTab === 'reclaim' && (
+          {/* User's Referral Link - Show prominently when connected and has referral code */}
+          {isConnected && userReferralCode && (
+            <div className="bg-gradient-to-br from-green-800/20 to-green-900/30 backdrop-blur-sm rounded-xl border border-green-500/20 p-6 max-w-2xl mx-auto">
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-white mb-2">Share with your friends and receive 20% of the included donation!</h3>
+                </div>
+                <div className="bg-black/20 rounded-lg p-4 border border-green-500/30">
+                  <div className="flex items-center justify-between space-x-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-blue-400 font-mono text-sm lg:text-base break-all">
+                        {window.location.origin}?ref={userReferralCode}
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 flex-shrink-0">
+                      <Button
+                        onClick={copyReferralLink}
+                        size="sm"
+                        variant="outline"
+                        className="bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30"
+                        data-testid="button-copy-referral-link"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={shareReferralLink}
+                        size="sm"
+                        variant="outline"
+                        className="bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30"
+                        data-testid="button-share-referral-link"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-green-300">
+                    Your referral code: <span className="font-bold text-green-400">{userReferralCode}</span> • Earn 3% of every transaction!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Referral Code Input Section - Show when connected but no own referral code */}
+          {isConnected && !userReferralCode && activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 max-w-md mx-auto">
               <div className="space-y-4">
                 <div className="text-center">
@@ -1630,7 +1721,7 @@ export default function SolRefund() {
                     className="text-sm text-purple-400 hover:text-purple-300 underline transition-colors"
                     data-testid="link-get-referral-code"
                   >
-                    Don't have a code? Get your own referral link →
+                    Get your own referral link and start earning →
                   </Link>
                 </div>
               </div>
