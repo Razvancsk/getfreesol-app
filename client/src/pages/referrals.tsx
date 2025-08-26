@@ -179,7 +179,7 @@ export default function Referrals() {
                 </div>
                 <h3 className="font-semibold">Earn 20%</h3>
                 <p className="text-sm text-muted-foreground">
-                  Get 20% of fees (3% of total transaction) instantly
+                  Earn 20% of platform fee from every referral transaction
                 </p>
               </div>
             </div>
