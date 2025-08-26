@@ -17,6 +17,8 @@ import {
   type InsertReferralCode,
   type ReferralTransaction,
   type InsertReferralTransaction,
+  type WalletReferralAssociation,
+  type InsertWalletReferralAssociation,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -25,7 +27,8 @@ import {
   tokenBurnRecords,
   nftBurnRecords,
   referralCodes,
-  referralTransactions
+  referralTransactions,
+  walletReferralAssociations
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or } from "drizzle-orm";
@@ -81,6 +84,11 @@ export interface IStorage {
   createReferralTransaction(transaction: InsertReferralTransaction): Promise<ReferralTransaction>;
   getReferralTransactionsByCode(codeId: string, limit?: number): Promise<ReferralTransaction[]>;
   getReferralStats(codeId: string): Promise<{ totalEarnings: string; totalReferrals: number }>;
+  
+  // Wallet Referral Associations (permanent - first referral wins forever)
+  createWalletReferralAssociation(association: InsertWalletReferralAssociation): Promise<WalletReferralAssociation>;
+  getWalletReferralAssociation(walletAddress: string): Promise<WalletReferralAssociation | undefined>;
+  hasWalletReferralAssociation(walletAddress: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -375,6 +383,37 @@ export class DatabaseStorage implements IStorage {
       totalEarnings: earnings?.totalEarnings || "0",
       totalReferrals: parseInt(earnings?.totalReferrals || "0")
     };
+  }
+
+  // Wallet Referral Associations (permanent - first referral wins forever)
+  async createWalletReferralAssociation(association: InsertWalletReferralAssociation): Promise<WalletReferralAssociation> {
+    try {
+      const [walletAssociation] = await db
+        .insert(walletReferralAssociations)
+        .values(association)
+        .returning();
+      return walletAssociation;
+    } catch (error) {
+      // If unique constraint fails, return existing association (first referral wins)
+      const existing = await this.getWalletReferralAssociation(association.walletAddress);
+      if (existing) {
+        return existing;
+      }
+      throw error;
+    }
+  }
+
+  async getWalletReferralAssociation(walletAddress: string): Promise<WalletReferralAssociation | undefined> {
+    const [association] = await db
+      .select()
+      .from(walletReferralAssociations)
+      .where(eq(walletReferralAssociations.walletAddress, walletAddress));
+    return association || undefined;
+  }
+
+  async hasWalletReferralAssociation(walletAddress: string): Promise<boolean> {
+    const association = await this.getWalletReferralAssociation(walletAddress);
+    return !!association;
   }
 }
 

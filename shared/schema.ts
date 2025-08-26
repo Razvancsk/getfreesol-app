@@ -107,6 +107,15 @@ export const referralTransactions = pgTable("referral_transactions", {
   paidAt: timestamp("paid_at").notNull().defaultNow(),
 });
 
+// Permanent wallet-to-referrer associations (first referral wins forever)
+export const walletReferralAssociations = pgTable("wallet_referral_associations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull().unique(), // One association per wallet
+  referralCodeId: varchar("referral_code_id").notNull(), // Which referrer gets credit
+  referralCode: text("referral_code").notNull(), // Store the actual code for easy lookup
+  associatedAt: timestamp("associated_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -156,6 +165,11 @@ export const insertReferralTransactionSchema = createInsertSchema(referralTransa
   paidAt: true,
 });
 
+export const insertWalletReferralAssociationSchema = createInsertSchema(walletReferralAssociations).omit({
+  id: true,
+  associatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -174,3 +188,5 @@ export type ReferralCode = typeof referralCodes.$inferSelect;
 export type InsertReferralCode = z.infer<typeof insertReferralCodeSchema>;
 export type ReferralTransaction = typeof referralTransactions.$inferSelect;
 export type InsertReferralTransaction = z.infer<typeof insertReferralTransactionSchema>;
+export type WalletReferralAssociation = typeof walletReferralAssociations.$inferSelect;
+export type InsertWalletReferralAssociation = z.infer<typeof insertWalletReferralAssociationSchema>;

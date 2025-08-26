@@ -138,10 +138,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { walletAddress, selectedAccounts, donationPercentage, referralCode } = req.body;
       
-      // Check if referral code exists
+      // Check for permanent wallet association first (first referral wins forever)
       let referralCodeData = null;
-      if (referralCode) {
-        referralCodeData = await storage.getReferralCodeByCode(referralCode);
+      let permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      
+      if (permanentAssociation) {
+        // Use permanent association
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+        console.log('Using permanent referral association:', permanentAssociation.referralCode);
+      } else if (referralCode) {
+        // No permanent association exists, check if referral code is valid
+        const tempReferralData = await storage.getReferralCodeByCode(referralCode);
+        if (tempReferralData) {
+          // Create permanent association (first referral wins)
+          try {
+            permanentAssociation = await storage.createWalletReferralAssociation({
+              walletAddress,
+              referralCodeId: tempReferralData.id,
+              referralCode: referralCode
+            });
+            referralCodeData = tempReferralData;
+            console.log('Created new permanent referral association:', referralCode, 'for wallet:', walletAddress);
+          } catch (error) {
+            console.log('Failed to create association (might already exist):', error);
+            // Try to get existing association
+            permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+            if (permanentAssociation) {
+              referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+            }
+          }
+        }
       }
 
       // Get empty accounts from storage
@@ -302,10 +328,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Record referral transaction if applicable
-      if (referralCodeUsed && referralFeeAmount > 0) {
-        const referralCodeData = await storage.getReferralCodeByCode(referralCodeUsed);
+      // Record referral transaction using permanent association (first referral wins forever)
+      const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      if (permanentAssociation && referralFeeAmount > 0) {
+        const referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
         if (referralCodeData) {
+          console.log('Recording referral transaction for permanent association:', permanentAssociation.referralCode);
           await storage.createReferralTransaction({
             referralCodeId: referralCodeData.id,
             transactionSignature: signature,
@@ -530,6 +558,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get all referral codes error:", error);
       res.status(500).json({ error: "Failed to get referral codes" });
+    }
+  });
+
+  // Check wallet's permanent referral association (for debugging)
+  app.get("/api/referrals/association/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const association = await storage.getWalletReferralAssociation(walletAddress);
+      
+      if (!association) {
+        return res.json({
+          success: false,
+          message: "No permanent referral association found for this wallet"
+        });
+      }
+
+      const referralCodeData = await storage.getReferralCodeByCode(association.referralCode);
+      
+      res.json({
+        success: true,
+        association: {
+          ...association,
+          referrerWallet: referralCodeData?.walletAddress
+        }
+      });
+      
+    } catch (error) {
+      console.error("Get wallet association error:", error);
+      res.status(500).json({ error: "Failed to get wallet association" });
     }
   });
 
