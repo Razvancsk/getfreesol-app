@@ -149,7 +149,7 @@ export default function Referrals() {
         </div>
 
         {/* How It Works */}
-        <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
@@ -191,7 +191,7 @@ export default function Referrals() {
 
         {!hasReferralCode ? (
           /* Create Referral Code */
-          <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20">
+          <Card>
             <CardHeader>
               <CardTitle>Create Your Referral Code</CardTitle>
               <CardDescription>
