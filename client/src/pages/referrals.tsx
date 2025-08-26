@@ -180,7 +180,7 @@ export default function Referrals() {
                 <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
                   <DollarSign className="w-6 h-6 text-purple-400" />
                 </div>
-                <h3 className="font-semibold text-white">Earn 20%</h3>
+                <h3 className="font-semibold text-white">Earn</h3>
                 <p className="text-sm text-purple-200">
                   Earn 20% of platform fee from every referral transaction
                 </p>
