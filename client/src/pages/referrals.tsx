@@ -272,7 +272,7 @@ export default function Referrals() {
                       size="icon"
                       onClick={() => copyToClipboard(getReferralLink(referralCode.code), "Referral link")}
                       data-testid="button-copy-link"
-                      className="border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
+                      className="bg-purple-600 border-purple-500 text-white hover:bg-purple-700 hover:border-purple-400"
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
