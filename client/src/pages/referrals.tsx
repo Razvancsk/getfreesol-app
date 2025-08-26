@@ -279,26 +279,6 @@ export default function Referrals() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Referral Code</Label>
-                  <div className="flex space-x-2">
-                    <Input 
-                      value={referralCode.code} 
-                      readOnly 
-                      className="font-mono"
-                      data-testid="input-referral-code"
-                    />
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => copyToClipboard(referralCode.code, "Referral code")}
-                      data-testid="button-copy-code"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label>Referral Link</Label>
                   <div className="flex space-x-2">
                     <Input 
@@ -325,26 +305,6 @@ export default function Referrals() {
                   </div>
                 </div>
 
-                {referralCode.websiteUrl && (
-                  <div className="space-y-2">
-                    <Label>Associated Website</Label>
-                    <div className="flex space-x-2">
-                      <Input 
-                        value={referralCode.websiteUrl} 
-                        readOnly
-                        data-testid="text-website-url"
-                      />
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => window.open(referralCode.websiteUrl, "_blank")}
-                        data-testid="button-open-website"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
