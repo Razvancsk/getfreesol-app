@@ -173,6 +173,9 @@ export default function Referrals() {
                 </div>
                 <h3 className="font-semibold text-white">Share & Promote</h3>
                 <p className="text-sm text-purple-200">
+                  Share with your friends
+                </p>
+                <p className="text-sm text-purple-200">
                   Share your link on your website, social media, or directly
                 </p>
               </div>
