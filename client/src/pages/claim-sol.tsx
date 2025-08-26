@@ -1599,9 +1599,43 @@ export default function SolRefund() {
             </p>
           </div>
 
-
-
-
+          {/* Referral Code Section - Show when connected */}
+          {isConnected && activeTab === 'reclaim' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 max-w-md mx-auto">
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-white mb-2">Referral Code</h3>
+                  <p className="text-sm text-purple-200">Have a referral code? Enter it to share fees with your referrer!</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="referral-code" className="text-white">Referral Code (Optional)</Label>
+                  <Input
+                    id="referral-code"
+                    type="text"
+                    placeholder="Enter referral code (e.g., ABC123)"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    className="bg-black/20 border-purple-500/30 text-white placeholder-purple-300 focus:border-purple-400"
+                    data-testid="input-referral-code-main"
+                  />
+                  {referralCode && (
+                    <p className="text-xs text-green-400">
+                      ✓ Referral code applied: {referralCode}
+                    </p>
+                  )}
+                </div>
+                <div className="text-center">
+                  <Link 
+                    to="/referrals"
+                    className="text-sm text-purple-400 hover:text-purple-300 underline transition-colors"
+                    data-testid="link-get-referral-code"
+                  >
+                    Don't have a code? Get your own referral link →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Scan Wallet Section - Hidden on swap tab */}
           {isConnected && activeTab !== 'swap' && (
