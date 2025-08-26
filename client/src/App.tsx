@@ -16,6 +16,8 @@ function Router() {
       <Route path="/claim-sol" component={ClaimSol} />
       <Route path="/swap" component={SwapPage} />
       <Route path="/referrals" component={Referrals} />
+      {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
+      <Route path="/:referralCode" component={ClaimSol} />
       <Route component={NotFound} />
     </Switch>
   );
