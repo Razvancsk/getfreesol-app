@@ -149,45 +149,45 @@ export default function Referrals() {
         </div>
 
         {/* How It Works */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
               How It Works
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </h3>
+          </div>
+          <div className="space-y-4">
             <div className="grid md:grid-cols-3 gap-4">
               <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-blue-600 dark:text-blue-400 font-bold">1</span>
+                <div className="w-12 h-12 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-blue-400 font-bold">1</span>
                 </div>
-                <h3 className="font-semibold">Connect Wallet</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-white">Connect Wallet</h3>
+                <p className="text-sm text-purple-200">
                   Connect your wallet to automatically generate your referral link
                 </p>
               </div>
               <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-green-600 dark:text-green-400 font-bold">2</span>
+                <div className="w-12 h-12 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-green-400 font-bold">2</span>
                 </div>
-                <h3 className="font-semibold">Share & Promote</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-white">Share & Promote</h3>
+                <p className="text-sm text-purple-200">
                   Share your link on your website, social media, or directly
                 </p>
               </div>
               <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mx-auto">
-                  <span className="text-purple-600 dark:text-purple-400 font-bold">3</span>
+                <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-purple-400 font-bold">3</span>
                 </div>
-                <h3 className="font-semibold">Earn 20%</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-white">Earn 20%</h3>
+                <p className="text-sm text-purple-200">
                   Earn 20% of platform fee from every referral transaction
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {!hasReferralCode ? (
           /* Create Referral Code */
