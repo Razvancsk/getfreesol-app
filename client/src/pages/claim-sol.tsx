@@ -56,7 +56,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('referrals');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
   const [showSlippageModal, setShowSlippageModal] = useState<boolean>(false);
@@ -1598,17 +1598,6 @@ export default function SolRefund() {
               <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
                 <div className="flex items-center space-x-2">
                   <Button
-                    onClick={() => setActiveTab('referrals')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'referrals' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Referrals
-                  </Button>
-                  <Button
                     onClick={() => setActiveTab('reclaim')}
                     className={`px-4 py-2 text-sm font-medium rounded transition-all ${
                       activeTab === 'reclaim' 
@@ -1622,6 +1611,17 @@ export default function SolRefund() {
                       <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                     </svg>
                     Reclaim SOL
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('referrals')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'referrals' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Referrals
                   </Button>
                   <Button
                     onClick={() => setActiveTab('burnTokens')}
