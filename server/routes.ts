@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -211,18 +211,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = new Transaction();
       
       // Add close account instructions for each empty account
-      const { TOKEN_PROGRAM_ID, Token } = await import('@solana/spl-token');
+      const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = Token.createCloseAccountInstruction(
-          TOKEN_PROGRAM_ID,
-          accountPublicKey,
-          ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey,  // owner
-          []
+        const closeInstruction = createCloseAccountInstruction(
+          accountPublicKey, // account to close
+          ownerPublicKey,   // destination (receives SOL)
+          ownerPublicKey    // owner
         );
         
         transaction.add(closeInstruction);

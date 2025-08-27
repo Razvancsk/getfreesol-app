@@ -457,18 +457,6 @@ export default function SolRefund() {
     setRealSwapData(null);
   };
 
-  // Auto-quote for swap when input changes
-  useEffect(() => {
-    if (activeTab === 'swap') {
-      const timer = setTimeout(() => {
-        if (swapInputAmount && parseFloat(swapInputAmount) > 0) {
-          getSwapQuote();
-        }
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [swapInputAmount, swapInputToken, swapOutputToken, activeTab]);
 
   // Clear scan result when wallet disconnects
   useEffect(() => {
@@ -619,9 +607,9 @@ export default function SolRefund() {
     }
   };
 
-  // Initialize Jupiter Terminal when swap tab is active
-  useEffect(() => {
-    if (activeTab === 'swap' && typeof window !== 'undefined') {
+  // Jupiter Terminal initialization removed - swap functionality moved to separate page
+  /*useEffect(() => {
+    if (false && typeof window !== 'undefined') {
       setIsJupiterLoading(true);
       let retryCount = 0;
       const maxRetries = 10;
@@ -942,7 +930,7 @@ export default function SolRefund() {
       // Start initialization with delay
       setTimeout(initTerminal, 1000);
     }
-  }, [activeTab, isConnected, publicKey]);
+  }, [activeTab, isConnected, publicKey]); */
 
   // Scan wallet for empty token accounts
   const scanMutation = useMutation({
@@ -1687,10 +1675,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-              {activeTab === 'swap' 
-                ? 'Swap with no fees!' 
-                : 'Get your SOL back!'
-              }
+              Get your SOL back!
             </p>
           </div>
 
@@ -1721,8 +1706,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Scan Wallet Section - Hidden on swap tab */}
-          {isConnected && activeTab !== 'swap' && (
+          {/* Scan Wallet Section */}
+          {isConnected && (
             <div className="text-center">
               <Button 
                 onClick={() => {
@@ -2104,8 +2089,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Swap Interface */}
-          {activeTab === 'swap' && (
+          {/* Swap Interface - Moved to separate /swap page */}
+          {false && (
             <div className="space-y-6">
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-6">
                 
