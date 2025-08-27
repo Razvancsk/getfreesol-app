@@ -56,7 +56,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap'>('referrals');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('referrals');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
   const [showSlippageModal, setShowSlippageModal] = useState<boolean>(false);
@@ -1645,17 +1645,6 @@ export default function SolRefund() {
                   >
                     <Flame className="h-4 w-4 mr-2" />
                     Burn Tokens
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('swap')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'swap' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Swap
                   </Button>
                 </div>
               </div>
