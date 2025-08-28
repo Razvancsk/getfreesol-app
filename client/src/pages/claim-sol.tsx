@@ -1463,7 +1463,7 @@ export default function SolRefund() {
 
 
           {/* Scan Wallet Section */}
-          {isConnected && (
+          {isConnected && activeTab !== 'referrals' && (
             <div className="text-center">
               <Button 
                 onClick={() => {
