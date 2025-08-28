@@ -756,6 +756,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : 'https://api.mainnet-beta.solana.com';
       
       console.log(`Creating bulk token burn transaction for ${tokenMints.length} tokens...`);
+      console.log('Referral code data:', referralCodeData);
+      console.log('Permanent association:', permanentAssociation);
       
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
@@ -835,6 +837,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralFeeAmount = totalFeeAmount * 0.35;
         // 65% of fee stays with platform (9.75% of total)
         platformFeeAmount = totalFeeAmount * 0.65;
+        console.log(`Referral fee calculation: totalFee=${totalFeeAmount}, referralFee=${referralFeeAmount}, platformFee=${platformFeeAmount}`);
+      } else {
+        console.log('No referral code data - using full platform fee');
       }
       
       const netAmount = totalSolRecovered - totalFeeAmount;
@@ -857,14 +862,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add referral fee transfer if applicable
       if (referralFeeAmount > 0 && referralCodeData) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        const lamportsAmount = Math.round(referralFeeAmount * 1e9);
+        
+        console.log(`Adding referral fee transfer: ${referralFeeAmount} SOL (${lamportsAmount} lamports) to ${referralCodeData.walletAddress}`);
         
         const referralFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
           toPubkey: referralWalletPublicKey,
-          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+          lamports: lamportsAmount, // Convert SOL to lamports
         });
         
         transaction.add(referralFeeTransferInstruction);
+        console.log('✅ Referral fee transfer instruction added to transaction');
+      } else {
+        console.log(`❌ Referral fee transfer skipped: referralFeeAmount=${referralFeeAmount}, referralCodeData=${!!referralCodeData}`);
       }
       
       // Get recent blockhash
