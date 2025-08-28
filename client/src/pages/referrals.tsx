@@ -140,21 +140,11 @@ export default function Referrals() {
   const stats = referralCode?.stats || { totalEarnings: "0", totalReferrals: 0 };
   const transactions = transactionsData?.transactions || [];
   
-  // Force cache clear and page reload to fix stubborn cache issue
-  useEffect(() => {
-    const forceRefresh = () => {
-      queryClient.clear();
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    };
-    
-    // Only run once when component mounts and wallet is connected
-    if (connected && publicKey && !localStorage.getItem('cache-cleared-' + publicKey.toString())) {
-      localStorage.setItem('cache-cleared-' + publicKey.toString(), 'true');
-      forceRefresh();
-    }
-  }, [connected, publicKey, queryClient]);
+  // Debug: Log what's happening
+  console.log('Referral Data:', referralData);
+  console.log('Referral Code ID:', referralData?.referralCode?.id);
+  console.log('Transactions Data:', transactionsData);
+  console.log('Transactions Array:', transactions);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
