@@ -54,13 +54,14 @@ export default function Referrals() {
 
   // Fetch referral transactions
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["/api/referrals/transactions", referralData?.referralCode?.id, Date.now()],
+    queryKey: ["/api/referrals/transactions", referralData?.referralCode?.id],
     queryFn: () => fetch(`/api/referrals/${referralData?.referralCode?.id}/transactions?_t=${Date.now()}`).then(res => res.json()),
     enabled: !!referralData?.referralCode?.id,
     retry: false,
-    refetchInterval: 3000, // Refresh every 3 seconds
+    refetchInterval: 2000, // Refresh every 2 seconds
     staleTime: 0, // Always consider data stale
-    cacheTime: 0, // Don't cache at all
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   // Create referral code mutation
@@ -138,6 +139,22 @@ export default function Referrals() {
   const hasReferralCode = !!referralCode;
   const stats = referralCode?.stats || { totalEarnings: "0", totalReferrals: 0 };
   const transactions = transactionsData?.transactions || [];
+  
+  // Force cache clear and page reload to fix stubborn cache issue
+  useEffect(() => {
+    const forceRefresh = () => {
+      queryClient.clear();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    };
+    
+    // Only run once when component mounts and wallet is connected
+    if (connected && publicKey && !localStorage.getItem('cache-cleared-' + publicKey.toString())) {
+      localStorage.setItem('cache-cleared-' + publicKey.toString(), 'true');
+      forceRefresh();
+    }
+  }, [connected, publicKey, queryClient]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
