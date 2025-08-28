@@ -343,13 +343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             platformFeeAmount: platformFeeAmount.toString()
           });
           
-          // Update referral earnings
-          const stats = await storage.getReferralStats(referralCodeData.id);
-          await storage.updateReferralEarnings(
-            referralCodeData.id,
-            stats.totalEarnings,
-            stats.totalReferrals
-          );
+          // Note: referral earnings are calculated dynamically in getReferralStats()
+          // No need to manually update - the stats come from summing all referral transactions
         }
       }
 
