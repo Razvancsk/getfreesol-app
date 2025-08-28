@@ -122,8 +122,8 @@ export default function SolRefund() {
 
   // Query to get referral transactions
   const { data: referralTransactions } = useQuery({
-    queryKey: ['/api/referrals', userReferrals?.referralCode?.id, 'transactions'],
-    enabled: !!userReferrals?.referralCode?.id,
+    queryKey: ['/api/referrals', (userReferrals as any)?.referralCode?.id, 'transactions'],
+    enabled: !!(userReferrals as any)?.referralCode?.id,
     retry: false,
   });
 
@@ -1762,7 +1762,7 @@ export default function SolRefund() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
-                    {userReferrals?.referralCode?.stats?.totalEarnings || '0'} SOL
+                    {(userReferrals as any)?.referralCode?.stats?.totalEarnings || '0'} SOL
                   </div>
                   <div className="text-sm text-purple-200 uppercase tracking-wider">
                     Total Earnings
@@ -1771,7 +1771,7 @@ export default function SolRefund() {
                 
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
-                    {userReferrals?.referralCode?.stats?.totalReferrals || '0'}
+                    {(userReferrals as any)?.referralCode?.stats?.totalReferrals || '0'}
                   </div>
                   <div className="text-sm text-purple-200 uppercase tracking-wider">
                     Total Referrals
@@ -1828,8 +1828,8 @@ export default function SolRefund() {
                   </p>
                 </div>
                 <div className="space-y-4">
-                  {referralTransactions?.transactions && referralTransactions.transactions.length > 0 ? (
-                    referralTransactions.transactions.map((tx: any, index: number) => (
+                  {(referralTransactions as any)?.transactions && (referralTransactions as any).transactions.length > 0 ? (
+                    (referralTransactions as any).transactions.map((tx: any, index: number) => (
                       <div key={index} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
@@ -1842,10 +1842,10 @@ export default function SolRefund() {
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-green-400">
-                              +{tx.referralEarnings || '0'} SOL
+                              +{tx.referralFeeAmount || '0'} SOL
                             </p>
                             <p className="text-xs text-purple-300">
-                              From {tx.platformFee || '0'} SOL fee
+                              From {tx.originalFeeAmount || '0'} SOL fee
                             </p>
                           </div>
                         </div>

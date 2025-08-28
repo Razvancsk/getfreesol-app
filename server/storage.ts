@@ -374,7 +374,7 @@ export class DatabaseStorage implements IStorage {
     const [earnings] = await db
       .select({ 
         totalEarnings: sql<string>`sum(${referralTransactions.referralFeeAmount})`,
-        totalReferrals: sql<string>`count(*)` 
+        totalReferrals: sql<string>`count(distinct ${referralTransactions.referredWalletAddress})` 
       })
       .from(referralTransactions)
       .where(eq(referralTransactions.referralCodeId, codeId));
