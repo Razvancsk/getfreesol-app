@@ -191,10 +191,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let platformFeeAmount = totalFeeAmount;
       
       if (referralCodeData) {
-        // 33% of fee goes to referral (5% of total)
-        referralFeeAmount = totalFeeAmount * 0.33;
-        // 67% of fee stays with platform (10% of total)
-        platformFeeAmount = totalFeeAmount * 0.67;
+        // 35% of fee goes to referral (5.25% of total)
+        referralFeeAmount = totalFeeAmount * 0.35;
+        // 65% of fee stays with platform (9.75% of total)
+        platformFeeAmount = totalFeeAmount * 0.65;
       }
       
       const netAmount = totalSolReclaimed - totalFeeAmount;
