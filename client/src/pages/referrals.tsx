@@ -42,45 +42,59 @@ export default function Referrals() {
   const queryClient = useQueryClient();
   const [websiteUrl, setWebsiteUrl] = useState("");
 
-  // Fetch referral code for connected wallet
+  // Clear all data when wallet changes
+  useEffect(() => {
+    queryClient.removeQueries();
+    queryClient.clear();
+  }, [publicKey, queryClient]);
+
+  // Fetch referral code for connected wallet - force fresh data per wallet
   const { data: referralData, isLoading: isLoadingReferral } = useQuery({
-    queryKey: ["/api/referrals/wallet", publicKey?.toString()],
-    queryFn: () => fetch(`/api/referrals/wallet/${publicKey?.toString()}`).then(res => res.json()),
+    queryKey: ["wallet-referral", publicKey?.toString(), Date.now()],
+    queryFn: async () => {
+      if (!publicKey) return null;
+      console.log("Fetching referral code for wallet:", publicKey.toString());
+      const response = await fetch(`/api/referrals/wallet/${publicKey.toString()}?_t=${Date.now()}`);
+      const data = await response.json();
+      console.log("Referral data for wallet:", publicKey.toString(), data);
+      return data;
+    },
     enabled: !!publicKey,
     retry: false,
-    refetchInterval: 5000, // Refresh every 5 seconds
-    staleTime: 0, // Always consider data stale
+    refetchInterval: 3000,
+    staleTime: 0,
+    cacheTime: 0,
   });
 
-  // Fetch referral transactions - force it to work with explicit logging
+  // Fetch referral transactions - wallet specific with no caching
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["referral-transactions", referralData?.referralCode?.id, publicKey?.toString()],
+    queryKey: ["transactions", referralData?.referralCode?.id, publicKey?.toString(), Date.now()],
     queryFn: async () => {
       const referralCodeId = referralData?.referralCode?.id;
-      if (!referralCodeId) {
-        console.log("No referral code ID available");
+      const walletAddr = publicKey?.toString();
+      
+      if (!referralCodeId || !walletAddr) {
+        console.log("Missing referral code ID or wallet:", { referralCodeId, walletAddr });
         return { transactions: [] };
       }
       
-      console.log("Fetching referral transactions for ID:", referralCodeId);
-      const url = `/api/referrals/${referralCodeId}/transactions`;
-      console.log("API URL:", url);
+      console.log("Fetching transactions for wallet:", walletAddr, "referral ID:", referralCodeId);
+      const url = `/api/referrals/${referralCodeId}/transactions?wallet=${walletAddr}&_t=${Date.now()}`;
       
       const response = await fetch(url);
       if (!response.ok) {
-        console.error("Failed to fetch referral transactions:", response.status, response.statusText);
-        throw new Error('Failed to fetch referral transactions');
+        console.error("Failed to fetch transactions:", response.status);
+        return { transactions: [] };
       }
       
       const data = await response.json();
-      console.log("Referral transactions response:", data);
+      console.log("Fresh transaction data for wallet", walletAddr, ":", data);
       return data;
     },
     enabled: !!referralData?.referralCode?.id && !!publicKey,
     refetchInterval: 2000,
     staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    cacheTime: 0,
   });
 
   // Create referral code mutation
