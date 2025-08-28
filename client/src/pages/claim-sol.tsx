@@ -113,10 +113,17 @@ export default function SolRefund() {
     select
   } = useWalletAdapter();
 
-  // Query to get user's referral code
+  // Query to get user's referral code and stats
   const { data: userReferrals } = useQuery({
     queryKey: ['/api/referrals/wallet', publicKey?.toString()],
     enabled: !!publicKey,
+    retry: false,
+  });
+
+  // Query to get referral transactions
+  const { data: referralTransactions } = useQuery({
+    queryKey: ['/api/referrals', userReferrals?.referralCode?.id, 'transactions'],
+    enabled: !!userReferrals?.referralCode?.id,
     retry: false,
   });
 
@@ -1755,7 +1762,7 @@ export default function SolRefund() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
-                    0.000245 SOL
+                    {userReferrals?.referralCode?.stats?.totalEarnings || '0'} SOL
                   </div>
                   <div className="text-sm text-purple-200 uppercase tracking-wider">
                     Total Earnings
@@ -1764,7 +1771,7 @@ export default function SolRefund() {
                 
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
-                    3
+                    {userReferrals?.referralCode?.stats?.totalReferrals || '0'}
                   </div>
                   <div className="text-sm text-purple-200 uppercase tracking-wider">
                     Total Referrals
@@ -1821,44 +1828,47 @@ export default function SolRefund() {
                   </p>
                 </div>
                 <div className="space-y-4">
-                  {[
-                    { id: '9QQk8474...1qfyuawC', date: '26/08/2025, 22:46:59', transaction: '3ewHUSPJzccsE...', earnings: '+0.000061 SOL', fee: '0.000306 SOL' },
-                    { id: '9QQk8474...1qfyuawC', date: '26/08/2025, 22:43:12', transaction: '2QGpefeNWsb...', earnings: '+0.000122 SOL', fee: '0.000612 SOL' },
-                    { id: '9QQk8474...1qfyuawC', date: '26/08/2025, 22:39:21', transaction: '2bmL6yfg1KL...', earnings: '+0.000061 SOL', fee: '0.000306 SOL' }
-                  ].map((tx, index) => (
-                    <div key={index} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <p className="font-mono text-sm text-white">
-                            {tx.id}
-                          </p>
-                          <p className="text-xs text-purple-300">
-                            {tx.date}
-                          </p>
+                  {referralTransactions?.transactions && referralTransactions.transactions.length > 0 ? (
+                    referralTransactions.transactions.map((tx: any, index: number) => (
+                      <div key={index} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <p className="font-mono text-sm text-white">
+                              {tx.referredWallet?.slice(0, 8)}...{tx.referredWallet?.slice(-8)}
+                            </p>
+                            <p className="text-xs text-purple-300">
+                              {new Date(tx.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-green-400">
+                              +{tx.referralEarnings || '0'} SOL
+                            </p>
+                            <p className="text-xs text-purple-300">
+                              From {tx.platformFee || '0'} SOL fee
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-green-400">
-                            {tx.earnings}
-                          </p>
-                          <p className="text-xs text-purple-300">
-                            From {tx.fee} fee
-                          </p>
+                        <Separator className="bg-purple-500/30" />
+                        <div className="flex justify-between text-xs text-purple-300">
+                          <span>Transaction: {tx.transactionSignature?.slice(0, 12)}...</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`https://solscan.io/tx/${tx.transactionSignature}`, "_blank")}
+                            className="text-purple-300 hover:text-white hover:bg-purple-700/30"
+                          >
+                            View on Solscan
+                          </Button>
                         </div>
                       </div>
-                      <Separator className="bg-purple-500/30" />
-                      <div className="flex justify-between text-xs text-purple-300">
-                        <span>Transaction: {tx.transaction}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(`https://solscan.io/tx/${tx.transaction}`, "_blank")}
-                          className="text-purple-300 hover:text-white hover:bg-purple-700/30"
-                        >
-                          View on Solscan
-                        </Button>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-purple-300">No referral transactions yet</p>
+                      <p className="text-sm text-purple-400 mt-2">Share your referral link to start earning!</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
