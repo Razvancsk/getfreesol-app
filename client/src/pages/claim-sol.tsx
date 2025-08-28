@@ -1457,7 +1457,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-Get your SOL back!
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -1725,7 +1725,7 @@ Get your SOL back!
                       </div>
                       <h3 className="font-semibold text-white">Earn</h3>
                       <p className="text-sm text-purple-200">
-                        Earn 20% of platform fee from every referral transaction
+                        Earn 35% of platform fee from every referral transaction
                       </p>
                     </div>
                   </div>
