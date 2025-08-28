@@ -1457,7 +1457,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-'Get your SOL back!'
+Get your SOL back!
             </p>
           </div>
 
