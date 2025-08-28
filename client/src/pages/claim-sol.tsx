@@ -56,7 +56,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap'>('referrals');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
   const [showSlippageModal, setShowSlippageModal] = useState<boolean>(false);
@@ -140,6 +140,10 @@ export default function SolRefund() {
         setUserReferralCode(data.referralCode.code);
         // Refetch user referrals to update the cache
         queryClient.invalidateQueries({ queryKey: ['/api/referrals/wallet', publicKey?.toString()] });
+        toast({
+          title: "Referral Code Created!",
+          description: `Your referral code: ${data.referralCode.code}`,
+        });
       }
     },
     onError: (error) => {
@@ -453,6 +457,18 @@ export default function SolRefund() {
     setRealSwapData(null);
   };
 
+  // Auto-quote for swap when input changes
+  useEffect(() => {
+    if (activeTab === 'swap') {
+      const timer = setTimeout(() => {
+        if (swapInputAmount && parseFloat(swapInputAmount) > 0) {
+          getSwapQuote();
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [swapInputAmount, swapInputToken, swapOutputToken, activeTab]);
 
   // Clear scan result when wallet disconnects
   useEffect(() => {
@@ -603,9 +619,9 @@ export default function SolRefund() {
     }
   };
 
-  // Jupiter Terminal initialization removed - swap functionality moved to separate page
-  /*useEffect(() => {
-    if (false && typeof window !== 'undefined') {
+  // Initialize Jupiter Terminal when swap tab is active
+  useEffect(() => {
+    if (activeTab === 'swap' && typeof window !== 'undefined') {
       setIsJupiterLoading(true);
       let retryCount = 0;
       const maxRetries = 10;
@@ -926,7 +942,7 @@ export default function SolRefund() {
       // Start initialization with delay
       setTimeout(initTerminal, 1000);
     }
-  }, [activeTab, isConnected, publicKey]); */
+  }, [activeTab, isConnected, publicKey]);
 
   // Scan wallet for empty token accounts
   const scanMutation = useMutation({
@@ -1594,6 +1610,17 @@ export default function SolRefund() {
               <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
                 <div className="flex items-center space-x-2">
                   <Button
+                    onClick={() => setActiveTab('referrals')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'referrals' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Referrals
+                  </Button>
+                  <Button
                     onClick={() => setActiveTab('reclaim')}
                     className={`px-4 py-2 text-sm font-medium rounded transition-all ${
                       activeTab === 'reclaim' 
@@ -1620,15 +1647,15 @@ export default function SolRefund() {
                     Burn Tokens
                   </Button>
                   <Button
-                    onClick={() => setActiveTab('referrals')}
+                    onClick={() => setActiveTab('swap')}
                     className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'referrals' 
+                      activeTab === 'swap' 
                         ? 'bg-purple-600 text-white' 
                         : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                     }`}
                   >
-                    <Users className="h-4 w-4 mr-2" />
-                    Referrals
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Swap
                   </Button>
                 </div>
               </div>
@@ -1671,13 +1698,42 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-              Get your SOL back!
+              {activeTab === 'swap' 
+                ? 'Swap with no fees!' 
+                : 'Get your SOL back!'
+              }
             </p>
           </div>
 
+          {/* User's Referral Link - Simple display */}
+          {isConnected && activeTab === 'reclaim' && userReferralCode && (
+            <div className="flex items-center justify-center space-x-3 max-w-2xl mx-auto">
+              <div className="text-blue-400 font-mono text-sm lg:text-base break-all">
+                {window.location.origin}/{userReferralCode}
+              </div>
+              <Button
+                onClick={copyReferralLink}
+                size="sm"
+                variant="outline"
+                className="bg-green-600/20 border-green-500/30 text-green-400 hover:bg-green-600/30 flex-shrink-0"
+                data-testid="button-copy-referral-link"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={shareReferralLink}
+                size="sm"
+                variant="outline"
+                className="bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30 flex-shrink-0"
+                data-testid="button-share-referral-link"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
-          {/* Scan Wallet Section */}
-          {isConnected && (
+          {/* Scan Wallet Section - Hidden on swap tab */}
+          {isConnected && activeTab !== 'swap' && (
             <div className="text-center">
               <Button 
                 onClick={() => {
@@ -2059,8 +2115,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Swap Interface - Moved to separate /swap page */}
-          {false && (
+          {/* Swap Interface */}
+          {activeTab === 'swap' && (
             <div className="space-y-6">
               <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-6">
                 

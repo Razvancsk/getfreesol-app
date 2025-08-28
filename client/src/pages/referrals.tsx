@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,41 +42,20 @@ export default function Referrals() {
   const queryClient = useQueryClient();
   const [websiteUrl, setWebsiteUrl] = useState("");
 
-  // Clear all data when wallet changes
-  useEffect(() => {
-    queryClient.removeQueries();
-    queryClient.clear();
-  }, [publicKey, queryClient]);
-
-  // Fetch referral code for connected wallet - force fresh data per wallet
+  // Fetch referral code for connected wallet
   const { data: referralData, isLoading: isLoadingReferral } = useQuery({
-    queryKey: ["wallet-referral", publicKey?.toString(), Date.now()],
-    queryFn: async () => {
-      if (!publicKey) return null;
-      const response = await fetch(`/api/referrals/wallet/${publicKey.toString()}?_t=${Date.now()}`);
-      return response.json();
-    },
-    enabled: !!publicKey && connected,
+    queryKey: ["/api/referrals/wallet", publicKey?.toString()],
+    queryFn: () => fetch(`/api/referrals/wallet/${publicKey?.toString()}`).then(res => res.json()),
+    enabled: !!publicKey,
     retry: false,
-    refetchInterval: 3000,
-    staleTime: 0,
   });
 
-  // Fetch referral transactions - wallet specific with no caching
+  // Fetch referral transactions
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["transactions", referralData?.referralCode?.id, publicKey?.toString(), Date.now()],
-    queryFn: async () => {
-      const referralCodeId = referralData?.referralCode?.id;
-      if (!referralCodeId) return { transactions: [] };
-      
-      const response = await fetch(`/api/referrals/${referralCodeId}/transactions?_t=${Date.now()}`);
-      if (!response.ok) return { transactions: [] };
-      
-      return response.json();
-    },
-    enabled: !!referralData?.referralCode?.id && !!publicKey && connected,
-    refetchInterval: 2000,
-    staleTime: 0,
+    queryKey: ["/api/referrals/transactions", referralData?.referralCode?.id],
+    queryFn: () => fetch(`/api/referrals/${referralData?.referralCode?.id}/transactions`).then(res => res.json()),
+    enabled: !!referralData?.referralCode?.id,
+    retry: false,
   });
 
   // Create referral code mutation
@@ -153,7 +132,7 @@ export default function Referrals() {
   const referralCode = referralData?.referralCode;
   const hasReferralCode = !!referralCode;
   const stats = referralCode?.stats || { totalEarnings: "0", totalReferrals: 0 };
-  const transactions = (transactionsData?.transactions || []).slice(0, 10); // Show only last 10 transactions
+  const transactions = transactionsData?.transactions || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -330,16 +309,7 @@ export default function Referrals() {
                               {tx.referredWalletAddress.slice(0, 8)}...{tx.referredWalletAddress.slice(-8)}
                             </p>
                             <p className="text-xs text-purple-300">
-                              {(() => {
-                                const date = new Date(tx.paidAt);
-                                const year = date.getUTCFullYear();
-                                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-                                const day = String(date.getUTCDate()).padStart(2, '0');
-                                const hours = String(date.getUTCHours()).padStart(2, '0');
-                                const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-                                const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-                                return `${month}/${day}/${year}, ${hours}:${minutes}:${seconds} UTC`;
-                              })()}
+                              {new Date(tx.paidAt).toLocaleString()}
                             </p>
                           </div>
                           <div className="text-right">
