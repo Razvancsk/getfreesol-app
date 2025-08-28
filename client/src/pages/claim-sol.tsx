@@ -142,10 +142,6 @@ export default function SolRefund() {
         setUserReferralCode(data.referralCode.code);
         // Refetch user referrals to update the cache
         queryClient.invalidateQueries({ queryKey: ['/api/referrals/wallet', publicKey?.toString()] });
-        toast({
-          title: "Referral Code Created!",
-          description: `Your referral code: ${data.referralCode.code}`,
-        });
       }
     },
     onError: (error) => {
