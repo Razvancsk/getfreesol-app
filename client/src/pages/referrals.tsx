@@ -52,18 +52,35 @@ export default function Referrals() {
     staleTime: 0, // Always consider data stale
   });
 
-  // Fetch referral transactions - copy the working pattern from transaction ledger
+  // Fetch referral transactions - force it to work with explicit logging
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["referral-transactions", referralData?.referralCode?.id],
+    queryKey: ["referral-transactions", referralData?.referralCode?.id, publicKey?.toString()],
     queryFn: async () => {
-      if (!referralData?.referralCode?.id) return { transactions: [] };
-      const response = await fetch(`/api/referrals/${referralData.referralCode.id}/transactions`);
-      if (!response.ok) throw new Error('Failed to fetch referral transactions');
-      return response.json();
+      const referralCodeId = referralData?.referralCode?.id;
+      if (!referralCodeId) {
+        console.log("No referral code ID available");
+        return { transactions: [] };
+      }
+      
+      console.log("Fetching referral transactions for ID:", referralCodeId);
+      const url = `/api/referrals/${referralCodeId}/transactions`;
+      console.log("API URL:", url);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error("Failed to fetch referral transactions:", response.status, response.statusText);
+        throw new Error('Failed to fetch referral transactions');
+      }
+      
+      const data = await response.json();
+      console.log("Referral transactions response:", data);
+      return data;
     },
-    enabled: !!referralData?.referralCode?.id,
-    refetchInterval: 2000, // Refresh every 2 seconds like the working ledger
+    enabled: !!referralData?.referralCode?.id && !!publicKey,
+    refetchInterval: 2000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   // Create referral code mutation
