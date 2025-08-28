@@ -54,12 +54,13 @@ export default function Referrals() {
 
   // Fetch referral transactions
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["/api/referrals/transactions", referralData?.referralCode?.id],
-    queryFn: () => fetch(`/api/referrals/${referralData?.referralCode?.id}/transactions`).then(res => res.json()),
+    queryKey: ["/api/referrals/transactions", referralData?.referralCode?.id, Date.now()],
+    queryFn: () => fetch(`/api/referrals/${referralData?.referralCode?.id}/transactions?_t=${Date.now()}`).then(res => res.json()),
     enabled: !!referralData?.referralCode?.id,
     retry: false,
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 3000, // Refresh every 3 seconds
     staleTime: 0, // Always consider data stale
+    cacheTime: 0, // Don't cache at all
   });
 
   // Create referral code mutation
