@@ -137,6 +137,17 @@ export default function Referrals() {
   const hasReferralCode = !!referralCode;
   const stats = referralCode?.stats || { totalEarnings: "0", totalReferrals: 0 };
   const transactions = transactionsData?.transactions || [];
+  
+  // Debug: Log the raw transaction data
+  if (transactions.length > 0) {
+    console.log("First transaction raw data:", transactions[0]);
+    console.log("First transaction paidAt:", transactions[0].paidAt);
+    console.log("Formatted date:", new Date(transactions[0].paidAt).toLocaleString('en-US', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZone: 'UTC'
+    }));
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
