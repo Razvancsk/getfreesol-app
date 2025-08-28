@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,30 +52,38 @@ export default function Referrals() {
     staleTime: 0, // Always consider data stale
   });
 
-  // Fetch referral transactions - force it to work
-  const referralCodeId = referralData?.referralCode?.id;
-  const { data: transactionsData, isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery({
-    queryKey: ["referral-transactions", referralCodeId, Date.now()],
-    queryFn: async () => {
-      if (!referralCodeId) return { transactions: [] };
+  // Directly fetch transactions with useEffect - bypass React Query issues
+  const [transactionsData, setTransactionsData] = useState({ transactions: [] });
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  
+  const fetchTransactions = useCallback(async () => {
+    const referralCodeId = referralData?.referralCode?.id;
+    if (!referralCodeId) return;
+    
+    setIsLoadingTransactions(true);
+    try {
       const response = await fetch(`/api/referrals/${referralCodeId}/transactions?_t=${Date.now()}`);
       const data = await response.json();
-      return data;
-    },
-    enabled: !!referralCodeId,
-    retry: false,
-    refetchInterval: 3000,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-  });
-
-  // Force refetch when referral code becomes available
-  useEffect(() => {
-    if (referralCodeId && refetchTransactions) {
-      refetchTransactions();
+      setTransactionsData(data);
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    } finally {
+      setIsLoadingTransactions(false);
     }
-  }, [referralCodeId, refetchTransactions]);
+  }, [referralData?.referralCode?.id]);
+  
+  // Fetch immediately when referral code is available
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+  
+  // Auto-refresh every 3 seconds
+  useEffect(() => {
+    if (!referralData?.referralCode?.id) return;
+    
+    const interval = setInterval(fetchTransactions, 3000);
+    return () => clearInterval(interval);
+  }, [fetchTransactions, referralData?.referralCode?.id]);
 
   // Create referral code mutation
   const createReferralMutation = useMutation({
