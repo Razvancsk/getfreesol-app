@@ -48,6 +48,8 @@ export default function Referrals() {
     queryFn: () => fetch(`/api/referrals/wallet/${publicKey?.toString()}`).then(res => res.json()),
     enabled: !!publicKey,
     retry: false,
+    refetchInterval: 5000, // Refresh every 5 seconds
+    staleTime: 0, // Always consider data stale
   });
 
   // Fetch referral transactions
@@ -56,6 +58,8 @@ export default function Referrals() {
     queryFn: () => fetch(`/api/referrals/${referralData?.referralCode?.id}/transactions`).then(res => res.json()),
     enabled: !!referralData?.referralCode?.id,
     retry: false,
+    refetchInterval: 5000, // Refresh every 5 seconds
+    staleTime: 0, // Always consider data stale
   });
 
   // Create referral code mutation
