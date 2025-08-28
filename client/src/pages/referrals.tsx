@@ -313,7 +313,15 @@ export default function Referrals() {
                               {tx.referredWalletAddress.slice(0, 8)}...{tx.referredWalletAddress.slice(-8)}
                             </p>
                             <p className="text-xs text-purple-300">
-                              {new Date(tx.paidAt).toLocaleString()}
+                              {new Date(tx.paidAt).toLocaleString('en-US', {
+                                year: 'numeric',
+                                month: '2-digit', 
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                timeZone: 'UTC'
+                              })} UTC
                             </p>
                           </div>
                           <div className="text-right">
