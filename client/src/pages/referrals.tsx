@@ -52,17 +52,30 @@ export default function Referrals() {
     staleTime: 0, // Always consider data stale
   });
 
-  // Fetch referral transactions
-  const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["/api/referrals/transactions", referralData?.referralCode?.id],
-    queryFn: () => fetch(`/api/referrals/${referralData?.referralCode?.id}/transactions?_t=${Date.now()}`).then(res => res.json()),
-    enabled: !!referralData?.referralCode?.id,
+  // Fetch referral transactions - force it to work
+  const referralCodeId = referralData?.referralCode?.id;
+  const { data: transactionsData, isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery({
+    queryKey: ["referral-transactions", referralCodeId, Date.now()],
+    queryFn: async () => {
+      if (!referralCodeId) return { transactions: [] };
+      const response = await fetch(`/api/referrals/${referralCodeId}/transactions?_t=${Date.now()}`);
+      const data = await response.json();
+      return data;
+    },
+    enabled: !!referralCodeId,
     retry: false,
-    refetchInterval: 2000, // Refresh every 2 seconds
-    staleTime: 0, // Always consider data stale
+    refetchInterval: 3000,
+    staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   });
+
+  // Force refetch when referral code becomes available
+  useEffect(() => {
+    if (referralCodeId && refetchTransactions) {
+      refetchTransactions();
+    }
+  }, [referralCodeId, refetchTransactions]);
 
   // Create referral code mutation
   const createReferralMutation = useMutation({
@@ -139,12 +152,6 @@ export default function Referrals() {
   const hasReferralCode = !!referralCode;
   const stats = referralCode?.stats || { totalEarnings: "0", totalReferrals: 0 };
   const transactions = transactionsData?.transactions || [];
-  
-  // Debug: Log what's happening
-  console.log('Referral Data:', referralData);
-  console.log('Referral Code ID:', referralData?.referralCode?.id);
-  console.log('Transactions Data:', transactionsData);
-  console.log('Transactions Array:', transactions);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
