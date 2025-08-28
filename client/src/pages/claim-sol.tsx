@@ -1457,7 +1457,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? 'Burn Unwanted Tokens.' : 'Get your SOL back!'}
             </p>
           </div>
 
