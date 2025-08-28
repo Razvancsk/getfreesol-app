@@ -211,16 +211,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = new Transaction();
       
       // Add close account instructions for each empty account
-      const { createCloseAccountInstruction } = await import('@solana/spl-token');
+      const { Token, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = createCloseAccountInstruction(
+        const closeInstruction = Token.createCloseAccountInstruction(
+          TOKEN_PROGRAM_ID,
           accountPublicKey, // account to close
           ownerPublicKey,   // destination (receives SOL)
-          ownerPublicKey    // owner
+          ownerPublicKey,   // owner
+          []                // multiSigners
         );
         
         transaction.add(closeInstruction);
