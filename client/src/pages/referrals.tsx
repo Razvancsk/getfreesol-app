@@ -53,17 +53,13 @@ export default function Referrals() {
     queryKey: ["wallet-referral", publicKey?.toString(), Date.now()],
     queryFn: async () => {
       if (!publicKey) return null;
-      console.log("Fetching referral code for wallet:", publicKey.toString());
       const response = await fetch(`/api/referrals/wallet/${publicKey.toString()}?_t=${Date.now()}`);
-      const data = await response.json();
-      console.log("Referral data for wallet:", publicKey.toString(), data);
-      return data;
+      return response.json();
     },
-    enabled: !!publicKey,
+    enabled: !!publicKey && connected,
     retry: false,
     refetchInterval: 3000,
     staleTime: 0,
-    cacheTime: 0,
   });
 
   // Fetch referral transactions - wallet specific with no caching
@@ -71,30 +67,16 @@ export default function Referrals() {
     queryKey: ["transactions", referralData?.referralCode?.id, publicKey?.toString(), Date.now()],
     queryFn: async () => {
       const referralCodeId = referralData?.referralCode?.id;
-      const walletAddr = publicKey?.toString();
+      if (!referralCodeId) return { transactions: [] };
       
-      if (!referralCodeId || !walletAddr) {
-        console.log("Missing referral code ID or wallet:", { referralCodeId, walletAddr });
-        return { transactions: [] };
-      }
+      const response = await fetch(`/api/referrals/${referralCodeId}/transactions?_t=${Date.now()}`);
+      if (!response.ok) return { transactions: [] };
       
-      console.log("Fetching transactions for wallet:", walletAddr, "referral ID:", referralCodeId);
-      const url = `/api/referrals/${referralCodeId}/transactions?wallet=${walletAddr}&_t=${Date.now()}`;
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        console.error("Failed to fetch transactions:", response.status);
-        return { transactions: [] };
-      }
-      
-      const data = await response.json();
-      console.log("Fresh transaction data for wallet", walletAddr, ":", data);
-      return data;
+      return response.json();
     },
-    enabled: !!referralData?.referralCode?.id && !!publicKey,
+    enabled: !!referralData?.referralCode?.id && !!publicKey && connected,
     refetchInterval: 2000,
     staleTime: 0,
-    cacheTime: 0,
   });
 
   // Create referral code mutation
