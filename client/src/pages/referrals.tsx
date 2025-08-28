@@ -137,17 +137,6 @@ export default function Referrals() {
   const hasReferralCode = !!referralCode;
   const stats = referralCode?.stats || { totalEarnings: "0", totalReferrals: 0 };
   const transactions = transactionsData?.transactions || [];
-  
-  // Debug: Log the raw transaction data
-  if (transactions.length > 0) {
-    console.log("First transaction raw data:", transactions[0]);
-    console.log("First transaction paidAt:", transactions[0].paidAt);
-    console.log("Formatted date:", new Date(transactions[0].paidAt).toLocaleString('en-US', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      timeZone: 'UTC'
-    }));
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -324,15 +313,16 @@ export default function Referrals() {
                               {tx.referredWalletAddress.slice(0, 8)}...{tx.referredWalletAddress.slice(-8)}
                             </p>
                             <p className="text-xs text-purple-300">
-                              {new Date(tx.paidAt).toLocaleString('en-US', {
-                                year: 'numeric',
-                                month: '2-digit', 
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit',
-                                timeZone: 'UTC'
-                              })} UTC
+                              {(() => {
+                                const date = new Date(tx.paidAt);
+                                const year = date.getUTCFullYear();
+                                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                                const day = String(date.getUTCDate()).padStart(2, '0');
+                                const hours = String(date.getUTCHours()).padStart(2, '0');
+                                const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+                                const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+                                return `${month}/${day}/${year}, ${hours}:${minutes}:${seconds} UTC`;
+                              })()}
                             </p>
                           </div>
                           <div className="text-right">
