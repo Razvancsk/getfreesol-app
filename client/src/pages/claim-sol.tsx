@@ -56,16 +56,11 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap'>('referrals');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('referrals');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
-  const [slippage, setSlippage] = useState<number>(3); // Default 3% slippage
-  const [showSlippageModal, setShowSlippageModal] = useState<boolean>(false);
-  const [jitoPriority, setJitoPriority] = useState<string>('Normal'); // Jito fee priority
-  const [manualJitoFee, setManualJitoFee] = useState<string>('0'); // Manual Jito fee amount
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
-  const [websiteUrl, setWebsiteUrl] = useState("");
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -232,243 +227,11 @@ export default function SolRefund() {
     }
   }, [toast]);
 
-  // Swap state
-  const [swapInputToken, setSwapInputToken] = useState({
-    address: 'So11111111111111111111111111111111111111112',
-    symbol: 'SOL',
-    name: 'Solana',
-    decimals: 9,
-    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png'
-  });
-  const [swapOutputToken, setSwapOutputToken] = useState({
-    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    decimals: 6,
-    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png'
-  });
-  const [swapInputAmount, setSwapInputAmount] = useState<string>('');
-  const [swapOutputAmount, setSwapOutputAmount] = useState<string>('');
-  const [swapQuote, setSwapQuote] = useState<any>(null);
-  const [isSwapLoading, setIsSwapLoading] = useState(false);
-  const [isSwapping, setIsSwapping] = useState(false);
 
-  // Custom swap interface state
-  const [swapForm, setSwapForm] = useState({
-    fromValue: '',
-    toValue: ''
-  });
-  const [realBalances, setRealBalances] = useState<any>(null);
-  const [realTokens, setRealTokens] = useState({
-    fromSymbol: 'USDC',
-    toSymbol: 'SOL'
-  });
-  const [realSwapData, setRealSwapData] = useState<any>(null);
-  const [showTokenSelector, setShowTokenSelector] = useState<string | null>(null);
-  const [tokenSearchQuery, setTokenSearchQuery] = useState('');
-  const [allTokens, setAllTokens] = useState<any[]>([]);
-  const [jupiterTokens, setJupiterTokens] = useState<any[]>([]);
 
-  const [isSearchingTokens, setIsSearchingTokens] = useState(false);
-  const [isJupiterLoading, setIsJupiterLoading] = useState(false);
-
-  // Function to get the correct trading pair address for DexScreener
-  const getTradingPairAddress = (tokenMint: string): string => {
-    // Map common tokens to their most liquid trading pairs on Solana
-    const tradingPairs: { [key: string]: string } = {
-      // SOL pairs
-      'So11111111111111111111111111111111111111112': 'So11111111111111111111111111111111111111112', // SOL itself
-      // USDC pairs - show USDC/SOL (most liquid USDC pair)
-      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': '58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2', // USDC/SOL pair
-      // USDT pairs
-      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'HWHvQhFmJB6gPtqJx3gjxHWnJsZFa5anEhNMC1RmYgcx', // USDT/SOL pair
-      // BONK pairs
-      'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': '8BnEgHoWFysVcuFFX7QztDmzuH8r5ZFvyP3sYwn1XTh6', // BONK/SOL pair
-      // WIF pairs
-      'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm': 'HWHvQhFmJB6gPtqJx3gjxHWnJsZFa5anEhNMC1RmYgcx', // WIF/SOL pair
-    };
-    
-    // Return the trading pair address if we have a mapping, otherwise use the token itself
-    return tradingPairs[tokenMint] || tokenMint;
-  };
-
-  // Popular tokens list with logos
-  const popularTokens = [
-    {
-      address: 'So11111111111111111111111111111111111111112',
-      symbol: 'SOL',
-      name: 'Solana',
-      decimals: 9,
-      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png'
-    },
-    {
-      address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png'
-    },
-    {
-      address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-      symbol: 'USDT',
-      name: 'Tether',
-      decimals: 6,
-      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.png'
-    },
-    {
-      address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
-      symbol: 'mSOL',
-      name: 'Marinade staked SOL',
-      decimals: 9,
-      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So/logo.png'
-    },
-    {
-      address: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
-      symbol: 'JUP',
-      name: 'Jupiter',
-      decimals: 6,
-      logoURI: 'https://static.jup.ag/jup/icon.png'
-    },
-    {
-      address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',
-      symbol: 'ETH',
-      name: 'Ethereum (Portal)',
-      decimals: 8,
-      logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs/logo.png'
-    }
-  ];
 
   const REFERRAL_ACCOUNT = 'EeGruK1u1DswLBKQ985ZHYvDkezDLKNFL9hMqMeSicji';
 
-  // Custom swap functions
-  const getJupiterQuote = async (amount: string) => {
-    if (!amount || parseFloat(amount) <= 0) return;
-    
-    try {
-      // Use Jupiter API to get real quotes
-      const quote = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=${swapInputToken.address}&outputMint=${swapOutputToken.address}&amount=${parseFloat(amount) * Math.pow(10, swapInputToken.decimals)}&slippageBps=${slippage * 100}`);
-      const quoteData = await quote.json();
-      
-      if (quoteData && quoteData.outAmount) {
-        const outputAmount = (quoteData.outAmount / Math.pow(10, swapOutputToken.decimals)).toFixed(6);
-        setSwapForm(prev => ({ ...prev, toValue: outputAmount }));
-        setRealSwapData({
-          exchangeRate: (parseFloat(outputAmount) / parseFloat(amount)).toFixed(6),
-          platformFee: '0',
-          routeLabel: quoteData.routePlan?.[0]?.swapInfo?.label || 'Best Route'
-        });
-      }
-    } catch (error) {
-      console.error('Error getting Jupiter quote:', error);
-    }
-  };
-
-  const reverseTokenPair = () => {
-    const tempToken = swapInputToken;
-    setSwapInputToken(swapOutputToken);
-    setSwapOutputToken(tempToken);
-    setRealTokens({
-      fromSymbol: swapOutputToken.symbol,
-      toSymbol: tempToken.symbol
-    });
-    setSwapForm({ fromValue: '', toValue: '' });
-  };
-
-  const executeCustomSwap = async () => {
-    if (!isConnected || !swapForm.fromValue) return;
-    
-    setIsSwapping(true);
-    try {
-      // Here you would integrate with Jupiter's swap execution
-      // For now, just show success message
-      toast({
-        title: "Swap Initiated",
-        description: `Swapping ${swapForm.fromValue} ${realTokens.fromSymbol} for ${swapForm.toValue} ${realTokens.toSymbol}`,
-      });
-    } catch (error) {
-      console.error('Swap failed:', error);
-      toast({
-        title: "Swap Failed",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSwapping(false);
-    }
-  };
-
-  // Fetch Jupiter token list
-  const fetchJupiterTokens = async () => {
-    try {
-      const response = await fetch('https://token.jup.ag/strict');
-      const tokens = await response.json();
-      setAllTokens(tokens);
-      return tokens;
-    } catch (error) {
-      console.error('Failed to fetch Jupiter tokens:', error);
-      return popularTokens; // Fallback to popular tokens
-    }
-  };
-
-  // Load tokens on component mount and preload Jupiter
-  useEffect(() => {
-    fetchJupiterTokens();
-    
-    // Preload Jupiter script for faster initialization
-    if (typeof window !== 'undefined' && !document.getElementById('jupiter-preload')) {
-      const preloadScript = document.createElement('link');
-      preloadScript.id = 'jupiter-preload';
-      preloadScript.rel = 'preload';
-      preloadScript.href = 'https://terminal.jup.ag/main-v2.js';
-      preloadScript.as = 'script';
-      document.head.appendChild(preloadScript);
-    }
-  }, []);
-
-  // Filter tokens based on search query
-  const filteredTokens = useMemo(() => {
-    const tokensToFilter = allTokens.length > 0 ? allTokens : popularTokens;
-    
-    if (!tokenSearchQuery.trim()) {
-      return tokensToFilter.slice(0, 20); // Show top 20 by default
-    }
-    
-    const query = tokenSearchQuery.toLowerCase();
-    return tokensToFilter
-      .filter(token => 
-        token.symbol.toLowerCase().includes(query) ||
-        token.name.toLowerCase().includes(query) ||
-        token.address.toLowerCase().includes(query)
-      )
-      .slice(0, 50); // Limit to 50 results
-  }, [allTokens, popularTokens, tokenSearchQuery]);
-
-  const selectToken = (token: any, position: 'from' | 'to') => {
-    if (position === 'from') {
-      setSwapInputToken(token);
-      setRealTokens(prev => ({ ...prev, fromSymbol: token.symbol }));
-    } else {
-      setSwapOutputToken(token);
-      setRealTokens(prev => ({ ...prev, toSymbol: token.symbol }));
-    }
-    setShowTokenSelector(null);
-    setTokenSearchQuery(''); // Clear search on selection
-    setSwapForm({ fromValue: '', toValue: '' });
-    setRealSwapData(null);
-  };
-
-  // Auto-quote for swap when input changes
-  useEffect(() => {
-    if (activeTab === 'swap') {
-      const timer = setTimeout(() => {
-        if (swapInputAmount && parseFloat(swapInputAmount) > 0) {
-          getSwapQuote();
-        }
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [swapInputAmount, swapInputToken, swapOutputToken, activeTab]);
 
   // Clear scan result when wallet disconnects
   useEffect(() => {
@@ -1646,17 +1409,6 @@ export default function SolRefund() {
                     <Flame className="h-4 w-4 mr-2" />
                     Burn Tokens
                   </Button>
-                  <Button
-                    onClick={() => setActiveTab('swap')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'swap' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    Swap
-                  </Button>
                 </div>
               </div>
             )}
@@ -1698,10 +1450,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-              {activeTab === 'swap' 
-                ? 'Swap with no fees!' 
-                : 'Get your SOL back!'
-              }
+'Get your SOL back!'
             </p>
           </div>
 
@@ -1732,8 +1481,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Scan Wallet Section - Hidden on swap tab */}
-          {isConnected && activeTab !== 'swap' && (
+          {/* Scan Wallet Section */}
+          {isConnected && (
             <div className="text-center">
               <Button 
                 onClick={() => {
@@ -2115,106 +1864,7 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Swap Interface */}
-          {activeTab === 'swap' && (
-            <div className="space-y-6">
-              <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-6">
-                
-                {/* Jupiter Terminal - Single container for all screen sizes */}
-                <div className="order-1 lg:order-2 w-fit mx-auto" style={{ width: '390px', height: '577px' }}>
-                  {isJupiterLoading && (
-                    <div className="flex items-center justify-center bg-purple-900/20 backdrop-blur-sm border border-purple-500/30 rounded-lg" style={{ width: '390px', height: '577px' }}>
-                      <div className="text-center space-y-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
-                        <p className="text-purple-300 text-sm">Loading Jupiter Terminal...</p>
-                      </div>
-                    </div>
-                  )}
-                  <div 
-                    id="jupiter-terminal" 
-                    style={{ 
-                      width: '390px', 
-                      height: '577px',
-                      display: isJupiterLoading ? 'none' : 'block'
-                    }}
-                  ></div>
-                </div>
 
-                {/* DexScreener Chart - Hidden on mobile, visible on desktop */}
-                <div className="hidden lg:block order-2 lg:order-1 bg-black rounded-xl border border-gray-700/50 overflow-hidden relative">
-                  {/* Loading overlay for chart transitions */}
-                  <div className="absolute inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-10 transition-opacity duration-200" 
-                       style={{ opacity: selectedTokenMint ? 0 : 1, pointerEvents: selectedTokenMint ? 'none' : 'auto' }}>
-                    <div className="text-center space-y-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mx-auto"></div>
-                      <p className="text-purple-300 text-xs">Loading chart...</p>
-                    </div>
-                  </div>
-                  
-                  <iframe
-                    key={`chart-${selectedTokenMint}-${Date.now()}`}
-                    src={`https://dexscreener.com/solana/${getTradingPairAddress(selectedTokenMint)}?embed=1&theme=dark&trades=1&info=0&controls=0&autorefresh=5&cache=${Date.now()}`}
-                    style={{
-                      width: '100%',
-                      height: '600px',
-                      border: 'none',
-                      backgroundColor: 'black'
-                    }}
-                    allow="clipboard-write"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                    loading="eager"
-                    onLoad={() => {
-                      // Hide loading overlay when chart loads
-                      const overlay = document.querySelector('.absolute.inset-0.bg-black\\/90');
-                      if (overlay) {
-                        (overlay as HTMLElement).style.opacity = '0';
-                        (overlay as HTMLElement).style.pointerEvents = 'none';
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Slippage Settings Modal */}
-          {showSlippageModal && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-white">Swap Settings</h2>
-                  <button
-                    onClick={() => setShowSlippageModal(false)}
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Slippage Tolerance */}
-                <div className="mb-8">
-                  <h3 className="text-white font-medium mb-4">Slippage Tolerance</h3>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {[1, 3, 5, 10].map((value) => (
-                      <button
-                        key={value}
-                        onClick={() => setSlippage(value)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          slippage === value
-                            ? 'bg-white text-black'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
-                        }`}
-                      >
-                        {value}%
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
           {activeTab === 'reclaim' && stats && (
