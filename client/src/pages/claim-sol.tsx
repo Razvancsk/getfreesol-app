@@ -868,7 +868,8 @@ export default function SolRefund() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           walletAddress: publicKey?.toString(),
-          tokenMints
+          tokenMints,
+          referralCode: referralCode || undefined
         })
       });
       
@@ -876,7 +877,7 @@ export default function SolRefund() {
         throw new Error('Failed to prepare bulk burn transaction');
       }
       
-      const { transaction, tokensProcessed, solRecovered, netAmount, feeAmount } = await response.json();
+      const { transaction, tokensProcessed, solRecovered, netAmount, feeAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
       
       // Sign and send transaction using the connected wallet
       console.log('🔐 About to sign bulk burn transaction with:', walletName || 'unknown wallet');
@@ -914,7 +915,10 @@ export default function SolRefund() {
           tokensProcessed,
           solRecovered,
           netAmount,
-          feeAmount
+          feeAmount,
+          referralCodeUsed: referralCodeUsed || null,
+          platformFeeAmount: platformFeeAmount || 0,
+          referralFeeAmount: referralFeeAmount || 0
         })
       });
       

@@ -704,10 +704,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk Burn Tokens API
   app.post("/api/tokens/bulk-burn", async (req, res) => {
     try {
-      const { walletAddress, tokenMints } = req.body;
+      const { walletAddress, tokenMints, referralCode } = req.body;
       
       if (!walletAddress || !tokenMints || !Array.isArray(tokenMints) || tokenMints.length === 0) {
         return res.status(400).json({ error: "Wallet address and token mints array are required" });
+      }
+
+      // Handle referral code logic (first referral wins forever)
+      let referralCodeData = null;
+      let permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      
+      if (permanentAssociation) {
+        // Use existing permanent association
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+        console.log('Using existing permanent referral association:', permanentAssociation.referralCode, 'for wallet:', walletAddress);
+      } else if (referralCode) {
+        // Try to find the temp referral code
+        const tempReferralData = await storage.getReferralCodeByCode(referralCode);
+        if (tempReferralData) {
+          // Create permanent association (first referral wins forever)
+          try {
+            permanentAssociation = await storage.createWalletReferralAssociation({
+              walletAddress,
+              referralCodeId: tempReferralData.id,
+              referralCode: referralCode
+            });
+            referralCodeData = tempReferralData;
+            console.log('Created new permanent referral association:', referralCode, 'for wallet:', walletAddress);
+          } catch (error) {
+            console.log('Failed to create association (might already exist):', error);
+            // Try to get existing association
+            permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+            if (permanentAssociation) {
+              referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+            }
+          }
+        }
       }
 
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
@@ -791,24 +823,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Calculate fee and net amount
+      // Calculate totals with referral fee splitting
       const totalSolRecovered = totalTokensProcessed * 0.00203928;
-      const feePercentage = 0.15; // 15% fee
-      const feeAmount = totalSolRecovered * feePercentage;
-      const netAmount = totalSolRecovered - feeAmount;
+      const totalFeeAmount = totalSolRecovered * 0.15; // 15% fee
+      
+      let referralFeeAmount = 0;
+      let platformFeeAmount = totalFeeAmount;
+      
+      if (referralCodeData) {
+        // 35% of fee goes to referral (5.25% of total)
+        referralFeeAmount = totalFeeAmount * 0.35;
+        // 65% of fee stays with platform (9.75% of total)
+        platformFeeAmount = totalFeeAmount * 0.65;
+      }
+      
+      const netAmount = totalSolRecovered - totalFeeAmount;
 
-      // Add service fee transfer if applicable
-      if (feeAmount > 0) {
-        const { SystemProgram } = await import('@solana/web3.js');
+      // Add service fee transfers
+      const { SystemProgram } = await import('@solana/web3.js');
+      
+      if (platformFeeAmount > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
-        const feeTransferInstruction = SystemProgram.transfer({
+        const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
           toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(feeAmount * 1e9), // Convert SOL to lamports
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
         });
         
-        transaction.add(feeTransferInstruction);
+        transaction.add(platformFeeTransferInstruction);
+      }
+      
+      // Add referral fee transfer if applicable
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: referralWalletPublicKey,
+          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(referralFeeTransferInstruction);
       }
       
       // Get recent blockhash
@@ -820,14 +876,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${feeAmount.toFixed(8)} fee)`);
+      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${totalFeeAmount.toFixed(8)} fee)`);
       
       res.json({
         transaction: transactionBase64,
         tokensProcessed: totalTokensProcessed,
         solRecovered: totalSolRecovered.toFixed(8),
-        feeAmount: feeAmount.toFixed(8),
+        feeAmount: totalFeeAmount.toFixed(8),
+        platformFeeAmount: platformFeeAmount.toFixed(8),
+        referralFeeAmount: referralFeeAmount.toFixed(8),
         netAmount: netAmount.toFixed(8),
+        referralCodeUsed: referralCode || null,
         message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`
       });
       
@@ -941,7 +1000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Record successful token burn transaction
   app.post("/api/tokens/record-burn-success", async (req, res) => {
     try {
-      const { signature, walletAddress, tokenMints, tokensProcessed, solRecovered, netAmount, feeAmount } = req.body;
+      const { signature, walletAddress, tokenMints, tokensProcessed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount } = req.body;
 
       // Validate required fields
       if (!signature || !walletAddress || !tokenMints || !tokensProcessed || !solRecovered) {
@@ -970,9 +1029,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'token_burn',
           tokenMints: tokenMints,
           tokensProcessed: tokensProcessed,
-          description: `Burned ${tokensProcessed} tokens`
+          description: `Burned ${tokensProcessed} tokens`,
+          referralCodeUsed: referralCodeUsed || null
         })
       });
+      
+      // Record referral transaction using permanent association (first referral wins forever)
+      const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      if (permanentAssociation && referralFeeAmount > 0) {
+        const referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+        if (referralCodeData) {
+          console.log('Recording referral transaction for permanent association:', permanentAssociation.referralCode);
+          await storage.createReferralTransaction({
+            referralCodeId: referralCodeData.id,
+            transactionSignature: signature,
+            referredWalletAddress: walletAddress,
+            originalFeeAmount: feeAmount.toString(),
+            referralFeeAmount: referralFeeAmount.toString(),
+            platformFeeAmount: platformFeeAmount.toString()
+          });
+          
+          // Note: referral earnings are calculated dynamically in getReferralStats()
+          // No need to manually update - the stats come from summing all referral transactions
+        }
+      }
 
       // Record individual token burn records
       for (const tokenMint of tokenMints) {
