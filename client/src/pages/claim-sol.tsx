@@ -1834,10 +1834,10 @@ export default function SolRefund() {
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <p className="font-mono text-sm text-white">
-                              {tx.referredWallet?.slice(0, 8)}...{tx.referredWallet?.slice(-8)}
+                              {tx.referredWalletAddress?.slice(0, 8)}...{tx.referredWalletAddress?.slice(-8)}
                             </p>
                             <p className="text-xs text-purple-300">
-                              {new Date(tx.createdAt).toLocaleString()}
+                              {tx.paidAt ? new Date(tx.paidAt).toLocaleString() : 'Date unavailable'}
                             </p>
                           </div>
                           <div className="text-right">
