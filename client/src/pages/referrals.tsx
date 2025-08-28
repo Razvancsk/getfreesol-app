@@ -52,38 +52,19 @@ export default function Referrals() {
     staleTime: 0, // Always consider data stale
   });
 
-  // Directly fetch transactions with useEffect - bypass React Query issues
-  const [transactionsData, setTransactionsData] = useState({ transactions: [] });
-  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  
-  const fetchTransactions = useCallback(async () => {
-    const referralCodeId = referralData?.referralCode?.id;
-    if (!referralCodeId) return;
-    
-    setIsLoadingTransactions(true);
-    try {
-      const response = await fetch(`/api/referrals/${referralCodeId}/transactions?_t=${Date.now()}`);
-      const data = await response.json();
-      setTransactionsData(data);
-    } catch (error) {
-      console.error('Failed to fetch transactions:', error);
-    } finally {
-      setIsLoadingTransactions(false);
-    }
-  }, [referralData?.referralCode?.id]);
-  
-  // Fetch immediately when referral code is available
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
-  
-  // Auto-refresh every 3 seconds
-  useEffect(() => {
-    if (!referralData?.referralCode?.id) return;
-    
-    const interval = setInterval(fetchTransactions, 3000);
-    return () => clearInterval(interval);
-  }, [fetchTransactions, referralData?.referralCode?.id]);
+  // Fetch referral transactions - copy the working pattern from transaction ledger
+  const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
+    queryKey: ["referral-transactions", referralData?.referralCode?.id],
+    queryFn: async () => {
+      if (!referralData?.referralCode?.id) return { transactions: [] };
+      const response = await fetch(`/api/referrals/${referralData.referralCode.id}/transactions`);
+      if (!response.ok) throw new Error('Failed to fetch referral transactions');
+      return response.json();
+    },
+    enabled: !!referralData?.referralCode?.id,
+    refetchInterval: 2000, // Refresh every 2 seconds like the working ledger
+    staleTime: 0,
+  });
 
   // Create referral code mutation
   const createReferralMutation = useMutation({
@@ -159,7 +140,7 @@ export default function Referrals() {
   const referralCode = referralData?.referralCode;
   const hasReferralCode = !!referralCode;
   const stats = referralCode?.stats || { totalEarnings: "0", totalReferrals: 0 };
-  const transactions = transactionsData?.transactions || [];
+  const transactions = (transactionsData?.transactions || []).slice(0, 10); // Show only last 10 transactions
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
