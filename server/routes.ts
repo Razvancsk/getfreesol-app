@@ -631,13 +631,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const walletPublicKey = new PublicKey(address);
 
       // Use Helius DAS API to get all assets with metadata
-      let tokens = [];
+      let tokens: any[] = [];
       if (!heliusApiKey) {
         return res.status(500).json({ error: "Helius API key is required for token scanning" });
       }
 
       try {
         const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+        const rpcUrl = heliusRpcUrl; // Make rpcUrl available in scope
         const heliusResponse = await fetch(heliusRpcUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
