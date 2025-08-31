@@ -1649,9 +1649,7 @@ export default function SolRefund() {
                           </div>
                           {/* Status Badge */}
                           <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            token.status === 'Frozen' 
-                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
-                              : token.status === 'Empty'
+                            token.status === 'Empty'
                               ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                               : 'bg-green-500/20 text-green-400 border border-green-500/30'
                           }`}>

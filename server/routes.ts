@@ -662,17 +662,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
           if (heliusData.result?.items) {
-            // Filter for ALL fungible tokens (including frozen and empty ones that can be closed)
+            // Filter for fungible tokens that can be burned or closed (exclude frozen tokens)
             tokens = heliusData.result.items
               .filter((asset: any) => 
                 asset.interface === 'FungibleToken' || 
                 asset.interface === 'FungibleAsset'
               )
-              // Include ALL token accounts - frozen, empty, or with balance
-              // They all can be closed to recover ~0.002 SOL rent deposit
+              .filter((asset: any) => {
+                // Exclude frozen tokens since they can't be burned
+                const isFrozen = asset.token_info?.state === 'frozen';
+                return !isFrozen;
+              })
               .map((asset: any) => {
                 const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
-                const isFrozen = asset.token_info?.state === 'frozen';
                 const isEmpty = balance === 0;
                 
                 return {
@@ -682,13 +684,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   name: asset.content?.metadata?.name || 'Unknown Token',
                   symbol: asset.content?.metadata?.symbol || 'TOKEN',
                   logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null,
-                  isFrozen: isFrozen,
+                  isFrozen: false, // No frozen tokens included
                   isEmpty: isEmpty,
-                  status: isFrozen ? 'Frozen' : (isEmpty ? 'Empty' : 'Active')
+                  status: isEmpty ? 'Empty' : 'Active'
                 };
               });
             
-            console.log(`Processed ${tokens.length} fungible tokens (including frozen and empty accounts)`);
+            console.log(`Processed ${tokens.length} burnable tokens (excluding frozen accounts)`);
           }
         }
       } catch (error) {
