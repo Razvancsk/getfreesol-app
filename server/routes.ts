@@ -662,26 +662,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
           if (heliusData.result?.items) {
-            // Filter for fungible tokens with balance > 0
+            // Filter for ALL fungible tokens (including frozen and empty ones that can be closed)
             tokens = heliusData.result.items
               .filter((asset: any) => 
                 asset.interface === 'FungibleToken' || 
                 asset.interface === 'FungibleAsset'
               )
-              .filter((asset: any) => {
-                const balance = asset.token_info?.balance || 0;
-                return balance > 0;
-              })
-              .map((asset: any) => ({
-                mint: asset.id,
-                balance: (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0),
-                decimals: asset.token_info?.decimals || 0,
-                name: asset.content?.metadata?.name || 'Unknown Token',
-                symbol: asset.content?.metadata?.symbol || 'TOKEN',
-                logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null
-              }));
+              // Include ALL token accounts - frozen, empty, or with balance
+              // They all can be closed to recover ~0.002 SOL rent deposit
+              .map((asset: any) => {
+                const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
+                const isFrozen = asset.token_info?.state === 'frozen';
+                const isEmpty = balance === 0;
+                
+                return {
+                  mint: asset.id,
+                  balance: balance,
+                  decimals: asset.token_info?.decimals || 0,
+                  name: asset.content?.metadata?.name || 'Unknown Token',
+                  symbol: asset.content?.metadata?.symbol || 'TOKEN',
+                  logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null,
+                  isFrozen: isFrozen,
+                  isEmpty: isEmpty,
+                  status: isFrozen ? 'Frozen' : (isEmpty ? 'Empty' : 'Active')
+                };
+              });
             
-            console.log(`Processed ${tokens.length} fungible tokens with balances`);
+            console.log(`Processed ${tokens.length} fungible tokens (including frozen and empty accounts)`);
           }
         }
       } catch (error) {

@@ -1643,11 +1643,26 @@ export default function SolRefund() {
                         />
                       )}
                       <div className="flex-1 min-w-0 overflow-hidden">
-                        <div className="text-sm font-medium text-white truncate">
-                          {token.symbol || 'TOKEN'}
+                        <div className="flex items-center space-x-2">
+                          <div className="text-sm font-medium text-white truncate">
+                            {token.symbol || 'TOKEN'}
+                          </div>
+                          {/* Status Badge */}
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            token.status === 'Frozen' 
+                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                              : token.status === 'Empty'
+                              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                              : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          }`}>
+                            {token.status || 'Active'}
+                          </div>
                         </div>
-                        <div className="text-xs text-white truncate">
-                          Balance: {token.balance} {token.symbol || 'TOKENS'}
+                        <div className="text-xs text-gray-300 truncate">
+                          {token.balance > 0 
+                            ? `Balance: ${token.balance} ${token.symbol || 'TOKENS'}` 
+                            : 'Empty account - can close for ~0.002 SOL'
+                          }
                         </div>
                       </div>
                     </div>
