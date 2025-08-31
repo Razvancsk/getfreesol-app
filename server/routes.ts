@@ -662,25 +662,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
           if (heliusData.result?.items) {
-            // Filter for fungible tokens first
+            // Filter for fungible tokens with meaningful balances only
             const fungibleTokens = heliusData.result.items
               .filter((asset: any) => 
                 asset.interface === 'FungibleToken' || 
                 asset.interface === 'FungibleAsset'
-              );
+              )
+              .filter((asset: any) => {
+                const balance = asset.token_info?.balance || 0;
+                const decimals = asset.token_info?.decimals || 0;
+                const displayBalance = balance / Math.pow(10, decimals);
+                
+                // Only show tokens with meaningful balances (> 0.001) or empty accounts that can be closed
+                return displayBalance > 0.001 || balance === 0;
+              });
 
-            console.log(`Found ${fungibleTokens.length} fungible tokens, checking for frozen status...`);
+            console.log(`Found ${fungibleTokens.length} fungible tokens with meaningful balances`);
 
-            // Filter out frozen tokens and log details
-            const burnableTokens = fungibleTokens.filter((asset: any) => {
-              const state = asset.token_info?.state;
-              const supply = asset.token_info?.supply;
-              const isFrozen = state === 'frozen' || supply === '0';
-              
-              console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: state=${state}, supply=${supply}, isFrozen=${isFrozen}`);
-              
-              return !isFrozen;
-            });
+            // Use Solana RPC to check if tokens are actually burnable
+            const { Connection, PublicKey } = await import('@solana/web3.js');
+            const { Token, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+            
+            const connection = new Connection(rpcUrl, 'confirmed');
+            const ownerPublicKey = new PublicKey(address);
+            
+            const burnableTokens = [];
+            
+            for (const asset of fungibleTokens) {
+              try {
+                const mintPublicKey = new PublicKey(asset.id);
+                const tokenAccount = await Token.getAssociatedTokenAddress(
+                  ASSOCIATED_TOKEN_PROGRAM_ID,
+                  TOKEN_PROGRAM_ID,
+                  mintPublicKey,
+                  ownerPublicKey
+                );
+                
+                // Check if the token account actually exists and is accessible
+                const accountInfo = await connection.getParsedAccountInfo(tokenAccount);
+                
+                if (accountInfo.value && accountInfo.value.data) {
+                  const parsedInfo = accountInfo.value.data as any;
+                  if (parsedInfo.parsed && parsedInfo.parsed.info) {
+                    const tokenState = parsedInfo.parsed.info.state;
+                    
+                    // Only include tokens that are not frozen
+                    if (tokenState !== 'frozen') {
+                      burnableTokens.push(asset);
+                      console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: BURNABLE (state=${tokenState})`);
+                    } else {
+                      console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: FROZEN - excluded`);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.log(`Error checking token ${asset.content?.metadata?.symbol || 'Unknown'}:`, error instanceof Error ? error.message : String(error));
+              }
+            }
 
             tokens = burnableTokens.map((asset: any) => {
               const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
@@ -693,13 +731,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: asset.content?.metadata?.name || 'Unknown Token',
                 symbol: asset.content?.metadata?.symbol || 'TOKEN',
                 logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null,
-                isFrozen: false, // No frozen tokens included
+                isFrozen: false,
                 isEmpty: isEmpty,
                 status: isEmpty ? 'Empty' : 'Active'
               };
             });
             
-            console.log(`Processed ${tokens.length} burnable tokens (excluded ${fungibleTokens.length - tokens.length} frozen tokens)`);
+            console.log(`Processed ${tokens.length} truly burnable tokens (excluded ${fungibleTokens.length - tokens.length} frozen/inaccessible tokens)`);
           }
         }
       } catch (error) {
