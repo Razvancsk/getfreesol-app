@@ -662,35 +662,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
           if (heliusData.result?.items) {
-            // Filter for fungible tokens that can be burned or closed (exclude frozen tokens)
-            tokens = heliusData.result.items
+            // Filter for fungible tokens first
+            const fungibleTokens = heliusData.result.items
               .filter((asset: any) => 
                 asset.interface === 'FungibleToken' || 
                 asset.interface === 'FungibleAsset'
-              )
-              .filter((asset: any) => {
-                // Exclude frozen tokens since they can't be burned
-                const isFrozen = asset.token_info?.state === 'frozen';
-                return !isFrozen;
-              })
-              .map((asset: any) => {
-                const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
-                const isEmpty = balance === 0;
-                
-                return {
-                  mint: asset.id,
-                  balance: balance,
-                  decimals: asset.token_info?.decimals || 0,
-                  name: asset.content?.metadata?.name || 'Unknown Token',
-                  symbol: asset.content?.metadata?.symbol || 'TOKEN',
-                  logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null,
-                  isFrozen: false, // No frozen tokens included
-                  isEmpty: isEmpty,
-                  status: isEmpty ? 'Empty' : 'Active'
-                };
-              });
+              );
+
+            console.log(`Found ${fungibleTokens.length} fungible tokens, checking for frozen status...`);
+
+            // Filter out frozen tokens and log details
+            const burnableTokens = fungibleTokens.filter((asset: any) => {
+              const state = asset.token_info?.state;
+              const supply = asset.token_info?.supply;
+              const isFrozen = state === 'frozen' || supply === '0';
+              
+              console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: state=${state}, supply=${supply}, isFrozen=${isFrozen}`);
+              
+              return !isFrozen;
+            });
+
+            tokens = burnableTokens.map((asset: any) => {
+              const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
+              const isEmpty = balance === 0;
+              
+              return {
+                mint: asset.id,
+                balance: balance,
+                decimals: asset.token_info?.decimals || 0,
+                name: asset.content?.metadata?.name || 'Unknown Token',
+                symbol: asset.content?.metadata?.symbol || 'TOKEN',
+                logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null,
+                isFrozen: false, // No frozen tokens included
+                isEmpty: isEmpty,
+                status: isEmpty ? 'Empty' : 'Active'
+              };
+            });
             
-            console.log(`Processed ${tokens.length} burnable tokens (excluding frozen accounts)`);
+            console.log(`Processed ${tokens.length} burnable tokens (excluded ${fungibleTokens.length - tokens.length} frozen tokens)`);
           }
         }
       } catch (error) {
