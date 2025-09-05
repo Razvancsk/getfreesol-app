@@ -7,7 +7,6 @@ import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
-import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -1234,55 +1233,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter API endpoints
-  app.get("/api/jupiter/tokens", async (req, res) => {
-    try {
-      const tokens = await getJupiterTokens();
-      res.json({ success: true, tokens });
-    } catch (error) {
-      console.error("Error fetching Jupiter tokens:", error);
-      res.status(500).json({ error: "Failed to fetch Jupiter tokens" });
-    }
-  });
-
-  app.get("/api/jupiter/tokens/search", async (req, res) => {
-    try {
-      const { q } = req.query;
-      if (!q || typeof q !== 'string') {
-        return res.status(400).json({ error: "Search query 'q' is required" });
-      }
-      
-      const tokens = await searchJupiterTokens(q);
-      res.json({ success: true, tokens });
-    } catch (error) {
-      console.error("Error searching Jupiter tokens:", error);
-      res.status(500).json({ error: "Failed to search Jupiter tokens" });
-    }
-  });
-
-  app.get("/api/jupiter/quote", async (req, res) => {
-    try {
-      const { inputMint, outputMint, amount, slippageBps } = req.query;
-      
-      if (!inputMint || !outputMint || !amount) {
-        return res.status(400).json({ 
-          error: "inputMint, outputMint, and amount are required" 
-        });
-      }
-      
-      const quote = await getJupiterQuote(
-        inputMint as string,
-        outputMint as string,
-        parseInt(amount as string),
-        slippageBps ? parseInt(slippageBps as string) : 100
-      );
-      
-      res.json({ success: true, quote });
-    } catch (error) {
-      console.error("Error getting Jupiter quote:", error);
-      res.status(500).json({ error: "Failed to get Jupiter quote" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
