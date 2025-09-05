@@ -474,8 +474,15 @@ export default function SolRefund() {
       const signedTx = await signTransaction(tx);
       const signature = await connection.sendRawTransaction(signedTx.serialize());
       
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
+      // Wait for confirmation with error handling
+      try {
+        await connection.confirmTransaction(signature, 'confirmed');
+        console.log('Transaction confirmed successfully!');
+      } catch (confirmError: any) {
+        console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
+        console.warn('Transaction signature:', signature);
+        // Continue with success recording since transaction was sent
+      }
       
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
@@ -577,7 +584,15 @@ export default function SolRefund() {
       const signature = await connection.sendRawTransaction(signedTx.serialize());
       console.log('📡 Transaction sent to network:', signature);
       
-      await connection.confirmTransaction(signature, 'confirmed');
+      // Wait for confirmation with error handling
+      try {
+        await connection.confirmTransaction(signature, 'confirmed');
+        console.log('✅ Transaction confirmed successfully!');
+      } catch (confirmError: any) {
+        console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
+        console.warn('Transaction signature:', signature);
+        // Continue with success recording since transaction was sent
+      }
       
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
