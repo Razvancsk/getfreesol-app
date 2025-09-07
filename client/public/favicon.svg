@@ -2,15 +2,15 @@
   <!-- Background circle -->
   <circle cx="16" cy="16" r="16" fill="#8B5CF6"/>
   
-  <!-- Simple "G" design for favicon -->
-  <circle cx="16" cy="16" r="10" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+  <!-- Very simple small "G" design -->
+  <circle cx="16" cy="16" r="8" fill="none" stroke="#FFFFFF" stroke-width="2"/>
   
-  <!-- Gap in the circle (top right) -->
-  <path d="M 16 6 A 10 10 0 0 1 24.14 12" fill="none" stroke="#8B5CF6" stroke-width="3"/>
+  <!-- Small gap in the circle -->
+  <path d="M 16 8 A 8 8 0 0 1 21.66 12" fill="none" stroke="#8B5CF6" stroke-width="2.5"/>
   
-  <!-- Inner horizontal line -->
-  <line x1="16" y1="16" x2="22" y2="16" stroke="#FFFFFF" stroke-width="2"/>
+  <!-- Small inner horizontal line -->
+  <line x1="16" y1="16" x2="20" y2="16" stroke="#FFFFFF" stroke-width="1.5"/>
   
-  <!-- Inner vertical line -->
-  <line x1="19" y1="13" x2="19" y2="19" stroke="#FFFFFF" stroke-width="2"/>
+  <!-- Small inner vertical line -->
+  <line x1="18" y1="14" x2="18" y2="18" stroke="#FFFFFF" stroke-width="1.5"/>
 </svg>
