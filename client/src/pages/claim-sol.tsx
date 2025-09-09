@@ -662,6 +662,7 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
+
       // Get transaction (15% service fee)
       const response = await fetch('/api/sol-refund/prepare-transaction', {
         method: 'POST',

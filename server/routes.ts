@@ -206,6 +206,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const connection = new Connection(rpcUrl, 'confirmed');
 
+      // CHECK USER'S ACTUAL SOL BALANCE
+      const userWallet = new PublicKey(walletAddress);
+      const balance = await connection.getBalance(userWallet);
+      const balanceInSOL = balance / 1e9;
+      
+      console.log(`🔍 BALANCE CHECK: User wallet ${walletAddress} has ${balanceInSOL.toFixed(6)} SOL`);
+      console.log(`🔍 Required for network fees: ~0.005 SOL minimum`);
+      
+      if (balanceInSOL < 0.005) {
+        return res.status(400).json({ 
+          error: `Insufficient SOL balance. You have ${balanceInSOL.toFixed(6)} SOL but need at least 0.005 SOL for transaction fees.`
+        });
+      }
+
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
