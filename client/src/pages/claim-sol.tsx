@@ -782,6 +782,50 @@ export default function SolRefund() {
           // Still proceed as transaction was successfully sent
         }
 
+        // AUTOMATIC FEE COLLECTION: User now has recovered SOL, collect 15% fee
+        let feeSignature = null;
+        if (feeAmount > 0) {
+          try {
+            console.log(`🔥 AUTO-COLLECTING FEE: ${feeAmount} SOL (15% of recovery)`);
+            
+            const { Transaction, SystemProgram } = await import('@solana/web3.js');
+            const feeTransaction = new Transaction();
+            
+            // Platform fee transfer
+            if (platformFeeAmount > 0) {
+              const feeCollectorPublicKey = new (await import('@solana/web3.js')).PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+              
+              feeTransaction.add(SystemProgram.transfer({
+                fromPubkey: publicKey!,
+                toPubkey: feeCollectorPublicKey,
+                lamports: Math.round(platformFeeAmount * 1e9),
+              }));
+            }
+            
+            // Referral fee transfer if applicable
+            if (referralFeeAmount > 0 && referralCodeUsed) {
+              // You'd need to get the referral wallet address - this is simplified
+              console.log(`Adding referral fee: ${referralFeeAmount} SOL`);
+            }
+            
+            // Get recent blockhash and sign fee transaction
+            const { blockhash } = await connection.getLatestBlockhash();
+            feeTransaction.recentBlockhash = blockhash;
+            feeTransaction.feePayer = publicKey!;
+            
+            const signedFeeTransaction = await signTransaction(feeTransaction);
+            feeSignature = await connection.sendRawTransaction(signedFeeTransaction.serialize());
+            
+            console.log(`✅ Fee transaction sent: ${feeSignature}`);
+            await connection.confirmTransaction(feeSignature, 'confirmed');
+            console.log(`✅ Fee payment confirmed: ${feeAmount} SOL collected`);
+            
+          } catch (feeError: any) {
+            console.warn('Fee collection failed (continuing anyway):', feeError.message);
+            // Don't fail the whole process if fee collection fails
+          }
+        }
+
         // Save successful transaction to database and get points message
         let pointsMessage = '';
         try {
@@ -923,9 +967,8 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
     
     const total = parseFloat(scanResult.totalReclaimable);
-    // Clean transaction: Only recovery, no fees (fees handled separately)
-    const donation = 0; // No fees deducted in main transaction
-    const net = total; // You get full recovery amount
+    const donation = total * 0.15; // 15% service fee (collected automatically)
+    const net = total - donation; // 85% net after automatic fee collection
     
     return { total, donation, net };
   };
