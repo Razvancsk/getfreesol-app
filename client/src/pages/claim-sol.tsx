@@ -1459,8 +1459,8 @@ export default function SolRefund() {
           </div>
 
           {/* Axiom Banner */}
-          <div className="mb-6">
-            <AxiomBanner className="max-w-4xl mx-auto" />
+          <div className="mb-4">
+            <AxiomBanner />
           </div>
 
           {/* Description */}

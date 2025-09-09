@@ -11,7 +11,7 @@ export default function AxiomBanner({ className = '' }: AxiomBannerProps) {
   };
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full max-w-sm mx-auto ${className}`}>
       <button
         onClick={handleClick}
         className="w-full group cursor-pointer transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent rounded-lg overflow-hidden"
@@ -21,7 +21,7 @@ export default function AxiomBanner({ className = '' }: AxiomBannerProps) {
         <img
           src={axiomBannerImage}
           alt="Axiom - Get your SOL back"
-          className="w-full h-auto object-cover rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300"
+          className="w-full h-16 object-cover rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300"
         />
       </button>
     </div>

@@ -293,8 +293,8 @@ export default function SwapPage() {
 
       <div className="max-w-6xl mx-auto pt-8">
         {/* Axiom Banner */}
-        <div className="mb-6">
-          <AxiomBanner className="max-w-4xl mx-auto" />
+        <div className="mb-4">
+          <AxiomBanner />
         </div>
         
         <div className="lg:grid lg:grid-cols-12 lg:gap-6">
