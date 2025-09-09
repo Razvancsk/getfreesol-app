@@ -1240,13 +1240,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { placement } = req.query;
       
-      let query = db.select().from(ads).where(eq(ads.isActive, true));
+      let whereConditions = eq(ads.isActive, true);
       
       if (placement && typeof placement === 'string') {
-        query = query.where(eq(ads.placement, placement));
+        whereConditions = sql`${ads.isActive} = true AND ${ads.placement} = ${placement}`;
       }
       
-      const result = await query.orderBy(ads.priority, ads.createdAt);
+      const result = await db.select()
+        .from(ads)
+        .where(whereConditions)
+        .orderBy(ads.priority, ads.createdAt);
       
       res.json({
         success: true,
