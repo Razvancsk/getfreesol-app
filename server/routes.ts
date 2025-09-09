@@ -188,23 +188,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid accounts to close" });
       }
 
-      // Calculate totals with referral fee splitting
+      // Calculate totals - FEES TEMPORARILY DISABLED: Users get 100% back
       const totalSolReclaimed = accountsToClose.reduce((sum, account) => 
         sum + parseFloat(account.rentAmount), 0
       );
-      const totalFeeAmount = totalSolReclaimed * (donationPercentage / 100);
+      const totalFeeAmount = 0; // Fees disabled - users get full amount
       
       let referralFeeAmount = 0;
-      let platformFeeAmount = totalFeeAmount;
+      let platformFeeAmount = 0; // No platform fees
       
-      if (referralCodeData) {
-        // 35% of fee goes to referral (5.25% of total)
-        referralFeeAmount = totalFeeAmount * 0.35;
-        // 65% of fee stays with platform (9.75% of total)
-        platformFeeAmount = totalFeeAmount * 0.65;
-      }
+      // Referral system temporarily disabled but code preserved
+      // if (referralCodeData) {
+      //   // 35% of fee goes to referral (5.25% of total)
+      //   referralFeeAmount = totalFeeAmount * 0.35;
+      //   // 65% of fee stays with platform (9.75% of total)
+      //   platformFeeAmount = totalFeeAmount * 0.65;
+      // }
       
-      const netAmount = totalSolReclaimed - totalFeeAmount;
+      const netAmount = totalSolReclaimed; // Users get full amount back
 
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
@@ -234,33 +235,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.add(closeInstruction);
       }
 
+      // FEES TEMPORARILY DISABLED - Code preserved for future use
       // Add service fee transfers
-      const { SystemProgram } = await import('@solana/web3.js');
+      // const { SystemProgram } = await import('@solana/web3.js');
       
-      if (platformFeeAmount > 0) {
-        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
-        
-        const platformFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: new PublicKey(walletAddress),
-          toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
-        });
-        
-        transaction.add(platformFeeTransferInstruction);
-      }
+      // if (platformFeeAmount > 0) {
+      //   const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+      //   
+      //   const platformFeeTransferInstruction = SystemProgram.transfer({
+      //     fromPubkey: new PublicKey(walletAddress),
+      //     toPubkey: feeCollectorPublicKey,
+      //     lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+      //   });
+      //   
+      //   transaction.add(platformFeeTransferInstruction);
+      // }
       
       // Add referral fee transfer if applicable
-      if (referralFeeAmount > 0 && referralCodeData) {
-        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-        
-        const referralFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: new PublicKey(walletAddress),
-          toPubkey: referralWalletPublicKey,
-          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
-        });
-        
-        transaction.add(referralFeeTransferInstruction);
-      }
+      // if (referralFeeAmount > 0 && referralCodeData) {
+      //   const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+      //   
+      //   const referralFeeTransferInstruction = SystemProgram.transfer({
+      //     fromPubkey: new PublicKey(walletAddress),
+      //     toPubkey: referralWalletPublicKey,
+      //     lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+      //   });
+      //   
+      //   transaction.add(referralFeeTransferInstruction);
+      // }
 
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();

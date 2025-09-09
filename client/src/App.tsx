@@ -16,7 +16,8 @@ function Router() {
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
       <Route path="/swap" component={SwapPage} />
-      <Route path="/referrals" component={Referrals} />
+      {/* Referrals route temporarily disabled */}
+      {/* <Route path="/referrals" component={Referrals} /> */}
       <Route path="/admin" component={Admin} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />

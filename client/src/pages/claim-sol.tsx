@@ -55,7 +55,7 @@ interface RefundStats {
 
 export default function SolRefund() {
   const queryClient = useQueryClient();
-  const donationPercentage = 15; // Fixed 15% service fee
+  const donationPercentage = 0; // Fees temporarily disabled - users get 100% back
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
@@ -1248,8 +1248,8 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
     
     const total = parseFloat(scanResult.totalReclaimable);
-    const donation = total * 0.15; // 15% service fee
-    const net = total - donation; // 85% to user
+    const donation = 0; // No fees - users get 100% back
+    const net = total - donation; // 100% to user
     
     return { total, donation, net };
   };
@@ -1409,6 +1409,7 @@ export default function SolRefund() {
                     <Flame className="h-4 w-4 mr-2" />
                     Burn Tokens
                   </Button>
+                  {/* Referrals tab temporarily hidden 
                   <Button
                     onClick={() => setActiveTab('referrals')}
                     className={`px-4 py-2 text-sm font-medium rounded transition-all ${
@@ -1420,6 +1421,7 @@ export default function SolRefund() {
                     <Users className="h-4 w-4 mr-2" />
                     Referrals
                   </Button>
+                  */}
                 </div>
               </div>
             )}
@@ -2000,7 +2002,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">15% service fee supports platform maintenance and development</span>
+                  <span className="text-sm">No fees - you get 100% of your SOL back!</span>
                 </div>
               </div>
             </div>
