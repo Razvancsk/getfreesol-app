@@ -116,6 +116,23 @@ export const walletReferralAssociations = pgTable("wallet_referral_associations"
   associatedAt: timestamp("associated_at").notNull().defaultNow(),
 });
 
+// Ads system for DeFi referral links
+export const ads = pgTable("ads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(), // Ad title (e.g., "Jupiter - Best DEX")
+  description: text("description").notNull(), // Ad description
+  imageUrl: text("image_url"), // Optional ad image/logo
+  targetUrl: text("target_url").notNull(), // Referral link URL
+  appName: text("app_name").notNull(), // DeFi app name (e.g., "Jupiter", "Orca", "Raydium")
+  placement: text("placement").notNull(), // "sidebar", "header", "footer", "inline"
+  priority: integer("priority").notNull().default(1), // Display priority (higher = shown first)
+  isActive: boolean("is_active").notNull().default(true),
+  clickCount: integer("click_count").notNull().default(0), // Track clicks
+  impressionCount: integer("impression_count").notNull().default(0), // Track views
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -170,6 +187,14 @@ export const insertWalletReferralAssociationSchema = createInsertSchema(walletRe
   associatedAt: true,
 });
 
+export const insertAdSchema = createInsertSchema(ads).omit({
+  id: true,
+  clickCount: true,
+  impressionCount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -190,3 +215,5 @@ export type ReferralTransaction = typeof referralTransactions.$inferSelect;
 export type InsertReferralTransaction = z.infer<typeof insertReferralTransactionSchema>;
 export type WalletReferralAssociation = typeof walletReferralAssociations.$inferSelect;
 export type InsertWalletReferralAssociation = z.infer<typeof insertWalletReferralAssociationSchema>;
+export type Ad = typeof ads.$inferSelect;
+export type InsertAd = z.infer<typeof insertAdSchema>;
