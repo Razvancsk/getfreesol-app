@@ -209,26 +209,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
-      // ONLY close ONE account at a time to minimize fees
+      // Close ALL selected accounts in bulk transaction
       const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
-      // Take only the first account to keep transaction simple and cheap
-      const singleAccount = accountsToClose[0];
-      const accountPublicKey = new PublicKey(singleAccount.accountAddress);
-      const ownerPublicKey = new PublicKey(walletAddress);
+      for (const account of accountsToClose) {
+        const accountPublicKey = new PublicKey(account.accountAddress);
+        const ownerPublicKey = new PublicKey(walletAddress);
+        
+        const closeInstruction = createCloseAccountInstruction(
+          accountPublicKey,
+          ownerPublicKey, // destination (receives SOL)
+          ownerPublicKey  // owner
+        );
+        
+        transaction.add(closeInstruction);
+      }
       
-      const closeInstruction = createCloseAccountInstruction(
-        accountPublicKey,
-        ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey  // owner
-      );
-      
-      transaction.add(closeInstruction);
-      console.log(`Creating minimal transaction for single account: ${singleAccount.accountAddress}`);
+      console.log(`Creating bulk transaction for ${accountsToClose.length} accounts`);
 
-      // Create transaction with ONLY close instructions
-      // Fees will be collected in a separate transaction after SOL recovery
-      // This ensures user can sign with current balance
+      // Add platform and referral fees directly to transaction
+      // This shows correct net amount to user in wallet
+      
+      if (platformFeeAmount > 0) {
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const platformFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(platformFeeTransferInstruction);
+      }
+      
+      // Add referral fee transfer if applicable  
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: referralWalletPublicKey,
+          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(referralFeeTransferInstruction);
+      }
 
       // Optimize transaction for Helius RPC - better fee estimation
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
@@ -251,12 +276,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         transaction: transactionBase64,
-        message: `Prepared minimal transaction for 1 account`,
-        totalSolReclaimed: parseFloat(singleAccount.rentAmount),
-        feeAmount: 0, // No upfront fees
-        platformFeeAmount: 0, // Collected separately 
-        referralFeeAmount: 0, // Collected separately
-        netAmount: parseFloat(singleAccount.rentAmount), // User gets full recovery first
+        message: `Prepared transaction to close ${accountsToClose.length} accounts`,
+        totalSolReclaimed: totalSolReclaimed,
+        feeAmount: totalFeeAmount,
+        platformFeeAmount: platformFeeAmount,
+        referralFeeAmount: referralFeeAmount,
+        netAmount: netAmount, // Correct net amount after fees
         referralCodeUsed: referralCode || null
       });
 
