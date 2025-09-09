@@ -807,7 +807,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { 
         TOKEN_PROGRAM_ID, 
         ASSOCIATED_TOKEN_PROGRAM_ID,
-        Token 
+        getAssociatedTokenAddress,
+        createBurnInstruction,
+        createCloseAccountInstruction
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -832,11 +834,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const mintPublicKey = new PublicKey(tokenMint);
           
           // Get associated token account
-          const tokenAccount = await Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
-            TOKEN_PROGRAM_ID, // programId
+          const tokenAccount = await getAssociatedTokenAddress(
             mintPublicKey,
-            ownerPublicKey
+            ownerPublicKey,
+            false,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
           );
           
           // Get token account info to determine balance and decimals
@@ -853,20 +856,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
-            const burnInstruction = Token.createBurnInstruction(
-              TOKEN_PROGRAM_ID, // Token program ID
-              mintPublicKey,    // Token mint
+            const burnInstruction = createBurnInstruction(
               tokenAccount,     // Token account to burn from
+              mintPublicKey,    // Token mint
               ownerPublicKey,   // Owner
-              [],               // Additional signers
-              balance           // Amount to burn (full balance)
+              balance,          // Amount to burn (full balance)
+              []               // Additional signers
             );
             transaction.add(burnInstruction);
           }
           
           // Step 2: Close the now-empty account to reclaim SOL
-          const closeInstruction = Token.createCloseAccountInstruction(
-            TOKEN_PROGRAM_ID,
+          const closeInstruction = createCloseAccountInstruction(
             tokenAccount,
             ownerPublicKey, // destination (receives SOL)
             ownerPublicKey,  // owner
