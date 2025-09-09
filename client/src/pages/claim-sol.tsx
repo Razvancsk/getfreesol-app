@@ -923,7 +923,7 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
     
     const total = parseFloat(scanResult.totalReclaimable);
-    const donation = total * 0.15; // 15% service fee
+    const donation = total * 0.15; // 15% service fee to platform
     const net = total - donation; // 85% to user
     
     return { total, donation, net };
