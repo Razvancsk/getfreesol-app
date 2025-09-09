@@ -1291,6 +1291,23 @@ export default function SolRefund() {
               {/* Burn Button at Bottom */}
               {selectedTokens.size > 0 && (
                 <div className="mt-6">
+                  {/* Wallet Balance Warning for Burning */}
+                  <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4 mb-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-amber-400 mt-0.5">
+                        ⚠️
+                      </div>
+                      <div className="text-sm text-amber-200">
+                        <div className="font-medium mb-1">Wallet Balance Warning</div>
+                        <div className="text-xs space-y-1">
+                          <p>Your wallet may show "insufficient SOL" warnings. This is normal!</p>
+                          <p><strong>This transaction GIVES YOU MORE SOL than it costs in fees.</strong></p>
+                          <p>✅ Safe to click "Confirm anyway" - you'll gain SOL, not lose it.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <Button
                     onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
                     disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
