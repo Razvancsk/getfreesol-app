@@ -6,7 +6,14 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { 
+  TOKEN_PROGRAM_ID, 
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createCloseAccountInstruction,
+  createBurnInstruction,
+  getAccount
+} from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -217,8 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = Token.createCloseAccountInstruction(
-          TOKEN_PROGRAM_ID,
+        const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
           ownerPublicKey, // destination (receives SOL)
           ownerPublicKey,  // owner
@@ -663,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
           if (heliusData.result?.items) {
-            // Filter for fungible tokens with meaningful balances only
+            // Filter for fungible tokens (back to original logic - show all with balance)
             const fungibleTokens = heliusData.result.items
               .filter((asset: any) => 
                 asset.interface === 'FungibleToken' || 
@@ -671,11 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               )
               .filter((asset: any) => {
                 const balance = asset.token_info?.balance || 0;
-                const decimals = asset.token_info?.decimals || 0;
-                const displayBalance = balance / Math.pow(10, decimals);
-                
-                // Only show tokens with meaningful balances (> 0.001) or empty accounts that can be closed
-                return displayBalance > 0.001 || balance === 0;
+                // Show tokens with any balance > 0 or empty accounts that can be closed
+                return balance > 0 || balance === 0;
               });
 
             console.log(`Found ${fungibleTokens.length} fungible tokens with meaningful balances`);
@@ -1018,20 +1021,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = Token.createBurnInstruction(
-          TOKEN_PROGRAM_ID, // Token program ID
-          mintPublicKey,    // Token mint
+        const burnInstruction = createBurnInstruction(
           tokenAccount,     // Token account to burn from
+          mintPublicKey,    // Token mint
           ownerPublicKey,   // Owner
-          [],               // Additional signers
-          balance           // Amount to burn (full balance)
+          balance,          // Amount to burn (full balance)
+          []               // Additional signers
         );
         transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = Token.createCloseAccountInstruction(
-        TOKEN_PROGRAM_ID,
+      const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
         ownerPublicKey,  // owner
