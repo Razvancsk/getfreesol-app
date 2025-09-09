@@ -8,6 +8,7 @@ import { ArrowUpDown, RefreshCw, Coins, Wallet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import WalletSelectionModal from '@/components/WalletSelectionModal';
 import { getConnectedWallet, getWalletByType, WalletType } from '@/lib/solana';
+import AdContainer from '@/components/AdContainer';
 
 const connection = new Connection(
   import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
@@ -289,7 +290,11 @@ export default function SwapPage() {
       <div className="pt-8 pb-4">
       </div>
 
-      <div className="max-w-md mx-auto pt-8">
+      <div className="max-w-6xl mx-auto pt-8">
+        <div className="lg:grid lg:grid-cols-12 lg:gap-6">
+          {/* Main Swap Card */}
+          <div className="lg:col-span-9 flex justify-center">
+            <div className="w-full max-w-md">
         <Card className="bg-black/40 backdrop-blur-sm border border-purple-500/30">
           <CardHeader>
             <CardTitle className="text-white text-center text-xl">SWAP</CardTitle>
@@ -451,7 +456,32 @@ export default function SwapPage() {
               </div>
             )}
           </CardContent>
-        </Card>
+            </Card>
+            </div>
+          </div>
+          
+          {/* Sidebar with Ads - Desktop Only */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-6 space-y-4">
+              <AdContainer 
+                placement="sidebar" 
+                maxAds={3}
+                title="DeFi Trading"
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Mobile Ads - Show below main content on smaller screens */}
+        <div className="lg:hidden mt-6">
+          <AdContainer 
+            placement="mobile" 
+            maxAds={2}
+            title="DeFi Trading"
+            className="w-full"
+          />
+        </div>
       </div>
 
       {/* Wallet Selection Modal */}
