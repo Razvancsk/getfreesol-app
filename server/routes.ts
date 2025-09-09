@@ -212,18 +212,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add close account instructions for each empty account
       const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
+      // Create a temporary keypair to receive the full SOL amount first
+      const { Keypair } = await import('@solana/web3.js');
+      const tempKeypair = Keypair.generate();
+      
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
         const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
-          ownerPublicKey, // destination (receives SOL)
+          tempKeypair.publicKey, // Send SOL to temporary account first
           ownerPublicKey  // owner
         );
         
         transaction.add(closeInstruction);
       }
+      
+      // Transfer net amount (after fees) to user
+      const userNetTransferInstruction = SystemProgram.transfer({
+        fromPubkey: tempKeypair.publicKey,
+        toPubkey: new PublicKey(walletAddress),
+        lamports: Math.round(netAmount * 1e9), // Only the net amount goes to user
+      });
+      
+      transaction.add(userNetTransferInstruction);
 
       // Add service fee transfers - users pay 15% fee upfront
       if (platformFeeAmount > 0) {
