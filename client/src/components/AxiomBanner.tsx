@@ -14,7 +14,7 @@ export default function AxiomBanner({ className = '' }: AxiomBannerProps) {
     <div className={`w-full max-w-sm mx-auto ${className}`}>
       <button
         onClick={handleClick}
-        className="w-full group cursor-pointer transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent rounded-lg overflow-hidden"
+        className="w-full group cursor-pointer transition-transform hover:scale-[1.02] focus:outline-none rounded-lg overflow-hidden"
         aria-label="Visit Axiom - Get your SOL back"
         data-testid="button-axiom-banner"
       >
