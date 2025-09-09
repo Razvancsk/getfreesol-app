@@ -237,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.add(closeInstruction);
       }
 
-      // Add simple transfer of 15% of recovered SOL to platform
+      // Add 15% fee transfer IN SAME TRANSACTION (after account closures)
       const { SystemProgram } = await import('@solana/web3.js');
       
       if (platformFeeAmount > 0) {
@@ -250,10 +250,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         transaction.add(feeTransferInstruction);
-        console.log(`✅ Transfer 15% fee: ${platformFeeAmount.toFixed(8)} SOL to platform`);
+        console.log(`✅ Added 15% fee transfer: ${platformFeeAmount.toFixed(8)} SOL in same transaction`);
       }
       
-      console.log(`SIMPLE TRANSACTION: User gets ${totalSolReclaimed.toFixed(8)} SOL, pays ${platformFeeAmount.toFixed(8)} SOL fee, net ${netAmount.toFixed(8)} SOL`);
+      console.log(`COMPLETE TRANSACTION: Close accounts + fee transfer. Net result: ${netAmount.toFixed(8)} SOL to user`);
 
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -278,6 +278,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Prepare transaction error:", error);
       res.status(500).json({ error: "Failed to prepare transaction" });
+    }
+  });
+
+  // Collect 15% fee after successful SOL recovery
+  app.post("/api/sol-refund/collect-fee", async (req, res) => {
+    try {
+      const { walletAddress, recoveredAmount, referralCode } = req.body;
+
+      if (!walletAddress || !recoveredAmount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Calculate fee amounts
+      const totalFeeAmount = parseFloat(recoveredAmount) * 0.15;
+      let platformFeeAmount = totalFeeAmount;
+      let referralFeeAmount = 0;
+
+      // Check for referral code and adjust fee distribution
+      if (referralCode) {
+        referralFeeAmount = totalFeeAmount * 0.35; // 35% of fee to referral
+        platformFeeAmount = totalFeeAmount * 0.65; // 65% of fee to platform
+      }
+
+      const { Connection, Transaction, SystemProgram, PublicKey } = await import('@solana/web3.js');
+      
+      // Get RPC connection
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? 
+        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
+        'https://api.mainnet-beta.solana.com';
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+
+      // Create fee collection transaction
+      const feeTransaction = new Transaction();
+      
+      if (platformFeeAmount > 0) {
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const platformFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(platformFeeAmount * 1e9),
+        });
+        
+        feeTransaction.add(platformFeeTransferInstruction);
+      }
+
+      // Add referral fee if applicable
+      if (referralFeeAmount > 0) {
+        // For now, just log the referral fee - you'd need to get the referral wallet address
+        console.log(`Referral fee to collect: ${referralFeeAmount} SOL`);
+      }
+
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      feeTransaction.recentBlockhash = blockhash;
+      feeTransaction.feePayer = new PublicKey(walletAddress);
+
+      // Serialize transaction
+      const serializedTransaction = feeTransaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = serializedTransaction.toString('base64');
+
+      console.log(`Fee collection transaction prepared: ${totalFeeAmount.toFixed(8)} SOL total fee`);
+
+      res.json({
+        transaction: transactionBase64,
+        feeAmount: totalFeeAmount,
+        platformFeeAmount: platformFeeAmount,
+        referralFeeAmount: referralFeeAmount,
+        message: `Fee collection transaction prepared: ${totalFeeAmount.toFixed(8)} SOL`
+      });
+
+    } catch (error) {
+      console.error("Fee collection error:", error);
+      res.status(500).json({ error: "Failed to prepare fee collection" });
     }
   });
 

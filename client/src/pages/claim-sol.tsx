@@ -782,8 +782,8 @@ export default function SolRefund() {
           // Still proceed as transaction was successfully sent
         }
 
-        // Fees are now included in the main transaction, no separate collection needed
-        console.log(`✅ Transaction includes both SOL recovery AND 15% fee payment`);
+        // Fee is now included in the main transaction - no separate collection needed
+        console.log(`✅ Transaction completed with SOL recovery AND 15% fee payment in same transaction`);
 
         // Save successful transaction to database and get points message
         let pointsMessage = '';
