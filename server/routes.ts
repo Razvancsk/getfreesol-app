@@ -238,12 +238,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.add(closeInstruction);
       }
 
-      // SOLUTION: Keep fee collection separate from main recovery transaction
-      // This prevents wallet simulation failures and complex account interactions
-      // Fees will be collected via a separate transaction after SOL recovery succeeds
+      // Add fee transfers IN MAIN TRANSACTION (structured properly to avoid simulation issues)
+      const { SystemProgram } = await import('@solana/web3.js');
       
-      console.log(`CLEAN TRANSACTION: Only recovering ${totalSolReclaimed} SOL`);
-      console.log(`Fees (${totalFeeAmount} SOL) will be processed separately after recovery`);
+      console.log(`COMPLETE TRANSACTION: Recover ${totalSolReclaimed} SOL, pay ${totalFeeAmount} SOL fees, net ${netAmount} SOL`);
+      
+      // Add platform fee transfer 
+      if (platformFeeAmount > 0) {
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const platformFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(platformFeeTransferInstruction);
+        console.log(`✅ Added platform fee: ${platformFeeAmount.toFixed(8)} SOL to transaction`);
+      }
+      
+      // Add referral fee transfer if applicable
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: referralWalletPublicKey,
+          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(referralFeeTransferInstruction);
+        console.log(`✅ Added referral fee: ${referralFeeAmount.toFixed(8)} SOL to transaction`);
+      }
 
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
