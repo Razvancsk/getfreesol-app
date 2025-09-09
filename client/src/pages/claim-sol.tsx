@@ -94,7 +94,8 @@ export default function SolRefund() {
   const { toast } = useToast();
   const [location] = useLocation();
 
-  // Wallet adapter state - Move this early so publicKey is available
+  // Wallet adapter state - Initialize early to ensure publicKey is available
+  const walletAdapter = useWalletAdapter();
   const { 
     publicKey, 
     connected: isConnected, 
@@ -111,7 +112,7 @@ export default function SolRefund() {
     connectBitget,
     setVisible,
     select
-  } = useWalletAdapter();
+  } = walletAdapter || {};
 
   // Query to get user's referral code and stats
   const { data: userReferrals } = useQuery({
