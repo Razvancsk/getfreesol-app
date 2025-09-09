@@ -132,43 +132,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get wallet SOL balance
-  app.get("/api/wallet/balance/:address", async (req, res) => {
-    try {
-      const { address } = req.params;
-      
-      // Validate address
-      try {
-        new PublicKey(address);
-      } catch (error) {
-        return res.status(400).json({ error: "Invalid wallet address" });
-      }
-
-      // Get RPC connection
-      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
-        'https://api.mainnet-beta.solana.com';
-      
-      const connection = new Connection(rpcUrl, 'confirmed');
-      const publicKey = new PublicKey(address);
-      
-      const balance = await connection.getBalance(publicKey);
-      const balanceSOL = balance / 1e9; // Convert lamports to SOL
-      
-      res.json({
-        success: true,
-        balance: balanceSOL,
-        balanceFormatted: balanceSOL.toFixed(6),
-        isLowBalance: balanceSOL < 0.0005 // Warning threshold
-      });
-      
-    } catch (error) {
-      console.error("Balance check error:", error);
-      res.status(500).json({ error: "Failed to get wallet balance" });
-    }
-  });
-
   // Prepare transaction for SOL refund
   app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
     try {
@@ -242,30 +205,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'https://api.mainnet-beta.solana.com';
       
       const connection = new Connection(rpcUrl, 'confirmed');
-      
-      // Check wallet SOL balance first to prevent insufficient funds errors
-      const ownerPublicKey = new PublicKey(walletAddress);
-      const walletBalance = await connection.getBalance(ownerPublicKey);
-      const walletBalanceSOL = walletBalance / 1e9; // Convert lamports to SOL
-      
-      // Calculate actual required balance: network fee only (fees come from recovered SOL)
-      const networkFee = 0.0001; // Only network transaction fee needed upfront
-      const totalFeesFromRecoveredSOL = platformFeeAmount + referralFeeAmount;
-      
-      // Add debugging for balance issues
-      console.log(`Balance check: wallet=${walletBalanceSOL} SOL, networkFee=${networkFee} SOL, feesFromRecovered=${totalFeesFromRecoveredSOL} SOL`);
-      
-      // Only check if user has enough for network fees (platform/referral fees come from recovered SOL)
-      if (walletBalanceSOL < networkFee) {
-        return res.status(400).json({ 
-          error: "Insufficient SOL for transaction fees",
-          details: {
-            currentBalance: walletBalanceSOL.toFixed(6),
-            requiredMinimum: networkFee.toFixed(6),
-            message: `You need at least ${networkFee.toFixed(6)} SOL in your wallet to pay for network transaction fees. Your current balance is ${walletBalanceSOL.toFixed(6)} SOL. Platform fees (${totalFeesFromRecoveredSOL.toFixed(6)} SOL) will be deducted from the recovered SOL.`
-          }
-        });
-      }
 
       // Create transaction to close token accounts
       const transaction = new Transaction();
@@ -861,31 +800,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : 'https://api.mainnet-beta.solana.com';
       
       console.log(`Creating bulk token burn transaction for ${tokenMints.length} tokens...`);
-      
-      // Check wallet SOL balance first to prevent insufficient funds errors
-      const connection = new Connection(rpcUrl, 'confirmed');
-      const ownerPublicKey = new PublicKey(walletAddress);
-      const walletBalance = await connection.getBalance(ownerPublicKey);
-      const walletBalanceSOL = walletBalance / 1e9; // Convert lamports to SOL
-      
-      // Estimate transaction fee (approximately 0.0001 to 0.0005 SOL per transaction)
-      const estimatedFee = 0.0001; // Very conservative estimate to allow more transactions
-      
-      // Add debugging for balance issues
-      console.log(`Balance check: wallet=${walletBalanceSOL} SOL, required=${estimatedFee} SOL`);
-      
-      if (walletBalanceSOL < estimatedFee) {
-        return res.status(400).json({ 
-          error: "Insufficient SOL for transaction fees",
-          details: {
-            currentBalance: walletBalanceSOL.toFixed(6),
-            requiredMinimum: estimatedFee.toFixed(6),
-            message: `You need at least ${estimatedFee.toFixed(6)} SOL in your wallet to pay for transaction fees. Your current balance is ${walletBalanceSOL.toFixed(6)} SOL. Please add more SOL to your wallet and try again.`
-          }
-        });
-      }
       console.log('Referral code data:', referralCodeData);
       console.log('Permanent association:', permanentAssociation);
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
       
       // Create single transaction with multiple burn+close instructions
       const transaction = new Transaction();
@@ -1062,29 +981,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Creating token burn transaction...');
       
-      // Check wallet SOL balance first to prevent insufficient funds errors
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
-      const walletBalance = await connection.getBalance(ownerPublicKey);
-      const walletBalanceSOL = walletBalance / 1e9; // Convert lamports to SOL
-      
-      // Estimate transaction fee (approximately 0.0001 to 0.0005 SOL per transaction)
-      const estimatedFee = 0.0001; // Very conservative estimate to allow more transactions
-      
-      // Add debugging for balance issues
-      console.log(`Balance check: wallet=${walletBalanceSOL} SOL, required=${estimatedFee} SOL`);
-      
-      if (walletBalanceSOL < estimatedFee) {
-        return res.status(400).json({ 
-          error: "Insufficient SOL for transaction fees",
-          details: {
-            currentBalance: walletBalanceSOL.toFixed(6),
-            requiredMinimum: estimatedFee.toFixed(6),
-            message: `You need at least ${estimatedFee.toFixed(6)} SOL in your wallet to pay for transaction fees. Your current balance is ${walletBalanceSOL.toFixed(6)} SOL. Please add more SOL to your wallet and try again.`
-          }
-        });
-      }
-      
       const mintPublicKey = new PublicKey(tokenMint);
       
       // Get associated token account
@@ -1229,7 +1127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `Successfully burned ${tokensProcessed} tokens and recovered ${netAmount.toFixed(6)} SOL!`
+        message: `Successfully burned ${tokensProcessed} tokens and recovered ${Number(netAmount).toFixed(6)} SOL!`
       });
 
     } catch (error) {
