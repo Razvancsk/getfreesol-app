@@ -237,7 +237,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use Helius-optimized fee calculation
       try {
         const feeCalculator = await connection.getFeeForMessage(transaction.compileMessage());
-        console.log(`Helius estimated fee: ${feeCalculator.value} lamports (${(feeCalculator.value / 1e9).toFixed(9)} SOL)`);
+        if (feeCalculator.value) {
+          console.log(`Helius estimated fee: ${feeCalculator.value} lamports (${(feeCalculator.value / 1e9).toFixed(9)} SOL)`);
+        }
       } catch (feeError) {
         console.log('Fee estimation failed, using default');
       }
@@ -250,10 +252,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction: transactionBase64,
         message: `Prepared transaction to close ${accountsToClose.length} accounts`,
         totalSolReclaimed: totalSolReclaimed,
-        feeAmount: totalFeeAmount,
-        platformFeeAmount: platformFeeAmount,
-        referralFeeAmount: referralFeeAmount,
-        netAmount: netAmount,
+        feeAmount: 0, // No upfront fees
+        platformFeeAmount: 0, // Collected separately 
+        referralFeeAmount: 0, // Collected separately
+        netAmount: totalSolReclaimed, // User gets full recovery first
         referralCodeUsed: referralCode || null
       });
 
