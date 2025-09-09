@@ -6,7 +6,8 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddress, createBurnInstruction } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -206,54 +207,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const connection = new Connection(rpcUrl, 'confirmed');
 
-      // CHECK USER'S ACTUAL SOL BALANCE
-      const userWallet = new PublicKey(walletAddress);
-      const balance = await connection.getBalance(userWallet);
-      const balanceInSOL = balance / 1e9;
-      
-      console.log(`🔍 BALANCE CHECK: User wallet ${walletAddress} has ${balanceInSOL.toFixed(6)} SOL`);
-      console.log(`🔍 Required for network fees: ~0.005 SOL minimum`);
-      
-      if (balanceInSOL < 0.005) {
-        return res.status(400).json({ 
-          error: `Insufficient SOL balance. You have ${balanceInSOL.toFixed(6)} SOL but need at least 0.005 SOL for transaction fees.`
-        });
-      }
-
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
-      // Close all accounts normally - all SOL goes to user first
+      // Add close account instructions for each empty account
+      const { TOKEN_PROGRAM_ID, Token } = await import('@solana/spl-token');
+      
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = createCloseAccountInstruction(
+        const closeInstruction = Token.createCloseAccountInstruction(
+          TOKEN_PROGRAM_ID,
           accountPublicKey,
-          ownerPublicKey, // All SOL goes to user
-          ownerPublicKey  // owner
+          ownerPublicKey, // destination (receives SOL)
+          ownerPublicKey,  // owner
+          []
         );
         
         transaction.add(closeInstruction);
       }
 
-      // Add 15% fee transfer IN SAME TRANSACTION (after account closures)
+      // Add service fee transfers
       const { SystemProgram } = await import('@solana/web3.js');
       
       if (platformFeeAmount > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
-        const feeTransferInstruction = SystemProgram.transfer({
+        const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
           toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(platformFeeAmount * 1e9), // 15% of recovered SOL
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
         });
         
-        transaction.add(feeTransferInstruction);
-        console.log(`✅ Added 15% fee transfer: ${platformFeeAmount.toFixed(8)} SOL in same transaction`);
+        transaction.add(platformFeeTransferInstruction);
       }
       
-      console.log(`COMPLETE TRANSACTION: Close accounts + fee transfer. Net result: ${netAmount.toFixed(8)} SOL to user`);
+      // Add referral fee transfer if applicable
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: referralWalletPublicKey,
+          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(referralFeeTransferInstruction);
+      }
 
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -278,82 +279,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Prepare transaction error:", error);
       res.status(500).json({ error: "Failed to prepare transaction" });
-    }
-  });
-
-  // Collect 15% fee after successful SOL recovery
-  app.post("/api/sol-refund/collect-fee", async (req, res) => {
-    try {
-      const { walletAddress, recoveredAmount, referralCode } = req.body;
-
-      if (!walletAddress || !recoveredAmount) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      // Calculate fee amounts
-      const totalFeeAmount = parseFloat(recoveredAmount) * 0.15;
-      let platformFeeAmount = totalFeeAmount;
-      let referralFeeAmount = 0;
-
-      // Check for referral code and adjust fee distribution
-      if (referralCode) {
-        referralFeeAmount = totalFeeAmount * 0.35; // 35% of fee to referral
-        platformFeeAmount = totalFeeAmount * 0.65; // 65% of fee to platform
-      }
-
-      const { Connection, Transaction, SystemProgram, PublicKey } = await import('@solana/web3.js');
-      
-      // Get RPC connection
-      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
-        'https://api.mainnet-beta.solana.com';
-      
-      const connection = new Connection(rpcUrl, 'confirmed');
-
-      // Create fee collection transaction
-      const feeTransaction = new Transaction();
-      
-      if (platformFeeAmount > 0) {
-        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
-        
-        const platformFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: new PublicKey(walletAddress),
-          toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(platformFeeAmount * 1e9),
-        });
-        
-        feeTransaction.add(platformFeeTransferInstruction);
-      }
-
-      // Add referral fee if applicable
-      if (referralFeeAmount > 0) {
-        // For now, just log the referral fee - you'd need to get the referral wallet address
-        console.log(`Referral fee to collect: ${referralFeeAmount} SOL`);
-      }
-
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      feeTransaction.recentBlockhash = blockhash;
-      feeTransaction.feePayer = new PublicKey(walletAddress);
-
-      // Serialize transaction
-      const serializedTransaction = feeTransaction.serialize({ requireAllSignatures: false });
-      const transactionBase64 = serializedTransaction.toString('base64');
-
-      console.log(`Fee collection transaction prepared: ${totalFeeAmount.toFixed(8)} SOL total fee`);
-
-      res.json({
-        transaction: transactionBase64,
-        feeAmount: totalFeeAmount,
-        platformFeeAmount: platformFeeAmount,
-        referralFeeAmount: referralFeeAmount,
-        message: `Fee collection transaction prepared: ${totalFeeAmount.toFixed(8)} SOL`
-      });
-
-    } catch (error) {
-      console.error("Fee collection error:", error);
-      res.status(500).json({ error: "Failed to prepare fee collection" });
     }
   });
 
@@ -757,7 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Use Solana RPC to check if tokens are actually burnable
             const { Connection, PublicKey } = await import('@solana/web3.js');
-            const { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+            const { Token, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
             
             const connection = new Connection(rpcUrl, 'confirmed');
             const ownerPublicKey = new PublicKey(address);
@@ -767,7 +692,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const asset of fungibleTokens) {
               try {
                 const mintPublicKey = new PublicKey(asset.id);
-                const tokenAccount = await getAssociatedTokenAddress(
+                const tokenAccount = await Token.getAssociatedTokenAddress(
+                  ASSOCIATED_TOKEN_PROGRAM_ID,
+                  TOKEN_PROGRAM_ID,
                   mintPublicKey,
                   ownerPublicKey
                 );
@@ -875,7 +802,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        Token 
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -900,7 +828,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const mintPublicKey = new PublicKey(tokenMint);
           
           // Get associated token account
-          const tokenAccount = await getAssociatedTokenAddress(
+          const tokenAccount = await Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
+            TOKEN_PROGRAM_ID, // programId
             mintPublicKey,
             ownerPublicKey
           );
@@ -919,20 +849,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
-            const burnInstruction = createBurnInstruction(
-              tokenAccount,     // Token account to burn from
+            const burnInstruction = Token.createBurnInstruction(
+              TOKEN_PROGRAM_ID, // Token program ID
               mintPublicKey,    // Token mint
+              tokenAccount,     // Token account to burn from
               ownerPublicKey,   // Owner
+              [],               // Additional signers
               balance           // Amount to burn (full balance)
             );
             transaction.add(burnInstruction);
           }
           
           // Step 2: Close the now-empty account to reclaim SOL
-          const closeInstruction = createCloseAccountInstruction(
+          const closeInstruction = Token.createCloseAccountInstruction(
+            TOKEN_PROGRAM_ID,
             tokenAccount,
             ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey  // owner
+            ownerPublicKey,  // owner
+            []
           );
           
           transaction.add(closeInstruction);
@@ -1044,7 +978,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        Token 
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -1060,7 +995,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintPublicKey = new PublicKey(tokenMint);
       
       // Get associated token account
-      const tokenAccount = await getAssociatedTokenAddress(
+      const tokenAccount = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
+        TOKEN_PROGRAM_ID, // programId
         mintPublicKey,
         ownerPublicKey
       );
@@ -1081,20 +1018,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = createBurnInstruction(
-          tokenAccount,     // Token account to burn from
+        const burnInstruction = Token.createBurnInstruction(
+          TOKEN_PROGRAM_ID, // Token program ID
           mintPublicKey,    // Token mint
+          tokenAccount,     // Token account to burn from
           ownerPublicKey,   // Owner
+          [],               // Additional signers
           balance           // Amount to burn (full balance)
         );
         transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = createCloseAccountInstruction(
+      const closeInstruction = Token.createCloseAccountInstruction(
+        TOKEN_PROGRAM_ID,
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey  // owner
+        ownerPublicKey,  // owner
+        []
       );
       
       transaction.add(closeInstruction);
@@ -1293,6 +1234,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter API endpoints
+  app.get("/api/jupiter/tokens", async (req, res) => {
+    try {
+      const tokens = await getJupiterTokens();
+      res.json({ success: true, tokens });
+    } catch (error) {
+      console.error("Error fetching Jupiter tokens:", error);
+      res.status(500).json({ error: "Failed to fetch Jupiter tokens" });
+    }
+  });
+
+  app.get("/api/jupiter/tokens/search", async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: "Search query 'q' is required" });
+      }
+      
+      const tokens = await searchJupiterTokens(q);
+      res.json({ success: true, tokens });
+    } catch (error) {
+      console.error("Error searching Jupiter tokens:", error);
+      res.status(500).json({ error: "Failed to search Jupiter tokens" });
+    }
+  });
+
+  app.get("/api/jupiter/quote", async (req, res) => {
+    try {
+      const { inputMint, outputMint, amount, slippageBps } = req.query;
+      
+      if (!inputMint || !outputMint || !amount) {
+        return res.status(400).json({ 
+          error: "inputMint, outputMint, and amount are required" 
+        });
+      }
+      
+      const quote = await getJupiterQuote(
+        inputMint as string,
+        outputMint as string,
+        parseInt(amount as string),
+        slippageBps ? parseInt(slippageBps as string) : 100
+      );
+      
+      res.json({ success: true, quote });
+    } catch (error) {
+      console.error("Error getting Jupiter quote:", error);
+      res.status(500).json({ error: "Failed to get Jupiter quote" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -3,11 +3,9 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SolanaProvider } from "@/providers/SolanaProvider";
+import NotFound from "@/pages/not-found";
 import ClaimSol from "@/pages/claim-sol";
 import SwapPage from "@/pages/swap";
-import Referrals from "@/pages/referrals";
-import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
@@ -15,9 +13,6 @@ function Router() {
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
       <Route path="/swap" component={SwapPage} />
-      <Route path="/referrals" component={Referrals} />
-      {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
-      <Route path="/:referralCode" component={ClaimSol} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -26,12 +21,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SolanaProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </SolanaProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
