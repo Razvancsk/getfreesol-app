@@ -16,6 +16,7 @@ import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1754527057994.png';
 import AdContainer from '@/components/AdContainer';
+import AxiomBanner from '@/components/AxiomBanner';
 
 interface EmptyTokenAccount {
   id: number;
@@ -1455,6 +1456,11 @@ export default function SolRefund() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Axiom Banner */}
+          <div className="mb-6">
+            <AxiomBanner className="max-w-4xl mx-auto" />
           </div>
 
           {/* Description */}

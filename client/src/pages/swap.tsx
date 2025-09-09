@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import WalletSelectionModal from '@/components/WalletSelectionModal';
 import { getConnectedWallet, getWalletByType, WalletType } from '@/lib/solana';
 import AdContainer from '@/components/AdContainer';
+import AxiomBanner from '@/components/AxiomBanner';
 
 const connection = new Connection(
   import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
@@ -291,6 +292,11 @@ export default function SwapPage() {
       </div>
 
       <div className="max-w-6xl mx-auto pt-8">
+        {/* Axiom Banner */}
+        <div className="mb-6">
+          <AxiomBanner className="max-w-4xl mx-auto" />
+        </div>
+        
         <div className="lg:grid lg:grid-cols-12 lg:gap-6">
           {/* Main Swap Card */}
           <div className="lg:col-span-9 flex justify-center">
