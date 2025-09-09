@@ -1121,7 +1121,7 @@ export default function SolRefund() {
                   </h3>
                   <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
                     Your current balance is {balanceQuery.data?.balanceFormatted || '0.000000'} SOL. 
-                    You need at least 0.001 SOL to pay for transaction fees. 
+                    You need at least 0.0005 SOL to pay for transaction fees. 
                     Please add more SOL to your wallet before performing transactions.
                   </p>
                 </div>

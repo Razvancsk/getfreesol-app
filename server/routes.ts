@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         balance: balanceSOL,
         balanceFormatted: balanceSOL.toFixed(6),
-        isLowBalance: balanceSOL < 0.001 // Warning threshold
+        isLowBalance: balanceSOL < 0.0005 // Warning threshold
       });
       
     } catch (error) {
@@ -249,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const walletBalanceSOL = walletBalance / 1e9; // Convert lamports to SOL
       
       // Estimate transaction fee (approximately 0.0001 to 0.0005 SOL per transaction)
-      const estimatedFee = 0.001; // Conservative estimate for safety
+      const estimatedFee = 0.0005; // More reasonable estimate for safety
       
       if (walletBalanceSOL < estimatedFee) {
         return res.status(400).json({ 
@@ -864,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const walletBalanceSOL = walletBalance / 1e9; // Convert lamports to SOL
       
       // Estimate transaction fee (approximately 0.0001 to 0.0005 SOL per transaction)
-      const estimatedFee = 0.001; // Conservative estimate for safety
+      const estimatedFee = 0.0005; // More reasonable estimate for safety
       
       if (walletBalanceSOL < estimatedFee) {
         return res.status(400).json({ 
@@ -1061,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const walletBalanceSOL = walletBalance / 1e9; // Convert lamports to SOL
       
       // Estimate transaction fee (approximately 0.0001 to 0.0005 SOL per transaction)
-      const estimatedFee = 0.001; // Conservative estimate for safety
+      const estimatedFee = 0.0005; // More reasonable estimate for safety
       
       if (walletBalanceSOL < estimatedFee) {
         return res.status(400).json({ 
