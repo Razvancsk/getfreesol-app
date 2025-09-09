@@ -217,24 +217,31 @@ export const useWalletAdapter = (): WalletAdapterHook => {
                             magicEdenWallet.isConnected ? 'Magic Eden' : 
                             bitgetWallet.isConnected ? 'Bitget' : (wallet?.adapter?.name || null);
 
-  // Simplified signTransaction wrapper - fix hanging issue
+  // Enhanced signTransaction wrapper with strict wallet isolation
   const wrappedSignTransaction = useCallback(async (transaction: any) => {
-    // Direct wallet integrations first
+
+    // Priority 1: Direct wallet integrations (no fallbacks to maintain wallet isolation)
     if (backpackWallet.isConnected) {
       return await backpackWallet.signTransaction(transaction);
     } 
+    
     if (coinbaseWallet.isConnected) {
       return await coinbaseWallet.signTransaction(transaction);
     }
+    
     if (magicEdenWallet.isConnected) {
       return await magicEdenWallet.signTransaction(transaction);
     }
+    
     if (bitgetWallet.isConnected) {
       return await bitgetWallet.signTransaction(transaction);
     }
     
-    // Standard wallet adapter (Phantom, Solflare, etc.)
-    if (connected && signTransaction) {
+    // Priority 2: Standard wallet adapter (Phantom, Solflare, etc.) - STRICT ISOLATION
+    if (connected && signTransaction && wallet?.adapter) {
+      const walletName = wallet.adapter.name;
+      
+      // IMPORTANT: No fallbacks here - each wallet must handle its own transactions
       const signedTx = await signTransaction(transaction);
       return signedTx;
     } 

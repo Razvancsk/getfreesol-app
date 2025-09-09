@@ -94,8 +94,7 @@ export default function SolRefund() {
   const { toast } = useToast();
   const [location] = useLocation();
 
-  // Wallet adapter state - Initialize early to ensure publicKey is available
-  const walletAdapter = useWalletAdapter();
+  // Wallet adapter state - Move this early so publicKey is available
   const { 
     publicKey, 
     connected: isConnected, 
@@ -112,7 +111,7 @@ export default function SolRefund() {
     connectBitget,
     setVisible,
     select
-  } = walletAdapter || {};
+  } = useWalletAdapter();
 
   // Query to get user's referral code and stats
   const { data: userReferrals } = useQuery({
@@ -475,15 +474,8 @@ export default function SolRefund() {
       const signedTx = await signTransaction(tx);
       const signature = await connection.sendRawTransaction(signedTx.serialize());
       
-      // Wait for confirmation with error handling
-      try {
-        await connection.confirmTransaction(signature, 'confirmed');
-        console.log('Transaction confirmed successfully!');
-      } catch (confirmError: any) {
-        console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
-        console.warn('Transaction signature:', signature);
-        // Continue with success recording since transaction was sent
-      }
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
       
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
@@ -585,15 +577,7 @@ export default function SolRefund() {
       const signature = await connection.sendRawTransaction(signedTx.serialize());
       console.log('📡 Transaction sent to network:', signature);
       
-      // Wait for confirmation with error handling
-      try {
-        await connection.confirmTransaction(signature, 'confirmed');
-        console.log('✅ Transaction confirmed successfully!');
-      } catch (confirmError: any) {
-        console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
-        console.warn('Transaction signature:', signature);
-        // Continue with success recording since transaction was sent
-      }
+      await connection.confirmTransaction(signature, 'confirmed');
       
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {

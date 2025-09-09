@@ -5,8 +5,8 @@ import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertSca
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { Connection, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const netAmount = totalSolReclaimed - totalFeeAmount;
 
-      // Use Helius RPC for better transaction estimates and balance accuracy
+      // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusApiKey ? 
         `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
@@ -209,82 +209,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
-      // Close ALL selected accounts in bulk transaction
-      const { createCloseAccountInstruction } = await import('@solana/spl-token');
+      // Add close account instructions for each empty account
+      const { TOKEN_PROGRAM_ID, Token } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = createCloseAccountInstruction(
+        const closeInstruction = Token.createCloseAccountInstruction(
+          TOKEN_PROGRAM_ID,
           accountPublicKey,
           ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey  // owner
+          ownerPublicKey,  // owner
+          []
         );
         
         transaction.add(closeInstruction);
       }
-      
-      console.log(`Creating bulk transaction for ${accountsToClose.length} accounts`);
-      console.log(`Platform fee: ${platformFeeAmount} SOL`);
-      console.log(`Referral fee: ${referralFeeAmount} SOL`);
-      console.log(`Total recovered: ${totalSolReclaimed} SOL`);
-      console.log(`Net amount: ${netAmount} SOL`);
 
-      // SOLUTION: Create a "NET POSITIVE" transaction structure
-      // Instead of charging fees upfront, we'll:
-      // 1. Close accounts (user gets SOL)
-      // 2. Then in SAME transaction, transfer the fees
-      // 3. But structure it so net effect is positive
+      // Add service fee transfers
+      const { SystemProgram } = await import('@solana/web3.js');
       
-      // Calculate the actual net SOL the user will receive
-      const netSolToUser = totalSolReclaimed - platformFeeAmount - referralFeeAmount;
+      if (platformFeeAmount > 0) {
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const platformFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(platformFeeTransferInstruction);
+      }
       
-      // Add a single transfer to user for the NET amount
-      // This way Phantom sees: "User receives X SOL" instead of "User pays fees"
-      if (netSolToUser > 0) {
-        // Transfer net amount to a temporary account or structure differently
-        // For now, let's add minimal fee transfers to keep transaction cost low
+      // Add referral fee transfer if applicable
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
-        if (platformFeeAmount > 0.0001) { // Only add if significant
-          const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
-          
-          const platformFeeTransferInstruction = SystemProgram.transfer({
-            fromPubkey: new PublicKey(walletAddress),
-            toPubkey: feeCollectorPublicKey,
-            lamports: Math.round(platformFeeAmount * 1e9),
-          });
-          
-          transaction.add(platformFeeTransferInstruction);
-        }
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: referralWalletPublicKey,
+          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+        });
         
-        if (referralFeeAmount > 0.0001 && referralCodeData) { // Only add if significant
-          const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-          
-          const referralFeeTransferInstruction = SystemProgram.transfer({
-            fromPubkey: new PublicKey(walletAddress),
-            toPubkey: referralWalletPublicKey,
-            lamports: Math.round(referralFeeAmount * 1e9),
-          });
-          
-          transaction.add(referralFeeTransferInstruction);
-        }
+        transaction.add(referralFeeTransferInstruction);
       }
 
-      // Optimize transaction for Helius RPC - better fee estimation
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = new PublicKey(walletAddress);
-      
-      // Use Helius-optimized fee calculation
-      try {
-        const feeCalculator = await connection.getFeeForMessage(transaction.compileMessage());
-        if (feeCalculator.value) {
-          console.log(`Helius estimated fee: ${feeCalculator.value} lamports (${(feeCalculator.value / 1e9).toFixed(9)} SOL)`);
-        }
-      } catch (feeError) {
-        console.log('Fee estimation failed, using default');
-      }
 
       // Serialize transaction
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
@@ -297,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         feeAmount: totalFeeAmount,
         platformFeeAmount: platformFeeAmount,
         referralFeeAmount: referralFeeAmount,
-        netAmount: netAmount, // Correct net amount after fees
+        netAmount: netAmount,
         referralCodeUsed: referralCode || null
       });
 
@@ -707,7 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Use Solana RPC to check if tokens are actually burnable
             const { Connection, PublicKey } = await import('@solana/web3.js');
-            const { getAssociatedTokenAddress, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+            const { Token, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
             
             const connection = new Connection(rpcUrl, 'confirmed');
             const ownerPublicKey = new PublicKey(address);
@@ -717,7 +691,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const asset of fungibleTokens) {
               try {
                 const mintPublicKey = new PublicKey(asset.id);
-                const tokenAccount = await getAssociatedTokenAddress(
+                const tokenAccount = await Token.getAssociatedTokenAddress(
+                  ASSOCIATED_TOKEN_PROGRAM_ID,
+                  TOKEN_PROGRAM_ID,
                   mintPublicKey,
                   ownerPublicKey
                 );
@@ -822,6 +798,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { 
+        TOKEN_PROGRAM_ID, 
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        Token 
+      } = await import('@solana/spl-token');
+      
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
       const rpcUrl = heliusApiKey 
@@ -844,7 +827,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const mintPublicKey = new PublicKey(tokenMint);
           
           // Get associated token account
-          const tokenAccount = await getAssociatedTokenAddress(
+          const tokenAccount = await Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
+            TOKEN_PROGRAM_ID, // programId
             mintPublicKey,
             ownerPublicKey
           );
@@ -863,20 +848,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
-            const burnInstruction = createBurnInstruction(
-              tokenAccount,     // Token account to burn from
+            const burnInstruction = Token.createBurnInstruction(
+              TOKEN_PROGRAM_ID, // Token program ID
               mintPublicKey,    // Token mint
+              tokenAccount,     // Token account to burn from
               ownerPublicKey,   // Owner
+              [],               // Additional signers
               balance           // Amount to burn (full balance)
             );
             transaction.add(burnInstruction);
           }
           
           // Step 2: Close the now-empty account to reclaim SOL
-          const closeInstruction = createCloseAccountInstruction(
+          const closeInstruction = Token.createCloseAccountInstruction(
+            TOKEN_PROGRAM_ID,
             tokenAccount,
             ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey  // owner
+            ownerPublicKey,  // owner
+            []
           );
           
           transaction.add(closeInstruction);
@@ -892,27 +881,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Calculate totals with referral fee splitting based on actual account rent
-      let totalSolRecovered = 0;
-      
-      // Get actual rent amounts from the token accounts
-      for (const tokenMint of tokenMints) {
-        try {
-          const mintPublicKey = new PublicKey(tokenMint);
-          const tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey);
-          const accountInfo = await connection.getAccountInfo(tokenAccount);
-          
-          if (accountInfo) {
-            // Add the actual rent amount (account lamports) to total
-            const rentAmount = accountInfo.lamports / 1e9; // Convert lamports to SOL
-            totalSolRecovered += rentAmount;
-          }
-        } catch (error) {
-          console.log(`Error getting account info for token ${tokenMint}:`, error);
-          // Fallback to hardcoded amount if unable to get account info
-          totalSolRecovered += 0.00203928;
-        }
-      }
+      // Calculate totals with referral fee splitting
+      const totalSolRecovered = totalTokensProcessed * 0.00203928;
       const totalFeeAmount = totalSolRecovered * 0.15; // 15% fee
       
       let referralFeeAmount = 0;
@@ -931,6 +901,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const netAmount = totalSolRecovered - totalFeeAmount;
 
       // Add service fee transfers
+      const { SystemProgram } = await import('@solana/web3.js');
+      
       if (platformFeeAmount > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
@@ -1002,6 +974,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Wallet address and token mint are required" });
       }
 
+      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { 
+        TOKEN_PROGRAM_ID, 
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        Token 
+      } = await import('@solana/spl-token');
+      
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
       const rpcUrl = heliusApiKey 
@@ -1015,7 +994,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintPublicKey = new PublicKey(tokenMint);
       
       // Get associated token account
-      const tokenAccount = await getAssociatedTokenAddress(
+      const tokenAccount = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
+        TOKEN_PROGRAM_ID, // programId
         mintPublicKey,
         ownerPublicKey
       );
@@ -1036,20 +1017,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = createBurnInstruction(
-          tokenAccount,     // Token account to burn from
+        const burnInstruction = Token.createBurnInstruction(
+          TOKEN_PROGRAM_ID, // Token program ID
           mintPublicKey,    // Token mint
+          tokenAccount,     // Token account to burn from
           ownerPublicKey,   // Owner
+          [],               // Additional signers
           balance           // Amount to burn (full balance)
         );
         transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = createCloseAccountInstruction(
+      const closeInstruction = Token.createCloseAccountInstruction(
+        TOKEN_PROGRAM_ID,
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey  // owner
+        ownerPublicKey,  // owner
+        []
       );
       
       transaction.add(closeInstruction);
@@ -1087,11 +1072,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate required fields
       if (!signature || !walletAddress || !tokenMints || !tokensProcessed || !solRecovered) {
         return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      // Validate that tokensProcessed is greater than zero to prevent division by zero
-      if (tokensProcessed <= 0) {
-        return res.status(400).json({ error: "tokensProcessed must be greater than zero" });
       }
 
       // Check if transaction already recorded
@@ -1150,13 +1130,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tokenSymbol: 'TOKEN',
           tokenName: 'Unknown Token',
           amountBurned: '1.0',
-          solRecovered: tokensProcessed > 0 ? (solRecovered / tokensProcessed).toString() : '0'
+          solRecovered: (solRecovered / tokensProcessed).toString()
         });
       }
 
       res.json({
         success: true,
-        message: `Successfully burned ${tokensProcessed} tokens and recovered ${Number(netAmount).toFixed(6)} SOL!`
+        message: `Successfully burned ${tokensProcessed} tokens and recovered ${netAmount.toFixed(6)} SOL!`
       });
 
     } catch (error) {
