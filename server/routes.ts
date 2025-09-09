@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, ads, insertAdSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { 
@@ -1231,6 +1231,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Enhanced stats error:", error);
       res.status(500).json({ error: "Failed to get enhanced statistics" });
+    }
+  });
+
+  // Ads API endpoints
+  // Get all ads (optionally filtered by placement)
+  app.get("/api/ads", async (req, res) => {
+    try {
+      const { placement } = req.query;
+      
+      let query = db.select().from(ads).where(eq(ads.isActive, true));
+      
+      if (placement && typeof placement === 'string') {
+        query = query.where(eq(ads.placement, placement));
+      }
+      
+      const result = await query.orderBy(ads.priority, ads.createdAt);
+      
+      res.json({
+        success: true,
+        ads: result
+      });
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+      res.status(500).json({ error: "Failed to fetch ads" });
+    }
+  });
+
+  // Create a new ad
+  app.post("/api/ads", async (req, res) => {
+    try {
+      const validatedData = insertAdSchema.parse(req.body);
+      
+      const result = await db.insert(ads).values({
+        ...validatedData,
+        id: nanoid(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      res.json({
+        success: true,
+        ad: result[0]
+      });
+    } catch (error) {
+      console.error("Error creating ad:", error);
+      res.status(500).json({ error: "Failed to create ad" });
+    }
+  });
+
+  // Update an ad
+  app.put("/api/ads/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertAdSchema.partial().parse(req.body);
+      
+      const result = await db.update(ads)
+        .set({
+          ...validatedData,
+          updatedAt: new Date()
+        })
+        .where(eq(ads.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      
+      res.json({
+        success: true,
+        ad: result[0]
+      });
+    } catch (error) {
+      console.error("Error updating ad:", error);
+      res.status(500).json({ error: "Failed to update ad" });
+    }
+  });
+
+  // Delete an ad
+  app.delete("/api/ads/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db.delete(ads)
+        .where(eq(ads.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      
+      res.json({
+        success: true,
+        message: "Ad deleted successfully"
+      });
+    } catch (error) {
+      console.error("Error deleting ad:", error);
+      res.status(500).json({ error: "Failed to delete ad" });
+    }
+  });
+
+  // Track ad click
+  app.post("/api/ads/:id/click", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db.update(ads)
+        .set({
+          clickCount: sql`${ads.clickCount} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(ads.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      
+      res.json({
+        success: true,
+        clickCount: result[0].clickCount
+      });
+    } catch (error) {
+      console.error("Error tracking ad click:", error);
+      res.status(500).json({ error: "Failed to track ad click" });
+    }
+  });
+
+  // Track ad impression
+  app.post("/api/ads/:id/impression", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db.update(ads)
+        .set({
+          impressionCount: sql`${ads.impressionCount} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(ads.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      
+      res.json({
+        success: true,
+        impressionCount: result[0].impressionCount
+      });
+    } catch (error) {
+      console.error("Error tracking ad impression:", error);
+      res.status(500).json({ error: "Failed to track ad impression" });
     }
   });
 
