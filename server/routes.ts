@@ -212,33 +212,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add close account instructions for each empty account
       const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
-      // Create a temporary keypair to receive the full SOL amount first
-      const { Keypair } = await import('@solana/web3.js');
-      const tempKeypair = Keypair.generate();
-      
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
         const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
-          tempKeypair.publicKey, // Send SOL to temporary account first
+          ownerPublicKey, // destination (receives SOL)
           ownerPublicKey  // owner
         );
         
         transaction.add(closeInstruction);
       }
-      
-      // Transfer net amount (after fees) to user
-      const userNetTransferInstruction = SystemProgram.transfer({
-        fromPubkey: tempKeypair.publicKey,
-        toPubkey: new PublicKey(walletAddress),
-        lamports: Math.round(netAmount * 1e9), // Only the net amount goes to user
-      });
-      
-      transaction.add(userNetTransferInstruction);
 
-      // Add service fee transfers - users pay 15% fee upfront
+      // Add service fee transfers
+      
       if (platformFeeAmount > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
@@ -251,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.add(platformFeeTransferInstruction);
       }
       
-      // Add referral fee transfer - 35% of 15% fee goes to referral
+      // Add referral fee transfer if applicable
       if (referralFeeAmount > 0 && referralCodeData) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
@@ -1139,7 +1127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `Successfully burned ${tokensProcessed} tokens and recovered ${Number(netAmount).toFixed(6)} SOL!`
+        message: `Successfully burned ${tokensProcessed} tokens and recovered ${netAmount.toFixed(6)} SOL!`
       });
 
     } catch (error) {
