@@ -983,8 +983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        Token 
+        ASSOCIATED_TOKEN_PROGRAM_ID
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -1000,11 +999,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintPublicKey = new PublicKey(tokenMint);
       
       // Get associated token account
-      const tokenAccount = await Token.getAssociatedTokenAddress(
-        ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
-        TOKEN_PROGRAM_ID, // programId
-        mintPublicKey,
-        ownerPublicKey
+      const tokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,    // mint
+        ownerPublicKey    // owner
       );
       
       // Get token account info to determine balance and decimals
