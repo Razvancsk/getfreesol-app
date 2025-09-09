@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import logoImage from '../assets/logo.png';
+import logoImage from '@assets/image_1754527057994.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -958,7 +958,7 @@ export default function SolRefund() {
                 <img 
                   src={logoImage}
                   alt="Get your SOL back!"
-                  className="h-32 w-auto"
+                  className="h-24 w-auto"
                 />
               </div>
               
