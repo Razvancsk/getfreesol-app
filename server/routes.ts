@@ -213,6 +213,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const connection = new Connection(rpcUrl, 'confirmed');
 
+      // Import SPL Token functions  
+      const { createCloseAccountInstruction } = await import('@solana/spl-token');
+
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
