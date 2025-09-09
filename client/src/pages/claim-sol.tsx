@@ -657,6 +657,11 @@ export default function SolRefund() {
   // Process SOL refund (15% service fee)
   const refundMutation = useMutation({
     mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string }) => {
+      // Check wallet connection
+      if (!isConnected || !publicKey) {
+        throw new Error('Wallet not connected');
+      }
+
       // Get transaction (15% service fee)
       const response = await fetch('/api/sol-refund/prepare-transaction', {
         method: 'POST',
@@ -669,10 +674,6 @@ export default function SolRefund() {
       }
       
       const { transaction, message, totalSolReclaimed, feeAmount, netAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
-      
-      if (!isConnected || !publicKey) {
-        throw new Error('Wallet not connected');
-      }
 
       const { Connection } = await import('@solana/web3.js');
       
