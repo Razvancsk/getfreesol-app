@@ -226,6 +226,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Creating bulk transaction for ${accountsToClose.length} accounts`);
+      console.log(`Platform fee: ${platformFeeAmount} SOL`);
+      console.log(`Referral fee: ${referralFeeAmount} SOL`);
+      console.log(`Total recovered: ${totalSolReclaimed} SOL`);
+      console.log(`Net amount: ${netAmount} SOL`);
 
       // Add platform and referral fees directly to transaction
       // This shows correct net amount to user in wallet
