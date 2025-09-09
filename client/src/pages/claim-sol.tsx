@@ -923,10 +923,8 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
     
     const total = parseFloat(scanResult.totalReclaimable);
-    // NOTE: Fees will be collected in separate transaction after SOL recovery
-    // Main transaction only recovers SOL to avoid wallet balance errors
-    const donation = 0; // No fees in main transaction
-    const net = total; // User gets full amount in main transaction
+    const donation = total * 0.15; // 15% service fee
+    const net = total - donation; // 85% to user (net after fees)
     
     return { total, donation, net };
   };
