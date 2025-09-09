@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddress, createBurnInstruction } from "@solana/spl-token";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -210,18 +210,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = new Transaction();
       
       // Add close account instructions for each empty account
-      const { TOKEN_PROGRAM_ID, Token } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = Token.createCloseAccountInstruction(
-          TOKEN_PROGRAM_ID,
+        const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
           ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey,  // owner
-          []
+          ownerPublicKey  // owner
         );
         
         transaction.add(closeInstruction);
@@ -681,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Use Solana RPC to check if tokens are actually burnable
             const { Connection, PublicKey } = await import('@solana/web3.js');
-            const { Token, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+            const { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
             
             const connection = new Connection(rpcUrl, 'confirmed');
             const ownerPublicKey = new PublicKey(address);
@@ -691,9 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const asset of fungibleTokens) {
               try {
                 const mintPublicKey = new PublicKey(asset.id);
-                const tokenAccount = await Token.getAssociatedTokenAddress(
-                  ASSOCIATED_TOKEN_PROGRAM_ID,
-                  TOKEN_PROGRAM_ID,
+                const tokenAccount = await getAssociatedTokenAddress(
                   mintPublicKey,
                   ownerPublicKey
                 );
@@ -801,8 +796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        Token 
+        ASSOCIATED_TOKEN_PROGRAM_ID
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -827,9 +821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const mintPublicKey = new PublicKey(tokenMint);
           
           // Get associated token account
-          const tokenAccount = await Token.getAssociatedTokenAddress(
-            ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
-            TOKEN_PROGRAM_ID, // programId
+          const tokenAccount = await getAssociatedTokenAddress(
             mintPublicKey,
             ownerPublicKey
           );
@@ -848,24 +840,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
-            const burnInstruction = Token.createBurnInstruction(
-              TOKEN_PROGRAM_ID, // Token program ID
-              mintPublicKey,    // Token mint
+            const burnInstruction = createBurnInstruction(
               tokenAccount,     // Token account to burn from
+              mintPublicKey,    // Token mint
               ownerPublicKey,   // Owner
-              [],               // Additional signers
               balance           // Amount to burn (full balance)
             );
             transaction.add(burnInstruction);
           }
           
           // Step 2: Close the now-empty account to reclaim SOL
-          const closeInstruction = Token.createCloseAccountInstruction(
-            TOKEN_PROGRAM_ID,
+          const closeInstruction = createCloseAccountInstruction(
             tokenAccount,
             ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey,  // owner
-            []
+            ownerPublicKey  // owner
           );
           
           transaction.add(closeInstruction);
@@ -977,8 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
       const { 
         TOKEN_PROGRAM_ID, 
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        Token 
+        ASSOCIATED_TOKEN_PROGRAM_ID
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -994,9 +981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintPublicKey = new PublicKey(tokenMint);
       
       // Get associated token account
-      const tokenAccount = await Token.getAssociatedTokenAddress(
-        ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
-        TOKEN_PROGRAM_ID, // programId
+      const tokenAccount = await getAssociatedTokenAddress(
         mintPublicKey,
         ownerPublicKey
       );
@@ -1017,24 +1002,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = Token.createBurnInstruction(
-          TOKEN_PROGRAM_ID, // Token program ID
-          mintPublicKey,    // Token mint
+        const burnInstruction = createBurnInstruction(
           tokenAccount,     // Token account to burn from
+          mintPublicKey,    // Token mint
           ownerPublicKey,   // Owner
-          [],               // Additional signers
           balance           // Amount to burn (full balance)
         );
         transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = Token.createCloseAccountInstruction(
-        TOKEN_PROGRAM_ID,
+      const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey,  // owner
-        []
+        ownerPublicKey  // owner
       );
       
       transaction.add(closeInstruction);
