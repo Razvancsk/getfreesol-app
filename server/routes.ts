@@ -225,35 +225,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.add(closeInstruction);
       }
 
-      // Only add minimal fee if user has very low balance
-      // This reduces upfront SOL requirement
-      const minPlatformFee = Math.min(platformFeeAmount, 0.001); // Cap at 0.001 SOL max upfront
-      const minReferralFee = Math.min(referralFeeAmount, 0.0005); // Cap at 0.0005 SOL max upfront
-      
-      if (minPlatformFee > 0) {
-        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
-        
-        const platformFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: new PublicKey(walletAddress),
-          toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(minPlatformFee * 1e9), // Convert SOL to lamports
-        });
-        
-        transaction.add(platformFeeTransferInstruction);
-      }
-      
-      // Add referral fee transfer if applicable
-      if (minReferralFee > 0 && referralCodeData) {
-        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-        
-        const referralFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: new PublicKey(walletAddress),
-          toPubkey: referralWalletPublicKey,
-          lamports: Math.round(minReferralFee * 1e9), // Convert SOL to lamports
-        });
-        
-        transaction.add(referralFeeTransferInstruction);
-      }
+      // No upfront fees - user only pays network fee (0.00009 SOL)
+      // Service fees will be collected separately after successful recovery
 
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
