@@ -209,21 +209,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
-      // Add close account instructions for each empty account
+      // ONLY close ONE account at a time to minimize fees
       const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
-      for (const account of accountsToClose) {
-        const accountPublicKey = new PublicKey(account.accountAddress);
-        const ownerPublicKey = new PublicKey(walletAddress);
-        
-        const closeInstruction = createCloseAccountInstruction(
-          accountPublicKey,
-          ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey  // owner
-        );
-        
-        transaction.add(closeInstruction);
-      }
+      // Take only the first account to keep transaction simple and cheap
+      const singleAccount = accountsToClose[0];
+      const accountPublicKey = new PublicKey(singleAccount.accountAddress);
+      const ownerPublicKey = new PublicKey(walletAddress);
+      
+      const closeInstruction = createCloseAccountInstruction(
+        accountPublicKey,
+        ownerPublicKey, // destination (receives SOL)
+        ownerPublicKey  // owner
+      );
+      
+      transaction.add(closeInstruction);
+      console.log(`Creating minimal transaction for single account: ${singleAccount.accountAddress}`);
 
       // Create transaction with ONLY close instructions
       // Fees will be collected in a separate transaction after SOL recovery
@@ -250,12 +251,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         transaction: transactionBase64,
-        message: `Prepared transaction to close ${accountsToClose.length} accounts`,
-        totalSolReclaimed: totalSolReclaimed,
+        message: `Prepared minimal transaction for 1 account`,
+        totalSolReclaimed: parseFloat(singleAccount.rentAmount),
         feeAmount: 0, // No upfront fees
         platformFeeAmount: 0, // Collected separately 
         referralFeeAmount: 0, // Collected separately
-        netAmount: totalSolReclaimed, // User gets full recovery first
+        netAmount: parseFloat(singleAccount.rentAmount), // User gets full recovery first
         referralCodeUsed: referralCode || null
       });
 
