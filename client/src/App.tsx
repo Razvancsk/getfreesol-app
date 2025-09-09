@@ -7,6 +7,7 @@ import { SolanaProvider } from "@/providers/SolanaProvider";
 import ClaimSol from "@/pages/claim-sol";
 import SwapPage from "@/pages/swap";
 import Referrals from "@/pages/referrals";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/claim-sol" component={ClaimSol} />
       <Route path="/swap" component={SwapPage} />
       <Route path="/referrals" component={Referrals} />
+      <Route path="/admin" component={Admin} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />
       <Route component={NotFound} />
