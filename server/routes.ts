@@ -248,19 +248,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const walletBalance = await connection.getBalance(ownerPublicKey);
       const walletBalanceSOL = walletBalance / 1e9; // Convert lamports to SOL
       
-      // Estimate transaction fee (approximately 0.0001 to 0.0005 SOL per transaction)
-      const estimatedFee = 0.0001; // Very conservative estimate to allow more transactions
+      // Calculate actual required balance: network fee only (fees come from recovered SOL)
+      const networkFee = 0.0001; // Only network transaction fee needed upfront
+      const totalFeesFromRecoveredSOL = platformFeeAmount + referralFeeAmount;
       
       // Add debugging for balance issues
-      console.log(`Balance check: wallet=${walletBalanceSOL} SOL, required=${estimatedFee} SOL`);
+      console.log(`Balance check: wallet=${walletBalanceSOL} SOL, networkFee=${networkFee} SOL, feesFromRecovered=${totalFeesFromRecoveredSOL} SOL`);
       
-      if (walletBalanceSOL < estimatedFee) {
+      // Only check if user has enough for network fees (platform/referral fees come from recovered SOL)
+      if (walletBalanceSOL < networkFee) {
         return res.status(400).json({ 
           error: "Insufficient SOL for transaction fees",
           details: {
             currentBalance: walletBalanceSOL.toFixed(6),
-            requiredMinimum: estimatedFee.toFixed(6),
-            message: `You need at least ${estimatedFee.toFixed(6)} SOL in your wallet to pay for transaction fees. Your current balance is ${walletBalanceSOL.toFixed(6)} SOL. Please add more SOL to your wallet and try again.`
+            requiredMinimum: networkFee.toFixed(6),
+            message: `You need at least ${networkFee.toFixed(6)} SOL in your wallet to pay for network transaction fees. Your current balance is ${walletBalanceSOL.toFixed(6)} SOL. Platform fees (${totalFeesFromRecoveredSOL.toFixed(6)} SOL) will be deducted from the recovered SOL.`
           }
         });
       }
