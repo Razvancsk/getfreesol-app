@@ -923,8 +923,9 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
     
     const total = parseFloat(scanResult.totalReclaimable);
-    const donation = total * 0.15; // 15% service fee
-    const net = total - donation; // 85% to user (net after fees)
+    // Clean transaction: Only recovery, no fees (fees handled separately)
+    const donation = 0; // No fees deducted in main transaction
+    const net = total; // You get full recovery amount
     
     return { total, donation, net };
   };
