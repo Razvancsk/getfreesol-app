@@ -56,7 +56,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
@@ -64,16 +64,6 @@ export default function SolRefund() {
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
-  
-  // Jupiter swap states (placeholders to fix compilation errors)
-  const [isJupiterLoading, setIsJupiterLoading] = useState(false);
-  const [swapInputAmount, setSwapInputAmount] = useState('');
-  const [swapInputToken, setSwapInputToken] = useState(null);
-  const [swapOutputToken, setSwapOutputToken] = useState(null);
-  const [swapOutputAmount, setSwapOutputAmount] = useState('');
-  const [swapQuote, setSwapQuote] = useState(null);
-  const [isSwapLoading, setIsSwapLoading] = useState(false);
-  const [isSwapping, setIsSwapping] = useState(false);
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {

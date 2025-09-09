@@ -6,13 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { 
-  TOKEN_PROGRAM_ID, 
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddress,
-  createCloseAccountInstruction,
-  createBurnInstruction
-} from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -213,21 +207,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const connection = new Connection(rpcUrl, 'confirmed');
 
-      // Import SPL Token functions  
-      const { createCloseAccountInstruction } = await import('@solana/spl-token');
-
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
       // Add close account instructions for each empty account
+      const { TOKEN_PROGRAM_ID, Token } = await import('@solana/spl-token');
+      
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        const closeInstruction = createCloseAccountInstruction(
+        const closeInstruction = Token.createCloseAccountInstruction(
+          TOKEN_PROGRAM_ID,
           accountPublicKey,
           ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey  // owner
+          ownerPublicKey,  // owner
+          []
         );
         
         transaction.add(closeInstruction);
@@ -687,7 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Use Solana RPC to check if tokens are actually burnable
             const { Connection, PublicKey } = await import('@solana/web3.js');
-            const { getAssociatedTokenAddress, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+            const { Token, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
             
             const connection = new Connection(rpcUrl, 'confirmed');
             const ownerPublicKey = new PublicKey(address);
@@ -697,12 +692,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const asset of fungibleTokens) {
               try {
                 const mintPublicKey = new PublicKey(asset.id);
-                const tokenAccount = await getAssociatedTokenAddress(
-                  mintPublicKey,
-                  ownerPublicKey,
-                  false,
+                const tokenAccount = await Token.getAssociatedTokenAddress(
+                  ASSOCIATED_TOKEN_PROGRAM_ID,
                   TOKEN_PROGRAM_ID,
-                  ASSOCIATED_TOKEN_PROGRAM_ID
+                  mintPublicKey,
+                  ownerPublicKey
                 );
                 
                 // Check if the token account actually exists and is accessible
@@ -809,9 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { 
         TOKEN_PROGRAM_ID, 
         ASSOCIATED_TOKEN_PROGRAM_ID,
-        getAssociatedTokenAddress,
-        createBurnInstruction,
-        createCloseAccountInstruction
+        Token 
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -836,12 +828,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const mintPublicKey = new PublicKey(tokenMint);
           
           // Get associated token account
-          const tokenAccount = await getAssociatedTokenAddress(
+          const tokenAccount = await Token.getAssociatedTokenAddress(
+            ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
+            TOKEN_PROGRAM_ID, // programId
             mintPublicKey,
-            ownerPublicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            ownerPublicKey
           );
           
           // Get token account info to determine balance and decimals
@@ -858,20 +849,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Step 1: Burn tokens (if balance > 0)
           if (balance > 0) {
-            const burnInstruction = createBurnInstruction(
-              tokenAccount,     // Token account to burn from
+            const burnInstruction = Token.createBurnInstruction(
+              TOKEN_PROGRAM_ID, // Token program ID
               mintPublicKey,    // Token mint
+              tokenAccount,     // Token account to burn from
               ownerPublicKey,   // Owner
+              [],               // Additional signers
               balance           // Amount to burn (full balance)
             );
             transaction.add(burnInstruction);
           }
           
           // Step 2: Close the now-empty account to reclaim SOL
-          const closeInstruction = createCloseAccountInstruction(
+          const closeInstruction = Token.createCloseAccountInstruction(
+            TOKEN_PROGRAM_ID,
             tokenAccount,
             ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey  // owner
+            ownerPublicKey,  // owner
+            []
           );
           
           transaction.add(closeInstruction);
@@ -984,9 +979,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { 
         TOKEN_PROGRAM_ID, 
         ASSOCIATED_TOKEN_PROGRAM_ID,
-        getAssociatedTokenAddress,
-        createBurnInstruction,
-        createCloseAccountInstruction
+        Token 
       } = await import('@solana/spl-token');
       
       // Use Helius RPC if available
@@ -1002,12 +995,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintPublicKey = new PublicKey(tokenMint);
       
       // Get associated token account
-      const tokenAccount = await getAssociatedTokenAddress(
+      const tokenAccount = await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID, // associatedProgramId
+        TOKEN_PROGRAM_ID, // programId
         mintPublicKey,
-        ownerPublicKey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        ownerPublicKey
       );
       
       // Get token account info to determine balance and decimals
@@ -1026,20 +1018,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = createBurnInstruction(
-          tokenAccount,     // Token account to burn from
+        const burnInstruction = Token.createBurnInstruction(
+          TOKEN_PROGRAM_ID, // Token program ID
           mintPublicKey,    // Token mint
+          tokenAccount,     // Token account to burn from
           ownerPublicKey,   // Owner
+          [],               // Additional signers
           balance           // Amount to burn (full balance)
         );
         transaction.add(burnInstruction);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      const closeInstruction = createCloseAccountInstruction(
+      const closeInstruction = Token.createCloseAccountInstruction(
+        TOKEN_PROGRAM_ID,
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey  // owner
+        ownerPublicKey,  // owner
+        []
       );
       
       transaction.add(closeInstruction);
