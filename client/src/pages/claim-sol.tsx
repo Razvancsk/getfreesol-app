@@ -2247,10 +2247,10 @@ export default function SolRefund() {
                                   </div>
                                 </div>
                                 
-                                {/* Orders Table */}
-                                <div className="overflow-x-auto">
+                                {/* Orders Table - Scrollable */}
+                                <div className="max-h-80 overflow-y-auto overflow-x-auto">
                                   <table className="w-full text-sm">
-                                    <thead className="border-b border-neutral-700">
+                                    <thead className="sticky top-0 bg-neutral-900 border-b border-neutral-700">
                                       <tr>
                                         <th className="text-left text-neutral-400 font-medium py-2 text-xs">Price</th>
                                         <th className="text-left text-neutral-400 font-medium py-2 text-xs">Amount</th>
@@ -2260,17 +2260,17 @@ export default function SolRefund() {
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-800/50">
-                                      {Array.from({ length: 9 }, (_, i) => (
+                                      {Array.from({ length: 20 }, (_, i) => (
                                         <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
                                           <td className="py-2 text-white font-mono text-sm">
-                                            {i === 0 ? '0.0278' : i === 1 ? '0.0332' : i === 2 ? '0.096' : i === 3 ? '0.10' : i === 4 ? '0.13' : i === 5 ? '0.15' : i === 6 ? '0.45' : i === 7 ? '0.45' : '0.50'}
+                                            {i === 0 ? '0.0278' : i === 1 ? '0.0332' : i === 2 ? '0.096' : i === 3 ? '0.10' : i === 4 ? '0.13' : i === 5 ? '0.15' : i === 6 ? '0.45' : i === 7 ? '0.45' : i === 8 ? '0.50' : i === 9 ? '0.55' : i === 10 ? '0.60' : i === 11 ? '0.65' : i === 12 ? '0.70' : i === 13 ? '0.75' : i === 14 ? '0.80' : i === 15 ? '0.85' : i === 16 ? '0.90' : i === 17 ? '0.95' : i === 18 ? '1.00' : '1.05'}
                                           </td>
                                           <td className="py-2 text-white text-sm">
-                                            {i === 0 ? '30.0K' : i === 1 ? '1.0K' : i === 2 ? '4.0K' : i === 3 ? '100' : i === 4 ? '3.0K' : i === 5 ? '270' : i === 6 ? '50' : i === 7 ? '30' : '30'}
+                                            {i === 0 ? '30.0K' : i === 1 ? '1.0K' : i === 2 ? '4.0K' : i === 3 ? '100' : i === 4 ? '3.0K' : i === 5 ? '270' : i === 6 ? '50' : i === 7 ? '30' : i === 8 ? '30' : i === 9 ? '25' : i === 10 ? '20' : i === 11 ? '15' : i === 12 ? '12' : i === 13 ? '10' : i === 14 ? '8' : i === 15 ? '6' : i === 16 ? '5' : i === 17 ? '4' : i === 18 ? '3' : '2'}
                                           </td>
                                           <td className="py-2 text-white text-sm">
                                             <div className="flex items-center space-x-1">
-                                              <span>{i === 0 ? '836.7' : i === 1 ? '0.00765' : i === 2 ? '384' : i === 3 ? '10' : i === 4 ? '384' : i === 5 ? '40.2' : i === 6 ? '22.5' : i === 7 ? '13.5' : '15'}</span>
+                                              <span>{i === 0 ? '836.7' : i === 1 ? '0.00765' : i === 2 ? '384' : i === 3 ? '10' : i === 4 ? '384' : i === 5 ? '40.2' : i === 6 ? '22.5' : i === 7 ? '13.5' : i === 8 ? '15' : i === 9 ? '13.8' : i === 10 ? '12' : i === 11 ? '9.8' : i === 12 ? '8.4' : i === 13 ? '7.5' : i === 14 ? '6.4' : i === 15 ? '5.1' : i === 16 ? '4.5' : i === 17 ? '3.8' : i === 18 ? '3.0' : '2.1'}</span>
                                               <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
                                             </div>
                                           </td>
