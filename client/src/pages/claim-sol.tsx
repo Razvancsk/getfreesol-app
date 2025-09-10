@@ -58,7 +58,7 @@ export default function SolRefund() {
   const donationPercentage = 0; // Fees temporarily disabled - users get 100% back
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'premarket'>('reclaim');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
@@ -1409,6 +1409,18 @@ export default function SolRefund() {
                     <Flame className="h-4 w-4 mr-2" />
                     Burn Tokens
                   </Button>
+                  <Button
+                    onClick={() => setActiveTab('premarket')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'premarket' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                    data-testid="button-premarket"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Pre market
+                  </Button>
                   {/* Referrals tab temporarily hidden 
                   <Button
                     onClick={() => setActiveTab('referrals')}
@@ -1468,13 +1480,13 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-4xl mx-auto text-3xl lg:text-4xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? 'Burn Unwanted Tokens.' : 'Claim Solana Rent– Zero Fees!'}
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? 'Burn Unwanted Tokens.' : activeTab === 'premarket' ? 'Create Pre-market Token Sales with Collateral.' : 'Claim Solana Rent– Zero Fees!'}
             </p>
           </div>
 
 
           {/* Scan Wallet Section */}
-          {isConnected && activeTab !== 'referrals' && (
+          {isConnected && activeTab !== 'referrals' && activeTab !== 'premarket' && (
             <div className="text-center">
               <Button 
                 onClick={() => {
@@ -1483,10 +1495,13 @@ export default function SolRefund() {
                       scanMutation.mutate(publicKey.toString());
                     } else if (activeTab === 'burnTokens') {
                       scanTokensMutation.mutate(publicKey.toString());
+                    } else if (activeTab === 'premarket') {
+                      // For premarket, we don't need to scan - show the creation interface
+                      // This will be handled by state below
                     }
                   }
                 }}
-                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey || activeTab === 'premarket'}
                 size="lg"
                 className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-10 py-5 text-xl lg:text-2xl font-semibold transition-all duration-200"
               >
