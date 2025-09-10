@@ -2567,20 +2567,11 @@ export default function SolRefund() {
                               <div className="flex items-center justify-between">
                                 <span className="text-white text-2xl">{collateral.sol.toFixed(4)}</span>
                                 <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
-                                  <div className="w-4 h-4 rounded-full bg-gradient-to-r from-purple-400 to-blue-400 flex items-center justify-center">
-                                    <svg className="w-3 h-3" viewBox="0 0 397 311" fill="none">
-                                      <path d="M64.6 237.9C69.5 235.3 75.4 235.3 80.3 237.9L288.3 353.6C294.6 356.9 302 351.9 302 344.8V307.4C302 302.8 299.5 298.6 295.4 296.3L95.4 186.3C90.5 183.7 84.6 183.7 79.7 186.3L-120.3 296.3C-124.4 298.6 -127 302.8 -127 307.4V344.8C-127 351.9 -119.6 356.9 -113.3 353.6L64.6 237.9Z" fill="url(#gradient1)"/>
-                                      <path d="M64.6 99.9C69.5 97.3 75.4 97.3 80.3 99.9L288.3 215.6C294.6 218.9 302 213.9 302 206.8V169.4C302 164.8 299.5 160.6 295.4 158.3L95.4 48.3C90.5 45.7 84.6 45.7 79.7 48.3L-120.3 158.3C-124.4 160.6 -127 164.8 -127 169.4V206.8C-127 213.9 -119.6 218.9 -113.3 215.6L64.6 99.9Z" fill="url(#gradient2)"/>
-                                      <defs>
-                                        <linearGradient id="gradient1" x1="-127" y1="320.1" x2="302" y2="320.1" gradientUnits="userSpaceOnUse">
-                                          <stop stopColor="#00D4FF"/>
-                                          <stop offset="1" stopColor="#7B2CF4"/>
-                                        </linearGradient>
-                                        <linearGradient id="gradient2" x1="-127" y1="132.1" x2="302" y2="132.1" gradientUnits="userSpaceOnUse">
-                                          <stop stopColor="#00D4FF"/>
-                                          <stop offset="1" stopColor="#7B2CF4"/>
-                                        </linearGradient>
-                                      </defs>
+                                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 via-blue-500 to-green-400 flex items-center justify-center">
+                                    <svg className="w-3 h-3" viewBox="0 0 101 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M100.48 69.3817L83.8068 86.8015C83.4444 87.1878 82.9616 87.4099 82.4347 87.4099H6.55301C5.5701 87.4099 4.94 86.5793 5.32501 85.7558L12.1383 69.8776C12.3563 69.4033 12.8085 69.1071 13.3138 69.1071H95.2809C96.2708 69.1071 96.8956 70.1006 100.48 69.3817Z" fill="#14F195"/>
+                                      <path d="M100.48 18.6992L83.8068 1.27943C83.4444 0.893141 82.9616 0.671021 82.4347 0.671021H6.55301C5.5701 0.671021 4.94 1.50166 5.32501 2.32517L12.1383 17.2034C12.3563 17.6777 12.8085 17.9739 13.3138 17.9739H95.2809C96.2708 17.9739 96.8956 16.9804 100.48 18.6992Z" fill="#14F195"/>
+                                      <path d="M83.8068 35.4583C84.1692 35.0719 84.6519 34.8499 85.1789 34.8499H95.2809C96.2708 34.8499 96.8956 35.8434 100.48 35.1245L17.4335 52.2286C16.9282 52.2286 16.476 51.9324 16.258 51.4581L9.44471 36.5799C9.05970 35.7564 9.68979 34.9258 10.6727 34.9258H26.6935C27.2204 34.9258 27.7032 35.1479 28.0656 35.5342L83.8068 35.4583Z" fill="#14F195"/>
                                     </svg>
                                   </div>
                                   <span className="text-white text-sm">SOL</span>
