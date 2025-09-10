@@ -17,6 +17,7 @@ import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1754527057994.png';
 import AdContainer from '@/components/AdContainer';
 import AxiomBanner from '@/components/AxiomBanner';
+import { ObjectUploader } from '@/components/ObjectUploader';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2856,28 +2857,14 @@ export default function SolRefund() {
                         />
                       </div>
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="tokenLogo" className="text-purple-300">Token Logo URL</Label>
-                        <Input
-                          id="tokenLogo"
-                          value={premarketForm.tokenLogo}
-                          onChange={(e) => handlePremarketFormChange('tokenLogo', e.target.value)}
-                          placeholder="https://example.com/logo.png (optional)"
-                          className="bg-slate-800/50 border-slate-600 text-white"
-                          data-testid="input-tokenlogo"
+                        <Label className="text-purple-300">Token Logo</Label>
+                        <ObjectUploader
+                          onUploadComplete={(publicURL) => handlePremarketFormChange('tokenLogo', publicURL)}
+                          maxFileSize={5 * 1024 * 1024} // 5MB
+                          accept="image/*"
+                          currentImageUrl={premarketForm.tokenLogo}
+                          className="bg-slate-800/50 border-slate-600"
                         />
-                        {premarketForm.tokenLogo && (
-                          <div className="flex items-center space-x-2 mt-2">
-                            <img 
-                              src={premarketForm.tokenLogo} 
-                              alt="Token logo preview" 
-                              className="w-8 h-8 rounded-full"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                            <span className="text-green-400 text-xs">✓ Logo preview</span>
-                          </div>
-                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="totalSupply" className="text-purple-300">Total Supply</Label>

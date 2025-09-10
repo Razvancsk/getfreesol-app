@@ -15,6 +15,7 @@ import {
   getAccount
 } from "@solana/spl-token";
 import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -1904,6 +1905,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting settlement status:", error);
       res.status(500).json({ error: "Failed to get settlement status" });
+    }
+  });
+
+  // File upload API routes for object storage
+  
+  // Endpoint to serve uploaded files
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  // Endpoint to get upload URL for file uploads
+  app.post("/api/objects/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Endpoint to finalize file upload and return public URL
+  app.post("/api/objects/finalize", async (req, res) => {
+    try {
+      const { uploadURL } = req.body;
+      if (!uploadURL) {
+        return res.status(400).json({ error: "uploadURL is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      
+      // Return the public URL for accessing the uploaded file
+      const publicURL = `${req.protocol}://${req.get('host')}${objectPath}`;
+      
+      res.json({
+        success: true,
+        objectPath,
+        publicURL
+      });
+    } catch (error) {
+      console.error("Error finalizing upload:", error);
+      res.status(500).json({ error: "Failed to finalize upload" });
     }
   });
 
