@@ -2408,18 +2408,11 @@ export default function SolRefund() {
                                   </thead>
                                   <tbody className="divide-y divide-neutral-800/50">
                                     {Array.from({ length: 8 }, (_, i) => {
-                                      const pairs = [
-                                        { name: 'XPL/SOL', logo: 'https://via.placeholder.com/24/14F195/ffffff?text=X' },
-                                        { name: 'LINEA/SOL', logo: 'https://via.placeholder.com/24/3366ff/ffffff?text=L' },
-                                        { name: 'STARK/SOL', logo: 'https://via.placeholder.com/24/ff6b35/ffffff?text=S' },
-                                        { name: 'BASE/SOL', logo: 'https://via.placeholder.com/24/0052ff/ffffff?text=B' },
-                                        { name: 'POLY/SOL', logo: 'https://via.placeholder.com/24/8247e5/ffffff?text=P' },
-                                        { name: 'ARB/SOL', logo: 'https://via.placeholder.com/24/28a0f0/ffffff?text=A' },
-                                        { name: 'OP/SOL', logo: 'https://via.placeholder.com/24/ff0420/ffffff?text=O' },
-                                        { name: 'AVAX/SOL', logo: 'https://via.placeholder.com/24/e84142/ffffff?text=V' }
-                                      ];
+                                      // Use the selected token symbol for all trading pairs
+                                      const tokenSymbol = selectedToken?.tokenSymbol?.toUpperCase() || 'TOKEN';
+                                      const tradingPair = `${tokenSymbol}/SOL`;
+                                      const tokenLogo = `https://via.placeholder.com/24/14F195/ffffff?text=${selectedToken?.tokenSymbol?.charAt(0)?.toUpperCase() || 'T'}`;
                                       const times = ['12s', '45s', '2m', '8m', '1h', '3h', '1d', '2d'];
-                                      const pair = pairs[i];
                                       const timeAgo = times[i];
                                       
                                       return (
@@ -2436,15 +2429,10 @@ export default function SolRefund() {
                                           </td>
                                           <td className="py-2 px-3 text-white text-xs">
                                             <div className="flex items-center space-x-1">
-                                              <img 
-                                                src={pair.logo} 
-                                                alt={pair.name.split('/')[0]} 
-                                                className="w-4 h-4 rounded-full"
-                                                onError={(e) => {
-                                                  e.currentTarget.src = "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png";
-                                                }}
-                                              />
-                                              <span>{pair.name}</span>
+                                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-500 to-green-600 flex items-center justify-center text-white font-bold text-xs">
+                                                {selectedToken?.tokenSymbol?.charAt(0)?.toUpperCase() || 'T'}
+                                              </div>
+                                              <span>{tradingPair}</span>
                                             </div>
                                           </td>
                                           <td className="py-2 px-3 text-right text-white font-mono">${formatPrice(selectedToken.startingPrice)}</td>
