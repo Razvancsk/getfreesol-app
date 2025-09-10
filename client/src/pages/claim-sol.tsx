@@ -2152,53 +2152,140 @@ export default function SolRefund() {
                           </div>
                         </div>
 
-                        {/* Order Book Preview */}
+                        {/* Recent Trades */}
                         <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
-                          <h4 className="text-white font-semibold mb-3">Order Book</h4>
+                          <div className="flex items-center space-x-2 mb-3">
+                            <Clock className="h-4 w-4 text-purple-400" />
+                            <h4 className="text-white font-semibold">Recent Trades</h4>
+                          </div>
                           
-                          <div className="space-y-2 text-xs">
-                            <div className="flex justify-between text-purple-300 border-b border-slate-700 pb-1">
-                              <span>Price (SOL)</span>
-                              <span>Amount</span>
-                              <span>Total</span>
-                            </div>
-                            
-                            {/* Sell Orders (Red) */}
-                            <div className="space-y-1">
-                              <div className="text-red-400 text-xs font-semibold mb-1">Sell Orders</div>
-                              <div className="flex justify-between text-red-300">
-                                <span>0.152</span>
-                                <span>1,000</span>
-                                <span>152.0</span>
-                              </div>
-                              <div className="flex justify-between text-red-300">
-                                <span>0.151</span>
-                                <span>2,500</span>
-                                <span>377.5</span>
-                              </div>
-                            </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-slate-700/50">
+                                  <th className="text-left text-purple-300 font-medium py-1 px-1">Time</th>
+                                  <th className="text-left text-purple-300 font-medium py-1 px-1">Type</th>
+                                  <th className="text-left text-purple-300 font-medium py-1 px-1">Pair</th>
+                                  <th className="text-right text-purple-300 font-medium py-1 px-1">Price ($)</th>
+                                  <th className="text-right text-purple-300 font-medium py-1 px-1">Amount</th>
+                                  <th className="text-right text-purple-300 font-medium py-1 px-1">Collateral</th>
+                                  <th className="text-center text-purple-300 font-medium py-1 px-1">TX.hash</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
+                                  <td className="py-2 px-1 text-purple-300">2h</td>
+                                  <td className="py-2 px-1">
+                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
+                                  </td>
+                                  <td className="py-2 px-1">
+                                    <div className="flex items-center space-x-1">
+                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {selectedToken.tokenSymbol.charAt(0)}
+                                      </div>
+                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-right text-white font-mono">{selectedToken.startingPrice}</td>
+                                  <td className="py-2 px-1 text-right text-white">5.2K</td>
+                                  <td className="py-2 px-1 text-right">
+                                    <div className="flex items-center justify-end space-x-1">
+                                      <span className="text-white">2.8</span>
+                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-center">
+                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
+                                      <ArrowUpDown className="h-3 w-3" />
+                                    </button>
+                                  </td>
+                                </tr>
+                                
+                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
+                                  <td className="py-2 px-1 text-purple-300">3h</td>
+                                  <td className="py-2 px-1">
+                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-red-600 text-white rounded">SELL</span>
+                                  </td>
+                                  <td className="py-2 px-1">
+                                    <div className="flex items-center space-x-1">
+                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {selectedToken.tokenSymbol.charAt(0)}
+                                      </div>
+                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-right text-white font-mono">{(parseFloat(selectedToken.startingPrice) * 0.98).toFixed(4)}</td>
+                                  <td className="py-2 px-1 text-right text-white">1.8K</td>
+                                  <td className="py-2 px-1 text-right">
+                                    <div className="flex items-center justify-end space-x-1">
+                                      <span className="text-white">1.2</span>
+                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-center">
+                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
+                                      <ArrowUpDown className="h-3 w-3" />
+                                    </button>
+                                  </td>
+                                </tr>
 
-                            <div className="border-t border-slate-700 pt-2">
-                              <div className="text-center text-white font-mono font-bold">
-                                {selectedToken.startingPrice} SOL
-                              </div>
-                              <div className="text-center text-purple-400 text-xs">Last Price</div>
-                            </div>
+                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
+                                  <td className="py-2 px-1 text-purple-300">4h</td>
+                                  <td className="py-2 px-1">
+                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
+                                  </td>
+                                  <td className="py-2 px-1">
+                                    <div className="flex items-center space-x-1">
+                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {selectedToken.tokenSymbol.charAt(0)}
+                                      </div>
+                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-right text-white font-mono">{(parseFloat(selectedToken.startingPrice) * 1.02).toFixed(4)}</td>
+                                  <td className="py-2 px-1 text-right text-white">12.5K</td>
+                                  <td className="py-2 px-1 text-right">
+                                    <div className="flex items-center justify-end space-x-1">
+                                      <span className="text-white">6.4</span>
+                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-center">
+                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
+                                      <ArrowUpDown className="h-3 w-3" />
+                                    </button>
+                                  </td>
+                                </tr>
 
-                            {/* Buy Orders (Green) */}
-                            <div className="space-y-1">
-                              <div className="text-green-400 text-xs font-semibold mb-1">Buy Orders</div>
-                              <div className="flex justify-between text-green-300">
-                                <span>0.149</span>
-                                <span>1,500</span>
-                                <span>223.5</span>
-                              </div>
-                              <div className="flex justify-between text-green-300">
-                                <span>0.148</span>
-                                <span>3,000</span>
-                                <span>444.0</span>
-                              </div>
-                            </div>
+                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
+                                  <td className="py-2 px-1 text-purple-300">5h</td>
+                                  <td className="py-2 px-1">
+                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
+                                  </td>
+                                  <td className="py-2 px-1">
+                                    <div className="flex items-center space-x-1">
+                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                        {selectedToken.tokenSymbol.charAt(0)}
+                                      </div>
+                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-right text-white font-mono">{selectedToken.startingPrice}</td>
+                                  <td className="py-2 px-1 text-right text-white">8.1K</td>
+                                  <td className="py-2 px-1 text-right">
+                                    <div className="flex items-center justify-end space-x-1">
+                                      <span className="text-white">4.1</span>
+                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-1 text-center">
+                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
+                                      <ArrowUpDown className="h-3 w-3" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       </div>
