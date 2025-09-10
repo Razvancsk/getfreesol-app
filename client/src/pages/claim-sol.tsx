@@ -2228,79 +2228,74 @@ export default function SolRefund() {
 
                         {/* Tab Content */}
                         {selectedDetailTab === 'trade' && (
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Created Orders & Buy/Sell */}
-                            <div className="space-y-4">
-                              <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
-                                <div className="flex items-center justify-between mb-4">
-                                  <h3 className="text-white font-semibold">Your Orders</h3>
-                                  <div className="flex items-center space-x-2">
-                                    <Button size="sm" className="text-sm px-6 py-2 bg-green-500 hover:bg-green-600 text-white border-0">
-                                      Buy Orders
-                                    </Button>
-                                    <Button size="sm" className="text-sm px-6 py-2 bg-red-500 hover:bg-red-600 text-white border-0">
-                                      Sell Orders
-                                    </Button>
-                                  </div>
-                                </div>
-                                
-                                {/* Orders Table - Scrollable */}
-                                <div className="max-h-80 overflow-y-auto overflow-x-auto">
-                                  <table className="w-full text-sm">
-                                    <thead className="sticky top-0 bg-neutral-900 border-b border-neutral-700">
-                                      <tr>
-                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Price</th>
-                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Amount</th>
-                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Collateral</th>
-                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Fill Type</th>
-                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs"></th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-neutral-800/50">
-                                      {Array.from({ length: 20 }, (_, i) => (
-                                        <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
-                                          <td className="py-2 text-white font-mono text-sm">
-                                            {i === 0 ? '0.0278' : i === 1 ? '0.0332' : i === 2 ? '0.096' : i === 3 ? '0.10' : i === 4 ? '0.13' : i === 5 ? '0.15' : i === 6 ? '0.45' : i === 7 ? '0.45' : i === 8 ? '0.50' : i === 9 ? '0.55' : i === 10 ? '0.60' : i === 11 ? '0.65' : i === 12 ? '0.70' : i === 13 ? '0.75' : i === 14 ? '0.80' : i === 15 ? '0.85' : i === 16 ? '0.90' : i === 17 ? '0.95' : i === 18 ? '1.00' : '1.05'}
-                                          </td>
-                                          <td className="py-2 text-white text-sm">
-                                            {i === 0 ? '30.0K' : i === 1 ? '1.0K' : i === 2 ? '4.0K' : i === 3 ? '100' : i === 4 ? '3.0K' : i === 5 ? '270' : i === 6 ? '50' : i === 7 ? '30' : i === 8 ? '30' : i === 9 ? '25' : i === 10 ? '20' : i === 11 ? '15' : i === 12 ? '12' : i === 13 ? '10' : i === 14 ? '8' : i === 15 ? '6' : i === 16 ? '5' : i === 17 ? '4' : i === 18 ? '3' : '2'}
-                                          </td>
-                                          <td className="py-2 text-white text-sm">
-                                            <div className="flex items-center space-x-1">
-                                              <span>{i === 0 ? '836.7' : i === 1 ? '0.00765' : i === 2 ? '384' : i === 3 ? '10' : i === 4 ? '384' : i === 5 ? '40.2' : i === 6 ? '22.5' : i === 7 ? '13.5' : i === 8 ? '15' : i === 9 ? '13.8' : i === 10 ? '12' : i === 11 ? '9.8' : i === 12 ? '8.4' : i === 13 ? '7.5' : i === 14 ? '6.4' : i === 15 ? '5.1' : i === 16 ? '4.5' : i === 17 ? '3.8' : i === 18 ? '3.0' : '2.1'}</span>
-                                              <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
-                                            </div>
-                                          </td>
-                                          <td className="py-2">
-                                            <span className="px-2 py-1 text-xs rounded bg-neutral-700/50 text-neutral-300 border border-neutral-600">
-                                              PARTIAL
-                                            </span>
-                                          </td>
-                                          <td className="py-2 text-right">
-                                            <span className="text-green-400 font-medium text-sm">Buy</span>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-
-                                {/* Buy/Sell Buttons */}
-                                <div className="flex space-x-2 mb-4 mt-4">
-                                  <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 text-base font-medium" data-testid="button-create-buy">
-                                    Create Buy Order
-                                  </Button>
-                                  <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 text-base font-medium" data-testid="button-create-sell">
-                                    Create Sell Order
-                                  </Button>
-                                </div>
-
-                                <div className="text-xs text-orange-400 bg-orange-500/10 p-3 rounded border border-orange-500/20">
-                                  ⚠️ Collateral required: You must deposit SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
-                                </div>
+                          <div className="space-y-4">
+                            {/* Header with filter buttons */}
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-white font-semibold text-lg">Your Orders</h3>
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" className="text-sm px-6 py-2 bg-green-500 hover:bg-green-600 text-white border-0">
+                                  Buy Orders
+                                </Button>
+                                <Button size="sm" className="text-sm px-6 py-2 bg-red-500 hover:bg-red-600 text-white border-0">
+                                  Sell Orders
+                                </Button>
                               </div>
                             </div>
+                            
+                            {/* Orders Table - Direct Row Layout */}
+                            <div className="max-h-80 overflow-y-auto overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead className="sticky top-0 bg-neutral-900/90 backdrop-blur border-b border-neutral-700">
+                                  <tr>
+                                    <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Price</th>
+                                    <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Amount</th>
+                                    <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Collateral</th>
+                                    <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Fill Type</th>
+                                    <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs"></th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-800/50">
+                                  {Array.from({ length: 20 }, (_, i) => (
+                                    <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
+                                      <td className="py-3 px-2 text-white font-mono text-sm">
+                                        {i === 0 ? '0.0278' : i === 1 ? '0.0332' : i === 2 ? '0.096' : i === 3 ? '0.10' : i === 4 ? '0.13' : i === 5 ? '0.15' : i === 6 ? '0.45' : i === 7 ? '0.45' : i === 8 ? '0.50' : i === 9 ? '0.55' : i === 10 ? '0.60' : i === 11 ? '0.65' : i === 12 ? '0.70' : i === 13 ? '0.75' : i === 14 ? '0.80' : i === 15 ? '0.85' : i === 16 ? '0.90' : i === 17 ? '0.95' : i === 18 ? '1.00' : '1.05'}
+                                      </td>
+                                      <td className="py-3 px-2 text-white text-sm">
+                                        {i === 0 ? '30.0K' : i === 1 ? '1.0K' : i === 2 ? '4.0K' : i === 3 ? '100' : i === 4 ? '3.0K' : i === 5 ? '270' : i === 6 ? '50' : i === 7 ? '30' : i === 8 ? '30' : i === 9 ? '25' : i === 10 ? '20' : i === 11 ? '15' : i === 12 ? '12' : i === 13 ? '10' : i === 14 ? '8' : i === 15 ? '6' : i === 16 ? '5' : i === 17 ? '4' : i === 18 ? '3' : '2'}
+                                      </td>
+                                      <td className="py-3 px-2 text-white text-sm">
+                                        <div className="flex items-center space-x-1">
+                                          <span>{i === 0 ? '836.7' : i === 1 ? '0.00765' : i === 2 ? '384' : i === 3 ? '10' : i === 4 ? '384' : i === 5 ? '40.2' : i === 6 ? '22.5' : i === 7 ? '13.5' : i === 8 ? '15' : i === 9 ? '13.8' : i === 10 ? '12' : i === 11 ? '9.8' : i === 12 ? '8.4' : i === 13 ? '7.5' : i === 14 ? '6.4' : i === 15 ? '5.1' : i === 16 ? '4.5' : i === 17 ? '3.8' : i === 18 ? '3.0' : '2.1'}</span>
+                                          <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-2">
+                                        <span className="px-2 py-1 text-xs rounded bg-neutral-700/50 text-neutral-300 border border-neutral-600">
+                                          PARTIAL
+                                        </span>
+                                      </td>
+                                      <td className="py-3 px-2 text-right">
+                                        <span className="text-green-400 font-medium text-sm">Buy</span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
 
+                            {/* Buy/Sell Buttons */}
+                            <div className="flex space-x-2 mt-6">
+                              <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 text-base font-medium" data-testid="button-create-buy">
+                                Create Buy Order
+                              </Button>
+                              <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 text-base font-medium" data-testid="button-create-sell">
+                                Create Sell Order
+                              </Button>
+                            </div>
+
+                            <div className="text-xs text-orange-400 bg-orange-500/10 p-3 rounded border border-orange-500/20 mt-4">
+                              ⚠️ Collateral required: You must deposit SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
+                            </div>
                           </div>
                         )}
 
