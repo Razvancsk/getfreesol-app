@@ -129,11 +129,11 @@ export default function SolRefund() {
     }
   };
 
-  // Fetch SOL price once when component mounts - stable pricing  
+  // Fetch SOL price with live updates when price changes  
   useEffect(() => {
     fetchSolPrice();
-    // Update price every 2 minutes for stable pricing (not constantly moving)
-    const interval = setInterval(fetchSolPrice, 120000);
+    // Update price every 30 seconds to catch live price changes
+    const interval = setInterval(fetchSolPrice, 30000);
     return () => clearInterval(interval);
   }, []);
 
