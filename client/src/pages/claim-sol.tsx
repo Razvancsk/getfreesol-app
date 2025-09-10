@@ -58,7 +58,7 @@ export default function SolRefund() {
   const donationPercentage = 0; // Fees temporarily disabled - users get 100% back
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'premarket'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'premarket' | 'swap'>('reclaim');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
@@ -78,6 +78,16 @@ export default function SolRefund() {
   
   // Pre-market sub-tab state
   const [premarketSubTab, setPremarketSubTab] = useState<'active' | 'activity' | 'create'>('active');
+
+  // Swap-related state variables
+  const [isJupiterLoading, setIsJupiterLoading] = useState(false);
+  const [isSwapLoading, setIsSwapLoading] = useState(false);
+  const [isSwapping, setIsSwapping] = useState(false);
+  const [swapInputAmount, setSwapInputAmount] = useState('');
+  const [swapOutputAmount, setSwapOutputAmount] = useState('');
+  const [swapInputToken, setSwapInputToken] = useState<any>(null);
+  const [swapOutputToken, setSwapOutputToken] = useState<any>(null);
+  const [swapQuote, setSwapQuote] = useState<any>(null);
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -946,14 +956,20 @@ export default function SolRefund() {
   });
 
   // Query to get pre-market listings
-  const { data: premarketListings } = useQuery({
+  const { data: premarketListings } = useQuery<{
+    success: boolean;
+    listings?: any[];
+  }>({
     queryKey: ['/api/premarket/listings'],
     enabled: activeTab === 'premarket',
     retry: false,
   });
 
   // Query to get user's orders
-  const { data: userOrders } = useQuery({
+  const { data: userOrders } = useQuery<{
+    success: boolean;
+    orders?: any[];
+  }>({
     queryKey: ['/api/premarket/orders/wallet', publicKey?.toString()],
     enabled: activeTab === 'premarket' && !!publicKey,
     retry: false,
@@ -1600,13 +1616,13 @@ export default function SolRefund() {
                       scanMutation.mutate(publicKey.toString());
                     } else if (activeTab === 'burnTokens') {
                       scanTokensMutation.mutate(publicKey.toString());
-                    } else if (activeTab === 'premarket') {
-                      // For premarket, we don't need to scan - show the creation interface
-                      // This will be handled by state below
+                    } else if (activeTab === 'swap') {
+                      // For swap, we don't need to scan
+                      // This will be handled by swap interface
                     }
                   }
                 }}
-                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey || activeTab === 'premarket'}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey || activeTab === 'swap'}
                 size="lg"
                 className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-10 py-5 text-xl lg:text-2xl font-semibold transition-all duration-200"
               >
@@ -1872,8 +1888,8 @@ export default function SolRefund() {
                   <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
                   
                   <div className="space-y-4">
-                    {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
-                      premarketListings.listings.map((listing: any) => (
+                    {premarketListings?.success && premarketListings.listings?.length ? (
+                      premarketListings.listings?.map((listing: any) => (
                         <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -1961,8 +1977,8 @@ export default function SolRefund() {
                     <h3 className="text-lg font-semibold text-white mb-4">Your Orders</h3>
                     
                     <div className="space-y-4">
-                      {userOrders && userOrders.success && userOrders.orders?.length > 0 ? (
-                        userOrders.orders.map((order: any) => (
+                      {userOrders?.success && userOrders.orders?.length ? (
+                        userOrders.orders?.map((order: any) => (
                           <div key={order.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
