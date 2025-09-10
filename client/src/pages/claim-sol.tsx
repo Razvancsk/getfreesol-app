@@ -2099,166 +2099,100 @@ export default function SolRefund() {
                       )}
                     </div>
                   ) : (
-                    // Recent Trades Table (shows AFTER clicking a token)
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <Button 
-                            onClick={() => setSelectedToken(null)}
-                            variant="outline"
-                            size="sm"
-                            className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
-                          >
-                            ← Back
-                          </Button>
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            {selectedToken.tokenSymbol.charAt(0)}
+                    // Selected Token (shows same horizontal format with back button)
+                    <div className="space-y-3">
+                      {/* Back Button Row */}
+                      <div className="flex items-center space-x-3 mb-4">
+                        <Button 
+                          onClick={() => setSelectedToken(null)}
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20 px-3 py-1.5 text-xs"
+                          data-testid="button-back-to-list"
+                        >
+                          ← Back
+                        </Button>
+                      </div>
+
+                      {/* Selected Token Row (same format as list) */}
+                      <div className="bg-black/80 rounded-md border border-gray-700/50 px-4 py-3 ring-2 ring-purple-500/50">
+                        <div className="flex items-center justify-between">
+                          {/* Token Info */}
+                          <div className="flex items-center space-x-3 min-w-[120px]">
+                            <div className="w-7 h-7 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                              {selectedToken.tokenSymbol.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="text-white font-medium text-base">{selectedToken.tokenSymbol}</div>
+                              <div className="text-gray-400 text-xs">{selectedToken.tokenName}</div>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-white font-semibold">{selectedToken.tokenSymbol}</h3>
-                            <p className="text-purple-300 text-sm">{selectedToken.tokenName || 'Token Name'}</p>
+
+                          {/* Price */}
+                          <div className="text-right min-w-[80px]">
+                            <div className="text-white font-semibold text-base">${formatPrice(selectedToken.startingPrice)}</div>
+                          </div>
+
+                          {/* 24h Vol */}
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-gray-500 text-xs mb-0.5">24h Vol</div>
+                            <div className="text-white text-sm font-mono">$18,691.9</div>
+                            <div className="text-green-400 text-xs">+14.76%</div>
+                          </div>
+
+                          {/* Total Vol */}
+                          <div className="text-right min-w-[80px]">
+                            <div className="text-gray-500 text-xs mb-0.5">Total Vol</div>
+                            <div className="text-white text-sm font-mono">$10.7M</div>
+                          </div>
+
+                          {/* Settle Starts */}
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-gray-500 text-xs mb-0.5">Settle Starts (UTC)</div>
+                            <div className="text-white text-sm font-mono">TBA</div>
+                          </div>
+
+                          {/* Settle Ends */}
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-gray-500 text-xs mb-0.5">Settle Ends (UTC)</div>
+                            <div className="text-white text-sm font-mono">TBA</div>
+                          </div>
+
+                          {/* Countdown */}
+                          <div className="text-right min-w-[80px]">
+                            <div className="text-gray-500 text-xs mb-0.5">Countdown</div>
+                            <div className="text-white text-sm">Not Started</div>
+                          </div>
+
+                          {/* Close/Settings Icons */}
+                          <div className="flex items-center space-x-2 ml-4">
+                            <button 
+                              className="text-gray-400 hover:text-gray-200 transition-colors"
+                              onClick={() => setSelectedToken(null)}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                            <button className="text-gray-400 hover:text-gray-200 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </button>
+                            <button className="text-orange-400 hover:text-orange-300 transition-colors">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                              </svg>
+                            </button>
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-                        {/* Left Panel - Recent Trades Table */}
-                        <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 overflow-hidden">
-                          <div className="px-4 py-3 border-b border-neutral-800 bg-neutral-900/60">
-                            <div className="flex items-center space-x-2">
-                              <Clock className="h-4 w-4 text-neutral-400" />
-                              <h4 className="text-sm font-medium text-white">Recent Trades</h4>
-                            </div>
-                          </div>
-
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                              <thead className="sticky top-0 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-10">
-                                <tr>
-                                  <th className="text-left text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Time</th>
-                                  <th className="text-left text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Type</th>
-                                  <th className="text-left text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Pair</th>
-                                  <th className="text-right text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Price</th>
-                                  <th className="text-right text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Amount</th>
-                                  <th className="text-right text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Collateral</th>
-                                  <th className="text-center text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Tx</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-neutral-800/50">
-                                {Array.from({ length: 8 }, (_, index) => (
-                                  <tr key={index} className="hover:bg-neutral-800/40 transition-colors group">
-                                    <td className="py-2 px-3 text-neutral-400 text-xs">{6 + index}h</td>
-                                    <td className="py-2 px-3">
-                                      <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded border ${
-                                        index % 2 === 0 
-                                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                          : 'bg-red-500/10 text-red-400 border-red-500/20'
-                                      }`}>
-                                        {index % 2 === 0 ? 'BUY' : 'SELL'}
-                                      </span>
-                                    </td>
-                                    <td className="py-2 px-3">
-                                      <div className="flex items-center space-x-2">
-                                        <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                          {selectedToken.tokenSymbol.charAt(0)}
-                                        </div>
-                                        <span className="text-white font-medium text-sm">{selectedToken.tokenSymbol}/USDC</span>
-                                      </div>
-                                    </td>
-                                    <td className="py-2 px-3 text-right text-white font-mono tabular-nums text-sm">
-                                      {index === 0 ? '0.031' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0275' : '0.0265'}
-                                    </td>
-                                    <td className="py-2 px-3 text-right text-white tabular-nums text-sm">
-                                      {index === 0 ? '18K' : index === 1 ? '8K' : index === 2 ? '6.8K' : index === 3 ? '2K' : '7.5K'}
-                                    </td>
-                                    <td className="py-2 px-3 text-right">
-                                      <div className="flex items-center justify-end space-x-1">
-                                        <span className="text-white tabular-nums text-sm">{index === 0 ? '558' : index === 1 ? '224' : index === 2 ? '186' : index === 3 ? '55' : '199'}</span>
-                                        <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                                      </div>
-                                    </td>
-                                    <td className="py-2 px-3 text-center">
-                                      <button 
-                                        className="text-neutral-400 hover:text-neutral-200 transition-colors opacity-0 group-hover:opacity-100" 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const mockTxHash = `${Math.random().toString(36).substr(2, 9)}`;
-                                          window.open(`https://solscan.io/tx/${mockTxHash}`, '_blank');
-                                        }}
-                                        data-testid="button-view-tx"
-                                      >
-                                        <ExternalLink className="h-3 w-3" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-
-                        {/* Right Panel - Trading Interface */}
-                        <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
-                          <div className="space-y-4">
-                            {/* Price Info */}
-                            <div className="bg-neutral-800/50 rounded-lg p-3">
-                              <div className="text-xs text-neutral-400 mb-1">Current Price</div>
-                              <div className="text-lg font-bold text-white font-mono">{selectedToken.startingPrice} SOL</div>
-                            </div>
-
-                            {/* Buy/Sell Tabs */}
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button 
-                                size="sm"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-                                data-testid="button-buy-token"
-                              >
-                                Buy
-                              </Button>
-                              <Button 
-                                size="sm"
-                                className="bg-red-600 hover:bg-red-700 text-white text-xs"
-                                data-testid="button-sell-token"
-                              >
-                                Sell
-                              </Button>
-                            </div>
-
-                            {/* Trade Form */}
-                            <div className="space-y-3">
-                              <div>
-                                <label className="text-xs text-neutral-400 block mb-1">Amount</label>
-                                <Input 
-                                  type="number"
-                                  placeholder="0.00"
-                                  className="bg-neutral-800 border-neutral-700 text-white text-sm h-8"
-                                  data-testid="input-trade-amount"
-                                />
-                              </div>
-                              
-                              <div>
-                                <label className="text-xs text-neutral-400 block mb-1">Price (SOL)</label>
-                                <Input 
-                                  type="number"
-                                  placeholder={selectedToken.startingPrice}
-                                  className="bg-neutral-800 border-neutral-700 text-white text-sm h-8"
-                                  data-testid="input-trade-price"
-                                />
-                              </div>
-
-                              <Button 
-                                size="sm"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                                data-testid="button-place-order"
-                              >
-                                Place Order
-                              </Button>
-                            </div>
-
-                            <div className="text-xs text-neutral-500 bg-neutral-800/30 p-2 rounded">
-                              Collateral required for settlement
-                            </div>
-                          </div>
+                      {/* Optional Trading Interface Below */}
+                      <div className="bg-black/60 rounded-md border border-gray-700/30 p-4 mt-4">
+                        <div className="text-center text-gray-400 text-sm">
+                          Trading interface coming soon
                         </div>
                       </div>
                     </div>
