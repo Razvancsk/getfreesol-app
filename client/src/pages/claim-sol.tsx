@@ -2231,41 +2231,25 @@ export default function SolRefund() {
                         {/* Tab Content */}
                         {selectedDetailTab === 'trade' && (
                           <div className="space-y-4">
-                            {/* Create Order Buttons at Top */}
-                            <div className="flex space-x-2">
-                              <Button 
-                                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 text-base font-semibold" 
-                                onClick={() => {setShowCreateOfferModal(true); setOfferType('buy');}}
-                                data-testid="button-create-buy-top"
-                              >
-                                Create Buy Order
-                              </Button>
-                              <Button 
-                                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 text-base font-semibold" 
-                                onClick={() => {setShowCreateOfferModal(true); setOfferType('sell');}}
-                                data-testid="button-create-sell-top"
-                              >
-                                Create Sell Order
-                              </Button>
-                            </div>
-
-                            {/* Collateral Warning */}
-                            <div className="text-xs text-orange-400 bg-orange-500/10 p-3 rounded border border-orange-500/20 flex items-center space-x-2">
-                              <span className="text-orange-400">⚠️</span>
-                              <span>Collateral required: You must deposit SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.</span>
-                            </div>
-                            
-                            {/* Header with Create Offer button */}
+                            {/* Header with filter buttons and Create Offer */}
                             <div className="flex items-center justify-between">
                               <h3 className="text-white font-semibold text-lg">Your Orders</h3>
-                              <Button 
-                                size="sm" 
-                                className="text-sm px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white border-0"
-                                onClick={() => setShowCreateOfferModal(true)}
-                                data-testid="button-create-offer"
-                              >
-                                Create Offer
-                              </Button>
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" className="text-sm px-4 py-2 bg-green-500 hover:bg-green-600 text-white border-0">
+                                  Buy Orders
+                                </Button>
+                                <Button size="sm" className="text-sm px-4 py-2 bg-red-500 hover:bg-red-600 text-white border-0">
+                                  Sell Orders
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  className="text-sm px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white border-0"
+                                  onClick={() => setShowCreateOfferModal(true)}
+                                  data-testid="button-create-offer"
+                                >
+                                  Create Offer
+                                </Button>
+                              </div>
                             </div>
                             
                             {/* Orders Table - Direct Row Layout */}
