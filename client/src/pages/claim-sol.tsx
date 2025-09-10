@@ -2433,11 +2433,8 @@ export default function SolRefund() {
                         {selectedDetailTab === 'info' && (
                           <div className="space-y-4">
                             <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
-                              <div className="flex items-center justify-between mb-4">
+                              <div className="mb-4">
                                 <h3 className="text-white font-semibold">Token Information</h3>
-                                <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700" data-testid="button-delete-token">
-                                  Delete
-                                </Button>
                               </div>
                               
                               <div className="space-y-4">
