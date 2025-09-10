@@ -25,10 +25,10 @@ interface SolanaProviderProps {
 }
 
 export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
-  // Start Trust Wallet hiding utility
-  React.useEffect(() => {
-    startTrustWalletHiding();
-  }, []);
+  // Temporarily disabled - this was hiding the wallet modal
+  // React.useEffect(() => {
+  //   startTrustWalletHiding();
+  // }, []);
 
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Mainnet;
@@ -70,7 +70,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
       <WalletProvider 
         wallets={wallets} 
         onError={onError}
-        autoConnect={true}
+        autoConnect={false}
       >
         <WalletModalProvider>
           {children}
