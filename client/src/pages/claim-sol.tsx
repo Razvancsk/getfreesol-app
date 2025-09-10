@@ -86,21 +86,24 @@ export default function SolRefund() {
   const [offerType, setOfferType] = useState<'buy' | 'sell'>('buy');
   const [offerPrice, setOfferPrice] = useState('');
   const [offerAmount, setOfferAmount] = useState('');
-  const [solPrice, setSolPrice] = useState(224); // Live SOL price from CoinGecko API
+  const [solPrice, setSolPrice] = useState(224); // Live SOL price from GeckoTerminal API
   const [priceLoading, setPriceLoading] = useState(false);
 
-  // Fetch live SOL price from CoinGecko API (has CORS support)
+  // Fetch live SOL price from GeckoTerminal API (real-time on-chain data)
   const fetchSolPrice = async () => {
     try {
       setPriceLoading(true);
-      // Try CoinGecko first (has better CORS support)
-      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+      // GeckoTerminal API for real-time on-chain SOL price
+      const response = await fetch('https://api.geckoterminal.com/api/v2/networks/solana/tokens/So11111111111111111111111111111111111111112');
       const data = await response.json();
-      if (data?.solana?.usd) {
-        setSolPrice(data.solana.usd);
+      
+      if (data?.data?.attributes?.price_usd) {
+        const livePriceUSD = parseFloat(data.data.attributes.price_usd);
+        setSolPrice(livePriceUSD);
+        console.log(`Live SOL price updated: $${livePriceUSD.toFixed(2)}`);
       }
     } catch (error) {
-      console.error('Failed to fetch SOL price:', error);
+      console.error('Failed to fetch live SOL price:', error);
       // Fallback to current market price if API fails
       setSolPrice(224); // Current real SOL price
     } finally {
@@ -111,12 +114,18 @@ export default function SolRefund() {
   // Fetch SOL price on component mount and when modal opens
   useEffect(() => {
     if (showCreateOfferModal) {
+      // Fetch immediately when modal opens
       fetchSolPrice();
-      // Update price every 10 seconds when modal is open
-      const interval = setInterval(fetchSolPrice, 10000);
+      // Update price every 5 seconds for live updates
+      const interval = setInterval(fetchSolPrice, 5000);
       return () => clearInterval(interval);
     }
   }, [showCreateOfferModal]);
+
+  // Also fetch price when component first mounts
+  useEffect(() => {
+    fetchSolPrice();
+  }, []);
 
   // Calculate collateral based on price and amount
   const calculateCollateral = () => {
