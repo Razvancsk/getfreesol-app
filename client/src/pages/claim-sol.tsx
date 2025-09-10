@@ -66,6 +66,15 @@ export default function SolRefund() {
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+  
+  // Pre-market form state
+  const [premarketForm, setPremarketForm] = useState({
+    tokenName: '',
+    tokenSymbol: '',
+    totalSupply: '',
+    startingPrice: '',
+    description: ''
+  });
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -211,6 +220,46 @@ export default function SolRefund() {
     } else {
       copyReferralLink(); // Fallback to copy
     }
+  };
+
+  // Pre-market form handlers
+  const handlePremarketFormChange = (field: string, value: string) => {
+    setPremarketForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCreateListing = () => {
+    if (!publicKey) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to create a listing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate form
+    if (!premarketForm.tokenName || !premarketForm.tokenSymbol || !premarketForm.totalSupply || !premarketForm.startingPrice) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const listingData = {
+      creatorWallet: publicKey.toString(),
+      tokenName: premarketForm.tokenName,
+      tokenSymbol: premarketForm.tokenSymbol,
+      totalSupply: premarketForm.totalSupply,
+      startingPrice: premarketForm.startingPrice,
+      description: premarketForm.description
+    };
+
+    createListingMutation.mutate(listingData);
   };
   // Check for referral code in URL on mount - support both formats
   useEffect(() => {
@@ -860,6 +909,59 @@ export default function SolRefund() {
   });
 
 
+
+  // Create Pre-market Listing Mutation
+  const createListingMutation = useMutation({
+    mutationFn: async (listingData: any) => {
+      const response = await apiRequest('POST', '/api/premarket/listings', listingData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Listing Created!",
+        description: `Your ${premarketForm.tokenName} listing has been created successfully.`,
+      });
+      // Reset form
+      setPremarketForm({
+        tokenName: '',
+        tokenSymbol: '',
+        totalSupply: '',
+        startingPrice: '',
+        description: ''
+      });
+      // Refresh listings
+      queryClient.invalidateQueries({ queryKey: ['/api/premarket/listings'] });
+    },
+    onError: (error) => {
+      console.error('Error creating listing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create listing. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Query to get pre-market listings
+  const { data: premarketListings } = useQuery({
+    queryKey: ['/api/premarket/listings'],
+    enabled: activeTab === 'premarket',
+    retry: false,
+  });
+
+  // Query to get user's orders
+  const { data: userOrders } = useQuery({
+    queryKey: ['/api/premarket/orders/wallet', publicKey?.toString()],
+    enabled: activeTab === 'premarket' && !!publicKey,
+    retry: false,
+  });
+
+  // Query to get user's collateral
+  const { data: userCollateral } = useQuery({
+    queryKey: ['/api/premarket/collateral/wallet', publicKey?.toString()],
+    enabled: activeTab === 'premarket' && !!publicKey,
+    retry: false,
+  });
 
   // Bulk Burn Tokens Mutation
   const bulkBurnTokensMutation = useMutation({
@@ -1727,6 +1829,8 @@ export default function SolRefund() {
                     <Label htmlFor="tokenName" className="text-purple-300">Token Name</Label>
                     <Input
                       id="tokenName"
+                      value={premarketForm.tokenName}
+                      onChange={(e) => handlePremarketFormChange('tokenName', e.target.value)}
                       placeholder="e.g., MyToken"
                       className="bg-slate-800/50 border-slate-600 text-white"
                       data-testid="input-tokenname"
@@ -1736,6 +1840,8 @@ export default function SolRefund() {
                     <Label htmlFor="tokenSymbol" className="text-purple-300">Token Symbol</Label>
                     <Input
                       id="tokenSymbol"
+                      value={premarketForm.tokenSymbol}
+                      onChange={(e) => handlePremarketFormChange('tokenSymbol', e.target.value)}
                       placeholder="e.g., MTK"
                       className="bg-slate-800/50 border-slate-600 text-white"
                       data-testid="input-tokensymbol"
@@ -1746,6 +1852,8 @@ export default function SolRefund() {
                     <Input
                       id="totalSupply"
                       type="number"
+                      value={premarketForm.totalSupply}
+                      onChange={(e) => handlePremarketFormChange('totalSupply', e.target.value)}
                       placeholder="1000000"
                       className="bg-slate-800/50 border-slate-600 text-white"
                       data-testid="input-totalsupply"
@@ -1757,6 +1865,8 @@ export default function SolRefund() {
                       id="startingPrice"
                       type="number"
                       step="0.000001"
+                      value={premarketForm.startingPrice}
+                      onChange={(e) => handlePremarketFormChange('startingPrice', e.target.value)}
                       placeholder="0.001"
                       className="bg-slate-800/50 border-slate-600 text-white"
                       data-testid="input-startingprice"
@@ -1766,6 +1876,8 @@ export default function SolRefund() {
                     <Label htmlFor="description" className="text-purple-300">Description</Label>
                     <Input
                       id="description"
+                      value={premarketForm.description}
+                      onChange={(e) => handlePremarketFormChange('description', e.target.value)}
                       placeholder="Describe your token project..."
                       className="bg-slate-800/50 border-slate-600 text-white"
                       data-testid="input-description"
@@ -1773,11 +1885,17 @@ export default function SolRefund() {
                   </div>
                 </div>
                 <Button
+                  onClick={handleCreateListing}
+                  disabled={createListingMutation.isPending}
                   className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
                   data-testid="button-createlisting"
                 >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Create Listing
+                  {createListingMutation.isPending ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                  )}
+                  {createListingMutation.isPending ? 'Creating...' : 'Create Listing'}
                 </Button>
               </div>
 
@@ -1785,36 +1903,44 @@ export default function SolRefund() {
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
                 
-                {/* Sample listing - this will be populated from API later */}
                 <div className="space-y-4">
-                  <div className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-white">Sample Token (STK)</h4>
-                        <p className="text-sm text-purple-300">Revolutionary DeFi protocol</p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm">
-                          <span className="text-purple-300">Supply: 1,000,000</span>
-                          <span className="text-purple-300">Price: 0.001 SOL</span>
+                  {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
+                    premarketListings.listings.map((listing: any) => (
+                      <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
+                            <p className="text-sm text-purple-300">{listing.description || 'No description available'}</p>
+                            <div className="flex items-center space-x-4 mt-2 text-sm">
+                              <span className="text-purple-300">Supply: {parseInt(listing.totalSupply).toLocaleString()}</span>
+                              <span className="text-purple-300">Price: {listing.startingPrice} SOL</span>
+                            </div>
+                            <div className="text-xs text-purple-400 mt-1">
+                              Created by: {listing.creatorWallet.slice(0, 6)}...{listing.creatorWallet.slice(-6)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="space-y-2">
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700" data-testid="button-buytoken">
+                                <DollarSign className="h-3 w-3 mr-1" />
+                                Buy
+                              </Button>
+                              <Button size="sm" variant="outline" className="border-purple-500 text-purple-300" data-testid="button-selltoken">
+                                <ArrowUpDown className="h-3 w-3 mr-1" />
+                                Sell
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="space-y-2">
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700" data-testid="button-buytoken">
-                            <DollarSign className="h-3 w-3 mr-1" />
-                            Buy
-                          </Button>
-                          <Button size="sm" variant="outline" className="border-purple-500 text-purple-300" data-testid="button-selltoken">
-                            <ArrowUpDown className="h-3 w-3 mr-1" />
-                            Sell
-                          </Button>
-                        </div>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-purple-300 text-sm py-8">
+                      <TrendingUp className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                      <p>No pre-market listings yet.</p>
+                      <p>Create the first listing above!</p>
                     </div>
-                  </div>
-                  
-                  <div className="text-center text-purple-300 text-sm">
-                    More listings will appear here as they are created
-                  </div>
+                  )}
                 </div>
               </div>
 
