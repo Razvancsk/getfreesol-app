@@ -2418,12 +2418,14 @@ export default function SolRefund() {
                                         { name: 'STEP/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/StepAscQoEioFxxWGnh2sLBDFp9d8rvKz2Yp39iDpyT/logo.png' },
                                         { name: 'COPE/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/8HGyAAB1yoM1ttS7pXjHMa3dukTFGQggnFFH3hJZgzQh/logo.png' }
                                       ];
+                                      const times = ['12s', '45s', '2m', '8m', '1h', '3h', '1d', '2d'];
                                       const pair = pairs[i];
+                                      const timeAgo = times[i];
                                       
                                       return (
                                         <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
                                           <td className="py-2 px-3 text-neutral-400 text-xs">
-                                            {i + 1}h
+                                            {timeAgo}
                                           </td>
                                           <td className="py-2 px-3">
                                             <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
