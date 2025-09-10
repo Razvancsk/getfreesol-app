@@ -2099,100 +2099,193 @@ export default function SolRefund() {
                       )}
                     </div>
                   ) : (
-                    // Selected Token (shows same horizontal format with back button)
-                    <div className="space-y-3">
-                      {/* Back Button Row */}
-                      <div className="flex items-center space-x-3 mb-4">
-                        <Button 
-                          onClick={() => setSelectedToken(null)}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20 px-3 py-1.5 text-xs"
-                          data-testid="button-back-to-list"
-                        >
-                          ← Back
-                        </Button>
-                      </div>
+                    // Token Details View
+                    <div className="space-y-0">
+                      {/* Sticky Header: Back Button + Token Row */}
+                      <div className="sticky top-0 bg-gradient-to-br from-purple-800/90 to-purple-900/90 backdrop-blur-sm z-10 -mx-6 px-6 py-4 border-b border-purple-500/20">
+                        <div className="flex items-center space-x-4 mb-3">
+                          <Button 
+                            onClick={() => setSelectedToken(null)}
+                            variant="outline"
+                            size="sm"
+                            className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
+                            data-testid="button-back-to-list"
+                          >
+                            ← Back
+                          </Button>
+                        </div>
 
-                      {/* Selected Token Row (same format as list) */}
-                      <div className="bg-black/80 rounded-md border border-gray-700/50 px-4 py-3 ring-2 ring-purple-500/50">
-                        <div className="flex items-center justify-between">
-                          {/* Token Info */}
-                          <div className="flex items-center space-x-3 min-w-[120px]">
-                            <div className="w-7 h-7 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                              {selectedToken.tokenSymbol.charAt(0)}
+                        {/* Token Summary Row */}
+                        <div className="bg-black/60 rounded-md border border-gray-700/50 px-4 py-3">
+                          <div className="flex items-center justify-between">
+                            {/* Token Info */}
+                            <div className="flex items-center space-x-3 min-w-[120px]">
+                              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {selectedToken.tokenSymbol.charAt(0)}
+                              </div>
+                              <div>
+                                <div className="text-white font-semibold text-lg">{selectedToken.tokenSymbol}</div>
+                                <div className="text-gray-400 text-sm">{selectedToken.tokenName}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="text-white font-medium text-base">{selectedToken.tokenSymbol}</div>
-                              <div className="text-gray-400 text-xs">{selectedToken.tokenName}</div>
+
+                            {/* Price */}
+                            <div className="text-right min-w-[80px]">
+                              <div className="text-white font-bold text-lg">${formatPrice(selectedToken.startingPrice)}</div>
                             </div>
-                          </div>
 
-                          {/* Price */}
-                          <div className="text-right min-w-[80px]">
-                            <div className="text-white font-semibold text-base">${formatPrice(selectedToken.startingPrice)}</div>
-                          </div>
+                            {/* 24h Vol */}
+                            <div className="text-right min-w-[100px]">
+                              <div className="text-gray-500 text-xs mb-0.5">24h Vol</div>
+                              <div className="text-white text-sm font-mono">$18,691.9</div>
+                              <div className="text-green-400 text-xs">+14.76%</div>
+                            </div>
 
-                          {/* 24h Vol */}
-                          <div className="text-right min-w-[100px]">
-                            <div className="text-gray-500 text-xs mb-0.5">24h Vol</div>
-                            <div className="text-white text-sm font-mono">$18,691.9</div>
-                            <div className="text-green-400 text-xs">+14.76%</div>
-                          </div>
+                            {/* Total Vol */}
+                            <div className="text-right min-w-[80px]">
+                              <div className="text-gray-500 text-xs mb-0.5">Total Vol</div>
+                              <div className="text-white text-sm font-mono">$10.7M</div>
+                            </div>
 
-                          {/* Total Vol */}
-                          <div className="text-right min-w-[80px]">
-                            <div className="text-gray-500 text-xs mb-0.5">Total Vol</div>
-                            <div className="text-white text-sm font-mono">$10.7M</div>
-                          </div>
+                            {/* Settle Starts */}
+                            <div className="text-right min-w-[100px]">
+                              <div className="text-gray-500 text-xs mb-0.5">Settle Starts (UTC)</div>
+                              <div className="text-white text-sm font-mono">TBA</div>
+                            </div>
 
-                          {/* Settle Starts */}
-                          <div className="text-right min-w-[100px]">
-                            <div className="text-gray-500 text-xs mb-0.5">Settle Starts (UTC)</div>
-                            <div className="text-white text-sm font-mono">TBA</div>
-                          </div>
+                            {/* Settle Ends */}
+                            <div className="text-right min-w-[100px]">
+                              <div className="text-gray-500 text-xs mb-0.5">Settle Ends (UTC)</div>
+                              <div className="text-white text-sm font-mono">TBA</div>
+                            </div>
 
-                          {/* Settle Ends */}
-                          <div className="text-right min-w-[100px]">
-                            <div className="text-gray-500 text-xs mb-0.5">Settle Ends (UTC)</div>
-                            <div className="text-white text-sm font-mono">TBA</div>
-                          </div>
-
-                          {/* Countdown */}
-                          <div className="text-right min-w-[80px]">
-                            <div className="text-gray-500 text-xs mb-0.5">Countdown</div>
-                            <div className="text-white text-sm">Not Started</div>
-                          </div>
-
-                          {/* Close/Settings Icons */}
-                          <div className="flex items-center space-x-2 ml-4">
-                            <button 
-                              className="text-gray-400 hover:text-gray-200 transition-colors"
-                              onClick={() => setSelectedToken(null)}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                            <button className="text-gray-400 hover:text-gray-200 transition-colors">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                            </button>
-                            <button className="text-orange-400 hover:text-orange-300 transition-colors">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                              </svg>
-                            </button>
+                            {/* Countdown */}
+                            <div className="text-right min-w-[80px]">
+                              <div className="text-gray-500 text-xs mb-0.5">Countdown</div>
+                              <div className="text-white text-sm">Not Started</div>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Optional Trading Interface Below */}
-                      <div className="bg-black/60 rounded-md border border-gray-700/30 p-4 mt-4">
-                        <div className="text-center text-gray-400 text-sm">
-                          Trading interface coming soon
+                      {/* Token Details Content */}
+                      <div className="pt-6">
+                        {/* Detail Tabs */}
+                        <div className="flex space-x-1 border-b border-neutral-800 mb-6">
+                          <button className="px-4 py-2 text-sm font-medium text-purple-300 border-b-2 border-purple-500 bg-purple-500/10">
+                            Trade
+                          </button>
+                          <button className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                            Activity
+                          </button>
+                          <button className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                            Info
+                          </button>
+                        </div>
+
+                        {/* Trade Tab Content */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Buy/Sell Forms */}
+                          <div className="space-y-4">
+                            <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
+                              <h3 className="text-white font-semibold mb-4">Place Order</h3>
+                              
+                              {/* Buy/Sell Toggle */}
+                              <div className="flex space-x-2 mb-4">
+                                <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" data-testid="button-buy">
+                                  Buy
+                                </Button>
+                                <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" data-testid="button-sell">
+                                  Sell
+                                </Button>
+                              </div>
+
+                              {/* Order Form */}
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="text-sm text-neutral-400 block mb-2">Price (USD)</label>
+                                  <Input 
+                                    type="number"
+                                    placeholder={formatPrice(selectedToken.startingPrice)}
+                                    className="bg-neutral-800 border-neutral-700 text-white"
+                                    data-testid="input-order-price"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <label className="text-sm text-neutral-400 block mb-2">Amount</label>
+                                  <Input 
+                                    type="number"
+                                    placeholder="0"
+                                    className="bg-neutral-800 border-neutral-700 text-white"
+                                    data-testid="input-order-amount"
+                                  />
+                                </div>
+
+                                <div className="bg-neutral-800/50 p-3 rounded">
+                                  <div className="text-xs text-neutral-400 mb-1">Estimated Total</div>
+                                  <div className="text-white font-mono">$0.00</div>
+                                </div>
+
+                                <div className="text-xs text-orange-400 bg-orange-500/10 p-3 rounded border border-orange-500/20">
+                                  ⚠️ Collateral required: You must deposit SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
+                                </div>
+
+                                <Button 
+                                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                                  data-testid="button-place-order"
+                                >
+                                  Connect Wallet to Trade
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Order Book / Market Data */}
+                          <div className="space-y-4">
+                            <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
+                              <h3 className="text-white font-semibold mb-4">Market Overview</h3>
+                              
+                              <div className="space-y-3 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-neutral-400">Current Price:</span>
+                                  <span className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-neutral-400">24h Volume:</span>
+                                  <span className="text-white font-mono">$18,691.90</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-neutral-400">Total Volume:</span>
+                                  <span className="text-white font-mono">$10.7M</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-neutral-400">Total Supply:</span>
+                                  <span className="text-white font-mono">{parseInt(selectedToken.totalSupply || '0').toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-neutral-400">Settlement:</span>
+                                  <span className="text-white">Not Started</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
+                              <h3 className="text-white font-semibold mb-4">Recent Trades</h3>
+                              <div className="space-y-2 text-sm">
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <div key={i} className="flex justify-between items-center py-1">
+                                    <span className={`text-xs px-2 py-0.5 rounded ${i % 2 === 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                      {i % 2 === 0 ? 'BUY' : 'SELL'}
+                                    </span>
+                                    <span className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</span>
+                                    <span className="text-neutral-400">{Math.floor(Math.random() * 10000)}K</span>
+                                    <span className="text-neutral-500 text-xs">{i + 1}h</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
