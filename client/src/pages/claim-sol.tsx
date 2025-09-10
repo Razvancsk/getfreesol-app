@@ -166,16 +166,14 @@ export default function SolRefund() {
     };
   }, []);
 
-  // Calculate collateral based on price and amount
-  const calculateCollateral = () => {
+  // Calculate collateral based on price and amount - updates automatically when SOL price changes
+  const collateral = useMemo(() => {
     const price = parseFloat(offerPrice) || 0;
     const amount = parseFloat(offerAmount) || 0;
     const usdCollateral = price * amount;
     const solCollateral = usdCollateral / solPrice;
     return { usd: usdCollateral, sol: solCollateral };
-  };
-
-  const collateral = calculateCollateral();
+  }, [offerPrice, offerAmount, solPrice]);
   
   // Real-time countdown ticker for settlement windows
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
