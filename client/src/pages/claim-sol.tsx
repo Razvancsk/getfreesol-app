@@ -1577,17 +1577,25 @@ export default function SolRefund() {
                 </>
               ) : (
                 <div className="flex flex-col items-center space-y-3">
-                  <Button
-                    onClick={() => {
-                      console.log('🔗 Direct modal open');
-                      setModalVisible(true);
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('🔗 Button clicked!');
+                      alert('Button clicked!');
+                      if (setModalVisible) {
+                        console.log('📱 Opening modal');
+                        setModalVisible(true);
+                      } else {
+                        console.error('❌ setModalVisible not available');
+                      }
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30 inline-flex items-center justify-center gap-2"
                     title="Connect your wallet"
                   >
                     <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>
