@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, Clock, Shield, Plus, X } from "lucide-react";
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1754527057994.png';
@@ -1485,23 +1486,7 @@ export default function SolRefund() {
                     </Button>
                   </>
                 ) : (
-                  <Button
-                    onClick={() => {
-                      console.log('Mobile connect wallet button clicked');
-                      try {
-                        select(null);
-                        setVisible(true);
-                        console.log('Mobile wallet modal should be visible now');
-                      } catch (error) {
-                        console.error('Error opening mobile wallet modal:', error);
-                      }
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                    title="Connect your wallet"
-                  >
-                    <Wallet className="h-4 w-4 mr-1" />
-                    Connect
-                  </Button>
+                  <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium !border !border-purple-500/30" />
                 )}
               </div>
             </div>
@@ -1583,23 +1568,7 @@ export default function SolRefund() {
                 </>
               ) : (
                 <div className="flex flex-col items-center space-y-3">
-                  <Button
-                    onClick={() => {
-                      console.log('Connect wallet button clicked');
-                      try {
-                        select(null);
-                        setVisible(true);
-                        console.log('Wallet modal should be visible now');
-                      } catch (error) {
-                        console.error('Error opening wallet modal:', error);
-                      }
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
-                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
-                  >
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Connect Wallet
-                  </Button>
+                  <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-6 !py-3 !text-lg !font-medium !border !border-purple-500/30" />
                 </div>
               )}
             </div>
