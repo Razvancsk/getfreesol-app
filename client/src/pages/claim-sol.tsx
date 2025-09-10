@@ -2366,7 +2366,14 @@ export default function SolRefund() {
                                       <td className="py-3 px-2 text-white text-sm">
                                         <div className="flex items-center space-x-1">
                                           <span>{i === 0 ? '836.7' : i === 1 ? '0.00765' : i === 2 ? '384' : i === 3 ? '10' : i === 4 ? '384' : i === 5 ? '40.2' : i === 6 ? '22.5' : i === 7 ? '13.5' : i === 8 ? '15' : i === 9 ? '13.8' : i === 10 ? '12' : i === 11 ? '9.8' : i === 12 ? '8.4' : i === 13 ? '7.5' : i === 14 ? '6.4' : i === 15 ? '5.1' : i === 16 ? '4.5' : i === 17 ? '3.8' : i === 18 ? '3.0' : '2.1'}</span>
-                                          <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
+                                          <img 
+                                            src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" 
+                                            alt="SOL" 
+                                            className="w-3 h-3 rounded-full"
+                                            onError={(e) => {
+                                              e.currentTarget.src = "https://cryptologos.cc/logos/solana-sol-logo.png?v=029";
+                                            }}
+                                          />
                                         </div>
                                       </td>
                                       <td className="py-3 px-2">
