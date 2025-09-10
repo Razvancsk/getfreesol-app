@@ -2567,14 +2567,28 @@ export default function SolRefund() {
                               <div className="flex items-center justify-between">
                                 <span className="text-white text-2xl">{collateral.sol.toFixed(4)}</span>
                                 <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
-                                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 via-blue-500 to-green-400 flex items-center justify-center">
-                                    <svg className="w-3 h-3" viewBox="0 0 101 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M100.48 69.3817L83.8068 86.8015C83.4444 87.1878 82.9616 87.4099 82.4347 87.4099H6.55301C5.5701 87.4099 4.94 86.5793 5.32501 85.7558L12.1383 69.8776C12.3563 69.4033 12.8085 69.1071 13.3138 69.1071H95.2809C96.2708 69.1071 96.8956 70.1006 100.48 69.3817Z" fill="#14F195"/>
-                                      <path d="M100.48 18.6992L83.8068 1.27943C83.4444 0.893141 82.9616 0.671021 82.4347 0.671021H6.55301C5.5701 0.671021 4.94 1.50166 5.32501 2.32517L12.1383 17.2034C12.3563 17.6777 12.8085 17.9739 13.3138 17.9739H95.2809C96.2708 17.9739 96.8956 16.9804 100.48 18.6992Z" fill="#14F195"/>
-                                      <path d="M83.8068 35.4583C84.1692 35.0719 84.6519 34.8499 85.1789 34.8499H95.2809C96.2708 34.8499 96.8956 35.8434 100.48 35.1245L17.4335 52.2286C16.9282 52.2286 16.476 51.9324 16.258 51.4581L9.44471 36.5799C9.05970 35.7564 9.68979 34.9258 10.6727 34.9258H26.6935C27.2204 34.9258 27.7032 35.1479 28.0656 35.5342L83.8068 35.4583Z" fill="#14F195"/>
+                                  <div className="w-5 h-5 flex items-center justify-center">
+                                    <svg width="20" height="17" viewBox="0 0 397 311" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M64.6 237.9c4.9-2.6 10.8-2.6 15.7 0l208 115.7c6.3 3.3 13.7-1.7 13.7-8.8v-37.4c0-4.6-2.5-8.8-6.6-11.1L95.4 186.3c-4.9-2.6-10.8-2.6-15.7 0L-120.3 296.3c-4.1 2.3-6.6 6.5-6.6 11.1v37.4c0 7.1 7.4 12.1 13.7 8.8L64.6 237.9z" fill="url(#solanaGradient1)"/>
+                                      <path d="M64.6 99.9c4.9-2.6 10.8-2.6 15.7 0l208 115.7c6.3 3.3 13.7-1.7 13.7-8.8v-37.4c0-4.6-2.5-8.8-6.6-11.1L95.4 48.3c-4.9-2.6-10.8-2.6-15.7 0L-120.3 158.3c-4.1 2.3-6.6 6.5-6.6 11.1v37.4c0 7.1 7.4 12.1 13.7 8.8L64.6 99.9z" fill="url(#solanaGradient2)"/>
+                                      <path d="M333.1 138.2c4.9-2.6 10.8-2.6 15.7 0l47.9 25.4c6.3 3.3 13.7-1.7 13.7-8.8v-37.4c0-4.6-2.5-8.8-6.6-11.1l-200-110c-4.9-2.6-10.8-2.6-15.7 0l-208 110c-4.1 2.3-6.6 6.5-6.6 11.1v37.4c0 7.1 7.4 12.1 13.7 8.8l208-110z" fill="url(#solanaGradient3)"/>
+                                      <defs>
+                                        <linearGradient id="solanaGradient1" x1="7.9" y1="177.3" x2="398.3" y2="177.3" gradientUnits="userSpaceOnUse">
+                                          <stop stopColor="#00FFA3"/>
+                                          <stop offset="1" stopColor="#DC1FFF"/>
+                                        </linearGradient>
+                                        <linearGradient id="solanaGradient2" x1="7.9" y1="99.9" x2="398.3" y2="99.9" gradientUnits="userSpaceOnUse">
+                                          <stop stopColor="#00FFA3"/>
+                                          <stop offset="1" stopColor="#DC1FFF"/>
+                                        </linearGradient>
+                                        <linearGradient id="solanaGradient3" x1="7.9" y1="22.5" x2="398.3" y2="22.5" gradientUnits="userSpaceOnUse">
+                                          <stop stopColor="#00FFA3"/>
+                                          <stop offset="1" stopColor="#DC1FFF"/>
+                                        </linearGradient>
+                                      </defs>
                                     </svg>
                                   </div>
-                                  <span className="text-white text-sm">SOL</span>
+                                  <span className="text-white text-sm font-medium">SOL</span>
                                 </div>
                               </div>
                             </div>
