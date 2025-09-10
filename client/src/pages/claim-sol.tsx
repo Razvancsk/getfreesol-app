@@ -82,6 +82,8 @@ export default function SolRefund() {
   // Selected token in active premarket view
   const [selectedToken, setSelectedToken] = useState<any>(null);
   const [selectedDetailTab, setSelectedDetailTab] = useState<'trade' | 'activity' | 'info'>('trade');
+  const [showCreateOfferModal, setShowCreateOfferModal] = useState(false);
+  const [offerType, setOfferType] = useState<'buy' | 'sell'>('buy');
   
   // Real-time countdown ticker for settlement windows
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -2229,17 +2231,41 @@ export default function SolRefund() {
                         {/* Tab Content */}
                         {selectedDetailTab === 'trade' && (
                           <div className="space-y-4">
-                            {/* Header with filter buttons */}
+                            {/* Create Order Buttons at Top */}
+                            <div className="flex space-x-2">
+                              <Button 
+                                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 text-base font-semibold" 
+                                onClick={() => {setShowCreateOfferModal(true); setOfferType('buy');}}
+                                data-testid="button-create-buy-top"
+                              >
+                                Create Buy Order
+                              </Button>
+                              <Button 
+                                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 text-base font-semibold" 
+                                onClick={() => {setShowCreateOfferModal(true); setOfferType('sell');}}
+                                data-testid="button-create-sell-top"
+                              >
+                                Create Sell Order
+                              </Button>
+                            </div>
+
+                            {/* Collateral Warning */}
+                            <div className="text-xs text-orange-400 bg-orange-500/10 p-3 rounded border border-orange-500/20 flex items-center space-x-2">
+                              <span className="text-orange-400">⚠️</span>
+                              <span>Collateral required: You must deposit SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.</span>
+                            </div>
+                            
+                            {/* Header with Create Offer button */}
                             <div className="flex items-center justify-between">
                               <h3 className="text-white font-semibold text-lg">Your Orders</h3>
-                              <div className="flex items-center space-x-2">
-                                <Button size="sm" className="text-sm px-6 py-2 bg-green-500 hover:bg-green-600 text-white border-0">
-                                  Buy Orders
-                                </Button>
-                                <Button size="sm" className="text-sm px-6 py-2 bg-red-500 hover:bg-red-600 text-white border-0">
-                                  Sell Orders
-                                </Button>
-                              </div>
+                              <Button 
+                                size="sm" 
+                                className="text-sm px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white border-0"
+                                onClick={() => setShowCreateOfferModal(true)}
+                                data-testid="button-create-offer"
+                              >
+                                Create Offer
+                              </Button>
                             </div>
                             
                             {/* Orders Table - Direct Row Layout */}
@@ -2283,19 +2309,6 @@ export default function SolRefund() {
                               </table>
                             </div>
 
-                            {/* Buy/Sell Buttons */}
-                            <div className="flex space-x-2 mt-6">
-                              <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 text-base font-medium" data-testid="button-create-buy">
-                                Create Buy Order
-                              </Button>
-                              <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 text-base font-medium" data-testid="button-create-sell">
-                                Create Sell Order
-                              </Button>
-                            </div>
-
-                            <div className="text-xs text-orange-400 bg-orange-500/10 p-3 rounded border border-orange-500/20 mt-4">
-                              ⚠️ Collateral required: You must deposit SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
-                            </div>
                           </div>
                         )}
 
@@ -2382,6 +2395,146 @@ export default function SolRefund() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Create Offer Modal */}
+                  {showCreateOfferModal && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                      <div className="bg-neutral-900 rounded-lg border border-neutral-800 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                          {/* Step Indicator */}
+                          <div className="text-neutral-400 text-sm mb-4">STEP 2/3</div>
+                          
+                          {/* Title */}
+                          <h2 className="text-white text-2xl font-bold mb-6">Create {selectedToken?.tokenSymbol || 'Token'} Offer</h2>
+                          
+                          {/* Buy/Sell Toggle */}
+                          <div className="flex space-x-2 mb-6">
+                            <button 
+                              className={`flex-1 py-3 px-4 rounded-lg border transition-colors ${
+                                offerType === 'buy' 
+                                  ? 'border-green-500/50 bg-green-500/10 text-white' 
+                                  : 'border-neutral-600 bg-neutral-800 text-neutral-400 hover:text-white'
+                              }`}
+                              onClick={() => setOfferType('buy')}
+                            >
+                              WANT TO BUY
+                            </button>
+                            <button 
+                              className={`flex-1 py-3 px-4 rounded-lg border transition-colors ${
+                                offerType === 'sell' 
+                                  ? 'border-red-500/50 bg-red-500/10 text-red-400' 
+                                  : 'border-neutral-600 bg-neutral-800 text-neutral-400 hover:text-white'
+                              }`}
+                              onClick={() => setOfferType('sell')}
+                            >
+                              WANT TO SELL
+                            </button>
+                          </div>
+
+                          {/* Price per Point */}
+                          <div className="mb-6">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <label className="text-neutral-400 text-sm font-medium">PRICE PER POINT</label>
+                              <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-neutral-400 text-xs">?</div>
+                            </div>
+                            <div className="bg-neutral-800 rounded-lg p-4">
+                              <input 
+                                type="text" 
+                                placeholder="$ Enter your price"
+                                className="bg-transparent text-white text-xl placeholder-neutral-500 w-full outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Amount */}
+                          <div className="mb-6">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <label className="text-neutral-400 text-sm font-medium">AMOUNT</label>
+                              <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-neutral-400 text-xs">?</div>
+                            </div>
+                            <div className="bg-neutral-800 rounded-lg p-4 flex items-center space-x-3">
+                              <input 
+                                type="text" 
+                                placeholder="Enter amount"
+                                className="bg-transparent text-white text-lg placeholder-neutral-500 flex-1 outline-none"
+                              />
+                              <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
+                                <div className="w-4 h-4 bg-orange-500 rounded-full"></div>
+                                <span className="text-white text-sm">{selectedToken?.tokenSymbol || 'Token'}</span>
+                                <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Collateral */}
+                          <div className="mb-6">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <label className="text-neutral-400 text-sm font-medium">COLLATERAL</label>
+                                <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-neutral-400 text-xs">?</div>
+                              </div>
+                              <span className="text-neutral-400 text-sm">Balance: 0 USDC</span>
+                            </div>
+                            <div className="bg-neutral-800 rounded-lg p-4 flex items-center justify-between">
+                              <span className="text-neutral-500 text-2xl">0.00</span>
+                              <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
+                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
+                                <span className="text-white text-sm">USDC</span>
+                                <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Fill Type */}
+                          <div className="mb-8">
+                            <label className="text-neutral-400 text-sm font-medium block mb-4">FILL TYPE</label>
+                            <div className="space-y-3">
+                              <label className="flex items-start space-x-3 cursor-pointer">
+                                <div className="w-5 h-5 rounded-full border-2 border-orange-500 bg-orange-500 flex items-center justify-center mt-0.5">
+                                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                                </div>
+                                <div>
+                                  <div className="text-white font-medium">Partial Fill</div>
+                                  <div className="text-neutral-400 text-sm">Multiple users can contribute to fulfill the offer</div>
+                                </div>
+                              </label>
+                              
+                              <label className="flex items-start space-x-3 cursor-pointer">
+                                <div className="w-5 h-5 rounded-full border border-neutral-600 mt-0.5"></div>
+                                <div>
+                                  <div className="text-white font-medium">Single Fill</div>
+                                  <div className="text-neutral-400 text-sm">Entire offer must be filled by 1 user</div>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex space-x-3">
+                            <Button 
+                              className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white py-3"
+                              onClick={() => setShowCreateOfferModal(false)}
+                            >
+                              Back
+                            </Button>
+                            <Button 
+                              className={`flex-1 py-3 text-white font-medium ${
+                                offerType === 'buy' 
+                                  ? 'bg-green-600 hover:bg-green-700' 
+                                  : 'bg-red-600 hover:bg-red-700'
+                              }`}
+                            >
+                              {offerType === 'buy' ? 'Buy' : 'Sell'}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
