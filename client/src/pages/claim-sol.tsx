@@ -1332,10 +1332,10 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 pt-1 pb-2 max-w-7xl">
-        <div className="lg:grid lg:grid-cols-12 lg:gap-6">
+      <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
+        <div className="w-full">
           {/* Main Content */}
-          <div className="lg:col-span-9 space-y-2">
+          <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
             {/* Top row: Logo and Wallet Connection (mobile) */}
@@ -2029,18 +2029,6 @@ export default function SolRefund() {
               </div>
             </div>
           )}
-          </div>
-          
-          {/* Sidebar with Ads - Desktop Only */}
-          <div className="hidden lg:block lg:col-span-3">
-            <div className="sticky top-6 space-y-4">
-              <AdContainer 
-                placement="sidebar" 
-                maxAds={4}
-                title="DeFi Opportunities"
-                className="w-full"
-              />
-            </div>
           </div>
         </div>
         
