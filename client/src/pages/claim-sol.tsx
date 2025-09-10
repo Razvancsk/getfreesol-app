@@ -1575,7 +1575,16 @@ export default function SolRefund() {
               ) : (
                 <div className="flex flex-col items-center space-y-3">
                   <Button
-                    onClick={connect}
+                    onClick={() => {
+                      console.log('🔗 Connect button clicked');
+                      alert('Button clicked!');
+                      if (setVisible) {
+                        console.log('📱 Opening wallet modal');
+                        setVisible(true);
+                      } else {
+                        console.error('❌ setVisible is not available');
+                      }
+                    }}
                     className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
                     title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
                   >
