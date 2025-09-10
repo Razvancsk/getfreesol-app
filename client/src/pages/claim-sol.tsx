@@ -2399,6 +2399,7 @@ export default function SolRefund() {
                                     <tr>
                                       <th className="text-left text-neutral-400 font-medium py-2 px-3">Time</th>
                                       <th className="text-left text-neutral-400 font-medium py-2 px-3">Type</th>
+                                      <th className="text-left text-neutral-400 font-medium py-2 px-3">Pair</th>
                                       <th className="text-right text-neutral-400 font-medium py-2 px-3">Price</th>
                                       <th className="text-right text-neutral-400 font-medium py-2 px-3">Amount</th>
                                       <th className="text-right text-neutral-400 font-medium py-2 px-3">Total</th>
@@ -2406,36 +2407,65 @@ export default function SolRefund() {
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-neutral-800/50">
-                                    {Array.from({ length: 8 }, (_, i) => (
-                                      <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
-                                        <td className="py-2 px-3 text-neutral-400 text-xs">{i + 1}h ago</td>
-                                        <td className="py-2 px-3">
-                                          <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                                            i % 2 === 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-                                          }`}>
-                                            {i % 2 === 0 ? 'BUY' : 'SELL'}
-                                          </span>
-                                        </td>
-                                        <td className="py-2 px-3 text-right text-white font-mono">${formatPrice(selectedToken.startingPrice)}</td>
-                                        <td className="py-2 px-3 text-right text-white">{(Math.random() * 1000).toFixed(0)}</td>
-                                        <td className="py-2 px-3 text-right text-white font-mono">
-                                          <div className="flex items-center justify-end space-x-1">
-                                            <span>{(Math.random() * 45).toFixed(3)}</span>
-                                            <img 
-                                              src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" 
-                                              alt="SOL" 
-                                              className="w-3 h-3 rounded-full"
-                                              onError={(e) => {
-                                                e.currentTarget.src = "https://cryptologos.cc/logos/solana-sol-logo.png?v=029";
-                                              }}
-                                            />
-                                          </div>
-                                        </td>
-                                        <td className="py-2 px-3 text-center">
-                                          <span className="text-green-400 text-xs">Completed</span>
-                                        </td>
-                                      </tr>
-                                    ))}
+                                    {Array.from({ length: 8 }, (_, i) => {
+                                      const pairs = [
+                                        { name: 'Meteora/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/METeorJKZjf1HvchYLY4k1qphS7QsKbG8QvkQKvNzVa/logo.svg' },
+                                        { name: 'BONK/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263/logo.png' },
+                                        { name: 'RAY/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/logo.png' },
+                                        { name: 'ORCA/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE/logo.png' },
+                                        { name: 'SAMO/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU/logo.png' },
+                                        { name: 'SRM/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt/logo.png' },
+                                        { name: 'STEP/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/StepAscQoEioFxxWGnh2sLBDFp9d8rvKz2Yp39iDpyT/logo.png' },
+                                        { name: 'COPE/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/8HGyAAB1yoM1ttS7pXjHMa3dukTFGQggnFFH3hJZgzQh/logo.png' }
+                                      ];
+                                      const pair = pairs[i];
+                                      
+                                      return (
+                                        <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
+                                          <td className="py-2 px-3 text-neutral-400 text-xs">
+                                            {i + 1}h
+                                          </td>
+                                          <td className="py-2 px-3">
+                                            <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                                              i % 2 === 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                                            }`}>
+                                              {i % 2 === 0 ? 'BUY' : 'SELL'}
+                                            </span>
+                                          </td>
+                                          <td className="py-2 px-3 text-white text-xs">
+                                            <div className="flex items-center space-x-1">
+                                              <img 
+                                                src={pair.logo} 
+                                                alt={pair.name.split('/')[0]} 
+                                                className="w-4 h-4 rounded-full"
+                                                onError={(e) => {
+                                                  e.currentTarget.src = "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png";
+                                                }}
+                                              />
+                                              <span>{pair.name}</span>
+                                            </div>
+                                          </td>
+                                          <td className="py-2 px-3 text-right text-white font-mono">${formatPrice(selectedToken.startingPrice)}</td>
+                                          <td className="py-2 px-3 text-right text-white">{(Math.random() * 1000).toFixed(0)}</td>
+                                          <td className="py-2 px-3 text-right text-white font-mono">
+                                            <div className="flex items-center justify-end space-x-1">
+                                              <span>{(Math.random() * 45).toFixed(3)}</span>
+                                              <img 
+                                                src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" 
+                                                alt="SOL" 
+                                                className="w-3 h-3 rounded-full"
+                                                onError={(e) => {
+                                                  e.currentTarget.src = "https://cryptologos.cc/logos/solana-sol-logo.png?v=029";
+                                                }}
+                                              />
+                                            </div>
+                                          </td>
+                                          <td className="py-2 px-3 text-center">
+                                            <span className="text-green-400 text-xs">Completed</span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
