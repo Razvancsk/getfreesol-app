@@ -2564,16 +2564,27 @@ export default function SolRefund() {
                               <span className="text-neutral-400 text-sm">SOL Price: ${solPrice.toFixed(2)}</span>
                             </div>
                             <div className="bg-neutral-800 rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-white text-2xl">${collateral.usd.toFixed(2)}</span>
+                              <div className="flex items-center justify-between">
+                                <span className="text-white text-2xl">{collateral.sol.toFixed(4)}</span>
                                 <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
-                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
-                                  <span className="text-white text-sm">USD</span>
+                                  <div className="w-4 h-4 rounded-full bg-gradient-to-r from-purple-400 to-blue-400 flex items-center justify-center">
+                                    <svg className="w-3 h-3" viewBox="0 0 397 311" fill="none">
+                                      <path d="M64.6 237.9C69.5 235.3 75.4 235.3 80.3 237.9L288.3 353.6C294.6 356.9 302 351.9 302 344.8V307.4C302 302.8 299.5 298.6 295.4 296.3L95.4 186.3C90.5 183.7 84.6 183.7 79.7 186.3L-120.3 296.3C-124.4 298.6 -127 302.8 -127 307.4V344.8C-127 351.9 -119.6 356.9 -113.3 353.6L64.6 237.9Z" fill="url(#gradient1)"/>
+                                      <path d="M64.6 99.9C69.5 97.3 75.4 97.3 80.3 99.9L288.3 215.6C294.6 218.9 302 213.9 302 206.8V169.4C302 164.8 299.5 160.6 295.4 158.3L95.4 48.3C90.5 45.7 84.6 45.7 79.7 48.3L-120.3 158.3C-124.4 160.6 -127 164.8 -127 169.4V206.8C-127 213.9 -119.6 218.9 -113.3 215.6L64.6 99.9Z" fill="url(#gradient2)"/>
+                                      <defs>
+                                        <linearGradient id="gradient1" x1="-127" y1="320.1" x2="302" y2="320.1" gradientUnits="userSpaceOnUse">
+                                          <stop stopColor="#00D4FF"/>
+                                          <stop offset="1" stopColor="#7B2CF4"/>
+                                        </linearGradient>
+                                        <linearGradient id="gradient2" x1="-127" y1="132.1" x2="302" y2="132.1" gradientUnits="userSpaceOnUse">
+                                          <stop stopColor="#00D4FF"/>
+                                          <stop offset="1" stopColor="#7B2CF4"/>
+                                        </linearGradient>
+                                      </defs>
+                                    </svg>
+                                  </div>
+                                  <span className="text-white text-sm">SOL</span>
                                 </div>
-                              </div>
-                              <div className="flex items-center justify-between pt-2 border-t border-neutral-700">
-                                <span className="text-orange-400 text-lg">≈ {collateral.sol.toFixed(4)} SOL</span>
-                                <span className="text-neutral-400 text-sm">Required in SOL</span>
                               </div>
                             </div>
                           </div>
