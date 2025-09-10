@@ -1948,7 +1948,7 @@ export default function SolRefund() {
 
                               {/* Price */}
                               <div className="text-right">
-                                <div className="text-white font-bold text-lg">${listing.startingPrice}</div>
+                                <div className="text-white font-bold text-lg">${parseFloat(listing.startingPrice).toFixed(3)}</div>
                               </div>
 
                               {/* 24h Vol */}
@@ -2019,7 +2019,7 @@ export default function SolRefund() {
                               {/* Price */}
                               <div className="text-right min-w-[80px]">
                                 <div className="text-white font-semibold text-base">
-                                  ${index === 0 ? '0.565' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0265' : index === 4 ? '0.024' : '0.022'}
+                                  ${index === 0 ? '0.565' : index === 1 ? '0.028' : index === 2 ? '0.027' : index === 3 ? '0.026' : index === 4 ? '0.024' : '0.022'}
                                 </div>
                               </div>
 
@@ -2486,7 +2486,7 @@ export default function SolRefund() {
                                 <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
                                 <div className="text-sm text-blue-300 space-y-1">
                                   <div>Supply: {parseInt(listing.totalSupply).toLocaleString()}</div>
-                                  <div>Price: {listing.startingPrice} SOL</div>
+                                  <div>Price: {parseFloat(listing.startingPrice).toFixed(3)} SOL</div>
                                   <div>Status: <Badge className="bg-green-600">{listing.isActive ? 'Active' : 'Inactive'}</Badge></div>
                                 </div>
                                 
