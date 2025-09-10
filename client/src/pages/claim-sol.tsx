@@ -2350,7 +2350,6 @@ export default function SolRefund() {
                                     <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Price</th>
                                     <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Amount</th>
                                     <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Collateral</th>
-                                    <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs">Fill Type</th>
                                     <th className="text-left text-neutral-400 font-medium py-3 px-2 text-xs"></th>
                                   </tr>
                                 </thead>
@@ -2375,11 +2374,6 @@ export default function SolRefund() {
                                             }}
                                           />
                                         </div>
-                                      </td>
-                                      <td className="py-3 px-2">
-                                        <span className="px-2 py-1 text-xs rounded bg-neutral-700/50 text-neutral-300 border border-neutral-600">
-                                          PARTIAL
-                                        </span>
                                       </td>
                                       <td className="py-3 px-2 text-right">
                                         <span className="text-green-400 font-medium text-sm">Buy</span>
