@@ -142,6 +142,8 @@ export const premarketListings = pgTable("premarket_listings", {
   totalSupply: decimal("total_supply", { precision: 18, scale: 0 }).notNull(), // Total tokens for sale
   startingPrice: decimal("starting_price", { precision: 18, scale: 9 }).notNull(), // Starting price in SOL
   description: text("description"), // Project description
+  tgeDate: timestamp("tge_date"), // Token Generation Event date
+  settlementDeadline: timestamp("settlement_deadline"), // 4 hours after TGE
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

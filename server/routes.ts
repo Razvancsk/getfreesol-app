@@ -1682,6 +1682,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Set TGE date for a listing (triggers 4-hour settlement countdown)
+  app.post("/api/premarket/listings/:listingId/set-tge", async (req, res) => {
+    try {
+      const { listingId } = req.params;
+      const { tgeDate } = req.body;
+      
+      if (!tgeDate) {
+        return res.status(400).json({ error: "TGE date is required" });
+      }
+      
+      const tgeDateObj = new Date(tgeDate);
+      const settlementDeadline = new Date(tgeDateObj.getTime() + 4 * 60 * 60 * 1000); // 4 hours later
+      
+      const [updatedListing] = await db
+        .update(premarketListings)
+        .set({
+          tgeDate: tgeDateObj,
+          settlementDeadline: settlementDeadline
+        })
+        .where(eq(premarketListings.id, listingId))
+        .returning();
+      
+      if (!updatedListing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      
+      res.json({
+        success: true,
+        listing: updatedListing,
+        message: "TGE date set. Settlement window is now 4 hours."
+      });
+    } catch (error) {
+      console.error("Error setting TGE date:", error);
+      res.status(400).json({ error: "Failed to set TGE date" });
+    }
+  });
+
+  // Settle order (seller delivers tokens)
+  app.post("/api/premarket/orders/:orderId/settle", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { sellerWallet, transactionSignature } = req.body;
+      
+      // Get the order and check if settlement is still possible
+      const [order] = await db
+        .select()
+        .from(premarketOrders)
+        .where(eq(premarketOrders.id, orderId));
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Get the listing to check settlement deadline
+      const [listing] = await db
+        .select()
+        .from(premarketListings)
+        .where(eq(premarketListings.id, order.listingId));
+      
+      if (!listing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      
+      // Check if settlement deadline has passed
+      const now = new Date();
+      if (listing.settlementDeadline && now > listing.settlementDeadline) {
+        return res.status(400).json({ 
+          error: "Settlement deadline has passed. Order is now OVERDUE.",
+          isOverdue: true
+        });
+      }
+      
+      // Update order status to settled
+      const [settledOrder] = await db
+        .update(premarketOrders)
+        .set({
+          status: 'settled',
+          filledAt: new Date()
+        })
+        .where(eq(premarketOrders.id, orderId))
+        .returning();
+      
+      // Release collateral back to seller and send payment
+      // In a real implementation, this would trigger smart contract interactions
+      await db
+        .update(collateralDeposits)
+        .set({
+          status: 'released',
+          releasedAt: new Date()
+        })
+        .where(eq(collateralDeposits.orderId, orderId));
+      
+      res.json({
+        success: true,
+        order: settledOrder,
+        message: "Order settled successfully. Seller receives payment + collateral back."
+      });
+    } catch (error) {
+      console.error("Error settling order:", error);
+      res.status(400).json({ error: "Failed to settle order" });
+    }
+  });
+
+  // Cancel overdue order (buyer claims seller's collateral)
+  app.post("/api/premarket/orders/:orderId/cancel-overdue", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { buyerWallet } = req.body;
+      
+      // Get the order
+      const [order] = await db
+        .select()
+        .from(premarketOrders)
+        .where(eq(premarketOrders.id, orderId));
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Get the listing to check settlement deadline
+      const [listing] = await db
+        .select()
+        .from(premarketListings)
+        .where(eq(premarketListings.id, order.listingId));
+      
+      if (!listing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      
+      // Check if settlement deadline has actually passed
+      const now = new Date();
+      if (!listing.settlementDeadline || now <= listing.settlementDeadline) {
+        return res.status(400).json({ 
+          error: "Settlement deadline has not passed yet. Cannot cancel order.",
+          timeRemaining: listing.settlementDeadline ? Math.max(0, listing.settlementDeadline.getTime() - now.getTime()) : 0
+        });
+      }
+      
+      // Update order status to cancelled
+      const [cancelledOrder] = await db
+        .update(premarketOrders)
+        .set({
+          status: 'cancelled_overdue',
+          filledAt: new Date()
+        })
+        .where(eq(premarketOrders.id, orderId))
+        .returning();
+      
+      // Transfer seller's collateral to buyer as compensation
+      await db
+        .update(collateralDeposits)
+        .set({
+          status: 'forfeited',
+          releasedAt: new Date()
+        })
+        .where(eq(collateralDeposits.orderId, orderId));
+      
+      res.json({
+        success: true,
+        order: cancelledOrder,
+        message: "Order cancelled due to overdue settlement. Buyer receives refund + seller's collateral."
+      });
+    } catch (error) {
+      console.error("Error cancelling overdue order:", error);
+      res.status(400).json({ error: "Failed to cancel overdue order" });
+    }
+  });
+
+  // Get settlement status for orders
+  app.get("/api/premarket/orders/:orderId/settlement-status", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Get order and listing details
+      const orderResult = await db
+        .select({
+          order: premarketOrders,
+          listing: premarketListings
+        })
+        .from(premarketOrders)
+        .leftJoin(premarketListings, eq(premarketOrders.listingId, premarketListings.id))
+        .where(eq(premarketOrders.id, orderId));
+      
+      if (orderResult.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      const { order, listing } = orderResult[0];
+      const now = new Date();
+      
+      let settlementStatus = 'pending';
+      let timeRemaining = 0;
+      let isOverdue = false;
+      
+      if (listing?.settlementDeadline) {
+        timeRemaining = Math.max(0, listing.settlementDeadline.getTime() - now.getTime());
+        isOverdue = now > listing.settlementDeadline;
+        
+        if (order.status === 'settled') {
+          settlementStatus = 'settled';
+        } else if (order.status === 'cancelled_overdue') {
+          settlementStatus = 'cancelled_overdue';
+        } else if (isOverdue) {
+          settlementStatus = 'overdue';
+        } else {
+          settlementStatus = 'active';
+        }
+      }
+      
+      res.json({
+        success: true,
+        order,
+        listing,
+        settlementStatus,
+        timeRemaining,
+        isOverdue,
+        canSettle: !isOverdue && order.status === 'filled',
+        canCancelOverdue: isOverdue && order.status !== 'settled' && order.status !== 'cancelled_overdue'
+      });
+    } catch (error) {
+      console.error("Error getting settlement status:", error);
+      res.status(500).json({ error: "Failed to get settlement status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

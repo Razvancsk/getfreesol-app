@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, Clock, Shield, Plus, X } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1754527057994.png';
@@ -1876,7 +1876,7 @@ export default function SolRefund() {
                       premarketListings.listings.map((listing: any) => (
                         <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
                           <div className="flex justify-between items-start">
-                            <div>
+                            <div className="flex-1">
                               <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
                               <p className="text-sm text-purple-300">{listing.description || 'No description available'}</p>
                               <div className="flex items-center space-x-4 mt-2 text-sm">
@@ -1886,8 +1886,48 @@ export default function SolRefund() {
                               <div className="text-xs text-purple-400 mt-1">
                                 Created by: {listing.creatorWallet.slice(0, 6)}...{listing.creatorWallet.slice(-6)}
                               </div>
+                              
+                              {/* Settlement Status */}
+                              {listing.tgeDate && (
+                                <div className="mt-3 p-2 bg-blue-900/20 rounded border border-blue-500/30">
+                                  <div className="text-xs text-blue-300">
+                                    <div>TGE: {new Date(listing.tgeDate).toLocaleString()}</div>
+                                    {listing.settlementDeadline && (
+                                      <div className="flex items-center space-x-2 mt-1">
+                                        <span>Settlement Deadline:</span>
+                                        <span className="font-mono text-blue-200">
+                                          {new Date() < new Date(listing.settlementDeadline) ? (
+                                            <span className="text-green-400">
+                                              {Math.max(0, Math.floor((new Date(listing.settlementDeadline).getTime() - new Date().getTime()) / (1000 * 60)))} min remaining
+                                            </span>
+                                          ) : (
+                                            <span className="text-red-400">OVERDUE</span>
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* TGE Date Setting for Creator */}
+                              {!listing.tgeDate && publicKey && listing.creatorWallet === publicKey.toString() && (
+                                <div className="mt-3 p-2 bg-orange-900/20 rounded border border-orange-500/30">
+                                  <div className="text-xs text-orange-300 mb-2">Set Token Generation Event (TGE) Date:</div>
+                                  <div className="flex items-center space-x-2">
+                                    <Input
+                                      type="datetime-local"
+                                      className="bg-slate-800/50 border-slate-600 text-white text-xs"
+                                      min={new Date().toISOString().slice(0, 16)}
+                                    />
+                                    <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-xs">
+                                      Set TGE
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="text-right">
+                            <div className="text-right ml-4">
                               <div className="space-y-2">
                                 <Button size="sm" className="bg-green-600 hover:bg-green-700" data-testid="button-buytoken">
                                   <DollarSign className="h-3 w-3 mr-1" />
@@ -1924,8 +1964,8 @@ export default function SolRefund() {
                       {userOrders && userOrders.success && userOrders.orders?.length > 0 ? (
                         userOrders.orders.map((order: any) => (
                           <div key={order.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
-                            <div className="flex justify-between items-center">
-                              <div>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
                                 <div className="flex items-center space-x-2">
                                   <span className="font-semibold text-white capitalize">{order.orderType}</span>
                                   <span className="text-purple-300">{order.quantity} tokens</span>
@@ -1933,17 +1973,77 @@ export default function SolRefund() {
                                 <div className="text-sm text-purple-400 mt-1">
                                   Price: {order.price} SOL • Collateral: {order.collateralAmount} SOL
                                 </div>
+                                
+                                {/* Settlement Phase for Filled Orders */}
+                                {order.status === 'filled' && (
+                                  <div className="mt-3 p-3 bg-orange-900/20 rounded border border-orange-500/30">
+                                    <div className="text-xs text-orange-300 mb-2">⏰ SETTLEMENT PHASE ACTIVE</div>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs text-orange-300">Settlement Deadline:</span>
+                                        <span className="font-mono text-xs text-orange-200">
+                                          <span className="text-yellow-400">2h 15m remaining</span>
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Settlement Actions */}
+                                      <div className="space-y-2">
+                                        {order.orderType === 'sell' ? (
+                                          <div className="flex items-center space-x-2">
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-xs">
+                                              <CheckCircle className="h-3 w-3 mr-1" />
+                                              Settle Order
+                                            </Button>
+                                            <div className="text-xs text-green-300">Deliver tokens to get payment + collateral</div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center space-x-2">
+                                            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-xs" disabled>
+                                              <Clock className="h-3 w-3 mr-1" />
+                                              Waiting for Seller
+                                            </Button>
+                                            <div className="text-xs text-blue-300">If seller doesn't settle, you can claim their collateral</div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Settlement Success */}
+                                {order.status === 'settled' && (
+                                  <div className="mt-3 p-3 bg-green-900/20 rounded border border-green-500/30">
+                                    <div className="text-xs text-green-300 mb-1">✅ ORDER SETTLED SUCCESSFULLY</div>
+                                    <div className="text-xs text-green-400">
+                                      {order.orderType === 'sell' ? 'Payment received + collateral returned' : 'Tokens received'}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Cancelled Due to Overdue */}
+                                {order.status === 'cancelled_overdue' && (
+                                  <div className="mt-3 p-3 bg-red-900/20 rounded border border-red-500/30">
+                                    <div className="text-xs text-red-300 mb-1">❌ ORDER CANCELLED - OVERDUE</div>
+                                    <div className="text-xs text-red-400">
+                                      {order.orderType === 'buy' ? 'Refund + seller collateral received' : 'Collateral forfeited to buyer'}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                              <Badge 
-                                variant="outline" 
-                                className={`${
-                                  order.status === 'active' ? 'border-green-500 text-green-400' : 
-                                  order.status === 'filled' ? 'border-blue-500 text-blue-400' : 
-                                  'border-gray-500 text-gray-400'
-                                }`}
-                              >
-                                {order.status}
-                              </Badge>
+                              <div className="ml-4">
+                                <Badge 
+                                  variant="outline" 
+                                  className={`${
+                                    order.status === 'active' ? 'border-green-500 text-green-400' : 
+                                    order.status === 'filled' ? 'border-orange-500 text-orange-400' : 
+                                    order.status === 'settled' ? 'border-blue-500 text-blue-400' :
+                                    order.status === 'cancelled_overdue' ? 'border-red-500 text-red-400' :
+                                    'border-gray-500 text-gray-400'
+                                  }`}
+                                >
+                                  {order.status.replace('_', ' ').toUpperCase()}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
                         ))
