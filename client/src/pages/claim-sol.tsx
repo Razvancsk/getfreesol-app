@@ -82,6 +82,9 @@ export default function SolRefund() {
   // Selected token in active premarket view
   const [selectedToken, setSelectedToken] = useState<any>(null);
   
+  // Debug log to see what's happening with selectedToken
+  console.log('selectedToken value:', selectedToken, 'type:', typeof selectedToken);
+  
   // Real-time countdown ticker for settlement windows
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
@@ -1923,223 +1926,291 @@ export default function SolRefund() {
               {/* Active Premarket Tab */}
               {premarketSubTab === 'active' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                  {/* DEBUG INFO */}
+                  <div className="mb-4 p-2 bg-yellow-600/20 border border-yellow-500 rounded text-yellow-200 text-xs">
+                    DEBUG: Tab={premarketSubTab}, selectedToken={selectedToken ? 'SET' : 'NULL'}, showing={!selectedToken ? 'TOKEN PREVIEW' : 'TRADES TABLE'}
+                  </div>
                   {!selectedToken ? (
+                    // Token Preview/Overview (like ZKC image)
                     <div>
-                      <div className="flex items-center space-x-2 mb-4">
-                        <Clock className="h-5 w-5 text-purple-400" />
-                        <h3 className="text-lg font-semibold text-white">Recent Trades</h3>
-                      </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-purple-500/30">
-                          <th className="text-left text-purple-300 font-medium py-3 px-4">Time</th>
-                          <th className="text-left text-purple-300 font-medium py-3 px-4">Type</th>
-                          <th className="text-left text-purple-300 font-medium py-3 px-4">Pair</th>
-                          <th className="text-right text-purple-300 font-medium py-3 px-4">Price ($)</th>
-                          <th className="text-right text-purple-300 font-medium py-3 px-4">Amount</th>
-                          <th className="text-right text-purple-300 font-medium py-3 px-4">Collateral</th>
-                          <th className="text-center text-purple-300 font-medium py-3 px-4">TX.hash</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                      <h3 className="text-lg font-semibold text-white mb-6">Active Pre-market Tokens</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
                           premarketListings.listings.map((listing: any) => (
-                            <tr 
-                              key={listing.id} 
-                              className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors cursor-pointer" 
+                            <div 
+                              key={listing.id}
+                              className="bg-neutral-900/50 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-800/50 transition-colors cursor-pointer"
                               onClick={() => setSelectedToken(listing)}
-                              data-testid={`row-trade-${listing.id}`}
+                              data-testid={`card-token-${listing.id}`}
                             >
-                              <td className="py-4 px-4 text-purple-300">2h</td>
-                              <td className="py-4 px-4">
-                                <span className="inline-block px-3 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
-                              </td>
-                              <td className="py-4 px-4">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                    {listing.tokenSymbol.charAt(0)}
-                                  </div>
-                                  <span className="text-white font-medium">{listing.tokenSymbol}/SOL</span>
+                              {/* Token Header */}
+                              <div className="flex items-center space-x-3 mb-4">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                  {listing.tokenSymbol.charAt(0)}
                                 </div>
-                              </td>
-                              <td className="py-4 px-4 text-right text-white font-mono">{listing.startingPrice}</td>
-                              <td className="py-4 px-4 text-right text-white">18K</td>
-                              <td className="py-4 px-4 text-right">
-                                <div className="flex items-center justify-end space-x-2">
-                                  <span className="text-white">558</span>
-                                  <div className="w-4 h-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
-                                  <span className="text-orange-400">🔥</span>
+                                <div>
+                                  <h4 className="text-white font-semibold text-sm">{listing.tokenSymbol}</h4>
+                                  <p className="text-neutral-400 text-xs">{listing.tokenName}</p>
                                 </div>
-                              </td>
-                              <td className="py-4 px-4 text-center">
-                                <button 
-                                  className="text-purple-400 hover:text-purple-300 transition-colors" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    window.open(`https://solscan.io/tx/example`, '_blank');
-                                  }}
-                                  data-testid="button-view-tx"
-                                >
-                                  <ArrowUpDown className="h-4 w-4" />
-                                </button>
-                              </td>
-                            </tr>
+                              </div>
+
+                              {/* Stats Grid */}
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                  <div className="text-neutral-400 mb-1">24h Vol</div>
+                                  <div className="text-white font-mono">$3,526.8 <span className="text-green-400">+10,082.76%</span></div>
+                                </div>
+                                <div>
+                                  <div className="text-neutral-400 mb-1">Total Vol</div>
+                                  <div className="text-white font-mono">$3,547.3</div>
+                                </div>
+                                <div>
+                                  <div className="text-neutral-400 mb-1">Settle Starts (UTC)</div>
+                                  <div className="text-white font-mono">TBA</div>
+                                </div>
+                                <div>
+                                  <div className="text-neutral-400 mb-1">Settle Ends (UTC)</div>
+                                  <div className="text-white font-mono">TBA</div>
+                                </div>
+                              </div>
+
+                              {/* Countdown */}
+                              <div className="mt-4 pt-3 border-t border-neutral-700">
+                                <div className="text-neutral-400 text-xs mb-1">Countdown</div>
+                                <div className="text-white font-medium text-sm">Not Started</div>
+                              </div>
+                            </div>
                           ))
                         ) : (
-                          Array.from({ length: 5 }, (_, index) => (
-                            <tr 
-                              key={index} 
-                              className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors cursor-pointer"
+                          // Mock tokens for demo
+                          Array.from({ length: 6 }, (_, index) => (
+                            <div 
+                              key={index}
+                              className="bg-neutral-900/50 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-800/50 transition-colors cursor-pointer"
                               onClick={() => {
-                                toast({ 
-                                  title: "Token Details", 
-                                  description: `Clicked on LINEA trade from ${6 + index}h ago` 
-                                });
+                                const mockToken = {
+                                  tokenSymbol: index === 0 ? 'ZKC' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB',
+                                  tokenName: index === 0 ? 'zkSync Token' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum',
+                                  startingPrice: index === 0 ? '0.031' : index === 1 ? '0.028' : '0.025',
+                                  totalSupply: '1000000'
+                                };
+                                setSelectedToken(mockToken);
                               }}
+                              data-testid={`card-token-mock-${index}`}
                             >
-                              <td className="py-4 px-4 text-purple-300">{6 + index}h</td>
-                              <td className="py-4 px-4">
-                                <span className={`inline-block px-3 py-1 text-xs font-medium rounded text-white ${
-                                  index % 2 === 0 ? 'bg-green-600' : 'bg-red-600'
-                                }`}>
-                                  {index % 2 === 0 ? 'BUY' : 'SELL'}
-                                </span>
-                              </td>
-                              <td className="py-4 px-4">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                    L
+                              {/* Token Header */}
+                              <div className="flex items-center space-x-3 mb-4">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                  {index === 0 ? 'Z' : index === 1 ? 'L' : index === 2 ? 'S' : index === 3 ? 'B' : index === 4 ? 'P' : 'A'}
+                                </div>
+                                <div>
+                                  <h4 className="text-white font-semibold text-sm">
+                                    {index === 0 ? 'ZKC' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB'}
+                                  </h4>
+                                  <p className="text-neutral-400 text-xs">
+                                    {index === 0 ? 'zkSync Token' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Stats Grid */}
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                  <div className="text-neutral-400 mb-1">24h Vol</div>
+                                  <div className="text-white font-mono">
+                                    ${index === 0 ? '3,526.8' : index === 1 ? '2,134.5' : index === 2 ? '1,892.3' : '956.7'} 
+                                    <span className="text-green-400 ml-1">
+                                      +{index === 0 ? '10,082.76' : index === 1 ? '5,432.18' : index === 2 ? '3,210.45' : '1,876.32'}%
+                                    </span>
                                   </div>
-                                  <span className="text-white font-medium">LINEA/USDC</span>
                                 </div>
-                              </td>
-                              <td className="py-4 px-4 text-right text-white font-mono">
-                                {index === 0 ? '0.031' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0275' : '0.0265'}
-                              </td>
-                              <td className="py-4 px-4 text-right text-white">
-                                {index === 0 ? '18K' : index === 1 ? '8K' : index === 2 ? '6.8K' : index === 3 ? '2K' : '7.5K'}
-                              </td>
-                              <td className="py-4 px-4 text-right">
-                                <div className="flex items-center justify-end space-x-2">
-                                  <span className="text-white">{index === 0 ? '558' : index === 1 ? '224' : index === 2 ? '186.33' : index === 3 ? '55' : '198.75'}</span>
-                                  <div className="w-4 h-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
-                                  <span className="text-orange-400">🔥</span>
+                                <div>
+                                  <div className="text-neutral-400 mb-1">Total Vol</div>
+                                  <div className="text-white font-mono">
+                                    ${index === 0 ? '3,547.3' : index === 1 ? '2,156.8' : index === 2 ? '1,923.7' : '978.4'}
+                                  </div>
                                 </div>
-                              </td>
-                              <td className="py-4 px-4 text-center">
-                                <button 
-                                  className="text-purple-400 hover:text-purple-300 transition-colors" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const mockTxHash = `${Math.random().toString(36).substr(2, 9)}...${Math.random().toString(36).substr(2, 6)}`;
-                                    window.open(`https://solscan.io/tx/${mockTxHash}`, '_blank');
-                                  }}
-                                  data-testid="button-view-tx"
-                                >
-                                  <ArrowUpDown className="h-4 w-4" />
-                                </button>
-                              </td>
-                            </tr>
+                                <div>
+                                  <div className="text-neutral-400 mb-1">Settle Starts (UTC)</div>
+                                  <div className="text-white font-mono">TBA</div>
+                                </div>
+                                <div>
+                                  <div className="text-neutral-400 mb-1">Settle Ends (UTC)</div>
+                                  <div className="text-white font-mono">TBA</div>
+                                </div>
+                              </div>
+
+                              {/* Countdown */}
+                              <div className="mt-4 pt-3 border-t border-neutral-700">
+                                <div className="text-neutral-400 text-xs mb-1">Countdown</div>
+                                <div className="text-white font-medium text-sm">Not Started</div>
+                              </div>
+                            </div>
                           ))
                         )}
-                      </tbody>
-                    </table>
-                  </div>
+                      </div>
                     </div>
                   ) : (
-                    // Detailed Token Trading View
+                    // Recent Trades Table (shows AFTER clicking a token)
                     <div>
-                      <div className="flex items-center space-x-4 mb-6">
-                        <Button 
-                          onClick={() => setSelectedToken(null)}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
-                          data-testid="button-back-to-table"
-                        >
-                          ← Back to Trades
-                        </Button>
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                          <Button 
+                            onClick={() => setSelectedToken(null)}
+                            variant="outline"
+                            size="sm"
+                            className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
+                          >
+                            ← Back
+                          </Button>
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                             {selectedToken.tokenSymbol.charAt(0)}
                           </div>
                           <div>
-                            <h2 className="text-xl font-bold text-white">{selectedToken.tokenSymbol}</h2>
-                            <p className="text-purple-300 text-sm">{selectedToken.tokenName}</p>
+                            <h3 className="text-white font-semibold">{selectedToken.tokenSymbol}</h3>
+                            <p className="text-purple-300 text-sm">{selectedToken.tokenName || 'Token Name'}</p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Price and Stats */}
-                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
-                          <div className="text-sm text-purple-300 mb-1">Current Price</div>
-                          <div className="text-2xl font-bold text-white font-mono">{selectedToken.startingPrice} SOL</div>
-                          
-                          <div className="mt-4 space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-purple-300">Total Supply:</span>
-                              <span className="text-white font-mono">{parseInt(selectedToken.totalSupply).toLocaleString()}</span>
+                      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+                        {/* Left Panel - Recent Trades Table */}
+                        <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 overflow-hidden">
+                          <div className="px-4 py-3 border-b border-neutral-800 bg-neutral-900/60">
+                            <div className="flex items-center space-x-2">
+                              <Clock className="h-4 w-4 text-neutral-400" />
+                              <h4 className="text-sm font-medium text-white">Recent Trades</h4>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-purple-300">Creator:</span>
-                              <span className="text-white font-mono text-xs">
-                                {selectedToken.creatorWallet.slice(0, 6)}...{selectedToken.creatorWallet.slice(-6)}
-                              </span>
-                            </div>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead className="sticky top-0 bg-neutral-900/90 backdrop-blur-sm border-b border-neutral-800 z-10">
+                                <tr>
+                                  <th className="text-left text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Time</th>
+                                  <th className="text-left text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Type</th>
+                                  <th className="text-left text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Pair</th>
+                                  <th className="text-right text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Price</th>
+                                  <th className="text-right text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Amount</th>
+                                  <th className="text-right text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Collateral</th>
+                                  <th className="text-center text-neutral-400 font-medium py-2 px-3 uppercase tracking-wide">Tx</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-neutral-800/50">
+                                {Array.from({ length: 8 }, (_, index) => (
+                                  <tr key={index} className="hover:bg-neutral-800/40 transition-colors group">
+                                    <td className="py-2 px-3 text-neutral-400 text-xs">{6 + index}h</td>
+                                    <td className="py-2 px-3">
+                                      <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded border ${
+                                        index % 2 === 0 
+                                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                      }`}>
+                                        {index % 2 === 0 ? 'BUY' : 'SELL'}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <div className="flex items-center space-x-2">
+                                        <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                          {selectedToken.tokenSymbol.charAt(0)}
+                                        </div>
+                                        <span className="text-white font-medium text-sm">{selectedToken.tokenSymbol}/USDC</span>
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-3 text-right text-white font-mono tabular-nums text-sm">
+                                      {index === 0 ? '0.031' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0275' : '0.0265'}
+                                    </td>
+                                    <td className="py-2 px-3 text-right text-white tabular-nums text-sm">
+                                      {index === 0 ? '18K' : index === 1 ? '8K' : index === 2 ? '6.8K' : index === 3 ? '2K' : '7.5K'}
+                                    </td>
+                                    <td className="py-2 px-3 text-right">
+                                      <div className="flex items-center justify-end space-x-1">
+                                        <span className="text-white tabular-nums text-sm">{index === 0 ? '558' : index === 1 ? '224' : index === 2 ? '186' : index === 3 ? '55' : '199'}</span>
+                                        <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      <button 
+                                        className="text-neutral-400 hover:text-neutral-200 transition-colors opacity-0 group-hover:opacity-100" 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const mockTxHash = `${Math.random().toString(36).substr(2, 9)}`;
+                                          window.open(`https://solscan.io/tx/${mockTxHash}`, '_blank');
+                                        }}
+                                        data-testid="button-view-tx"
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
 
-                        {/* Buy/Sell Interface */}
-                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
-                          <div className="flex space-x-2 mb-4">
-                            <Button 
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                              data-testid="button-buy-token"
-                            >
-                              Buy
-                            </Button>
-                            <Button 
-                              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                              data-testid="button-sell-token"
-                            >
-                              Sell
-                            </Button>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-sm text-purple-300">Amount</label>
-                              <Input 
-                                type="number"
-                                placeholder="0.00"
-                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
-                                data-testid="input-trade-amount"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="text-sm text-purple-300">Price (SOL)</label>
-                              <Input 
-                                type="number"
-                                placeholder={selectedToken.startingPrice}
-                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
-                                data-testid="input-trade-price"
-                              />
+                        {/* Right Panel - Trading Interface */}
+                        <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
+                          <div className="space-y-4">
+                            {/* Price Info */}
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <div className="text-xs text-neutral-400 mb-1">Current Price</div>
+                              <div className="text-lg font-bold text-white font-mono">{selectedToken.startingPrice} SOL</div>
                             </div>
 
-                            <div className="text-xs text-purple-400 bg-slate-700/30 p-2 rounded">
-                              ⚠️ Collateral Required: Orders require SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
+                            {/* Buy/Sell Tabs */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button 
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                                data-testid="button-buy-token"
+                              >
+                                Buy
+                              </Button>
+                              <Button 
+                                size="sm"
+                                className="bg-red-600 hover:bg-red-700 text-white text-xs"
+                                data-testid="button-sell-token"
+                              >
+                                Sell
+                              </Button>
                             </div>
 
-                            <Button 
-                              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                              data-testid="button-place-order"
-                            >
-                              Place Order
-                            </Button>
+                            {/* Trade Form */}
+                            <div className="space-y-3">
+                              <div>
+                                <label className="text-xs text-neutral-400 block mb-1">Amount</label>
+                                <Input 
+                                  type="number"
+                                  placeholder="0.00"
+                                  className="bg-neutral-800 border-neutral-700 text-white text-sm h-8"
+                                  data-testid="input-trade-amount"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="text-xs text-neutral-400 block mb-1">Price (SOL)</label>
+                                <Input 
+                                  type="number"
+                                  placeholder={selectedToken.startingPrice}
+                                  className="bg-neutral-800 border-neutral-700 text-white text-sm h-8"
+                                  data-testid="input-trade-price"
+                                />
+                              </div>
+
+                              <Button 
+                                size="sm"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                data-testid="button-place-order"
+                              >
+                                Place Order
+                              </Button>
+                            </div>
+
+                            <div className="text-xs text-neutral-500 bg-neutral-800/30 p-2 rounded">
+                              Collateral required for settlement
+                            </div>
                           </div>
                         </div>
                       </div>
