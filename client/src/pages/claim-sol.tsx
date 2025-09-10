@@ -86,7 +86,34 @@ export default function SolRefund() {
   const [offerType, setOfferType] = useState<'buy' | 'sell'>('buy');
   const [offerPrice, setOfferPrice] = useState('');
   const [offerAmount, setOfferAmount] = useState('');
-  const [solPrice, setSolPrice] = useState(85); // Mock SOL price - replace with live data
+  const [solPrice, setSolPrice] = useState(85); // Live SOL price from Jupiter API
+  const [priceLoading, setPriceLoading] = useState(false);
+
+  // Fetch live SOL price from Jupiter API
+  const fetchSolPrice = async () => {
+    try {
+      setPriceLoading(true);
+      const response = await fetch('https://price.jup.ag/v6/price?ids=SOL');
+      const data = await response.json();
+      if (data?.data?.SOL?.price) {
+        setSolPrice(data.data.SOL.price);
+      }
+    } catch (error) {
+      console.error('Failed to fetch SOL price:', error);
+    } finally {
+      setPriceLoading(false);
+    }
+  };
+
+  // Fetch SOL price on component mount and when modal opens
+  useEffect(() => {
+    if (showCreateOfferModal) {
+      fetchSolPrice();
+      // Update price every 10 seconds when modal is open
+      const interval = setInterval(fetchSolPrice, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [showCreateOfferModal]);
 
   // Calculate collateral based on price and amount
   const calculateCollateral = () => {
@@ -2483,7 +2510,10 @@ export default function SolRefund() {
                                 <label className="text-neutral-400 text-sm font-medium">COLLATERAL</label>
                                 <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-neutral-400 text-xs">?</div>
                               </div>
-                              <span className="text-neutral-400 text-sm">SOL Price: ${solPrice}</span>
+                              <span className="text-neutral-400 text-sm flex items-center space-x-1">
+                                <span>SOL Price: ${solPrice.toFixed(2)}</span>
+                                {priceLoading && <div className="w-3 h-3 border border-neutral-400 border-t-transparent rounded-full animate-spin"></div>}
+                              </span>
                             </div>
                             <div className="bg-neutral-800 rounded-lg p-4">
                               <div className="flex items-center justify-between mb-2">
