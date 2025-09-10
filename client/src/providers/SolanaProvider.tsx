@@ -24,20 +24,12 @@ interface SolanaProviderProps {
   children: ReactNode;
 }
 
+
 export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   // Temporarily disabled - this was hiding the wallet modal
   // React.useEffect(() => {
   //   startTrustWalletHiding();
   // }, []);
-
-  // Eager reconnect for seamless experience
-  React.useEffect(() => {
-    const savedWallet = localStorage.getItem('walletName');
-    if (savedWallet && document.visibilityState === 'visible') {
-      // Auto-select saved wallet for seamless reconnect
-      console.log('🔄 Auto-selecting saved wallet:', savedWallet);
-    }
-  }, []);
 
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Mainnet;
@@ -65,23 +57,9 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     // BitKeepWalletAdapter removed - using custom Bitget integration in useBitgetWallet.ts
   ], []);
 
-  // Handle wallet errors and save successful connections
+  // Handle wallet errors
   const onError = useCallback((error: WalletError) => {
     console.error('Wallet error:', error);
-    // For wallet not ready errors, we'll let the connection logic handle showing the modal
-    if (error.name === 'WalletNotReadyError') {
-      console.log('💡 Wallet needs to be installed - users should be redirected to wallet download page');
-    }
-    // Don't save wallet name on connection errors (except user rejection)
-    if (error.name !== 'WalletConnectionError' || !error.message?.includes('User rejected')) {
-      localStorage.removeItem('walletName');
-    }
-  }, []);
-
-  // Save wallet name for seamless reconnect
-  const handleConnect = useCallback((walletName: string) => {
-    console.log('✅ Wallet connected:', walletName);
-    localStorage.setItem('walletName', walletName);
   }, []);
 
   return (
@@ -89,7 +67,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
       <WalletProvider 
         wallets={wallets} 
         onError={onError}
-        autoConnect={true}
+        autoConnect={false}
       >
         <WalletModalProvider>
           {children}

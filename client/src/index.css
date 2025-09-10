@@ -80,10 +80,17 @@
   display: none !important;
 }
 
-/* Hide any element containing "Trust" text */
-.wallet-adapter-modal button:contains("Trust"),
+/* Hide elements with Trust text in title or alt attributes */
 .wallet-adapter-modal [title*="Trust"],
 .wallet-adapter-modal [alt*="Trust"] {
+  display: none !important;
+}
+
+/* Hide connecting spinner in wallet modal - minimal fix as requested */
+.wallet-adapter-modal-wrapper .wallet-adapter-modal-container .wallet-adapter-modal-title:contains("Connecting"),
+.wallet-adapter-modal .wallet-adapter-modal-title:contains("Connecting"),
+.wallet-adapter-modal [class*="connecting"],
+.wallet-adapter-modal-wrapper [class*="connecting"] {
   display: none !important;
 }
 
@@ -200,14 +207,6 @@ input[type="number"] {
 #jupiter-terminal div[class*="overlay"],
 #jupiter-terminal div[class*="modal"],
 #jupiter-terminal div[class*="screen"],
-#jupiter-terminal div:has(> h1:contains("Swapping")),
-#jupiter-terminal div:has(> h2:contains("Pending")),
-#jupiter-terminal div:has(> div:contains("Pending Approval")),
-#jupiter-terminal div:has(> h1:contains("Swap Failed")),
-#jupiter-terminal div:has(> h2:contains("Swap Failed")),
-#jupiter-terminal div:has(> div:contains("Swap Failed")),
-#jupiter-terminal div:has(> div:contains("User rejected")),
-#jupiter-terminal div:has(> button:contains("Retry")),
 #jupiter-terminal [data-testid*="swap-progress"],
 #jupiter-terminal [data-testid*="transaction-progress"],
 #jupiter-terminal [data-testid="swapping-screen"],
@@ -311,8 +310,7 @@ input[type="number"] {
 }
 
 /* Hide only connecting text, not entire modals */
-.wallet-adapter-modal [aria-label*="Connecting"],
-.wallet-adapter-modal-title:contains("Connecting") {
+.wallet-adapter-modal [aria-label*="Connecting"] {
   display: none !important;
 }
 
