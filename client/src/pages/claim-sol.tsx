@@ -88,53 +88,82 @@ export default function SolRefund() {
   const [offerAmount, setOfferAmount] = useState('');
   const [solPrice, setSolPrice] = useState(224); // Live SOL price from Helius API
 
-  // Fetch live SOL price from Helius API (best Solana infrastructure)
-  const fetchSolPrice = async () => {
-    try {
-      // Use Helius DAS API to get SOL token data with price
-      const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY || 'demo'}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 'sol-price',
-          method: 'getAsset',
-          params: {
-            id: 'So11111111111111111111111111111111111111112'
-          }
-        })
-      });
-      
-      const data = await response.json();
-      
-      // If Helius doesn't have price data in getAsset, fall back to reliable API
-      if (!data?.result?.price_info?.price_per_token) {
-        // Fallback to CoinGecko for stable pricing
-        const fallbackResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-        const fallbackData = await fallbackResponse.json();
-        
-        if (fallbackData?.solana?.usd) {
-          setSolPrice(fallbackData.solana.usd);
-        }
-      } else {
-        const livePriceUSD = parseFloat(data.result.price_info.price_per_token);
-        setSolPrice(livePriceUSD);
-      }
-    } catch (error) {
-      console.error('Failed to fetch SOL price:', error);
-      // Fallback to current market price if API fails
-      setSolPrice(224);
-    }
-  };
-
-  // Fetch SOL price with live updates when price changes  
+  // Real-time SOL price streaming via WebSocket
   useEffect(() => {
-    fetchSolPrice();
-    // Update price every 30 seconds to catch live price changes
-    const interval = setInterval(fetchSolPrice, 30000);
-    return () => clearInterval(interval);
+    let ws: WebSocket | null = null;
+    let reconnectInterval: NodeJS.Timeout | null = null;
+    let isConnected = false;
+
+    const connectWebSocket = () => {
+      try {
+        // Binance WebSocket for real-time SOL/USDT price updates
+        ws = new WebSocket('wss://stream.binance.com:9443/ws/solusdt@ticker');
+        
+        ws.onopen = () => {
+          isConnected = true;
+          console.log('🟢 Connected to live SOL price stream');
+          if (reconnectInterval) {
+            clearInterval(reconnectInterval);
+            reconnectInterval = null;
+          }
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data && data.c) {
+              const livePrice = parseFloat(data.c);
+              setSolPrice(livePrice);
+              // Only log price changes, not every tick
+              const prevPrice = parseFloat(localStorage.getItem('lastSOLPrice') || '0');
+              if (Math.abs(livePrice - prevPrice) > 0.01) {
+                console.log(`💰 SOL price updated: $${livePrice.toFixed(2)}`);
+                localStorage.setItem('lastSOLPrice', livePrice.toString());
+              }
+            }
+          } catch (error) {
+            console.error('Failed to parse price data:', error);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          isConnected = false;
+        };
+
+        ws.onclose = () => {
+          isConnected = false;
+          console.log('🔴 SOL price stream disconnected, reconnecting...');
+          // Auto-reconnect after 3 seconds
+          if (!reconnectInterval) {
+            reconnectInterval = setInterval(() => {
+              if (!isConnected) {
+                connectWebSocket();
+              }
+            }, 3000);
+          }
+        };
+
+      } catch (error) {
+        console.error('Failed to connect to price stream:', error);
+        // Fallback to REST API if WebSocket fails
+        setSolPrice(224);
+      }
+    };
+
+    // Start WebSocket connection
+    connectWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      isConnected = false;
+      if (ws) {
+        ws.close();
+      }
+      if (reconnectInterval) {
+        clearInterval(reconnectInterval);
+      }
+    };
   }, []);
 
   // Calculate collateral based on price and amount
