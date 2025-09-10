@@ -2567,27 +2567,14 @@ export default function SolRefund() {
                               <div className="flex items-center justify-between">
                                 <span className="text-white text-2xl">{collateral.sol.toFixed(4)}</span>
                                 <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
-                                  <div className="w-5 h-5 flex items-center justify-center">
-                                    <svg width="20" height="17" viewBox="0 0 397 311" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M64.6 237.9c4.9-2.6 10.8-2.6 15.7 0l208 115.7c6.3 3.3 13.7-1.7 13.7-8.8v-37.4c0-4.6-2.5-8.8-6.6-11.1L95.4 186.3c-4.9-2.6-10.8-2.6-15.7 0L-120.3 296.3c-4.1 2.3-6.6 6.5-6.6 11.1v37.4c0 7.1 7.4 12.1 13.7 8.8L64.6 237.9z" fill="url(#solanaGradient1)"/>
-                                      <path d="M64.6 99.9c4.9-2.6 10.8-2.6 15.7 0l208 115.7c6.3 3.3 13.7-1.7 13.7-8.8v-37.4c0-4.6-2.5-8.8-6.6-11.1L95.4 48.3c-4.9-2.6-10.8-2.6-15.7 0L-120.3 158.3c-4.1 2.3-6.6 6.5-6.6 11.1v37.4c0 7.1 7.4 12.1 13.7 8.8L64.6 99.9z" fill="url(#solanaGradient2)"/>
-                                      <path d="M333.1 138.2c4.9-2.6 10.8-2.6 15.7 0l47.9 25.4c6.3 3.3 13.7-1.7 13.7-8.8v-37.4c0-4.6-2.5-8.8-6.6-11.1l-200-110c-4.9-2.6-10.8-2.6-15.7 0l-208 110c-4.1 2.3-6.6 6.5-6.6 11.1v37.4c0 7.1 7.4 12.1 13.7 8.8l208-110z" fill="url(#solanaGradient3)"/>
-                                      <defs>
-                                        <linearGradient id="solanaGradient1" x1="7.9" y1="177.3" x2="398.3" y2="177.3" gradientUnits="userSpaceOnUse">
-                                          <stop stopColor="#00FFA3"/>
-                                          <stop offset="1" stopColor="#DC1FFF"/>
-                                        </linearGradient>
-                                        <linearGradient id="solanaGradient2" x1="7.9" y1="99.9" x2="398.3" y2="99.9" gradientUnits="userSpaceOnUse">
-                                          <stop stopColor="#00FFA3"/>
-                                          <stop offset="1" stopColor="#DC1FFF"/>
-                                        </linearGradient>
-                                        <linearGradient id="solanaGradient3" x1="7.9" y1="22.5" x2="398.3" y2="22.5" gradientUnits="userSpaceOnUse">
-                                          <stop stopColor="#00FFA3"/>
-                                          <stop offset="1" stopColor="#DC1FFF"/>
-                                        </linearGradient>
-                                      </defs>
-                                    </svg>
-                                  </div>
+                                  <img 
+                                    src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" 
+                                    alt="SOL" 
+                                    className="w-4 h-4 rounded-full"
+                                    onError={(e) => {
+                                      e.currentTarget.src = "https://cryptologos.cc/logos/solana-sol-logo.png?v=029";
+                                    }}
+                                  />
                                   <span className="text-white text-sm font-medium">SOL</span>
                                 </div>
                               </div>
