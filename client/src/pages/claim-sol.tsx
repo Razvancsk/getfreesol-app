@@ -1493,7 +1493,7 @@ export default function SolRefund() {
                       className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium !border !border-purple-500/30 !inline-flex !items-center !justify-center !gap-2"
                     />
                     <p className="text-xs text-muted-foreground text-center">
-                      Click "Connect" in wallet popup after selection
+                      Select your wallet to connect instantly
                     </p>
                   </div>
                 )}
@@ -1581,7 +1581,7 @@ export default function SolRefund() {
                     className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-6 !py-3 !text-lg !font-medium !border !border-purple-500/30 !inline-flex !items-center !justify-center !gap-2"
                   />
                   <p className="text-xs text-muted-foreground text-center max-w-sm">
-                    After selecting your wallet, click "Connect" in the wallet popup to approve the connection
+                    Select your wallet to connect instantly and start claiming
                   </p>
                 </div>
               )}
