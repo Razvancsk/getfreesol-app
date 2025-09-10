@@ -86,45 +86,55 @@ export default function SolRefund() {
   const [offerType, setOfferType] = useState<'buy' | 'sell'>('buy');
   const [offerPrice, setOfferPrice] = useState('');
   const [offerAmount, setOfferAmount] = useState('');
-  const [solPrice, setSolPrice] = useState(224); // Live SOL price from GeckoTerminal API
-  const [priceLoading, setPriceLoading] = useState(false);
+  const [solPrice, setSolPrice] = useState(224); // Live SOL price from Helius API
 
-  // Fetch live SOL price from GeckoTerminal API (real-time on-chain data)
+  // Fetch live SOL price from Helius API (best Solana infrastructure)
   const fetchSolPrice = async () => {
     try {
-      setPriceLoading(true);
-      // GeckoTerminal API for real-time on-chain SOL price
-      const response = await fetch('https://api.geckoterminal.com/api/v2/networks/solana/tokens/So11111111111111111111111111111111111111112');
+      // Use Helius DAS API to get SOL token data with price
+      const response = await fetch(`https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY || 'demo'}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'sol-price',
+          method: 'getAsset',
+          params: {
+            id: 'So11111111111111111111111111111111111111112'
+          }
+        })
+      });
+      
       const data = await response.json();
       
-      if (data?.data?.attributes?.price_usd) {
-        const livePriceUSD = parseFloat(data.data.attributes.price_usd);
+      // If Helius doesn't have price data in getAsset, fall back to reliable API
+      if (!data?.result?.price_info?.price_per_token) {
+        // Fallback to CoinGecko for stable pricing
+        const fallbackResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+        const fallbackData = await fallbackResponse.json();
+        
+        if (fallbackData?.solana?.usd) {
+          setSolPrice(fallbackData.solana.usd);
+        }
+      } else {
+        const livePriceUSD = parseFloat(data.result.price_info.price_per_token);
         setSolPrice(livePriceUSD);
-        console.log(`Live SOL price updated: $${livePriceUSD.toFixed(2)}`);
       }
     } catch (error) {
-      console.error('Failed to fetch live SOL price:', error);
+      console.error('Failed to fetch SOL price:', error);
       // Fallback to current market price if API fails
-      setSolPrice(224); // Current real SOL price
-    } finally {
-      setPriceLoading(false);
+      setSolPrice(224);
     }
   };
 
-  // Fetch SOL price on component mount and when modal opens
-  useEffect(() => {
-    if (showCreateOfferModal) {
-      // Fetch immediately when modal opens
-      fetchSolPrice();
-      // Update price every 5 seconds for live updates
-      const interval = setInterval(fetchSolPrice, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [showCreateOfferModal]);
-
-  // Also fetch price when component first mounts
+  // Fetch SOL price once when component mounts - stable pricing  
   useEffect(() => {
     fetchSolPrice();
+    // Update price every 2 minutes for stable pricing (not constantly moving)
+    const interval = setInterval(fetchSolPrice, 120000);
+    return () => clearInterval(interval);
   }, []);
 
   // Calculate collateral based on price and amount
@@ -2522,10 +2532,7 @@ export default function SolRefund() {
                                 <label className="text-neutral-400 text-sm font-medium">COLLATERAL</label>
                                 <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-neutral-400 text-xs">?</div>
                               </div>
-                              <span className="text-neutral-400 text-sm flex items-center space-x-1">
-                                <span>SOL Price: ${solPrice.toFixed(2)}</span>
-                                {priceLoading && <div className="w-3 h-3 border border-neutral-400 border-t-transparent rounded-full animate-spin"></div>}
-                              </span>
+                              <span className="text-neutral-400 text-sm">SOL Price: ${solPrice.toFixed(2)}</span>
                             </div>
                             <div className="bg-neutral-800 rounded-lg p-4">
                               <div className="flex items-center justify-between mb-2">
