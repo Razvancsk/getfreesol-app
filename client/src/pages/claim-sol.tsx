@@ -2545,9 +2545,6 @@ export default function SolRefund() {
                               <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
                                 <div className="w-4 h-4 bg-orange-500 rounded-full"></div>
                                 <span className="text-white text-sm">{selectedToken?.tokenSymbol || 'Token'}</span>
-                                <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
                               </div>
                             </div>
                           </div>
