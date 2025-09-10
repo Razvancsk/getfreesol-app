@@ -1344,7 +1344,7 @@ export default function SolRefund() {
               <div className="flex items-center">
                 <img 
                   src={logoImage}
-                  alt="Solana Refunds – Zero Fees!"
+                  alt="Claim Solana Rent– Zero Fees!"
                   className="h-24 w-auto"
                 />
               </div>
@@ -1468,7 +1468,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? 'Burn Unwanted Tokens.' : 'Solana Refunds – Zero Fees!'}
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? 'Burn Unwanted Tokens.' : 'Claim Solana Rent– Zero Fees!'}
             </p>
           </div>
 
