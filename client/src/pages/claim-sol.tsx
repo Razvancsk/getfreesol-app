@@ -84,6 +84,20 @@ export default function SolRefund() {
   const [selectedDetailTab, setSelectedDetailTab] = useState<'trade' | 'activity' | 'info'>('trade');
   const [showCreateOfferModal, setShowCreateOfferModal] = useState(false);
   const [offerType, setOfferType] = useState<'buy' | 'sell'>('buy');
+  const [offerPrice, setOfferPrice] = useState('');
+  const [offerAmount, setOfferAmount] = useState('');
+  const [solPrice, setSolPrice] = useState(85); // Mock SOL price - replace with live data
+
+  // Calculate collateral based on price and amount
+  const calculateCollateral = () => {
+    const price = parseFloat(offerPrice) || 0;
+    const amount = parseFloat(offerAmount) || 0;
+    const usdCollateral = price * amount;
+    const solCollateral = usdCollateral / solPrice;
+    return { usd: usdCollateral, sol: solCollateral };
+  };
+
+  const collateral = calculateCollateral();
   
   // Real-time countdown ticker for settlement windows
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -2424,10 +2438,14 @@ export default function SolRefund() {
                               <label className="text-neutral-400 text-sm font-medium">PRICE PER POINT</label>
                               <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-neutral-400 text-xs">?</div>
                             </div>
-                            <div className="bg-neutral-800 rounded-lg p-4">
+                            <div className="bg-neutral-800 rounded-lg p-4 flex items-center">
+                              <span className="text-white text-xl mr-2">$</span>
                               <input 
-                                type="text" 
-                                placeholder="$ Enter your price"
+                                type="number"
+                                step="0.0001"
+                                placeholder="Enter your price"
+                                value={offerPrice}
+                                onChange={(e) => setOfferPrice(e.target.value)}
                                 className="bg-transparent text-white text-xl placeholder-neutral-500 w-full outline-none"
                               />
                             </div>
@@ -2441,8 +2459,11 @@ export default function SolRefund() {
                             </div>
                             <div className="bg-neutral-800 rounded-lg p-4 flex items-center space-x-3">
                               <input 
-                                type="text" 
+                                type="number"
+                                step="0.01"
                                 placeholder="Enter amount"
+                                value={offerAmount}
+                                onChange={(e) => setOfferAmount(e.target.value)}
                                 className="bg-transparent text-white text-lg placeholder-neutral-500 flex-1 outline-none"
                               />
                               <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
@@ -2462,16 +2483,19 @@ export default function SolRefund() {
                                 <label className="text-neutral-400 text-sm font-medium">COLLATERAL</label>
                                 <div className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-neutral-400 text-xs">?</div>
                               </div>
-                              <span className="text-neutral-400 text-sm">Balance: 0 USDC</span>
+                              <span className="text-neutral-400 text-sm">SOL Price: ${solPrice}</span>
                             </div>
-                            <div className="bg-neutral-800 rounded-lg p-4 flex items-center justify-between">
-                              <span className="text-neutral-500 text-2xl">0.00</span>
-                              <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
-                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
-                                <span className="text-white text-sm">USDC</span>
-                                <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
+                            <div className="bg-neutral-800 rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-white text-2xl">${collateral.usd.toFixed(2)}</span>
+                                <div className="flex items-center space-x-2 bg-neutral-700 px-3 py-1 rounded-lg">
+                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
+                                  <span className="text-white text-sm">USD</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between pt-2 border-t border-neutral-700">
+                                <span className="text-orange-400 text-lg">≈ {collateral.sol.toFixed(4)} SOL</span>
+                                <span className="text-neutral-400 text-sm">Required in SOL</span>
                               </div>
                             </div>
                           </div>
