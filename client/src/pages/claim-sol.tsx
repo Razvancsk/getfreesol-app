@@ -2409,14 +2409,14 @@ export default function SolRefund() {
                                   <tbody className="divide-y divide-neutral-800/50">
                                     {Array.from({ length: 8 }, (_, i) => {
                                       const pairs = [
-                                        { name: 'Meteora/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/METeorJKZjf1HvchYLY4k1qphS7QsKbG8QvkQKvNzVa/logo.svg' },
-                                        { name: 'BONK/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263/logo.png' },
-                                        { name: 'RAY/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/logo.png' },
-                                        { name: 'ORCA/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE/logo.png' },
-                                        { name: 'SAMO/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU/logo.png' },
-                                        { name: 'SRM/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt/logo.png' },
-                                        { name: 'STEP/USDC', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/StepAscQoEioFxxWGnh2sLBDFp9d8rvKz2Yp39iDpyT/logo.png' },
-                                        { name: 'COPE/SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/8HGyAAB1yoM1ttS7pXjHMa3dukTFGQggnFFH3hJZgzQh/logo.png' }
+                                        { name: 'XPL/SOL', logo: 'https://via.placeholder.com/24/14F195/ffffff?text=X' },
+                                        { name: 'LINEA/SOL', logo: 'https://via.placeholder.com/24/3366ff/ffffff?text=L' },
+                                        { name: 'STARK/SOL', logo: 'https://via.placeholder.com/24/ff6b35/ffffff?text=S' },
+                                        { name: 'BASE/SOL', logo: 'https://via.placeholder.com/24/0052ff/ffffff?text=B' },
+                                        { name: 'POLY/SOL', logo: 'https://via.placeholder.com/24/8247e5/ffffff?text=P' },
+                                        { name: 'ARB/SOL', logo: 'https://via.placeholder.com/24/28a0f0/ffffff?text=A' },
+                                        { name: 'OP/SOL', logo: 'https://via.placeholder.com/24/ff0420/ffffff?text=O' },
+                                        { name: 'AVAX/SOL', logo: 'https://via.placeholder.com/24/e84142/ffffff?text=V' }
                                       ];
                                       const times = ['12s', '45s', '2m', '8m', '1h', '3h', '1d', '2d'];
                                       const pair = pairs[i];
