@@ -889,58 +889,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Calculate totals with referral fee splitting
+      // Calculate totals - FEES TEMPORARILY DISABLED: Users get 100% back
       const totalSolRecovered = totalTokensProcessed * 0.00203928;
-      const totalFeeAmount = totalSolRecovered * 0.15; // 15% fee
+      const totalFeeAmount = 0; // Fees disabled - users get full amount
       
       let referralFeeAmount = 0;
-      let platformFeeAmount = totalFeeAmount;
+      let platformFeeAmount = 0; // No platform fees
       
-      if (referralCodeData) {
-        // 35% of fee goes to referral (5.25% of total)
-        referralFeeAmount = totalFeeAmount * 0.35;
-        // 65% of fee stays with platform (9.75% of total)
-        platformFeeAmount = totalFeeAmount * 0.65;
-        console.log(`Referral fee calculation: totalFee=${totalFeeAmount}, referralFee=${referralFeeAmount}, platformFee=${platformFeeAmount}`);
-      } else {
-        console.log('No referral code data - using full platform fee');
-      }
+      // FEES TEMPORARILY DISABLED - Code preserved for future use
+      // if (referralCodeData) {
+      //   // 35% of fee goes to referral (5.25% of total)
+      //   referralFeeAmount = totalFeeAmount * 0.35;
+      //   // 65% of fee stays with platform (9.75% of total)
+      //   platformFeeAmount = totalFeeAmount * 0.65;
+      //   console.log(`Referral fee calculation: totalFee=${totalFeeAmount}, referralFee=${referralFeeAmount}, platformFee=${platformFeeAmount}`);
+      // } else {
+      //   console.log('No referral code data - using full platform fee');
+      // }
       
-      const netAmount = totalSolRecovered - totalFeeAmount;
+      const netAmount = totalSolRecovered; // Users get 100% now
 
+      // FEES TEMPORARILY DISABLED - Code preserved for future use
       // Add service fee transfers
       const { SystemProgram } = await import('@solana/web3.js');
       
-      if (platformFeeAmount > 0) {
-        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
-        
-        const platformFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: ownerPublicKey,
-          toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
-        });
-        
-        transaction.add(platformFeeTransferInstruction);
-      }
+      // if (platformFeeAmount > 0) {
+      //   const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+      //   
+      //   const platformFeeTransferInstruction = SystemProgram.transfer({
+      //     fromPubkey: ownerPublicKey,
+      //     toPubkey: feeCollectorPublicKey,
+      //     lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+      //   });
+      //   
+      //   transaction.add(platformFeeTransferInstruction);
+      // }
       
-      // Add referral fee transfer if applicable
-      if (referralFeeAmount > 0 && referralCodeData) {
-        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-        const lamportsAmount = Math.round(referralFeeAmount * 1e9);
-        
-        console.log(`Adding referral fee transfer: ${referralFeeAmount} SOL (${lamportsAmount} lamports) to ${referralCodeData.walletAddress}`);
-        
-        const referralFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: ownerPublicKey,
-          toPubkey: referralWalletPublicKey,
-          lamports: lamportsAmount, // Convert SOL to lamports
-        });
-        
-        transaction.add(referralFeeTransferInstruction);
-        console.log('✅ Referral fee transfer instruction added to transaction');
-      } else {
-        console.log(`❌ Referral fee transfer skipped: referralFeeAmount=${referralFeeAmount}, referralCodeData=${!!referralCodeData}`);
-      }
+      // // Add referral fee transfer if applicable
+      // if (referralFeeAmount > 0 && referralCodeData) {
+      //   const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+      //   const lamportsAmount = Math.round(referralFeeAmount * 1e9);
+      //   
+      //   console.log(`Adding referral fee transfer: ${referralFeeAmount} SOL (${lamportsAmount} lamports) to ${referralCodeData.walletAddress}`);
+      //   
+      //   const referralFeeTransferInstruction = SystemProgram.transfer({
+      //     fromPubkey: ownerPublicKey,
+      //     toPubkey: referralWalletPublicKey,
+      //     lamports: lamportsAmount, // Convert SOL to lamports
+      //   });
+      //   
+      //   transaction.add(referralFeeTransferInstruction);
+      //   console.log('✅ Referral fee transfer instruction added to transaction');
+      // } else {
+      //   console.log(`❌ Referral fee transfer skipped: referralFeeAmount=${referralFeeAmount}, referralCodeData=${!!referralCodeData}`);
+      // }
       
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -951,7 +953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${totalFeeAmount.toFixed(8)} fee)`);
+      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (ZERO FEES - users get 100%)`);
       
       res.json({
         transaction: transactionBase64,
@@ -962,7 +964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralFeeAmount: referralFeeAmount.toFixed(8),
         netAmount: netAmount.toFixed(8),
         referralCodeUsed: referralCode || null,
-        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`
+        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens (${netAmount.toFixed(6)} SOL - ZERO FEES!)`
       });
       
     } catch (error) {
