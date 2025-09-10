@@ -2476,29 +2476,6 @@ export default function SolRefund() {
                             </div>
                           </div>
 
-                          {/* Fill Type */}
-                          <div className="mb-8">
-                            <label className="text-neutral-400 text-sm font-medium block mb-4">FILL TYPE</label>
-                            <div className="space-y-3">
-                              <label className="flex items-start space-x-3 cursor-pointer">
-                                <div className="w-5 h-5 rounded-full border-2 border-orange-500 bg-orange-500 flex items-center justify-center mt-0.5">
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                </div>
-                                <div>
-                                  <div className="text-white font-medium">Partial Fill</div>
-                                  <div className="text-neutral-400 text-sm">Multiple users can contribute to fulfill the offer</div>
-                                </div>
-                              </label>
-                              
-                              <label className="flex items-start space-x-3 cursor-pointer">
-                                <div className="w-5 h-5 rounded-full border border-neutral-600 mt-0.5"></div>
-                                <div>
-                                  <div className="text-white font-medium">Single Fill</div>
-                                  <div className="text-neutral-400 text-sm">Entire offer must be filled by 1 user</div>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
 
                           {/* Action Buttons */}
                           <div className="flex space-x-3">
