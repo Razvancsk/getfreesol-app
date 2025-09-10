@@ -85,6 +85,20 @@ export default function SolRefund() {
   // Real-time countdown ticker for settlement windows
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
+  // Smart price formatting function
+  const formatPrice = (price: string | number) => {
+    const num = parseFloat(price.toString());
+    if (num >= 1) {
+      return num.toFixed(2); // $1.00, $2.50, etc.
+    } else if (num >= 0.1) {
+      return num.toFixed(2); // $0.50, $0.25, etc.
+    } else if (num >= 0.01) {
+      return num.toFixed(3); // $0.052, $0.025, etc.
+    } else {
+      return num.toFixed(4); // $0.0052, $0.0025, etc.
+    }
+  };
+
   // Real-time ticker for countdown updates (every second)
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1948,7 +1962,7 @@ export default function SolRefund() {
 
                               {/* Price */}
                               <div className="text-right">
-                                <div className="text-white font-bold text-lg">${parseFloat(listing.startingPrice).toFixed(3)}</div>
+                                <div className="text-white font-bold text-lg">${formatPrice(listing.startingPrice)}</div>
                               </div>
 
                               {/* 24h Vol */}
@@ -2019,7 +2033,7 @@ export default function SolRefund() {
                               {/* Price */}
                               <div className="text-right min-w-[80px]">
                                 <div className="text-white font-semibold text-base">
-                                  ${index === 0 ? '0.565' : index === 1 ? '0.028' : index === 2 ? '0.027' : index === 3 ? '0.026' : index === 4 ? '0.024' : '0.022'}
+                                  ${formatPrice(index === 0 ? 0.565 : index === 1 ? 0.028 : index === 2 ? 0.027 : index === 3 ? 0.026 : index === 4 ? 0.024 : 0.022)}
                                 </div>
                               </div>
 
@@ -2486,7 +2500,7 @@ export default function SolRefund() {
                                 <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
                                 <div className="text-sm text-blue-300 space-y-1">
                                   <div>Supply: {parseInt(listing.totalSupply).toLocaleString()}</div>
-                                  <div>Price: {parseFloat(listing.startingPrice).toFixed(3)} SOL</div>
+                                  <div>Price: {formatPrice(listing.startingPrice)} SOL</div>
                                   <div>Status: <Badge className="bg-green-600">{listing.isActive ? 'Active' : 'Inactive'}</Badge></div>
                                 </div>
                                 
