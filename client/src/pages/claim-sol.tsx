@@ -2234,27 +2234,58 @@ export default function SolRefund() {
                               <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
                                 <div className="flex items-center justify-between mb-4">
                                   <h3 className="text-white font-semibold">Your Orders</h3>
-                                  <Button size="sm" variant="outline" className="text-xs border-purple-500/30 text-purple-300">
-                                    See All Orders
-                                  </Button>
+                                  <div className="flex items-center space-x-2">
+                                    <Button size="sm" variant="outline" className="text-xs border-green-500/30 text-green-300 hover:bg-green-500/20">
+                                      Buy Orders
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="text-xs border-red-500/30 text-red-300 hover:bg-red-500/20">
+                                      Sell Orders
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="text-xs border-purple-500/30 text-purple-300">
+                                      All Orders
+                                    </Button>
+                                  </div>
                                 </div>
                                 
-                                {/* Order List */}
-                                <div className="space-y-2 mb-4">
-                                  {Array.from({ length: 3 }, (_, i) => (
-                                    <div key={i} className="flex items-center justify-between p-2 bg-neutral-800/50 rounded text-sm">
-                                      <div className="flex items-center space-x-2">
-                                        <span className={`px-2 py-0.5 text-xs rounded ${i % 2 === 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                          {i % 2 === 0 ? 'BUY' : 'SELL'}
-                                        </span>
-                                        <span className="text-white">{(Math.random() * 1000).toFixed(0)}</span>
-                                      </div>
-                                      <div className="text-right">
-                                        <div className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</div>
-                                        <div className="text-neutral-400 text-xs">Pending</div>
-                                      </div>
-                                    </div>
-                                  ))}
+                                {/* Orders Table */}
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead className="border-b border-neutral-700">
+                                      <tr>
+                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Price</th>
+                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Amount</th>
+                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Collateral</th>
+                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs">Fill Type</th>
+                                        <th className="text-left text-neutral-400 font-medium py-2 text-xs"></th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-800/50">
+                                      {Array.from({ length: 9 }, (_, i) => (
+                                        <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
+                                          <td className="py-2 text-white font-mono text-sm">
+                                            {i === 0 ? '0.0278' : i === 1 ? '0.0332' : i === 2 ? '0.096' : i === 3 ? '0.10' : i === 4 ? '0.13' : i === 5 ? '0.15' : i === 6 ? '0.45' : i === 7 ? '0.45' : '0.50'}
+                                          </td>
+                                          <td className="py-2 text-white text-sm">
+                                            {i === 0 ? '30.0K' : i === 1 ? '1.0K' : i === 2 ? '4.0K' : i === 3 ? '100' : i === 4 ? '3.0K' : i === 5 ? '270' : i === 6 ? '50' : i === 7 ? '30' : '30'}
+                                          </td>
+                                          <td className="py-2 text-white text-sm">
+                                            <div className="flex items-center space-x-1">
+                                              <span>{i === 0 ? '836.7' : i === 1 ? '0.00765' : i === 2 ? '384' : i === 3 ? '10' : i === 4 ? '384' : i === 5 ? '40.2' : i === 6 ? '22.5' : i === 7 ? '13.5' : '15'}</span>
+                                              <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">$</div>
+                                            </div>
+                                          </td>
+                                          <td className="py-2">
+                                            <span className="px-2 py-1 text-xs rounded bg-neutral-700/50 text-neutral-300 border border-neutral-600">
+                                              PARTIAL
+                                            </span>
+                                          </td>
+                                          <td className="py-2 text-right">
+                                            <span className="text-green-400 font-medium text-sm">Buy</span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
                                 </div>
 
                                 {/* Buy/Sell Buttons */}
