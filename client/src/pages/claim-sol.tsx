@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, Clock, Shield, Plus, X } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import logoImage from '@assets/image_1754527057994.png';
 import AdContainer from '@/components/AdContainer';
 import AxiomBanner from '@/components/AxiomBanner';
@@ -1574,23 +1575,9 @@ export default function SolRefund() {
                 </>
               ) : (
                 <div className="flex flex-col items-center space-y-3">
-                  <Button
-                    onClick={() => {
-                      console.log('🔗 Connect button clicked');
-                      alert('Button clicked!');
-                      if (setVisible) {
-                        console.log('📱 Opening wallet modal');
-                        setVisible(true);
-                      } else {
-                        console.error('❌ setVisible is not available');
-                      }
-                    }}
+                  <WalletMultiButton 
                     className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
-                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
-                  >
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Connect Wallet
-                  </Button>
+                  />
                 </div>
               )}
             </div>
