@@ -73,7 +73,8 @@ export default function SolRefund() {
     tokenSymbol: '',
     totalSupply: '',
     startingPrice: '',
-    description: ''
+    description: '',
+    tokenLogo: ''
   });
   
   // Pre-market sub-tab state
@@ -2101,7 +2102,13 @@ export default function SolRefund() {
                                 tokenSymbol: index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB',
                                 tokenName: index === 0 ? 'Plasma' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum',
                                 startingPrice: index === 0 ? '0.565' : index === 1 ? '0.028' : '0.025',
-                                totalSupply: '1000000'
+                                totalSupply: '1000000',
+                                tokenLogo: index === 0 ? 'https://via.placeholder.com/32/14F195/ffffff?text=X' : 
+                                          index === 1 ? 'https://via.placeholder.com/32/3366ff/ffffff?text=L' :
+                                          index === 2 ? 'https://via.placeholder.com/32/ff6b35/ffffff?text=S' :
+                                          index === 3 ? 'https://via.placeholder.com/32/0052ff/ffffff?text=B' :
+                                          index === 4 ? 'https://via.placeholder.com/32/8247e5/ffffff?text=P' : 
+                                          'https://via.placeholder.com/32/28a0f0/ffffff?text=A'
                               };
                               setSelectedToken(mockToken);
                             }}
@@ -2110,9 +2117,24 @@ export default function SolRefund() {
                             <div className="flex items-center justify-between">
                               {/* Token Info */}
                               <div className="flex items-center space-x-3 min-w-[120px]">
-                                <div className="w-7 h-7 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                  {index === 0 ? 'X' : index === 1 ? 'L' : index === 2 ? 'S' : index === 3 ? 'B' : index === 4 ? 'P' : 'A'}
-                                </div>
+                                <img 
+                                  src={index === 0 ? 'https://via.placeholder.com/32/14F195/ffffff?text=X' : 
+                                       index === 1 ? 'https://via.placeholder.com/32/3366ff/ffffff?text=L' :
+                                       index === 2 ? 'https://via.placeholder.com/32/ff6b35/ffffff?text=S' :
+                                       index === 3 ? 'https://via.placeholder.com/32/0052ff/ffffff?text=B' :
+                                       index === 4 ? 'https://via.placeholder.com/32/8247e5/ffffff?text=P' : 
+                                       'https://via.placeholder.com/32/28a0f0/ffffff?text=A'}
+                                  alt={`${index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB'} logo`}
+                                  className="w-7 h-7 rounded-full"
+                                  onError={(e) => {
+                                    // Fallback to gradient div if image fails
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'w-7 h-7 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs';
+                                    fallback.textContent = (index === 0 ? 'X' : index === 1 ? 'L' : index === 2 ? 'S' : index === 3 ? 'B' : index === 4 ? 'P' : 'A');
+                                    e.currentTarget.parentNode?.appendChild(fallback);
+                                  }}
+                                />
                                 <div>
                                   <div className="text-white font-medium text-base">
                                     {index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB'}
@@ -2212,9 +2234,25 @@ export default function SolRefund() {
                           <div className="flex items-center justify-between">
                             {/* Token Info */}
                             <div className="flex items-center space-x-3 min-w-[120px]">
-                              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                {selectedToken.tokenSymbol.charAt(0)}
-                              </div>
+                              {selectedToken.tokenLogo ? (
+                                <img 
+                                  src={selectedToken.tokenLogo} 
+                                  alt={`${selectedToken.tokenSymbol} logo`}
+                                  className="w-8 h-8 rounded-full"
+                                  onError={(e) => {
+                                    // Fallback to gradient div if logo fails
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'w-8 h-8 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm';
+                                    fallback.textContent = selectedToken.tokenSymbol.charAt(0);
+                                    e.currentTarget.parentNode?.appendChild(fallback);
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                  {selectedToken.tokenSymbol.charAt(0)}
+                                </div>
+                              )}
                               <div>
                                 <div className="text-white font-semibold text-lg">{selectedToken.tokenSymbol}</div>
                                 <div className="text-gray-400 text-sm">{selectedToken.tokenName}</div>
@@ -2411,7 +2449,7 @@ export default function SolRefund() {
                                       // Use the selected token symbol for all trading pairs
                                       const tokenSymbol = selectedToken?.tokenSymbol?.toUpperCase() || 'TOKEN';
                                       const tradingPair = `${tokenSymbol}/SOL`;
-                                      const tokenLogo = `https://via.placeholder.com/24/14F195/ffffff?text=${selectedToken?.tokenSymbol?.charAt(0)?.toUpperCase() || 'T'}`;
+                                      const tokenLogo = selectedToken?.tokenLogo;
                                       const times = ['12s', '45s', '2m', '8m', '1h', '3h', '1d', '2d'];
                                       const timeAgo = times[i];
                                       
@@ -2429,9 +2467,25 @@ export default function SolRefund() {
                                           </td>
                                           <td className="py-2 px-3 text-white text-xs">
                                             <div className="flex items-center space-x-1">
-                                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-500 to-green-600 flex items-center justify-center text-white font-bold text-xs">
-                                                {selectedToken?.tokenSymbol?.charAt(0)?.toUpperCase() || 'T'}
-                                              </div>
+                                              {tokenLogo ? (
+                                                <img 
+                                                  src={tokenLogo} 
+                                                  alt={`${selectedToken?.tokenSymbol} logo`}
+                                                  className="w-4 h-4 rounded-full"
+                                                  onError={(e) => {
+                                                    // Fallback to gradient div if logo fails
+                                                    e.currentTarget.style.display = 'none';
+                                                    const fallback = document.createElement('div');
+                                                    fallback.className = 'w-4 h-4 rounded-full bg-gradient-to-br from-teal-500 to-green-600 flex items-center justify-center text-white font-bold text-xs';
+                                                    fallback.textContent = selectedToken?.tokenSymbol?.charAt(0)?.toUpperCase() || 'T';
+                                                    e.currentTarget.parentNode?.appendChild(fallback);
+                                                  }}
+                                                />
+                                              ) : (
+                                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-500 to-green-600 flex items-center justify-center text-white font-bold text-xs">
+                                                  {selectedToken?.tokenSymbol?.charAt(0)?.toUpperCase() || 'T'}
+                                                </div>
+                                              )}
                                               <span>{tradingPair}</span>
                                             </div>
                                           </td>
@@ -2800,6 +2854,30 @@ export default function SolRefund() {
                           className="bg-slate-800/50 border-slate-600 text-white"
                           data-testid="input-tokensymbol"
                         />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="tokenLogo" className="text-purple-300">Token Logo URL</Label>
+                        <Input
+                          id="tokenLogo"
+                          value={premarketForm.tokenLogo}
+                          onChange={(e) => handlePremarketFormChange('tokenLogo', e.target.value)}
+                          placeholder="https://example.com/logo.png (optional)"
+                          className="bg-slate-800/50 border-slate-600 text-white"
+                          data-testid="input-tokenlogo"
+                        />
+                        {premarketForm.tokenLogo && (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <img 
+                              src={premarketForm.tokenLogo} 
+                              alt="Token logo preview" 
+                              className="w-8 h-8 rounded-full"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            <span className="text-green-400 text-xs">✓ Logo preview</span>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="totalSupply" className="text-purple-300">Total Supply</Label>

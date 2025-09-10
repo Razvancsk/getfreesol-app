@@ -139,6 +139,7 @@ export const premarketListings = pgTable("premarket_listings", {
   creatorWallet: text("creator_wallet").notNull(), // Project creator's wallet
   tokenName: text("token_name").notNull(), // Token name (e.g., "MyToken")
   tokenSymbol: text("token_symbol").notNull(), // Token symbol (e.g., "MTK")
+  tokenLogo: text("token_logo"), // Optional token logo URL
   totalSupply: decimal("total_supply", { precision: 18, scale: 0 }).notNull(), // Total tokens for sale
   startingPrice: decimal("starting_price", { precision: 18, scale: 9 }).notNull(), // Starting price in SOL
   description: text("description"), // Project description
