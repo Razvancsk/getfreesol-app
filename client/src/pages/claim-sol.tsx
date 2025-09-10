@@ -966,6 +966,38 @@ export default function SolRefund() {
     retry: false,
   });
 
+  // Query to get creator's own listings for the Create tab
+  const { data: creatorListings, refetch: refetchCreatorListings } = useQuery({
+    queryKey: ['/api/premarket/listings/creator', publicKey?.toString()],
+    enabled: activeTab === 'premarket' && premarketSubTab === 'create' && !!publicKey,
+    retry: false,
+  });
+
+  // Set TGE date mutation
+  const setTgeDateMutation = useMutation({
+    mutationFn: async ({ listingId, tgeDate }: { listingId: string; tgeDate: string }) => {
+      return await apiRequest(`/api/premarket/listings/${listingId}/set-tge`, {
+        method: 'POST',
+        body: JSON.stringify({ tgeDate })
+      });
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({ title: "TGE date set successfully!", description: "Settlement window is now 4 hours from TGE." });
+        refetchCreatorListings();
+        queryClient.invalidateQueries({ queryKey: ['/api/premarket/listings'] });
+      }
+    },
+    onError: (error: any) => {
+      console.error("Failed to set TGE date:", error);
+      toast({ 
+        title: "Failed to set TGE date", 
+        description: error.message || "Please try again.",
+        variant: "destructive" 
+      });
+    }
+  });
+
   // Bulk Burn Tokens Mutation
   const bulkBurnTokensMutation = useMutation({
     mutationFn: async (tokenMints: string[]) => {
@@ -2095,81 +2127,182 @@ export default function SolRefund() {
 
               {/* Create Tab */}
               {premarketSubTab === 'create' && (
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Create Pre-market Listing</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="tokenName" className="text-purple-300">Token Name</Label>
-                      <Input
-                        id="tokenName"
-                        value={premarketForm.tokenName}
-                        onChange={(e) => handlePremarketFormChange('tokenName', e.target.value)}
-                        placeholder="e.g., MyToken"
-                        className="bg-slate-800/50 border-slate-600 text-white"
-                        data-testid="input-tokenname"
-                      />
+                <div className="space-y-6">
+                  {/* Create Listing Form */}
+                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Create Pre-market Listing</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="tokenName" className="text-purple-300">Token Name</Label>
+                        <Input
+                          id="tokenName"
+                          value={premarketForm.tokenName}
+                          onChange={(e) => handlePremarketFormChange('tokenName', e.target.value)}
+                          placeholder="e.g., MyToken"
+                          className="bg-slate-800/50 border-slate-600 text-white"
+                          data-testid="input-tokenname"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tokenSymbol" className="text-purple-300">Token Symbol</Label>
+                        <Input
+                          id="tokenSymbol"
+                          value={premarketForm.tokenSymbol}
+                          onChange={(e) => handlePremarketFormChange('tokenSymbol', e.target.value)}
+                          placeholder="e.g., MTK"
+                          className="bg-slate-800/50 border-slate-600 text-white"
+                          data-testid="input-tokensymbol"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="totalSupply" className="text-purple-300">Total Supply</Label>
+                        <Input
+                          id="totalSupply"
+                          type="number"
+                          value={premarketForm.totalSupply}
+                          onChange={(e) => handlePremarketFormChange('totalSupply', e.target.value)}
+                          placeholder="1000000"
+                          className="bg-slate-800/50 border-slate-600 text-white"
+                          data-testid="input-totalsupply"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="startingPrice" className="text-purple-300">Starting Price (SOL)</Label>
+                        <Input
+                          id="startingPrice"
+                          type="number"
+                          step="0.000001"
+                          value={premarketForm.startingPrice}
+                          onChange={(e) => handlePremarketFormChange('startingPrice', e.target.value)}
+                          placeholder="0.001"
+                          className="bg-slate-800/50 border-slate-600 text-white"
+                          data-testid="input-startingprice"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="description" className="text-purple-300">Description</Label>
+                        <Input
+                          id="description"
+                          value={premarketForm.description}
+                          onChange={(e) => handlePremarketFormChange('description', e.target.value)}
+                          placeholder="Describe your token project..."
+                          className="bg-slate-800/50 border-slate-600 text-white"
+                          data-testid="input-description"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="tokenSymbol" className="text-purple-300">Token Symbol</Label>
-                      <Input
-                        id="tokenSymbol"
-                        value={premarketForm.tokenSymbol}
-                        onChange={(e) => handlePremarketFormChange('tokenSymbol', e.target.value)}
-                        placeholder="e.g., MTK"
-                        className="bg-slate-800/50 border-slate-600 text-white"
-                        data-testid="input-tokensymbol"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="totalSupply" className="text-purple-300">Total Supply</Label>
-                      <Input
-                        id="totalSupply"
-                        type="number"
-                        value={premarketForm.totalSupply}
-                        onChange={(e) => handlePremarketFormChange('totalSupply', e.target.value)}
-                        placeholder="1000000"
-                        className="bg-slate-800/50 border-slate-600 text-white"
-                        data-testid="input-totalsupply"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="startingPrice" className="text-purple-300">Starting Price (SOL)</Label>
-                      <Input
-                        id="startingPrice"
-                        type="number"
-                        step="0.000001"
-                        value={premarketForm.startingPrice}
-                        onChange={(e) => handlePremarketFormChange('startingPrice', e.target.value)}
-                        placeholder="0.001"
-                        className="bg-slate-800/50 border-slate-600 text-white"
-                        data-testid="input-startingprice"
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="description" className="text-purple-300">Description</Label>
-                      <Input
-                        id="description"
-                        value={premarketForm.description}
-                        onChange={(e) => handlePremarketFormChange('description', e.target.value)}
-                        placeholder="Describe your token project..."
-                        className="bg-slate-800/50 border-slate-600 text-white"
-                        data-testid="input-description"
-                      />
+                    <Button
+                      onClick={handleCreateListing}
+                      disabled={createListingMutation.isPending}
+                      className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
+                      data-testid="button-createlisting"
+                    >
+                      {createListingMutation.isPending ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                      )}
+                      {createListingMutation.isPending ? 'Creating...' : 'Create Listing'}
+                    </Button>
+                  </div>
+
+                  {/* Your Created Listings */}
+                  <div className="bg-gradient-to-br from-blue-800/20 to-blue-900/30 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Your Pre-market Listings</h3>
+                    
+                    <div className="space-y-4">
+                      {creatorListings && creatorListings.success && creatorListings.listings?.length > 0 ? (
+                        creatorListings.listings.map((listing: any) => (
+                          <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
+                                <div className="text-sm text-blue-300 space-y-1">
+                                  <div>Supply: {parseInt(listing.totalSupply).toLocaleString()}</div>
+                                  <div>Price: {listing.startingPrice} SOL</div>
+                                  <div>Status: <Badge className="bg-green-600">{listing.isActive ? 'Active' : 'Inactive'}</Badge></div>
+                                </div>
+                                
+                                {/* TGE Management Section */}
+                                <div className="mt-3">
+                                  {!listing.tgeDate ? (
+                                    /* TGE Date Setting Form */
+                                    <div className="p-3 bg-orange-900/20 rounded border border-orange-500/30">
+                                      <div className="text-xs text-orange-300 mb-2">⏰ Set Token Generation Event (TGE) Date</div>
+                                      <div className="flex items-center space-x-2">
+                                        <Input
+                                          type="datetime-local"
+                                          className="bg-slate-800/50 border-slate-600 text-white text-xs flex-1"
+                                          min={new Date().toISOString().slice(0, 16)}
+                                          id={`tge-date-${listing.id}`}
+                                        />
+                                        <Button 
+                                          size="sm" 
+                                          className="bg-orange-600 hover:bg-orange-700 text-xs"
+                                          disabled={setTgeDateMutation.isPending}
+                                          onClick={() => {
+                                            const input = document.getElementById(`tge-date-${listing.id}`) as HTMLInputElement;
+                                            if (input.value) {
+                                              setTgeDateMutation.mutate({
+                                                listingId: listing.id,
+                                                tgeDate: input.value
+                                              });
+                                            }
+                                          }}
+                                          data-testid="button-settge"
+                                        >
+                                          {setTgeDateMutation.isPending ? 'Setting...' : 'Set TGE'}
+                                        </Button>
+                                      </div>
+                                      <div className="text-xs text-orange-300 mt-1">
+                                        Once TGE is set, buyers have 4 hours to settle orders after token launch
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    /* TGE Date Set - Show Status */
+                                    <div className="p-3 bg-blue-900/20 rounded border border-blue-500/30">
+                                      <div className="text-xs text-blue-300 space-y-1">
+                                        <div>🚀 TGE: {new Date(listing.tgeDate).toLocaleString()}</div>
+                                        {listing.settlementDeadline && (
+                                          <div className="flex items-center space-x-2">
+                                            <span>Settlement Deadline:</span>
+                                            <span className="font-mono text-blue-200">
+                                              {new Date() < new Date(listing.settlementDeadline) ? (
+                                                <span className="text-green-400">
+                                                  {Math.max(0, Math.floor((new Date(listing.settlementDeadline).getTime() - new Date().getTime()) / (1000 * 60)))} min remaining
+                                                </span>
+                                              ) : (
+                                                <span className="text-red-400">Settlement window closed</span>
+                                              )}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-green-300 mt-1">
+                                        ✅ Your listing is ready for settlement once orders are filled
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="ml-4">
+                                <div className="text-xs text-blue-400">
+                                  Created: {new Date(listing.createdAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-blue-300 text-sm py-8">
+                          <Plus className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                          <p>No listings created yet.</p>
+                          <p>Create your first pre-market listing above!</p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <Button
-                    onClick={handleCreateListing}
-                    disabled={createListingMutation.isPending}
-                    className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
-                    data-testid="button-createlisting"
-                  >
-                    {createListingMutation.isPending ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                    )}
-                    {createListingMutation.isPending ? 'Creating...' : 'Create Listing'}
-                  </Button>
                 </div>
               )}
             </div>
