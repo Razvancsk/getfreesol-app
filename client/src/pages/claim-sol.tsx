@@ -78,6 +78,21 @@ export default function SolRefund() {
   
   // Pre-market sub-tab state
   const [premarketSubTab, setPremarketSubTab] = useState<'active' | 'activity' | 'create'>('active');
+  
+  // Selected token in active premarket view
+  const [selectedToken, setSelectedToken] = useState<any>(null);
+  
+  // Real-time countdown ticker for settlement windows
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+
+  // Real-time ticker for countdown updates (every second)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -978,7 +993,8 @@ export default function SolRefund() {
     mutationFn: async ({ listingId, tgeDate }: { listingId: string; tgeDate: string }) => {
       return await apiRequest(`/api/premarket/listings/${listingId}/set-tge`, {
         method: 'POST',
-        body: JSON.stringify({ tgeDate })
+        body: JSON.stringify({ tgeDate }),
+        headers: { 'Content-Type': 'application/json' }
       });
     },
     onSuccess: (data) => {
@@ -1901,87 +1917,293 @@ export default function SolRefund() {
               {/* Active Premarket Tab */}
               {premarketSubTab === 'active' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
-                  
-                  <div className="space-y-4">
-                    {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
-                      premarketListings.listings.map((listing: any) => (
-                        <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
-                              <p className="text-sm text-purple-300">{listing.description || 'No description available'}</p>
-                              <div className="flex items-center space-x-4 mt-2 text-sm">
-                                <span className="text-purple-300">Supply: {parseInt(listing.totalSupply).toLocaleString()}</span>
-                                <span className="text-purple-300">Price: {listing.startingPrice} SOL</span>
-                              </div>
-                              <div className="text-xs text-purple-400 mt-1">
-                                Created by: {listing.creatorWallet.slice(0, 6)}...{listing.creatorWallet.slice(-6)}
-                              </div>
-                              
-                              {/* Settlement Status */}
-                              {listing.tgeDate && (
-                                <div className="mt-3 p-2 bg-blue-900/20 rounded border border-blue-500/30">
-                                  <div className="text-xs text-blue-300">
-                                    <div>TGE: {new Date(listing.tgeDate).toLocaleString()}</div>
-                                    {listing.settlementDeadline && (
-                                      <div className="flex items-center space-x-2 mt-1">
-                                        <span>Settlement Deadline:</span>
-                                        <span className="font-mono text-blue-200">
-                                          {new Date() < new Date(listing.settlementDeadline) ? (
-                                            <span className="text-green-400">
-                                              {Math.max(0, Math.floor((new Date(listing.settlementDeadline).getTime() - new Date().getTime()) / (1000 * 60)))} min remaining
-                                            </span>
-                                          ) : (
-                                            <span className="text-red-400">OVERDUE</span>
-                                          )}
-                                        </span>
+                  {!selectedToken ? (
+                    // Table view - similar to Whales Market
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-purple-500/20">
+                              <th className="text-left text-purple-300 font-medium py-2">Token</th>
+                              <th className="text-right text-purple-300 font-medium py-2">Last Price</th>
+                              <th className="text-right text-purple-300 font-medium py-2">Vol 24h</th>
+                              <th className="text-right text-purple-300 font-medium py-2">Total Vol</th>
+                              <th className="text-center text-purple-300 font-medium py-2">Settle Starts/Ends</th>
+                              <th className="text-center text-purple-300 font-medium py-2">Countdown</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
+                              premarketListings.listings.map((listing: any) => {
+                                const tgeTime = listing.tgeDate ? new Date(listing.tgeDate) : null;
+                                // Calculate 4-hour settlement window client-side
+                                const settlementDeadline = tgeTime ? new Date(tgeTime.getTime() + 4 * 60 * 60 * 1000) : null;
+                                
+                                let settlementStatus = 'Not Set';
+                                let countdown = '';
+                                
+                                if (tgeTime && settlementDeadline) {
+                                  if (currentTime < tgeTime) {
+                                    settlementStatus = 'Pending TGE';
+                                    const timeToTge = tgeTime.getTime() - currentTime.getTime();
+                                    const hours = Math.floor(timeToTge / (1000 * 60 * 60));
+                                    const minutes = Math.floor((timeToTge % (1000 * 60 * 60)) / (1000 * 60));
+                                    countdown = `${hours}h ${minutes}m to TGE`;
+                                  } else if (currentTime >= tgeTime && currentTime < settlementDeadline) {
+                                    settlementStatus = 'Settlement Window';
+                                    const timeRemaining = settlementDeadline.getTime() - currentTime.getTime();
+                                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                                    countdown = `${hours}h ${minutes}m left`;
+                                  } else {
+                                    settlementStatus = 'Overdue';
+                                    countdown = 'EXPIRED';
+                                  }
+                                }
+                                
+                                return (
+                                  <tr 
+                                    key={listing.id} 
+                                    className="border-b border-slate-700/30 hover:bg-slate-800/30 cursor-pointer transition-colors"
+                                    onClick={() => setSelectedToken(listing)}
+                                    data-testid={`row-token-${listing.id}`}
+                                  >
+                                    <td className="py-3">
+                                      <div className="flex items-center space-x-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                          {listing.tokenSymbol.charAt(0)}
+                                        </div>
+                                        <div>
+                                          <div className="text-white font-medium">{listing.tokenSymbol}</div>
+                                          <div className="text-purple-300 text-xs">{listing.tokenName}</div>
+                                        </div>
                                       </div>
-                                    )}
+                                    </td>
+                                    <td className="py-3 text-right">
+                                      <div className="text-white font-mono">{listing.startingPrice} SOL</div>
+                                    </td>
+                                    <td className="py-3 text-right">
+                                      <div className="text-purple-300">-</div>
+                                    </td>
+                                    <td className="py-3 text-right">
+                                      <div className="text-purple-300">-</div>
+                                    </td>
+                                    <td className="py-3 text-center">
+                                      <div className={`text-xs px-2 py-1 rounded ${
+                                        settlementStatus === 'Settlement Window' ? 'bg-green-900/20 text-green-400 border border-green-500/30' :
+                                        settlementStatus === 'Pending TGE' ? 'bg-blue-900/20 text-blue-400 border border-blue-500/30' :
+                                        settlementStatus === 'Overdue' ? 'bg-red-900/20 text-red-400 border border-red-500/30' :
+                                        'bg-slate-800/30 text-slate-400 border border-slate-600/30'
+                                      }`}>
+                                        {settlementStatus}
+                                      </div>
+                                    </td>
+                                    <td className="py-3 text-center">
+                                      <div className={`text-sm font-mono ${
+                                        countdown === 'EXPIRED' ? 'text-red-400' : 
+                                        countdown.includes('left') ? 'text-green-400' : 
+                                        'text-purple-300'
+                                      }`}>
+                                        {countdown || '-'}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            ) : (
+                              <tr>
+                                <td colSpan={6} className="text-center text-purple-300 py-8">
+                                  <div className="flex flex-col items-center space-y-2">
+                                    <TrendingUp className="h-12 w-12 text-purple-400" />
+                                    <p>No active listings yet.</p>
+                                    <p className="text-sm">Create your first listing in the Create tab!</p>
                                   </div>
-                                </div>
-                              )}
-                              
-                              {/* TGE Date Setting for Creator */}
-                              {!listing.tgeDate && publicKey && listing.creatorWallet === publicKey.toString() && (
-                                <div className="mt-3 p-2 bg-orange-900/20 rounded border border-orange-500/30">
-                                  <div className="text-xs text-orange-300 mb-2">Set Token Generation Event (TGE) Date:</div>
-                                  <div className="flex items-center space-x-2">
-                                    <Input
-                                      type="datetime-local"
-                                      className="bg-slate-800/50 border-slate-600 text-white text-xs"
-                                      min={new Date().toISOString().slice(0, 16)}
-                                    />
-                                    <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-xs">
-                                      Set TGE
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    // Detailed Token Trading View - similar to Whales Market LINEA token page
+                    <div>
+                      <div className="flex items-center space-x-4 mb-6">
+                        <Button 
+                          onClick={() => setSelectedToken(null)}
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
+                          data-testid="button-back-to-table"
+                        >
+                          ← Back to Market
+                        </Button>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {selectedToken.tokenSymbol.charAt(0)}
+                          </div>
+                          <div>
+                            <h2 className="text-xl font-bold text-white">{selectedToken.tokenSymbol}</h2>
+                            <p className="text-purple-300 text-sm">{selectedToken.tokenName}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Price and Stats */}
+                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
+                          <div className="text-sm text-purple-300 mb-1">Current Price</div>
+                          <div className="text-2xl font-bold text-white font-mono">{selectedToken.startingPrice} SOL</div>
+                          
+                          <div className="mt-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-purple-300">Total Supply:</span>
+                              <span className="text-white font-mono">{parseInt(selectedToken.totalSupply).toLocaleString()}</span>
                             </div>
-                            <div className="text-right ml-4">
-                              <div className="space-y-2">
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700" data-testid="button-buytoken">
-                                  <DollarSign className="h-3 w-3 mr-1" />
-                                  Buy
-                                </Button>
-                                <Button size="sm" variant="outline" className="border-purple-500 text-purple-300" data-testid="button-selltoken">
-                                  <ArrowUpDown className="h-3 w-3 mr-1" />
-                                  Sell
-                                </Button>
+                            <div className="flex justify-between">
+                              <span className="text-purple-300">Creator:</span>
+                              <span className="text-white font-mono text-xs">
+                                {selectedToken.creatorWallet.slice(0, 6)}...{selectedToken.creatorWallet.slice(-6)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Settlement Status */}
+                          {selectedToken.tgeDate && (
+                            <div className="mt-4 p-3 bg-blue-900/20 rounded border border-blue-500/30">
+                              <div className="text-xs text-blue-300">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span>TGE Date:</span>
+                                  <span className="font-mono">{new Date(selectedToken.tgeDate).toLocaleString()}</span>
+                                </div>
+                                {(() => {
+                                  const tgeTime = new Date(selectedToken.tgeDate);
+                                  const settlementDeadline = new Date(tgeTime.getTime() + 4 * 60 * 60 * 1000);
+                                  return (
+                                    <div className="flex justify-between items-center">
+                                      <span>Settlement Window:</span>
+                                      <span className={`font-mono ${
+                                        currentTime < settlementDeadline ? 'text-green-400' : 'text-red-400'
+                                      }`}>
+                                        {currentTime < settlementDeadline ? (
+                                          `${Math.max(0, Math.floor((settlementDeadline.getTime() - currentTime.getTime()) / (1000 * 60)))} min left`
+                                        ) : (
+                                          'EXPIRED'
+                                        )}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Buy/Sell Interface */}
+                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
+                          <div className="flex space-x-2 mb-4">
+                            <Button 
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                              data-testid="button-buy-token"
+                            >
+                              Buy
+                            </Button>
+                            <Button 
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                              data-testid="button-sell-token"
+                            >
+                              Sell
+                            </Button>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm text-purple-300">Amount</label>
+                              <Input 
+                                type="number"
+                                placeholder="0.00"
+                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
+                                data-testid="input-trade-amount"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm text-purple-300">Price (SOL)</label>
+                              <Input 
+                                type="number"
+                                placeholder={selectedToken.startingPrice}
+                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
+                                data-testid="input-trade-price"
+                              />
+                            </div>
+
+                            <div className="text-xs text-purple-400 bg-slate-700/30 p-2 rounded">
+                              ⚠️ Collateral Required: Orders require SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
+                            </div>
+
+                            <Button 
+                              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                              data-testid="button-place-order"
+                            >
+                              Place Order
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Order Book Preview */}
+                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
+                          <h4 className="text-white font-semibold mb-3">Order Book</h4>
+                          
+                          <div className="space-y-2 text-xs">
+                            <div className="flex justify-between text-purple-300 border-b border-slate-700 pb-1">
+                              <span>Price (SOL)</span>
+                              <span>Amount</span>
+                              <span>Total</span>
+                            </div>
+                            
+                            {/* Sell Orders (Red) */}
+                            <div className="space-y-1">
+                              <div className="text-red-400 text-xs font-semibold mb-1">Sell Orders</div>
+                              <div className="flex justify-between text-red-300">
+                                <span>0.152</span>
+                                <span>1,000</span>
+                                <span>152.0</span>
+                              </div>
+                              <div className="flex justify-between text-red-300">
+                                <span>0.151</span>
+                                <span>2,500</span>
+                                <span>377.5</span>
+                              </div>
+                            </div>
+
+                            <div className="border-t border-slate-700 pt-2">
+                              <div className="text-center text-white font-mono font-bold">
+                                {selectedToken.startingPrice} SOL
+                              </div>
+                              <div className="text-center text-purple-400 text-xs">Last Price</div>
+                            </div>
+
+                            {/* Buy Orders (Green) */}
+                            <div className="space-y-1">
+                              <div className="text-green-400 text-xs font-semibold mb-1">Buy Orders</div>
+                              <div className="flex justify-between text-green-300">
+                                <span>0.149</span>
+                                <span>1,500</span>
+                                <span>223.5</span>
+                              </div>
+                              <div className="flex justify-between text-green-300">
+                                <span>0.148</span>
+                                <span>3,000</span>
+                                <span>444.0</span>
                               </div>
                             </div>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center text-purple-300 text-sm py-8">
-                        <Globe className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                        <p>No active pre-market listings yet.</p>
-                        <p>Be the first to create one!</p>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
 
