@@ -991,11 +991,17 @@ export default function SolRefund() {
   // Set TGE date mutation
   const setTgeDateMutation = useMutation({
     mutationFn: async ({ listingId, tgeDate }: { listingId: string; tgeDate: string }) => {
-      return await apiRequest(`/api/premarket/listings/${listingId}/set-tge`, {
+      const response = await fetch(`/api/premarket/listings/${listingId}/set-tge`, {
         method: 'POST',
-        body: JSON.stringify({ tgeDate }),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tgeDate })
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to set TGE date');
+      }
+      
+      return await response.json();
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -1917,380 +1923,99 @@ export default function SolRefund() {
               {/* Active Premarket Tab */}
               {premarketSubTab === 'active' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  {!selectedToken ? (
-                    // Table view - similar to Whales Market
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
-                      
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-purple-500/20">
-                              <th className="text-left text-purple-300 font-medium py-2">Token</th>
-                              <th className="text-right text-purple-300 font-medium py-2">Last Price</th>
-                              <th className="text-right text-purple-300 font-medium py-2">Vol 24h</th>
-                              <th className="text-right text-purple-300 font-medium py-2">Total Vol</th>
-                              <th className="text-center text-purple-300 font-medium py-2">Settle Starts/Ends</th>
-                              <th className="text-center text-purple-300 font-medium py-2">Countdown</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
-                              premarketListings.listings.map((listing: any) => {
-                                const tgeTime = listing.tgeDate ? new Date(listing.tgeDate) : null;
-                                // Calculate 4-hour settlement window client-side
-                                const settlementDeadline = tgeTime ? new Date(tgeTime.getTime() + 4 * 60 * 60 * 1000) : null;
-                                
-                                let settlementStatus = 'Not Set';
-                                let countdown = '';
-                                
-                                if (tgeTime && settlementDeadline) {
-                                  if (currentTime < tgeTime) {
-                                    settlementStatus = 'Pending TGE';
-                                    const timeToTge = tgeTime.getTime() - currentTime.getTime();
-                                    const hours = Math.floor(timeToTge / (1000 * 60 * 60));
-                                    const minutes = Math.floor((timeToTge % (1000 * 60 * 60)) / (1000 * 60));
-                                    countdown = `${hours}h ${minutes}m to TGE`;
-                                  } else if (currentTime >= tgeTime && currentTime < settlementDeadline) {
-                                    settlementStatus = 'Settlement Window';
-                                    const timeRemaining = settlementDeadline.getTime() - currentTime.getTime();
-                                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-                                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                                    countdown = `${hours}h ${minutes}m left`;
-                                  } else {
-                                    settlementStatus = 'Overdue';
-                                    countdown = 'EXPIRED';
-                                  }
-                                }
-                                
-                                return (
-                                  <tr 
-                                    key={listing.id} 
-                                    className="border-b border-slate-700/30 hover:bg-slate-800/30 cursor-pointer transition-colors"
-                                    onClick={() => setSelectedToken(listing)}
-                                    data-testid={`row-token-${listing.id}`}
-                                  >
-                                    <td className="py-3">
-                                      <div className="flex items-center space-x-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                          {listing.tokenSymbol.charAt(0)}
-                                        </div>
-                                        <div>
-                                          <div className="text-white font-medium">{listing.tokenSymbol}</div>
-                                          <div className="text-purple-300 text-xs">{listing.tokenName}</div>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className="py-3 text-right">
-                                      <div className="text-white font-mono">{listing.startingPrice} SOL</div>
-                                    </td>
-                                    <td className="py-3 text-right">
-                                      <div className="text-purple-300">-</div>
-                                    </td>
-                                    <td className="py-3 text-right">
-                                      <div className="text-purple-300">-</div>
-                                    </td>
-                                    <td className="py-3 text-center">
-                                      <div className={`text-xs px-2 py-1 rounded ${
-                                        settlementStatus === 'Settlement Window' ? 'bg-green-900/20 text-green-400 border border-green-500/30' :
-                                        settlementStatus === 'Pending TGE' ? 'bg-blue-900/20 text-blue-400 border border-blue-500/30' :
-                                        settlementStatus === 'Overdue' ? 'bg-red-900/20 text-red-400 border border-red-500/30' :
-                                        'bg-slate-800/30 text-slate-400 border border-slate-600/30'
-                                      }`}>
-                                        {settlementStatus}
-                                      </div>
-                                    </td>
-                                    <td className="py-3 text-center">
-                                      <div className={`text-sm font-mono ${
-                                        countdown === 'EXPIRED' ? 'text-red-400' : 
-                                        countdown.includes('left') ? 'text-green-400' : 
-                                        'text-purple-300'
-                                      }`}>
-                                        {countdown || '-'}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })
-                            ) : (
-                              <tr>
-                                <td colSpan={6} className="text-center text-purple-300 py-8">
-                                  <div className="flex flex-col items-center space-y-2">
-                                    <TrendingUp className="h-12 w-12 text-purple-400" />
-                                    <p>No active listings yet.</p>
-                                    <p className="text-sm">Create your first listing in the Create tab!</p>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Clock className="h-5 w-5 text-purple-400" />
+                    <h3 className="text-lg font-semibold text-white">Recent Trades</h3>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-purple-500/30">
+                          <th className="text-left text-purple-300 font-medium py-3 px-4">Time</th>
+                          <th className="text-left text-purple-300 font-medium py-3 px-4">Type</th>
+                          <th className="text-left text-purple-300 font-medium py-3 px-4">Pair</th>
+                          <th className="text-right text-purple-300 font-medium py-3 px-4">Price ($)</th>
+                          <th className="text-right text-purple-300 font-medium py-3 px-4">Amount</th>
+                          <th className="text-right text-purple-300 font-medium py-3 px-4">Collateral</th>
+                          <th className="text-center text-purple-300 font-medium py-3 px-4">TX.hash</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
+                          premarketListings.listings.map((listing: any) => (
+                            <tr key={listing.id} className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors" data-testid={`row-trade-${listing.id}`}>
+                              <td className="py-4 px-4 text-purple-300">2h</td>
+                              <td className="py-4 px-4">
+                                <span className="inline-block px-3 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                    {listing.tokenSymbol.charAt(0)}
                                   </div>
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ) : (
-                    // Detailed Token Trading View - similar to Whales Market LINEA token page
-                    <div>
-                      <div className="flex items-center space-x-4 mb-6">
-                        <Button 
-                          onClick={() => setSelectedToken(null)}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
-                          data-testid="button-back-to-table"
-                        >
-                          ← Back to Market
-                        </Button>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                            {selectedToken.tokenSymbol.charAt(0)}
-                          </div>
-                          <div>
-                            <h2 className="text-xl font-bold text-white">{selectedToken.tokenSymbol}</h2>
-                            <p className="text-purple-300 text-sm">{selectedToken.tokenName}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Price and Stats */}
-                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
-                          <div className="text-sm text-purple-300 mb-1">Current Price</div>
-                          <div className="text-2xl font-bold text-white font-mono">{selectedToken.startingPrice} SOL</div>
-                          
-                          <div className="mt-4 space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-purple-300">Total Supply:</span>
-                              <span className="text-white font-mono">{parseInt(selectedToken.totalSupply).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-purple-300">Creator:</span>
-                              <span className="text-white font-mono text-xs">
-                                {selectedToken.creatorWallet.slice(0, 6)}...{selectedToken.creatorWallet.slice(-6)}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Settlement Status */}
-                          {selectedToken.tgeDate && (
-                            <div className="mt-4 p-3 bg-blue-900/20 rounded border border-blue-500/30">
-                              <div className="text-xs text-blue-300">
-                                <div className="flex justify-between items-center mb-2">
-                                  <span>TGE Date:</span>
-                                  <span className="font-mono">{new Date(selectedToken.tgeDate).toLocaleString()}</span>
+                                  <span className="text-white font-medium">{listing.tokenSymbol}/SOL</span>
                                 </div>
-                                {(() => {
-                                  const tgeTime = new Date(selectedToken.tgeDate);
-                                  const settlementDeadline = new Date(tgeTime.getTime() + 4 * 60 * 60 * 1000);
-                                  return (
-                                    <div className="flex justify-between items-center">
-                                      <span>Settlement Window:</span>
-                                      <span className={`font-mono ${
-                                        currentTime < settlementDeadline ? 'text-green-400' : 'text-red-400'
-                                      }`}>
-                                        {currentTime < settlementDeadline ? (
-                                          `${Math.max(0, Math.floor((settlementDeadline.getTime() - currentTime.getTime()) / (1000 * 60)))} min left`
-                                        ) : (
-                                          'EXPIRED'
-                                        )}
-                                      </span>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Buy/Sell Interface */}
-                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
-                          <div className="flex space-x-2 mb-4">
-                            <Button 
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                              data-testid="button-buy-token"
-                            >
-                              Buy
-                            </Button>
-                            <Button 
-                              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                              data-testid="button-sell-token"
-                            >
-                              Sell
-                            </Button>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-sm text-purple-300">Amount</label>
-                              <Input 
-                                type="number"
-                                placeholder="0.00"
-                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
-                                data-testid="input-trade-amount"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="text-sm text-purple-300">Price (SOL)</label>
-                              <Input 
-                                type="number"
-                                placeholder={selectedToken.startingPrice}
-                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
-                                data-testid="input-trade-price"
-                              />
-                            </div>
-
-                            <div className="text-xs text-purple-400 bg-slate-700/30 p-2 rounded">
-                              ⚠️ Collateral Required: Orders require SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
-                            </div>
-
-                            <Button 
-                              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                              data-testid="button-place-order"
-                            >
-                              Place Order
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Recent Trades */}
-                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <Clock className="h-4 w-4 text-purple-400" />
-                            <h4 className="text-white font-semibold">Recent Trades</h4>
-                          </div>
-                          
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
-                              <thead>
-                                <tr className="border-b border-slate-700/50">
-                                  <th className="text-left text-purple-300 font-medium py-1 px-1">Time</th>
-                                  <th className="text-left text-purple-300 font-medium py-1 px-1">Type</th>
-                                  <th className="text-left text-purple-300 font-medium py-1 px-1">Pair</th>
-                                  <th className="text-right text-purple-300 font-medium py-1 px-1">Price ($)</th>
-                                  <th className="text-right text-purple-300 font-medium py-1 px-1">Amount</th>
-                                  <th className="text-right text-purple-300 font-medium py-1 px-1">Collateral</th>
-                                  <th className="text-center text-purple-300 font-medium py-1 px-1">TX.hash</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
-                                  <td className="py-2 px-1 text-purple-300">2h</td>
-                                  <td className="py-2 px-1">
-                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
-                                  </td>
-                                  <td className="py-2 px-1">
-                                    <div className="flex items-center space-x-1">
-                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                        {selectedToken.tokenSymbol.charAt(0)}
-                                      </div>
-                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-right text-white font-mono">{selectedToken.startingPrice}</td>
-                                  <td className="py-2 px-1 text-right text-white">5.2K</td>
-                                  <td className="py-2 px-1 text-right">
-                                    <div className="flex items-center justify-end space-x-1">
-                                      <span className="text-white">2.8</span>
-                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-center">
-                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
-                                      <ArrowUpDown className="h-3 w-3" />
-                                    </button>
-                                  </td>
-                                </tr>
-                                
-                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
-                                  <td className="py-2 px-1 text-purple-300">3h</td>
-                                  <td className="py-2 px-1">
-                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-red-600 text-white rounded">SELL</span>
-                                  </td>
-                                  <td className="py-2 px-1">
-                                    <div className="flex items-center space-x-1">
-                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                        {selectedToken.tokenSymbol.charAt(0)}
-                                      </div>
-                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-right text-white font-mono">{(parseFloat(selectedToken.startingPrice) * 0.98).toFixed(4)}</td>
-                                  <td className="py-2 px-1 text-right text-white">1.8K</td>
-                                  <td className="py-2 px-1 text-right">
-                                    <div className="flex items-center justify-end space-x-1">
-                                      <span className="text-white">1.2</span>
-                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-center">
-                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
-                                      <ArrowUpDown className="h-3 w-3" />
-                                    </button>
-                                  </td>
-                                </tr>
-
-                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
-                                  <td className="py-2 px-1 text-purple-300">4h</td>
-                                  <td className="py-2 px-1">
-                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
-                                  </td>
-                                  <td className="py-2 px-1">
-                                    <div className="flex items-center space-x-1">
-                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                        {selectedToken.tokenSymbol.charAt(0)}
-                                      </div>
-                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-right text-white font-mono">{(parseFloat(selectedToken.startingPrice) * 1.02).toFixed(4)}</td>
-                                  <td className="py-2 px-1 text-right text-white">12.5K</td>
-                                  <td className="py-2 px-1 text-right">
-                                    <div className="flex items-center justify-end space-x-1">
-                                      <span className="text-white">6.4</span>
-                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-center">
-                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
-                                      <ArrowUpDown className="h-3 w-3" />
-                                    </button>
-                                  </td>
-                                </tr>
-
-                                <tr className="border-b border-slate-700/30 hover:bg-slate-700/30">
-                                  <td className="py-2 px-1 text-purple-300">5h</td>
-                                  <td className="py-2 px-1">
-                                    <span className="inline-block px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
-                                  </td>
-                                  <td className="py-2 px-1">
-                                    <div className="flex items-center space-x-1">
-                                      <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                        {selectedToken.tokenSymbol.charAt(0)}
-                                      </div>
-                                      <span className="text-white">{selectedToken.tokenSymbol}/SOL</span>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-right text-white font-mono">{selectedToken.startingPrice}</td>
-                                  <td className="py-2 px-1 text-right text-white">8.1K</td>
-                                  <td className="py-2 px-1 text-right">
-                                    <div className="flex items-center justify-end space-x-1">
-                                      <span className="text-white">4.1</span>
-                                      <div className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
-                                    </div>
-                                  </td>
-                                  <td className="py-2 px-1 text-center">
-                                    <button className="text-purple-400 hover:text-purple-300" data-testid="button-view-tx">
-                                      <ArrowUpDown className="h-3 w-3" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                              </td>
+                              <td className="py-4 px-4 text-right text-white font-mono">{listing.startingPrice}</td>
+                              <td className="py-4 px-4 text-right text-white">18K</td>
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex items-center justify-end space-x-2">
+                                  <span className="text-white">558</span>
+                                  <div className="w-4 h-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
+                                  <span className="text-orange-400">🔥</span>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <button className="text-purple-400 hover:text-purple-300 transition-colors" data-testid="button-view-tx">
+                                  <ArrowUpDown className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          Array.from({ length: 5 }, (_, index) => (
+                            <tr key={index} className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors">
+                              <td className="py-4 px-4 text-purple-300">{6 + index}h</td>
+                              <td className="py-4 px-4">
+                                <span className={`inline-block px-3 py-1 text-xs font-medium rounded text-white ${
+                                  index % 2 === 0 ? 'bg-green-600' : 'bg-red-600'
+                                }`}>
+                                  {index % 2 === 0 ? 'BUY' : 'SELL'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-5 h-5 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                    L
+                                  </div>
+                                  <span className="text-white font-medium">LINEA/USDC</span>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 text-right text-white font-mono">
+                                {index === 0 ? '0.031' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0275' : '0.0265'}
+                              </td>
+                              <td className="py-4 px-4 text-right text-white">
+                                {index === 0 ? '18K' : index === 1 ? '8K' : index === 2 ? '6.8K' : index === 3 ? '2K' : '7.5K'}
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex items-center justify-end space-x-2">
+                                  <span className="text-white">{index === 0 ? '558' : index === 1 ? '224' : index === 2 ? '186.33' : index === 3 ? '55' : '198.75'}</span>
+                                  <div className="w-4 h-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full"></div>
+                                  <span className="text-orange-400">🔥</span>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <button className="text-purple-400 hover:text-purple-300 transition-colors" data-testid="button-view-tx">
+                                  <ArrowUpDown className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
