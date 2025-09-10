@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, ads, insertAdSchema } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, ads, insertAdSchema, insertPremarketListingSchema, insertPremarketOrderSchema, insertCollateralDepositSchema, insertAirdropClaimSchema, premarketListings, premarketOrders, collateralDeposits, airdropClaims } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
@@ -1439,6 +1439,246 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting Jupiter quote:", error);
       res.status(500).json({ error: "Failed to get Jupiter quote" });
+    }
+  });
+
+  // Pre-market API endpoints
+  
+  // Create a new pre-market listing
+  app.post("/api/premarket/listings", async (req, res) => {
+    try {
+      const validatedData = insertPremarketListingSchema.parse(req.body);
+      
+      const [listing] = await db
+        .insert(premarketListings)
+        .values(validatedData)
+        .returning();
+      
+      res.json({
+        success: true,
+        listing
+      });
+    } catch (error) {
+      console.error("Error creating premarket listing:", error);
+      res.status(400).json({ error: "Failed to create premarket listing" });
+    }
+  });
+
+  // Get all active pre-market listings
+  app.get("/api/premarket/listings", async (req, res) => {
+    try {
+      const listings = await db
+        .select()
+        .from(premarketListings)
+        .where(eq(premarketListings.isActive, true))
+        .orderBy(sql`${premarketListings.createdAt} DESC`);
+      
+      res.json({
+        success: true,
+        listings
+      });
+    } catch (error) {
+      console.error("Error fetching premarket listings:", error);
+      res.status(500).json({ error: "Failed to fetch premarket listings" });
+    }
+  });
+
+  // Get listings by creator
+  app.get("/api/premarket/listings/creator/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const listings = await db
+        .select()
+        .from(premarketListings)
+        .where(eq(premarketListings.creatorWallet, walletAddress))
+        .orderBy(sql`${premarketListings.createdAt} DESC`);
+      
+      res.json({
+        success: true,
+        listings
+      });
+    } catch (error) {
+      console.error("Error fetching creator listings:", error);
+      res.status(500).json({ error: "Failed to fetch creator listings" });
+    }
+  });
+
+  // Create a buy/sell order
+  app.post("/api/premarket/orders", async (req, res) => {
+    try {
+      const validatedData = insertPremarketOrderSchema.parse(req.body);
+      
+      const [order] = await db
+        .insert(premarketOrders)
+        .values(validatedData)
+        .returning();
+      
+      res.json({
+        success: true,
+        order
+      });
+    } catch (error) {
+      console.error("Error creating premarket order:", error);
+      res.status(400).json({ error: "Failed to create premarket order" });
+    }
+  });
+
+  // Get orders for a listing
+  app.get("/api/premarket/orders/listing/:listingId", async (req, res) => {
+    try {
+      const { listingId } = req.params;
+      
+      const orders = await db
+        .select()
+        .from(premarketOrders)
+        .where(eq(premarketOrders.listingId, listingId))
+        .orderBy(sql`${premarketOrders.createdAt} DESC`);
+      
+      res.json({
+        success: true,
+        orders
+      });
+    } catch (error) {
+      console.error("Error fetching listing orders:", error);
+      res.status(500).json({ error: "Failed to fetch listing orders" });
+    }
+  });
+
+  // Get orders by wallet
+  app.get("/api/premarket/orders/wallet/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const orders = await db
+        .select()
+        .from(premarketOrders)
+        .where(eq(premarketOrders.walletAddress, walletAddress))
+        .orderBy(sql`${premarketOrders.createdAt} DESC`);
+      
+      res.json({
+        success: true,
+        orders
+      });
+    } catch (error) {
+      console.error("Error fetching wallet orders:", error);
+      res.status(500).json({ error: "Failed to fetch wallet orders" });
+    }
+  });
+
+  // Create collateral deposit
+  app.post("/api/premarket/collateral", async (req, res) => {
+    try {
+      const validatedData = insertCollateralDepositSchema.parse(req.body);
+      
+      const [deposit] = await db
+        .insert(collateralDeposits)
+        .values(validatedData)
+        .returning();
+      
+      res.json({
+        success: true,
+        deposit
+      });
+    } catch (error) {
+      console.error("Error creating collateral deposit:", error);
+      res.status(400).json({ error: "Failed to create collateral deposit" });
+    }
+  });
+
+  // Get collateral deposits by wallet
+  app.get("/api/premarket/collateral/wallet/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const deposits = await db
+        .select()
+        .from(collateralDeposits)
+        .where(eq(collateralDeposits.walletAddress, walletAddress))
+        .orderBy(sql`${collateralDeposits.createdAt} DESC`);
+      
+      res.json({
+        success: true,
+        deposits
+      });
+    } catch (error) {
+      console.error("Error fetching collateral deposits:", error);
+      res.status(500).json({ error: "Failed to fetch collateral deposits" });
+    }
+  });
+
+  // Submit airdrop claim
+  app.post("/api/premarket/airdrop-claims", async (req, res) => {
+    try {
+      const validatedData = insertAirdropClaimSchema.parse(req.body);
+      
+      const [claim] = await db
+        .insert(airdropClaims)
+        .values(validatedData)
+        .returning();
+      
+      // Handle collateral redistribution logic here
+      // For now, just record the claim
+      
+      res.json({
+        success: true,
+        claim
+      });
+    } catch (error) {
+      console.error("Error processing airdrop claim:", error);
+      res.status(400).json({ error: "Failed to process airdrop claim" });
+    }
+  });
+
+  // Get airdrop claims for a listing
+  app.get("/api/premarket/airdrop-claims/listing/:listingId", async (req, res) => {
+    try {
+      const { listingId } = req.params;
+      
+      const claims = await db
+        .select()
+        .from(airdropClaims)
+        .where(eq(airdropClaims.listingId, listingId))
+        .orderBy(sql`${airdropClaims.claimedAt} DESC`);
+      
+      res.json({
+        success: true,
+        claims
+      });
+    } catch (error) {
+      console.error("Error fetching airdrop claims:", error);
+      res.status(500).json({ error: "Failed to fetch airdrop claims" });
+    }
+  });
+
+  // Fill a buy/sell order (match orders)
+  app.post("/api/premarket/orders/:orderId/fill", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { fillerWallet } = req.body;
+      
+      // Update the order status to filled
+      const [updatedOrder] = await db
+        .update(premarketOrders)
+        .set({
+          status: 'filled',
+          filledBy: fillerWallet,
+          filledAt: new Date()
+        })
+        .where(eq(premarketOrders.id, orderId))
+        .returning();
+      
+      if (!updatedOrder) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      res.json({
+        success: true,
+        order: updatedOrder
+      });
+    } catch (error) {
+      console.error("Error filling order:", error);
+      res.status(400).json({ error: "Failed to fill order" });
     }
   });
 
