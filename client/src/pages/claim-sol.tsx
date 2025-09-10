@@ -2273,35 +2273,6 @@ export default function SolRefund() {
                               </div>
                             </div>
 
-                            {/* Market Data */}
-                            <div className="space-y-4">
-                              <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
-                                <h3 className="text-white font-semibold mb-4">Market Overview</h3>
-                                
-                                <div className="space-y-3 text-sm">
-                                  <div className="flex justify-between">
-                                    <span className="text-neutral-400">Current Price:</span>
-                                    <span className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-neutral-400">24h Volume:</span>
-                                    <span className="text-white font-mono">$18,691.90</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-neutral-400">Total Volume:</span>
-                                    <span className="text-white font-mono">$10.7M</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-neutral-400">Total Supply:</span>
-                                    <span className="text-white font-mono">{parseInt(selectedToken.totalSupply || '0').toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-neutral-400">Settlement:</span>
-                                    <span className="text-white">Not Started</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
                           </div>
                         )}
 
