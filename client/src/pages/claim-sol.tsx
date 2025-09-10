@@ -1488,9 +1488,14 @@ export default function SolRefund() {
                     </Button>
                   </>
                 ) : (
-                  <WalletMultiButton 
-                    className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium !border !border-purple-500/30 !inline-flex !items-center !justify-center !gap-2"
-                  />
+                  <div className="flex flex-col items-center space-y-2">
+                    <WalletMultiButton 
+                      className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium !border !border-purple-500/30 !inline-flex !items-center !justify-center !gap-2"
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      Click "Connect" in wallet popup after selection
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1575,6 +1580,9 @@ export default function SolRefund() {
                   <WalletMultiButton 
                     className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-6 !py-3 !text-lg !font-medium !border !border-purple-500/30 !inline-flex !items-center !justify-center !gap-2"
                   />
+                  <p className="text-xs text-muted-foreground text-center max-w-sm">
+                    After selecting your wallet, click "Connect" in the wallet popup to approve the connection
+                  </p>
                 </div>
               )}
             </div>
