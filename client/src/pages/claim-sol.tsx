@@ -1923,10 +1923,12 @@ export default function SolRefund() {
               {/* Active Premarket Tab */}
               {premarketSubTab === 'active' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Clock className="h-5 w-5 text-purple-400" />
-                    <h3 className="text-lg font-semibold text-white">Recent Trades</h3>
-                  </div>
+                  {!selectedToken ? (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <Clock className="h-5 w-5 text-purple-400" />
+                        <h3 className="text-lg font-semibold text-white">Recent Trades</h3>
+                      </div>
                   
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1944,7 +1946,12 @@ export default function SolRefund() {
                       <tbody>
                         {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
                           premarketListings.listings.map((listing: any) => (
-                            <tr key={listing.id} className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors" data-testid={`row-trade-${listing.id}`}>
+                            <tr 
+                              key={listing.id} 
+                              className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors cursor-pointer" 
+                              onClick={() => setSelectedToken(listing)}
+                              data-testid={`row-trade-${listing.id}`}
+                            >
                               <td className="py-4 px-4 text-purple-300">2h</td>
                               <td className="py-4 px-4">
                                 <span className="inline-block px-3 py-1 text-xs font-medium bg-green-600 text-white rounded">BUY</span>
@@ -1967,7 +1974,14 @@ export default function SolRefund() {
                                 </div>
                               </td>
                               <td className="py-4 px-4 text-center">
-                                <button className="text-purple-400 hover:text-purple-300 transition-colors" data-testid="button-view-tx">
+                                <button 
+                                  className="text-purple-400 hover:text-purple-300 transition-colors" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.open(`https://solscan.io/tx/example`, '_blank');
+                                  }}
+                                  data-testid="button-view-tx"
+                                >
                                   <ArrowUpDown className="h-4 w-4" />
                                 </button>
                               </td>
@@ -1975,7 +1989,16 @@ export default function SolRefund() {
                           ))
                         ) : (
                           Array.from({ length: 5 }, (_, index) => (
-                            <tr key={index} className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors">
+                            <tr 
+                              key={index} 
+                              className="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors cursor-pointer"
+                              onClick={() => {
+                                toast({ 
+                                  title: "Token Details", 
+                                  description: `Clicked on LINEA trade from ${6 + index}h ago` 
+                                });
+                              }}
+                            >
                               <td className="py-4 px-4 text-purple-300">{6 + index}h</td>
                               <td className="py-4 px-4">
                                 <span className={`inline-block px-3 py-1 text-xs font-medium rounded text-white ${
@@ -2006,7 +2029,15 @@ export default function SolRefund() {
                                 </div>
                               </td>
                               <td className="py-4 px-4 text-center">
-                                <button className="text-purple-400 hover:text-purple-300 transition-colors" data-testid="button-view-tx">
+                                <button 
+                                  className="text-purple-400 hover:text-purple-300 transition-colors" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const mockTxHash = `${Math.random().toString(36).substr(2, 9)}...${Math.random().toString(36).substr(2, 6)}`;
+                                    window.open(`https://solscan.io/tx/${mockTxHash}`, '_blank');
+                                  }}
+                                  data-testid="button-view-tx"
+                                >
                                   <ArrowUpDown className="h-4 w-4" />
                                 </button>
                               </td>
@@ -2016,6 +2047,104 @@ export default function SolRefund() {
                       </tbody>
                     </table>
                   </div>
+                    </div>
+                  ) : (
+                    // Detailed Token Trading View
+                    <div>
+                      <div className="flex items-center space-x-4 mb-6">
+                        <Button 
+                          onClick={() => setSelectedToken(null)}
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-500/30 text-purple-300 hover:bg-purple-600/20"
+                          data-testid="button-back-to-table"
+                        >
+                          ← Back to Trades
+                        </Button>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {selectedToken.tokenSymbol.charAt(0)}
+                          </div>
+                          <div>
+                            <h2 className="text-xl font-bold text-white">{selectedToken.tokenSymbol}</h2>
+                            <p className="text-purple-300 text-sm">{selectedToken.tokenName}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Price and Stats */}
+                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
+                          <div className="text-sm text-purple-300 mb-1">Current Price</div>
+                          <div className="text-2xl font-bold text-white font-mono">{selectedToken.startingPrice} SOL</div>
+                          
+                          <div className="mt-4 space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-purple-300">Total Supply:</span>
+                              <span className="text-white font-mono">{parseInt(selectedToken.totalSupply).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-purple-300">Creator:</span>
+                              <span className="text-white font-mono text-xs">
+                                {selectedToken.creatorWallet.slice(0, 6)}...{selectedToken.creatorWallet.slice(-6)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Buy/Sell Interface */}
+                        <div className="bg-slate-800/30 rounded-lg p-4 border border-purple-500/20">
+                          <div className="flex space-x-2 mb-4">
+                            <Button 
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                              data-testid="button-buy-token"
+                            >
+                              Buy
+                            </Button>
+                            <Button 
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                              data-testid="button-sell-token"
+                            >
+                              Sell
+                            </Button>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm text-purple-300">Amount</label>
+                              <Input 
+                                type="number"
+                                placeholder="0.00"
+                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
+                                data-testid="input-trade-amount"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm text-purple-300">Price (SOL)</label>
+                              <Input 
+                                type="number"
+                                placeholder={selectedToken.startingPrice}
+                                className="bg-slate-700/50 border-slate-600 text-white mt-1"
+                                data-testid="input-trade-price"
+                              />
+                            </div>
+
+                            <div className="text-xs text-purple-400 bg-slate-700/30 p-2 rounded">
+                              ⚠️ Collateral Required: Orders require SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
+                            </div>
+
+                            <Button 
+                              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                              data-testid="button-place-order"
+                            >
+                              Place Order
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
