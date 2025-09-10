@@ -1332,10 +1332,10 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
+      <div className="container mx-auto px-4 pt-1 pb-2 max-w-7xl">
         <div className="w-full">
           {/* Main Content */}
-          <div className="space-y-2">
+          <div className="space-y-4 lg:space-y-6">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
             {/* Top row: Logo and Wallet Connection (mobile) */}
@@ -1467,7 +1467,7 @@ export default function SolRefund() {
 
           {/* Description */}
           <div className="text-center space-y-4 py-4">
-            <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
+            <p className="text-white max-w-4xl mx-auto text-3xl lg:text-4xl font-semibold">
 {activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? 'Burn Unwanted Tokens.' : 'Claim Solana Rent– Zero Fees!'}
             </p>
           </div>
@@ -1488,7 +1488,7 @@ export default function SolRefund() {
                 }}
                 disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
                 size="lg"
-                className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
+                className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-10 py-5 text-xl lg:text-2xl font-semibold transition-all duration-200"
               >
                 {(scanMutation.isPending || scanTokensMutation.isPending) ? (
                   <RefreshCw className="h-6 w-6 animate-spin mr-3" />
