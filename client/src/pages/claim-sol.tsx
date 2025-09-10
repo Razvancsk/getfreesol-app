@@ -75,6 +75,9 @@ export default function SolRefund() {
     startingPrice: '',
     description: ''
   });
+  
+  // Pre-market sub-tab state
+  const [premarketSubTab, setPremarketSubTab] = useState<'active' | 'activity' | 'create'>('active');
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -1821,187 +1824,254 @@ export default function SolRefund() {
           {/* Pre-market Interface */}
           {activeTab === 'premarket' && isConnected && (
             <div className="space-y-6">
-              {/* Create Listing Form */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Create Pre-market Listing</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="tokenName" className="text-purple-300">Token Name</Label>
-                    <Input
-                      id="tokenName"
-                      value={premarketForm.tokenName}
-                      onChange={(e) => handlePremarketFormChange('tokenName', e.target.value)}
-                      placeholder="e.g., MyToken"
-                      className="bg-slate-800/50 border-slate-600 text-white"
-                      data-testid="input-tokenname"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tokenSymbol" className="text-purple-300">Token Symbol</Label>
-                    <Input
-                      id="tokenSymbol"
-                      value={premarketForm.tokenSymbol}
-                      onChange={(e) => handlePremarketFormChange('tokenSymbol', e.target.value)}
-                      placeholder="e.g., MTK"
-                      className="bg-slate-800/50 border-slate-600 text-white"
-                      data-testid="input-tokensymbol"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="totalSupply" className="text-purple-300">Total Supply</Label>
-                    <Input
-                      id="totalSupply"
-                      type="number"
-                      value={premarketForm.totalSupply}
-                      onChange={(e) => handlePremarketFormChange('totalSupply', e.target.value)}
-                      placeholder="1000000"
-                      className="bg-slate-800/50 border-slate-600 text-white"
-                      data-testid="input-totalsupply"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="startingPrice" className="text-purple-300">Starting Price (SOL)</Label>
-                    <Input
-                      id="startingPrice"
-                      type="number"
-                      step="0.000001"
-                      value={premarketForm.startingPrice}
-                      onChange={(e) => handlePremarketFormChange('startingPrice', e.target.value)}
-                      placeholder="0.001"
-                      className="bg-slate-800/50 border-slate-600 text-white"
-                      data-testid="input-startingprice"
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="description" className="text-purple-300">Description</Label>
-                    <Input
-                      id="description"
-                      value={premarketForm.description}
-                      onChange={(e) => handlePremarketFormChange('description', e.target.value)}
-                      placeholder="Describe your token project..."
-                      className="bg-slate-800/50 border-slate-600 text-white"
-                      data-testid="input-description"
-                    />
-                  </div>
-                </div>
-                <Button
-                  onClick={handleCreateListing}
-                  disabled={createListingMutation.isPending}
-                  className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
-                  data-testid="button-createlisting"
-                >
-                  {createListingMutation.isPending ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
+              {/* Pre-market Sub-navigation */}
+              <div className="flex justify-center">
+                <div className="flex items-center space-x-2 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1">
+                  <Button
+                    onClick={() => setPremarketSubTab('active')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      premarketSubTab === 'active' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                    data-testid="button-active-premarket"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Active Premarket
+                  </Button>
+                  <Button
+                    onClick={() => setPremarketSubTab('activity')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      premarketSubTab === 'activity' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                    data-testid="button-your-activity"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Your Activity
+                  </Button>
+                  <Button
+                    onClick={() => setPremarketSubTab('create')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      premarketSubTab === 'create' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-transparent text-purple-300 hover:bg-purple-600/20'
+                    }`}
+                    data-testid="button-create-listing"
+                  >
                     <TrendingUp className="h-4 w-4 mr-2" />
-                  )}
-                  {createListingMutation.isPending ? 'Creating...' : 'Create Listing'}
-                </Button>
-              </div>
-
-              {/* Active Listings */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
-                
-                <div className="space-y-4">
-                  {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
-                    premarketListings.listings.map((listing: any) => (
-                      <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
-                            <p className="text-sm text-purple-300">{listing.description || 'No description available'}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm">
-                              <span className="text-purple-300">Supply: {parseInt(listing.totalSupply).toLocaleString()}</span>
-                              <span className="text-purple-300">Price: {listing.startingPrice} SOL</span>
-                            </div>
-                            <div className="text-xs text-purple-400 mt-1">
-                              Created by: {listing.creatorWallet.slice(0, 6)}...{listing.creatorWallet.slice(-6)}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="space-y-2">
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700" data-testid="button-buytoken">
-                                <DollarSign className="h-3 w-3 mr-1" />
-                                Buy
-                              </Button>
-                              <Button size="sm" variant="outline" className="border-purple-500 text-purple-300" data-testid="button-selltoken">
-                                <ArrowUpDown className="h-3 w-3 mr-1" />
-                                Sell
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-purple-300 text-sm py-8">
-                      <TrendingUp className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                      <p>No pre-market listings yet.</p>
-                      <p>Create the first listing above!</p>
-                    </div>
-                  )}
+                    Create
+                  </Button>
                 </div>
               </div>
 
-              {/* Order Management */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Your Orders & Collateral</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Active Orders */}
-                  <div>
-                    <h4 className="font-medium text-purple-300 mb-3">Active Orders</h4>
-                    <div className="space-y-2">
-                      <div className="bg-slate-800/30 rounded p-3 text-sm">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white">Buy 100 STK</span>
-                          <Badge variant="outline" className="border-green-500 text-green-400">Active</Badge>
+              {/* Active Premarket Tab */}
+              {premarketSubTab === 'active' && (
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
+                  
+                  <div className="space-y-4">
+                    {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
+                      premarketListings.listings.map((listing: any) => (
+                        <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-semibold text-white">{listing.tokenName} ({listing.tokenSymbol})</h4>
+                              <p className="text-sm text-purple-300">{listing.description || 'No description available'}</p>
+                              <div className="flex items-center space-x-4 mt-2 text-sm">
+                                <span className="text-purple-300">Supply: {parseInt(listing.totalSupply).toLocaleString()}</span>
+                                <span className="text-purple-300">Price: {listing.startingPrice} SOL</span>
+                              </div>
+                              <div className="text-xs text-purple-400 mt-1">
+                                Created by: {listing.creatorWallet.slice(0, 6)}...{listing.creatorWallet.slice(-6)}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="space-y-2">
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700" data-testid="button-buytoken">
+                                  <DollarSign className="h-3 w-3 mr-1" />
+                                  Buy
+                                </Button>
+                                <Button size="sm" variant="outline" className="border-purple-500 text-purple-300" data-testid="button-selltoken">
+                                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                                  Sell
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-purple-300 text-xs mt-1">
-                          Price: 0.001 SOL • Collateral: 0.1 SOL
+                      ))
+                    ) : (
+                      <div className="text-center text-purple-300 text-sm py-8">
+                        <Globe className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                        <p>No active pre-market listings yet.</p>
+                        <p>Be the first to create one!</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Your Activity Tab */}
+              {premarketSubTab === 'activity' && (
+                <div className="space-y-6">
+                  {/* Your Orders */}
+                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Your Orders</h3>
+                    
+                    <div className="space-y-4">
+                      {userOrders && userOrders.success && userOrders.orders?.length > 0 ? (
+                        userOrders.orders.map((order: any) => (
+                          <div key={order.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-semibold text-white capitalize">{order.orderType}</span>
+                                  <span className="text-purple-300">{order.quantity} tokens</span>
+                                </div>
+                                <div className="text-sm text-purple-400 mt-1">
+                                  Price: {order.price} SOL • Collateral: {order.collateralAmount} SOL
+                                </div>
+                              </div>
+                              <Badge 
+                                variant="outline" 
+                                className={`${
+                                  order.status === 'active' ? 'border-green-500 text-green-400' : 
+                                  order.status === 'filled' ? 'border-blue-500 text-blue-400' : 
+                                  'border-gray-500 text-gray-400'
+                                }`}
+                              >
+                                {order.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-purple-300 text-sm py-8">
+                          <Users className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                          <p>No orders yet.</p>
+                          <p>Start trading in the Active Premarket section!</p>
                         </div>
-                      </div>
-                      <div className="text-center text-purple-400 text-xs">
-                        No active orders
-                      </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Collateral Status */}
-                  <div>
-                    <h4 className="font-medium text-purple-300 mb-3">Collateral Status</h4>
-                    <div className="space-y-2">
-                      <div className="bg-slate-800/30 rounded p-3 text-sm">
+                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Collateral Status</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-slate-800/30 rounded-lg p-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-white">Total Locked:</span>
-                          <span className="text-yellow-400">0.1 SOL</span>
+                          <span className="text-purple-300">Total Locked:</span>
+                          <span className="text-yellow-400 font-semibold">0.0 SOL</span>
                         </div>
                       </div>
-                      <div className="bg-slate-800/30 rounded p-3 text-sm">
+                      <div className="bg-slate-800/30 rounded-lg p-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-white">Available:</span>
-                          <span className="text-green-400">0.0 SOL</span>
+                          <span className="text-purple-300">Available:</span>
+                          <span className="text-green-400 font-semibold">0.0 SOL</span>
                         </div>
+                      </div>
+                    </div>
+                    
+                    {/* Airdrop Claims */}
+                    <div className="mt-6">
+                      <h4 className="font-medium text-purple-300 mb-3">Airdrop Claims</h4>
+                      <div className="text-center space-y-4">
+                        <div className="text-purple-300 text-sm">
+                          When you claim a token airdrop, collateral will be automatically redistributed according to the rules.
+                        </div>
+                        <Button className="bg-blue-600 hover:bg-blue-700" data-testid="button-claimairdrop">
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Claim Airdrop
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Airdrop Claims */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Airdrop Claims</h3>
-                <div className="text-center space-y-4">
-                  <div className="text-purple-300">
-                    When you claim a token airdrop, collateral will be automatically redistributed according to the rules.
+              {/* Create Tab */}
+              {premarketSubTab === 'create' && (
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Create Pre-market Listing</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tokenName" className="text-purple-300">Token Name</Label>
+                      <Input
+                        id="tokenName"
+                        value={premarketForm.tokenName}
+                        onChange={(e) => handlePremarketFormChange('tokenName', e.target.value)}
+                        placeholder="e.g., MyToken"
+                        className="bg-slate-800/50 border-slate-600 text-white"
+                        data-testid="input-tokenname"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tokenSymbol" className="text-purple-300">Token Symbol</Label>
+                      <Input
+                        id="tokenSymbol"
+                        value={premarketForm.tokenSymbol}
+                        onChange={(e) => handlePremarketFormChange('tokenSymbol', e.target.value)}
+                        placeholder="e.g., MTK"
+                        className="bg-slate-800/50 border-slate-600 text-white"
+                        data-testid="input-tokensymbol"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="totalSupply" className="text-purple-300">Total Supply</Label>
+                      <Input
+                        id="totalSupply"
+                        type="number"
+                        value={premarketForm.totalSupply}
+                        onChange={(e) => handlePremarketFormChange('totalSupply', e.target.value)}
+                        placeholder="1000000"
+                        className="bg-slate-800/50 border-slate-600 text-white"
+                        data-testid="input-totalsupply"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="startingPrice" className="text-purple-300">Starting Price (SOL)</Label>
+                      <Input
+                        id="startingPrice"
+                        type="number"
+                        step="0.000001"
+                        value={premarketForm.startingPrice}
+                        onChange={(e) => handlePremarketFormChange('startingPrice', e.target.value)}
+                        placeholder="0.001"
+                        className="bg-slate-800/50 border-slate-600 text-white"
+                        data-testid="input-startingprice"
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="description" className="text-purple-300">Description</Label>
+                      <Input
+                        id="description"
+                        value={premarketForm.description}
+                        onChange={(e) => handlePremarketFormChange('description', e.target.value)}
+                        placeholder="Describe your token project..."
+                        className="bg-slate-800/50 border-slate-600 text-white"
+                        data-testid="input-description"
+                      />
+                    </div>
                   </div>
-                  <Button className="bg-blue-600 hover:bg-blue-700" data-testid="button-claimairdrop">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Claim Airdrop
+                  <Button
+                    onClick={handleCreateListing}
+                    disabled={createListingMutation.isPending}
+                    className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
+                    data-testid="button-createlisting"
+                  >
+                    {createListingMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                    )}
+                    {createListingMutation.isPending ? 'Creating...' : 'Create Listing'}
                   </Button>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
