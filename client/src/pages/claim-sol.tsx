@@ -82,9 +82,6 @@ export default function SolRefund() {
   // Selected token in active premarket view
   const [selectedToken, setSelectedToken] = useState<any>(null);
   
-  // Debug log to see what's happening with selectedToken
-  console.log('selectedToken value:', selectedToken, 'type:', typeof selectedToken);
-  
   // Real-time countdown ticker for settlement windows
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
@@ -1926,129 +1923,107 @@ export default function SolRefund() {
               {/* Active Premarket Tab */}
               {premarketSubTab === 'active' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  {/* DEBUG INFO */}
-                  <div className="mb-4 p-2 bg-yellow-600/20 border border-yellow-500 rounded text-yellow-200 text-xs">
-                    DEBUG: Tab={premarketSubTab}, selectedToken={selectedToken ? 'SET' : 'NULL'}, showing={!selectedToken ? 'TOKEN PREVIEW' : 'TRADES TABLE'}
-                  </div>
                   {!selectedToken ? (
-                    // Token Preview/Overview (like ZKC image)
+                    // Token Preview/Overview (Table row format like XPL)
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-6">Active Pre-market Tokens</h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
-                          premarketListings.listings.map((listing: any) => (
-                            <div 
-                              key={listing.id}
-                              className="bg-neutral-900/50 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-800/50 transition-colors cursor-pointer"
-                              onClick={() => setSelectedToken(listing)}
-                              data-testid={`card-token-${listing.id}`}
-                            >
-                              {/* Token Header */}
-                              <div className="flex items-center space-x-3 mb-4">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                  {listing.tokenSymbol.charAt(0)}
-                                </div>
-                                <div>
-                                  <h4 className="text-white font-semibold text-sm">{listing.tokenSymbol}</h4>
-                                  <p className="text-neutral-400 text-xs">{listing.tokenName}</p>
-                                </div>
-                              </div>
-
-                              {/* Stats Grid */}
-                              <div className="grid grid-cols-2 gap-3 text-xs">
-                                <div>
-                                  <div className="text-neutral-400 mb-1">24h Vol</div>
-                                  <div className="text-white font-mono">$3,526.8 <span className="text-green-400">+10,082.76%</span></div>
-                                </div>
-                                <div>
-                                  <div className="text-neutral-400 mb-1">Total Vol</div>
-                                  <div className="text-white font-mono">$3,547.3</div>
-                                </div>
-                                <div>
-                                  <div className="text-neutral-400 mb-1">Settle Starts (UTC)</div>
-                                  <div className="text-white font-mono">TBA</div>
-                                </div>
-                                <div>
-                                  <div className="text-neutral-400 mb-1">Settle Ends (UTC)</div>
-                                  <div className="text-white font-mono">TBA</div>
-                                </div>
-                              </div>
-
-                              {/* Countdown */}
-                              <div className="mt-4 pt-3 border-t border-neutral-700">
-                                <div className="text-neutral-400 text-xs mb-1">Countdown</div>
-                                <div className="text-white font-medium text-sm">Not Started</div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          // Mock tokens for demo
-                          Array.from({ length: 6 }, (_, index) => (
-                            <div 
-                              key={index}
-                              className="bg-neutral-900/50 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-800/50 transition-colors cursor-pointer"
-                              onClick={() => {
-                                const mockToken = {
-                                  tokenSymbol: index === 0 ? 'ZKC' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB',
-                                  tokenName: index === 0 ? 'zkSync Token' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum',
-                                  startingPrice: index === 0 ? '0.031' : index === 1 ? '0.028' : '0.025',
-                                  totalSupply: '1000000'
-                                };
-                                setSelectedToken(mockToken);
-                              }}
-                              data-testid={`card-token-mock-${index}`}
-                            >
-                              {/* Token Header */}
-                              <div className="flex items-center space-x-3 mb-4">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                  {index === 0 ? 'Z' : index === 1 ? 'L' : index === 2 ? 'S' : index === 3 ? 'B' : index === 4 ? 'P' : 'A'}
-                                </div>
-                                <div>
-                                  <h4 className="text-white font-semibold text-sm">
-                                    {index === 0 ? 'ZKC' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB'}
-                                  </h4>
-                                  <p className="text-neutral-400 text-xs">
-                                    {index === 0 ? 'zkSync Token' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum'}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Stats Grid */}
-                              <div className="grid grid-cols-2 gap-3 text-xs">
-                                <div>
-                                  <div className="text-neutral-400 mb-1">24h Vol</div>
-                                  <div className="text-white font-mono">
-                                    ${index === 0 ? '3,526.8' : index === 1 ? '2,134.5' : index === 2 ? '1,892.3' : '956.7'} 
-                                    <span className="text-green-400 ml-1">
-                                      +{index === 0 ? '10,082.76' : index === 1 ? '5,432.18' : index === 2 ? '3,210.45' : '1,876.32'}%
-                                    </span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-neutral-400 mb-1">Total Vol</div>
-                                  <div className="text-white font-mono">
-                                    ${index === 0 ? '3,547.3' : index === 1 ? '2,156.8' : index === 2 ? '1,923.7' : '978.4'}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-neutral-400 mb-1">Settle Starts (UTC)</div>
-                                  <div className="text-white font-mono">TBA</div>
-                                </div>
-                                <div>
-                                  <div className="text-neutral-400 mb-1">Settle Ends (UTC)</div>
-                                  <div className="text-white font-mono">TBA</div>
-                                </div>
-                              </div>
-
-                              {/* Countdown */}
-                              <div className="mt-4 pt-3 border-t border-neutral-700">
-                                <div className="text-neutral-400 text-xs mb-1">Countdown</div>
-                                <div className="text-white font-medium text-sm">Not Started</div>
-                              </div>
-                            </div>
-                          ))
-                        )}
+                      <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-neutral-900/60 border-b border-neutral-800">
+                            <tr>
+                              <th className="text-left text-neutral-400 font-medium py-3 px-4">Token</th>
+                              <th className="text-right text-neutral-400 font-medium py-3 px-4">Price</th>
+                              <th className="text-right text-neutral-400 font-medium py-3 px-4">24h Vol</th>
+                              <th className="text-right text-neutral-400 font-medium py-3 px-4">Total Vol</th>
+                              <th className="text-center text-neutral-400 font-medium py-3 px-4">Settle Starts (UTC)</th>
+                              <th className="text-center text-neutral-400 font-medium py-3 px-4">Settle Ends (UTC)</th>
+                              <th className="text-center text-neutral-400 font-medium py-3 px-4">Countdown</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-neutral-800/50">
+                            {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
+                              premarketListings.listings.map((listing: any) => (
+                                <tr 
+                                  key={listing.id}
+                                  className="hover:bg-neutral-800/40 transition-colors cursor-pointer"
+                                  onClick={() => setSelectedToken(listing)}
+                                  data-testid={`row-token-${listing.id}`}
+                                >
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                        {listing.tokenSymbol.charAt(0)}
+                                      </div>
+                                      <div>
+                                        <div className="text-white font-semibold">{listing.tokenSymbol}</div>
+                                        <div className="text-neutral-400 text-xs">{listing.tokenName}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">${listing.startingPrice}</td>
+                                  <td className="py-3 px-4 text-right">
+                                    <div className="text-white font-mono">$18,691.9</div>
+                                    <div className="text-green-400 text-xs">+14.76%</div>
+                                  </td>
+                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">$10.7M</td>
+                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
+                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
+                                  <td className="py-3 px-4 text-center text-white">Not Started</td>
+                                </tr>
+                              ))
+                            ) : (
+                              // Mock tokens for demo (row format)
+                              Array.from({ length: 6 }, (_, index) => (
+                                <tr 
+                                  key={index}
+                                  className="hover:bg-neutral-800/40 transition-colors cursor-pointer"
+                                  onClick={() => {
+                                    const mockToken = {
+                                      tokenSymbol: index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB',
+                                      tokenName: index === 0 ? 'Plasma' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum',
+                                      startingPrice: index === 0 ? '0.565' : index === 1 ? '0.028' : '0.025',
+                                      totalSupply: '1000000'
+                                    };
+                                    setSelectedToken(mockToken);
+                                  }}
+                                  data-testid={`row-token-mock-${index}`}
+                                >
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                        {index === 0 ? 'X' : index === 1 ? 'L' : index === 2 ? 'S' : index === 3 ? 'B' : index === 4 ? 'P' : 'A'}
+                                      </div>
+                                      <div>
+                                        <div className="text-white font-semibold">
+                                          {index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB'}
+                                        </div>
+                                        <div className="text-neutral-400 text-xs">
+                                          {index === 0 ? 'Plasma' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">
+                                    ${index === 0 ? '0.565' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0265' : index === 4 ? '0.024' : '0.022'}
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <div className="text-white font-mono">
+                                      ${index === 0 ? '18,691.9' : index === 1 ? '12,345.6' : index === 2 ? '8,923.4' : index === 3 ? '5,678.9' : index === 4 ? '3,456.7' : '2,134.5'}
+                                    </div>
+                                    <div className="text-green-400 text-xs">
+                                      +{index === 0 ? '14.76' : index === 1 ? '22.31' : index === 2 ? '18.42' : index === 3 ? '9.87' : index === 4 ? '15.63' : '7.21'}%
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">
+                                    ${index === 0 ? '10.7M' : index === 1 ? '8.2M' : index === 2 ? '6.5M' : index === 3 ? '4.1M' : index === 4 ? '2.8M' : '1.5M'}
+                                  </td>
+                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
+                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
+                                  <td className="py-3 px-4 text-center text-white">Not Started</td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   ) : (
