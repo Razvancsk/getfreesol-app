@@ -1924,107 +1924,165 @@ export default function SolRefund() {
               {premarketSubTab === 'active' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                   {!selectedToken ? (
-                    // Token Preview/Overview (Table row format like XPL)
-                    <div>
-                      <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead className="bg-neutral-900/60 border-b border-neutral-800">
-                            <tr>
-                              <th className="text-left text-neutral-400 font-medium py-3 px-4">Token</th>
-                              <th className="text-right text-neutral-400 font-medium py-3 px-4">Price</th>
-                              <th className="text-right text-neutral-400 font-medium py-3 px-4">24h Vol</th>
-                              <th className="text-right text-neutral-400 font-medium py-3 px-4">Total Vol</th>
-                              <th className="text-center text-neutral-400 font-medium py-3 px-4">Settle Starts (UTC)</th>
-                              <th className="text-center text-neutral-400 font-medium py-3 px-4">Settle Ends (UTC)</th>
-                              <th className="text-center text-neutral-400 font-medium py-3 px-4">Countdown</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-800/50">
-                            {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
-                              premarketListings.listings.map((listing: any) => (
-                                <tr 
-                                  key={listing.id}
-                                  className="hover:bg-neutral-800/40 transition-colors cursor-pointer"
-                                  onClick={() => setSelectedToken(listing)}
-                                  data-testid={`row-token-${listing.id}`}
-                                >
-                                  <td className="py-3 px-4">
-                                    <div className="flex items-center space-x-3">
-                                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                        {listing.tokenSymbol.charAt(0)}
-                                      </div>
-                                      <div>
-                                        <div className="text-white font-semibold">{listing.tokenSymbol}</div>
-                                        <div className="text-neutral-400 text-xs">{listing.tokenName}</div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">${listing.startingPrice}</td>
-                                  <td className="py-3 px-4 text-right">
-                                    <div className="text-white font-mono">$18,691.9</div>
-                                    <div className="text-green-400 text-xs">+14.76%</div>
-                                  </td>
-                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">$10.7M</td>
-                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
-                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
-                                  <td className="py-3 px-4 text-center text-white">Not Started</td>
-                                </tr>
-                              ))
-                            ) : (
-                              // Mock tokens for demo (row format)
-                              Array.from({ length: 6 }, (_, index) => (
-                                <tr 
-                                  key={index}
-                                  className="hover:bg-neutral-800/40 transition-colors cursor-pointer"
-                                  onClick={() => {
-                                    const mockToken = {
-                                      tokenSymbol: index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB',
-                                      tokenName: index === 0 ? 'Plasma' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum',
-                                      startingPrice: index === 0 ? '0.565' : index === 1 ? '0.028' : '0.025',
-                                      totalSupply: '1000000'
-                                    };
-                                    setSelectedToken(mockToken);
-                                  }}
-                                  data-testid={`row-token-mock-${index}`}
-                                >
-                                  <td className="py-3 px-4">
-                                    <div className="flex items-center space-x-3">
-                                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                        {index === 0 ? 'X' : index === 1 ? 'L' : index === 2 ? 'S' : index === 3 ? 'B' : index === 4 ? 'P' : 'A'}
-                                      </div>
-                                      <div>
-                                        <div className="text-white font-semibold">
-                                          {index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB'}
-                                        </div>
-                                        <div className="text-neutral-400 text-xs">
-                                          {index === 0 ? 'Plasma' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum'}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">
-                                    ${index === 0 ? '0.565' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0265' : index === 4 ? '0.024' : '0.022'}
-                                  </td>
-                                  <td className="py-3 px-4 text-right">
-                                    <div className="text-white font-mono">
-                                      ${index === 0 ? '18,691.9' : index === 1 ? '12,345.6' : index === 2 ? '8,923.4' : index === 3 ? '5,678.9' : index === 4 ? '3,456.7' : '2,134.5'}
-                                    </div>
-                                    <div className="text-green-400 text-xs">
-                                      +{index === 0 ? '14.76' : index === 1 ? '22.31' : index === 2 ? '18.42' : index === 3 ? '9.87' : index === 4 ? '15.63' : '7.21'}%
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-4 text-right text-white font-mono tabular-nums">
-                                    ${index === 0 ? '10.7M' : index === 1 ? '8.2M' : index === 2 ? '6.5M' : index === 3 ? '4.1M' : index === 4 ? '2.8M' : '1.5M'}
-                                  </td>
-                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
-                                  <td className="py-3 px-4 text-center text-white font-mono">TBA</td>
-                                  <td className="py-3 px-4 text-center text-white">Not Started</td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                    // Token Preview/Overview (Horizontal row format like XPL)
+                    <div className="space-y-3">
+                      {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
+                        premarketListings.listings.map((listing: any) => (
+                          <div 
+                            key={listing.id}
+                            className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4 hover:bg-neutral-800/40 transition-colors cursor-pointer"
+                            onClick={() => setSelectedToken(listing)}
+                            data-testid={`row-token-${listing.id}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              {/* Token Info */}
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                  {listing.tokenSymbol.charAt(0)}
+                                </div>
+                                <div>
+                                  <div className="text-white font-semibold text-lg">{listing.tokenSymbol}</div>
+                                  <div className="text-neutral-400 text-xs">{listing.tokenName}</div>
+                                </div>
+                              </div>
+
+                              {/* Price */}
+                              <div className="text-right">
+                                <div className="text-white font-bold text-lg">${listing.startingPrice}</div>
+                              </div>
+
+                              {/* 24h Vol */}
+                              <div className="text-right">
+                                <div className="text-neutral-400 text-xs">24h Vol</div>
+                                <div className="text-white font-mono">$18,691.9 <span className="text-green-400">+14.76%</span></div>
+                              </div>
+
+                              {/* Total Vol */}
+                              <div className="text-right">
+                                <div className="text-neutral-400 text-xs">Total Vol</div>
+                                <div className="text-white font-mono">$10.7M</div>
+                              </div>
+
+                              {/* Settle Starts */}
+                              <div className="text-center">
+                                <div className="text-neutral-400 text-xs">Settle Starts (UTC)</div>
+                                <div className="text-white font-mono">TBA</div>
+                              </div>
+
+                              {/* Settle Ends */}
+                              <div className="text-center">
+                                <div className="text-neutral-400 text-xs">Settle Ends (UTC)</div>
+                                <div className="text-white font-mono">TBA</div>
+                              </div>
+
+                              {/* Countdown */}
+                              <div className="text-right">
+                                <div className="text-neutral-400 text-xs">Countdown</div>
+                                <div className="text-white">Not Started</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        // Mock tokens for demo (horizontal row format)
+                        Array.from({ length: 6 }, (_, index) => (
+                          <div 
+                            key={index}
+                            className="bg-black/80 rounded-md border border-gray-700/50 px-4 py-3 hover:bg-gray-900/50 transition-colors cursor-pointer"
+                            onClick={() => {
+                              const mockToken = {
+                                tokenSymbol: index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB',
+                                tokenName: index === 0 ? 'Plasma' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum',
+                                startingPrice: index === 0 ? '0.565' : index === 1 ? '0.028' : '0.025',
+                                totalSupply: '1000000'
+                              };
+                              setSelectedToken(mockToken);
+                            }}
+                            data-testid={`row-token-mock-${index}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              {/* Token Info */}
+                              <div className="flex items-center space-x-3 min-w-[120px]">
+                                <div className="w-7 h-7 bg-gradient-to-br from-teal-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                  {index === 0 ? 'X' : index === 1 ? 'L' : index === 2 ? 'S' : index === 3 ? 'B' : index === 4 ? 'P' : 'A'}
+                                </div>
+                                <div>
+                                  <div className="text-white font-medium text-base">
+                                    {index === 0 ? 'XPL' : index === 1 ? 'LINEA' : index === 2 ? 'STARK' : index === 3 ? 'BASE' : index === 4 ? 'POLY' : 'ARB'}
+                                  </div>
+                                  <div className="text-gray-400 text-xs">
+                                    {index === 0 ? 'Plasma' : index === 1 ? 'Linea Token' : index === 2 ? 'Starknet' : index === 3 ? 'Base Token' : index === 4 ? 'Polygon' : 'Arbitrum'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Price */}
+                              <div className="text-right min-w-[80px]">
+                                <div className="text-white font-semibold text-base">
+                                  ${index === 0 ? '0.565' : index === 1 ? '0.028' : index === 2 ? '0.0275' : index === 3 ? '0.0265' : index === 4 ? '0.024' : '0.022'}
+                                </div>
+                              </div>
+
+                              {/* 24h Vol */}
+                              <div className="text-right min-w-[100px]">
+                                <div className="text-gray-500 text-xs mb-0.5">24h Vol</div>
+                                <div className="text-white text-sm font-mono">
+                                  ${index === 0 ? '18,691.9' : index === 1 ? '12,345.6' : index === 2 ? '8,923.4' : index === 3 ? '5,678.9' : index === 4 ? '3,456.7' : '2,134.5'}
+                                </div>
+                                <div className="text-green-400 text-xs">
+                                  +{index === 0 ? '14.76' : index === 1 ? '22.31' : index === 2 ? '18.42' : index === 3 ? '9.87' : index === 4 ? '15.63' : '7.21'}%
+                                </div>
+                              </div>
+
+                              {/* Total Vol */}
+                              <div className="text-right min-w-[80px]">
+                                <div className="text-gray-500 text-xs mb-0.5">Total Vol</div>
+                                <div className="text-white text-sm font-mono">
+                                  ${index === 0 ? '10.7M' : index === 1 ? '8.2M' : index === 2 ? '6.5M' : index === 3 ? '4.1M' : index === 4 ? '2.8M' : '1.5M'}
+                                </div>
+                              </div>
+
+                              {/* Settle Starts */}
+                              <div className="text-right min-w-[100px]">
+                                <div className="text-gray-500 text-xs mb-0.5">Settle Starts (UTC)</div>
+                                <div className="text-white text-sm font-mono">TBA</div>
+                              </div>
+
+                              {/* Settle Ends */}
+                              <div className="text-right min-w-[100px]">
+                                <div className="text-gray-500 text-xs mb-0.5">Settle Ends (UTC)</div>
+                                <div className="text-white text-sm font-mono">TBA</div>
+                              </div>
+
+                              {/* Countdown */}
+                              <div className="text-right min-w-[80px]">
+                                <div className="text-gray-500 text-xs mb-0.5">Countdown</div>
+                                <div className="text-white text-sm">Not Started</div>
+                              </div>
+
+                              {/* Close/Settings Icons */}
+                              <div className="flex items-center space-x-2 ml-4">
+                                <button className="text-gray-400 hover:text-gray-200 transition-colors">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                                <button className="text-gray-400 hover:text-gray-200 transition-colors">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                </button>
+                                <button className="text-orange-400 hover:text-orange-300 transition-colors">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   ) : (
                     // Recent Trades Table (shows AFTER clicking a token)
