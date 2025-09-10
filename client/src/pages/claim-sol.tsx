@@ -2418,7 +2418,19 @@ export default function SolRefund() {
                                         </td>
                                         <td className="py-2 px-3 text-right text-white font-mono">${formatPrice(selectedToken.startingPrice)}</td>
                                         <td className="py-2 px-3 text-right text-white">{(Math.random() * 1000).toFixed(0)}</td>
-                                        <td className="py-2 px-3 text-right text-white font-mono">${(Math.random() * 10000).toFixed(2)}</td>
+                                        <td className="py-2 px-3 text-right text-white font-mono">
+                                          <div className="flex items-center justify-end space-x-1">
+                                            <span>{(Math.random() * 45).toFixed(3)}</span>
+                                            <img 
+                                              src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" 
+                                              alt="SOL" 
+                                              className="w-3 h-3 rounded-full"
+                                              onError={(e) => {
+                                                e.currentTarget.src = "https://cryptologos.cc/logos/solana-sol-logo.png?v=029";
+                                              }}
+                                            />
+                                          </div>
+                                        </td>
                                         <td className="py-2 px-3 text-center">
                                           <span className="text-green-400 text-xs">Completed</span>
                                         </td>
