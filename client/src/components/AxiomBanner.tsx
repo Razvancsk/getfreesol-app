@@ -24,7 +24,7 @@ export default function AxiomBanner({ className = '' }: AxiomBannerProps) {
           className="w-full h-16 object-cover rounded-lg shadow-lg group-hover:shadow-xl transition-shadow duration-300"
         />
       </button>
-      <p className="text-center text-xs text-purple-400 mt-1">Trade and get rewards</p>
+      <p className="text-center text-sm text-purple-400 mt-0.5">Trade and get rewards</p>
     </div>
   );
 }
