@@ -81,6 +81,7 @@ export default function SolRefund() {
   
   // Selected token in active premarket view
   const [selectedToken, setSelectedToken] = useState<any>(null);
+  const [selectedDetailTab, setSelectedDetailTab] = useState<'trade' | 'activity' | 'info'>('trade');
   
   // Real-time countdown ticker for settlement windows
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -2190,121 +2191,207 @@ export default function SolRefund() {
                       <div className="pt-6">
                         {/* Detail Tabs */}
                         <div className="flex space-x-1 border-b border-neutral-800 mb-6">
-                          <button className="px-4 py-2 text-sm font-medium text-purple-300 border-b-2 border-purple-500 bg-purple-500/10">
+                          <button 
+                            className={`px-4 py-2 text-sm font-medium transition-colors ${
+                              selectedDetailTab === 'trade' 
+                                ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-500/10' 
+                                : 'text-gray-400 hover:text-white'
+                            }`}
+                            onClick={() => setSelectedDetailTab('trade')}
+                            data-testid="tab-trade"
+                          >
                             Trade
                           </button>
-                          <button className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                          <button 
+                            className={`px-4 py-2 text-sm font-medium transition-colors ${
+                              selectedDetailTab === 'activity' 
+                                ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-500/10' 
+                                : 'text-gray-400 hover:text-white'
+                            }`}
+                            onClick={() => setSelectedDetailTab('activity')}
+                            data-testid="tab-activity"
+                          >
                             Activity
                           </button>
-                          <button className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                          <button 
+                            className={`px-4 py-2 text-sm font-medium transition-colors ${
+                              selectedDetailTab === 'info' 
+                                ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-500/10' 
+                                : 'text-gray-400 hover:text-white'
+                            }`}
+                            onClick={() => setSelectedDetailTab('info')}
+                            data-testid="tab-info"
+                          >
                             Info
                           </button>
                         </div>
 
-                        {/* Trade Tab Content */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Buy/Sell Forms */}
-                          <div className="space-y-4">
-                            <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
-                              <h3 className="text-white font-semibold mb-4">Place Order</h3>
-                              
-                              {/* Buy/Sell Toggle */}
-                              <div className="flex space-x-2 mb-4">
-                                <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" data-testid="button-buy">
-                                  Buy
-                                </Button>
-                                <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" data-testid="button-sell">
-                                  Sell
-                                </Button>
-                              </div>
-
-                              {/* Order Form */}
-                              <div className="space-y-4">
-                                <div>
-                                  <label className="text-sm text-neutral-400 block mb-2">Price (USD)</label>
-                                  <Input 
-                                    type="number"
-                                    placeholder={formatPrice(selectedToken.startingPrice)}
-                                    className="bg-neutral-800 border-neutral-700 text-white"
-                                    data-testid="input-order-price"
-                                  />
+                        {/* Tab Content */}
+                        {selectedDetailTab === 'trade' && (
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Created Orders & Buy/Sell */}
+                            <div className="space-y-4">
+                              <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
+                                <div className="flex items-center justify-between mb-4">
+                                  <h3 className="text-white font-semibold">Your Orders</h3>
+                                  <Button size="sm" variant="outline" className="text-xs border-purple-500/30 text-purple-300">
+                                    See All Orders
+                                  </Button>
                                 </div>
                                 
-                                <div>
-                                  <label className="text-sm text-neutral-400 block mb-2">Amount</label>
-                                  <Input 
-                                    type="number"
-                                    placeholder="0"
-                                    className="bg-neutral-800 border-neutral-700 text-white"
-                                    data-testid="input-order-amount"
-                                  />
+                                {/* Order List */}
+                                <div className="space-y-2 mb-4">
+                                  {Array.from({ length: 3 }, (_, i) => (
+                                    <div key={i} className="flex items-center justify-between p-2 bg-neutral-800/50 rounded text-sm">
+                                      <div className="flex items-center space-x-2">
+                                        <span className={`px-2 py-0.5 text-xs rounded ${i % 2 === 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                          {i % 2 === 0 ? 'BUY' : 'SELL'}
+                                        </span>
+                                        <span className="text-white">{(Math.random() * 1000).toFixed(0)}</span>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</div>
+                                        <div className="text-neutral-400 text-xs">Pending</div>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
 
-                                <div className="bg-neutral-800/50 p-3 rounded">
-                                  <div className="text-xs text-neutral-400 mb-1">Estimated Total</div>
-                                  <div className="text-white font-mono">$0.00</div>
+                                {/* Buy/Sell Buttons */}
+                                <div className="flex space-x-2 mb-4">
+                                  <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" data-testid="button-create-buy">
+                                    Create Buy Order
+                                  </Button>
+                                  <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" data-testid="button-create-sell">
+                                    Create Sell Order
+                                  </Button>
                                 </div>
 
                                 <div className="text-xs text-orange-400 bg-orange-500/10 p-3 rounded border border-orange-500/20">
                                   ⚠️ Collateral required: You must deposit SOL collateral that will be forfeited if you fail to settle within 4 hours of TGE.
                                 </div>
+                              </div>
+                            </div>
 
-                                <Button 
-                                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                                  data-testid="button-place-order"
-                                >
-                                  Connect Wallet to Trade
-                                </Button>
+                            {/* Market Data */}
+                            <div className="space-y-4">
+                              <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
+                                <h3 className="text-white font-semibold mb-4">Market Overview</h3>
+                                
+                                <div className="space-y-3 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-neutral-400">Current Price:</span>
+                                    <span className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-neutral-400">24h Volume:</span>
+                                    <span className="text-white font-mono">$18,691.90</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-neutral-400">Total Volume:</span>
+                                    <span className="text-white font-mono">$10.7M</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-neutral-400">Total Supply:</span>
+                                    <span className="text-white font-mono">{parseInt(selectedToken.totalSupply || '0').toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-neutral-400">Settlement:</span>
+                                    <span className="text-white">Not Started</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
+                        )}
 
-                          {/* Order Book / Market Data */}
+                        {selectedDetailTab === 'activity' && (
+                          <div className="space-y-4">
+                            <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 overflow-hidden">
+                              <div className="px-4 py-3 border-b border-neutral-800 bg-neutral-900/60">
+                                <h4 className="text-sm font-medium text-white">Recent Transactions</h4>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-neutral-900/90 border-b border-neutral-800">
+                                    <tr>
+                                      <th className="text-left text-neutral-400 font-medium py-2 px-3">Time</th>
+                                      <th className="text-left text-neutral-400 font-medium py-2 px-3">Type</th>
+                                      <th className="text-right text-neutral-400 font-medium py-2 px-3">Price</th>
+                                      <th className="text-right text-neutral-400 font-medium py-2 px-3">Amount</th>
+                                      <th className="text-right text-neutral-400 font-medium py-2 px-3">Total</th>
+                                      <th className="text-center text-neutral-400 font-medium py-2 px-3">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-neutral-800/50">
+                                    {Array.from({ length: 8 }, (_, i) => (
+                                      <tr key={i} className="hover:bg-neutral-800/40 transition-colors">
+                                        <td className="py-2 px-3 text-neutral-400 text-xs">{i + 1}h ago</td>
+                                        <td className="py-2 px-3">
+                                          <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                                            i % 2 === 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                                          }`}>
+                                            {i % 2 === 0 ? 'BUY' : 'SELL'}
+                                          </span>
+                                        </td>
+                                        <td className="py-2 px-3 text-right text-white font-mono">${formatPrice(selectedToken.startingPrice)}</td>
+                                        <td className="py-2 px-3 text-right text-white">{(Math.random() * 1000).toFixed(0)}</td>
+                                        <td className="py-2 px-3 text-right text-white font-mono">${(Math.random() * 10000).toFixed(2)}</td>
+                                        <td className="py-2 px-3 text-center">
+                                          <span className="text-green-400 text-xs">Completed</span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedDetailTab === 'info' && (
                           <div className="space-y-4">
                             <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
-                              <h3 className="text-white font-semibold mb-4">Market Overview</h3>
-                              
-                              <div className="space-y-3 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-neutral-400">Current Price:</span>
-                                  <span className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-neutral-400">24h Volume:</span>
-                                  <span className="text-white font-mono">$18,691.90</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-neutral-400">Total Volume:</span>
-                                  <span className="text-white font-mono">$10.7M</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-neutral-400">Total Supply:</span>
-                                  <span className="text-white font-mono">{parseInt(selectedToken.totalSupply || '0').toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-neutral-400">Settlement:</span>
-                                  <span className="text-white">Not Started</span>
-                                </div>
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-white font-semibold">Token Information</h3>
+                                <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700" data-testid="button-delete-token">
+                                  Delete
+                                </Button>
                               </div>
-                            </div>
-
-                            <div className="bg-neutral-900/50 rounded-lg border border-neutral-800 p-4">
-                              <h3 className="text-white font-semibold mb-4">Recent Trades</h3>
-                              <div className="space-y-2 text-sm">
-                                {Array.from({ length: 5 }, (_, i) => (
-                                  <div key={i} className="flex justify-between items-center py-1">
-                                    <span className={`text-xs px-2 py-0.5 rounded ${i % 2 === 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                      {i % 2 === 0 ? 'BUY' : 'SELL'}
-                                    </span>
-                                    <span className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</span>
-                                    <span className="text-neutral-400">{Math.floor(Math.random() * 10000)}K</span>
-                                    <span className="text-neutral-500 text-xs">{i + 1}h</span>
-                                  </div>
-                                ))}
+                              
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="text-sm text-neutral-400">Token Symbol</label>
+                                  <div className="text-white font-mono">{selectedToken.tokenSymbol}</div>
+                                </div>
+                                <div>
+                                  <label className="text-sm text-neutral-400">Token Name</label>
+                                  <div className="text-white">{selectedToken.tokenName}</div>
+                                </div>
+                                <div>
+                                  <label className="text-sm text-neutral-400">Description</label>
+                                  <div className="text-white">{selectedToken.description || 'No description available'}</div>
+                                </div>
+                                <div>
+                                  <label className="text-sm text-neutral-400">Total Supply</label>
+                                  <div className="text-white font-mono">{parseInt(selectedToken.totalSupply || '0').toLocaleString()}</div>
+                                </div>
+                                <div>
+                                  <label className="text-sm text-neutral-400">Starting Price</label>
+                                  <div className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</div>
+                                </div>
+                                <div>
+                                  <label className="text-sm text-neutral-400">Creator Wallet</label>
+                                  <div className="text-white font-mono text-xs break-all">{selectedToken.creatorWallet}</div>
+                                </div>
+                                <div>
+                                  <label className="text-sm text-neutral-400">Created</label>
+                                  <div className="text-white">{new Date(selectedToken.createdAt).toLocaleDateString()}</div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   )}
