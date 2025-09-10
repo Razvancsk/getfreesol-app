@@ -2235,14 +2235,11 @@ export default function SolRefund() {
                                 <div className="flex items-center justify-between mb-4">
                                   <h3 className="text-white font-semibold">Your Orders</h3>
                                   <div className="flex items-center space-x-2">
-                                    <Button size="sm" variant="outline" className="text-xs border-green-500/30 text-green-300 hover:bg-green-500/20">
+                                    <Button size="sm" className="text-sm px-6 py-2 bg-green-500 hover:bg-green-600 text-white border-0">
                                       Buy Orders
                                     </Button>
-                                    <Button size="sm" variant="outline" className="text-xs border-red-500/30 text-red-300 hover:bg-red-500/20">
+                                    <Button size="sm" className="text-sm px-6 py-2 bg-red-500 hover:bg-red-600 text-white border-0">
                                       Sell Orders
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="text-xs border-purple-500/30 text-purple-300">
-                                      All Orders
                                     </Button>
                                   </div>
                                 </div>
@@ -2289,11 +2286,11 @@ export default function SolRefund() {
                                 </div>
 
                                 {/* Buy/Sell Buttons */}
-                                <div className="flex space-x-2 mb-4">
-                                  <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white" data-testid="button-create-buy">
+                                <div className="flex space-x-2 mb-4 mt-4">
+                                  <Button className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 text-base font-medium" data-testid="button-create-buy">
                                     Create Buy Order
                                   </Button>
-                                  <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" data-testid="button-create-sell">
+                                  <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 text-base font-medium" data-testid="button-create-sell">
                                     Create Sell Order
                                   </Button>
                                 </div>
