@@ -14,11 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, Clock, Shield, Plus, X } from "lucide-react";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import logoImage from '@assets/image_1754527057994.png';
 import AdContainer from '@/components/AdContainer';
 import AxiomBanner from '@/components/AxiomBanner';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 interface EmptyTokenAccount {
   id: number;
@@ -60,7 +58,7 @@ export default function SolRefund() {
   const donationPercentage = 0; // Fees temporarily disabled - users get 100% back
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'premarket' | 'swap'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'premarket'>('reclaim');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
@@ -80,16 +78,6 @@ export default function SolRefund() {
   
   // Pre-market sub-tab state
   const [premarketSubTab, setPremarketSubTab] = useState<'active' | 'activity' | 'create'>('active');
-
-  // Swap-related state variables
-  const [isJupiterLoading, setIsJupiterLoading] = useState(false);
-  const [isSwapLoading, setIsSwapLoading] = useState(false);
-  const [isSwapping, setIsSwapping] = useState(false);
-  const [swapInputAmount, setSwapInputAmount] = useState('');
-  const [swapOutputAmount, setSwapOutputAmount] = useState('');
-  const [swapInputToken, setSwapInputToken] = useState<any>(null);
-  const [swapOutputToken, setSwapOutputToken] = useState<any>(null);
-  const [swapQuote, setSwapQuote] = useState<any>(null);
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -138,8 +126,6 @@ export default function SolRefund() {
     setVisible,
     select
   } = useWalletAdapter();
-
-  const { setVisible: setModalVisible } = useWalletModal();
 
   // Query to get user's referral code and stats
   const { data: userReferrals } = useQuery({
@@ -960,20 +946,14 @@ export default function SolRefund() {
   });
 
   // Query to get pre-market listings
-  const { data: premarketListings } = useQuery<{
-    success: boolean;
-    listings?: any[];
-  }>({
+  const { data: premarketListings } = useQuery({
     queryKey: ['/api/premarket/listings'],
     enabled: activeTab === 'premarket',
     retry: false,
   });
 
   // Query to get user's orders
-  const { data: userOrders } = useQuery<{
-    success: boolean;
-    orders?: any[];
-  }>({
+  const { data: userOrders } = useQuery({
     queryKey: ['/api/premarket/orders/wallet', publicKey?.toString()],
     enabled: activeTab === 'premarket' && !!publicKey,
     retry: false,
@@ -1489,12 +1469,17 @@ export default function SolRefund() {
                     </Button>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center space-y-2">
-                    <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-4 !py-2 !text-sm !font-medium !border !border-purple-500/30 !inline-flex !items-center !justify-center !gap-2" />
-                    <p className="text-xs text-muted-foreground text-center">
-                      Select your wallet to connect instantly
-                    </p>
-                  </div>
+                  <Button
+                    onClick={() => {
+                      select(null);
+                      setVisible(true);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                    title="Connect your wallet"
+                  >
+                    <Wallet className="h-4 w-4 mr-1" />
+                    Connect
+                  </Button>
                 )}
               </div>
             </div>
@@ -1576,10 +1561,17 @@ export default function SolRefund() {
                 </>
               ) : (
                 <div className="flex flex-col items-center space-y-3">
-                  <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg !px-6 !py-3 !text-lg !font-medium !border !border-purple-500/30 !inline-flex !items-center !justify-center !gap-2" />
-                  <p className="text-xs text-muted-foreground text-center max-w-sm">
-                    Select your wallet to connect instantly and start claiming
-                  </p>
+                  <Button
+                    onClick={() => {
+                      select(null);
+                      setVisible(true);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
+                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
+                  >
+                    <Wallet className="h-5 w-5 mr-2" />
+                    Connect Wallet
+                  </Button>
                 </div>
               )}
             </div>
@@ -1608,13 +1600,13 @@ export default function SolRefund() {
                       scanMutation.mutate(publicKey.toString());
                     } else if (activeTab === 'burnTokens') {
                       scanTokensMutation.mutate(publicKey.toString());
-                    } else if (activeTab === 'swap') {
-                      // For swap, we don't need to scan
-                      // This will be handled by swap interface
+                    } else if (activeTab === 'premarket') {
+                      // For premarket, we don't need to scan - show the creation interface
+                      // This will be handled by state below
                     }
                   }
                 }}
-                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey || activeTab === 'swap'}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey || activeTab === 'premarket'}
                 size="lg"
                 className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-10 py-5 text-xl lg:text-2xl font-semibold transition-all duration-200"
               >
@@ -1880,8 +1872,8 @@ export default function SolRefund() {
                   <h3 className="text-lg font-semibold text-white mb-4">Active Pre-market Listings</h3>
                   
                   <div className="space-y-4">
-                    {premarketListings?.success && premarketListings.listings?.length ? (
-                      premarketListings.listings?.map((listing: any) => (
+                    {premarketListings && premarketListings.success && premarketListings.listings?.length > 0 ? (
+                      premarketListings.listings.map((listing: any) => (
                         <div key={listing.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -1969,8 +1961,8 @@ export default function SolRefund() {
                     <h3 className="text-lg font-semibold text-white mb-4">Your Orders</h3>
                     
                     <div className="space-y-4">
-                      {userOrders?.success && userOrders.orders?.length ? (
-                        userOrders.orders?.map((order: any) => (
+                      {userOrders && userOrders.success && userOrders.orders?.length > 0 ? (
+                        userOrders.orders.map((order: any) => (
                           <div key={order.id} className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">

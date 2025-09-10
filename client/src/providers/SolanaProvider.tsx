@@ -24,12 +24,11 @@ interface SolanaProviderProps {
   children: ReactNode;
 }
 
-
 export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
-  // Temporarily disabled - this was hiding the wallet modal
-  // React.useEffect(() => {
-  //   startTrustWalletHiding();
-  // }, []);
+  // Start Trust Wallet hiding utility
+  React.useEffect(() => {
+    startTrustWalletHiding();
+  }, []);
 
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Mainnet;
@@ -60,6 +59,10 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   // Handle wallet errors
   const onError = useCallback((error: WalletError) => {
     console.error('Wallet error:', error);
+    // For wallet not ready errors, we'll let the connection logic handle showing the modal
+    if (error.name === 'WalletNotReadyError') {
+      console.log('💡 Wallet needs to be installed - users should be redirected to wallet download page');
+    }
   }, []);
 
   return (
@@ -67,7 +70,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
       <WalletProvider 
         wallets={wallets} 
         onError={onError}
-        autoConnect={false}
+        autoConnect
       >
         <WalletModalProvider>
           {children}

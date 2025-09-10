@@ -80,17 +80,10 @@
   display: none !important;
 }
 
-/* Hide elements with Trust text in title or alt attributes */
+/* Hide any element containing "Trust" text */
+.wallet-adapter-modal button:contains("Trust"),
 .wallet-adapter-modal [title*="Trust"],
 .wallet-adapter-modal [alt*="Trust"] {
-  display: none !important;
-}
-
-/* Hide connecting spinner in wallet modal - minimal fix as requested */
-.wallet-adapter-modal-wrapper .wallet-adapter-modal-container .wallet-adapter-modal-title:contains("Connecting"),
-.wallet-adapter-modal .wallet-adapter-modal-title:contains("Connecting"),
-.wallet-adapter-modal [class*="connecting"],
-.wallet-adapter-modal-wrapper [class*="connecting"] {
   display: none !important;
 }
 
@@ -207,6 +200,14 @@ input[type="number"] {
 #jupiter-terminal div[class*="overlay"],
 #jupiter-terminal div[class*="modal"],
 #jupiter-terminal div[class*="screen"],
+#jupiter-terminal div:has(> h1:contains("Swapping")),
+#jupiter-terminal div:has(> h2:contains("Pending")),
+#jupiter-terminal div:has(> div:contains("Pending Approval")),
+#jupiter-terminal div:has(> h1:contains("Swap Failed")),
+#jupiter-terminal div:has(> h2:contains("Swap Failed")),
+#jupiter-terminal div:has(> div:contains("Swap Failed")),
+#jupiter-terminal div:has(> div:contains("User rejected")),
+#jupiter-terminal div:has(> button:contains("Retry")),
 #jupiter-terminal [data-testid*="swap-progress"],
 #jupiter-terminal [data-testid*="transaction-progress"],
 #jupiter-terminal [data-testid="swapping-screen"],
@@ -276,50 +277,4 @@ input[type="number"] {
   height: 577px !important;
   max-width: 390px !important;
   max-height: 577px !important;
-}
-
-/* ========= SEAMLESS WALLET CONNECTION ========= */
-/* Hide the connecting spinner/overlay for seamless wallet connection */
-
-/* Make wallet modal background more subtle */
-.wallet-adapter-modal-overlay {
-  background: rgba(0, 0, 0, 0.2) !important;
-}
-
-/* Speed up modal transitions for seamless feel */
-.wallet-adapter-modal {
-  transition: all 0.15s ease-out !important;
-}
-
-.wallet-adapter-modal-wrapper {
-  transition: opacity 0.2s ease-in-out;
-}
-
-/* SAFE: Hide only spinners and loading elements, keep modal interactive */
-.wallet-adapter-button-spinner,
-.wallet-adapter-connecting,
-.wallet-adapter-modal .spinner,
-.wallet-adapter-modal [data-testid*="connecting"],
-.wallet-adapter-modal [data-testid*="loading"],
-.wallet-adapter-modal [aria-label*="connecting"],
-.wallet-adapter-modal [aria-label*="loading"],
-.wallet-adapter-modal .loading-spinner {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
-
-/* Hide only connecting text, not entire modals */
-.wallet-adapter-modal [aria-label*="Connecting"] {
-  display: none !important;
-}
-
-/* Make wallet buttons more responsive */
-.wallet-adapter-modal-list .wallet-adapter-button {
-  transition: all 0.1s ease-out !important;
-}
-
-.wallet-adapter-modal-list .wallet-adapter-button:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
 }

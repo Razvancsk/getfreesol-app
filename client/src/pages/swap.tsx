@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Link } from 'wouter';
 import { ArrowUpDown, RefreshCw, Coins, Wallet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import WalletSelectionModal from '@/components/WalletSelectionModal';
 import { getConnectedWallet, getWalletByType, WalletType } from '@/lib/solana';
 import AdContainer from '@/components/AdContainer';
 import AxiomBanner from '@/components/AxiomBanner';
@@ -490,8 +490,12 @@ export default function SwapPage() {
         </div>
       </div>
 
-      {/* Original Wallet Button */}
-      <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !text-white !rounded-lg" />
+      {/* Wallet Selection Modal */}
+      <WalletSelectionModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onWalletSelect={connectToWallet}
+      />
     </div>
   );
 }
