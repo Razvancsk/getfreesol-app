@@ -2381,10 +2381,6 @@ export default function SolRefund() {
                                   <div className="text-white font-mono">${formatPrice(selectedToken.startingPrice)}</div>
                                 </div>
                                 <div>
-                                  <label className="text-sm text-neutral-400">Creator Wallet</label>
-                                  <div className="text-white font-mono text-xs break-all">{selectedToken.creatorWallet}</div>
-                                </div>
-                                <div>
                                   <label className="text-sm text-neutral-400">Created</label>
                                   <div className="text-white">{new Date(selectedToken.createdAt).toLocaleDateString()}</div>
                                 </div>
