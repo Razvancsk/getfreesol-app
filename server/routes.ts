@@ -1,21 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, ads, insertAdSchema } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { 
-  TOKEN_PROGRAM_ID, 
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddress,
-  createCloseAccountInstruction,
-  createBurnInstruction,
-  getAccount
-} from "@solana/spl-token";
-import { searchJupiterTokens, getJupiterQuote, getJupiterTokens } from "./jupiterApi";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { Connection, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -189,24 +180,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid accounts to close" });
       }
 
-      // Calculate totals - FEES TEMPORARILY DISABLED: Users get 100% back
+      // Calculate totals with referral fee splitting
       const totalSolReclaimed = accountsToClose.reduce((sum, account) => 
         sum + parseFloat(account.rentAmount), 0
       );
-      const totalFeeAmount = 0; // Fees disabled - users get full amount
+      const totalFeeAmount = totalSolReclaimed * (donationPercentage / 100);
       
       let referralFeeAmount = 0;
-      let platformFeeAmount = 0; // No platform fees
+      let platformFeeAmount = totalFeeAmount;
       
-      // Referral system temporarily disabled but code preserved
-      // if (referralCodeData) {
-      //   // 35% of fee goes to referral (5.25% of total)
-      //   referralFeeAmount = totalFeeAmount * 0.35;
-      //   // 65% of fee stays with platform (9.75% of total)
-      //   platformFeeAmount = totalFeeAmount * 0.65;
-      // }
+      if (referralCodeData) {
+        // 35% of fee goes to referral (5.25% of total)
+        referralFeeAmount = totalFeeAmount * 0.35;
+        // 65% of fee stays with platform (9.75% of total)
+        platformFeeAmount = totalFeeAmount * 0.65;
+      }
       
-      const netAmount = totalSolReclaimed; // Users get full amount back
+      const netAmount = totalSolReclaimed - totalFeeAmount;
 
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
@@ -220,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = new Transaction();
       
       // Add close account instructions for each empty account
-      const { TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+      const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
@@ -229,41 +219,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
           ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey,  // owner
-          []
+          ownerPublicKey  // owner
         );
         
         transaction.add(closeInstruction);
       }
 
-      // FEES TEMPORARILY DISABLED - Code preserved for future use
       // Add service fee transfers
-      // const { SystemProgram } = await import('@solana/web3.js');
       
-      // if (platformFeeAmount > 0) {
-      //   const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
-      //   
-      //   const platformFeeTransferInstruction = SystemProgram.transfer({
-      //     fromPubkey: new PublicKey(walletAddress),
-      //     toPubkey: feeCollectorPublicKey,
-      //     lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
-      //   });
-      //   
-      //   transaction.add(platformFeeTransferInstruction);
-      // }
+      if (platformFeeAmount > 0) {
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const platformFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(platformFeeTransferInstruction);
+      }
       
       // Add referral fee transfer if applicable
-      // if (referralFeeAmount > 0 && referralCodeData) {
-      //   const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-      //   
-      //   const referralFeeTransferInstruction = SystemProgram.transfer({
-      //     fromPubkey: new PublicKey(walletAddress),
-      //     toPubkey: referralWalletPublicKey,
-      //     lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
-      //   });
-      //   
-      //   transaction.add(referralFeeTransferInstruction);
-      // }
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: referralWalletPublicKey,
+          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(referralFeeTransferInstruction);
+      }
 
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -672,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
           if (heliusData.result?.items) {
-            // Filter for fungible tokens (back to original logic - show all with balance)
+            // Filter for fungible tokens with meaningful balances only
             const fungibleTokens = heliusData.result.items
               .filter((asset: any) => 
                 asset.interface === 'FungibleToken' || 
@@ -680,8 +667,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               )
               .filter((asset: any) => {
                 const balance = asset.token_info?.balance || 0;
-                // Show tokens with any balance > 0 or empty accounts that can be closed
-                return balance > 0 || balance === 0;
+                const decimals = asset.token_info?.decimals || 0;
+                const displayBalance = balance / Math.pow(10, decimals);
+                
+                // Only show tokens with meaningful balances (> 0.001) or empty accounts that can be closed
+                return displayBalance > 0.001 || balance === 0;
               });
 
             console.log(`Found ${fungibleTokens.length} fungible tokens with meaningful balances`);
@@ -700,10 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const mintPublicKey = new PublicKey(asset.id);
                 const tokenAccount = await getAssociatedTokenAddress(
                   mintPublicKey,
-                  ownerPublicKey,
-                  false,
-                  TOKEN_PROGRAM_ID,
-                  ASSOCIATED_TOKEN_PROGRAM_ID
+                  ownerPublicKey
                 );
                 
                 // Check if the token account actually exists and is accessible
@@ -806,15 +793,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
-      const { 
-        TOKEN_PROGRAM_ID, 
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        getAssociatedTokenAddress,
-        createBurnInstruction,
-        createCloseAccountInstruction
-      } = await import('@solana/spl-token');
-      
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
       const rpcUrl = heliusApiKey 
@@ -839,10 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get associated token account
           const tokenAccount = await getAssociatedTokenAddress(
             mintPublicKey,
-            ownerPublicKey,
-            false,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            ownerPublicKey
           );
           
           // Get token account info to determine balance and decimals
@@ -863,8 +838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               tokenAccount,     // Token account to burn from
               mintPublicKey,    // Token mint
               ownerPublicKey,   // Owner
-              balance,          // Amount to burn (full balance)
-              []               // Additional signers
+              balance           // Amount to burn (full balance)
             );
             transaction.add(burnInstruction);
           }
@@ -873,8 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const closeInstruction = createCloseAccountInstruction(
             tokenAccount,
             ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey,  // owner
-            []
+            ownerPublicKey  // owner
           );
           
           transaction.add(closeInstruction);
@@ -890,60 +863,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Calculate totals - FEES TEMPORARILY DISABLED: Users get 100% back
-      const totalSolRecovered = totalTokensProcessed * 0.00203928;
-      const totalFeeAmount = 0; // Fees disabled - users get full amount
+      // Calculate totals with referral fee splitting based on actual account rent
+      let totalSolRecovered = 0;
+      
+      // Get actual rent amounts from the token accounts
+      for (const tokenMint of tokenMints) {
+        try {
+          const mintPublicKey = new PublicKey(tokenMint);
+          const tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey);
+          const accountInfo = await connection.getAccountInfo(tokenAccount);
+          
+          if (accountInfo) {
+            // Add the actual rent amount (account lamports) to total
+            const rentAmount = accountInfo.lamports / 1e9; // Convert lamports to SOL
+            totalSolRecovered += rentAmount;
+          }
+        } catch (error) {
+          console.log(`Error getting account info for token ${tokenMint}:`, error);
+          // Fallback to hardcoded amount if unable to get account info
+          totalSolRecovered += 0.00203928;
+        }
+      }
+      const totalFeeAmount = totalSolRecovered * 0.15; // 15% fee
       
       let referralFeeAmount = 0;
-      let platformFeeAmount = 0; // No platform fees
+      let platformFeeAmount = totalFeeAmount;
       
-      // FEES TEMPORARILY DISABLED - Code preserved for future use
-      // if (referralCodeData) {
-      //   // 35% of fee goes to referral (5.25% of total)
-      //   referralFeeAmount = totalFeeAmount * 0.35;
-      //   // 65% of fee stays with platform (9.75% of total)
-      //   platformFeeAmount = totalFeeAmount * 0.65;
-      //   console.log(`Referral fee calculation: totalFee=${totalFeeAmount}, referralFee=${referralFeeAmount}, platformFee=${platformFeeAmount}`);
-      // } else {
-      //   console.log('No referral code data - using full platform fee');
-      // }
+      if (referralCodeData) {
+        // 35% of fee goes to referral (5.25% of total)
+        referralFeeAmount = totalFeeAmount * 0.35;
+        // 65% of fee stays with platform (9.75% of total)
+        platformFeeAmount = totalFeeAmount * 0.65;
+        console.log(`Referral fee calculation: totalFee=${totalFeeAmount}, referralFee=${referralFeeAmount}, platformFee=${platformFeeAmount}`);
+      } else {
+        console.log('No referral code data - using full platform fee');
+      }
       
-      const netAmount = totalSolRecovered; // Users get 100% now
+      const netAmount = totalSolRecovered - totalFeeAmount;
 
-      // FEES TEMPORARILY DISABLED - Code preserved for future use
       // Add service fee transfers
-      const { SystemProgram } = await import('@solana/web3.js');
+      if (platformFeeAmount > 0) {
+        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        
+        const platformFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: feeCollectorPublicKey,
+          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+        });
+        
+        transaction.add(platformFeeTransferInstruction);
+      }
       
-      // if (platformFeeAmount > 0) {
-      //   const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
-      //   
-      //   const platformFeeTransferInstruction = SystemProgram.transfer({
-      //     fromPubkey: ownerPublicKey,
-      //     toPubkey: feeCollectorPublicKey,
-      //     lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
-      //   });
-      //   
-      //   transaction.add(platformFeeTransferInstruction);
-      // }
-      
-      // // Add referral fee transfer if applicable
-      // if (referralFeeAmount > 0 && referralCodeData) {
-      //   const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-      //   const lamportsAmount = Math.round(referralFeeAmount * 1e9);
-      //   
-      //   console.log(`Adding referral fee transfer: ${referralFeeAmount} SOL (${lamportsAmount} lamports) to ${referralCodeData.walletAddress}`);
-      //   
-      //   const referralFeeTransferInstruction = SystemProgram.transfer({
-      //     fromPubkey: ownerPublicKey,
-      //     toPubkey: referralWalletPublicKey,
-      //     lamports: lamportsAmount, // Convert SOL to lamports
-      //   });
-      //   
-      //   transaction.add(referralFeeTransferInstruction);
-      //   console.log('✅ Referral fee transfer instruction added to transaction');
-      // } else {
-      //   console.log(`❌ Referral fee transfer skipped: referralFeeAmount=${referralFeeAmount}, referralCodeData=${!!referralCodeData}`);
-      // }
+      // Add referral fee transfer if applicable
+      if (referralFeeAmount > 0 && referralCodeData) {
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        const lamportsAmount = Math.round(referralFeeAmount * 1e9);
+        
+        console.log(`Adding referral fee transfer: ${referralFeeAmount} SOL (${lamportsAmount} lamports) to ${referralCodeData.walletAddress}`);
+        
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: referralWalletPublicKey,
+          lamports: lamportsAmount, // Convert SOL to lamports
+        });
+        
+        transaction.add(referralFeeTransferInstruction);
+        console.log('✅ Referral fee transfer instruction added to transaction');
+      } else {
+        console.log(`❌ Referral fee transfer skipped: referralFeeAmount=${referralFeeAmount}, referralCodeData=${!!referralCodeData}`);
+      }
       
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -954,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (ZERO FEES - users get 100%)`);
+      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${totalFeeAmount.toFixed(8)} fee)`);
       
       res.json({
         transaction: transactionBase64,
@@ -965,7 +953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralFeeAmount: referralFeeAmount.toFixed(8),
         netAmount: netAmount.toFixed(8),
         referralCodeUsed: referralCode || null,
-        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens (${netAmount.toFixed(6)} SOL - ZERO FEES!)`
+        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`
       });
       
     } catch (error) {
@@ -985,12 +973,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Wallet address and token mint are required" });
       }
 
-      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
-      const { 
-        TOKEN_PROGRAM_ID, 
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      } = await import('@solana/spl-token');
-      
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
       const rpcUrl = heliusApiKey 
@@ -1005,8 +987,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get associated token account
       const tokenAccount = await getAssociatedTokenAddress(
-        mintPublicKey,    // mint
-        ownerPublicKey    // owner
+        mintPublicKey,
+        ownerPublicKey
       );
       
       // Get token account info to determine balance and decimals
@@ -1029,8 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tokenAccount,     // Token account to burn from
           mintPublicKey,    // Token mint
           ownerPublicKey,   // Owner
-          balance,          // Amount to burn (full balance)
-          []               // Additional signers
+          balance           // Amount to burn (full balance)
         );
         transaction.add(burnInstruction);
       }
@@ -1039,8 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey,  // owner
-        []
+        ownerPublicKey  // owner
       );
       
       transaction.add(closeInstruction);
@@ -1078,6 +1058,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate required fields
       if (!signature || !walletAddress || !tokenMints || !tokensProcessed || !solRecovered) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Validate that tokensProcessed is greater than zero to prevent division by zero
+      if (tokensProcessed <= 0) {
+        return res.status(400).json({ error: "tokensProcessed must be greater than zero" });
       }
 
       // Check if transaction already recorded
@@ -1136,7 +1121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tokenSymbol: 'TOKEN',
           tokenName: 'Unknown Token',
           amountBurned: '1.0',
-          solRecovered: (solRecovered / tokensProcessed).toString()
+          solRecovered: tokensProcessed > 0 ? (solRecovered / tokensProcessed).toString() : '0'
         });
       }
 
@@ -1239,266 +1224,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Ads API endpoints
-  // Get all ads (optionally filtered by placement)
-  app.get("/api/ads", async (req, res) => {
-    try {
-      const { placement } = req.query;
-      
-      let whereConditions = eq(ads.isActive, true);
-      
-      if (placement && typeof placement === 'string') {
-        whereConditions = sql`${ads.isActive} = true AND ${ads.placement} = ${placement}`;
-      }
-      
-      const result = await db.select()
-        .from(ads)
-        .where(whereConditions)
-        .orderBy(ads.priority, ads.createdAt);
-      
-      res.json({
-        success: true,
-        ads: result
-      });
-    } catch (error) {
-      console.error("Error fetching ads:", error);
-      res.status(500).json({ error: "Failed to fetch ads" });
-    }
-  });
-
-  // Create a new ad
-  app.post("/api/ads", async (req, res) => {
-    try {
-      const validatedData = insertAdSchema.parse(req.body);
-      
-      const result = await db.insert(ads).values({
-        ...validatedData,
-        id: nanoid(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).returning();
-      
-      res.json({
-        success: true,
-        ad: result[0]
-      });
-    } catch (error) {
-      console.error("Error creating ad:", error);
-      res.status(500).json({ error: "Failed to create ad" });
-    }
-  });
-
-  // Update an ad
-  app.put("/api/ads/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const validatedData = insertAdSchema.partial().parse(req.body);
-      
-      const result = await db.update(ads)
-        .set({
-          ...validatedData,
-          updatedAt: new Date()
-        })
-        .where(eq(ads.id, id))
-        .returning();
-      
-      if (result.length === 0) {
-        return res.status(404).json({ error: "Ad not found" });
-      }
-      
-      res.json({
-        success: true,
-        ad: result[0]
-      });
-    } catch (error) {
-      console.error("Error updating ad:", error);
-      res.status(500).json({ error: "Failed to update ad" });
-    }
-  });
-
-  // Delete an ad
-  app.delete("/api/ads/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const result = await db.delete(ads)
-        .where(eq(ads.id, id))
-        .returning();
-      
-      if (result.length === 0) {
-        return res.status(404).json({ error: "Ad not found" });
-      }
-      
-      res.json({
-        success: true,
-        message: "Ad deleted successfully"
-      });
-    } catch (error) {
-      console.error("Error deleting ad:", error);
-      res.status(500).json({ error: "Failed to delete ad" });
-    }
-  });
-
-  // Track ad click
-  app.post("/api/ads/:id/click", async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const result = await db.update(ads)
-        .set({
-          clickCount: sql`${ads.clickCount} + 1`,
-          updatedAt: new Date()
-        })
-        .where(eq(ads.id, id))
-        .returning();
-      
-      if (result.length === 0) {
-        return res.status(404).json({ error: "Ad not found" });
-      }
-      
-      res.json({
-        success: true,
-        clickCount: result[0].clickCount
-      });
-    } catch (error) {
-      console.error("Error tracking ad click:", error);
-      res.status(500).json({ error: "Failed to track ad click" });
-    }
-  });
-
-  // Track ad impression
-  app.post("/api/ads/:id/impression", async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const result = await db.update(ads)
-        .set({
-          impressionCount: sql`${ads.impressionCount} + 1`,
-          updatedAt: new Date()
-        })
-        .where(eq(ads.id, id))
-        .returning();
-      
-      if (result.length === 0) {
-        return res.status(404).json({ error: "Ad not found" });
-      }
-      
-      res.json({
-        success: true,
-        impressionCount: result[0].impressionCount
-      });
-    } catch (error) {
-      console.error("Error tracking ad impression:", error);
-      res.status(500).json({ error: "Failed to track ad impression" });
-    }
-  });
-
-  // Jupiter API endpoints
-  app.get("/api/jupiter/tokens", async (req, res) => {
-    try {
-      const tokens = await getJupiterTokens();
-      res.json({ success: true, tokens });
-    } catch (error) {
-      console.error("Error fetching Jupiter tokens:", error);
-      res.status(500).json({ error: "Failed to fetch Jupiter tokens" });
-    }
-  });
-
-  app.get("/api/jupiter/tokens/search", async (req, res) => {
-    try {
-      const { q } = req.query;
-      if (!q || typeof q !== 'string') {
-        return res.status(400).json({ error: "Search query 'q' is required" });
-      }
-      
-      const tokens = await searchJupiterTokens(q);
-      res.json({ success: true, tokens });
-    } catch (error) {
-      console.error("Error searching Jupiter tokens:", error);
-      res.status(500).json({ error: "Failed to search Jupiter tokens" });
-    }
-  });
-
-  app.get("/api/jupiter/quote", async (req, res) => {
-    try {
-      const { inputMint, outputMint, amount, slippageBps } = req.query;
-      
-      if (!inputMint || !outputMint || !amount) {
-        return res.status(400).json({ 
-          error: "inputMint, outputMint, and amount are required" 
-        });
-      }
-      
-      const quote = await getJupiterQuote(
-        inputMint as string,
-        outputMint as string,
-        parseInt(amount as string),
-        slippageBps ? parseInt(slippageBps as string) : 100
-      );
-      
-      res.json({ success: true, quote });
-    } catch (error) {
-      console.error("Error getting Jupiter quote:", error);
-      res.status(500).json({ error: "Failed to get Jupiter quote" });
-    }
-  });
-
-
-  // File upload API routes for object storage
-  
-  // Endpoint to serve uploaded files
-  app.get("/objects/:objectPath(*)", async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
-    try {
-      const objectFile = await objectStorageService.getObjectEntityFile(
-        req.path,
-      );
-      objectStorageService.downloadObject(objectFile, res);
-    } catch (error) {
-      console.error("Error accessing object:", error);
-      if (error instanceof ObjectNotFoundError) {
-        return res.sendStatus(404);
-      }
-      return res.sendStatus(500);
-    }
-  });
-
-  // Endpoint to get upload URL for file uploads
-  app.post("/api/objects/upload", async (req, res) => {
-    try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
-    } catch (error) {
-      console.error("Error getting upload URL:", error);
-      res.status(500).json({ error: "Failed to get upload URL" });
-    }
-  });
-
-  // Endpoint to finalize file upload and return public URL
-  app.post("/api/objects/finalize", async (req, res) => {
-    try {
-      const { uploadURL } = req.body;
-      if (!uploadURL) {
-        return res.status(400).json({ error: "uploadURL is required" });
-      }
-
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-      
-      // Return the public URL for accessing the uploaded file
-      const publicURL = `${req.protocol}://${req.get('host')}${objectPath}`;
-      
-      res.json({
-        success: true,
-        objectPath,
-        publicURL
-      });
-    } catch (error) {
-      console.error("Error finalizing upload:", error);
-      res.status(500).json({ error: "Failed to finalize upload" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
