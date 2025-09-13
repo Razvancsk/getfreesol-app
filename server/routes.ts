@@ -180,24 +180,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid accounts to close" });
       }
 
-      // Calculate totals with referral fee splitting
-      const totalSolReclaimed = accountsToClose.reduce((sum, account) => 
-        sum + parseFloat(account.rentAmount), 0
-      );
-      const totalFeeAmount = totalSolReclaimed * (donationPercentage / 100);
-      
-      let referralFeeAmount = 0;
-      let platformFeeAmount = totalFeeAmount;
-      
-      if (referralCodeData) {
-        // 35% of fee goes to referral (5.25% of total)
-        referralFeeAmount = totalFeeAmount * 0.35;
-        // 65% of fee stays with platform (9.75% of total)
-        platformFeeAmount = totalFeeAmount * 0.65;
-      }
-      
-      const netAmount = totalSolReclaimed - totalFeeAmount;
-
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusApiKey ? 
@@ -205,6 +187,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'https://api.mainnet-beta.solana.com';
       
       const connection = new Connection(rpcUrl, 'confirmed');
+
+      // Read actual account lamports for precise calculations
+      let totalRecoveredLamports = 0;
+      const accountInfos = [];
+      
+      for (const account of accountsToClose) {
+        try {
+          const accountPublicKey = new PublicKey(account.accountAddress);
+          const accountInfo = await connection.getAccountInfo(accountPublicKey);
+          if (accountInfo) {
+            totalRecoveredLamports += accountInfo.lamports;
+            accountInfos.push({ ...account, lamports: accountInfo.lamports });
+          }
+        } catch (error) {
+          console.log(`Error getting account info for ${account.accountAddress}:`, error);
+          // Fallback to stored rent amount
+          const fallbackLamports = Math.round(parseFloat(account.rentAmount) * 1e9);
+          totalRecoveredLamports += fallbackLamports;
+          accountInfos.push({ ...account, lamports: fallbackLamports });
+        }
+      }
 
       // Create transaction to close token accounts
       const transaction = new Transaction();
@@ -225,41 +228,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.add(closeInstruction);
       }
 
-      // Add service fee transfers
+      // Get recent blockhash for fee estimation
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = new PublicKey(walletAddress);
+
+      // Estimate transaction fee
+      let estimatedTxFeeLamports = 5000; // Default 5k lamports
+      try {
+        const message = transaction.compileMessage();
+        const feeForMessage = await connection.getFeeForMessage(message);
+        if (feeForMessage.value) {
+          estimatedTxFeeLamports = feeForMessage.value;
+        }
+      } catch (error) {
+        console.log('Failed to estimate transaction fee, using default:', error);
+      }
+
+      // Calculate fees in lamports with proper capping
+      const donationFactor = donationPercentage / 100;
+      const requestedFeeLamports = Math.floor(totalRecoveredLamports * donationFactor);
+      const safetyBufferLamports = 50000; // 0.00005 SOL buffer
+      const maxAllowedFeeLamports = Math.max(0, totalRecoveredLamports - estimatedTxFeeLamports - safetyBufferLamports);
+      const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
       
-      if (platformFeeAmount > 0) {
+      let referralFeeLamports = 0;
+      let platformFeeLamports = totalFeeLamports;
+      
+      if (referralCodeData && totalFeeLamports > 0) {
+        // 35% of fee goes to referral
+        referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
+        // 65% of fee stays with platform
+        platformFeeLamports = totalFeeLamports - referralFeeLamports;
+      }
+      
+      const netLamports = totalRecoveredLamports - totalFeeLamports;
+
+      // Add fee transfer instructions AFTER close instructions
+      if (platformFeeLamports > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
           toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+          lamports: platformFeeLamports,
         });
         
         transaction.add(platformFeeTransferInstruction);
       }
       
       // Add referral fee transfer if applicable
-      if (referralFeeAmount > 0 && referralCodeData) {
+      if (referralFeeLamports > 0 && referralCodeData) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
         const referralFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
           toPubkey: referralWalletPublicKey,
-          lamports: Math.round(referralFeeAmount * 1e9), // Convert SOL to lamports
+          lamports: referralFeeLamports,
         });
         
         transaction.add(referralFeeTransferInstruction);
       }
 
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = new PublicKey(walletAddress);
-
       // Serialize transaction
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
+
+      // Convert lamports to SOL for response
+      const totalSolReclaimed = totalRecoveredLamports / 1e9;
+      const totalFeeAmount = totalFeeLamports / 1e9;
+      const platformFeeAmount = platformFeeLamports / 1e9;
+      const referralFeeAmount = referralFeeLamports / 1e9;
+      const netAmount = netLamports / 1e9;
 
       res.json({
         transaction: transactionBase64,
@@ -269,7 +309,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platformFeeAmount: platformFeeAmount,
         referralFeeAmount: referralFeeAmount,
         netAmount: netAmount,
-        referralCodeUsed: referralCode || null
+        referralCodeUsed: referralCode || null,
+        feeCapInfo: {
+          requestedFeeLamports,
+          maxAllowedFeeLamports,
+          actualFeeLamports: totalFeeLamports,
+          estimatedTxFeeLamports,
+          safetyBufferLamports
+        }
       });
 
     } catch (error) {
@@ -806,21 +853,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
       
-      // Create single transaction with multiple burn+close instructions
-      const transaction = new Transaction();
-      let totalTokensProcessed = 0;
+      // Get actual rent amounts from the token accounts for precise calculations
+      let totalRecoveredLamports = 0;
+      const validTokens = [];
       
       for (const tokenMint of tokenMints) {
         try {
           const mintPublicKey = new PublicKey(tokenMint);
+          const tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey);
           
-          // Get associated token account
-          const tokenAccount = await getAssociatedTokenAddress(
-            mintPublicKey,
-            ownerPublicKey
-          );
-          
-          // Get token account info to determine balance and decimals
+          // Get token account info to verify it exists and get balance
           const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
           const parsedInfo = tokenAccountInfo.value?.data as any;
           
@@ -829,131 +871,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
-          const balance = parsedInfo.parsed.info.tokenAmount.amount;
-          const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
-          
-          // Step 1: Burn tokens (if balance > 0)
-          if (balance > 0) {
-            const burnInstruction = createBurnInstruction(
-              tokenAccount,     // Token account to burn from
-              mintPublicKey,    // Token mint
-              ownerPublicKey,   // Owner
-              balance           // Amount to burn (full balance)
-            );
-            transaction.add(burnInstruction);
+          // Get actual account lamports
+          const accountInfo = await connection.getAccountInfo(tokenAccount);
+          if (accountInfo) {
+            totalRecoveredLamports += accountInfo.lamports;
+            validTokens.push({
+              mint: tokenMint,
+              account: tokenAccount,
+              balance: parsedInfo.parsed.info.tokenAmount.amount,
+              lamports: accountInfo.lamports
+            });
           }
-          
-          // Step 2: Close the now-empty account to reclaim SOL
-          const closeInstruction = createCloseAccountInstruction(
-            tokenAccount,
-            ownerPublicKey, // destination (receives SOL)
-            ownerPublicKey  // owner
-          );
-          
-          transaction.add(closeInstruction);
-          totalTokensProcessed++;
-          
         } catch (error) {
           console.log(`Error processing token ${tokenMint}:`, error);
           continue;
         }
       }
       
-      if (totalTokensProcessed === 0) {
+      if (validTokens.length === 0) {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Calculate totals with referral fee splitting based on actual account rent
-      let totalSolRecovered = 0;
+      // Create transaction with burn+close instructions
+      const transaction = new Transaction();
       
-      // Get actual rent amounts from the token accounts
-      for (const tokenMint of tokenMints) {
-        try {
-          const mintPublicKey = new PublicKey(tokenMint);
-          const tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey);
-          const accountInfo = await connection.getAccountInfo(tokenAccount);
-          
-          if (accountInfo) {
-            // Add the actual rent amount (account lamports) to total
-            const rentAmount = accountInfo.lamports / 1e9; // Convert lamports to SOL
-            totalSolRecovered += rentAmount;
-          }
-        } catch (error) {
-          console.log(`Error getting account info for token ${tokenMint}:`, error);
-          // Fallback to hardcoded amount if unable to get account info
-          totalSolRecovered += 0.00203928;
+      for (const token of validTokens) {
+        const mintPublicKey = new PublicKey(token.mint);
+        
+        // Step 1: Burn tokens (if balance > 0)
+        if (token.balance > 0) {
+          const burnInstruction = createBurnInstruction(
+            token.account,    // Token account to burn from
+            mintPublicKey,    // Token mint
+            ownerPublicKey,   // Owner
+            token.balance     // Amount to burn (full balance)
+          );
+          transaction.add(burnInstruction);
         }
+        
+        // Step 2: Close the now-empty account to reclaim SOL
+        const closeInstruction = createCloseAccountInstruction(
+          token.account,
+          ownerPublicKey, // destination (receives SOL)
+          ownerPublicKey  // owner
+        );
+        
+        transaction.add(closeInstruction);
       }
-      const totalFeeAmount = totalSolRecovered * 0.15; // 15% fee
       
-      let referralFeeAmount = 0;
-      let platformFeeAmount = totalFeeAmount;
+      // Get recent blockhash for fee estimation
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+
+      // Estimate transaction fee
+      let estimatedTxFeeLamports = 5000; // Default 5k lamports
+      try {
+        const message = transaction.compileMessage();
+        const feeForMessage = await connection.getFeeForMessage(message);
+        if (feeForMessage.value) {
+          estimatedTxFeeLamports = feeForMessage.value;
+        }
+      } catch (error) {
+        console.log('Failed to estimate transaction fee, using default:', error);
+      }
+
+      // Calculate fees in lamports with proper capping (15% fee)
+      const donationFactor = 0.15; // 15% fee for token burning
+      const requestedFeeLamports = Math.floor(totalRecoveredLamports * donationFactor);
+      const safetyBufferLamports = 50000; // 0.00005 SOL buffer
+      const maxAllowedFeeLamports = Math.max(0, totalRecoveredLamports - estimatedTxFeeLamports - safetyBufferLamports);
+      const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
       
-      if (referralCodeData) {
-        // 35% of fee goes to referral (5.25% of total)
-        referralFeeAmount = totalFeeAmount * 0.35;
-        // 65% of fee stays with platform (9.75% of total)
-        platformFeeAmount = totalFeeAmount * 0.65;
-        console.log(`Referral fee calculation: totalFee=${totalFeeAmount}, referralFee=${referralFeeAmount}, platformFee=${platformFeeAmount}`);
+      let referralFeeLamports = 0;
+      let platformFeeLamports = totalFeeLamports;
+      
+      if (referralCodeData && totalFeeLamports > 0) {
+        // 35% of fee goes to referral
+        referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
+        // 65% of fee stays with platform
+        platformFeeLamports = totalFeeLamports - referralFeeLamports;
+        console.log(`Referral fee calculation: totalFee=${totalFeeLamports}, referralFee=${referralFeeLamports}, platformFee=${platformFeeLamports}`);
       } else {
         console.log('No referral code data - using full platform fee');
       }
       
-      const netAmount = totalSolRecovered - totalFeeAmount;
+      const netLamports = totalRecoveredLamports - totalFeeLamports;
 
-      // Add service fee transfers
-      if (platformFeeAmount > 0) {
+      // Add fee transfer instructions AFTER close instructions
+      if (platformFeeLamports > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
           toPubkey: feeCollectorPublicKey,
-          lamports: Math.round(platformFeeAmount * 1e9), // Convert SOL to lamports
+          lamports: platformFeeLamports,
         });
         
         transaction.add(platformFeeTransferInstruction);
       }
       
       // Add referral fee transfer if applicable
-      if (referralFeeAmount > 0 && referralCodeData) {
+      if (referralFeeLamports > 0 && referralCodeData) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-        const lamportsAmount = Math.round(referralFeeAmount * 1e9);
-        
-        console.log(`Adding referral fee transfer: ${referralFeeAmount} SOL (${lamportsAmount} lamports) to ${referralCodeData.walletAddress}`);
         
         const referralFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
           toPubkey: referralWalletPublicKey,
-          lamports: lamportsAmount, // Convert SOL to lamports
+          lamports: referralFeeLamports,
         });
         
         transaction.add(referralFeeTransferInstruction);
-        console.log('✅ Referral fee transfer instruction added to transaction');
-      } else {
-        console.log(`❌ Referral fee transfer skipped: referralFeeAmount=${referralFeeAmount}, referralCodeData=${!!referralCodeData}`);
       }
-      
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = ownerPublicKey;
       
       // Serialize transaction
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
-      console.log(`Bulk token burn transaction prepared: ${totalTokensProcessed} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${totalFeeAmount.toFixed(8)} fee)`);
+      // Convert lamports to SOL for response
+      const totalSolRecovered = totalRecoveredLamports / 1e9;
+      const totalFeeAmount = totalFeeLamports / 1e9;
+      const platformFeeAmount = platformFeeLamports / 1e9;
+      const referralFeeAmount = referralFeeLamports / 1e9;
+      const netAmount = netLamports / 1e9;
+      
+      console.log(`Bulk token burn transaction prepared: ${validTokens.length} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${totalFeeAmount.toFixed(8)} fee)`);
       
       res.json({
         transaction: transactionBase64,
-        tokensProcessed: totalTokensProcessed,
+        tokensProcessed: validTokens.length,
         solRecovered: totalSolRecovered.toFixed(8),
         feeAmount: totalFeeAmount.toFixed(8),
         platformFeeAmount: platformFeeAmount.toFixed(8),
         referralFeeAmount: referralFeeAmount.toFixed(8),
         netAmount: netAmount.toFixed(8),
         referralCodeUsed: referralCode || null,
-        message: `Bulk burn transaction prepared for ${totalTokensProcessed} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`
+        message: `Bulk burn transaction prepared for ${validTokens.length} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`,
+        feeCapInfo: {
+          requestedFeeLamports,
+          maxAllowedFeeLamports,
+          actualFeeLamports: totalFeeLamports,
+          estimatedTxFeeLamports,
+          safetyBufferLamports
+        }
       });
       
     } catch (error) {
