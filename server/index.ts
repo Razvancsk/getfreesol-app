@@ -129,13 +129,49 @@ app.use((req, res, next) => {
   process.exit(1);
 });
 
-// Handle uncaught exceptions and rejections
-process.on('uncaughtException', (error) => {
+// Enhanced global error handlers for database connection issues
+process.on('uncaughtException', (error: Error) => {
   console.error('Uncaught Exception:', error);
+  
+  // Check if it's a database connection error
+  const isDatabaseError = 
+    error.message?.includes('terminating connection') ||
+    error.message?.includes('connection closed') ||
+    error.message?.includes('connection lost') ||
+    (error as any).code === '57P01' || // admin_shutdown
+    (error as any).code === '08006' || // connection_failure
+    (error as any).code === '08003';   // connection_does_not_exist
+  
+  if (isDatabaseError) {
+    console.error('Database connection error detected. The connection will be automatically retried on next request.');
+    // Don't exit for database connection errors - let the retry logic handle it
+    return;
+  }
+  
+  // For other uncaught exceptions, exit gracefully
+  console.error('Shutting down due to uncaught exception...');
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  
+  // Check if it's a database connection error
+  const isDatabaseError = 
+    reason?.message?.includes('terminating connection') ||
+    reason?.message?.includes('connection closed') ||
+    reason?.message?.includes('connection lost') ||
+    reason?.code === '57P01' || // admin_shutdown
+    reason?.code === '08006' || // connection_failure
+    reason?.code === '08003';   // connection_does_not_exist
+  
+  if (isDatabaseError) {
+    console.error('Database connection rejection detected. The connection will be automatically retried on next request.');
+    // Don't exit for database connection errors - let the retry logic handle it
+    return;
+  }
+  
+  // For other unhandled rejections, exit gracefully
+  console.error('Shutting down due to unhandled rejection...');
   process.exit(1);
 });
