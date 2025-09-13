@@ -275,11 +275,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
       
+      // Check referral wallet BEFORE calculating final fees
+      let referralWalletExists = false;
       if (referralCodeData && totalFeeLamports > 0) {
-        // 35% of fee goes to referral
-        referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
-        // 65% of fee stays with platform
-        platformFeeLamports = totalFeeLamports - referralFeeLamports;
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        // Check if referral wallet exists (has SOL balance)
+        try {
+          const referralBalance = await connection.getBalance(referralWalletPublicKey);
+          referralWalletExists = referralBalance > 0;
+          console.log(`Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
+        } catch (error) {
+          console.log('Failed to check referral wallet balance:', error);
+          referralWalletExists = false;
+        }
+        
+        if (referralWalletExists) {
+          // 35% of fee goes to referral
+          referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
+          // 65% of fee stays with platform
+          platformFeeLamports = totalFeeLamports - referralFeeLamports;
+          console.log(`✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${referralFeeLamports}`);
+        } else {
+          // Referral wallet doesn't exist, all fees go to platform
+          platformFeeLamports = totalFeeLamports;
+          referralFeeLamports = 0;
+          console.log(`❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - all fees to platform: ${platformFeeLamports}`);
+        }
       }
       
       const netLamports = totalRecoveredLamports - totalFeeLamports;
@@ -296,54 +318,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         transaction.add(platformFeeTransferInstruction);
+        console.log(`Platform fee transfer added: ${platformFeeLamports} lamports`);
       }
       
-      // Add referral fee transfer if applicable - but check if referral wallet exists first
-      if (referralFeeLamports > 0 && referralCodeData) {
+      // Add referral fee transfer only if referral wallet exists
+      if (referralFeeLamports > 0 && referralCodeData && referralWalletExists) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
-        // Check if referral wallet exists (has SOL balance)
-        let referralWalletExists = false;
-        try {
-          const referralBalance = await connection.getBalance(referralWalletPublicKey);
-          referralWalletExists = referralBalance > 0;
-        } catch (error) {
-          console.log('Failed to check referral wallet balance:', error);
-        }
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
+          toPubkey: referralWalletPublicKey,
+          lamports: referralFeeLamports,
+        });
         
-        if (referralWalletExists) {
-          const referralFeeTransferInstruction = SystemProgram.transfer({
-            fromPubkey: new PublicKey(walletAddress),
-            toPubkey: referralWalletPublicKey,
-            lamports: referralFeeLamports,
-          });
-          
-          transaction.add(referralFeeTransferInstruction);
-          console.log(`✅ Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
-        } else {
-          // Referral wallet doesn't exist, add referral fee to platform fee instead
-          platformFeeLamports += referralFeeLamports;
-          referralFeeLamports = 0;
-          console.log(`❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist, adding referral fee to platform`);
-          
-          // Update the platform fee transfer instruction with the combined amount
-          const instructions = transaction.instructions;
-          for (let i = 0; i < instructions.length; i++) {
-            const instruction = instructions[i];
-            if (instruction.programId.equals(SystemProgram.programId) && 
-                instruction.keys.length === 2 &&
-                instruction.keys[1].pubkey.toString() === '9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC') {
-              // This is the platform fee transfer, update the amount
-              const newInstruction = SystemProgram.transfer({
-                fromPubkey: new PublicKey(walletAddress),
-                toPubkey: new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC'),
-                lamports: platformFeeLamports,
-              });
-              transaction.instructions[i] = newInstruction;
-              break;
-            }
-          }
-        }
+        transaction.add(referralFeeTransferInstruction);
+        console.log(`Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
       }
 
       // Serialize transaction
