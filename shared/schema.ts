@@ -133,55 +133,9 @@ export const ads = pgTable("ads", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Pre-market system for token pre-sales with collateral
-export const premarketListings = pgTable("premarket_listings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  creatorWallet: text("creator_wallet").notNull(), // Project creator's wallet
-  tokenName: text("token_name").notNull(), // Token name (e.g., "MyToken")
-  tokenSymbol: text("token_symbol").notNull(), // Token symbol (e.g., "MTK")
-  tokenLogo: text("token_logo"), // Optional token logo URL
-  totalSupply: decimal("total_supply", { precision: 18, scale: 0 }).notNull(), // Total tokens for sale
-  startingPrice: decimal("starting_price", { precision: 18, scale: 9 }).notNull(), // Starting price in SOL
-  description: text("description"), // Project description
-  tgeDate: timestamp("tge_date"), // Token Generation Event date
-  settlementDeadline: timestamp("settlement_deadline"), // 4 hours after TGE
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
 
-export const premarketOrders = pgTable("premarket_orders", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  listingId: varchar("listing_id").notNull(), // Reference to premarket listing
-  walletAddress: text("wallet_address").notNull(), // Buyer or seller wallet
-  orderType: text("order_type").notNull(), // 'buy' or 'sell'
-  quantity: decimal("quantity", { precision: 18, scale: 9 }).notNull(), // Token quantity
-  price: decimal("price", { precision: 18, scale: 9 }).notNull(), // Price per token in SOL
-  collateralAmount: decimal("collateral_amount", { precision: 18, scale: 9 }).notNull(), // Required collateral deposit
-  status: text("status").notNull().default("active"), // 'active', 'filled', 'cancelled'
-  filledBy: text("filled_by"), // Wallet address of the counterparty when filled
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  filledAt: timestamp("filled_at"),
-});
 
-export const collateralDeposits = pgTable("collateral_deposits", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id").notNull(), // Reference to the order
-  walletAddress: text("wallet_address").notNull(), // Who deposited the collateral
-  depositAmount: decimal("deposit_amount", { precision: 18, scale: 9 }).notNull(), // Collateral amount in SOL
-  depositType: text("deposit_type").notNull(), // 'seller' or 'buyer'
-  status: text("status").notNull().default("locked"), // 'locked', 'released', 'forfeited'
-  transactionSignature: text("transaction_signature"), // Solana transaction signature
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  releasedAt: timestamp("released_at"),
-});
 
-export const airdropClaims = pgTable("airdrop_claims", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  listingId: varchar("listing_id").notNull(), // Reference to premarket listing
-  sellerWallet: text("seller_wallet").notNull(), // Seller who claimed airdrop
-  claimSignature: text("claim_signature").notNull(), // Transaction signature of airdrop claim
-  claimedAt: timestamp("claimed_at").notNull().defaultNow(),
-});
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -245,31 +199,6 @@ export const insertAdSchema = createInsertSchema(ads).omit({
   updatedAt: true,
 });
 
-export const insertPremarketListingSchema = createInsertSchema(premarketListings).omit({
-  id: true,
-  isActive: true,
-  createdAt: true,
-});
-
-export const insertPremarketOrderSchema = createInsertSchema(premarketOrders).omit({
-  id: true,
-  status: true,
-  filledBy: true,
-  createdAt: true,
-  filledAt: true,
-});
-
-export const insertCollateralDepositSchema = createInsertSchema(collateralDeposits).omit({
-  id: true,
-  status: true,
-  createdAt: true,
-  releasedAt: true,
-});
-
-export const insertAirdropClaimSchema = createInsertSchema(airdropClaims).omit({
-  id: true,
-  claimedAt: true,
-});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -293,11 +222,3 @@ export type WalletReferralAssociation = typeof walletReferralAssociations.$infer
 export type InsertWalletReferralAssociation = z.infer<typeof insertWalletReferralAssociationSchema>;
 export type Ad = typeof ads.$inferSelect;
 export type InsertAd = z.infer<typeof insertAdSchema>;
-export type PremarketListing = typeof premarketListings.$inferSelect;
-export type InsertPremarketListing = z.infer<typeof insertPremarketListingSchema>;
-export type PremarketOrder = typeof premarketOrders.$inferSelect;
-export type InsertPremarketOrder = z.infer<typeof insertPremarketOrderSchema>;
-export type CollateralDeposit = typeof collateralDeposits.$inferSelect;
-export type InsertCollateralDeposit = z.infer<typeof insertCollateralDepositSchema>;
-export type AirdropClaim = typeof airdropClaims.$inferSelect;
-export type InsertAirdropClaim = z.infer<typeof insertAirdropClaimSchema>;
