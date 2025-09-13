@@ -643,35 +643,37 @@ export default function ClaimSolPage() {
                         ))}
                       </div>
 
-              {/* Burn Button at Bottom */}
-              {selectedTokens.size > 0 && (
-                <div className="mt-6">
-                  <Button
-                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
-                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
-                    className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
-                  >
-                    {bulkBurnTokensMutation.isPending ? (
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                    ) : (
-                      <Flame className="h-5 w-5 mr-2" />
-                    )}
-                    BURN
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+                      {/* Burn Button at Bottom */}
+                      {selectedTokens.size > 0 && (
+                        <div className="mt-6">
+                          <Button
+                            onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                            disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                            className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                          >
+                            {bulkBurnTokensMutation.isPending ? (
+                              <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                            ) : (
+                              <Flame className="h-5 w-5 mr-2" />
+                            )}
+                            BURN
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-          {/* Empty State Messages */}
-          {activeTab === 'burnTokens' && tokenList.length === 0 && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="text-center space-y-4">
-                <Flame className="h-12 w-12 text-purple-400 mx-auto" />
-                <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
-                <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
-              </div>
-            </div>
+                  {/* Empty State Messages */}
+                  {activeTab === 'burnTokens' && tokenList.length === 0 && (
+                    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                      <div className="text-center space-y-4">
+                        <Flame className="h-12 w-12 text-purple-400 mx-auto" />
+                        <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
+                        <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
           )}
 
           {/* Referrals Tab Content */}
@@ -823,7 +825,6 @@ export default function ClaimSolPage() {
           )}
         </div>
       )}
-      </div>
     </div>
   );
 }
