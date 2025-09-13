@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
-          ownerPublicKey, // destination (receives SOL)
+          ownerPublicKey, // destination (user receives SOL)
           ownerPublicKey  // owner
         );
         
@@ -245,12 +245,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Failed to estimate transaction fee, using default:', error);
       }
 
-      // Calculate fees in lamports with proper capping
+      // Check user's current SOL balance for network fee validation
+      let userBalanceLamports = 0;
+      try {
+        const userBalance = await connection.getBalance(new PublicKey(walletAddress));
+        userBalanceLamports = userBalance;
+      } catch (error) {
+        console.log('Failed to get user balance:', error);
+      }
+      
+      // Check if user has enough SOL to cover network transaction fee
+      if (userBalanceLamports < estimatedTxFeeLamports + 10000) { // 10k lamport buffer
+        const neededSol = (estimatedTxFeeLamports + 10000) / 1e9;
+        const currentSol = userBalanceLamports / 1e9;
+        return res.status(400).json({
+          error: `Insufficient SOL for transaction fee. You have ${currentSol.toFixed(6)} SOL but need at least ${neededSol.toFixed(6)} SOL. Please add more SOL to your wallet.`
+        });
+      }
+      
+      // Calculate fees in lamports - no pre-balance capping needed since closes execute first
       const donationFactor = donationPercentage / 100;
       const requestedFeeLamports = Math.floor(totalRecoveredLamports * donationFactor);
       const safetyBufferLamports = 50000; // 0.00005 SOL buffer
       const maxAllowedFeeLamports = Math.max(0, totalRecoveredLamports - estimatedTxFeeLamports - safetyBufferLamports);
       const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
+      
+      console.log(`Fee calculation: requested=${requestedFeeLamports}, maxAllowed=${maxAllowedFeeLamports}, final=${totalFeeLamports}`);
       
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
@@ -265,6 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const netLamports = totalRecoveredLamports - totalFeeLamports;
 
       // Add fee transfer instructions AFTER close instructions
+      // Fees are paid from SOL recovered by closing accounts
       if (platformFeeLamports > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
