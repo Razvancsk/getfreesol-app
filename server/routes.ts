@@ -991,19 +991,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
       
+      // Check referral wallet BEFORE calculating final fees
+      let referralWalletExists = false;
       if (referralCodeData && totalFeeLamports > 0) {
-        // 35% of fee goes to referral
-        referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
-        // 65% of fee stays with platform
-        platformFeeLamports = totalFeeLamports - referralFeeLamports;
-        console.log(`Referral fee calculation: totalFee=${totalFeeLamports}, referralFee=${referralFeeLamports}, platformFee=${platformFeeLamports}`);
+        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+        
+        // Check if referral wallet exists (has SOL balance)
+        try {
+          const referralBalance = await connection.getBalance(referralWalletPublicKey);
+          referralWalletExists = referralBalance > 0;
+          console.log(`TOKEN BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
+        } catch (error) {
+          console.log('TOKEN BURN - Failed to check referral wallet balance:', error);
+          referralWalletExists = false;
+        }
+        
+        if (referralWalletExists) {
+          // 35% of fee goes to referral
+          referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
+          // 65% of fee stays with platform
+          platformFeeLamports = totalFeeLamports - referralFeeLamports;
+          console.log(`TOKEN BURN ✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${referralFeeLamports}`);
+        } else {
+          // Referral wallet doesn't exist, all fees go to platform
+          platformFeeLamports = totalFeeLamports;
+          referralFeeLamports = 0;
+          console.log(`TOKEN BURN ❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - all fees to platform: ${platformFeeLamports}`);
+        }
       } else {
-        console.log('No referral code data - using full platform fee');
+        console.log('TOKEN BURN - No referral code data - using full platform fee');
       }
       
       const netLamports = totalRecoveredLamports - totalFeeLamports;
 
-      // Add fee transfer instructions AFTER close instructions
+      // Add fee transfer instructions AFTER burn instructions
       if (platformFeeLamports > 0) {
         const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
         
@@ -1014,10 +1035,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         transaction.add(platformFeeTransferInstruction);
+        console.log(`TOKEN BURN - Platform fee transfer added: ${platformFeeLamports} lamports`);
       }
       
-      // Add referral fee transfer if applicable
-      if (referralFeeLamports > 0 && referralCodeData) {
+      // Add referral fee transfer only if referral wallet exists
+      if (referralFeeLamports > 0 && referralCodeData && referralWalletExists) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
         const referralFeeTransferInstruction = SystemProgram.transfer({
@@ -1027,6 +1049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         transaction.add(referralFeeTransferInstruction);
+        console.log(`TOKEN BURN - Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
       }
       
       // Serialize transaction
