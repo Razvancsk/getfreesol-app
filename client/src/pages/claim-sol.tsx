@@ -42,7 +42,7 @@ export default function ClaimSolPage() {
   const { connected: isConnected, publicKey, connect, disconnect } = useWallet();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const donationPercentage = 0; // Fees temporarily disabled - users get 100% back
+  const donationPercentage = 15; // Platform fee set to 15%
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
@@ -823,6 +823,7 @@ export default function ClaimSolPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
