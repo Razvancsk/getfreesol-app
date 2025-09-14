@@ -10,14 +10,18 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check endpoint for deployment verification
+// Lightweight health check endpoint - always returns 200
 app.get('/health', async (req, res) => {
   let databaseStatus = 'unknown';
-  try {
-    await db.execute(sql`SELECT 1`);
-    databaseStatus = 'connected';
-  } catch (error) {
-    databaseStatus = 'error';
+  if (process.env.DATABASE_URL) {
+    try {
+      await db.execute(sql`SELECT 1`);
+      databaseStatus = 'connected';
+    } catch (error) {
+      databaseStatus = 'error';
+    }
+  } else {
+    databaseStatus = 'not_configured';
   }
   
   const healthData = { 
@@ -30,6 +34,56 @@ app.get('/health', async (req, res) => {
   
   log(`Health check requested - Status: ${healthData.status}, DB: ${databaseStatus}, Env: ${healthData.environment}`);
   res.status(200).json(healthData);
+});
+
+// Readiness check endpoint - validates static assets and optional DB
+app.get('/ready', async (req, res) => {
+  const readyData = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown',
+    staticAssets: 'unknown',
+    database: 'unknown',
+    ready: false,
+    issues: [] as string[]
+  };
+
+  // Check static assets
+  try {
+    const staticPath = getStaticAssetsPath();
+    const indexPath = path.resolve(staticPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      readyData.staticAssets = 'ready';
+      log(`Readiness check - Static assets ready at: ${staticPath}`);
+    } else {
+      readyData.staticAssets = 'missing_index';
+      readyData.issues.push(`index.html not found at ${staticPath}`);
+    }
+  } catch (error) {
+    readyData.staticAssets = 'error';
+    readyData.issues.push(`Static assets error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  // Check database if configured
+  if (process.env.DATABASE_URL) {
+    try {
+      await db.execute(sql`SELECT 1`);
+      readyData.database = 'ready';
+    } catch (error) {
+      readyData.database = 'error';
+      readyData.issues.push(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  } else {
+    readyData.database = 'not_configured';
+  }
+
+  // Overall readiness
+  readyData.ready = readyData.staticAssets === 'ready' && 
+                   (readyData.database === 'ready' || readyData.database === 'not_configured');
+
+  const status = readyData.ready ? 200 : 503;
+  log(`Readiness check - Ready: ${readyData.ready}, Static: ${readyData.staticAssets}, DB: ${readyData.database}`);
+  
+  res.status(status).json(readyData);
 });
 
 app.use((req, res, next) => {
@@ -62,45 +116,47 @@ app.use((req, res, next) => {
   next();
 });
 
-// Determine static assets directory and ensure availability for production deployment
+// Determine static assets directory with deterministic resolution (no runtime copying)
 function getStaticAssetsPath() {
-  // When running from built dist/index.js, we look for adjacent public directory
+  // Support explicit override via environment variable
+  if (process.env.STATIC_DIR) {
+    const explicitPath = path.resolve(process.env.STATIC_DIR);
+    log(`Using explicit static assets path from STATIC_DIR: ${explicitPath}`);
+    return explicitPath;
+  }
+  
+  // Primary: When running from built dist/index.js, look for adjacent public directory
   const distPublic = path.resolve(import.meta.dirname, "public");
   
-  // Fallback to the original location
+  // Fallback: Original location in server/public
   const serverPublic = path.resolve(import.meta.dirname, "..", "server", "public");
   
   log(`Checking for static assets at: ${distPublic}`);
   
   if (fs.existsSync(distPublic)) {
-    log(`Static assets found at ${distPublic}`);
-    return distPublic;
-  }
-  
-  log(`Static assets not found at ${distPublic}, checking: ${serverPublic}`);
-  
-  if (fs.existsSync(serverPublic)) {
-    log(`Static assets found at ${serverPublic}`);
-    return serverPublic;
-  }
-  
-  // Try to copy from build output if available
-  const builtPublic = path.resolve(import.meta.dirname, "..", "dist", "public");
-  
-  if (fs.existsSync(builtPublic)) {
-    try {
-      log(`Copying static assets from ${builtPublic} to ${serverPublic}`);
-      fs.cpSync(builtPublic, serverPublic, { recursive: true, force: true });
-      log(`Successfully copied static assets to ${serverPublic}`);
-      return serverPublic;
-    } catch (error) {
-      console.error(`Failed to copy static assets:`, error);
-      throw new Error(`Could not copy static assets from ${builtPublic} to ${serverPublic}: ${error}`);
+    const indexPath = path.resolve(distPublic, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      log(`Static assets found and verified at ${distPublic}`);
+      return distPublic;
+    } else {
+      log(`Static assets directory exists but missing index.html at ${distPublic}`);
     }
   }
   
-  const errorMsg = `No static assets found at ${distPublic}, ${serverPublic}, or ${builtPublic}. Ensure 'vite build' ran successfully.`;
-  console.error(errorMsg);
+  log(`Static assets not found at ${distPublic}, checking fallback: ${serverPublic}`);
+  
+  if (fs.existsSync(serverPublic)) {
+    const indexPath = path.resolve(serverPublic, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      log(`Static assets found and verified at ${serverPublic}`);
+      return serverPublic;
+    } else {
+      log(`Static assets directory exists but missing index.html at ${serverPublic}`);
+    }
+  }
+  
+  const errorMsg = `No valid static assets found. Checked: ${distPublic}, ${serverPublic}. Ensure 'npm run build' was executed successfully.`;
+  log(errorMsg);
   throw new Error(errorMsg);
 }
 
@@ -111,21 +167,19 @@ function getStaticAssetsPath() {
     log(`PORT: ${process.env.PORT || '5000'}`);
     log(`DATABASE_URL exists: ${!!process.env.DATABASE_URL}`);
     
-    // Validate critical environment variables
-    const requiredEnvVars = ['DATABASE_URL'];
-    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-    if (missingVars.length > 0) {
-      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
-    }
-    
-    // Test database connectivity during startup
-    try {
-      log(`Testing database connection...`);
-      await db.execute(sql`SELECT 1`);
-      log(`Database connection successful`);
-    } catch (dbError) {
-      console.error(`Database connection failed:`, dbError);
-      throw new Error(`Database initialization failed: ${dbError}`);
+    // Test database connectivity during startup if configured
+    if (process.env.DATABASE_URL) {
+      try {
+        log(`Testing database connection...`);
+        await db.execute(sql`SELECT 1`);
+        log(`Database connection successful`);
+      } catch (dbError) {
+        log(`Database connection failed: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+        log(`Server will continue starting without database connectivity`);
+        // Don't exit - allow server to start and handle DB errors in endpoints
+      }
+    } else {
+      log(`DATABASE_URL not configured - database features will be unavailable`);
     }
     
     const server = await registerRoutes(app);
