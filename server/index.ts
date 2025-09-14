@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 app.use(express.json());
@@ -51,6 +53,36 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Ensure static assets are available for production deployment
+function ensureStaticAssets() {
+  const serverPublic = path.resolve(import.meta.dirname, "public");
+  
+  log(`Checking for static assets at: ${serverPublic}`);
+  
+  if (!fs.existsSync(serverPublic)) {
+    const builtPublic = path.resolve(import.meta.dirname, "..", "dist", "public");
+    
+    log(`Static assets not found at ${serverPublic}, checking build output at: ${builtPublic}`);
+    
+    if (fs.existsSync(builtPublic)) {
+      try {
+        log(`Copying static assets from ${builtPublic} to ${serverPublic}`);
+        fs.cpSync(builtPublic, serverPublic, { recursive: true });
+        log(`Successfully copied static assets to server/public`);
+      } catch (error) {
+        console.error(`Failed to copy static assets:`, error);
+        throw new Error(`Could not copy static assets from ${builtPublic} to ${serverPublic}: ${error}`);
+      }
+    } else {
+      const errorMsg = `Neither ${serverPublic} nor ${builtPublic} exists. Ensure 'vite build' ran successfully before starting the server.`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+  } else {
+    log(`Static assets found at ${serverPublic}`);
+  }
+}
 
 (async () => {
   try {
@@ -103,6 +135,7 @@ app.use((req, res, next) => {
       log(`Vite setup completed`);
     } else {
       log(`Setting up static file serving for production mode...`);
+      ensureStaticAssets();
       serveStatic(app);
       log(`Static file serving setup completed`);
     }
