@@ -11,16 +11,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Health check endpoint for deployment verification
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  let databaseStatus = 'unknown';
+  try {
+    await db.execute(sql`SELECT 1`);
+    databaseStatus = 'connected';
+  } catch (error) {
+    databaseStatus = 'error';
+  }
+  
   const healthData = { 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'unknown',
     port: process.env.PORT || '5000',
-    databaseConnected: !!process.env.DATABASE_URL
+    databaseStatus
   };
   
-  log(`Health check requested - ${JSON.stringify(healthData)}`);
+  log(`Health check requested - Status: ${healthData.status}, DB: ${databaseStatus}, Env: ${healthData.environment}`);
   res.status(200).json(healthData);
 });
 
@@ -54,34 +62,46 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ensure static assets are available for production deployment
-function ensureStaticAssets() {
-  const serverPublic = path.resolve(import.meta.dirname, "public");
+// Determine static assets directory and ensure availability for production deployment
+function getStaticAssetsPath() {
+  // When running from built dist/index.js, we look for adjacent public directory
+  const distPublic = path.resolve(import.meta.dirname, "public");
   
-  log(`Checking for static assets at: ${serverPublic}`);
+  // Fallback to the original location
+  const serverPublic = path.resolve(import.meta.dirname, "..", "server", "public");
   
-  if (!fs.existsSync(serverPublic)) {
-    const builtPublic = path.resolve(import.meta.dirname, "..", "dist", "public");
-    
-    log(`Static assets not found at ${serverPublic}, checking build output at: ${builtPublic}`);
-    
-    if (fs.existsSync(builtPublic)) {
-      try {
-        log(`Copying static assets from ${builtPublic} to ${serverPublic}`);
-        fs.cpSync(builtPublic, serverPublic, { recursive: true });
-        log(`Successfully copied static assets to server/public`);
-      } catch (error) {
-        console.error(`Failed to copy static assets:`, error);
-        throw new Error(`Could not copy static assets from ${builtPublic} to ${serverPublic}: ${error}`);
-      }
-    } else {
-      const errorMsg = `Neither ${serverPublic} nor ${builtPublic} exists. Ensure 'vite build' ran successfully before starting the server.`;
-      console.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-  } else {
-    log(`Static assets found at ${serverPublic}`);
+  log(`Checking for static assets at: ${distPublic}`);
+  
+  if (fs.existsSync(distPublic)) {
+    log(`Static assets found at ${distPublic}`);
+    return distPublic;
   }
+  
+  log(`Static assets not found at ${distPublic}, checking: ${serverPublic}`);
+  
+  if (fs.existsSync(serverPublic)) {
+    log(`Static assets found at ${serverPublic}`);
+    return serverPublic;
+  }
+  
+  // Try to copy from build output if available
+  const builtPublic = path.resolve(import.meta.dirname, "..", "dist", "public");
+  
+  if (fs.existsSync(builtPublic)) {
+    try {
+      log(`Copying static assets from ${builtPublic} to ${serverPublic}`);
+      fs.cpSync(builtPublic, serverPublic, { recursive: true, force: true });
+      log(`Successfully copied static assets to ${serverPublic}`);
+      return serverPublic;
+    } catch (error) {
+      console.error(`Failed to copy static assets:`, error);
+      throw new Error(`Could not copy static assets from ${builtPublic} to ${serverPublic}: ${error}`);
+    }
+  }
+  
+  const errorMsg = `No static assets found at ${distPublic}, ${serverPublic}, or ${builtPublic}. Ensure 'vite build' ran successfully.`;
+  console.error(errorMsg);
+  throw new Error(errorMsg);
 }
 
 (async () => {
@@ -119,24 +139,34 @@ function ensureStaticAssets() {
       res.status(status).json({ message });
     });
 
-    // Set NODE_ENV to production for deployment environment
+    // Set NODE_ENV to production for deployment environment if not already set
     if (!process.env.NODE_ENV) {
       process.env.NODE_ENV = 'production';
     }
     
+    // Ensure Express app environment matches NODE_ENV
+    app.set('env', process.env.NODE_ENV);
+    
     log(`Starting server in ${process.env.NODE_ENV} mode...`);
 
-    // importantly only setup vite in development and after
-    // setting up all the other routes so the catch-all route
-    // doesn't interfere with the other routes
-    if (app.get("env") === "development" || process.env.NODE_ENV === "development") {
+    // Setup vite in development, static file serving in production
+    if (process.env.NODE_ENV === "development") {
       log(`Setting up Vite for development mode...`);
       await setupVite(app, server);
       log(`Vite setup completed`);
     } else {
       log(`Setting up static file serving for production mode...`);
-      ensureStaticAssets();
-      serveStatic(app);
+      const staticPath = getStaticAssetsPath();
+      log(`Using static assets from: ${staticPath}`);
+      
+      // Serve static files from the resolved path
+      app.use(express.static(staticPath));
+      
+      // Fall through to index.html if the file doesn't exist (SPA routing)
+      app.use("*", (_req, res) => {
+        res.sendFile(path.resolve(staticPath, "index.html"));
+      });
+      
       log(`Static file serving setup completed`);
     }
 
