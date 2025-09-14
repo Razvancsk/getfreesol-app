@@ -10,11 +10,16 @@ app.use(express.urlencoded({ extended: false }));
 
 // Health check endpoint for deployment verification
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
+  const healthData = { 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'unknown'
-  });
+    environment: process.env.NODE_ENV || 'unknown',
+    port: process.env.PORT || '5000',
+    databaseConnected: !!process.env.DATABASE_URL
+  };
+  
+  log(`Health check requested - ${JSON.stringify(healthData)}`);
+  res.status(200).json(healthData);
 });
 
 app.use((req, res, next) => {
