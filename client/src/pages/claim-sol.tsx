@@ -950,15 +950,15 @@ export default function SolRefund() {
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
-          <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between mb-2 space-y-2 lg:space-y-0">
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
             {/* Top row: Logo and Wallet Connection (mobile) */}
-            <div className="flex items-start justify-between">
-              {/* Logo - positioned more left and up */}
-              <div className="flex items-start -mt-4">
+            <div className="flex items-center justify-between">
+              {/* Logo */}
+              <div className="flex items-center">
                 <img 
                   src={logoImage}
                   alt="Get your SOL back!"
-                  className="h-48 w-auto ml-0"
+                  className="h-48 w-auto"
                 />
               </div>
               
@@ -992,9 +992,9 @@ export default function SolRefund() {
               </div>
             </div>
             
-            {/* Center Navigation Buttons - Desktop: positioned higher, Mobile: below logo */}
+            {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
             {isConnected && (
-              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 lg:-mt-6">
+              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
                 <div className="flex items-center space-x-2">
                   <Button
                     onClick={() => setActiveTab('reclaim')}
