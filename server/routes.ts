@@ -309,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add fee transfer instructions AFTER close instructions
       // Fees are paid from SOL recovered by closing accounts
       if (platformFeeLamports > 0) {
-        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        const feeCollectorPublicKey = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
@@ -1026,7 +1026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add fee transfer instructions AFTER burn instructions
       if (platformFeeLamports > 0) {
-        const feeCollectorPublicKey = new PublicKey('9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        const feeCollectorPublicKey = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,

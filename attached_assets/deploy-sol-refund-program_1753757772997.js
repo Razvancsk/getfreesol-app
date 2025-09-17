@@ -71,13 +71,13 @@ async function deploySolRefundProgram() {
 
         console.log('✅ Deployment successful!');
         console.log('Program ID:', program.programId.toString());
-        console.log('Fee collector wallet: 9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC');
+        console.log('Fee collector wallet: 9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
 
         // Save config
         const configPath = path.join(__dirname, 'sol-refund-config.json');
         fs.writeFileSync(configPath, JSON.stringify({
             programId: program.programId.toString(),
-            feeCollector: '9QQk8474MNkfmNtdt6cvZbCPwiJicJ125N2NLqfyumYC',
+            feeCollector: '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf',
             feePercentage: 15
         }, null, 2));
 
