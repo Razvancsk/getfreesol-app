@@ -11,8 +11,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1757882056840.png';
@@ -384,6 +390,7 @@ export default function SolRefund() {
       console.error('Failed to disconnect wallet:', error);
     }
   };
+
 
 
   // Scan wallet for empty token accounts
@@ -987,19 +994,28 @@ export default function SolRefund() {
               </div>
               
               {/* Mobile Wallet Connection */}
-              <div className="lg:hidden flex items-center space-x-3">
+              <div className="lg:hidden flex items-center">
                 {isConnected && publicKey ? (
-                  <>
-                    <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-3 py-1 text-white font-mono text-xs border border-purple-500/30">
-                      <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
-                    </div>
-                    <Button
-                      onClick={disconnectWallet}
-                      className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-3 py-1 text-xs font-medium border border-purple-500/30"
-                    >
-                      Disconnect
-                    </Button>
-                  </>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                        data-testid="button-wallet-connected"
+                      >
+                        <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                      <DropdownMenuItem 
+                        onClick={disconnectWallet}
+                        className="text-white hover:bg-purple-600/40 cursor-pointer"
+                        data-testid="button-disconnect"
+                      >
+                        Disconnect
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : (
                   <Button
                     onClick={() => {
@@ -1008,6 +1024,7 @@ export default function SolRefund() {
                     }}
                     className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
                     title="Connect your wallet"
+                    data-testid="button-connect"
                   >
                     <Wallet className="h-4 w-4 mr-1" />
                     Connect
@@ -1064,19 +1081,26 @@ export default function SolRefund() {
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
               {isConnected && publicKey ? (
-                <>
-                  <div className="bg-purple-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30">
-                    <div className="flex items-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                      data-testid="button-wallet-connected-desktop"
+                    >
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={disconnectWallet}
-                    className="bg-purple-700/60 hover:bg-purple-600/60 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
-                  >
-                    Disconnect
-                  </Button>
-                </>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                    <DropdownMenuItem 
+                      onClick={disconnectWallet}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="button-disconnect-desktop"
+                    >
+                      Disconnect
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <div className="flex flex-col items-center space-y-3">
                   <Button
@@ -1086,6 +1110,7 @@ export default function SolRefund() {
                     }}
                     className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
                     title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
+                    data-testid="button-connect-desktop"
                   >
                     <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
