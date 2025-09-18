@@ -962,12 +962,16 @@ export default function SolRefund() {
             {/* Top row: Logo and Wallet Connection (mobile) */}
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <div className="flex items-center space-x-8">
+              <div className="flex items-center">
                 <img 
                   src={logoImage}
                   alt="Get your SOL back!"
                   className="h-[100px] w-[100px]"
                 />
+              </div>
+              
+              {/* Mobile Wallet Connection */}
+              <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
                   <a
@@ -991,10 +995,7 @@ export default function SolRefund() {
                     <SiDiscord className="h-4 w-4 text-white" />
                   </a>
                 </div>
-              </div>
-              
-              {/* Mobile Wallet Connection */}
-              <div className="lg:hidden flex items-center">
+                
                 {isConnected && publicKey ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1080,6 +1081,30 @@ export default function SolRefund() {
             
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
+              {/* Social Media Buttons */}
+              <div className="flex items-center space-x-1">
+                <a
+                  href="https://x.com/getfreesol_xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-social-x-desktop"
+                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  title="Follow us on X (Twitter)"
+                >
+                  <SiX className="h-4 w-4 text-white" />
+                </a>
+                <a
+                  href="https://discord.gg/tSBMgYcZaK"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-social-discord-desktop"
+                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  title="Join our Discord community"
+                >
+                  <SiDiscord className="h-4 w-4 text-white" />
+                </a>
+              </div>
+
               {isConnected && publicKey ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
