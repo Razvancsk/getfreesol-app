@@ -1662,6 +1662,23 @@ export default function SolRefund() {
         </div>
       </div>
 
+      {/* Footer */}
+      <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex items-center justify-center space-x-3">
+            <img 
+              src={logoImage}
+              alt="Get Free Sol"
+              className="h-8 w-8"
+            />
+            <div className="text-center">
+              <div className="text-white font-semibold text-lg">Get Free Sol</div>
+              <div className="text-purple-300 text-sm">2025 All rights reserved</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Wallet Selection Modal */}
 
     </div>
