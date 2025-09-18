@@ -968,20 +968,20 @@ export default function SolRefund() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-x"
-                    className="flex items-center justify-center w-7 h-7 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                     title="Follow us on X (Twitter)"
                   >
-                    <SiX className="h-3 w-3 text-white" />
+                    <SiX className="h-4 w-4 text-white" />
                   </a>
                   <a
                     href="https://discord.gg/tSBMgYcZaK"
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-discord"
-                    className="flex items-center justify-center w-7 h-7 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                     title="Join our Discord community"
                   >
-                    <SiDiscord className="h-3 w-3 text-white" />
+                    <SiDiscord className="h-4 w-4 text-white" />
                   </a>
                 </div>
               </div>
