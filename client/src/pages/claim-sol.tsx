@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Settings } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -68,6 +68,7 @@ export default function SolRefund() {
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
+  const [currentDesign, setCurrentDesign] = useState<'current' | 'design-1' | 'design-2' | 'design-3'>('current');
   
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -954,7 +955,11 @@ export default function SolRefund() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className={`min-h-screen ${
+      currentDesign === 'current' 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : currentDesign
+    }`}>
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
@@ -972,6 +977,49 @@ export default function SolRefund() {
               
               {/* Mobile Wallet Connection */}
               <div className="lg:hidden flex items-center space-x-2">
+                {/* Design Theme Selector */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md w-8 h-8 border border-purple-500/30 flex items-center justify-center"
+                      data-testid="button-design-selector-mobile"
+                      title="Choose Design Theme"
+                    >
+                      <Settings className="h-4 w-4 text-white" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('current')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-current-mobile"
+                    >
+                      Current Design
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('design-1')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-minimalist-mobile"
+                    >
+                      Modern Minimalist
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('design-2')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-cyberpunk-mobile"
+                    >
+                      Cyberpunk/Tech
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('design-3')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-professional-mobile"
+                    >
+                      Professional/Corporate
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
                   <a
@@ -1081,28 +1129,74 @@ export default function SolRefund() {
             
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
-              {/* Social Media Buttons */}
-              <div className="flex items-center space-x-1">
-                <a
-                  href="https://x.com/getfreesol_xyz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-social-x-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  title="Follow us on X (Twitter)"
-                >
-                  <SiX className="h-4 w-4 text-white" />
-                </a>
-                <a
-                  href="https://discord.gg/tSBMgYcZaK"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-social-discord-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  title="Join our Discord community"
-                >
-                  <SiDiscord className="h-4 w-4 text-white" />
-                </a>
+              {/* Design Selector and Social Media Buttons */}
+              <div className="flex items-center space-x-2">
+                {/* Design Theme Selector */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md w-8 h-8 border border-purple-500/30 flex items-center justify-center"
+                      data-testid="button-design-selector"
+                      title="Choose Design Theme"
+                    >
+                      <Settings className="h-4 w-4 text-white" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('current')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-current"
+                    >
+                      Current Design
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('design-1')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-minimalist"
+                    >
+                      Modern Minimalist
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('design-2')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-cyberpunk"
+                    >
+                      Cyberpunk/Tech
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setCurrentDesign('design-3')}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="design-professional"
+                    >
+                      Professional/Corporate
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Social Media Buttons */}
+                <div className="flex items-center space-x-1">
+                  <a
+                    href="https://x.com/getfreesol_xyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-x-desktop"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="Follow us on X (Twitter)"
+                  >
+                    <SiX className="h-4 w-4 text-white" />
+                  </a>
+                  <a
+                    href="https://discord.gg/tSBMgYcZaK"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-discord-desktop"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="Join our Discord community"
+                  >
+                    <SiDiscord className="h-4 w-4 text-white" />
+                  </a>
+                </div>
               </div>
 
               {isConnected && publicKey ? (
@@ -1168,7 +1262,15 @@ export default function SolRefund() {
                 }}
                 disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
                 size="lg"
-                className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
+                className={`px-8 py-4 text-lg font-semibold transition-all duration-200 ${
+                  currentDesign === 'current' 
+                    ? 'bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white'
+                    : currentDesign === 'design-1' 
+                    ? 'button-minimalist'
+                    : currentDesign === 'design-2' 
+                    ? 'button-cyber'
+                    : 'button-professional'
+                }`}
               >
                 {(scanMutation.isPending || scanTokensMutation.isPending) ? (
                   <RefreshCw className="h-6 w-6 animate-spin mr-3" />
@@ -1199,7 +1301,15 @@ export default function SolRefund() {
 
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && scanResult && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className={`p-6 ${
+              currentDesign === 'current' 
+                ? 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20'
+                : currentDesign === 'design-1' 
+                ? 'card-minimalist'
+                : currentDesign === 'design-2' 
+                ? 'card-cyber'
+                : 'card-professional'
+            }`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
               </div>
