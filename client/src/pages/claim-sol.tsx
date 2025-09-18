@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe } from "lucide-react";
+import { SiX, SiDiscord } from 'react-icons/si';
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import logoImage from '@assets/image_1757882056840.png';
@@ -954,12 +955,35 @@ export default function SolRefund() {
             {/* Top row: Logo and Wallet Connection (mobile) */}
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <div className="flex items-center">
+              <div className="flex items-center space-x-4">
                 <img 
                   src={logoImage}
                   alt="Get your SOL back!"
                   className="h-[100px] w-[100px]"
                 />
+                {/* Social Media Buttons */}
+                <div className="flex items-center space-x-2">
+                  <a
+                    href="https://x.com/getfreesol_xyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-x"
+                    className="flex items-center justify-center w-10 h-10 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
+                    title="Follow us on X (Twitter)"
+                  >
+                    <SiX className="h-5 w-5 text-white" />
+                  </a>
+                  <a
+                    href="https://discord.gg/tSBMgYcZaK"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-discord"
+                    className="flex items-center justify-center w-10 h-10 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
+                    title="Join our Discord community"
+                  >
+                    <SiDiscord className="h-5 w-5 text-white" />
+                  </a>
+                </div>
               </div>
               
               {/* Mobile Wallet Connection */}
