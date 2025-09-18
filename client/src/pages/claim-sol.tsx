@@ -955,33 +955,33 @@ export default function SolRefund() {
             {/* Top row: Logo and Wallet Connection (mobile) */}
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-8">
                 <img 
                   src={logoImage}
                   alt="Get your SOL back!"
                   className="h-[100px] w-[100px]"
                 />
                 {/* Social Media Buttons */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-x"
-                    className="flex items-center justify-center w-10 h-10 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center w-7 h-7 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                     title="Follow us on X (Twitter)"
                   >
-                    <SiX className="h-5 w-5 text-white" />
+                    <SiX className="h-3 w-3 text-white" />
                   </a>
                   <a
                     href="https://discord.gg/tSBMgYcZaK"
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-discord"
-                    className="flex items-center justify-center w-10 h-10 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center w-7 h-7 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                     title="Join our Discord community"
                   >
-                    <SiDiscord className="h-5 w-5 text-white" />
+                    <SiDiscord className="h-3 w-3 text-white" />
                   </a>
                 </div>
               </div>
