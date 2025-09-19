@@ -741,22 +741,57 @@ export default function SolRefund() {
         
         const nftMints = nfts.map(nft => nft.mint);
         
-        // Handle Core NFTs with frontend UMI burning (official pattern)
+        // Handle Core NFTs with frontend UMI burning - debugging approach
         if (nftType === 'core') {
           try {
+            console.log('🔧 Starting Core NFT burning process...');
+            
             // Ensure wallet is properly connected with adapter
             if (!wallet.wallet?.adapter || !wallet.publicKey) {
               throw new Error('Wallet adapter not properly connected for Core NFT burning');
             }
+            console.log('✅ Wallet adapter validated');
             
-            // Create UMI instance with Helius RPC and proper plugins
-            const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
-            console.log('🔧 Setting up UMI with Helius RPC');
+            // Try minimal UMI setup first 
+            console.log('🔧 Creating minimal UMI instance...');
+            let umi;
+            try {
+              umi = createUmi();
+              console.log('✅ Basic UMI instance created');
+            } catch (error) {
+              console.error('❌ Failed to create basic UMI instance:', error);
+              throw error;
+            }
             
-            const umi = createUmi()
-              .use(web3JsRpc(heliusRpc))
-              .use(mplCore())
-              .use(walletAdapterIdentity(wallet.wallet.adapter));
+            // Add RPC plugin
+            try {
+              const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
+              umi = umi.use(web3JsRpc(heliusRpc));
+              console.log('✅ RPC plugin added');
+            } catch (error) {
+              console.error('❌ Failed to add RPC plugin:', error);
+              throw error;
+            }
+            
+            // Add Core plugin
+            try {
+              umi = umi.use(mplCore());
+              console.log('✅ MPL Core plugin added');
+            } catch (error) {
+              console.error('❌ Failed to add MPL Core plugin:', error);
+              throw error;
+            }
+            
+            // Add wallet identity
+            try {
+              umi = umi.use(walletAdapterIdentity(wallet.wallet.adapter));
+              console.log('✅ Wallet identity added');
+            } catch (error) {
+              console.error('❌ Failed to add wallet identity:', error);
+              throw error;
+            }
+            
+            console.log('🎉 UMI fully configured, attempting burn...');
             
             let burnedCount = 0;
             const burnResults = [];
