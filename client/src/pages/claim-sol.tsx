@@ -791,11 +791,16 @@ export default function SolRefund() {
       
       const hasRentRecovery = totalSolRecovered > 0;
       
+      // Generate Solscan links for each transaction
+      const transactionLinks = results.map(result => 
+        `${result.type.toUpperCase()}: https://solscan.io/tx/${result.signature}`
+      ).join('\n');
+      
       toast({
-        title: "NFTs Burned Successfully!",
+        title: hasRentRecovery ? "NFTs Burned Successfully!" : "Burn Requests Recorded",
         description: hasRentRecovery 
-          ? `Burned ${totalBurned} NFTs and recovered ${totalNetAmount.toFixed(6)} SOL (after 15% fee)`
-          : `Burned ${totalBurned} NFTs (compressed NFTs provide no rent recovery)`,
+          ? `Burned ${totalBurned} NFTs and recovered ${totalNetAmount.toFixed(6)} SOL (after 15% fee)\n\nView on Solscan:\n${transactionLinks}`
+          : `Recorded burn requests for ${totalBurned} NFTs (compressed NFTs cannot be burned via this interface yet)\n\nView transaction on Solscan:\n${transactionLinks}`,
         className: "bg-green-600 text-white border-green-600",
       });
 
