@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           workingEndpoint = endpoint as string;
           break;
         } catch (error) {
-          console.log(`RPC endpoint ${endpoint} failed, trying next...`);
+          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
         }
       }
 
@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
       }
 
-      console.log(`Using RPC endpoint: ${workingEndpoint}`);
+      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
 
       const walletPublicKey = new PublicKey(address);
       
@@ -706,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           workingEndpoint = endpoint as string;
           break;
         } catch (error) {
-          console.log(`RPC endpoint ${endpoint} failed, trying next...`);
+          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
         }
       }
 
@@ -714,7 +714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
       }
 
-      console.log(`Using RPC endpoint: ${workingEndpoint}`);
+      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
 
       const walletPublicKey = new PublicKey(address);
 
@@ -1264,7 +1264,290 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Scan wallet for NFTs
+  app.get("/api/nfts/scan/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const { type } = req.query; // standard, pnft, ocp, core, cnft
+      
+      // Validate address
+      try {
+        new PublicKey(address);
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid wallet address" });
+      }
 
+      // Get RPC connection
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: "Helius API key is required for NFT scanning" });
+      }
+
+      console.log(`Using RPC endpoint: https://mainnet.helius-rpc.com/?api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`);
+
+      const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+
+      // Get all NFT assets
+      const heliusResponse = await fetch(heliusRpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'nft-scan',
+          method: 'getAssetsByOwner',
+          params: {
+            ownerAddress: address,
+            page: 1,
+            limit: 1000,
+            displayOptions: {
+              showFungible: false,
+              showNativeBalance: false
+            }
+          }
+        })
+      });
+
+      if (!heliusResponse.ok) {
+        throw new Error(`Helius API error: ${heliusResponse.statusText}`);
+      }
+
+      const heliusData = await heliusResponse.json();
+      console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
+
+      let nfts: any[] = [];
+      const items = heliusData.result?.items || [];
+
+      for (const asset of items) {
+        const { interface: assetInterface, token_standard, compression } = asset;
+        
+        // Skip if not an NFT
+        if (assetInterface !== 'ProgrammableNFT' && 
+            assetInterface !== 'V1_NFT' && 
+            token_standard !== 'NonFungible' && 
+            token_standard !== 'ProgrammableNonFungible' &&
+            !compression?.compressed) {
+          continue;
+        }
+
+        // Classify NFT type
+        let nftType = 'standard';
+        
+        if (compression?.compressed) {
+          nftType = 'cnft';
+        } else if (token_standard === 'ProgrammableNonFungible' || assetInterface === 'ProgrammableNFT') {
+          nftType = 'pnft';
+        } else if (asset.creators && asset.creators.some((c: any) => c.verified && c.address === 'oCPn3FnZqNvZKWF5xLEJvf3HNfN1WZcx7v72qqxbLGE')) {
+          nftType = 'ocp'; // Simplified OCP detection
+        } else if (asset.grouping && asset.grouping.some((g: any) => g.group_key === 'collection' && g.group_value.startsWith('Core'))) {
+          nftType = 'core'; // Simplified Core detection
+        }
+
+        // Filter by type if specified
+        if (type && type !== nftType) {
+          continue;
+        }
+
+        const nftInfo = {
+          mint: asset.id,
+          name: asset.content?.metadata?.name || 'Unknown NFT',
+          symbol: asset.content?.metadata?.symbol || '',
+          image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
+          description: asset.content?.metadata?.description || '',
+          type: nftType,
+          interface: assetInterface,
+          tokenStandard: token_standard,
+          compressed: compression?.compressed || false,
+          creators: asset.creators || [],
+          collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null,
+          attributes: asset.content?.metadata?.attributes || []
+        };
+
+        nfts.push(nftInfo);
+      }
+
+      console.log(`Processed ${nfts.length} NFTs${type ? ` of type ${type}` : ''}`);
+
+      // Group by type for counts
+      const counts = {
+        standard: nfts.filter(n => n.type === 'standard').length,
+        pnft: nfts.filter(n => n.type === 'pnft').length,
+        ocp: nfts.filter(n => n.type === 'ocp').length,
+        core: nfts.filter(n => n.type === 'core').length,
+        cnft: nfts.filter(n => n.type === 'cnft').length
+      };
+
+      res.json({
+        success: true,
+        nfts,
+        counts,
+        total: nfts.length
+      });
+    } catch (error) {
+      console.error('Error scanning NFTs:', error);
+      res.status(500).json({ error: "Failed to scan NFTs" });
+    }
+  });
+
+  // Burn NFTs API
+  app.post("/api/nfts/burn", async (req, res) => {
+    try {
+      const { walletAddress, nftMints, nftType, referralCode } = req.body;
+      
+      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftMints.length === 0) {
+        return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
+      }
+
+      if (!nftType || !['standard', 'pnft', 'ocp', 'core', 'cnft'].includes(nftType)) {
+        return res.status(400).json({ error: "Valid NFT type is required (standard, pnft, ocp, core, cnft)" });
+      }
+
+      // Handle referral code logic (same as token burning)
+      let referralCodeData = null;
+      let permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      
+      if (permanentAssociation) {
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+      } else if (referralCode) {
+        const tempReferralData = await storage.getReferralCodeByCode(referralCode);
+        if (tempReferralData) {
+          try {
+            permanentAssociation = await storage.createWalletReferralAssociation({
+              walletAddress,
+              referralCodeId: tempReferralData.id,
+              referralCode: referralCode
+            });
+            referralCodeData = tempReferralData;
+          } catch (error) {
+            permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+            if (permanentAssociation) {
+              referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+            }
+          }
+        }
+      }
+
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      console.log(`Creating NFT burn transaction for ${nftMints.length} ${nftType} NFTs...`);
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      
+      // Create transaction based on NFT type
+      const transaction = new Transaction();
+      
+      // For now, we'll implement basic NFT burning (standard type)
+      // TODO: Implement specific burning logic for each NFT type
+      if (nftType === 'standard') {
+        for (const mintAddress of nftMints) {
+          const mintPublicKey = new PublicKey(mintAddress);
+          
+          // Get associated token account
+          const tokenAccount = await getAssociatedTokenAddress(
+            mintPublicKey,
+            ownerPublicKey
+          );
+          
+          // Check if account exists and has balance
+          try {
+            const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+            const parsedInfo = tokenAccountInfo.value?.data as any;
+            
+            if (parsedInfo?.parsed?.info) {
+              const balance = parsedInfo.parsed.info.tokenAmount.amount;
+              
+              // Burn the NFT (should be balance of 1)
+              if (balance > 0) {
+                const burnInstruction = createBurnInstruction(
+                  tokenAccount,
+                  mintPublicKey,
+                  ownerPublicKey,
+                  balance
+                );
+                transaction.add(burnInstruction);
+              }
+              
+              // Close the account
+              const closeInstruction = createCloseAccountInstruction(
+                tokenAccount,
+                ownerPublicKey,
+                ownerPublicKey
+              );
+              transaction.add(closeInstruction);
+            }
+          } catch (error) {
+            console.log(`Skipping NFT ${mintAddress}: ${error}`);
+          }
+        }
+      } else {
+        // For other NFT types, return a placeholder transaction for now
+        return res.status(501).json({ 
+          error: `${nftType.toUpperCase()} burning is not yet implemented. Coming soon!` 
+        });
+      }
+      
+      if (transaction.instructions.length === 0) {
+        return res.status(400).json({ error: "No valid NFTs found to burn" });
+      }
+
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+      
+      // Calculate platform fee (15% of estimated SOL recovery)
+      const estimatedSolRecovery = nftMints.length * 0.002; // Estimate 0.002 SOL per NFT
+      const platformFeeAmount = estimatedSolRecovery * 0.15; // 15% platform fee
+      const referralFeeAmount = referralCodeData ? platformFeeAmount * 0.35 : 0; // 35% of platform fee goes to referral
+      const finalPlatformFeeAmount = platformFeeAmount - referralFeeAmount;
+      
+      // Add platform fee transfer
+      const platformWallet = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
+      if (finalPlatformFeeAmount > 0.001) { // Only add if significant
+        const platformFeeInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: platformWallet,
+          lamports: Math.floor(finalPlatformFeeAmount * 1_000_000_000)
+        });
+        transaction.add(platformFeeInstruction);
+      }
+
+      // Add referral fee transfer if applicable
+      if (referralCodeData && referralFeeAmount > 0.001) {
+        const referralWallet = new PublicKey(referralCodeData.walletAddress);
+        const referralFeeInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: referralWallet,
+          lamports: Math.floor(referralFeeAmount * 1_000_000_000)
+        });
+        transaction.add(referralFeeInstruction);
+      }
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false
+      });
+      
+      const base64Transaction = Buffer.from(serializedTransaction).toString('base64');
+      
+      res.json({
+        success: true,
+        transaction: base64Transaction,
+        message: `Prepared ${nftType.toUpperCase()} burn transaction for ${nftMints.length} NFTs`,
+        estimatedSolRecovery,
+        platformFee: finalPlatformFeeAmount,
+        referralFee: referralFeeAmount,
+        referralCode: referralCodeData?.code || null
+      });
+    } catch (error) {
+      console.error('Error creating NFT burn transaction:', error);
+      res.status(500).json({ error: "Failed to create NFT burn transaction" });
+    }
+  });
 
   // Get comprehensive transaction history
   app.get("/api/transactions/history", async (req, res) => {
