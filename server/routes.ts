@@ -1287,7 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
 
-      // Get all NFT assets
+      // Get all NFT assets owned by this wallet
       const heliusResponse = await fetch(heliusRpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1320,13 +1320,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const asset of items) {
         const { interface: assetInterface, token_standard, compression } = asset;
         
-        // Asset classification logic
-        
-        // Skip if not an NFT or if it's a compressed NFT (cNFT)
+        // Skip compressed NFTs (cNFTs)
         if (compression?.compressed) {
-          continue; // Skip cNFTs entirely
+          continue;
         }
         
+        // Only process actual NFTs
         if (assetInterface !== 'ProgrammableNFT' && 
             assetInterface !== 'V1_NFT' && 
             assetInterface !== 'NonFungible' &&
@@ -1336,15 +1335,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
-        // Classify NFT type (excluding cNFTs)
+        // Classify NFT type
         let nftType = 'standard';
         
         if (assetInterface === 'MplCoreAsset') {
-          nftType = 'core'; // Metaplex Core NFTs
+          nftType = 'core';
         } else if (token_standard === 'ProgrammableNonFungible' || assetInterface === 'ProgrammableNFT') {
           nftType = 'pnft';
         } else if (asset.creators && asset.creators.some((c: any) => c.verified && c.address === 'oCPn3FnZqNvZKWF5xLEJvf3HNfN1WZcx7v72qqxbLGE')) {
-          nftType = 'ocp'; // Magic Eden's Open Creator Protocol
+          nftType = 'ocp';
         }
 
         // Filter by type if specified
@@ -1394,9 +1393,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue; // Skip position/utility NFTs
         }
 
+        const nftName = asset.content?.metadata?.name || 'Unknown NFT';
+        
         const nftInfo = {
           mint: asset.id,
-          name: asset.content?.metadata?.name || 'Unknown NFT',
+          name: nftName,
           symbol: asset.content?.metadata?.symbol || '',
           image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
           description: asset.content?.metadata?.description || '',
@@ -1409,10 +1410,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attributes: asset.content?.metadata?.attributes || []
         };
 
+        console.log(`Adding NFT: ${nftName} (${asset.id.slice(0,8)}...) - Type: ${nftType}`);
         nfts.push(nftInfo);
       }
 
-      console.log(`Processed ${nfts.length} NFTs${type ? ` of type ${type}` : ''}`);
+      console.log(`Processed ${nfts.length} NFTs${type ? ` of type ${type}` : ''}:`);
+      nfts.forEach(nft => {
+        console.log(`- ${nft.name} (${nft.mint}) - Type: ${nft.type}`);
+      });
 
       // Group by type for counts (excluding cNFTs)
       const counts = {
