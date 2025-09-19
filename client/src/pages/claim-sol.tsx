@@ -689,7 +689,148 @@ export default function SolRefund() {
     },
   });
 
+  // Burn NFTs mutation
+  const burnNftsMutation = useMutation({
+    mutationFn: async (selectedNftIds: string[]) => {
+      if (!isConnected || !publicKey) {
+        throw new Error('Wallet not connected');
+      }
 
+      // Get the NFT data to group by type
+      if (!nftData || !nftData.nfts) {
+        throw new Error('No NFT data available');
+      }
+
+      // Find the selected NFTs and group them by type
+      const selectedNfts = nftData.nfts.filter((nft: any) => {
+        const nftId = nft.mint || nft.id || nft.assetId;
+        return selectedNftIds.includes(nftId);
+      });
+
+      if (selectedNfts.length === 0) {
+        throw new Error('No valid NFTs selected');
+      }
+
+      // Group NFTs by type
+      const nftsByType: { [key: string]: any[] } = {};
+      selectedNfts.forEach((nft: any) => {
+        if (!nftsByType[nft.type]) {
+          nftsByType[nft.type] = [];
+        }
+        nftsByType[nft.type].push(nft);
+      });
+
+      const results = [];
+      
+      // Process each type separately
+      for (const [nftType, nfts] of Object.entries(nftsByType)) {
+        console.log(`Burning ${nfts.length} ${nftType} NFTs...`);
+        
+        const nftMints = nfts.map(nft => nft.mint);
+        
+        // Prepare burn transaction
+        const response = await fetch('/api/nfts/burn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: publicKey.toString(),
+            nftMints,
+            nftType,
+            referralCode: referralCode || undefined
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to prepare ${nftType} burn transaction: ${errorData.error || 'Unknown error'}`);
+        }
+
+        const { transaction, nftsProcessed, solRecovered, netAmount, feeAmount } = await response.json();
+
+        // Sign and send transaction using connected wallet
+        const { Connection, Transaction } = await import('@solana/web3.js');
+        
+        const heliusResponse = await fetch('/api/helius-config');
+        const rpcConfig = await heliusResponse.json();
+        
+        const connection = new Connection(
+          rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+          'confirmed'
+        );
+        
+        const txBuffer = Buffer.from(transaction, 'base64');
+        const tx = Transaction.from(txBuffer);
+        
+        const signedTx = await signTransaction(tx);
+        const signature = await connection.sendRawTransaction(signedTx.serialize());
+        
+        // Wait for confirmation
+        try {
+          await connection.confirmTransaction(signature, 'confirmed');
+          console.log(`${nftType} NFT burn transaction confirmed:`, signature);
+        } catch (confirmError: any) {
+          console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
+        }
+
+        results.push({
+          type: nftType,
+          count: nftsProcessed,
+          signature,
+          solRecovered: parseFloat(solRecovered || '0'),
+          netAmount: parseFloat(netAmount || '0'),
+          feeAmount: parseFloat(feeAmount || '0')
+        });
+      }
+
+      return results;
+    },
+    onSuccess: (results) => {
+      const totalBurned = results.reduce((sum, r) => sum + r.count, 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + r.solRecovered, 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + r.netAmount, 0);
+      
+      const hasRentRecovery = totalSolRecovered > 0;
+      
+      toast({
+        title: "NFTs Burned Successfully!",
+        description: hasRentRecovery 
+          ? `Burned ${totalBurned} NFTs and recovered ${totalNetAmount.toFixed(6)} SOL (after 15% fee)`
+          : `Burned ${totalBurned} NFTs (compressed NFTs provide no rent recovery)`,
+        className: "bg-green-600 text-white border-green-600",
+      });
+
+      // Clear selection and refresh NFT list
+      setSelectedNfts(new Set());
+      if (publicKey) {
+        scanNftsMutation.mutate(publicKey.toString());
+      }
+      
+      // Refresh stats if SOL was recovered
+      if (hasRentRecovery) {
+        queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error burning NFTs:', error);
+      
+      let errorMessage = "Failed to burn NFTs. Please try again.";
+      if (error.message) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('wallet not found')) {
+          errorMessage = "Please install and connect your wallet.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Selection handlers
   const toggleTokenSelection = (mintAddress: string) => {
@@ -1618,18 +1759,24 @@ export default function SolRefund() {
                     <div className="flex justify-center pt-4">
                       <button
                         onClick={() => {
-                          // TODO: Implement NFT burning
-                          toast({
-                            title: "Feature Coming Soon",
-                            description: `NFT burning for ${selectedNfts.size} selected NFTs will be implemented next`,
-                            className: "bg-purple-600 text-white border-purple-600",
-                          });
+                          if (!publicKey) {
+                            toast({
+                              title: "Error",
+                              description: "Please connect your wallet first",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
+                          const selectedIds = Array.from(selectedNfts);
+                          burnNftsMutation.mutate(selectedIds);
                         }}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105"
+                        disabled={burnNftsMutation.isPending || !publicKey}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                         data-testid="button-burn-selected-nfts"
                       >
-                        <Flame className="h-5 w-5" />
-                        Burn {selectedNfts.size} Selected NFT{selectedNfts.size > 1 ? 's' : ''}
+                        <Flame className={`h-5 w-5 ${burnNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                        {burnNftsMutation.isPending ? 'Burning...' : `Burn ${selectedNfts.size} Selected NFT${selectedNfts.size > 1 ? 's' : ''}`}
                       </button>
                     </div>
                   )}
