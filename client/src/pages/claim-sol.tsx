@@ -1183,17 +1183,6 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Connect Wallet Message */}
-          {!isConnected && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="text-center space-y-4">
-                <Wallet className="h-12 w-12 text-purple-400 mx-auto" />
-                <h3 className="text-lg font-semibold text-white">Connect Your Wallet</h3>
-                <p className="text-purple-200">Connect your wallet using the "Connect Wallet" button above to get your SOL back!</p>
-                <p className="text-sm text-purple-300">Supports: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and <strong>Ledger Hardware Wallets</strong></p>
-              </div>
-            </div>
-          )}
 
 
 
