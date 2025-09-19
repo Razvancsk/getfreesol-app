@@ -1168,6 +1168,29 @@ export default function SolRefund() {
 
 
 
+          {/* Manual Refresh Button */}
+          {isConnected && activeTab !== 'referrals' && (
+            <div className="text-center">
+              <button 
+                onClick={() => {
+                  if (publicKey) {
+                    if (activeTab === 'reclaim') {
+                      scanMutation.mutate(publicKey.toString());
+                    } else if (activeTab === 'burnTokens') {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }
+                }}
+                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                data-testid="button-refresh-scan"
+              >
+                <RefreshCw className={`h-4 w-4 ${(scanMutation.isPending || scanTokensMutation.isPending) ? 'animate-spin' : ''}`} />
+                Click to Refresh
+              </button>
+            </div>
+          )}
+
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && scanResult && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
