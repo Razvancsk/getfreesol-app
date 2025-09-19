@@ -5,7 +5,7 @@ import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertSca
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { Connection, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
 
 export async function registerRoutes(app: Express): Promise<Server> {
