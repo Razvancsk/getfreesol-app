@@ -1320,21 +1320,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const asset of items) {
         const { interface: assetInterface, token_standard, compression } = asset;
         
-        // Skip if not an NFT
+        // Skip if not an NFT or if it's a compressed NFT (cNFT)
+        if (compression?.compressed) {
+          continue; // Skip cNFTs entirely
+        }
+        
         if (assetInterface !== 'ProgrammableNFT' && 
             assetInterface !== 'V1_NFT' && 
             token_standard !== 'NonFungible' && 
-            token_standard !== 'ProgrammableNonFungible' &&
-            !compression?.compressed) {
+            token_standard !== 'ProgrammableNonFungible') {
           continue;
         }
 
-        // Classify NFT type
+        // Classify NFT type (excluding cNFTs)
         let nftType = 'standard';
         
-        if (compression?.compressed) {
-          nftType = 'cnft';
-        } else if (token_standard === 'ProgrammableNonFungible' || assetInterface === 'ProgrammableNFT') {
+        if (token_standard === 'ProgrammableNonFungible' || assetInterface === 'ProgrammableNFT') {
           nftType = 'pnft';
         } else if (asset.creators && asset.creators.some((c: any) => c.verified && c.address === 'oCPn3FnZqNvZKWF5xLEJvf3HNfN1WZcx7v72qqxbLGE')) {
           nftType = 'ocp'; // Simplified OCP detection
@@ -1367,13 +1368,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Processed ${nfts.length} NFTs${type ? ` of type ${type}` : ''}`);
 
-      // Group by type for counts
+      // Group by type for counts (excluding cNFTs)
       const counts = {
         standard: nfts.filter(n => n.type === 'standard').length,
         pnft: nfts.filter(n => n.type === 'pnft').length,
         ocp: nfts.filter(n => n.type === 'ocp').length,
-        core: nfts.filter(n => n.type === 'core').length,
-        cnft: nfts.filter(n => n.type === 'cnft').length
+        core: nfts.filter(n => n.type === 'core').length
       };
 
       res.json({
@@ -1397,8 +1397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
       }
 
-      if (!nftType || !['standard', 'pnft', 'ocp', 'core', 'cnft'].includes(nftType)) {
-        return res.status(400).json({ error: "Valid NFT type is required (standard, pnft, ocp, core, cnft)" });
+      if (!nftType || !['standard', 'pnft', 'ocp', 'core'].includes(nftType)) {
+        return res.status(400).json({ error: "Valid NFT type is required (standard, pnft, ocp, core)" });
       }
 
       // Handle referral code logic (same as token burning)
@@ -1482,139 +1482,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Skipping NFT ${mintAddress}: ${error}`);
           }
         }
-      } else if (nftType === 'cnft') {
-        // cNFTs (Compressed NFTs) burning using Bubblegum program
-        console.log(`Processing ${nftMints.length} compressed NFTs for burning (no rent recovery)`);
-        
-        try {
-          
-          let validBurns = 0;
-          
-          for (const assetId of nftMints) {
-            try {
-              console.log(`Processing cNFT ${assetId}...`);
-              
-              // Get asset and proof data from Helius DAS API
-              const [assetResponse, proofResponse] = await Promise.all([
-                fetch(rpcUrl, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    id: 'get-asset',
-                    method: 'getAsset',
-                    params: { id: assetId }
-                  })
-                }),
-                fetch(rpcUrl, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    id: 'get-asset-proof',
-                    method: 'getAssetProof',
-                    params: { id: assetId }
-                  })
-                })
-              ]);
-
-              if (!assetResponse.ok || !proofResponse.ok) {
-                console.log(`Failed to fetch data for cNFT ${assetId}, skipping...`);
-                continue;
-              }
-
-              const assetData = await assetResponse.json();
-              const proofData = await proofResponse.json();
-
-              if (!assetData.result || !proofData.result) {
-                console.log(`No asset or proof data for cNFT ${assetId}, skipping...`);
-                continue;
-              }
-
-              const asset = assetData.result;
-              const proof = proofData.result;
-
-              // Verify this is actually a compressed NFT
-              if (!asset.compression || !asset.compression.compressed) {
-                console.log(`Asset ${assetId} is not compressed, skipping...`);
-                continue;
-              }
-
-              // Extract Merkle proof data from Helius API response
-              const merkleTree = new PublicKey(proof.tree_id);
-              const leafOwner = ownerPublicKey;
-              const leafDelegate = asset.ownership?.delegate ? new PublicKey(asset.ownership.delegate) : ownerPublicKey;
-              const nonce = asset.compression.leaf_id;
-              const index = asset.compression.leaf_id;
-              
-              // Get the actual proof data
-              const root = Buffer.from(proof.root.replace('0x', ''), 'hex');
-              const dataHash = Buffer.from(asset.compression.data_hash.replace('0x', ''), 'hex');
-              const creatorHash = Buffer.from(asset.compression.creator_hash.replace('0x', ''), 'hex');
-              
-              console.log(`Merkle proof data for ${assetId}:`, {
-                tree: proof.tree_id,
-                root: proof.root,
-                dataHash: asset.compression.data_hash,
-                creatorHash: asset.compression.creator_hash,
-                nonce,
-                index
-              });
-              
-              // Convert proof to account metas
-              const proofPath = proof.proof.map((p: string) => ({
-                pubkey: new PublicKey(p),
-                isSigner: false,
-                isWritable: false
-              }));
-
-              // NOTE: Full cNFT burning via Bubblegum requires complex account derivation and proper
-              // instruction serialization. For now, we'll create a memo transaction that records 
-              // the burn request with proof verification data. This is honest about current limitations.
-              
-              const memoText = `cNFT Burn Request: ${assetId.slice(0, 8)}... | Tree: ${proof.tree_id.slice(0, 8)}... | Root: ${proof.root.slice(0, 8)}... | DataHash: ${asset.compression.data_hash.slice(0, 8)}... | CreatorHash: ${asset.compression.creator_hash.slice(0, 8)}... | Nonce: ${nonce} | Index: ${index}`;
-              const memoInstruction = new TransactionInstruction({
-                keys: [{ pubkey: ownerPublicKey, isSigner: true, isWritable: false }],
-                programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'), // Memo program
-                data: Buffer.from(memoText, 'utf8')
-              });
-              transaction.add(memoInstruction);
-              
-              console.log(`Added memo instruction for cNFT burn request: ${assetId}`);
-              validBurns++;
-
-            } catch (error) {
-              console.log(`Error processing cNFT ${assetId}:`, error);
-              continue;
-            }
-          }
-
-          // If no valid burn instructions were added, add a memo to indicate the attempt
-          if (validBurns === 0) {
-            console.log('No valid cNFT burn instructions created, adding memo...');
-            const memoText = `Attempted cNFT burn - no valid assets found`;
-            const memoInstruction = new TransactionInstruction({
-              keys: [],
-              programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
-              data: Buffer.from(memoText, 'utf8')
-            });
-            transaction.add(memoInstruction);
-          } else {
-            console.log(`Created ${validBurns} cNFT burn instructions`);
-          }
-
-        } catch (importError) {
-          console.log('Error importing Bubblegum libraries, falling back to memo:', importError);
-          // Fallback to memo if imports fail
-          const memoText = `cNFT burn attempted: ${nftMints.length} assets`;
-          const memoInstruction = new TransactionInstruction({
-            keys: [],
-            programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
-            data: Buffer.from(memoText, 'utf8')
-          });
-          transaction.add(memoInstruction);
-        }
-        
       } else {
         // For other NFT types (pNFT, OCP, Core), return a placeholder transaction for now
         return res.status(501).json({ 
@@ -1632,8 +1499,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction.feePayer = ownerPublicKey;
       
       // Calculate platform fee (15% of estimated SOL recovery)
-      // cNFTs provide no SOL recovery, other NFTs estimate 0.002 SOL per NFT
-      const estimatedSolRecovery = nftType === 'cnft' ? 0 : nftMints.length * 0.002;
+      // Standard NFTs estimate 0.002 SOL per NFT (others provide no recovery yet)
+      const estimatedSolRecovery = nftType === 'standard' ? nftMints.length * 0.002 : 0;
       const platformFeeAmount = estimatedSolRecovery * 0.15; // 15% platform fee
       const referralFeeAmount = referralCodeData ? platformFeeAmount * 0.35 : 0; // 35% of platform fee goes to referral
       const finalPlatformFeeAmount = platformFeeAmount - referralFeeAmount;
@@ -1671,9 +1538,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         transaction: base64Transaction,
-        message: nftType === 'cnft' 
-          ? `Prepared ${nftType.toUpperCase()} burn transaction for ${nftMints.length} NFTs (no rent recovery)`
-          : `Prepared ${nftType.toUpperCase()} burn transaction for ${nftMints.length} NFTs`,
+        message: nftType === 'standard' 
+          ? `Prepared ${nftType.toUpperCase()} burn transaction for ${nftMints.length} NFTs`
+          : `Prepared ${nftType.toUpperCase()} burn transaction for ${nftMints.length} NFTs (no rent recovery yet)`,
         nftsProcessed: nftMints.length,
         solRecovered: estimatedSolRecovery.toString(),
         netAmount: (estimatedSolRecovery * 0.85).toString(), // 85% after 15% fee
