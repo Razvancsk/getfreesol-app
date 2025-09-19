@@ -711,9 +711,13 @@ export default function SolRefund() {
         throw new Error('No valid NFTs selected');
       }
 
-      // Group NFTs by type
+      // Group NFTs by type (excluding cNFTs)
       const nftsByType: { [key: string]: any[] } = {};
       selectedNfts.forEach((nft: any) => {
+        // Skip cNFTs entirely
+        if (nft.type === 'cnft') {
+          return;
+        }
         if (!nftsByType[nft.type]) {
           nftsByType[nft.type] = [];
         }
@@ -1634,8 +1638,8 @@ export default function SolRefund() {
               {nftData && nftData.nfts && nftData.nfts.length > 0 && (
                 <div className="mb-4">
                   <p className="text-white text-sm">
-                    <span className="font-semibold">Note about Compressed NFTs ({nftData.counts?.cnft || 0})</span>
-                    <span className="text-orange-300 ml-2">- Compressed NFTs can be burned but do not provide any SOL rent reclamation since they don't require separate accounts for metadata storage.</span>
+                    <span className="font-semibold">Supported NFT Types:</span>
+                    <span className="text-purple-300 ml-2">- Metaplex Core, OCP, and Programmable NFTs (pNFTs). Standard NFTs provide rent reclamation.</span>
                   </p>
                 </div>
               )}
@@ -1653,7 +1657,7 @@ export default function SolRefund() {
                     <div className="flex items-center space-x-4">
                       <button
                         onClick={() => {
-                          const allNfts = nftData.nfts;
+                          const allNfts = nftData.nfts.filter((nft: any) => nft.type !== 'cnft');
                           setSelectedNfts(new Set(allNfts.map((nft: any) => nft.mint || nft.id || nft.assetId).filter(Boolean)));
                         }}
                         className="text-sm text-purple-300 hover:text-white transition-colors"
@@ -1670,17 +1674,18 @@ export default function SolRefund() {
                       </button>
                     </div>
                     <p className="text-sm text-purple-200">
-                      {selectedNfts.size} selected • {nftData.nfts.length} total • {nftData.counts?.cnft || 0} cNFTs (no rent)
+                      {selectedNfts.size} selected • {nftData.nfts.filter((nft: any) => nft.type !== 'cnft').length} total NFTs
                     </p>
                   </div>
 
                   {/* NFT Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {nftData.nfts.map((nft: any) => {
+                    {nftData.nfts
+                      .filter((nft: any) => nft.type !== 'cnft') // Skip cNFTs entirely
+                      .map((nft: any) => {
                       // Use a stable identifier that works for all NFT types
                       const nftId = nft.mint || nft.id || nft.assetId;
                       const isSelected = selectedNfts.has(nftId);
-                      const isCnft = nft.type === 'cnft';
                       
                       return (
                         <div
@@ -1746,10 +1751,9 @@ export default function SolRefund() {
                                 nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
                                 nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
                                 nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
-                                nft.type === 'cnft' ? 'bg-yellow-500/20 text-yellow-300' :
                                 'bg-gray-500/20 text-gray-300'
                               }`}>
-                                {nft.type.toUpperCase()}{nft.type === 'cnft' ? ' (No Rent)' : ''}
+                                {nft.type.toUpperCase()}
                               </span>
                             </div>
                           </div>
