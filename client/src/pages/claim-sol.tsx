@@ -23,10 +23,11 @@ import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { createUmi } from '@metaplex-foundation/umi';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { mplCore, burn } from '@metaplex-foundation/mpl-core';
+import { mplCore, burnV1, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
 import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
+import bs58 from 'bs58';
 import logoImage from '@assets/image_1757882056840.png';
 
 interface EmptyTokenAccount {
@@ -743,48 +744,76 @@ export default function SolRefund() {
         // Handle Core NFTs with frontend UMI burning (official pattern)
         if (nftType === 'core') {
           try {
-            // Ensure wallet is properly connected
-            if (!wallet.wallet || !wallet.publicKey) {
-              throw new Error('Wallet not properly connected for Core NFT burning');
+            // Ensure wallet is properly connected with adapter
+            if (!wallet.wallet?.adapter || !wallet.publicKey) {
+              throw new Error('Wallet adapter not properly connected for Core NFT burning');
             }
             
-            // Create UMI instance with proper RPC and wallet setup
+            // Create UMI instance with proper RPC and wallet adapter
             const umi = createUmi()
               .use(web3JsRpc(rpcConnection))
               .use(mplCore())
-              .use(walletAdapterIdentity(wallet.wallet));
+              .use(walletAdapterIdentity(wallet.wallet.adapter));
             
             let burnedCount = 0;
             const burnResults = [];
             
             for (const mintAddress of nftMints) {
               try {
+                // Use the Core asset ID directly (not mint address)
                 const assetPublicKey = umiPublicKey(mintAddress);
                 
-                console.log('🔥 Starting Core NFT burn for:', mintAddress);
-                console.log('💰 Wallet before burn:', wallet.publicKey.toString());
+                console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
+                console.log('💰 User wallet:', wallet.publicKey.toString());
                 
-                // Get wallet balance before burn to calculate actual rent recovery
+                // Get wallet balance before burn
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
+                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
                 
-                // Use the simplified burn function from mpl-core
-                const result = await burn(umi, {
-                  asset: assetPublicKey,
-                  // authority defaults to umi.identity (the connected wallet)
-                  // payer defaults to umi.identity (user gets rent back)
+                // Use the correct burnV1 function with proper asset ID
+                const result = await burnV1(umi, {
+                  asset: assetPublicKey, // This is the Core asset ID from DAS
+                  authority: umi.identity, // User's wallet has authority
+                  payer: umi.identity, // User gets rent back
                 }).sendAndConfirm(umi);
                 
-                // Get balance after to see actual rent recovered
-                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
-                const actualRentRecovered = (balanceAfter - balanceBefore) / 1e9; // Convert to SOL
+                // Properly encode signature for Solana RPC
+                const signature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature);
+                console.log('✅ Transaction confirmed:', signature);
                 
-                console.log('✅ Core NFT burn successful!', {
-                  signature: result.signature,
-                  explorer: `https://solscan.io/tx/${result.signature}`,
+                // Get transaction details with error handling
+                let txDetails = null;
+                let networkFee = 5000; // Default Solana fee estimate
+                try {
+                  txDetails = await rpcConnection.getTransaction(signature, {
+                    commitment: 'confirmed',
+                    maxSupportedTransactionVersion: 0
+                  });
+                  networkFee = txDetails?.meta?.fee || 5000;
+                } catch (error) {
+                  console.warn('Could not fetch transaction details, using estimated fee');
+                }
+                
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
+                const actualRentRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9; // Accurate with fees
+                console.log('💰 Balance after:', balanceAfter / 1e9, 'SOL');
+                
+                console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
+                  signature: signature,
+                  explorer: `https://solscan.io/tx/${signature}`,
                   rentRecovered: `${actualRentRecovered} SOL`,
+                  networkFee: `${networkFee / 1e9} SOL`,
                   balanceBefore: balanceBefore / 1e9,
                   balanceAfter: balanceAfter / 1e9
                 });
+                
+                // Verify NFT is actually destroyed
+                try {
+                  await fetchAssetV1(umi, assetPublicKey);
+                  console.warn('⚠️ Asset still exists - burn may have failed');
+                } catch (error) {
+                  console.log('✅ Asset confirmed destroyed - NFT and metadata completely deleted!');
+                }
                 
                 burnedCount++;
                 burnResults.push({
