@@ -1319,10 +1319,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const items = heliusData.result?.items || [];
 
       for (const asset of items) {
-        const { interface: assetInterface, compression } = asset;
+        const { interface: assetInterface, compression, burnt } = asset;
         
         // Only process Metaplex Core NFTs
         if (assetInterface !== 'MplCoreAsset') {
+          continue;
+        }
+        
+        // Skip burned NFTs (they still show in DAS with burnt: true)
+        if (burnt === true) {
+          console.log(`Skipping burned NFT: ${asset.content?.metadata?.name || asset.id}`);
           continue;
         }
         
