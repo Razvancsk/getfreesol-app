@@ -64,6 +64,7 @@ export default function SolRefund() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
+  const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState<string>('');
@@ -129,7 +130,7 @@ export default function SolRefund() {
         scanTokensMutation.mutate(publicKey.toString());
       }
     }
-  }, [isConnected, publicKey, activeTab]);
+  }, [isConnected, publicKey, activeTab, burnSubTab]);
 
   // Query to get user's referral code and stats
   const { data: userReferrals } = useQuery({
@@ -1159,9 +1160,39 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? 'Burn Unwanted Tokens.' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : 'Get your SOL back!'}
             </p>
           </div>
+
+          {/* Burn Sub-Tabs */}
+          {activeTab === 'burnTokens' && (
+            <div className="flex justify-center mb-6">
+              <div className="bg-purple-800/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1 flex space-x-1">
+                <button
+                  onClick={() => setBurnSubTab('tokens')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    burnSubTab === 'tokens' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-burn-tokens"
+                >
+                  🔥 Burn Tokens
+                </button>
+                <button
+                  onClick={() => setBurnSubTab('nft')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    burnSubTab === 'nft' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-burn-nft"
+                >
+                  🖼️ Burn NFT
+                </button>
+              </div>
+            </div>
+          )}
 
 
 
@@ -1258,7 +1289,7 @@ export default function SolRefund() {
           )}
 
           {/* Burn Tokens Results */}
-          {activeTab === 'burnTokens' && tokenList.length > 0 && (
+          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length > 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">{selectedTokens.size} selected</h3>
@@ -1378,8 +1409,8 @@ export default function SolRefund() {
 
 
 
-          {/* Empty State Messages */}
-          {activeTab === 'burnTokens' && tokenList.length === 0 && (
+          {/* Empty State Messages - Tokens */}
+          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length === 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Token & NFT Scanner</h3>
@@ -1401,6 +1432,33 @@ export default function SolRefund() {
                 <Flame className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
                 <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Empty State Messages - NFTs */}
+          {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">NFT Scanner</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanTokensMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-nft"
+                >
+                  Click to Refresh
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              <div className="text-center space-y-4">
+                <Image className="h-12 w-12 text-purple-400 mx-auto" />
+                <h3 className="text-lg font-semibold text-white">NFT Burning Coming Soon</h3>
+                <p className="text-purple-200">NFT burning functionality will be available soon. For now, you can burn tokens.</p>
               </div>
             </div>
           )}
