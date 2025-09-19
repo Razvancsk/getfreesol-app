@@ -1352,6 +1352,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
+        // Filter out NFTs that should not be burned
+        const name = asset.content?.metadata?.name || '';
+        const description = asset.content?.metadata?.description || '';
+        const attributes = asset.content?.metadata?.attributes || [];
+        
+        // Check for "DO NOT BURN" indicators
+        const doNotBurnPatterns = [
+          /do\s*not\s*burn/i,
+          /don\'?t\s*burn/i,
+          /no\s*burn/i,
+          /keep/i,
+          /hold/i
+        ];
+        
+        const shouldNotBurn = doNotBurnPatterns.some(pattern => 
+          pattern.test(name) || pattern.test(description)
+        );
+        
+        if (shouldNotBurn) {
+          continue; // Skip NFTs marked as "do not burn"
+        }
+        
+        // Filter out position/utility NFTs
+        const positionPatterns = [
+          /position/i,
+          /meteora/i,
+          /liquidity/i,
+          /lp\s*token/i,
+          /utility/i,
+          /staking/i,
+          /vault/i,
+          /receipt/i
+        ];
+        
+        const isPositionNft = positionPatterns.some(pattern => 
+          pattern.test(name) || pattern.test(description)
+        );
+        
+        if (isPositionNft) {
+          continue; // Skip position/utility NFTs
+        }
+
         const nftInfo = {
           mint: asset.id,
           name: asset.content?.metadata?.name || 'Unknown NFT',
