@@ -1471,41 +1471,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction based on NFT type
       const transaction = new Transaction();
       
-      // Metaplex Core NFTs burning
+      // Metaplex Core NFTs burning - REAL IMPLEMENTATION
       if (nftType === 'core') {
-        console.log(`🔥 Server-side Core NFT burning initiated for ${nftMints.length} NFTs`);
+        console.log(`🔥 Preparing REAL Core NFT burn transactions for ${nftMints.length} NFTs`);
         console.log('🔧 NFT mints to burn:', nftMints);
         
         try {
-          // For now, return success simulation while we implement actual burning
-          // This allows frontend to proceed and show the proper flow
-          console.log('🎯 Simulating Core NFT burn success for testing...');
+          // Direct Solana approach - bypass UMI entirely
+          const { VersionedTransaction, TransactionInstruction, ComputeBudgetProgram } = await import('@solana/web3.js');
+          const bs58 = await import('bs58');
           
-          const burnResults = nftMints.map((mint: string) => ({
-            mint: mint,
-            signature: 'simulated_signature_' + Math.random().toString(36),
-            solRecovered: 0.01, // Simulated SOL recovery
-            success: true
-          }));
+          console.log('✅ Using direct Solana transaction approach (bypassing UMI)');
           
-          const totalSolRecovered = burnResults.reduce((sum, result) => sum + result.solRecovered, 0);
+          const burnTransactions = [];
+          let totalExpectedRent = 0;
           
-          console.log(`✅ Simulated burn completed: ${burnResults.length} NFTs, ${totalSolRecovered} SOL recovered`);
+          // Metaplex Core program ID
+          const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
           
+          // Build burn transaction for each Core NFT using direct instructions
+          for (const assetAddress of nftMints) {
+            try {
+              console.log(`🔍 Processing Core NFT: ${assetAddress}`);
+              
+              const assetPubkey = new PublicKey(assetAddress);
+              const userPubkey = new PublicKey(walletAddress);
+              
+              // Get account info to estimate rent recovery
+              const accountInfo = await connection.getAccountInfo(assetPubkey);
+              if (!accountInfo) {
+                console.log(`⚠️ Asset ${assetAddress} not found or already burned`);
+                continue;
+              }
+              
+              const rentLamports = accountInfo.lamports;
+              totalExpectedRent += rentLamports;
+              console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL`);
+              
+              // Check if account is owned by Core program
+              if (!accountInfo.owner.equals(CORE_PROGRAM_ID)) {
+                console.log(`⚠️ Asset ${assetAddress} not owned by Core program, skipping`);
+                continue;
+              }
+              
+              // Build Core burn instruction manually
+              // Instruction data: [7] = burn instruction discriminator for Core program
+              const instructionData = Buffer.from([7]);
+              
+              const burnInstruction = new TransactionInstruction({
+                keys: [
+                  { pubkey: assetPubkey, isSigner: false, isWritable: true },  // Asset to burn
+                  { pubkey: userPubkey, isSigner: true, isWritable: true },   // Authority & rent receiver
+                  { pubkey: userPubkey, isSigner: true, isWritable: true },   // Payer (same as authority)
+                ],
+                programId: CORE_PROGRAM_ID,
+                data: instructionData,
+              });
+              
+              // Add compute budget to ensure transaction has enough compute
+              const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+                units: 200_000, // Enough compute for Core burn
+              });
+              
+              // Build transaction
+              const { blockhash } = await connection.getLatestBlockhash();
+              
+              const messageV0 = new VersionedTransaction({
+                version: 0,
+                header: {
+                  numRequiredSignatures: 1,
+                  numReadonlySignedAccounts: 0,
+                  numReadonlyUnsignedAccounts: 0
+                },
+                staticAccountKeys: [
+                  userPubkey,     // 0: signer/payer
+                  assetPubkey,    // 1: asset to burn
+                  CORE_PROGRAM_ID // 2: program
+                ],
+                recentBlockhash: blockhash,
+                compiledInstructions: [
+                  // Compute budget instruction
+                  {
+                    programIdIndex: 2,
+                    accountKeyIndexes: [],
+                    data: computeBudgetIx.data
+                  },
+                  // Burn instruction
+                  {
+                    programIdIndex: 2, // Core program
+                    accountKeyIndexes: [1, 0, 0], // [asset, authority, payer]
+                    data: instructionData
+                  }
+                ],
+                addressTableLookups: []
+              });
+              
+              const serializedTx = messageV0.serialize();
+              const base64Tx = Buffer.from(serializedTx).toString('base64');
+              
+              console.log(`✅ Built DIRECT Core burn transaction for ${assetAddress}`);
+              
+              burnTransactions.push({
+                asset: assetAddress,
+                name: `Core NFT ${assetAddress.slice(0, 8)}...`,
+                transaction: base64Tx,
+                expectedRentSol: rentLamports / 1e9
+              });
+              
+            } catch (assetError) {
+              console.error(`❌ Failed to process asset ${assetAddress}:`, assetError);
+              // Continue with other assets
+            }
+          }
+          
+          if (burnTransactions.length === 0) {
+            return res.status(400).json({
+              success: false,
+              error: 'No valid Core NFTs found to burn'
+            });
+          }
+          
+          console.log(`🎯 Prepared ${burnTransactions.length} REAL burn transactions`);
+          console.log(`💰 Total expected rent recovery: ${totalExpectedRent / 1e9} SOL`);
+          
+          // Return prepared transactions for client to sign and submit
           return res.json({
             success: true,
-            burnedCount: burnResults.length,
-            totalSolRecovered: totalSolRecovered,
-            signatures: burnResults.map(r => r.signature),
-            transactions: burnResults,
-            message: "Core NFT burning simulation completed successfully. Actual implementation coming soon!"
+            message: "Real Core NFT burn transactions prepared",
+            burnTransactions: burnTransactions,
+            totalExpectedRentSol: totalExpectedRent / 1e9,
+            instructions: "These are REAL transactions that will DESTROY your NFTs and recover rent. Sign and submit each transaction to complete the burn."
           });
           
         } catch (error) {
-          console.error('❌ Server-side Core NFT burning failed:', error);
+          console.error('❌ Failed to prepare Core NFT burn transactions:', error);
           return res.status(500).json({
             success: false,
-            error: 'Server-side Core NFT burning failed: ' + (error as Error).message
+            error: 'Failed to prepare burn transactions: ' + (error as Error).message
           });
         }
         

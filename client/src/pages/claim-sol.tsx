@@ -801,39 +801,111 @@ export default function SolRefund() {
               throw error;
             }
             
-            console.log('❌ UMI approach failed due to Core plugin issues. Trying server-side burn...');
+            console.log('❌ UMI approach failed due to Core plugin issues. Preparing REAL server-side burn...');
             
-            // Fallback: Use server-side Core NFT burning instead of UMI
-            console.log('🔄 Attempting server-side Core NFT burn fallback...');
-            const serverBurnResponse = await apiRequest('POST', '/api/nfts/burn', {
+            // Get real burn transactions from server
+            console.log('🔄 Requesting REAL Core NFT burn transactions from server...');
+            const burnPrepResponse = await apiRequest('POST', '/api/nfts/burn', {
               nftMints: nftMints,
               nftType: 'core',
               walletAddress: wallet.publicKey.toString()
             });
             
-            const serverBurnData = await serverBurnResponse.json();
+            const burnPrepData = await burnPrepResponse.json();
+            console.log('📋 Received burn transaction preparation:', burnPrepData);
             
-            console.log('✅ Server-side Core NFT burn completed:', serverBurnData);
-            
-            if (serverBurnData.success) {
-              console.log(`🎉 Successfully burned ${serverBurnData.burnedCount} Core NFTs via server!`);
-              console.log(`💰 Total SOL recovered: ${serverBurnData.totalSolRecovered} SOL`);
-              
-              results.push({
-                type: nftType,
-                nftsProcessed: serverBurnData.burnedCount,
-                totalAttempted: nftMints.length,
-                solRecovered: serverBurnData.totalSolRecovered,
-                netAmount: serverBurnData.totalSolRecovered,
-                feeAmount: 0,
-                signatures: serverBurnData.signatures || [],
-                transactions: serverBurnData.transactions || []
-              });
-              
-              continue; // Skip the rest of the UMI approach
-            } else {
-              throw new Error('Server-side Core NFT burning failed: ' + serverBurnData.error);
+            if (!burnPrepData.success || !burnPrepData.burnTransactions) {
+              throw new Error('Failed to prepare burn transactions: ' + burnPrepData.error);
             }
+            
+            console.log(`🎯 Got ${burnPrepData.burnTransactions.length} REAL burn transactions to sign`);
+            console.log(`💰 Expected total rent recovery: ${burnPrepData.totalExpectedRentSol} SOL`);
+            
+            // Sign and submit each real burn transaction
+            const completedBurns = [];
+            let totalActualRecovered = 0;
+            
+            for (const burnTx of burnPrepData.burnTransactions) {
+              try {
+                console.log(`🔥 Signing REAL burn transaction for ${burnTx.name} (${burnTx.asset})`);
+                console.log(`💰 Expected rent recovery: ${burnTx.expectedRentSol} SOL`);
+                
+                // Decode the prepared transaction
+                const transaction = VersionedTransaction.deserialize(
+                  Buffer.from(burnTx.transaction, 'base64')
+                );
+                
+                console.log('📝 Transaction decoded, requesting wallet signature...');
+                
+                // Get user's balance before transaction
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
+                
+                // Sign and send the REAL burn transaction
+                const signature = await wallet.sendTransaction(transaction, rpcConnection, {
+                  maxRetries: 3,
+                  preflightCommitment: 'confirmed'
+                });
+                
+                console.log(`✅ REAL burn transaction signed! Signature: ${signature}`);
+                console.log(`🔗 Explorer: https://solscan.io/tx/${signature}`);
+                
+                // Wait for confirmation
+                await rpcConnection.confirmTransaction(signature, 'confirmed');
+                console.log('✅ Transaction confirmed on blockchain!');
+                
+                // Check actual rent recovered
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
+                const txDetails = await rpcConnection.getTransaction(signature, {
+                  commitment: 'confirmed',
+                  maxSupportedTransactionVersion: 0
+                });
+                const networkFee = txDetails?.meta?.fee || 5000;
+                const actualRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9;
+                
+                console.log(`💰 Actual SOL recovered: ${actualRecovered} SOL (after ${networkFee / 1e9} SOL fee)`);
+                console.log(`🔥 NFT ${burnTx.name} DESTROYED and rent recovered!`);
+                
+                totalActualRecovered += actualRecovered;
+                completedBurns.push({
+                  mint: burnTx.asset,
+                  name: burnTx.name,
+                  signature: signature,
+                  solRecovered: actualRecovered,
+                  success: true
+                });
+                
+              } catch (txError) {
+                console.error(`❌ Failed to burn ${burnTx.name}:`, txError);
+                completedBurns.push({
+                  mint: burnTx.asset,
+                  name: burnTx.name,
+                  error: txError instanceof Error ? txError.message : 'Unknown error',
+                  success: false
+                });
+              }
+            }
+            
+            const successfulBurns = completedBurns.filter(b => b.success);
+            
+            if (successfulBurns.length === 0) {
+              throw new Error('Failed to burn any Core NFTs');
+            }
+            
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
+            console.log(`💰 Total actual SOL recovered: ${totalActualRecovered} SOL`);
+            
+            results.push({
+              type: nftType,
+              nftsProcessed: successfulBurns.length,
+              totalAttempted: nftMints.length,
+              solRecovered: totalActualRecovered,
+              netAmount: totalActualRecovered,
+              feeAmount: 0,
+              signatures: successfulBurns.map(b => b.signature).filter(Boolean),
+              transactions: completedBurns
+            });
+            
+            continue; // Skip the rest of the UMI approach
             
             let burnedCount = 0;
             const burnResults = [];
