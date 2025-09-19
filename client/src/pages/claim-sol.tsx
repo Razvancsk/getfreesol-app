@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -1484,93 +1484,175 @@ export default function SolRefund() {
                 </button>
               </div>
 
-              {/* NFT Type Selection Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border border-purple-500/30 rounded-lg p-4 hover:border-purple-400/50 transition-all cursor-pointer group"
-                     data-testid="card-nft-standard">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-purple-600/30 rounded-lg flex items-center justify-center">
-                      <Image className="h-5 w-5 text-purple-300" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-medium">Standard NFT</h4>
-                      <p className="text-purple-200 text-sm">Regular NFTs</p>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white mb-1">{nftData?.counts?.standard || 0}</div>
-                    <div className="text-purple-300 text-sm">Available</div>
-                  </div>
+              {/* NFT Summary */}
+              {nftData && nftData.nfts && nftData.nfts.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-white text-sm">
+                    <span className="font-semibold">Compressed NFTs ({nftData.counts?.cnft || 0})</span>
+                    <span className="text-orange-300 ml-2">- Compressed NFTs are a special type of NFT that do not require a separate account to store their metadata. Due to this, you cannot reclaim any SOL rent from burning them. On top of this, some of them were created in such a way that it causes the transaction to be too large for Solana limits so we cannot burn them anyway. Just ignore them :)</span>
+                  </p>
                 </div>
+              )}
 
-                <div className="bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border border-purple-500/30 rounded-lg p-4 hover:border-purple-400/50 transition-all cursor-pointer group"
-                     data-testid="card-nft-programmable">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-purple-600/30 rounded-lg flex items-center justify-center">
-                      <Code className="h-5 w-5 text-purple-300" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-medium">pNFT</h4>
-                      <p className="text-purple-200 text-sm">Programmable NFTs</p>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white mb-1">{nftData?.counts?.pnft || 0}</div>
-                    <div className="text-purple-300 text-sm">Available</div>
-                  </div>
+              {/* Individual NFT Grid */}
+              {scanNftsMutation.isPending ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
+                  <p className="text-purple-200">Scanning for NFTs...</p>
                 </div>
+              ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Select All Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => {
+                          const burnableNfts = nftData.nfts.filter((nft: any) => nft.type !== 'cnft');
+                          setSelectedNfts(new Set(burnableNfts.map((nft: any) => nft.mint)));
+                        }}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-select-all-nfts"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setSelectedNfts(new Set())}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-deselect-all-nfts"
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                    <p className="text-sm text-purple-200">
+                      {selectedNfts.size} selected • {nftData.nfts.filter((nft: any) => nft.type !== 'cnft').length} burnable
+                    </p>
+                  </div>
 
-                <div className="bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border border-purple-500/30 rounded-lg p-4 hover:border-purple-400/50 transition-all cursor-pointer group"
-                     data-testid="card-nft-ocp">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-purple-600/30 rounded-lg flex items-center justify-center">
-                      <Shield className="h-5 w-5 text-purple-300" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-medium">OCP NFT</h4>
-                      <p className="text-purple-200 text-sm">Open Creator Protocol</p>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white mb-1">{nftData?.counts?.ocp || 0}</div>
-                    <div className="text-purple-300 text-sm">Available</div>
-                  </div>
-                </div>
+                  {/* NFT Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {nftData.nfts.map((nft: any) => {
+                      const isSelected = selectedNfts.has(nft.mint);
+                      const isCnft = nft.type === 'cnft';
+                      
+                      return (
+                        <div
+                          key={nft.mint}
+                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
+                            isCnft 
+                              ? 'border-orange-500/30 opacity-60 cursor-not-allowed' 
+                              : isSelected 
+                                ? 'border-green-400/50 bg-green-900/20' 
+                                : 'border-purple-500/30 hover:border-purple-400/50'
+                          }`}
+                          onClick={() => {
+                            if (!isCnft) {
+                              setSelectedNfts(prev => {
+                                const newSet = new Set(prev);
+                                if (isSelected) {
+                                  newSet.delete(nft.mint);
+                                } else {
+                                  newSet.add(nft.mint);
+                                }
+                                return newSet;
+                              });
+                            }
+                          }}
+                          data-testid={`card-nft-${nft.mint}`}
+                        >
+                          {/* Selection Checkbox */}
+                          {!isCnft && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                isSelected 
+                                  ? 'bg-green-500 border-green-500' 
+                                  : 'bg-purple-900/50 border-purple-400'
+                              }`}>
+                                {isSelected && <Check className="h-3 w-3 text-white" />}
+                              </div>
+                            </div>
+                          )}
 
-                <div className="bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border border-purple-500/30 rounded-lg p-4 hover:border-purple-400/50 transition-all cursor-pointer group"
-                     data-testid="card-nft-core">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-purple-600/30 rounded-lg flex items-center justify-center">
-                      <Cpu className="h-5 w-5 text-purple-300" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-medium">Core NFT</h4>
-                      <p className="text-purple-200 text-sm">Metaplex Core</p>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white mb-1">{nftData?.counts?.core || 0}</div>
-                    <div className="text-purple-300 text-sm">Available</div>
-                  </div>
-                </div>
+                          {/* NFT Image */}
+                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30">
+                            {nft.image ? (
+                              <img
+                                src={nft.image}
+                                alt={nft.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling!.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
+                              <Image className="h-8 w-8 text-purple-400" />
+                            </div>
+                          </div>
 
-                <div className="bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border border-purple-500/30 rounded-lg p-4 hover:border-purple-400/50 transition-all cursor-pointer group"
-                     data-testid="card-nft-cnft">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-purple-600/30 rounded-lg flex items-center justify-center">
-                      <TreePine className="h-5 w-5 text-purple-300" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-medium">cNFT</h4>
-                      <p className="text-purple-200 text-sm">Compressed NFTs</p>
-                    </div>
+                          {/* NFT Details */}
+                          <div className="space-y-1">
+                            <h4 className="text-white text-sm font-medium truncate" title={nft.name}>
+                              {nft.name || 'Unknown NFT'}
+                            </h4>
+                            
+                            {/* Type Badge */}
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                nft.type === 'standard' ? 'bg-blue-500/20 text-blue-300' :
+                                nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
+                                nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
+                                nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
+                                nft.type === 'cnft' ? 'bg-red-500/20 text-red-300' :
+                                'bg-gray-500/20 text-gray-300'
+                              }`}>
+                                {nft.type.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* CNFT Warning Overlay */}
+                          {isCnft && (
+                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                              <span className="text-orange-300 text-xs text-center px-2">
+                                Cannot Burn
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white mb-1">{nftData?.counts?.cnft || 0}</div>
-                    <div className="text-purple-300 text-sm">Available</div>
-                  </div>
+
+                  {/* Burn Selected Button */}
+                  {selectedNfts.size > 0 && (
+                    <div className="flex justify-center pt-4">
+                      <button
+                        onClick={() => {
+                          // TODO: Implement NFT burning
+                          toast({
+                            title: "Feature Coming Soon",
+                            description: `NFT burning for ${selectedNfts.size} selected NFTs will be implemented next`,
+                            className: "bg-purple-600 text-white border-purple-600",
+                          });
+                        }}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105"
+                        data-testid="button-burn-selected-nfts"
+                      >
+                        <Flame className="h-5 w-5" />
+                        Burn {selectedNfts.size} Selected NFT{selectedNfts.size > 1 ? 's' : ''}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : !scanNftsMutation.isPending ? (
+                <div className="text-center py-8">
+                  <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">No NFTs Found</h3>
+                  <p className="text-purple-200">Scan your wallet to find NFTs available for burning.</p>
+                </div>
+              ) : null}
 
               {/* Burn Instructions */}
               <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
