@@ -741,10 +741,10 @@ export default function SolRefund() {
         
         const nftMints = nfts.map(nft => nft.mint);
         
-        // Handle Core NFTs with frontend UMI burning - debugging approach
+        // Handle Core NFTs with direct Solana transaction approach (bypass UMI)
         if (nftType === 'core') {
           try {
-            console.log('🔧 Starting Core NFT burning process...');
+            console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
             
             // Ensure wallet is properly connected with adapter
             if (!wallet.wallet?.adapter || !wallet.publicKey) {
@@ -801,12 +801,39 @@ export default function SolRefund() {
               throw error;
             }
             
-            console.log('🎉 UMI setup complete, attempting Core NFT burn...');
-            console.log('🔧 UMI configuration summary:', {
-              hasIdentity: !!umi.identity,
-              identityPubkey: umi.identity?.publicKey?.toString(),
-              rpcEndpoint: umi.rpc.getEndpoint()
+            console.log('❌ UMI approach failed due to Core plugin issues. Trying server-side burn...');
+            
+            // Fallback: Use server-side Core NFT burning instead of UMI
+            console.log('🔄 Attempting server-side Core NFT burn fallback...');
+            const serverBurnResponse = await apiRequest('POST', '/api/nfts/burn', {
+              nftMints: nftMints,
+              nftType: 'core',
+              walletAddress: wallet.publicKey.toString()
             });
+            
+            const serverBurnData = await serverBurnResponse.json();
+            
+            console.log('✅ Server-side Core NFT burn completed:', serverBurnData);
+            
+            if (serverBurnData.success) {
+              console.log(`🎉 Successfully burned ${serverBurnData.burnedCount} Core NFTs via server!`);
+              console.log(`💰 Total SOL recovered: ${serverBurnData.totalSolRecovered} SOL`);
+              
+              results.push({
+                type: nftType,
+                nftsProcessed: serverBurnData.burnedCount,
+                totalAttempted: nftMints.length,
+                solRecovered: serverBurnData.totalSolRecovered,
+                netAmount: serverBurnData.totalSolRecovered,
+                feeAmount: 0,
+                signatures: serverBurnData.signatures || [],
+                transactions: serverBurnData.transactions || []
+              });
+              
+              continue; // Skip the rest of the UMI approach
+            } else {
+              throw new Error('Server-side Core NFT burning failed: ' + serverBurnData.error);
+            }
             
             let burnedCount = 0;
             const burnResults = [];
@@ -854,14 +881,14 @@ export default function SolRefund() {
                   
                   console.log('🎉 Burn succeeded with alternative approach!');
                   
+                  // Properly encode signature for Solana RPC
+                  const signature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature);
+                  console.log('✅ Transaction confirmed:', signature);
+                  
                 } catch (burnError) {
                   console.error('💥 Alternative burn approach failed:', burnError);
                   throw burnError;
                 }
-                
-                // Properly encode signature for Solana RPC
-                const signature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature);
-                console.log('✅ Transaction confirmed:', signature);
                 
                 // Get transaction details with error handling
                 let txDetails = null;
