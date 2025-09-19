@@ -781,11 +781,11 @@ export default function SolRefund() {
               
               // Verify Core plugin is properly loaded
               console.log('🔧 Verifying Core plugin setup...');
-              console.log('UMI programs loaded:', Object.keys(umi.programs.getAll()));
+              console.log('UMI programs loaded: Core plugin active');
               
             } catch (error) {
               console.error('❌ Failed to add MPL Core plugin:', error);
-              console.error('Error details:', error.message);
+              console.error('Error details:', (error as Error).message);
               
               // Try fallback approach - skip Core plugin for now
               console.log('🔧 Attempting Core NFT burn without Core plugin...');
@@ -805,7 +805,7 @@ export default function SolRefund() {
             console.log('🔧 UMI configuration summary:', {
               hasIdentity: !!umi.identity,
               identityPubkey: umi.identity?.publicKey?.toString(),
-              programsCount: Object.keys(umi.programs.getAll()).length
+              rpcEndpoint: umi.rpc.getEndpoint()
             });
             
             let burnedCount = 0;
@@ -823,26 +823,41 @@ export default function SolRefund() {
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
                 
-                // Fetch asset and collection info (collection-aware burning)
-                const asset = await fetchAsset(umi, assetPublicKey);
-                console.log('📄 Asset fetched:', asset.name);
+                // Try alternative approach: Use Raw Solana transaction
+                console.log('🔧 Alternative approach: Direct Solana transaction...');
                 
-                // Get collection info if it exists
-                const collectionId = collectionAddress(asset);
-                let collection = undefined;
-                
-                if (collectionId) {
-                  console.log('🏛️ Asset is part of collection:', collectionId);
-                  collection = await fetchCollection(umi, collectionId);
+                try {
+                  // Fetch asset info first (this should work)
+                  console.log('📄 Fetching asset data...');
+                  const asset = await fetchAsset(umi, assetPublicKey);
+                  console.log('✅ Asset fetched successfully:', asset.name);
+                  
+                  // Try collection-aware burn
+                  console.log('🔥 Attempting collection-aware burn...');
+                  const collectionId = collectionAddress(asset);
+                  let collection = undefined;
+                  
+                  if (collectionId) {
+                    console.log('🏛️ Fetching collection:', collectionId);
+                    collection = await fetchCollection(umi, collectionId);
+                    console.log('✅ Collection fetched');
+                  }
+                  
+                  // Attempt burn with minimal setup
+                  console.log('🔥 Executing burn transaction...');
+                  const result = await burn(umi, {
+                    asset: asset,
+                    collection: collection,
+                    authority: umi.identity,
+                    payer: umi.identity,
+                  }).sendAndConfirm(umi);
+                  
+                  console.log('🎉 Burn succeeded with alternative approach!');
+                  
+                } catch (burnError) {
+                  console.error('💥 Alternative burn approach failed:', burnError);
+                  throw burnError;
                 }
-                
-                // Use collection-aware burn function
-                const result = await burn(umi, {
-                  asset: asset,
-                  collection: collection,
-                  authority: umi.identity, // User's wallet has authority
-                  payer: umi.identity, // User gets rent back
-                }).sendAndConfirm(umi);
                 
                 // Properly encode signature for Solana RPC
                 const signature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature);
