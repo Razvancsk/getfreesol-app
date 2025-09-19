@@ -21,6 +21,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
+import { createUmi } from '@metaplex-foundation/umi';
+import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
+import { mplCore, burn } from '@metaplex-foundation/mpl-core';
+import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
 import logoImage from '@assets/image_1757882056840.png';
 
 interface EmptyTokenAccount {
@@ -60,6 +66,8 @@ interface RefundStats {
 
 export default function SolRefund() {
   const queryClient = useQueryClient();
+  const wallet = useWallet();
+  const { connection: rpcConnection } = useConnection();
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -732,7 +740,99 @@ export default function SolRefund() {
         
         const nftMints = nfts.map(nft => nft.mint);
         
-        // Prepare burn transaction
+        // Handle Core NFTs with frontend UMI burning (official pattern)
+        if (nftType === 'core') {
+          try {
+            // Ensure wallet is properly connected
+            if (!wallet.wallet || !wallet.publicKey) {
+              throw new Error('Wallet not properly connected for Core NFT burning');
+            }
+            
+            // Create UMI instance with proper RPC and wallet setup
+            const umi = createUmi()
+              .use(web3JsRpc(rpcConnection))
+              .use(mplCore())
+              .use(walletAdapterIdentity(wallet.wallet));
+            
+            let burnedCount = 0;
+            const burnResults = [];
+            
+            for (const mintAddress of nftMints) {
+              try {
+                const assetPublicKey = umiPublicKey(mintAddress);
+                
+                console.log('🔥 Starting Core NFT burn for:', mintAddress);
+                console.log('💰 Wallet before burn:', wallet.publicKey.toString());
+                
+                // Get wallet balance before burn to calculate actual rent recovery
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
+                
+                // Use the simplified burn function from mpl-core
+                const result = await burn(umi, {
+                  asset: assetPublicKey,
+                  // authority defaults to umi.identity (the connected wallet)
+                  // payer defaults to umi.identity (user gets rent back)
+                }).sendAndConfirm(umi);
+                
+                // Get balance after to see actual rent recovered
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
+                const actualRentRecovered = (balanceAfter - balanceBefore) / 1e9; // Convert to SOL
+                
+                console.log('✅ Core NFT burn successful!', {
+                  signature: result.signature,
+                  explorer: `https://solscan.io/tx/${result.signature}`,
+                  rentRecovered: `${actualRentRecovered} SOL`,
+                  balanceBefore: balanceBefore / 1e9,
+                  balanceAfter: balanceAfter / 1e9
+                });
+                
+                burnedCount++;
+                burnResults.push({
+                  mint: mintAddress,
+                  signature: result.signature,
+                  actualRentRecovered,
+                  success: true
+                });
+                
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                console.error(`Failed to burn Core NFT ${mintAddress}:`, error);
+                burnResults.push({
+                  mint: mintAddress,
+                  error: errorMessage,
+                  success: false
+                });
+              }
+            }
+            
+            if (burnedCount === 0) {
+              throw new Error('Failed to burn any Core NFTs');
+            }
+            
+            // Calculate actual total rent recovered from successful burns
+            const actualTotalRent = burnResults
+              .filter(r => r.success)
+              .reduce((sum, r) => sum + (r.actualRentRecovered || 0), 0);
+            
+            results.push({
+              type: nftType,
+              nftsProcessed: burnedCount,
+              totalAttempted: nftMints.length,
+              solRecovered: actualTotalRent, // Actual rent recovered, not estimated
+              netAmount: actualTotalRent,
+              feeAmount: 0, // No server fee for frontend burning
+              signatures: burnResults.filter(r => r.success).map(r => r.signature)
+            });
+            
+            continue; // Skip to next NFT type
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error('Core NFT burning failed:', error);
+            throw new Error(`Core NFT burning failed: ${errorMessage}`);
+          }
+        }
+        
+        // For non-Core NFTs, use server API (will return error for unsupported types)
         const response = await fetch('/api/nfts/burn', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -746,7 +846,7 @@ export default function SolRefund() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(`Failed to prepare ${nftType} burn transaction: ${errorData.error || 'Unknown error'}`);
+          throw new Error(`${nftType} NFT burning: ${errorData.error || 'This NFT type is not supported for burning'}`);
         }
 
         const { transaction, nftsProcessed, solRecovered, netAmount, feeAmount } = await response.json();
