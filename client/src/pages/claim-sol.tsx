@@ -23,7 +23,7 @@ import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { createUmi } from '@metaplex-foundation/umi';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { mplCore, burnV1, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
+import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
 import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
@@ -773,9 +773,23 @@ export default function SolRefund() {
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
                 
-                // Use the correct burnV1 function with proper asset ID
-                const result = await burnV1(umi, {
-                  asset: assetPublicKey, // This is the Core asset ID from DAS
+                // Fetch asset and collection info (collection-aware burning)
+                const asset = await fetchAsset(umi, assetPublicKey);
+                console.log('📄 Asset fetched:', asset.name);
+                
+                // Get collection info if it exists
+                const collectionId = collectionAddress(asset);
+                let collection = undefined;
+                
+                if (collectionId) {
+                  console.log('🏛️ Asset is part of collection:', collectionId);
+                  collection = await fetchCollection(umi, collectionId);
+                }
+                
+                // Use collection-aware burn function
+                const result = await burn(umi, {
+                  asset: asset,
+                  collection: collection,
                   authority: umi.identity, // User's wallet has authority
                   payer: umi.identity, // User gets rent back
                 }).sendAndConfirm(umi);
@@ -812,7 +826,7 @@ export default function SolRefund() {
                 
                 // Verify NFT is actually destroyed
                 try {
-                  await fetchAssetV1(umi, assetPublicKey);
+                  await fetchAsset(umi, assetPublicKey);
                   console.warn('⚠️ Asset still exists - burn may have failed');
                 } catch (error) {
                   console.log('✅ Asset confirmed destroyed - NFT and metadata completely deleted!');
