@@ -1320,6 +1320,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const asset of items) {
         const { interface: assetInterface, token_standard, compression } = asset;
         
+        // Debug logging to understand asset structure
+        console.log(`Asset ${asset.id}:`, {
+          interface: assetInterface,
+          token_standard,
+          compressed: compression?.compressed,
+          creators: asset.creators?.map((c: any) => c.address),
+          grouping: asset.grouping
+        });
+        
         // Skip if not an NFT or if it's a compressed NFT (cNFT)
         if (compression?.compressed) {
           continue; // Skip cNFTs entirely
@@ -1327,6 +1336,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (assetInterface !== 'ProgrammableNFT' && 
             assetInterface !== 'V1_NFT' && 
+            assetInterface !== 'NonFungible' &&
+            assetInterface !== 'MplCoreAsset' &&
             token_standard !== 'NonFungible' && 
             token_standard !== 'ProgrammableNonFungible') {
           continue;
@@ -1335,12 +1346,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Classify NFT type (excluding cNFTs)
         let nftType = 'standard';
         
-        if (token_standard === 'ProgrammableNonFungible' || assetInterface === 'ProgrammableNFT') {
+        if (assetInterface === 'MplCoreAsset') {
+          nftType = 'core'; // Metaplex Core NFTs
+        } else if (token_standard === 'ProgrammableNonFungible' || assetInterface === 'ProgrammableNFT') {
           nftType = 'pnft';
         } else if (asset.creators && asset.creators.some((c: any) => c.verified && c.address === 'oCPn3FnZqNvZKWF5xLEJvf3HNfN1WZcx7v72qqxbLGE')) {
-          nftType = 'ocp'; // Simplified OCP detection
-        } else if (asset.grouping && asset.grouping.some((g: any) => g.group_key === 'collection' && g.group_value.startsWith('Core'))) {
-          nftType = 'core'; // Simplified Core detection
+          nftType = 'ocp'; // Magic Eden's Open Creator Protocol
         }
 
         // Filter by type if specified
