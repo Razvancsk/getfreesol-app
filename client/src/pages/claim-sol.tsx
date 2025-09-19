@@ -1488,8 +1488,8 @@ export default function SolRefund() {
               {nftData && nftData.nfts && nftData.nfts.length > 0 && (
                 <div className="mb-4">
                   <p className="text-white text-sm">
-                    <span className="font-semibold">Compressed NFTs ({nftData.counts?.cnft || 0})</span>
-                    <span className="text-orange-300 ml-2">- Compressed NFTs are a special type of NFT that do not require a separate account to store their metadata. Due to this, you cannot reclaim any SOL rent from burning them. On top of this, some of them were created in such a way that it causes the transaction to be too large for Solana limits so we cannot burn them anyway. Just ignore them :)</span>
+                    <span className="font-semibold">Note about Compressed NFTs ({nftData.counts?.cnft || 0})</span>
+                    <span className="text-orange-300 ml-2">- Compressed NFTs can be burned but do not provide any SOL rent reclamation since they don't require separate accounts for metadata storage.</span>
                   </p>
                 </div>
               )}
@@ -1507,8 +1507,8 @@ export default function SolRefund() {
                     <div className="flex items-center space-x-4">
                       <button
                         onClick={() => {
-                          const burnableNfts = nftData.nfts.filter((nft: any) => nft.type !== 'cnft');
-                          setSelectedNfts(new Set(burnableNfts.map((nft: any) => nft.mint)));
+                          const allNfts = nftData.nfts;
+                          setSelectedNfts(new Set(allNfts.map((nft: any) => nft.mint || nft.id || nft.assetId).filter(Boolean)));
                         }}
                         className="text-sm text-purple-300 hover:text-white transition-colors"
                         data-testid="button-select-all-nfts"
@@ -1524,53 +1524,49 @@ export default function SolRefund() {
                       </button>
                     </div>
                     <p className="text-sm text-purple-200">
-                      {selectedNfts.size} selected • {nftData.nfts.filter((nft: any) => nft.type !== 'cnft').length} burnable
+                      {selectedNfts.size} selected • {nftData.nfts.length} total • {nftData.counts?.cnft || 0} cNFTs (no rent)
                     </p>
                   </div>
 
                   {/* NFT Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {nftData.nfts.map((nft: any) => {
-                      const isSelected = selectedNfts.has(nft.mint);
+                      // Use a stable identifier that works for all NFT types
+                      const nftId = nft.mint || nft.id || nft.assetId;
+                      const isSelected = selectedNfts.has(nftId);
                       const isCnft = nft.type === 'cnft';
                       
                       return (
                         <div
-                          key={nft.mint}
+                          key={nftId}
                           className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
-                            isCnft 
-                              ? 'border-orange-500/30 opacity-60 cursor-not-allowed' 
-                              : isSelected 
-                                ? 'border-green-400/50 bg-green-900/20' 
-                                : 'border-purple-500/30 hover:border-purple-400/50'
+                            isSelected 
+                              ? 'border-green-400/50 bg-green-900/20' 
+                              : 'border-purple-500/30 hover:border-purple-400/50'
                           }`}
                           onClick={() => {
-                            if (!isCnft) {
-                              setSelectedNfts(prev => {
-                                const newSet = new Set(prev);
-                                if (isSelected) {
-                                  newSet.delete(nft.mint);
-                                } else {
-                                  newSet.add(nft.mint);
-                                }
-                                return newSet;
-                              });
-                            }
+                            setSelectedNfts(prev => {
+                              const newSet = new Set(prev);
+                              if (isSelected) {
+                                newSet.delete(nftId);
+                              } else {
+                                newSet.add(nftId);
+                              }
+                              return newSet;
+                            });
                           }}
-                          data-testid={`card-nft-${nft.mint}`}
+                          data-testid={`card-nft-${nftId}`}
                         >
                           {/* Selection Checkbox */}
-                          {!isCnft && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                isSelected 
-                                  ? 'bg-green-500 border-green-500' 
-                                  : 'bg-purple-900/50 border-purple-400'
-                              }`}>
-                                {isSelected && <Check className="h-3 w-3 text-white" />}
-                              </div>
+                          <div className="absolute top-2 left-2 z-10">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              isSelected 
+                                ? 'bg-green-500 border-green-500' 
+                                : 'bg-purple-900/50 border-purple-400'
+                            }`}>
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
                             </div>
-                          )}
+                          </div>
 
                           {/* NFT Image */}
                           <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30">
@@ -1604,22 +1600,14 @@ export default function SolRefund() {
                                 nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
                                 nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
                                 nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
-                                nft.type === 'cnft' ? 'bg-red-500/20 text-red-300' :
+                                nft.type === 'cnft' ? 'bg-yellow-500/20 text-yellow-300' :
                                 'bg-gray-500/20 text-gray-300'
                               }`}>
-                                {nft.type.toUpperCase()}
+                                {nft.type.toUpperCase()}{nft.type === 'cnft' ? ' (No Rent)' : ''}
                               </span>
                             </div>
                           </div>
 
-                          {/* CNFT Warning Overlay */}
-                          {isCnft && (
-                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                              <span className="text-orange-300 text-xs text-center px-2">
-                                Cannot Burn
-                              </span>
-                            </div>
-                          )}
                         </div>
                       );
                     })}
