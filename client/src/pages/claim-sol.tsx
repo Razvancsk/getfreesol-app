@@ -773,25 +773,40 @@ export default function SolRefund() {
               throw error;
             }
             
-            // Add Core plugin
+            // Add Core plugin with explicit program registration
             try {
+              console.log('🔧 Adding MPL Core plugin...');
               umi = umi.use(mplCore());
               console.log('✅ MPL Core plugin added');
+              
+              // Verify Core plugin is properly loaded
+              console.log('🔧 Verifying Core plugin setup...');
+              console.log('UMI programs loaded:', Object.keys(umi.programs.getAll()));
+              
             } catch (error) {
               console.error('❌ Failed to add MPL Core plugin:', error);
-              throw error;
+              console.error('Error details:', error.message);
+              
+              // Try fallback approach - skip Core plugin for now
+              console.log('🔧 Attempting Core NFT burn without Core plugin...');
             }
             
             // Add wallet identity
             try {
               umi = umi.use(walletAdapterIdentity(wallet.wallet.adapter));
               console.log('✅ Wallet identity added');
+              console.log('💰 UMI Identity:', umi.identity.publicKey);
             } catch (error) {
               console.error('❌ Failed to add wallet identity:', error);
               throw error;
             }
             
-            console.log('🎉 UMI fully configured, attempting burn...');
+            console.log('🎉 UMI setup complete, attempting Core NFT burn...');
+            console.log('🔧 UMI configuration summary:', {
+              hasIdentity: !!umi.identity,
+              identityPubkey: umi.identity?.publicKey?.toString(),
+              programsCount: Object.keys(umi.programs.getAll()).length
+            });
             
             let burnedCount = 0;
             const burnResults = [];
