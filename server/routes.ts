@@ -1318,43 +1318,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const items = heliusData.result?.items || [];
 
       for (const asset of items) {
-        const { interface: assetInterface, token_standard, compression } = asset;
+        const { interface: assetInterface, compression } = asset;
         
-        // Skip compressed NFTs (cNFTs)
+        // Only process Metaplex Core NFTs
+        if (assetInterface !== 'MplCoreAsset') {
+          continue;
+        }
+        
+        // Skip compressed NFTs (shouldn't happen with Core but check anyway)
         if (compression?.compressed) {
           continue;
         }
         
-        // Only process actual NFTs
-        if (assetInterface !== 'ProgrammableNFT' && 
-            assetInterface !== 'V1_NFT' && 
-            assetInterface !== 'NonFungible' &&
-            assetInterface !== 'MplCoreAsset' &&
-            token_standard !== 'NonFungible' && 
-            token_standard !== 'ProgrammableNonFungible') {
-          continue;
-        }
+        const nftType = 'core';
 
-        // Classify NFT type
-        let nftType = 'standard';
-        
-        if (assetInterface === 'MplCoreAsset') {
-          nftType = 'core';
-        } else if (token_standard === 'ProgrammableNonFungible' || assetInterface === 'ProgrammableNFT') {
-          nftType = 'pnft';
-        } else if (asset.creators && asset.creators.some((c: any) => c.verified && c.address === 'oCPn3FnZqNvZKWF5xLEJvf3HNfN1WZcx7v72qqxbLGE')) {
-          nftType = 'ocp';
-        }
-
-        // Filter by type if specified
-        if (type && type !== nftType) {
+        // Filter by type if specified (only 'core' supported now)
+        if (type && type !== 'core') {
           continue;
         }
 
         // Filter out NFTs that should not be burned
         const name = asset.content?.metadata?.name || '';
         const description = asset.content?.metadata?.description || '';
-        const attributes = asset.content?.metadata?.attributes || [];
         
         // Check for "DO NOT BURN" indicators
         const doNotBurnPatterns = [
@@ -1370,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (shouldNotBurn) {
-          continue; // Skip NFTs marked as "do not burn"
+          continue;
         }
         
         // Filter out position/utility NFTs
@@ -1390,41 +1375,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (isPositionNft) {
-          continue; // Skip position/utility NFTs
+          continue;
         }
 
-        const nftName = asset.content?.metadata?.name || 'Unknown NFT';
-        
         const nftInfo = {
           mint: asset.id,
-          name: nftName,
+          name: asset.content?.metadata?.name || 'Unknown NFT',
           symbol: asset.content?.metadata?.symbol || '',
           image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
           description: asset.content?.metadata?.description || '',
-          type: nftType,
-          interface: assetInterface,
-          tokenStandard: token_standard,
-          compressed: compression?.compressed || false,
+          type: 'core',
+          interface: 'MplCoreAsset',
+          tokenStandard: '',
+          compressed: false,
           creators: asset.creators || [],
           collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null,
           attributes: asset.content?.metadata?.attributes || []
         };
 
-        console.log(`Adding NFT: ${nftName} (${asset.id.slice(0,8)}...) - Type: ${nftType}`);
         nfts.push(nftInfo);
       }
 
-      console.log(`Processed ${nfts.length} NFTs${type ? ` of type ${type}` : ''}:`);
-      nfts.forEach(nft => {
-        console.log(`- ${nft.name} (${nft.mint}) - Type: ${nft.type}`);
-      });
 
-      // Group by type for counts (excluding cNFTs)
+      // All NFTs are Core type now
       const counts = {
-        standard: nfts.filter(n => n.type === 'standard').length,
-        pnft: nfts.filter(n => n.type === 'pnft').length,
-        ocp: nfts.filter(n => n.type === 'ocp').length,
-        core: nfts.filter(n => n.type === 'core').length
+        core: nfts.length
       };
 
       res.json({
@@ -1448,8 +1423,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
       }
 
-      if (!nftType || !['standard', 'pnft', 'ocp', 'core'].includes(nftType)) {
-        return res.status(400).json({ error: "Valid NFT type is required (standard, pnft, ocp, core)" });
+      if (!nftType || nftType !== 'core') {
+        return res.status(400).json({ error: "Only Metaplex Core NFTs are supported" });
       }
 
       // Handle referral code logic (same as token burning)
@@ -1482,7 +1457,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
         : 'https://api.mainnet-beta.solana.com';
       
-      console.log(`Creating NFT burn transaction for ${nftMints.length} ${nftType} NFTs...`);
       
       const connection = new Connection(rpcUrl, 'confirmed');
       const ownerPublicKey = new PublicKey(walletAddress);
@@ -1490,53 +1464,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction based on NFT type
       const transaction = new Transaction();
       
-      // For now, we'll implement basic NFT burning (standard type)
-      // TODO: Implement specific burning logic for each NFT type
-      if (nftType === 'standard') {
-        for (const mintAddress of nftMints) {
-          const mintPublicKey = new PublicKey(mintAddress);
-          
-          // Get associated token account
-          const tokenAccount = await getAssociatedTokenAddress(
-            mintPublicKey,
-            ownerPublicKey
-          );
-          
-          // Check if account exists and has balance
-          try {
-            const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
-            const parsedInfo = tokenAccountInfo.value?.data as any;
-            
-            if (parsedInfo?.parsed?.info) {
-              const balance = parsedInfo.parsed.info.tokenAmount.amount;
-              
-              // Burn the NFT (should be balance of 1)
-              if (balance > 0) {
-                const burnInstruction = createBurnInstruction(
-                  tokenAccount,
-                  mintPublicKey,
-                  ownerPublicKey,
-                  balance
-                );
-                transaction.add(burnInstruction);
-              }
-              
-              // Close the account
-              const closeInstruction = createCloseAccountInstruction(
-                tokenAccount,
-                ownerPublicKey,
-                ownerPublicKey
-              );
-              transaction.add(closeInstruction);
-            }
-          } catch (error) {
-            console.log(`Skipping NFT ${mintAddress}: ${error}`);
-          }
-        }
-      } else if (nftType === 'core') {
-        // Metaplex Core NFTs burning
-        console.log(`Processing ${nftMints.length} Core NFTs for burning`);
-        
+      // Metaplex Core NFTs burning only
+      if (nftType === 'core') {
         for (const mintAddress of nftMints) {
           try {
             const mintPublicKey = new PublicKey(mintAddress);
@@ -1550,9 +1479,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             transaction.add(burnInstruction);
-            console.log(`Added Core NFT burn instruction for ${mintAddress}`);
           } catch (error) {
-            console.log(`Error processing Core NFT ${mintAddress}:`, error);
+            // Skip problematic NFTs
           }
         }
         
