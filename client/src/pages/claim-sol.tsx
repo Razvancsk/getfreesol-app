@@ -120,6 +120,17 @@ export default function SolRefund() {
     select
   } = useWalletAdapter();
 
+  // Auto-scan wallet when user connects or switches tabs
+  useEffect(() => {
+    if (isConnected && publicKey && activeTab !== 'referrals') {
+      if (activeTab === 'reclaim') {
+        scanMutation.mutate(publicKey.toString());
+      } else if (activeTab === 'burnTokens') {
+        scanTokensMutation.mutate(publicKey.toString());
+      }
+    }
+  }, [isConnected, publicKey, activeTab]);
+
   // Query to get user's referral code and stats
   const { data: userReferrals } = useQuery({
     queryKey: ['/api/referrals/wallet', publicKey?.toString()],
@@ -1153,35 +1164,6 @@ export default function SolRefund() {
           </div>
 
 
-          {/* Scan Wallet Section */}
-          {isConnected && activeTab !== 'referrals' && (
-            <div className="text-center">
-              <Button 
-                onClick={() => {
-                  if (publicKey) {
-                    if (activeTab === 'reclaim') {
-                      scanMutation.mutate(publicKey.toString());
-                    } else if (activeTab === 'burnTokens') {
-                      scanTokensMutation.mutate(publicKey.toString());
-                    }
-                  }
-                }}
-                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
-                size="lg"
-                className="bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white px-8 py-4 text-lg font-semibold transition-all duration-200"
-              >
-                {(scanMutation.isPending || scanTokensMutation.isPending) ? (
-                  <RefreshCw className="h-6 w-6 animate-spin mr-3" />
-                ) : (
-                  <Search className="h-6 w-6 mr-3" />
-                )}
-                {(scanMutation.isPending || scanTokensMutation.isPending) 
-                  ? 'Scanning Wallet...' 
-                  : `Scan ${activeTab === 'reclaim' ? 'Empty Accounts' : 'Tokens'}`
-                }
-              </Button>
-            </div>
-          )}
 
 
 
