@@ -841,11 +841,27 @@ export default function SolRefund() {
                 // Get user's balance before transaction
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
                 
-                // Sign and send the REAL burn transaction
-                const signature = await wallet.sendTransaction(transaction, rpcConnection, {
-                  maxRetries: 3,
-                  preflightCommitment: 'confirmed'
+                // Sign and send the REAL burn transaction  
+                console.log('🔧 Transaction details:', {
+                  instructions: transaction.instructions.length,
+                  signers: transaction.signatures.length,
+                  feePayer: transaction.feePayer?.toString()
                 });
+                
+                let signature: string;
+                try {
+                  signature = await wallet.sendTransaction(transaction, rpcConnection, {
+                    maxRetries: 3,
+                    preflightCommitment: 'confirmed'
+                  });
+                  console.log(`✅ Transaction sent successfully: ${signature}`);
+                } catch (sendError) {
+                  console.error('❌ Wallet sendTransaction failed:', sendError);
+                  console.error('❌ Error message:', sendError.message);
+                  console.error('❌ Error type:', typeof sendError);
+                  console.error('❌ Error stack:', sendError.stack);
+                  throw sendError;
+                }
                 
                 console.log(`✅ REAL burn transaction signed! Signature: ${signature}`);
                 console.log(`🔗 Explorer: https://solscan.io/tx/${signature}`);
