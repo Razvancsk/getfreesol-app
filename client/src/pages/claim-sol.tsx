@@ -1168,34 +1168,24 @@ export default function SolRefund() {
 
 
 
-          {/* Manual Refresh Button */}
-          {isConnected && activeTab !== 'referrals' && (
-            <div className="text-center">
-              <button 
-                onClick={() => {
-                  if (publicKey) {
-                    if (activeTab === 'reclaim') {
-                      scanMutation.mutate(publicKey.toString());
-                    } else if (activeTab === 'burnTokens') {
-                      scanTokensMutation.mutate(publicKey.toString());
-                    }
-                  }
-                }}
-                disabled={scanMutation.isPending || scanTokensMutation.isPending || !publicKey}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
-                data-testid="button-refresh-scan"
-              >
-                <RefreshCw className={`h-4 w-4 ${(scanMutation.isPending || scanTokensMutation.isPending) ? 'animate-spin' : ''}`} />
-                Click to Refresh
-              </button>
-            </div>
-          )}
-
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && scanResult && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-scan"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                  Click to Refresh
+                </button>
               </div>
               <p className="text-white text-sm mb-6">
                 Found {scanResult.emptyAccounts} empty token accounts
@@ -1272,6 +1262,19 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">{selectedTokens.size} selected</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanTokensMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-tokens"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                  Click to Refresh
+                </button>
                 <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
                   {tokenList.length} Tokens Found
                 </div>
@@ -1378,6 +1381,22 @@ export default function SolRefund() {
           {/* Empty State Messages */}
           {activeTab === 'burnTokens' && tokenList.length === 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Token & NFT Scanner</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanTokensMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-tokens-empty"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                  Click to Refresh
+                </button>
+              </div>
               <div className="text-center space-y-4">
                 <Flame className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
