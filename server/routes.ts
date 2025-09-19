@@ -7,9 +7,7 @@ import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
-// Metaplex Core program ID and burn instruction implementation
-const MPL_CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
-const BURN_DISCRIMINATOR = 12;
+// Metaplex Core burning - currently disabled due to technical challenges
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -1469,81 +1467,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Metaplex Core NFTs burning only
       if (nftType === 'core') {
-        // We need to get the NFT data from our scan to include collection info
-        // For now, we'll fetch fresh data for each NFT to get collection addresses
-        
-        for (const mintAddress of nftMints) {
-          try {
-            // Note: For Core NFTs, mintAddress is actually the asset address, not an SPL mint
-            const assetPublicKey = new PublicKey(mintAddress);
-            
-            // Fetch asset details to get collection info
-            let collectionAddress = null;
-            try {
-              const assetResponse = await fetch(`${rpcUrl.replace('?api-key=', '/v0/assets/').replace('https://mainnet.helius-rpc.com', 'https://mainnet.helius-rpc.com')}${mintAddress}`);
-              if (assetResponse.ok) {
-                const assetData = await assetResponse.json();
-                const collectionGroup = assetData.grouping?.find((g: any) => g.group_key === 'collection');
-                if (collectionGroup) {
-                  collectionAddress = new PublicKey(collectionGroup.group_value);
-                }
-              }
-            } catch (e) {
-              // Continue without collection if fetch fails
-            }
-            
-            // Create proper Core NFT burn instruction
-            // Instruction data: [discriminator(12), compressionProof(none)]
-            const instructionData = Buffer.from([BURN_DISCRIMINATOR, 0]); // 0 = None for compressionProof
-            
-            // Account order per Kinobi spec: asset, collection?, payer, authority, systemProgram
-            const keys = [
-              {
-                pubkey: assetPublicKey,
-                isSigner: false,
-                isWritable: true, // Asset account will be closed, recovering rent
-              },
-            ];
-            
-            // Add collection account if it exists
-            if (collectionAddress) {
-              keys.push({
-                pubkey: collectionAddress,
-                isSigner: false,
-                isWritable: true, // Collection may need to be updated
-              });
-            }
-            
-            // Add remaining required accounts
-            keys.push(
-              {
-                pubkey: ownerPublicKey,
-                isSigner: true,
-                isWritable: true, // Payer (receives rent back)
-              },
-              {
-                pubkey: ownerPublicKey,
-                isSigner: true,
-                isWritable: false, // Authority (same as payer in this case)
-              },
-              {
-                pubkey: SystemProgram.programId,
-                isSigner: false,
-                isWritable: false,
-              }
-            );
-            
-            const burnInstruction = new TransactionInstruction({
-              keys,
-              programId: MPL_CORE_PROGRAM_ID,
-              data: instructionData,
-            });
-            
-            transaction.add(burnInstruction);
-          } catch (error) {
-            // Skip problematic NFTs
-          }
-        }
+        // Core NFT burning requires proper UMI framework integration
+        // Current implementation has technical challenges with library versions
+        return res.status(501).json({ 
+          success: false,
+          error: "Core NFT burning is temporarily unavailable due to technical integration challenges with the Metaplex Core library. The system currently only supports scanning Core NFTs. Proper burning with rent recovery will be implemented in a future update.",
+          supportedFeatures: [
+            "Core NFT detection and scanning",
+            "Safe filtering of burnable vs non-burnable NFTs",
+            "Collection identification"
+          ],
+          recommendation: "For now, you can use other Solana NFT burning tools that support Metaplex Core, or wait for this feature to be properly implemented."
+        });
         
       } else {
         // For other NFT types (pNFT, OCP), return a placeholder transaction for now
