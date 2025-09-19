@@ -1478,7 +1478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Direct Solana approach - bypass UMI entirely
-          const { VersionedTransaction, TransactionInstruction, ComputeBudgetProgram } = await import('@solana/web3.js');
+          const { Transaction, TransactionInstruction, ComputeBudgetProgram } = await import('@solana/web3.js');
           const bs58 = await import('bs58');
           
           console.log('✅ Using direct Solana transaction approach (bypassing UMI)');
@@ -1533,40 +1533,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 units: 200_000, // Enough compute for Core burn
               });
               
-              // Build transaction
+              // Build transaction using proper Transaction class
               const { blockhash } = await connection.getLatestBlockhash();
               
-              const messageV0 = new VersionedTransaction({
-                version: 0,
-                header: {
-                  numRequiredSignatures: 1,
-                  numReadonlySignedAccounts: 0,
-                  numReadonlyUnsignedAccounts: 0
-                },
-                staticAccountKeys: [
-                  userPubkey,     // 0: signer/payer
-                  assetPubkey,    // 1: asset to burn
-                  CORE_PROGRAM_ID // 2: program
-                ],
+              const transaction = new Transaction({
                 recentBlockhash: blockhash,
-                compiledInstructions: [
-                  // Compute budget instruction
-                  {
-                    programIdIndex: 2,
-                    accountKeyIndexes: [],
-                    data: computeBudgetIx.data
-                  },
-                  // Burn instruction
-                  {
-                    programIdIndex: 2, // Core program
-                    accountKeyIndexes: [1, 0, 0], // [asset, authority, payer]
-                    data: instructionData
-                  }
-                ],
-                addressTableLookups: []
+                feePayer: userPubkey
               });
               
-              const serializedTx = messageV0.serialize();
+              // Add compute budget and burn instructions
+              transaction.add(computeBudgetIx);
+              transaction.add(burnInstruction);
+              
+              // Serialize the transaction (unsigned)
+              const serializedTx = transaction.serialize({
+                requireAllSignatures: false, // We don't want to sign on server
+                verifySignatures: false
+              });
               const base64Tx = Buffer.from(serializedTx).toString('base64');
               
               console.log(`✅ Built DIRECT Core burn transaction for ${assetAddress}`);
