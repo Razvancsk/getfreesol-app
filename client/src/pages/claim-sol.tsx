@@ -830,8 +830,9 @@ export default function SolRefund() {
                 console.log(`🔥 Signing REAL burn transaction for ${burnTx.name} (${burnTx.asset})`);
                 console.log(`💰 Expected rent recovery: ${burnTx.expectedRentSol} SOL`);
                 
-                // Decode the prepared transaction
-                const transaction = VersionedTransaction.deserialize(
+                // Decode the prepared transaction (legacy Transaction, not VersionedTransaction)
+                const { Transaction } = await import('@solana/web3.js');
+                const transaction = Transaction.from(
                   Buffer.from(burnTx.transaction, 'base64')
                 );
                 
