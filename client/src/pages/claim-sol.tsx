@@ -749,9 +749,12 @@ export default function SolRefund() {
               throw new Error('Wallet adapter not properly connected for Core NFT burning');
             }
             
-            // Create UMI instance with proper RPC and wallet adapter
+            // Create UMI instance with Helius RPC and proper plugins
+            const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
+            console.log('🔧 Setting up UMI with Helius RPC');
+            
             const umi = createUmi()
-              .use(web3JsRpc(rpcConnection))
+              .use(web3JsRpc(heliusRpc))
               .use(mplCore())
               .use(walletAdapterIdentity(wallet.wallet.adapter));
             
