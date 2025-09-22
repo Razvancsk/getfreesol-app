@@ -756,19 +756,15 @@ export default function SolRefund() {
             console.log('🔧 Creating UMI instance with RPC endpoint...');
             const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
             
-            console.log('🔧 Step 1: Creating base UMI instance...');
+            console.log('🔧 Step 1: Creating UMI with RPC endpoint...');
             const umi = createUmi(heliusRpc);
-            console.log('✅ Base UMI created');
+            console.log('✅ Base UMI with RPC created');
             
-            console.log('🔧 Step 2: Adding web3.js RPC plugin...');
-            const umiWithRpc = umi.use(web3JsRpc());
-            console.log('✅ web3.js RPC plugin added');
-            
-            console.log('🔧 Step 3: Adding mplCore() plugin...');
-            const umiWithCore = umiWithRpc.use(mplCore());
+            console.log('🔧 Step 2: Adding mplCore() plugin...');
+            const umiWithCore = umi.use(mplCore());
             console.log('✅ mplCore plugin added');
             
-            console.log('🔧 Step 4: Adding wallet identity...');
+            console.log('🔧 Step 3: Adding wallet identity...');
             const finalUmi = umiWithCore.use(walletAdapterIdentity(wallet.wallet.adapter));
             console.log('✅ Wallet identity added');
             
@@ -798,11 +794,38 @@ export default function SolRefund() {
                 const asset = await fetchAsset(finalUmi, assetPublicKey);
                 console.log('✅ Asset fetched successfully:', asset.name);
 
-                console.log('🔥 Executing burn transaction...');
-                const result = await burn(finalUmi, {
-                  asset: asset,
-                  authority: finalUmi.identity,
-                }).sendAndConfirm(finalUmi);
+                // Check if NFT is part of a collection
+                let burnInstruction;
+                if (asset.collection && asset.collection.key) {
+                  console.log('🏛️ Collection Core NFT detected - fetching collection data...');
+                  try {
+                    const collection = await fetchCollection(finalUmi, asset.collection.key);
+                    console.log('✅ Collection fetched:', collection.name);
+                    
+                    // Burn NFT from collection
+                    console.log('🔥 Executing COLLECTION Core NFT burn...');
+                    burnInstruction = burn(finalUmi, {
+                      asset: asset,
+                      collection: collection,
+                      authority: finalUmi.identity,
+                    });
+                  } catch (collectionError) {
+                    console.warn('⚠️ Collection fetch failed, burning as single NFT:', collectionError);
+                    // Fallback to single NFT burn
+                    burnInstruction = burn(finalUmi, {
+                      asset: asset,
+                      authority: finalUmi.identity,
+                    });
+                  }
+                } else {
+                  console.log('🔥 Executing SINGLE Core NFT burn...');
+                  burnInstruction = burn(finalUmi, {
+                    asset: asset,
+                    authority: finalUmi.identity,
+                  });
+                }
+
+                const result = await burnInstruction.sendAndConfirm(finalUmi);
 
                 console.log('🎉 Core NFT burn succeeded with UMI!');
                 
