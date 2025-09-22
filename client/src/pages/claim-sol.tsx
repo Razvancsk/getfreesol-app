@@ -80,7 +80,7 @@ export default function SolRefund() {
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
-  
+
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
 
@@ -109,7 +109,7 @@ export default function SolRefund() {
       });
     }
   }, [tokenList]);
-  
+
   const { toast } = useToast();
   const [location] = useLocation();
 
@@ -249,12 +249,12 @@ export default function SolRefund() {
     // Check for query parameter format: ?ref=CODE
     const urlParams = new URLSearchParams(window.location.search);
     const queryRefCode = urlParams.get('ref');
-    
+
     // Check for path format: /CODE
     const pathRefCode = window.location.pathname.replace('/', '');
-    
+
     const refCode = queryRefCode || (pathRefCode && pathRefCode !== '' ? pathRefCode : null);
-    
+
     if (refCode) {
       setReferralCode(refCode);
       toast({
@@ -297,7 +297,7 @@ export default function SolRefund() {
         return false;
       }
     };
-    
+
     const handleError = (event: ErrorEvent) => {
       if (event.message?.includes('Failed to fetch') || 
           event.message?.includes('sendRawTransaction') ||
@@ -308,7 +308,7 @@ export default function SolRefund() {
         return false;
       }
     };
-    
+
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
     window.addEventListener('error', handleError);
     return () => {
@@ -501,36 +501,36 @@ export default function SolRefund() {
           tokenMint
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to prepare burn transaction');
       }
-      
+
       const { transaction, solRecovered } = await response.json();
-      
+
       // Sign and send transaction using connected wallet
       if (!isConnected || !publicKey) {
         throw new Error('Wallet not connected');
       }
 
       const { Connection, Transaction } = await import('@solana/web3.js');
-      
+
       // Use Helius RPC if available, otherwise fallback
       const heliusResponse = await fetch('/api/helius-config');
       const rpcConfig = await heliusResponse.json();
-      
+
       const connection = new Connection(
         rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
         'confirmed'
       );
-      
+
       // Deserialize and sign transaction with connected wallet
       const txBuffer = Buffer.from(transaction, 'base64');
       const tx = Transaction.from(txBuffer);
-      
+
       const signedTx = await signTransaction(tx);
       const signature = await connection.sendRawTransaction(signedTx.serialize());
-      
+
       // Wait for confirmation with error handling
       try {
         await connection.confirmTransaction(signature, 'confirmed');
@@ -540,7 +540,7 @@ export default function SolRefund() {
         console.warn('Transaction signature:', signature);
         // Continue with success recording since transaction was sent
       }
-      
+
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
         method: 'POST',
@@ -555,11 +555,11 @@ export default function SolRefund() {
           feeAmount: parseFloat(solRecovered) * 0.15
         })
       });
-      
+
       if (!recordResponse.ok) {
         console.error('Failed to record burn success:', await recordResponse.text());
       }
-      
+
       return { signature, solRecovered };
     },
     onSuccess: (data) => {
@@ -577,7 +577,7 @@ export default function SolRefund() {
     onError: (error) => {
       console.error('Error burning token:', error);
       let errorMessage = "Failed to burn token. Please try again.";
-      
+
       if (error instanceof Error) {
         if (error.message.includes('User rejected')) {
           errorMessage = "Transaction was cancelled by user.";
@@ -587,7 +587,7 @@ export default function SolRefund() {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -611,36 +611,36 @@ export default function SolRefund() {
           referralCode: referralCode || undefined
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to prepare bulk burn transaction');
       }
-      
+
       const { transaction, tokensProcessed, solRecovered, netAmount, feeAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
-      
+
       // Sign and send transaction using the connected wallet
       console.log('🔐 About to sign bulk burn transaction with:', walletName || 'unknown wallet');
 
       const { Connection, Transaction } = await import('@solana/web3.js');
-      
+
       const heliusResponse = await fetch('/api/helius-config');
       const rpcConfig = await heliusResponse.json();
-      
+
       const connection = new Connection(
         rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
         'confirmed'
       );
-      
+
       const txBuffer = Buffer.from(transaction, 'base64');
       const tx = Transaction.from(txBuffer);
-      
+
       // Use the wallet adapter's signTransaction instead of hardcoded window.solana
       const signedTx = await signTransaction(tx);
       console.log('✅ Transaction signed successfully with:', walletName);
-      
+
       const signature = await connection.sendRawTransaction(signedTx.serialize());
       console.log('📡 Transaction sent to network:', signature);
-      
+
       // Wait for confirmation with error handling
       try {
         await connection.confirmTransaction(signature, 'confirmed');
@@ -650,7 +650,7 @@ export default function SolRefund() {
         console.warn('Transaction signature:', signature);
         // Continue with success recording since transaction was sent
       }
-      
+
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
         method: 'POST',
@@ -668,11 +668,11 @@ export default function SolRefund() {
           referralFeeAmount: referralFeeAmount || 0
         })
       });
-      
+
       if (!recordResponse.ok) {
         console.error('Failed to record burn success:', await recordResponse.text());
       }
-      
+
       return { tokensProcessed, solRecovered, netAmount, feeAmount, signature };
     },
     onSuccess: (result) => {
@@ -734,24 +734,24 @@ export default function SolRefund() {
       });
 
       const results = [];
-      
+
       // Process each type separately
       for (const [nftType, nfts] of Object.entries(nftsByType)) {
         console.log(`Burning ${nfts.length} ${nftType} NFTs...`);
-        
+
         const nftMints = nfts.map(nft => nft.mint);
-        
+
         // Handle Core NFTs with direct Solana transaction approach (bypass UMI)
         if (nftType === 'core') {
           try {
             console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
-            
+
             // Ensure wallet is properly connected with adapter
             if (!wallet.wallet?.adapter || !wallet.publicKey) {
               throw new Error('Wallet adapter not properly connected for Core NFT burning');
             }
             console.log('✅ Wallet adapter validated');
-            
+
             // Try minimal UMI setup first 
             console.log('🔧 Creating minimal UMI instance...');
             let umi;
@@ -762,7 +762,7 @@ export default function SolRefund() {
               console.error('❌ Failed to create basic UMI instance:', error);
               throw error;
             }
-            
+
             // Add RPC plugin
             try {
               const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
@@ -772,25 +772,25 @@ export default function SolRefund() {
               console.error('❌ Failed to add RPC plugin:', error);
               throw error;
             }
-            
+
             // Add Core plugin with explicit program registration
             try {
               console.log('🔧 Adding MPL Core plugin...');
               umi = umi.use(mplCore());
               console.log('✅ MPL Core plugin added');
-              
+
               // Verify Core plugin is properly loaded
               console.log('🔧 Verifying Core plugin setup...');
               console.log('UMI programs loaded: Core plugin active');
-              
+
             } catch (error) {
               console.error('❌ Failed to add MPL Core plugin:', error);
               console.error('Error details:', (error as Error).message);
-              
+
               // Try fallback approach - skip Core plugin for now
               console.log('🔧 Attempting Core NFT burn without Core plugin...');
             }
-            
+
             // Add wallet identity
             try {
               umi = umi.use(walletAdapterIdentity(wallet.wallet.adapter));
@@ -800,9 +800,9 @@ export default function SolRefund() {
               console.error('❌ Failed to add wallet identity:', error);
               throw error;
             }
-            
+
             console.log('❌ UMI approach failed due to Core plugin issues. Preparing REAL server-side burn...');
-            
+
             // Get real burn transactions from server
             console.log('🔄 Requesting REAL Core NFT burn transactions from server...');
             const burnPrepResponse = await apiRequest('POST', '/api/nfts/burn', {
@@ -810,90 +810,89 @@ export default function SolRefund() {
               nftType: 'core',
               walletAddress: wallet.publicKey.toString()
             });
-            
+
             const burnPrepData = await burnPrepResponse.json();
             console.log('📋 Received burn transaction preparation:', burnPrepData);
-            
+
             if (!burnPrepData.success || !burnPrepData.burnTransactions) {
               throw new Error('Failed to prepare burn transactions: ' + burnPrepData.error);
             }
-            
+
             console.log(`🎯 Got ${burnPrepData.burnTransactions.length} REAL burn transactions to sign`);
             console.log(`💰 Expected total rent recovery: ${burnPrepData.totalExpectedRentSol} SOL`);
-            
+
             // Sign and submit each real burn transaction
             const completedBurns = [];
             let totalActualRecovered = 0;
-            
+
             for (const burnTx of burnPrepData.burnTransactions) {
               try {
                 console.log(`🔥 Signing REAL burn transaction for ${burnTx.name} (${burnTx.asset})`);
                 console.log(`💰 Expected rent recovery: ${burnTx.expectedRentSol} SOL`);
-                
+
                 // Decode the prepared transaction (legacy Transaction, not VersionedTransaction)
                 const { Transaction } = await import('@solana/web3.js');
                 const transaction = Transaction.from(
                   Buffer.from(burnTx.transaction, 'base64')
                 );
-                
+
                 console.log('📝 Transaction decoded, requesting wallet signature...');
-                
+
                 // Get user's balance before transaction
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
-                
-                // Sign and send the REAL burn transaction using the wallet adapter's signTransaction method
-                console.log('🔧 Transaction details:', {
-                  instructions: transaction.instructions.length,
-                  signers: transaction.signatures.length,
-                  feePayer: transaction.feePayer?.toString()
-                });
-                
-                console.log('🚀 About to sign transaction with wallet adapter...');
-                console.log('🔍 Wallet info:', {
-                  connected: wallet.connected,
-                  publicKey: wallet.publicKey?.toString(),
-                  walletName: wallet.wallet?.adapter?.name
-                });
-                
+                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
+
+                // Get RPC connection with proper configuration
+                const heliusResponse = await fetch('/api/helius-config');
+                const rpcConfig = await heliusResponse.json();
+
+                const connection = new Connection(
+                  rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+                  'confirmed'
+                );
+
                 let signature: string;
                 try {
-                  // Use the wallet adapter's signTransaction instead of sendTransaction
-                  console.log('✏️ Signing transaction...');
+                  // Use the wallet adapter's signTransaction 
+                  console.log('✏️ Signing Core NFT burn transaction...');
                   const signedTransaction = await signTransaction(transaction);
                   console.log('✅ Transaction signed successfully');
-                  
-                  // Send the signed transaction using RPC connection
+
+                  // Send the signed transaction using proper RPC connection
                   console.log('📡 Sending signed transaction to network...');
-                  signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
+                  signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
                     skipPreflight: false,
                     preflightCommitment: 'confirmed',
                     maxRetries: 3
                   });
-                  
-                  console.log(`✅ Transaction sent successfully: ${signature}`);
+
+                  console.log(`✅ Core NFT burn transaction sent: ${signature}`);
+                  console.log(`🔗 View on Solscan: https://solscan.io/tx/${signature}`);
                 } catch (sendError: any) {
-                  console.error('❌ Transaction signing/sending error:', sendError);
-                  
-                  // Try to extract meaningful error info
-                  let errorMsg = 'Transaction failed';
+                  console.error('❌ Core NFT burn transaction error:', sendError);
+
+                  // Handle specific wallet errors
+                  let errorMsg = 'Core NFT burn transaction failed';
                   if (sendError?.message) {
-                    if (sendError.message.includes('User rejected')) {
+                    if (sendError.message.includes('User rejected') || sendError.message.includes('User declined')) {
                       errorMsg = 'Transaction was cancelled by user';
+                    } else if (sendError.message.includes('Insufficient funds')) {
+                      errorMsg = 'Insufficient SOL for transaction fees';
                     } else {
-                      errorMsg = sendError.message;
+                      errorMsg = `Core NFT burn failed: ${sendError.message}`;
                     }
                   }
-                  
+
                   throw new Error(errorMsg);
                 }
-                
+
                 console.log(`✅ REAL burn transaction signed! Signature: ${signature}`);
                 console.log(`🔗 Explorer: https://solscan.io/tx/${signature}`);
-                
+
                 // Wait for confirmation
                 await rpcConnection.confirmTransaction(signature, 'confirmed');
                 console.log('✅ Transaction confirmed on blockchain!');
-                
+
                 // Check actual rent recovered
                 const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
                 const txDetails = await rpcConnection.getTransaction(signature, {
@@ -902,10 +901,10 @@ export default function SolRefund() {
                 });
                 const networkFee = txDetails?.meta?.fee || 5000;
                 const actualRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9;
-                
+
                 console.log(`💰 Actual SOL recovered: ${actualRecovered} SOL (after ${networkFee / 1e9} SOL fee)`);
                 console.log(`🔥 NFT ${burnTx.name} DESTROYED and rent recovered!`);
-                
+
                 totalActualRecovered += actualRecovered;
                 completedBurns.push({
                   mint: burnTx.asset,
@@ -914,7 +913,7 @@ export default function SolRefund() {
                   solRecovered: actualRecovered,
                   success: true
                 });
-                
+
               } catch (txError) {
                 console.error(`❌ Failed to burn ${burnTx.name}:`, txError);
                 completedBurns.push({
@@ -925,16 +924,16 @@ export default function SolRefund() {
                 });
               }
             }
-            
+
             const successfulBurns = completedBurns.filter(b => b.success);
-            
+
             if (successfulBurns.length === 0) {
               throw new Error('Failed to burn any Core NFTs');
             }
-            
+
             console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
             console.log(`💰 Total actual SOL recovered: ${totalActualRecovered} SOL`);
-            
+
             results.push({
               type: nftType,
               nftsProcessed: successfulBurns.length,
@@ -945,44 +944,44 @@ export default function SolRefund() {
               signatures: successfulBurns.map(b => b.signature).filter(Boolean),
               transactions: completedBurns
             });
-            
+
             continue; // Skip the rest of the UMI approach
-            
+
             let burnedCount = 0;
             const burnResults = [];
-            
+
             for (const mintAddress of nftMints) {
               try {
                 // Use the Core asset ID directly (not mint address)
                 const assetPublicKey = umiPublicKey(mintAddress);
-                
+
                 console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
                 console.log('💰 User wallet:', wallet.publicKey.toString());
-                
+
                 // Get wallet balance before burn
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
-                
+
                 // Try alternative approach: Use Raw Solana transaction
                 console.log('🔧 Alternative approach: Direct Solana transaction...');
-                
+
                 try {
                   // Fetch asset info first (this should work)
                   console.log('📄 Fetching asset data...');
                   const asset = await fetchAsset(umi, assetPublicKey);
                   console.log('✅ Asset fetched successfully:', asset.name);
-                  
+
                   // Try collection-aware burn
                   console.log('🔥 Attempting collection-aware burn...');
                   const collectionId = collectionAddress(asset);
                   let collection = undefined;
-                  
+
                   if (collectionId) {
                     console.log('🏛️ Fetching collection:', collectionId);
                     collection = await fetchCollection(umi, collectionId);
                     console.log('✅ Collection fetched');
                   }
-                  
+
                   // Attempt burn with minimal setup
                   console.log('🔥 Executing burn transaction...');
                   const result = await burn(umi, {
@@ -991,18 +990,18 @@ export default function SolRefund() {
                     authority: umi.identity,
                     payer: umi.identity,
                   }).sendAndConfirm(umi);
-                  
+
                   console.log('🎉 Burn succeeded with alternative approach!');
-                  
+
                   // Properly encode signature for Solana RPC
                   const signature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature);
                   console.log('✅ Transaction confirmed:', signature);
-                  
+
                 } catch (burnError) {
                   console.error('💥 Alternative burn approach failed:', burnError);
                   throw burnError;
                 }
-                
+
                 // Get transaction details with error handling
                 let txDetails = null;
                 let networkFee = 5000; // Default Solana fee estimate
@@ -1015,11 +1014,11 @@ export default function SolRefund() {
                 } catch (error) {
                   console.warn('Could not fetch transaction details, using estimated fee');
                 }
-                
+
                 const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
                 const actualRentRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9; // Accurate with fees
                 console.log('💰 Balance after:', balanceAfter / 1e9, 'SOL');
-                
+
                 console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
                   signature: signature,
                   explorer: `https://solscan.io/tx/${signature}`,
@@ -1028,7 +1027,7 @@ export default function SolRefund() {
                   balanceBefore: balanceBefore / 1e9,
                   balanceAfter: balanceAfter / 1e9
                 });
-                
+
                 // Verify NFT is actually destroyed
                 try {
                   await fetchAsset(umi, assetPublicKey);
@@ -1036,7 +1035,7 @@ export default function SolRefund() {
                 } catch (error) {
                   console.log('✅ Asset confirmed destroyed - NFT and metadata completely deleted!');
                 }
-                
+
                 burnedCount++;
                 burnResults.push({
                   mint: mintAddress,
@@ -1044,7 +1043,7 @@ export default function SolRefund() {
                   actualRentRecovered,
                   success: true
                 });
-                
+
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 console.error(`Failed to burn Core NFT ${mintAddress}:`, error);
@@ -1055,16 +1054,16 @@ export default function SolRefund() {
                 });
               }
             }
-            
+
             if (burnedCount === 0) {
               throw new Error('Failed to burn any Core NFTs');
             }
-            
+
             // Calculate actual total rent recovered from successful burns
             const actualTotalRent = burnResults
               .filter(r => r.success)
               .reduce((sum, r) => sum + (r.actualRentRecovered || 0), 0);
-            
+
             results.push({
               type: nftType,
               nftsProcessed: burnedCount,
@@ -1074,7 +1073,7 @@ export default function SolRefund() {
               feeAmount: 0, // No server fee for frontend burning
               signatures: burnResults.filter(r => r.success).map(r => r.signature)
             });
-            
+
             continue; // Skip to next NFT type
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1082,7 +1081,7 @@ export default function SolRefund() {
             throw new Error(`Core NFT burning failed: ${errorMessage}`);
           }
         }
-        
+
         // For non-Core NFTs, use server API (will return error for unsupported types)
         const response = await fetch('/api/nfts/burn', {
           method: 'POST',
@@ -1104,21 +1103,21 @@ export default function SolRefund() {
 
         // Sign and send transaction using connected wallet
         const { Connection, Transaction } = await import('@solana/web3.js');
-        
+
         const heliusResponse = await fetch('/api/helius-config');
         const rpcConfig = await heliusResponse.json();
-        
+
         const connection = new Connection(
           rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
           'confirmed'
         );
-        
+
         const txBuffer = Buffer.from(transaction, 'base64');
         const tx = Transaction.from(txBuffer);
-        
+
         const signedTx = await signTransaction(tx);
         const signature = await connection.sendRawTransaction(signedTx.serialize());
-        
+
         // Wait for confirmation
         try {
           await connection.confirmTransaction(signature, 'confirmed');
@@ -1140,17 +1139,17 @@ export default function SolRefund() {
       return results;
     },
     onSuccess: (results) => {
-      const totalBurned = results.reduce((sum, r) => sum + r.count, 0);
-      const totalSolRecovered = results.reduce((sum, r) => sum + r.solRecovered, 0);
-      const totalNetAmount = results.reduce((sum, r) => sum + r.netAmount, 0);
-      
+      const totalBurned = results.reduce((sum, r) => sum + (r.count || r.nftsProcessed), 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
+
       const hasRentRecovery = totalSolRecovered > 0;
-      
+
       // Generate Solscan links for each transaction
-      const transactionLinks = results.map(result => 
-        `${result.type.toUpperCase()}: https://solscan.io/tx/${result.signature}`
+      const transactionLinks = results.flatMap(result => 
+        (result.transactions || []).map(tx => `${tx.name.toUpperCase()}: https://solscan.io/tx/${tx.signature}`)
       ).join('\n');
-      
+
       toast({
         title: hasRentRecovery ? "NFTs Burned Successfully!" : "Burn Requests Recorded",
         description: hasRentRecovery 
@@ -1164,7 +1163,7 @@ export default function SolRefund() {
       if (publicKey) {
         scanNftsMutation.mutate(publicKey.toString());
       }
-      
+
       // Refresh stats if SOL was recovered
       if (hasRentRecovery) {
         queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
@@ -1172,7 +1171,7 @@ export default function SolRefund() {
     },
     onError: (error: any) => {
       console.error('Error burning NFTs:', error);
-      
+
       let errorMessage = "Failed to burn NFTs. Please try again.";
       if (error.message) {
         if (error.message.includes('User rejected')) {
@@ -1183,7 +1182,7 @@ export default function SolRefund() {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -1227,37 +1226,37 @@ export default function SolRefund() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to prepare transaction');
       }
-      
+
       const { transaction, message, totalSolReclaimed, feeAmount, netAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
-      
+
       if (!isConnected || !publicKey) {
         throw new Error('Wallet not connected');
       }
 
       const { Connection } = await import('@solana/web3.js');
-      
+
       // Get RPC configuration with fallbacks from backend
       console.log('Getting RPC configuration with fallbacks...');
-      
+
       const heliusResponse = await fetch('/api/helius-config');
       const rpcConfig = await heliusResponse.json();
-      
+
       // Build fallback endpoint list (public endpoints that work reliably)
       const fallbackEndpoints = [
         'https://api.mainnet-beta.solana.com',
         'https://solana-api.projectserum.com',
         'https://rpc.ankr.com/solana'
       ];
-      
+
       // Try Helius first if available, then fallback to public endpoints
       let connection: any;
       let endpointUsed: string = '';
       let connectionWorking = false;
-      
+
       // Try Helius if we have any API key, but test if it actually works
       if (rpcConfig.success && rpcConfig.apiKey) {
         try {
@@ -1273,7 +1272,7 @@ export default function SolRefund() {
       } else {
         console.log('No valid Helius key, using public endpoints...');
       }
-      
+
       // If Helius failed or not available, try fallback endpoints
       if (!connectionWorking) {
         for (const endpoint of fallbackEndpoints) {
@@ -1290,32 +1289,32 @@ export default function SolRefund() {
           }
         }
       }
-      
+
       if (!connectionWorking) {
         throw new Error('All RPC endpoints failed. Please try again later.');
       }
-      
+
       // Execute transaction (15% service fee)
       try {
         setProcessing(true);
         console.log('Starting DIRECT transaction processing - NO SIMULATION...');
-        
+
         // Wrap all async operations to prevent unhandled rejections
         let transactionBuffer, deserializedTransaction, signedTransaction;
-        
+
         try {
           transactionBuffer = Buffer.from(transaction, 'base64');
           deserializedTransaction = (await import('@solana/web3.js')).Transaction.from(transactionBuffer);
-          
+
           console.log(`Transaction deserialized, signing with ${walletName || 'connected wallet'}...`);
           signedTransaction = await signTransaction(deserializedTransaction);
         } catch (prepError: any) {
           console.log('Transaction preparation error:', prepError.message);
           throw new Error(`Transaction preparation failed: ${prepError.message}`);
         }
-        
+
         console.log(`Transaction signed, sending via ${endpointUsed} - SKIP ALL SIMULATION...`);
-        
+
         // Send with complete error handling to prevent unhandled rejections
         let signature;
         try {
@@ -1331,9 +1330,9 @@ export default function SolRefund() {
           console.log('Send transaction wrapper error:', wrappedError.message);
           throw wrappedError;
         }
-        
+
         console.log(`Transaction sent, signature: ${signature}, confirming...`);
-        
+
         // Simple confirmation without Promise.race to prevent unhandled rejections
         try {
           console.log('Waiting for transaction confirmation...');
@@ -1362,7 +1361,7 @@ export default function SolRefund() {
               referralFeeAmount: referralFeeAmount || 0
             })
           });
-          
+
           if (dbResponse.ok) {
             const dbResult = await dbResponse.json();
             pointsMessage = dbResult.message || '';
@@ -1384,7 +1383,7 @@ export default function SolRefund() {
       } catch (walletError: any) {
         console.error('Transaction error:', walletError);
         console.error('Error details:', JSON.stringify(walletError, null, 2));
-        
+
         // Extract specific Solana error information
         let errorMessage = 'Transaction failed';
         if (walletError.message) {
@@ -1394,33 +1393,33 @@ export default function SolRefund() {
         } else if (walletError.err) {
           errorMessage = `Solana error: ${JSON.stringify(walletError.err)}`;
         }
-        
+
         throw new Error(errorMessage);
       }
     },
     onSuccess: (result: any) => {
       // Use points message from backend if available, otherwise show default
       const title = result.pointsMessage || `Successfully closed ${result.accountsClosed} accounts and claimed ${result.totalReceived.toFixed(6)} SOL`;
-      
+
       toast({
         title: title,
         description: `Transaction: ${result.signature.substring(0, 8)}...`,
         className: "bg-green-600 text-white border-green-600",
       });
-      
+
       // Reset form and immediately refresh statistics and transaction history
       setScanResult(null);
-      
+
       // Invalidate and refetch all related queries for real-time updates
       queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
       queryClient.refetchQueries({ queryKey: ['/api/sol-refund/stats'] });
-      
+
       // Invalidate user profile to update total points
       if (publicKey) {
         queryClient.invalidateQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
         queryClient.refetchQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
       }
-      
+
       // Also invalidate leaderboard to update rankings
       queryClient.invalidateQueries({ queryKey: ['/api/leaderboard'] });
       queryClient.refetchQueries({ queryKey: ['/api/leaderboard'] });
@@ -1445,10 +1444,10 @@ export default function SolRefund() {
       });
       return;
     }
-    
+
     // Process all found empty accounts
     const allAccountAddresses = scanResult.accounts.map(acc => acc.accountAddress);
-    
+
     refundMutation.mutate({
       walletAddress: publicKey?.toString() || "",
       selectedAccounts: allAccountAddresses,
@@ -1483,11 +1482,11 @@ export default function SolRefund() {
 
   const calculateRefund = () => {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
-    
+
     const total = parseFloat(scanResult.totalReclaimable);
     const donation = total * 0.15; // 15% service fee
     const net = total - donation; // 85% to user
-    
+
     return { total, donation, net };
   };
 
@@ -1510,7 +1509,7 @@ export default function SolRefund() {
                   className="h-[100px] w-[100px]"
                 />
               </div>
-              
+
               {/* Mobile Wallet Connection */}
               <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
@@ -1536,7 +1535,7 @@ export default function SolRefund() {
                     <SiDiscord className="h-4 w-4 text-white" />
                   </a>
                 </div>
-                
+
                 {isConnected && publicKey ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1574,7 +1573,7 @@ export default function SolRefund() {
                 )}
               </div>
             </div>
-            
+
             {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
             {isConnected && (
               <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
@@ -1619,7 +1618,7 @@ export default function SolRefund() {
                 </div>
               </div>
             )}
-            
+
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
@@ -1750,7 +1749,7 @@ export default function SolRefund() {
               <p className="text-white text-sm mb-6">
                 Found {scanResult.emptyAccounts} empty token accounts
               </p>
-              
+
               {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
@@ -1862,8 +1861,8 @@ export default function SolRefund() {
                   {calculateTotalSOL(selectedTokens.size)}
                 </div>
               </div>
-              
-              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30 mb-6">
+
+              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
                 {tokenList.map((token, index) => (
                   <div 
                     key={index} 
@@ -2037,7 +2036,7 @@ export default function SolRefund() {
                       // Use a stable identifier that works for all NFT types
                       const nftId = nft.mint || nft.id || nft.assetId;
                       const isSelected = selectedNfts.has(nftId);
-                      
+
                       return (
                         <div
                           key={nftId}
@@ -2094,7 +2093,7 @@ export default function SolRefund() {
                             <h4 className="text-white text-sm font-medium truncate" title={nft.name}>
                               {nft.name || 'Unknown NFT'}
                             </h4>
-                            
+
                             {/* Type Badge */}
                             <div className="flex items-center justify-between">
                               <span className={`text-xs px-2 py-1 rounded-full ${
@@ -2127,7 +2126,7 @@ export default function SolRefund() {
                             });
                             return;
                           }
-                          
+
                           const selectedIds = Array.from(selectedNfts);
                           burnNftsMutation.mutate(selectedIds);
                         }}
@@ -2221,7 +2220,7 @@ export default function SolRefund() {
                     Total Earnings
                   </div>
                 </div>
-                
+
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
                     {(userReferrals as any)?.referralCode?.stats?.totalReferrals || '0'}
@@ -2360,7 +2359,7 @@ export default function SolRefund() {
               <div className="flex items-center mb-6">
                 <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <div className="min-w-full">
                   {/* Header */}
@@ -2378,7 +2377,7 @@ export default function SolRefund() {
                       DATE
                     </div>
                   </div>
-                  
+
                   {/* Transaction Rows */}
                   <div>
                     {allTransactions.map((tx, index) => (
@@ -2416,7 +2415,7 @@ export default function SolRefund() {
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* Load More Button */}
                   {hasMoreTransactions && (
                     <div className="flex justify-center mt-6">
@@ -2441,7 +2440,7 @@ export default function SolRefund() {
                 <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
                 <h3 className="text-lg font-semibold text-white">Safety & Security</h3>
               </div>
-              
+
               <div className="space-y-3 text-purple-200">
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
@@ -2470,7 +2469,7 @@ export default function SolRefund() {
                 <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
                 <h3 className="text-lg font-semibold text-white">What is this rent?</h3>
               </div>
-              
+
               <div className="space-y-3 text-purple-200 text-sm">
                 <p>
                   Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
