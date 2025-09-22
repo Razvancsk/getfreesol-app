@@ -848,19 +848,64 @@ export default function SolRefund() {
                   feePayer: transaction.feePayer?.toString()
                 });
                 
+                // Enhanced error logging for wallet signing
+                console.log('🚀 About to call wallet.sendTransaction...');
+                console.log('🔍 Wallet info:', {
+                  connected: wallet.connected,
+                  publicKey: wallet.publicKey?.toString(),
+                  walletName: wallet.wallet?.adapter?.name
+                });
+                
+                console.log('📋 Transaction validation:', {
+                  feePayer: transaction.feePayer?.toString(),
+                  recentBlockhash: transaction.recentBlockhash,
+                  instructions: transaction.instructions.map(ix => ({
+                    programId: ix.programId.toString(),
+                    dataLength: ix.data.length,
+                    keysCount: ix.keys.length
+                  }))
+                });
+                
                 let signature: string;
                 try {
-                  signature = await wallet.sendTransaction(transaction, rpcConnection, {
-                    maxRetries: 3,
-                    preflightCommitment: 'confirmed'
-                  });
+                  // Add timeout to wallet signing attempt
+                  const SIGNING_TIMEOUT = 30000; // 30 seconds
+                  signature = await Promise.race([
+                    wallet.sendTransaction(transaction, rpcConnection, {
+                      maxRetries: 3,
+                      preflightCommitment: 'confirmed',
+                      skipPreflight: false
+                    }),
+                    new Promise<never>((_, reject) =>
+                      setTimeout(() => reject(new Error('Wallet signing timeout after 30 seconds')), SIGNING_TIMEOUT)
+                    )
+                  ]);
+                  
                   console.log(`✅ Transaction sent successfully: ${signature}`);
-                } catch (sendError) {
-                  console.error('❌ Wallet sendTransaction failed:', sendError);
-                  console.error('❌ Error message:', sendError.message);
-                  console.error('❌ Error type:', typeof sendError);
-                  console.error('❌ Error stack:', sendError.stack);
-                  throw sendError;
+                } catch (sendError: any) {
+                  console.error('❌ DETAILED Wallet sendTransaction error:');
+                  console.error('❌ Error object:', sendError);
+                  console.error('❌ Error message:', sendError?.message || 'No error message');
+                  console.error('❌ Error name:', sendError?.name || 'No error name');
+                  console.error('❌ Error code:', sendError?.code || 'No error code');
+                  console.error('❌ Error toString:', sendError?.toString() || 'No toString');
+                  console.error('❌ Error keys:', Object.keys(sendError || {}));
+                  console.error('❌ Error constructor:', sendError?.constructor?.name || 'No constructor');
+                  console.error('❌ Error stack:', sendError?.stack || 'No stack trace');
+                  console.error('❌ Raw error type:', typeof sendError);
+                  console.error('❌ Is Error instance:', sendError instanceof Error);
+                  
+                  // Try to extract meaningful error info
+                  let errorMsg = 'Unknown wallet signing error';
+                  if (sendError?.message) {
+                    errorMsg = sendError.message;
+                  } else if (typeof sendError === 'string') {
+                    errorMsg = sendError;
+                  } else if (sendError?.toString && sendError.toString() !== '[object Object]') {
+                    errorMsg = sendError.toString();
+                  }
+                  
+                  throw new Error(`Wallet signing failed: ${errorMsg}`);
                 }
                 
                 console.log(`✅ REAL burn transaction signed! Signature: ${signature}`);
