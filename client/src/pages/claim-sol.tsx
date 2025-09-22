@@ -752,58 +752,110 @@ export default function SolRefund() {
             }
             console.log('✅ Wallet adapter validated');
 
-            // Try minimal UMI setup first 
-            console.log('🔧 Creating minimal UMI instance...');
-            let umi;
-            try {
-              umi = createUmi();
-              console.log('✅ Basic UMI instance created');
-            } catch (error) {
-              console.error('❌ Failed to create basic UMI instance:', error);
-              throw error;
+            // Set up UMI according to official Metaplex documentation
+            console.log('🔧 Creating UMI instance with RPC endpoint...');
+            const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
+            
+            const umi = createUmi(heliusRpc)
+              .use(mplCore())
+              .use(walletAdapterIdentity(wallet.wallet.adapter));
+              
+            console.log('✅ UMI instance created with Core plugin and wallet identity');
+            console.log('💰 UMI Identity:', umi.identity.publicKey);
+
+            // Now try to burn Core NFTs using the properly configured UMI
+            console.log('🔥 Attempting Core NFT burn with properly configured UMI...');
+            
+            let burnedCount = 0;
+            const burnResults = [];
+            let totalActualRecovered = 0;
+
+            for (const mintAddress of nftMints) {
+              try {
+                console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
+                
+                // Use the Core asset ID directly
+                const assetPublicKey = umiPublicKey(mintAddress);
+                
+                // Get wallet balance before burn
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
+                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
+
+                // Fetch asset info and burn
+                console.log('📄 Fetching asset data...');
+                const asset = await fetchAsset(umi, assetPublicKey);
+                console.log('✅ Asset fetched successfully:', asset.name);
+
+                console.log('🔥 Executing burn transaction...');
+                const result = await burn(umi, {
+                  asset: asset,
+                  authority: umi.identity,
+                }).sendAndConfirm(umi);
+
+                console.log('🎉 Core NFT burn succeeded with UMI!');
+                
+                // Properly encode signature for Solana RPC
+                const txSignature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature as Uint8Array);
+                console.log('✅ Transaction confirmed:', txSignature);
+
+                // Calculate actual rent recovered
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
+                const txDetails = await rpcConnection.getTransaction(txSignature, {
+                  commitment: 'confirmed',
+                  maxSupportedTransactionVersion: 0
+                });
+                const networkFee = txDetails?.meta?.fee || 5000;
+                const actualRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9;
+
+                console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
+                  signature: txSignature,
+                  explorer: `https://solscan.io/tx/${txSignature}`,
+                  rentRecovered: `${actualRecovered} SOL`,
+                  networkFee: `${networkFee / 1e9} SOL`
+                });
+
+                totalActualRecovered += actualRecovered;
+                burnedCount++;
+                burnResults.push({
+                  mint: mintAddress,
+                  signature: txSignature,
+                  actualRentRecovered: actualRecovered,
+                  success: true
+                });
+
+              } catch (burnError: any) {
+                console.error(`Failed to burn Core NFT ${mintAddress}:`, burnError);
+                burnResults.push({
+                  mint: mintAddress,
+                  error: burnError.message || 'Unknown error',
+                  success: false
+                });
+              }
             }
 
-            // Add RPC plugin
+            // Success - return results from UMI approach
+            const actualTotalRent = burnResults
+              .filter(r => r.success)
+              .reduce((sum, r) => sum + (r.actualRentRecovered || 0), 0);
+
+            results.push({
+              type: nftType,
+              nftsProcessed: burnedCount,
+              totalAttempted: nftMints.length,
+              solRecovered: actualTotalRent,
+              netAmount: actualTotalRent,
+              feeAmount: 0,
+              signatures: burnResults.filter(r => r.success).map(r => r.signature)
+            });
+
+            continue; // Skip to next NFT type
+            
+          } catch (coreError: any) {
+            console.log('❌ UMI approach failed. Trying server-side burn fallback...');
+            
+            // Fallback to server-side burn
             try {
-              const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
-              umi = umi.use(web3JsRpc(heliusRpc));
-              console.log('✅ RPC plugin added');
-            } catch (error) {
-              console.error('❌ Failed to add RPC plugin:', error);
-              throw error;
-            }
-
-            // Add Core plugin with explicit program registration
-            try {
-              console.log('🔧 Adding MPL Core plugin...');
-              umi = umi.use(mplCore());
-              console.log('✅ MPL Core plugin added');
-
-              // Verify Core plugin is properly loaded
-              console.log('🔧 Verifying Core plugin setup...');
-              console.log('UMI programs loaded: Core plugin active');
-
-            } catch (error) {
-              console.error('❌ Failed to add MPL Core plugin:', error);
-              console.error('Error details:', (error as Error).message);
-
-              // Try fallback approach - skip Core plugin for now
-              console.log('🔧 Attempting Core NFT burn without Core plugin...');
-            }
-
-            // Add wallet identity
-            try {
-              umi = umi.use(walletAdapterIdentity(wallet.wallet.adapter));
-              console.log('✅ Wallet identity added');
-              console.log('💰 UMI Identity:', umi.identity.publicKey);
-            } catch (error) {
-              console.error('❌ Failed to add wallet identity:', error);
-              throw error;
-            }
-
-            console.log('❌ UMI approach failed due to Core plugin issues. Preparing REAL server-side burn...');
-
-            // Get real burn transactions from server
+              // Get real burn transactions from server
             console.log('🔄 Requesting REAL Core NFT burn transactions from server...');
             const burnPrepResponse = await apiRequest('POST', '/api/nfts/burn', {
               nftMints: nftMints,
@@ -1060,29 +1112,15 @@ export default function SolRefund() {
             }
 
             if (burnedCount === 0) {
-              throw new Error('Failed to burn any Core NFTs');
+              throw new Error('All UMI Core NFT burns failed');
             }
 
-            // Calculate actual total rent recovered from successful burns
-            const actualTotalRent = burnResults
-              .filter(r => r.success)
-              .reduce((sum, r) => sum + (r.actualRentRecovered || 0), 0);
-
-            results.push({
-              type: nftType,
-              nftsProcessed: burnedCount,
-              totalAttempted: nftMints.length,
-              solRecovered: actualTotalRent, // Actual rent recovered, not estimated
-              netAmount: actualTotalRent,
-              feeAmount: 0, // No server fee for frontend burning
-              signatures: burnResults.filter(r => r.success).map(r => r.signature)
-            });
-
-            continue; // Skip to next NFT type
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error('Core NFT burning failed:', error);
-            throw new Error(`Core NFT burning failed: ${errorMessage}`);
+            console.log(`✅ Successfully burned ${burnedCount} Core NFTs with UMI!`);
+            
+            } catch (serverError: any) {
+              console.error('❌ Server-side burn fallback also failed:', serverError);
+              throw new Error(`Core NFT burning failed: ${serverError.message || 'All approaches failed'}`);
+            }
           }
         }
 
