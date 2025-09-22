@@ -1514,21 +1514,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 continue;
               }
               
-              // Build COMPLETE Core burn instruction that destroys BOTH asset AND metadata
-              // For Core NFTs, we need to properly burn with all metadata destruction
-              
-              // Core burn instruction data includes compression params for complete destruction
-              const instructionData = Buffer.concat([
-                Buffer.from([7]), // Burn discriminator
-                Buffer.alloc(32, 0) // Additional params for complete metadata destruction
-              ]);
+              // Build PROPER Core burn instruction according to Metaplex Core spec
+              // Burn discriminator is [7] for Core program
+              const instructionData = Buffer.from([7]);
               
               const burnInstruction = new TransactionInstruction({
                 keys: [
                   { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn
-                  { pubkey: userPubkey, isSigner: true, isWritable: true },     // Collection authority
-                  { pubkey: userPubkey, isSigner: true, isWritable: true },     // Payer/rent receiver  
-                  { pubkey: userPubkey, isSigner: false, isWritable: false },   // System program (for rent)
+                  { pubkey: userPubkey, isSigner: true, isWritable: true },     // Owner/authority
                   { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
                 ],
                 programId: CORE_PROGRAM_ID,
