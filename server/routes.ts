@@ -1421,7 +1421,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Burn NFTs API
+  // NEW HYBRID API - Build Core NFT burn transactions (server builds, frontend signs)
+  app.post('/api/nfts/burn/build', async (req, res) => {
+    try {
+      const { walletAddress, nftMints, nftType } = req.body;
+      
+      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftType !== 'core') {
+        return res.status(400).json({
+          success: false, 
+          error: 'Invalid request - requires walletAddress, nftMints array, and nftType="core"'
+        });
+      }
+
+      if (nftMints.length === 0 || nftMints.length > 50) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid NFT count - must be between 1 and 50 NFTs'
+        });
+      }
+
+      console.log('🔧 Building Core NFT burn transactions for', nftMints.length, 'NFTs');
+      
+      const userPubkey = new PublicKey(walletAddress);
+      const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+      
+      const builtTransactions = [];
+      let totalExpectedRentLamports = 0;
+      
+      // Get fresh blockhash for all transactions
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const { blockhash } = await connection.getLatestBlockhash();
+      
+      for (const mintAddress of nftMints) {
+        try {
+          console.log(`🔍 Building transaction for Core NFT: ${mintAddress}`);
+          const assetPubkey = new PublicKey(mintAddress);
+          
+          // Verify account exists and get rent amount
+          const accountInfo = await connection.getAccountInfo(assetPubkey);
+          if (!accountInfo) {
+            console.log(`⚠️ Asset ${mintAddress} not found, skipping`);
+            continue;
+          }
+          
+          if (!accountInfo.owner.equals(CORE_PROGRAM_ID)) {
+            console.log(`⚠️ Asset ${mintAddress} not owned by Core program, skipping`);
+            continue;
+          }
+          
+          const rentLamports = accountInfo.lamports;
+          totalExpectedRentLamports += rentLamports;
+          console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL`);
+          
+          // Import required classes
+          const { TransactionInstruction, ComputeBudgetProgram, SystemProgram } = await import('@solana/web3.js');
+          
+          // Build Core burn instruction (SAME AS WORKING SERVER LOGIC)
+          const instructionData = Buffer.from([7]); // Burn discriminator
+          
+          const burnInstruction = new TransactionInstruction({
+            keys: [
+              { pubkey: assetPubkey, isSigner: false, isWritable: true },
+              { pubkey: userPubkey, isSigner: true, isWritable: true },
+              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            ],
+            programId: CORE_PROGRAM_ID,
+            data: instructionData,
+          });
+          
+          // Add compute budget
+          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 });
+          
+          // Build transaction
+          const transaction = new Transaction({
+            recentBlockhash: blockhash,
+            feePayer: userPubkey
+          });
+          
+          transaction.add(computeBudgetIx);
+          transaction.add(burnInstruction);
+          
+          // Serialize unsigned transaction for frontend signing
+          const serialized = transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
+          
+          builtTransactions.push({
+            mint: mintAddress,
+            transaction: serialized.toString('base64'),
+            expectedRentLamports: rentLamports
+          });
+          
+          console.log(`✅ Built transaction for ${mintAddress}`);
+          
+        } catch (error: any) {
+          console.error(`❌ Failed to build transaction for ${mintAddress}:`, error);
+          continue;
+        }
+      }
+      
+      if (builtTransactions.length === 0) {
+        return res.status(400).json({ success: false, error: 'No valid Core NFTs found to burn' });
+      }
+      
+      console.log(`🎯 Built ${builtTransactions.length} burn transactions`);
+      console.log(`💰 Total expected rent recovery: ${totalExpectedRentLamports / 1e9} SOL`);
+      
+      res.json({
+        success: true,
+        message: `Built ${builtTransactions.length} Core NFT burn transactions`,
+        transactions: builtTransactions,
+        totalExpectedRentLamports,
+        totalExpectedRentSol: totalExpectedRentLamports / 1e9
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Error building Core NFT burn transactions:', error);
+      res.status(500).json({ success: false, error: 'Failed to build burn transactions: ' + (error.message || 'Unknown error') });
+    }
+  });
+
+  // NEW HYBRID API - Submit signed Core NFT burn transactions
+  app.post('/api/nfts/burn/submit', async (req, res) => {
+    try {
+      const { signedTransactions, walletAddress } = req.body;
+      
+      if (!signedTransactions || !Array.isArray(signedTransactions) || !walletAddress) {
+        return res.status(400).json({ success: false, error: 'Invalid request - requires signedTransactions array and walletAddress' });
+      }
+      
+      console.log(`🚀 Submitting ${signedTransactions.length} signed Core NFT burn transactions`);
+      
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      const results = [];
+      let totalActualRecoveredLamports = 0;
+      
+      for (const { mint, signedTransaction } of signedTransactions) {
+        try {
+          console.log(`📤 Submitting burn transaction for ${mint}`);
+          
+          // Send the signed transaction
+          const signature = await connection.sendRawTransaction(Buffer.from(signedTransaction, 'base64'));
+          console.log(`🚀 Transaction submitted: ${signature}`);
+          
+          // Confirm the transaction
+          const confirmation = await connection.confirmTransaction(signature);
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          }
+          
+          // Get transaction details for rent calculation
+          const txDetails = await connection.getTransaction(signature, 'confirmed');
+          
+          let rentRecoveredLamports = 0;
+          if (txDetails?.meta) {
+            const preBalances = txDetails.meta.preBalances;
+            const postBalances = txDetails.meta.postBalances;
+            const walletIndex = txDetails.transaction.message.accountKeys.findIndex(key => key.toString() === walletAddress);
+            
+            if (walletIndex >= 0) {
+              const balanceChange = postBalances[walletIndex] - preBalances[walletIndex];
+              rentRecoveredLamports = balanceChange + txDetails.meta.fee; // Add back transaction fee
+            }
+          }
+          
+          totalActualRecoveredLamports += rentRecoveredLamports;
+          
+          results.push({
+            mint,
+            signature,
+            success: true,
+            rentRecoveredLamports,
+            rentRecoveredSol: rentRecoveredLamports / 1e9
+          });
+          
+          console.log(`✅ ${mint} burned successfully! Recovered: ${rentRecoveredLamports / 1e9} SOL`);
+          
+        } catch (error: any) {
+          console.error(`❌ Failed to submit transaction for ${mint}:`, error);
+          results.push({ mint, success: false, error: error.message || 'Transaction submission failed' });
+        }
+      }
+      
+      const successfulBurns = results.filter(r => r.success).length;
+      console.log(`🎉 Completed: ${successfulBurns}/${results.length} burns successful`);
+      console.log(`💰 Total actual rent recovered: ${totalActualRecoveredLamports / 1e9} SOL`);
+      
+      res.json({
+        success: true,
+        message: `Processed ${results.length} transactions, ${successfulBurns} successful`,
+        results,
+        summary: {
+          totalProcessed: results.length,
+          successful: successfulBurns,
+          failed: results.length - successfulBurns,
+          totalRentRecoveredLamports: totalActualRecoveredLamports,
+          totalRentRecoveredSol: totalActualRecoveredLamports / 1e9
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Error submitting Core NFT burn transactions:', error);
+      res.status(500).json({ success: false, error: 'Failed to submit transactions: ' + (error.message || 'Unknown error') });
+    }
+  });
+
+  // LEGACY API - Burn NFTs (for non-Core NFTs)
   app.post("/api/nfts/burn", async (req, res) => {
     try {
       const { walletAddress, nftMints, nftType, referralCode } = req.body;

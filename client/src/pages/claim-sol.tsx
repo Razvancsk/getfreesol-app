@@ -763,6 +763,9 @@ export default function SolRefund() {
             // Import necessary Solana classes 
             const { Transaction, TransactionInstruction, ComputeBudgetProgram, SystemProgram } = await import('@solana/web3.js');
             
+            // Import PublicKey for Core program constants
+            const { PublicKey } = await import('@solana/web3.js');
+            
             // Core program constants (same as server)
             const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
             const userPubkey = wallet.publicKey!;
@@ -782,28 +785,7 @@ export default function SolRefund() {
                 console.log(`🔥 Burning Core NFT with DIRECT TRANSACTION: ${mintAddress}`);
                 const assetPubkey = new PublicKey(mintAddress);
 
-                // Get wallet balance before burn
-                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
-                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
-
-                // Get account info to verify and estimate rent recovery (same as server)
-                console.log('📄 Getting asset account info...');
-                const accountInfo = await rpcConnection.getAccountInfo(assetPubkey);
-                if (!accountInfo) {
-                  console.log(`⚠️ Asset ${mintAddress} not found or already burned`);
-                  continue;
-                }
-
-                const rentLamports = accountInfo.lamports;
-                console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL`);
-
-                // Verify account is owned by Core program (same as server)
-                if (!accountInfo.owner.equals(CORE_PROGRAM_ID)) {
-                  console.log(`⚠️ Asset ${mintAddress} not owned by Core program, skipping`);
-                  continue;
-                }
-
-                console.log('✅ Asset verified as valid Core NFT');
+                console.log('📄 Starting Core NFT burn - letting server handle RPC verification...');
 
                 // Build DIRECT Core burn instruction (EXACT SAME AS SERVER)
                 const instructionData = Buffer.from([7]); // Burn discriminator
@@ -881,7 +863,14 @@ export default function SolRefund() {
                 });
 
               } catch (burnError: any) {
-                console.error(`Failed to burn Core NFT ${mintAddress}:`, burnError);
+                console.error(`Failed to burn Core NFT ${mintAddress}:`, {
+                  message: burnError?.message || 'Unknown error',
+                  stack: burnError?.stack,
+                  name: burnError?.name,
+                  code: burnError?.code,
+                  cause: burnError?.cause,
+                  fullError: burnError
+                });
                 burnResults.push({
                   mint: mintAddress,
                   error: burnError.message || 'Unknown error',
@@ -917,7 +906,7 @@ export default function SolRefund() {
             const burnPrepResponse = await apiRequest('POST', '/api/nfts/burn', {
               nftMints: nftMints,
               nftType: 'core',
-              walletAddress: wallet.publicKey.toString()
+              walletAddress: wallet.publicKey!.toString()
             });
 
             const burnPrepData = await burnPrepResponse.json();
@@ -1141,13 +1130,7 @@ export default function SolRefund() {
                   balanceAfter: balanceAfter / 1e9
                 });
 
-                // Verify NFT is actually destroyed
-                try {
-                  await fetchAsset(finalUmi, assetPublicKey);
-                  console.warn('⚠️ Asset still exists - burn may have failed');
-                } catch (error) {
-                  console.log('✅ Asset confirmed destroyed - NFT and metadata completely deleted!');
-                }
+                // Note: Asset verification removed - using direct transactions
 
                 burnedCount++;
                 burnResults.push({
@@ -1159,7 +1142,14 @@ export default function SolRefund() {
 
               } catch (error: any) {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                console.error(`Failed to burn Core NFT ${mintAddress}:`, error);
+                console.error(`❌ Failed to burn Core NFT ${mintAddress}:`, {
+                  message: error?.message || 'Unknown error',
+                  stack: error?.stack,
+                  name: error?.name,
+                  code: error?.code,
+                  cause: error?.cause,
+                  fullError: error
+                });
                 burnResults.push({
                   mint: mintAddress,
                   error: errorMessage,
@@ -1175,7 +1165,14 @@ export default function SolRefund() {
             console.log(`✅ Successfully burned ${burnedCount} Core NFTs with UMI!`);
             
             } catch (serverError: any) {
-              console.error('❌ Server-side burn fallback also failed:', serverError);
+              console.error('❌ Server-side burn fallback also failed:', {
+                message: serverError?.message || 'Unknown error',
+                stack: serverError?.stack,
+                name: serverError?.name,
+                code: serverError?.code,
+                cause: serverError?.cause,
+                fullError: serverError
+              });
               throw new Error(`Core NFT burning failed: ${serverError.message || 'All approaches failed'}`);
             }
           }
