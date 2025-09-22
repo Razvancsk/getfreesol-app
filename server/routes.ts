@@ -1480,31 +1480,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`🔍 Building enhanced Core burn for proper rent reclamation: ${mintAddress}`);
           
-          // Enhanced Core burn instruction with proper rent handling
-          // Using burn (discriminator [7]) but with enhanced account handling for rent
-          const instructionData = Buffer.from([7]); // Burn discriminator
+          // 🔥 STEP 1: Core burn instruction 
+          const burnInstructionData = Buffer.from([7]); // Burn discriminator
           
           const burnInstruction = new TransactionInstruction({
             keys: [
-              { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn (rent source)
-              { pubkey: userPubkey, isSigner: true, isWritable: true },     // Authority & rent recipient  
+              { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn
+              { pubkey: userPubkey, isSigner: true, isWritable: true },     // Authority
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
             ],
             programId: CORE_PROGRAM_ID,
-            data: instructionData,
+            data: burnInstructionData,
           });
           
-          // Add enhanced compute budget for better transaction success
-          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 });
+          // 💰 STEP 2: Close instruction to reclaim rent (CRITICAL!)
+          const closeInstructionData = Buffer.from([1]); // Close discriminator
           
-          // Build transaction with proper rent handling
+          const closeInstruction = new TransactionInstruction({
+            keys: [
+              { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset account to close
+              { pubkey: userPubkey, isSigner: true, isWritable: false },    // Authority (must sign)
+              { pubkey: userPubkey, isSigner: false, isWritable: true },    // Recipient of rent lamports
+            ],
+            programId: CORE_PROGRAM_ID,
+            data: closeInstructionData,
+          });
+          
+          // Add enhanced compute budget for burn + close operations
+          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
+          
+          // Build transaction with BURN + CLOSE for proper rent reclamation
           const transaction = new Transaction({
             recentBlockhash: blockhash,
             feePayer: userPubkey // User pays fees and receives rent
           });
           
           transaction.add(computeBudgetIx);
-          transaction.add(burnInstruction);
+          transaction.add(burnInstruction);  // First: Burn the NFT
+          transaction.add(closeInstruction); // Second: Close account & reclaim rent
           
           console.log(`✅ Enhanced Core burn transaction built for ${mintAddress}`);
           console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL (rent from closed account)`);
