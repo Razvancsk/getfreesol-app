@@ -842,6 +842,13 @@ export default function SolRefund() {
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
 
+                // CRITICAL: Update transaction with fresh recent blockhash
+                console.log('🔄 Updating transaction with fresh recent blockhash...');
+                const { blockhash } = await rpcConnection.getLatestBlockhash('confirmed');
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = wallet.publicKey!;
+                console.log('✅ Transaction updated with fresh blockhash:', blockhash);
+
                 // Sign and send the REAL burn transaction using the wallet adapter's signTransaction method
                 console.log('🚀 About to sign transaction with wallet adapter...');
                 console.log('🔍 Wallet info:', {
