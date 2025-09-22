@@ -842,44 +842,40 @@ export default function SolRefund() {
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
 
-                // Get RPC connection with proper configuration
-                const heliusResponse = await fetch('/api/helius-config');
-                const rpcConfig = await heliusResponse.json();
-
-                const connection = new Connection(
-                  rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-                  'confirmed'
-                );
+                // Sign and send the REAL burn transaction using the wallet adapter's signTransaction method
+                console.log('🚀 About to sign transaction with wallet adapter...');
+                console.log('🔍 Wallet info:', {
+                  connected: isConnected,
+                  publicKey: publicKey?.toString(),
+                  walletName: walletName
+                });
 
                 let signature: string;
                 try {
-                  // Use the wallet adapter's signTransaction 
-                  console.log('✏️ Signing Core NFT burn transaction...');
+                  // Use the wallet adapter's signTransaction instead of sendTransaction
+                  console.log('✏️ Signing transaction...');
                   const signedTransaction = await signTransaction(transaction);
                   console.log('✅ Transaction signed successfully');
 
-                  // Send the signed transaction using proper RPC connection
+                  // Send the signed transaction using RPC connection
                   console.log('📡 Sending signed transaction to network...');
-                  signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+                  signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
                     skipPreflight: false,
                     preflightCommitment: 'confirmed',
                     maxRetries: 3
                   });
 
-                  console.log(`✅ Core NFT burn transaction sent: ${signature}`);
-                  console.log(`🔗 View on Solscan: https://solscan.io/tx/${signature}`);
+                  console.log(`✅ Transaction sent successfully: ${signature}`);
                 } catch (sendError: any) {
-                  console.error('❌ Core NFT burn transaction error:', sendError);
+                  console.error('❌ Transaction signing/sending error:', sendError);
 
-                  // Handle specific wallet errors
-                  let errorMsg = 'Core NFT burn transaction failed';
+                  // Try to extract meaningful error info
+                  let errorMsg = 'Transaction failed';
                   if (sendError?.message) {
-                    if (sendError.message.includes('User rejected') || sendError.message.includes('User declined')) {
+                    if (sendError.message.includes('User rejected')) {
                       errorMsg = 'Transaction was cancelled by user';
-                    } else if (sendError.message.includes('Insufficient funds')) {
-                      errorMsg = 'Insufficient SOL for transaction fees';
                     } else {
-                      errorMsg = `Core NFT burn failed: ${sendError.message}`;
+                      errorMsg = sendError.message;
                     }
                   }
 
@@ -1139,15 +1135,15 @@ export default function SolRefund() {
       return results;
     },
     onSuccess: (results) => {
-      const totalBurned = results.reduce((sum, r) => sum + (r.count || r.nftsProcessed), 0);
-      const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
-      const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
+      const totalBurned = results.reduce((sum, r) => sum + r.count, 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + r.solRecovered, 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + r.netAmount, 0);
 
       const hasRentRecovery = totalSolRecovered > 0;
 
       // Generate Solscan links for each transaction
-      const transactionLinks = results.flatMap(result => 
-        (result.transactions || []).map(tx => `${tx.name.toUpperCase()}: https://solscan.io/tx/${tx.signature}`)
+      const transactionLinks = results.map(result => 
+        `${result.type.toUpperCase()}: https://solscan.io/tx/${result.signature}`
       ).join('\n');
 
       toast({
@@ -1862,7 +1858,7 @@ export default function SolRefund() {
                 </div>
               </div>
 
-              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
+              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30 mb-6">
                 {tokenList.map((token, index) => (
                   <div 
                     key={index} 
