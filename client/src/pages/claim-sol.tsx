@@ -830,8 +830,7 @@ export default function SolRefund() {
                 
                 // Step 3: Server submits the signed transaction
                 const submitResponse = await apiRequest('POST', '/api/nfts/burn/submit', {
-                  signedTransaction: Buffer.from(signed.serialize()).toString('base64'),
-                  assetId: mintAddress,
+                  signedTransactions: [Buffer.from(signed.serialize()).toString('base64')], // Array format
                   walletAddress: userPubkey.toString()
                 });
                 
