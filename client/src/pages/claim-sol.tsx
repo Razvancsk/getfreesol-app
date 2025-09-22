@@ -822,15 +822,27 @@ export default function SolRefund() {
                 }
                 
                 const { transactions } = await buildResponse.json();
-                const txData = transactions[0].transaction; // Get first transaction  
-                const transaction = Transaction.from(Buffer.from(txData, 'base64'));
                 
-                // Step 2: Frontend signs with wallet
-                const signed = await wallet.signTransaction!(transaction);
+                // Step 2: Sign all transactions
+                const unsignedTxs = transactions.map((tx: any) => 
+                  Transaction.from(Buffer.from(tx.transaction, 'base64'))
+                );
                 
-                // Step 3: Server submits the signed transaction
+                const signedTxs = await wallet.signAllTransactions!(unsignedTxs);
+                
+                // Step 3: Serialize signed transactions for server
+                const signedTransactions = signedTxs.map(tx => 
+                  Buffer.from(tx.serialize()).toString('base64')
+                );
+                
+                // Step 4: Server submits the signed transactions  
+                const signedTransactionsWithMints = signedTransactions.map((signedTx, index) => ({
+                  mint: nftMints[index], // Match transaction to mint
+                  signedTransaction: signedTx
+                }));
+                
                 const submitResponse = await apiRequest('POST', '/api/nfts/burn/submit', {
-                  signedTransactions: [Buffer.from(signed.serialize()).toString('base64')], // Array format
+                  signedTransactions: signedTransactionsWithMints,
                   walletAddress: userPubkey.toString()
                 });
                 
@@ -839,8 +851,8 @@ export default function SolRefund() {
                   throw new Error(`Server submit failed: ${error}`);
                 }
                 
-                const { signature } = await submitResponse.json();
-                const txSignature = signature;
+                const submitResult = await submitResponse.json();
+                const txSignature = submitResult.results?.[0]?.signature || null;
 
                 console.log('🎉 Core NFT burn succeeded with DIRECT TRANSACTIONS!');
                 console.log('✅ Transaction confirmed:', txSignature);
@@ -851,8 +863,7 @@ export default function SolRefund() {
                 console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
                   signature: txSignature,
                   explorer: `https://solscan.io/tx/${txSignature}`,
-                  rentRecovered: `${actualRecovered} SOL`,
-                  networkFee: `${networkFee / 1e9} SOL`
+                  rentRecovered: `${actualRecovered} SOL`
                 });
 
                 totalActualRecovered += actualRecovered;
@@ -997,10 +1008,10 @@ export default function SolRefund() {
                   commitment: 'confirmed',
                   maxSupportedTransactionVersion: 0
                 });
-                const networkFee = txDetails?.meta?.fee || 5000;
-                const actualRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9;
+                const transactionFee = txDetails?.meta?.fee || 5000;
+                const actualRecovered = (balanceAfter - balanceBefore + transactionFee) / 1e9;
 
-                console.log(`💰 Actual SOL recovered: ${actualRecovered} SOL (after ${networkFee / 1e9} SOL fee)`);
+                console.log(`💰 Actual SOL recovered: ${actualRecovered} SOL (after ${transactionFee / 1e9} SOL fee)`);
                 console.log(`🔥 NFT ${burnTx.name} DESTROYED and rent recovered!`);
 
                 totalActualRecovered += actualRecovered;
