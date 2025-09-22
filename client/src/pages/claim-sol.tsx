@@ -839,7 +839,7 @@ export default function SolRefund() {
                 console.log('📝 Transaction decoded, requesting wallet signature...');
                 
                 // Get user's balance before transaction
-                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
                 
                 // Sign and send the REAL burn transaction  
                 console.log('🔧 Transaction details:', {
