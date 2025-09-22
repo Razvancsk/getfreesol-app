@@ -959,15 +959,16 @@ export default function SolRefund() {
                 const assetPublicKey = umiPublicKey(mintAddress);
 
                 console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
-                console.log('💰 User wallet:', wallet.publicKey.toString());
+                console.log('💰 User wallet:', wallet.publicKey?.toString());
 
                 // Get wallet balance before burn
-                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey);
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
 
                 // Try alternative approach: Use Raw Solana transaction
                 console.log('🔧 Alternative approach: Direct Solana transaction...');
 
+                let txSignature: string = '';
                 try {
                   // Fetch asset info first (this should work)
                   console.log('📄 Fetching asset data...');
@@ -981,7 +982,7 @@ export default function SolRefund() {
 
                   if (collectionId) {
                     console.log('🏛️ Fetching collection:', collectionId);
-                    collection = await fetchCollection(umi, collectionId);
+                    collection = await fetchCollection(umi, collectionId as any);
                     console.log('✅ Collection fetched');
                   }
 
@@ -997,8 +998,8 @@ export default function SolRefund() {
                   console.log('🎉 Burn succeeded with alternative approach!');
 
                   // Properly encode signature for Solana RPC
-                  const signature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature);
-                  console.log('✅ Transaction confirmed:', signature);
+                  txSignature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature as Uint8Array);
+                  console.log('✅ Transaction confirmed:', txSignature);
 
                 } catch (burnError) {
                   console.error('💥 Alternative burn approach failed:', burnError);
@@ -1009,7 +1010,7 @@ export default function SolRefund() {
                 let txDetails = null;
                 let networkFee = 5000; // Default Solana fee estimate
                 try {
-                  txDetails = await rpcConnection.getTransaction(signature, {
+                  txDetails = await rpcConnection.getTransaction(txSignature, {
                     commitment: 'confirmed',
                     maxSupportedTransactionVersion: 0
                   });
@@ -1018,13 +1019,13 @@ export default function SolRefund() {
                   console.warn('Could not fetch transaction details, using estimated fee');
                 }
 
-                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
                 const actualRentRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9; // Accurate with fees
                 console.log('💰 Balance after:', balanceAfter / 1e9, 'SOL');
 
                 console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
-                  signature: signature,
-                  explorer: `https://solscan.io/tx/${signature}`,
+                  signature: txSignature,
+                  explorer: `https://solscan.io/tx/${txSignature}`,
                   rentRecovered: `${actualRentRecovered} SOL`,
                   networkFee: `${networkFee / 1e9} SOL`,
                   balanceBefore: balanceBefore / 1e9,
@@ -1042,12 +1043,12 @@ export default function SolRefund() {
                 burnedCount++;
                 burnResults.push({
                   mint: mintAddress,
-                  signature: result.signature,
+                  signature: txSignature,
                   actualRentRecovered,
                   success: true
                 });
 
-              } catch (error) {
+              } catch (error: any) {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 console.error(`Failed to burn Core NFT ${mintAddress}:`, error);
                 burnResults.push({
