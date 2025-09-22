@@ -756,12 +756,24 @@ export default function SolRefund() {
             console.log('🔧 Creating UMI instance with RPC endpoint...');
             const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
             
-            const umi = createUmi(heliusRpc)
-              .use(mplCore())
-              .use(walletAdapterIdentity(wallet.wallet.adapter));
-              
-            console.log('✅ UMI instance created with Core plugin and wallet identity');
-            console.log('💰 UMI Identity:', umi.identity.publicKey);
+            console.log('🔧 Step 1: Creating base UMI instance...');
+            const umi = createUmi(heliusRpc);
+            console.log('✅ Base UMI created');
+            
+            console.log('🔧 Step 2: Adding web3.js RPC plugin...');
+            const umiWithRpc = umi.use(web3JsRpc());
+            console.log('✅ web3.js RPC plugin added');
+            
+            console.log('🔧 Step 3: Adding mplCore() plugin...');
+            const umiWithCore = umiWithRpc.use(mplCore());
+            console.log('✅ mplCore plugin added');
+            
+            console.log('🔧 Step 4: Adding wallet identity...');
+            const finalUmi = umiWithCore.use(walletAdapterIdentity(wallet.wallet.adapter));
+            console.log('✅ Wallet identity added');
+            
+            console.log('✅ UMI instance fully configured');
+            console.log('💰 UMI Identity:', finalUmi.identity.publicKey);
 
             // Now try to burn Core NFTs using the properly configured UMI
             console.log('🔥 Attempting Core NFT burn with properly configured UMI...');
@@ -783,14 +795,14 @@ export default function SolRefund() {
 
                 // Fetch asset info and burn
                 console.log('📄 Fetching asset data...');
-                const asset = await fetchAsset(umi, assetPublicKey);
+                const asset = await fetchAsset(finalUmi, assetPublicKey);
                 console.log('✅ Asset fetched successfully:', asset.name);
 
                 console.log('🔥 Executing burn transaction...');
-                const result = await burn(umi, {
+                const result = await burn(finalUmi, {
                   asset: asset,
-                  authority: umi.identity,
-                }).sendAndConfirm(umi);
+                  authority: finalUmi.identity,
+                }).sendAndConfirm(finalUmi);
 
                 console.log('🎉 Core NFT burn succeeded with UMI!');
                 
@@ -1086,7 +1098,7 @@ export default function SolRefund() {
 
                 // Verify NFT is actually destroyed
                 try {
-                  await fetchAsset(umi, assetPublicKey);
+                  await fetchAsset(finalUmi, assetPublicKey);
                   console.warn('⚠️ Asset still exists - burn may have failed');
                 } catch (error) {
                   console.log('✅ Asset confirmed destroyed - NFT and metadata completely deleted!');
