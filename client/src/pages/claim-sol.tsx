@@ -27,6 +27,7 @@ import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@
 import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
+import { signerIdentity, createSignerFromKeypair } from '@metaplex-foundation/umi';
 import bs58 from 'bs58';
 import logoImage from '@assets/image_1757882056840.png';
 
@@ -756,23 +757,21 @@ export default function SolRefund() {
             console.log('🔧 Creating UMI instance with RPC endpoint...');
             const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
             
-            console.log('🔧 Step 1: Creating UMI with RPC endpoint...');
-            const umi = createUmi(heliusRpc);
-            console.log('✅ Base UMI with RPC created');
+            console.log('🚀 BREAKTHROUGH: Using DIRECT SOLANA TRANSACTIONS (copying working server approach)!');
+            console.log('✅ Abandoning UMI completely - using exact same method that works on server');
             
-            console.log('🔧 Step 2: Adding mplCore() plugin...');
-            const umiWithCore = umi.use(mplCore());
-            console.log('✅ mplCore plugin added');
+            // Import necessary Solana classes 
+            const { Transaction, TransactionInstruction, ComputeBudgetProgram, SystemProgram } = await import('@solana/web3.js');
             
-            console.log('🔧 Step 3: Adding wallet identity...');
-            const finalUmi = umiWithCore.use(walletAdapterIdentity(wallet.wallet.adapter));
-            console.log('✅ Wallet identity added');
+            // Core program constants (same as server)
+            const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+            const userPubkey = wallet.publicKey!;
             
-            console.log('✅ UMI instance fully configured');
-            console.log('💰 UMI Identity:', finalUmi.identity.publicKey);
+            console.log('✅ Direct Solana transaction approach initialized');
+            console.log('💰 User pubkey:', userPubkey.toString());
 
-            // Now try to burn Core NFTs using the properly configured UMI
-            console.log('🔥 Attempting Core NFT burn with properly configured UMI...');
+            // Now burn Core NFTs using direct Solana transactions (same as server)
+            console.log('🔥 Attempting Core NFT burn with DIRECT TRANSACTIONS (server approach)...');
             
             let burnedCount = 0;
             const burnResults = [];
@@ -780,57 +779,80 @@ export default function SolRefund() {
 
             for (const mintAddress of nftMints) {
               try {
-                console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
-                
-                // Use the Core asset ID directly
-                const assetPublicKey = umiPublicKey(mintAddress);
-                
+                console.log(`🔥 Burning Core NFT with DIRECT TRANSACTION: ${mintAddress}`);
+                const assetPubkey = new PublicKey(mintAddress);
+
                 // Get wallet balance before burn
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
 
-                // Fetch asset info and burn
-                console.log('📄 Fetching asset data...');
-                const asset = await fetchAsset(finalUmi, assetPublicKey);
-                console.log('✅ Asset fetched successfully:', asset.name);
-
-                // Check if NFT is part of a collection
-                let burnInstruction;
-                if (asset.collection && asset.collection.key) {
-                  console.log('🏛️ Collection Core NFT detected - fetching collection data...');
-                  try {
-                    const collection = await fetchCollection(finalUmi, asset.collection.key);
-                    console.log('✅ Collection fetched:', collection.name);
-                    
-                    // Burn NFT from collection
-                    console.log('🔥 Executing COLLECTION Core NFT burn...');
-                    burnInstruction = burn(finalUmi, {
-                      asset: asset,
-                      collection: collection,
-                      authority: finalUmi.identity,
-                    });
-                  } catch (collectionError) {
-                    console.warn('⚠️ Collection fetch failed, burning as single NFT:', collectionError);
-                    // Fallback to single NFT burn
-                    burnInstruction = burn(finalUmi, {
-                      asset: asset,
-                      authority: finalUmi.identity,
-                    });
-                  }
-                } else {
-                  console.log('🔥 Executing SINGLE Core NFT burn...');
-                  burnInstruction = burn(finalUmi, {
-                    asset: asset,
-                    authority: finalUmi.identity,
-                  });
+                // Get account info to verify and estimate rent recovery (same as server)
+                console.log('📄 Getting asset account info...');
+                const accountInfo = await rpcConnection.getAccountInfo(assetPubkey);
+                if (!accountInfo) {
+                  console.log(`⚠️ Asset ${mintAddress} not found or already burned`);
+                  continue;
                 }
 
-                const result = await burnInstruction.sendAndConfirm(finalUmi);
+                const rentLamports = accountInfo.lamports;
+                console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL`);
 
-                console.log('🎉 Core NFT burn succeeded with UMI!');
+                // Verify account is owned by Core program (same as server)
+                if (!accountInfo.owner.equals(CORE_PROGRAM_ID)) {
+                  console.log(`⚠️ Asset ${mintAddress} not owned by Core program, skipping`);
+                  continue;
+                }
+
+                console.log('✅ Asset verified as valid Core NFT');
+
+                // Build DIRECT Core burn instruction (EXACT SAME AS SERVER)
+                const instructionData = Buffer.from([7]); // Burn discriminator
+
+                const burnInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },     // Owner/authority  
+                    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+                  ],
+                  programId: CORE_PROGRAM_ID,
+                  data: instructionData,
+                });
+
+                // Add compute budget (same as server)
+                const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+                  units: 200_000, // Enough compute for Core burn
+                });
+
+                // Build transaction (same as server)
+                const { blockhash } = await rpcConnection.getLatestBlockhash();
                 
-                // Properly encode signature for Solana RPC
-                const txSignature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature as Uint8Array);
+                const transaction = new Transaction({
+                  recentBlockhash: blockhash,
+                  feePayer: userPubkey
+                });
+                
+                // Add instructions
+                transaction.add(computeBudgetIx);
+                transaction.add(burnInstruction);
+
+                console.log('🔥 Signing and submitting DIRECT Core burn transaction...');
+                
+                // Sign transaction with wallet
+                const signed = await wallet.signTransaction!(transaction);
+                
+                // Submit transaction
+                const signature = await rpcConnection.sendRawTransaction(signed.serialize());
+                console.log('🚀 Transaction submitted:', signature);
+                
+                // Wait for confirmation
+                const confirmation = await rpcConnection.confirmTransaction(signature);
+                if (confirmation.value.err) {
+                  throw new Error(`Transaction failed: ${confirmation.value.err}`);
+                }
+                
+                const txSignature = signature;
+
+                console.log('🎉 Core NFT burn succeeded with DIRECT TRANSACTIONS!');
                 console.log('✅ Transaction confirmed:', txSignature);
 
                 // Calculate actual rent recovered
