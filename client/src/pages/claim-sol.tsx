@@ -841,71 +841,50 @@ export default function SolRefund() {
                 // Get user's balance before transaction
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
                 
-                // Sign and send the REAL burn transaction  
+                // Sign and send the REAL burn transaction using the wallet adapter's signTransaction method
                 console.log('🔧 Transaction details:', {
                   instructions: transaction.instructions.length,
                   signers: transaction.signatures.length,
                   feePayer: transaction.feePayer?.toString()
                 });
                 
-                // Enhanced error logging for wallet signing
-                console.log('🚀 About to call wallet.sendTransaction...');
+                console.log('🚀 About to sign transaction with wallet adapter...');
                 console.log('🔍 Wallet info:', {
                   connected: wallet.connected,
                   publicKey: wallet.publicKey?.toString(),
                   walletName: wallet.wallet?.adapter?.name
                 });
                 
-                console.log('📋 Transaction validation:', {
-                  feePayer: transaction.feePayer?.toString(),
-                  recentBlockhash: transaction.recentBlockhash,
-                  instructions: transaction.instructions.map(ix => ({
-                    programId: ix.programId.toString(),
-                    dataLength: ix.data.length,
-                    keysCount: ix.keys.length
-                  }))
-                });
-                
                 let signature: string;
                 try {
-                  // Add timeout to wallet signing attempt
-                  const SIGNING_TIMEOUT = 30000; // 30 seconds
-                  signature = await Promise.race([
-                    wallet.sendTransaction(transaction, rpcConnection, {
-                      maxRetries: 3,
-                      preflightCommitment: 'confirmed',
-                      skipPreflight: false
-                    }),
-                    new Promise<never>((_, reject) =>
-                      setTimeout(() => reject(new Error('Wallet signing timeout after 30 seconds')), SIGNING_TIMEOUT)
-                    )
-                  ]);
+                  // Use the wallet adapter's signTransaction instead of sendTransaction
+                  console.log('✏️ Signing transaction...');
+                  const signedTransaction = await signTransaction(transaction);
+                  console.log('✅ Transaction signed successfully');
+                  
+                  // Send the signed transaction using RPC connection
+                  console.log('📡 Sending signed transaction to network...');
+                  signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
+                    skipPreflight: false,
+                    preflightCommitment: 'confirmed',
+                    maxRetries: 3
+                  });
                   
                   console.log(`✅ Transaction sent successfully: ${signature}`);
                 } catch (sendError: any) {
-                  console.error('❌ DETAILED Wallet sendTransaction error:');
-                  console.error('❌ Error object:', sendError);
-                  console.error('❌ Error message:', sendError?.message || 'No error message');
-                  console.error('❌ Error name:', sendError?.name || 'No error name');
-                  console.error('❌ Error code:', sendError?.code || 'No error code');
-                  console.error('❌ Error toString:', sendError?.toString() || 'No toString');
-                  console.error('❌ Error keys:', Object.keys(sendError || {}));
-                  console.error('❌ Error constructor:', sendError?.constructor?.name || 'No constructor');
-                  console.error('❌ Error stack:', sendError?.stack || 'No stack trace');
-                  console.error('❌ Raw error type:', typeof sendError);
-                  console.error('❌ Is Error instance:', sendError instanceof Error);
+                  console.error('❌ Transaction signing/sending error:', sendError);
                   
                   // Try to extract meaningful error info
-                  let errorMsg = 'Unknown wallet signing error';
+                  let errorMsg = 'Transaction failed';
                   if (sendError?.message) {
-                    errorMsg = sendError.message;
-                  } else if (typeof sendError === 'string') {
-                    errorMsg = sendError;
-                  } else if (sendError?.toString && sendError.toString() !== '[object Object]') {
-                    errorMsg = sendError.toString();
+                    if (sendError.message.includes('User rejected')) {
+                      errorMsg = 'Transaction was cancelled by user';
+                    } else {
+                      errorMsg = sendError.message;
+                    }
                   }
                   
-                  throw new Error(`Wallet signing failed: ${errorMsg}`);
+                  throw new Error(errorMsg);
                 }
                 
                 console.log(`✅ REAL burn transaction signed! Signature: ${signature}`);
