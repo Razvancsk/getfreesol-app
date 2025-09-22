@@ -395,10 +395,11 @@ export default function SolRefund() {
     }
   }, [hasMoreTransactions, isLoadingTransactions]);
 
-  // Clear scan results when wallet disconnects
+  // Clear scan results and reset to first tab when wallet disconnects
   useEffect(() => {
     if (!isConnected || !publicKey) {
       setScanResult(null);
+      setActiveTab('reclaim'); // Reset to first page when wallet disconnects
     }
   }, [isConnected, publicKey]);
 
