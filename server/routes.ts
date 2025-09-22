@@ -1480,20 +1480,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`🔍 Building enhanced Core burn for proper rent reclamation: ${mintAddress}`);
           
-          // 🔥 COMPLETE CORE NFT RENT RECOVERY: Close ALL accounts
-          console.log(`🔥 COMPLETE rent recovery: Core data + mint + ATA accounts`);
+          // 🔥 CORE NFT: Just burn + close the asset account (that's all!)
+          console.log(`🔥 Core NFT: burn + close asset account for rent recovery`);
+          console.log(`🔍 Core Asset: ${assetPubkey.toString()}`);
+          console.log(`💰 Account rent: ${rentLamports / 1e9} SOL`);
           
-          // Find the mint and ATA accounts for this Core NFT
-          const mintPubkey = assetPubkey; // For Core NFTs, asset = mint in many cases
-          const { getAssociatedTokenAddress } = await import('@solana/spl-token');
-          const ataAddress = await getAssociatedTokenAddress(mintPubkey, userPubkey);
-          
-          console.log(`🔍 Mint: ${mintPubkey.toString()}`);
-          console.log(`🔍 ATA: ${ataAddress.toString()}`);
-          console.log(`🔍 Core Data: ${assetPubkey.toString()}`);
-          
-          // STEP 1: Burn Core NFT data account
-          const burnInstructionData = Buffer.from([7]);
+          // STEP 1: Burn Core NFT (clears the NFT data)
+          const burnInstructionData = Buffer.from([7]); // Burn discriminator
           const burnInstruction = new TransactionInstruction({
             keys: [
               { pubkey: assetPubkey, isSigner: false, isWritable: true },
@@ -1504,49 +1497,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data: burnInstructionData,
           });
           
-          // STEP 2: Close Core data account  
-          const closeInstructionData = Buffer.from([1]);
+          // STEP 2: Close asset account (user receives rent)
+          const closeInstructionData = Buffer.from([1]); // Close discriminator
           const closeInstruction = new TransactionInstruction({
             keys: [
-              { pubkey: assetPubkey, isSigner: false, isWritable: true },
-              { pubkey: userPubkey, isSigner: true, isWritable: false },
-              { pubkey: userPubkey, isSigner: false, isWritable: true },
+              { pubkey: assetPubkey, isSigner: false, isWritable: true },   // Asset to close
+              { pubkey: userPubkey, isSigner: true, isWritable: false },   // Authority (signer)
+              { pubkey: userPubkey, isSigner: false, isWritable: true },   // Recipient (USER gets rent!)
             ],
             programId: CORE_PROGRAM_ID,
             data: closeInstructionData,
           });
           
-          // STEP 3: Close ATA (recover ATA rent)
-          const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
-          const closeAtaInstruction = createCloseAccountInstruction(
-            ataAddress,     // Account to close
-            userPubkey,     // Destination (user gets rent)
-            userPubkey,     // Authority
-            [],             // No multisig
-            TOKEN_PROGRAM_ID
-          );
-          
-          // STEP 4: Close mint account (recover mint rent)  
-          const closeMintInstruction = createCloseAccountInstruction(
-            mintPubkey,     // Mint to close
-            userPubkey,     // Destination (user gets rent)
-            userPubkey,     // Authority  
-            [],             // No multisig
-            TOKEN_PROGRAM_ID
-          );
-          
-          // Build complete transaction  
-          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
+          // Build transaction
+          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 });
           const transaction = new Transaction({
             recentBlockhash: blockhash,
             feePayer: userPubkey
           });
           
           transaction.add(computeBudgetIx);
-          transaction.add(burnInstruction);     // 1. Burn Core NFT
-          transaction.add(closeInstruction);   // 2. Close Core data → rent
-          transaction.add(closeAtaInstruction); // 3. Close ATA → rent  
-          transaction.add(closeMintInstruction); // 4. Close mint → rent
+          transaction.add(burnInstruction);  // 1. Burn Core NFT
+          transaction.add(closeInstruction); // 2. Close asset → rent to user
           
           console.log(`✅ Enhanced Core burn transaction built for ${mintAddress}`);
           console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL (rent from closed account)`);
