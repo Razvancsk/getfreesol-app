@@ -805,17 +805,7 @@ export default function SolRefund() {
                   units: 200_000, // Enough compute for Core burn
                 });
 
-                // Build transaction (same as server)
-                const { blockhash } = await rpcConnection.getLatestBlockhash();
-                
-                const transaction = new Transaction({
-                  recentBlockhash: blockhash,
-                  feePayer: userPubkey
-                });
-                
-                // Add instructions
-                transaction.add(computeBudgetIx);
-                transaction.add(burnInstruction);
+                // ❌ REMOVED: Frontend RPC calls cause 403 errors - hybrid approach handles this on server
 
                 console.log('🔥 Signing and submitting DIRECT Core burn transaction...');
                 
@@ -940,12 +930,7 @@ export default function SolRefund() {
                 const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
 
-                // CRITICAL: Update transaction with fresh recent blockhash
-                console.log('🔄 Updating transaction with fresh recent blockhash...');
-                const { blockhash } = await rpcConnection.getLatestBlockhash('confirmed');
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = wallet.publicKey!;
-                console.log('✅ Transaction updated with fresh blockhash:', blockhash);
+                // ❌ REMOVED: Frontend RPC calls cause 403 errors - hybrid approach handles this on server
 
                 // Sign and send the REAL burn transaction using the wallet adapter's signTransaction method
                 console.log('🚀 About to sign transaction with wallet adapter...');
