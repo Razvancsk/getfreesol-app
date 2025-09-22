@@ -821,7 +821,8 @@ export default function SolRefund() {
                   throw new Error(`Server build failed: ${error}`);
                 }
                 
-                const { transaction: txData } = await buildResponse.json();
+                const { transactions } = await buildResponse.json();
+                const txData = transactions[0].transaction; // Get first transaction  
                 const transaction = Transaction.from(Buffer.from(txData, 'base64'));
                 
                 // Step 2: Frontend signs with wallet

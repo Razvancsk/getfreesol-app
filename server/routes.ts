@@ -1574,7 +1574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Get transaction details for rent calculation
-          const txDetails = await connection.getTransaction(signature, 'confirmed');
+          const txDetails = await connection.getTransaction(signature, { commitment: 'confirmed' });
           
           let rentRecoveredLamports = 0;
           if (txDetails?.meta) {
@@ -1623,7 +1623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error submitting Core NFT burn transactions:', error);
       res.status(500).json({ success: false, error: 'Failed to submit transactions: ' + (error.message || 'Unknown error') });
     }
