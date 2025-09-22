@@ -1480,43 +1480,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`🔍 Building enhanced Core burn for proper rent reclamation: ${mintAddress}`);
           
-          // 🔥 STEP 1: Burn the NFT content
-          const burnInstructionData = Buffer.from([7]); // Burn discriminator
+          // 🚀 OFFICIAL MPL CORE SDK - Proper rent reclamation
+          const { createUmi } = await import('@metaplex-foundation/umi');
+          const { createWeb3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
+          const { burnV1, closeV1 } = await import('@metaplex-foundation/mpl-core');
+          const { fromWeb3JsPublicKey, fromWeb3JsKeypair } = await import('@metaplex-foundation/umi-web3js-adapters');
+          const { ComputeBudgetProgram } = await import('@solana/web3.js');
           
-          const burnInstruction = new TransactionInstruction({
-            keys: [
-              { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn
-              { pubkey: userPubkey, isSigner: true, isWritable: true },     // Authority
-              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
-            ],
-            programId: CORE_PROGRAM_ID,
-            data: burnInstructionData,
+          console.log(`🔥 Using OFFICIAL MPL Core SDK for proper rent reclamation`);
+          
+          // Create UMI instance
+          const umi = createUmi(createWeb3JsRpc(connection));
+          
+          // Convert to UMI format
+          const assetUmi = fromWeb3JsPublicKey(assetPubkey);
+          const authorityUmi = fromWeb3JsPublicKey(userPubkey);
+          const receiverUmi = fromWeb3JsPublicKey(userPubkey); // USER gets the rent!
+          
+          // Build BURN instruction (official SDK)
+          const burnIx = burnV1(umi, {
+            asset: assetUmi,
+            authority: authorityUmi,
           });
           
-          // 💰 STEP 2: Close the asset account directly (reclaim ALL rent)
-          const closeInstructionData = Buffer.from([9]); // Close discriminator
-          
-          const closeInstruction = new TransactionInstruction({
-            keys: [
-              { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset account to close
-              { pubkey: userPubkey, isSigner: true, isWritable: true },     // Authority & rent recipient
-            ],
-            programId: CORE_PROGRAM_ID,
-            data: closeInstructionData,
+          // Build CLOSE instruction (official SDK - rent goes to USER!)
+          const closeIx = closeV1(umi, {
+            asset: assetUmi,
+            authority: authorityUmi,
+            receiver: receiverUmi, // CRITICAL: User wallet receives ALL rent
           });
           
-          // Add compute budget for burn + close
-          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 });
+          // Combine burn + close into one transaction
+          let txBuilder = burnIx.add(closeIx);
           
-          // Build transaction: burn → close asset account (simple!)
+          // Add compute budget
+          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
+          
+          // Convert to Web3.js transaction
+          const unsignedTx = await txBuilder.buildWithLatestBlockhash(umi);
+          const burnCloseTransaction = Transaction.from(unsignedTx.serializedMessage);
+          
+          // Add compute budget at the beginning
           const transaction = new Transaction({
             recentBlockhash: blockhash,
-            feePayer: userPubkey // User pays fees and receives ALL rent from asset account
+            feePayer: userPubkey
           });
-          
           transaction.add(computeBudgetIx);
-          transaction.add(burnInstruction);  // 1. Burn NFT content
-          transaction.add(closeInstruction); // 2. Close asset account → user gets ALL rent
+          transaction.instructions.push(...burnCloseTransaction.instructions);
           
           console.log(`✅ Enhanced Core burn transaction built for ${mintAddress}`);
           console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL (rent from closed account)`);
