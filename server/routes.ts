@@ -1480,7 +1480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`🔍 Building enhanced Core burn for proper rent reclamation: ${mintAddress}`);
           
-          // 🔥 STEP 1: Core burn instruction 
+          // 🔥 STEP 1: Burn the NFT content
           const burnInstructionData = Buffer.from([7]); // Burn discriminator
           
           const burnInstruction = new TransactionInstruction({
@@ -1493,31 +1493,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data: burnInstructionData,
           });
           
-          // 💰 STEP 2: Close instruction to reclaim rent (CRITICAL!)
-          const closeInstructionData = Buffer.from([1]); // Close discriminator
+          // 💰 STEP 2: Close the asset account directly (reclaim ALL rent)
+          const closeInstructionData = Buffer.from([9]); // Close discriminator
           
           const closeInstruction = new TransactionInstruction({
             keys: [
               { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset account to close
-              { pubkey: userPubkey, isSigner: true, isWritable: false },    // Authority (must sign)
-              { pubkey: userPubkey, isSigner: false, isWritable: true },    // Recipient of rent lamports
+              { pubkey: userPubkey, isSigner: true, isWritable: true },     // Authority & rent recipient
             ],
             programId: CORE_PROGRAM_ID,
             data: closeInstructionData,
           });
           
-          // Add enhanced compute budget for burn + close operations
-          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
+          // Add compute budget for burn + close
+          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 });
           
-          // Build transaction with BURN + CLOSE for proper rent reclamation
+          // Build transaction: burn → close asset account (simple!)
           const transaction = new Transaction({
             recentBlockhash: blockhash,
-            feePayer: userPubkey // User pays fees and receives rent
+            feePayer: userPubkey // User pays fees and receives ALL rent from asset account
           });
           
           transaction.add(computeBudgetIx);
-          transaction.add(burnInstruction);  // First: Burn the NFT
-          transaction.add(closeInstruction); // Second: Close account & reclaim rent
+          transaction.add(burnInstruction);  // 1. Burn NFT content
+          transaction.add(closeInstruction); // 2. Close asset account → user gets ALL rent
           
           console.log(`✅ Enhanced Core burn transaction built for ${mintAddress}`);
           console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL (rent from closed account)`);
