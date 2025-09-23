@@ -743,8 +743,13 @@ export default function SolRefund() {
 
         const nftMints = nfts.map(nft => nft.mint);
 
-        // Handle Core NFTs with direct Solana transaction approach (bypass UMI)
+        // Handle Core NFTs - TEMPORARILY DISABLED (being rebuilt with official Metaplex Core)
         if (nftType === 'core') {
+          throw new Error('Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!');
+        }
+        
+        // Legacy code (will be removed):
+        if (false && nftType === 'core') {
           try {
             console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
 

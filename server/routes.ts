@@ -1421,8 +1421,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // NEW HYBRID API - Build Core NFT burn transactions (server builds, frontend signs)
+  // NEW HYBRID API - Build Core NFT burn transactions (TEMPORARILY DISABLED)
   app.post('/api/nfts/burn/build', async (req, res) => {
+    // Core NFT burning temporarily disabled - being rebuilt with official Metaplex Core
+    return res.status(501).json({
+      success: false,
+      error: 'Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!'
+    });
     try {
       const { walletAddress, nftMints, nftType } = req.body;
       
@@ -1661,6 +1666,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!nftType || nftType !== 'core') {
         return res.status(400).json({ error: "Only Metaplex Core NFTs are supported" });
       }
+
+      // Core NFT burning temporarily disabled - being rebuilt with official Metaplex Core
+      return res.status(501).json({
+        success: false,
+        error: 'Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!'
+      });
 
       // Handle referral code logic (same as token burning)
       let referralCodeData = null;
