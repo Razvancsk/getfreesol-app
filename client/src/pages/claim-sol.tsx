@@ -85,6 +85,9 @@ export default function SolRefund() {
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+  
+  // Success message state for NFT burning
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -750,7 +753,7 @@ export default function SolRefund() {
           
           try {
             // Initialize UMI with wallet adapter
-            const umi = createUmi(connection)
+            const umi = createUmi(rpcConnection)
               .use(web3JsRpc())
               .use(walletAdapterIdentity(wallet))
               .use(mplCore());
