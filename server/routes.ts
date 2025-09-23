@@ -1469,7 +1469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Initialize UMI for Core NFT validation
       const { createUmi } = await import('@metaplex-foundation/umi');
       const { mplCore, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
-      const { publicKey as umiPublicKey } = await import('@metaplex-foundation/umi');
+      const { publicKey: umiPublicKey } = await import('@metaplex-foundation/umi');
       const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
       
       const umi = createUmi(rpcUrl)
@@ -1487,8 +1487,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const collection = await fetchCollection(umi, collectionId);
           console.log(`✅ Validated collection: ${collection.publicKey}`);
-        } catch (collectionError) {
-          console.log(`⚠️ Could not fetch collection, proceeding without`);
+        } catch (collectionError: any) {
+          console.log(`⚠️ Could not fetch collection, proceeding without: ${collectionError.message || 'Unknown error'}`);
         }
       }
 
