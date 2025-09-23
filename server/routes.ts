@@ -1473,7 +1473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
       
       const umi = createUmi(rpcUrl)
-        .use(web3JsRpc())
+        .use(web3JsRpc(rpcUrl))
         .use(mplCore());
       
       // Fetch the Core asset to validate
@@ -1559,7 +1559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
       
       const umi = createUmi(rpcUrl)
-        .use(web3JsRpc())
+        .use(web3JsRpc(rpcUrl))
         .use(mplCore());
       
       console.log('✅ UMI initialized with official Metaplex Core SDK');
@@ -1584,8 +1584,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               collection = await fetchCollection(umi, collectionId);
               console.log(`✅ Fetched collection: ${collection.publicKey}`);
-            } catch (collectionError) {
-              console.log(`⚠️ Could not fetch collection, proceeding without: ${collectionError.message}`);
+            } catch (collectionError: any) {
+              console.log(`⚠️ Could not fetch collection, proceeding without: ${collectionError.message || 'Unknown error'}`);
             }
           }
           
@@ -1595,8 +1595,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             collection: collection,
           });
           
-          // Get the transaction for client-side signing
-          const tx = await burnTransaction.getTransaction();
+          // Build transaction builder for client-side signing
+          const tx = await burnTransaction.buildAndSign(umi);
           const serializedTx = await umi.transactions.serialize(tx);
           const base64Tx = Buffer.from(serializedTx).toString('base64');
           
@@ -1762,7 +1762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : 'https://api.mainnet-beta.solana.com';
       
       const umi = createUmi(rpcUrl)
-        .use(web3JsRpc())
+        .use(web3JsRpc(rpcUrl))
         .use(mplCore());
       
       console.log('✅ UMI initialized with official Metaplex Core SDK');
