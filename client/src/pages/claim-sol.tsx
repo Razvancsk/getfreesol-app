@@ -22,9 +22,7 @@ import {
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { createUmi } from '@metaplex-foundation/umi';
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
-import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
+// Core NFT imports removed - will be re-added with official implementation
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
 import { signerIdentity, createSignerFromKeypair } from '@metaplex-foundation/umi';
@@ -748,8 +746,8 @@ export default function SolRefund() {
           throw new Error('Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!');
         }
         
-        // Legacy code (will be removed):
-        if (false && nftType === 'core') {
+        // Core NFT burning will be re-implemented with official Metaplex Core
+        if (false) { // Disabled legacy Core NFT code
           try {
             console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
 
