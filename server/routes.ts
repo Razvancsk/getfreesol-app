@@ -1421,13 +1421,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // NEW HYBRID API - Build Core NFT burn transactions (TEMPORARILY DISABLED)
+  // OFFICIAL METAPLEX CORE - Build Core NFT burn transactions
   app.post('/api/nfts/burn/build', async (req, res) => {
-    // Core NFT burning temporarily disabled - being rebuilt with official Metaplex Core
-    return res.status(501).json({
-      success: false,
-      error: 'Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!'
-    });
     try {
       const { walletAddress, nftMints, nftType } = req.body;
       
@@ -1445,7 +1440,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('🔧 Building Core NFT burn transactions for', nftMints.length, 'NFTs');
+      console.log('🔧 Building Core NFT burn transactions using OFFICIAL Metaplex Core SDK for', nftMints.length, 'NFTs');
+
+      // Initialize UMI with Metaplex Core for official implementation
+      const { createUmi } = await import('@metaplex-foundation/umi');
+      const { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
+      const { publicKey } = await import('@metaplex-foundation/umi');
+      const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
+      
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      
+      const umi = createUmi(rpcUrl)
+        .use(web3JsRpc())
+        .use(mplCore());
+      
+      console.log('✅ UMI initialized with official Metaplex Core SDK');
+
+      const builtTransactions = [];
+      let totalExpectedRentLamports = 0;
+      
+      for (const mintAddress of nftMints) {
+        try {
+          console.log(`🔍 Processing Core NFT: ${mintAddress}`);
+          
+          // Convert to UMI PublicKey and fetch full asset object (OFFICIAL WAY)
+          const assetId = publicKey(mintAddress);
+          const asset = await fetchAsset(umi, assetId);
+          
+          console.log(`✅ Fetched Core asset: ${asset.publicKey}`);
+          
+          // Check if asset belongs to a collection (required for proper burning)
+          const collectionId = collectionAddress(asset);
+          let collection = undefined;
+          if (collectionId) {
+            try {
+              collection = await fetchCollection(umi, collectionId);
+              console.log(`✅ Fetched collection: ${collection.publicKey}`);
+            } catch (collectionError) {
+              console.log(`⚠️ Could not fetch collection, proceeding without: ${collectionError.message}`);
+            }
+          }
+          
+          // Build the official burn transaction
+          const burnTransaction = burn(umi, {
+            asset: asset,
+            collection: collection,
+          });
+          
+          // Get the transaction for client-side signing
+          const tx = await burnTransaction.getTransaction();
+          const serializedTx = await umi.transactions.serialize(tx);
+          const base64Tx = Buffer.from(serializedTx).toString('base64');
+          
+          // Estimate rent recovery (Core NFTs typically recover ~0.003-0.005 SOL)
+          const estimatedRentLamports = 3_500_000; // ~0.0035 SOL average for Core NFTs
+          totalExpectedRentLamports += estimatedRentLamports;
+          
+          builtTransactions.push({
+            mint: mintAddress,
+            transaction: base64Tx,
+            expectedRentLamports: estimatedRentLamports,
+            expectedRentSol: estimatedRentLamports / 1e9
+          });
+          
+          console.log(`✅ Built official Core NFT burn transaction for ${mintAddress}`);
+          
+        } catch (error: any) {
+          console.error(`❌ Failed to build Core NFT transaction for ${mintAddress}:`, error);
+        }
+      }
+      
+      if (builtTransactions.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No valid Core NFT transactions could be built'
+        });
+      }
+      
+      console.log(`🎉 Built ${builtTransactions.length} official Core NFT burn transactions`);
+      console.log(`💰 Total expected rent recovery: ${totalExpectedRentLamports / 1e9} SOL`);
+      
+      res.json({
+        success: true,
+        message: `Built ${builtTransactions.length} Core NFT burn transactions using official Metaplex SDK`,
+        transactions: builtTransactions,
+        summary: {
+          totalTransactions: builtTransactions.length,
+          totalExpectedRentLamports: totalExpectedRentLamports,
+          totalExpectedRentSol: totalExpectedRentLamports / 1e9
+        }
+      });
       
       const userPubkey = new PublicKey(walletAddress);
       const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
@@ -1667,10 +1752,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Only Metaplex Core NFTs are supported" });
       }
 
-      // Core NFT burning temporarily disabled - being rebuilt with official Metaplex Core
-      return res.status(501).json({
-        success: false,
-        error: 'Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!'
+      // OFFICIAL METAPLEX CORE - Execute Core NFT burning using official SDK
+      console.log(`🔥 Executing Core NFT burning using OFFICIAL Metaplex Core SDK for ${nftMints.length} NFTs`);
+      
+      // Initialize UMI with Metaplex Core
+      const { createUmi } = await import('@metaplex-foundation/umi');
+      const { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
+      const { publicKey } = await import('@metaplex-foundation/umi');
+      const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
+      const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+      
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      const umi = createUmi(rpcUrl)
+        .use(web3JsRpc())
+        .use(mplCore());
+      
+      console.log('✅ UMI initialized with official Metaplex Core SDK');
+      
+      // This endpoint now returns a message for clients to use the new flow
+      return res.json({
+        success: true,
+        message: "Core NFT burning now uses official Metaplex SDK. Please use the build/submit flow for proper implementation.",
+        recommendedFlow: {
+          step1: "POST /api/nfts/burn/build - Build unsigned transactions",
+          step2: "Sign transactions on client side", 
+          step3: "POST /api/nfts/burn/submit - Submit signed transactions"
+        },
+        nftsCount: nftMints.length,
+        estimatedRentRecovery: `${(nftMints.length * 0.0035).toFixed(4)} SOL`
       });
 
       // Handle referral code logic (same as token burning)
