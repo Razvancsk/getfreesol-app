@@ -1320,9 +1320,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const asset of items) {
         const { interface: assetInterface, compression, burnt } = asset;
+        const assetName = asset.content?.metadata?.name || 'Unnamed';
+        
+        console.log(`🔍 Processing asset: ${assetName}`);
+        console.log(`   Interface: ${assetInterface}`);
+        console.log(`   Burnt: ${burnt}`);
+        console.log(`   Compressed: ${compression?.compressed}`);
         
         // Only process Metaplex Core NFTs
         if (assetInterface !== 'MplCoreAsset') {
+          console.log(`❌ Skipping ${assetName} - Interface: ${assetInterface} (expected: MplCoreAsset)`);
           continue;
         }
         
@@ -1362,6 +1369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (shouldNotBurn) {
+          console.log(`❌ Skipping ${name} - Contains "do not burn" indicator`);
           continue;
         }
         
@@ -1382,8 +1390,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (isPositionNft) {
+          console.log(`❌ Skipping ${name} - Identified as position/utility NFT`);
           continue;
         }
+        
+        console.log(`✅ ${name} passed all filters - Adding to burnable NFTs list`);
 
         const nftInfo = {
           mint: asset.id,
