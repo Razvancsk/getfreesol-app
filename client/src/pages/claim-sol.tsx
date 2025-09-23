@@ -766,52 +766,42 @@ export default function SolRefund() {
         if (nftType === 'core') {
           console.log('🔥 Using OFFICIAL Metaplex Core SDK for burning Core NFTs');
           
-          if (!umi) {
-            throw new Error('UMI not initialized - wallet may not be connected');
+          // Use direct wallet approach instead of UMI to avoid initialization issues
+          if (!wallet.connected || !wallet.publicKey) {
+            throw new Error('Wallet not connected for Core NFT burning');
           }
           
           try {
-            console.log('✅ Using component-level UMI instance for Core NFT burning');
+            console.log('✅ Using direct wallet approach for complete Core NFT burning process');
             
             const burnedCount = nftMints.length;
             let totalActualRecovered = 0;
             
-            // Process each Core NFT using official SDK
+            // Process each Core NFT using server-side burning (comprehensive rent recovery)
             for (const mintAddress of nftMints) {
               try {
-                console.log(`🔥 Burning Core NFT using official SDK: ${mintAddress}`);
+                console.log(`🔥 Starting comprehensive Core NFT burning for: ${mintAddress}`);
                 
-                // Convert to UMI PublicKey and fetch full asset (OFFICIAL WAY)
-                const assetId = umiPublicKey(mintAddress);
-                const asset = await fetchAsset(umi, assetId);
-                
-                console.log(`✅ Fetched Core asset: ${asset.publicKey}`);
-                
-                // Check if asset belongs to a collection
-                const collectionId = collectionAddress(asset);
-                let collection = undefined;
-                if (collectionId) {
-                  try {
-                    collection = await fetchCollection(umi, collectionId);
-                    console.log(`✅ Fetched collection: ${collection.publicKey}`);
-                  } catch (collectionError) {
-                    console.log(`⚠️ Could not fetch collection, proceeding without`);
-                  }
+                // Call server API for complete Core NFT burning process
+                const response = await fetch('/api/nfts/burn/core', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    walletAddress: wallet.publicKey.toString(),
+                    mintAddress: mintAddress
+                  })
+                });
+
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || 'Failed to burn Core NFT');
                 }
+
+                const burnResult = await response.json();
+                console.log(`✅ Core NFT burn completed: ${burnResult.signature}`);
+                console.log(`💰 Total rent recovered: ${burnResult.totalRecovered} SOL`);
                 
-                // Execute the official burn transaction
-                const result = await burn(umi, {
-                  asset: asset,
-                  collection: collection,
-                }).sendAndConfirm(umi);
-                
-                console.log(`✅ Core NFT burned successfully: ${result.signature}`);
-                
-                // Core NFTs typically recover ~0.0035 SOL
-                const actualRecovered = 0.0035;
-                totalActualRecovered += actualRecovered;
-                
-                console.log(`💰 Rent recovered: ${actualRecovered} SOL`);
+                totalActualRecovered += burnResult.totalRecovered || 0.005; // Fallback estimate
                 
               } catch (burnError: any) {
                 console.error(`❌ Failed to burn Core NFT ${mintAddress}:`, burnError);
