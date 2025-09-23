@@ -71,6 +71,21 @@ export default function SolRefund() {
   const queryClient = useQueryClient();
   const wallet = useWallet();
   const { connection: rpcConnection } = useConnection();
+
+  // Create UMI instance for NFT operations (hoisted to component level)
+  const umi = useMemo(() => {
+    if (!rpcConnection || !wallet?.publicKey) return null;
+    try {
+      const u = createUmi(rpcConnection)
+        .use(web3JsRpc())
+        .use(walletAdapterIdentity(wallet))
+        .use(mplCore());
+      return u;
+    } catch (error) {
+      console.error('UMI initialization failed:', error);
+      return null;
+    }
+  }, [rpcConnection, wallet?.publicKey]);
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -726,11 +741,11 @@ export default function SolRefund() {
         throw new Error('No valid NFTs selected');
       }
 
-      // Group NFTs by type (excluding cNFTs and Core NFTs)
+      // Group NFTs by type (process Core NFTs, skip only cNFTs)
       const nftsByType: { [key: string]: any[] } = {};
       selectedNfts.forEach((nft: any) => {
-        // Skip cNFTs and Core NFTs entirely
-        if (nft.type === 'cnft' || nft.type === 'core') {
+        // Skip only cNFTs (compressed NFTs), but process Core NFTs
+        if (nft.type === 'cnft') {
           return;
         }
         if (!nftsByType[nft.type]) {
@@ -751,14 +766,12 @@ export default function SolRefund() {
         if (nftType === 'core') {
           console.log('🔥 Using OFFICIAL Metaplex Core SDK for burning Core NFTs');
           
+          if (!umi) {
+            throw new Error('UMI not initialized - wallet may not be connected');
+          }
+          
           try {
-            // Initialize UMI with wallet adapter
-            const umi = createUmi(rpcConnection)
-              .use(web3JsRpc())
-              .use(walletAdapterIdentity(wallet))
-              .use(mplCore());
-            
-            console.log('✅ UMI initialized with official Metaplex Core SDK');
+            console.log('✅ Using component-level UMI instance for Core NFT burning');
             
             const burnedCount = nftMints.length;
             let totalActualRecovered = 0;
