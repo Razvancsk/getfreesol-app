@@ -1466,8 +1466,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('✅ Step 1: Preparing Core NFT burn using official Metaplex Core SDK');
       
-      // Initialize UMI for Core NFT validation
-      const { createUmi } = await import('@metaplex-foundation/umi');
+      // Initialize UMI for Core NFT validation using bundle defaults
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
       const { mplCore, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       const { publicKey: umiPublicKey } = await import('@metaplex-foundation/umi');
       const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
@@ -1549,8 +1549,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔧 Building Core NFT burn transactions using OFFICIAL Metaplex Core SDK for', nftMints.length, 'NFTs');
 
-      // Initialize UMI with Metaplex Core for official implementation
-      const { createUmi } = await import('@metaplex-foundation/umi');
+      // Initialize UMI with bundle defaults to register all required interfaces
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
       const { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       const { publicKey } = await import('@metaplex-foundation/umi');
       const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
@@ -1749,8 +1749,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // OFFICIAL METAPLEX CORE - Execute Core NFT burning using official SDK
       console.log(`🔥 Executing Core NFT burning using OFFICIAL Metaplex Core SDK for ${nftMints.length} NFTs`);
       
-      // Initialize UMI with Metaplex Core
-      const { createUmi } = await import('@metaplex-foundation/umi');
+      // Initialize UMI with bundle defaults to register all required interfaces  
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
       const { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       const { publicKey } = await import('@metaplex-foundation/umi');
       const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
