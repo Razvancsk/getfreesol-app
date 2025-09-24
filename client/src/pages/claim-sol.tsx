@@ -1569,7 +1569,7 @@ export default function SolRefund() {
                         return;
                       }
                       
-                      if (!isConnected) {
+                      if (!isConnected || !publicKey || !signTransaction) {
                         toast({
                           title: "Wallet not connected",
                           description: "Please connect your wallet first",
@@ -1578,11 +1578,29 @@ export default function SolRefund() {
                         return;
                       }
 
-                      toast({
-                        title: "NFT Burn",
-                        description: "Due to browser compatibility issues, please use the terminal method with your burn files. See instructions below.",
-                        variant: "default",
-                      });
+                      try {
+                        toast({
+                          title: "Starting NFT Burn...",
+                          description: "Preparing transaction for single asset burn",
+                        });
+
+                        // Use the burn utility
+                        const result = await burnSingleAsset(umi, nftAssetId.trim());
+
+                        toast({
+                          title: "NFT Burned Successfully!",
+                          description: `Transaction: ${result.signature}`,
+                        });
+                        
+                        setNftAssetId('');
+                      } catch (error: any) {
+                        console.error('Single burn failed:', error);
+                        toast({
+                          title: "NFT Burn Failed",
+                          description: error?.message || "Unknown error occurred",
+                          variant: "destructive",
+                        });
+                      }
                     }}
                     disabled={!isConnected || !nftAssetId.trim()}
                     className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1604,7 +1622,7 @@ export default function SolRefund() {
                         return;
                       }
                       
-                      if (!isConnected) {
+                      if (!isConnected || !publicKey || !signTransaction) {
                         toast({
                           title: "Wallet not connected",
                           description: "Please connect your wallet first",
@@ -1613,11 +1631,29 @@ export default function SolRefund() {
                         return;
                       }
 
-                      toast({
-                        title: "NFT Burn",
-                        description: "Due to browser compatibility issues, please use the terminal method with your burn files. See instructions below.",
-                        variant: "default",
-                      });
+                      try {
+                        toast({
+                          title: "Starting Collection NFT Burn...",
+                          description: "Preparing transaction with collection handling",
+                        });
+
+                        // Use the collection burn utility
+                        const result = await burnAssetWithCollection(umi, nftAssetId.trim());
+
+                        toast({
+                          title: "NFT Burned Successfully!",
+                          description: `Transaction: ${result.signature}`,
+                        });
+                        
+                        setNftAssetId('');
+                      } catch (error: any) {
+                        console.error('Collection burn failed:', error);
+                        toast({
+                          title: "Collection NFT Burn Failed",
+                          description: error?.message || "Unknown error occurred",
+                          variant: "destructive",
+                        });
+                      }
                     }}
                     disabled={!isConnected || !nftAssetId.trim()}
                     className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
