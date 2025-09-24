@@ -1474,16 +1474,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         collection = await fetchCollection(umi, collectionId); // Your exact code
       }
 
-      // Your exact burn call with sendAndConfirm
-      const result = await burn(umi, {
+      // Build your exact burn transaction (but don't sign/send - client will do that)
+      const burnTransaction = burn(umi, {
         asset: asset,
         collection: collection,
-      }).sendAndConfirm(umi);
+      });
+
+      // Build the transaction for client-side signing
+      const tx = await burnTransaction.buildAndSign(umi);
+      const serialized = umi.transactions.serialize(tx);
+      const base64Tx = Buffer.from(serialized).toString('base64');
 
       res.json({
         success: true,
-        message: 'Core NFT burned successfully using your exact SDK!',
-        signature: result.signature,
+        message: 'Core NFT burn transaction built using your exact SDK - ready for wallet signing!',
+        transaction: base64Tx,
         mintAddress,
         assetId: asset.publicKey,
         estimatedRent: 0.0035 // Simple estimate for Core NFT
