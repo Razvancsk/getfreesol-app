@@ -1489,13 +1489,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serialized = umi.transactions.serialize(tx);
       const base64Tx = Buffer.from(serialized).toString('base64');
 
+      const estimatedRent = 0.007; // Your Core NFT rent estimate
+      const feePercentage = 0.15; // 15% fee
+      const feeAmount = estimatedRent * feePercentage;
+      const netAmount = estimatedRent - feeAmount;
+
       res.json({
         success: true,
         message: 'Core NFT burn transaction built using your exact SDK - ready for wallet signing!',
         transaction: base64Tx,
         mintAddress,
         assetId: asset.publicKey,
-        estimatedRent: 0.0035 // Simple estimate for Core NFT
+        nftsProcessed: 1, // Frontend expects this
+        solRecovered: estimatedRent.toFixed(6), // Frontend expects this  
+        netAmount: netAmount.toFixed(6), // Frontend expects this
+        feeAmount: feeAmount.toFixed(6) // Frontend expects this
       });
 
     } catch (error: any) {
