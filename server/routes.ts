@@ -1455,13 +1455,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use your exact imports and approach
       const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { publicKey } = await import('@metaplex-foundation/umi');
+      const { publicKey, createSignerFromKeypair, generateSigner } = await import('@metaplex-foundation/umi');
       const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
       
       const umi = createUmi(rpcUrl);
+      
+      // Add dummy signer just for building transactions (client will sign with real wallet)
+      const dummySigner = generateSigner(umi);
+      umi.use({ install: (umi) => { umi.identity = createSignerFromKeypair(umi, dummySigner); } });
       
       // EXACTLY your code approach:
       const assetId = publicKey(mintAddress);
