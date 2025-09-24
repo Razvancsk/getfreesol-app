@@ -1384,6 +1384,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authority: publicKey(walletPublicKey),
       });
 
+      // Set recent blockhash before building
+      const latestBlockhash = await umi.rpc.getLatestBlockhash();
+      transaction.setBlockhash(latestBlockhash);
+      
       // Build transaction but don't sign it
       const builtTransaction = await transaction.build(umi);
       
@@ -1445,6 +1449,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authority: publicKey(walletPublicKey),
       });
 
+      // Set recent blockhash before building
+      const latestBlockhash = await umi.rpc.getLatestBlockhash();
+      transaction.setBlockhash(latestBlockhash);
+      
       // Build transaction but don't sign it
       const builtTransaction = await transaction.build(umi);
       
