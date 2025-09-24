@@ -76,8 +76,8 @@ export default function SolRefund() {
   const umi = useMemo(() => {
     if (!rpcConnection || !wallet?.publicKey) return null;
     try {
-      const u = createUmi(rpcConnection)
-        .use(web3JsRpc())
+      const u = createUmi()
+        .use(web3JsRpc(rpcConnection))
         .use(walletAdapterIdentity(wallet))
         .use(mplCore());
       return u;
@@ -1087,7 +1087,7 @@ export default function SolRefund() {
                 console.log('✅ Transaction confirmed on blockchain!');
 
                 // Check actual rent recovered
-                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
                 const txDetails = await rpcConnection.getTransaction(signature, {
                   commitment: 'confirmed',
                   maxSupportedTransactionVersion: 0
@@ -1107,12 +1107,12 @@ export default function SolRefund() {
                   success: true
                 });
 
-              } catch (txError) {
+              } catch (txError: unknown) {
                 console.error(`❌ Failed to burn ${burnTx.name}:`, txError);
                 completedBurns.push({
                   mint: burnTx.asset,
                   name: burnTx.name,
-                  error: txError instanceof Error ? txError.message : 'Unknown error',
+                  error: (txError as Error)?.message || 'Unknown error',
                   success: false
                 });
               }
@@ -1162,7 +1162,7 @@ export default function SolRefund() {
                 try {
                   // Fetch asset info first (this should work)
                   console.log('📄 Fetching asset data...');
-                  const asset = await fetchAsset(umi, assetPublicKey);
+                  const asset = await fetchAsset(umi!, assetPublicKey);
                   console.log('✅ Asset fetched successfully:', asset.name);
 
                   // Try collection-aware burn
@@ -1172,23 +1172,23 @@ export default function SolRefund() {
 
                   if (collectionId) {
                     console.log('🏛️ Fetching collection:', collectionId);
-                    collection = await fetchCollection(umi, collectionId as any);
+                    collection = await fetchCollection(umi!, collectionId as any);
                     console.log('✅ Collection fetched');
                   }
 
                   // Attempt burn with minimal setup
                   console.log('🔥 Executing burn transaction...');
-                  const result = await burn(umi, {
+                  const result = await burn(umi!, {
                     asset: asset,
                     collection: collection,
-                    authority: umi.identity,
-                    payer: umi.identity,
-                  }).sendAndConfirm(umi);
+                    authority: umi!.identity,
+                    payer: umi!.identity,
+                  }).sendAndConfirm(umi!);
 
                   console.log('🎉 Burn succeeded with alternative approach!');
 
                   // Properly encode signature for Solana RPC
-                  txSignature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature as Uint8Array);
+                  txSignature = result.signature as unknown as string;
                   console.log('✅ Transaction confirmed:', txSignature);
 
                 } catch (burnError) {
@@ -1327,16 +1327,17 @@ export default function SolRefund() {
       return results;
     },
     onSuccess: (results) => {
-      const totalBurned = results.reduce((sum, r) => sum + r.count, 0);
-      const totalSolRecovered = results.reduce((sum, r) => sum + r.solRecovered, 0);
-      const totalNetAmount = results.reduce((sum, r) => sum + r.netAmount, 0);
+      if (!results) return;
+      const totalBurned = results.reduce((sum, r) => sum + (r.count || 0), 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
 
       const hasRentRecovery = totalSolRecovered > 0;
 
       // Generate Solscan links for each transaction
-      const transactionLinks = results.map(result => 
+      const transactionLinks = results?.map(result => 
         `${result.type.toUpperCase()}: https://solscan.io/tx/${result.signature}`
-      ).join('\n');
+      ).join('\n') || '';
 
       toast({
         title: hasRentRecovery ? "NFTs Burned Successfully!" : "Burn Requests Recorded",
