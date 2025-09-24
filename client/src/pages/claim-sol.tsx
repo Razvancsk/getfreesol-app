@@ -1618,8 +1618,6 @@ export default function SolRefund() {
                     <ul className="space-y-1 text-purple-300 font-mono">
                       <li>📄 ./single burn.ts</li>
                       <li>📄 ./colection burn.ts</li>
-                      <li>📄 ./burn assest.json</li>
-                      <li>📄 ./burn nft</li>
                     </ul>
                     <p className="mt-3 text-purple-300">
                       Simply edit the asset ID in any file and execute it directly using tsx or node to burn your NFTs with the official Metaplex Core SDK.
