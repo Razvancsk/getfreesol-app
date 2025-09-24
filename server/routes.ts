@@ -1439,7 +1439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // COMPREHENSIVE CORE NFT BURNING - 3-step process (burn + close ATA + close mint)
+  // SIMPLE CORE NFT BURNING using only the official SDK approach
   app.post('/api/nfts/burn/core', async (req, res) => {
     try {
       const { walletAddress, mintAddress } = req.body;
@@ -1451,79 +1451,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`🔥 Starting comprehensive Core NFT burning for: ${mintAddress}`);
-      console.log(`📋 Process: 1) Burn NFT 2) Close ATA 3) Close Mint (recovers ALL rent)`);
-
-      // Initialize Solana connection
-      const { Connection, PublicKey } = await import('@solana/web3.js');
+      console.log(`🔥 Burning Core NFT using ONLY official SDK: ${mintAddress}`);
+      
+      // Initialize UMI with bundle defaults (as user instructed)
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+      const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
+      const { publicKey } = await import('@metaplex-foundation/umi');
       
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcUrl, 'confirmed');
       
-      const walletPubkey = new PublicKey(walletAddress);
-      const mintPubkey = new PublicKey(mintAddress);
-
-      console.log('✅ Step 1: Preparing Core NFT burn using official Metaplex Core SDK');
+      const umi = createUmi(rpcUrl);
       
-      // Initialize UMI for Core NFT validation using bundle defaults
-      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { mplCore, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
-      const { publicKey: umiPublicKey } = await import('@metaplex-foundation/umi');
-      const { web3JsRpc } = await import('@metaplex-foundation/umi-rpc-web3js');
-      
-      const umi = createUmi(rpcUrl)
-        .use(web3JsRpc(rpcUrl))
-        .use(mplCore());
-      
-      // Fetch the Core asset to validate
-      const assetId = umiPublicKey(mintAddress);
+      // Follow the EXACT approach the user showed me
+      const assetId = publicKey(mintAddress);
       const asset = await fetchAsset(umi, assetId);
-      console.log(`✅ Validated Core asset: ${asset.publicKey}`);
-      
-      // Check for collection
+
       const collectionId = collectionAddress(asset);
+      let collection = undefined;
+
       if (collectionId) {
         try {
-          const collection = await fetchCollection(umi, collectionId);
-          console.log(`✅ Validated collection: ${collection.publicKey}`);
-        } catch (collectionError: any) {
-          console.log(`⚠️ Could not fetch collection, proceeding without: ${collectionError.message || 'Unknown error'}`);
+          // Fixed the bug in user's example - use collectionId not collection
+          collection = await fetchCollection(umi, collectionId);
+          console.log(`✅ Found collection: ${collection.publicKey}`);
+        } catch (error) {
+          console.log(`⚠️ Collection fetch failed, proceeding without collection`);
         }
       }
 
-      // Calculate estimated rent recovery
-      const coreNftRent = 0.0035; // ~3.5 mSOL for Core NFT data
-      const ataRent = 0.00203928; // ~2.04 mSOL for ATA account  
-      const mintRent = 0.00144; // ~1.44 mSOL for mint account
-      const totalRecovered = coreNftRent + ataRent + mintRent;
+      // Build the burn transaction exactly as user showed
+      const burnTransaction = burn(umi, {
+        asset: asset,
+        collection: collection,
+      });
 
-      console.log(`💰 Estimated total rent recovery: ${totalRecovered.toFixed(6)} SOL`);
+      // For server-side, we build the transaction but let client sign
+      const tx = await burnTransaction.buildAndSign(umi);
+      const serialized = umi.transactions.serialize(tx);
+      const base64Tx = Buffer.from(serialized).toString('base64');
 
       res.json({
         success: true,
-        message: 'Core NFT validated and ready for comprehensive burning',
-        signature: 'client-side-signing-required', // Placeholder - actual signing happens on client
-        steps: [
-          '1. Burn Core NFT (removes NFT data/metadata)',
-          '2. Close ATA (refunds token account rent)', 
-          '3. Close Mint Account (refunds mint rent once supply = 0)'
-        ],
+        message: 'Core NFT burn transaction built using official SDK',
+        transaction: base64Tx,
         mintAddress,
         assetId: asset.publicKey,
-        totalRecovered,
-        breakdown: {
-          coreNftRent,
-          ataRent, 
-          mintRent
-        }
+        estimatedRent: 0.0035 // Simple estimate for Core NFT
       });
 
     } catch (error: any) {
-      console.error('❌ Error in comprehensive Core NFT burning:', error);
+      console.error('❌ Error burning Core NFT with official SDK:', error);
       res.status(500).json({ 
         success: false, 
-        error: 'Failed to prepare Core NFT burning: ' + (error.message || 'Unknown error') 
+        error: 'Failed to burn Core NFT: ' + (error.message || 'Unknown error') 
       });
     }
   });
