@@ -1348,6 +1348,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // NFT Burning endpoints - Server-side transaction creation for mainnet
+  app.post('/api/nft/burn-single', async (req, res) => {
+    try {
+      const { assetId, walletPublicKey } = req.body;
+      
+      if (!assetId || !walletPublicKey) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Asset ID and wallet public key are required' 
+        });
+      }
+
+      console.log('Creating single NFT burn transaction for asset:', assetId);
+
+      // Import UMI on server side where it works properly
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+      const { publicKey } = await import('@metaplex-foundation/umi');
+      const { burn, fetchAsset } = await import('@metaplex-foundation/mpl-core');
+      const { keypairIdentity, generateSigner } = await import('@metaplex-foundation/umi');
+
+      // Use mainnet RPC
+      const umi = createUmi('https://api.mainnet-beta.solana.com');
+      
+      // Create a temporary signer just for transaction building (not signing)
+      const tempSigner = generateSigner(umi);
+      umi.use(keypairIdentity(tempSigner));
+      
+      const assetPublicKey = publicKey(assetId);
+      const asset = await fetchAsset(umi, assetPublicKey);
+      
+      // Create burn transaction
+      const transaction = burn(umi, {
+        asset: asset,
+        authority: publicKey(walletPublicKey),
+      });
+
+      // Build transaction but don't sign it
+      const builtTransaction = await transaction.build(umi);
+      
+      res.json({
+        success: true,
+        transaction: Buffer.from(builtTransaction.serializedMessage).toString('base64'),
+        message: 'Single NFT burn transaction ready for mainnet signing'
+      });
+
+    } catch (error: any) {
+      console.error('Single NFT burn error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to create burn transaction'
+      });
+    }
+  });
+
+  app.post('/api/nft/burn-collection', async (req, res) => {
+    try {
+      const { assetId, walletPublicKey } = req.body;
+      
+      if (!assetId || !walletPublicKey) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Asset ID and wallet public key are required' 
+        });
+      }
+
+      console.log('Creating collection NFT burn transaction for asset:', assetId);
+
+      // Import UMI on server side where it works properly  
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+      const { publicKey } = await import('@metaplex-foundation/umi');
+      const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
+      const { keypairIdentity, generateSigner } = await import('@metaplex-foundation/umi');
+
+      // Use mainnet RPC
+      const umi = createUmi('https://api.mainnet-beta.solana.com');
+      
+      // Create a temporary signer just for transaction building (not signing)
+      const tempSigner = generateSigner(umi);
+      umi.use(keypairIdentity(tempSigner));
+      
+      const assetPublicKey = publicKey(assetId);
+      const asset = await fetchAsset(umi, assetPublicKey);
+      
+      const collectionId = collectionAddress(asset);
+      let collection = undefined;
+      
+      if (collectionId) {
+        collection = await fetchCollection(umi, collectionId);
+      }
+      
+      // Create burn transaction with collection
+      const transaction = burn(umi, {
+        asset: asset,
+        collection: collection,
+        authority: publicKey(walletPublicKey),
+      });
+
+      // Build transaction but don't sign it
+      const builtTransaction = await transaction.build(umi);
+      
+      res.json({
+        success: true,
+        transaction: Buffer.from(builtTransaction.serializedMessage).toString('base64'),
+        message: 'Collection NFT burn transaction ready for mainnet signing'
+      });
+
+    } catch (error: any) {
+      console.error('Collection NFT burn error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to create collection burn transaction'
+      });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

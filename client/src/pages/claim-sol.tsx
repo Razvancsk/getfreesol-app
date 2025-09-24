@@ -19,11 +19,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Connection, VersionedTransaction } from '@solana/web3.js';
+import { Connection, VersionedTransaction, Transaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import logoImage from '@assets/image_1757882056840.png';
-import { burnSingleAsset, burnAssetWithCollection } from '@/lib/nftBurn';
 
 interface EmptyTokenAccount {
   id: number;
@@ -1584,20 +1583,35 @@ export default function SolRefund() {
                           description: "Preparing transaction for single asset burn",
                         });
 
-                        // Initialize UMI with dynamic imports
-                        const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-                        const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+                        // Call server endpoint to create the burn transaction
+                        const response = await fetch('/api/nft/burn-single', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            assetId: nftAssetId.trim(),
+                            walletPublicKey: publicKey.toString()
+                          })
+                        });
 
-                        const rpcEndpoint = 'https://api.mainnet-beta.solana.com';
-                        const umi = createUmi(rpcEndpoint)
-                          .use(walletAdapterIdentity({
-                            publicKey,
-                            signTransaction,
-                            signAllTransactions: signAllTransactions!,
-                          }));
+                        const data = await response.json();
+                        
+                        if (!data.success) {
+                          throw new Error(data.message);
+                        }
 
-                        // Use the burn utility
-                        const result = await burnSingleAsset(umi, nftAssetId.trim());
+                        // Convert base64 transaction back to bytes and sign with wallet
+                        const transactionBuffer = Buffer.from(data.transaction, 'base64');
+                        const transaction = Transaction.from(transactionBuffer);
+                        
+                        // Sign with wallet
+                        const signedTransaction = await signTransaction(transaction);
+                        
+                        // Send to blockchain
+                        const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+                        
+                        const result = { success: true, signature };
 
                         toast({
                           title: "NFT Burned Successfully!",
@@ -1649,20 +1663,35 @@ export default function SolRefund() {
                           description: "Preparing transaction with collection handling",
                         });
 
-                        // Initialize UMI with dynamic imports
-                        const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-                        const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+                        // Call server endpoint to create the collection burn transaction
+                        const response = await fetch('/api/nft/burn-collection', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            assetId: nftAssetId.trim(),
+                            walletPublicKey: publicKey.toString()
+                          })
+                        });
 
-                        const rpcEndpoint = 'https://api.mainnet-beta.solana.com';
-                        const umi = createUmi(rpcEndpoint)
-                          .use(walletAdapterIdentity({
-                            publicKey,
-                            signTransaction,
-                            signAllTransactions: signAllTransactions!,
-                          }));
+                        const data = await response.json();
+                        
+                        if (!data.success) {
+                          throw new Error(data.message);
+                        }
 
-                        // Use the collection burn utility
-                        const result = await burnAssetWithCollection(umi, nftAssetId.trim());
+                        // Convert base64 transaction back to bytes and sign with wallet
+                        const transactionBuffer = Buffer.from(data.transaction, 'base64');
+                        const transaction = Transaction.from(transactionBuffer);
+                        
+                        // Sign with wallet
+                        const signedTransaction = await signTransaction(transaction);
+                        
+                        // Send to blockchain
+                        const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+                        
+                        const result = { success: true, signature };
 
                         toast({
                           title: "NFT Burned Successfully!",
