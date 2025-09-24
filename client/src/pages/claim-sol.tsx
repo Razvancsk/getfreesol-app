@@ -21,15 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import { createUmi } from '@metaplex-foundation/umi';
-// Official Metaplex Core imports
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
-import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
-import { signerIdentity, createSignerFromKeypair } from '@metaplex-foundation/umi';
-import bs58 from 'bs58';
 import logoImage from '@assets/image_1757882056840.png';
 
 interface EmptyTokenAccount {
