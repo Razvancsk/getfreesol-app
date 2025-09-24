@@ -1,11 +1,4 @@
-import { publicKey } from '@metaplex-foundation/umi';
-import {
-  burn,
-  fetchAsset,
-  collectionAddress,
-  fetchCollection,
-} from '@metaplex-foundation/mpl-core';
-import type { Umi, PublicKey } from '@metaplex-foundation/umi';
+import type { Umi } from '@metaplex-foundation/umi';
 
 /**
  * Single NFT Burn - Basic burn example
@@ -14,6 +7,10 @@ import type { Umi, PublicKey } from '@metaplex-foundation/umi';
 export async function burnSingleAsset(umi: Umi, assetId: string) {
   try {
     console.log('Starting single asset burn for:', assetId);
+    
+    // Dynamic imports to avoid browser compatibility issues
+    const { publicKey } = await import('@metaplex-foundation/umi');
+    const { burn, fetchAsset } = await import('@metaplex-foundation/mpl-core');
     
     const assetPublicKey = publicKey(assetId);
     const asset = await fetchAsset(umi, assetPublicKey);
@@ -42,6 +39,10 @@ export async function burnSingleAsset(umi: Umi, assetId: string) {
 export async function burnAssetWithCollection(umi: Umi, assetId: string) {
   try {
     console.log('Starting collection asset burn for:', assetId);
+    
+    // Dynamic imports to avoid browser compatibility issues
+    const { publicKey } = await import('@metaplex-foundation/umi');
+    const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
     
     const assetPublicKey = publicKey(assetId);
     const asset = await fetchAsset(umi, assetPublicKey);
