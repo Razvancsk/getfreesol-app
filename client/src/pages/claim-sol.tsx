@@ -23,6 +23,9 @@ import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import logoImage from '@assets/image_1757882056840.png';
+import { burnSingleAsset, burnAssetWithCollection } from '@/lib/nftBurn';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 
 interface EmptyTokenAccount {
   id: number;
@@ -67,9 +70,10 @@ export default function SolRefund() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
-  const [burnSubTab, setBurnSubTab] = useState<'tokens'>('tokens');
+  const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
+  const [nftAssetId, setNftAssetId] = useState<string>('');
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
 
@@ -665,6 +669,73 @@ export default function SolRefund() {
       toast({
         title: "Error",
         description: "Failed to burn tokens. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // NFT Burning Mutations using your custom burn methods
+  const singleBurnMutation = useMutation({
+    mutationFn: async (assetId: string) => {
+      if (!isConnected || !publicKey || !signTransaction) {
+        throw new Error('Wallet not connected');
+      }
+
+      const umi = createUmi('https://api.mainnet-beta.solana.com')
+        .use(walletAdapterIdentity({
+          publicKey,
+          signTransaction,
+          signAllTransactions: signAllTransactions!,
+        }));
+
+      return await burnSingleAsset(umi, assetId);
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Single NFT Burn Successful!",
+        description: `Successfully burned NFT using single burn method. Transaction: ${result.signature}`,
+        className: "bg-green-600 text-white border-green-600",
+      });
+      setNftAssetId('');
+    },
+    onError: (error: any) => {
+      console.error('Single burn failed:', error);
+      toast({
+        title: "Error",
+        description: `Single burn failed: ${error?.message || error}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const collectionBurnMutation = useMutation({
+    mutationFn: async (assetId: string) => {
+      if (!isConnected || !publicKey || !signTransaction) {
+        throw new Error('Wallet not connected');
+      }
+
+      const umi = createUmi('https://api.mainnet-beta.solana.com')
+        .use(walletAdapterIdentity({
+          publicKey,
+          signTransaction,
+          signAllTransactions: signAllTransactions!,
+        }));
+
+      return await burnAssetWithCollection(umi, assetId);
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Collection NFT Burn Successful!",
+        description: `Successfully burned NFT using collection burn method. Transaction: ${result.signature}`,
+        className: "bg-green-600 text-white border-green-600",
+      });
+      setNftAssetId('');
+    },
+    onError: (error: any) => {
+      console.error('Collection burn failed:', error);
+      toast({
+        title: "Error", 
+        description: `Collection burn failed: ${error?.message || error}`,
         variant: "destructive",
       });
     },
@@ -1443,21 +1514,98 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* NFT Burning Interface - Removed (User prefers simple file-based approach) */}
+          {/* NFT Burning Interface - Simplified using user's 2 burn methods */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-              <div className="space-y-4">
-                <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">NFT Burning Simplified</h3>
-                <p className="text-purple-200 mb-4">
-                  NFT burning functionality has been simplified to use direct file commands instead of the web interface.
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white">Core NFT Burning</h3>
+                <div className="text-sm text-purple-200">
+                  Using Metaplex Core SDK
+                </div>
+              </div>
+
+              {/* Core NFT Info Banner */}
+              <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-200 text-sm">
+                  <span className="font-medium">✨ Simplified NFT Burning</span>
+                  <span className="block text-blue-300/80 mt-1">Using your custom burn methods: Single Asset Burn and Collection Burn with proper collection handling.</span>
                 </p>
-                <div className="bg-slate-800/50 rounded-lg p-4 text-left">
-                  <p className="text-white text-sm font-medium mb-2">Available Commands:</p>
-                  <ul className="space-y-1 text-purple-300 text-sm font-mono">
-                    <li>• burn assest.json - Basic burn example</li>
-                    <li>• burn nft - Complete burn with collection handling</li>
-                  </ul>
+              </div>
+
+              {/* Manual Burn Input */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-purple-200 mb-2">
+                    NFT Asset ID (Public Key)
+                  </label>
+                  <input
+                    type="text"
+                    value={nftAssetId}
+                    onChange={(e) => setNftAssetId(e.target.value)}
+                    placeholder="Enter NFT Asset ID to burn..."
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 focus:outline-none"
+                    data-testid="input-nft-asset-id"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Single Burn Button */}
+                  <button
+                    onClick={() => {
+                      if (!nftAssetId.trim()) {
+                        toast({
+                          title: "Error",
+                          description: "Please enter an NFT Asset ID",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      singleBurnMutation.mutate(nftAssetId.trim());
+                    }}
+                    disabled={singleBurnMutation.isPending || !isConnected || !nftAssetId.trim()}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="button-single-burn"
+                  >
+                    <Flame className={`h-5 w-5 ${singleBurnMutation.isPending ? 'animate-spin' : ''}`} />
+                    {singleBurnMutation.isPending ? 'Burning...' : 'Single Burn'}
+                  </button>
+
+                  {/* Collection Burn Button */}
+                  <button
+                    onClick={() => {
+                      if (!nftAssetId.trim()) {
+                        toast({
+                          title: "Error",
+                          description: "Please enter an NFT Asset ID",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      collectionBurnMutation.mutate(nftAssetId.trim());
+                    }}
+                    disabled={collectionBurnMutation.isPending || !isConnected || !nftAssetId.trim()}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="button-collection-burn"
+                  >
+                    <Flame className={`h-5 w-5 ${collectionBurnMutation.isPending ? 'animate-spin' : ''}`} />
+                    {collectionBurnMutation.isPending ? 'Burning...' : 'Collection Burn'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4 mt-6">
+                <div className="flex items-start space-x-3">
+                  <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-purple-200">
+                    <p className="font-medium mb-2">Your Custom NFT Burning Methods:</p>
+                    <ul className="space-y-1 text-purple-300">
+                      <li>• <span className="font-medium">Single Burn:</span> Basic burn using your single burn.ts method</li>
+                      <li>• <span className="font-medium">Collection Burn:</span> Complete burn with collection handling using your colection burn.ts method</li>
+                      <li>• Enter the NFT Asset ID (public key) and choose your preferred burn method</li>
+                      <li>• Both methods use the official Metaplex Core SDK for secure burning</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
