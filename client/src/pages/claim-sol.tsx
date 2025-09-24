@@ -1540,70 +1540,105 @@ export default function SolRefund() {
                 </p>
               </div>
 
-              {/* File-Based Burn Instructions */}
+              {/* NFT Burning Interface */}
               <div className="space-y-6">
-                <div className="bg-slate-800/50 rounded-lg p-6 border border-purple-500/20">
-                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Code className="h-5 w-5" />
-                    Use Your Custom Burn Files
-                  </h4>
-                  
-                  <div className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {/* Single Burn File */}
-                      <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
-                        <h5 className="text-white font-medium mb-2 flex items-center gap-2">
-                          <Flame className="h-4 w-4 text-red-400" />
-                          single burn.ts
-                        </h5>
-                        <p className="text-purple-200 text-sm mb-3">Basic burn without collection handling</p>
-                        <div className="bg-black/30 rounded p-3 font-mono text-xs text-green-400 overflow-x-auto">
-                          <div className="text-purple-400">// Update the assetId</div>
-                          <div>const assetId = publicKey("YOUR_NFT_ASSET_ID");</div>
-                          <div className="text-purple-400">// Then run the file</div>
-                          <div>tsx single burn.ts</div>
-                        </div>
-                      </div>
+                <div>
+                  <label className="block text-sm font-medium text-purple-200 mb-2">
+                    NFT Asset ID
+                  </label>
+                  <input
+                    type="text"
+                    value={nftAssetId}
+                    onChange={(e) => setNftAssetId(e.target.value)}
+                    placeholder="Enter NFT Asset ID (public key) to burn..."
+                    className="w-full px-4 py-3 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 focus:outline-none transition-colors"
+                    data-testid="input-nft-asset-id"
+                  />
+                </div>
 
-                      {/* Collection Burn File */}
-                      <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-600">
-                        <h5 className="text-white font-medium mb-2 flex items-center gap-2">
-                          <Flame className="h-4 w-4 text-orange-400" />
-                          colection burn.ts
-                        </h5>
-                        <p className="text-purple-200 text-sm mb-3">Complete burn with collection handling</p>
-                        <div className="bg-black/30 rounded p-3 font-mono text-xs text-green-400 overflow-x-auto">
-                          <div className="text-purple-400">// Update the assetId</div>
-                          <div>const assetId = publicKey("YOUR_NFT_ASSET_ID");</div>
-                          <div className="text-purple-400">// Then run the file</div>
-                          <div>tsx colection burn.ts</div>
-                        </div>
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Single Burn Button */}
+                  <button
+                    onClick={async () => {
+                      if (!nftAssetId.trim()) {
+                        toast({
+                          title: "Error",
+                          description: "Please enter an NFT Asset ID",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      if (!isConnected) {
+                        toast({
+                          title: "Wallet not connected",
+                          description: "Please connect your wallet first",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
 
-                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <Info className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-blue-200">
-                          <p className="font-medium mb-2">How to Use:</p>
-                          <ol className="space-y-1 text-blue-300 list-decimal list-inside">
-                            <li>Open your terminal in the project directory</li>
-                            <li>Edit the assetId in the file you want to use</li>
-                            <li>Run the TypeScript file directly with tsx</li>
-                            <li>The burn transaction will be processed using the official Metaplex Core SDK</li>
-                          </ol>
-                        </div>
-                      </div>
-                    </div>
+                      toast({
+                        title: "NFT Burn",
+                        description: "Due to browser compatibility issues, please use the terminal method with your burn files. See instructions below.",
+                        variant: "default",
+                      });
+                    }}
+                    disabled={!isConnected || !nftAssetId.trim()}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="button-single-burn"
+                  >
+                    <Flame className="h-5 w-5" />
+                    Single Burn
+                  </button>
 
-                    <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-amber-200">
-                          <p className="font-medium mb-1">Note:</p>
-                          <p>These files run server-side to avoid browser compatibility issues with the UMI bundle. This ensures reliable NFT burning using your preferred approach.</p>
-                        </div>
-                      </div>
+                  {/* Collection Burn Button */}
+                  <button
+                    onClick={async () => {
+                      if (!nftAssetId.trim()) {
+                        toast({
+                          title: "Error",
+                          description: "Please enter an NFT Asset ID",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      if (!isConnected) {
+                        toast({
+                          title: "Wallet not connected",
+                          description: "Please connect your wallet first",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      toast({
+                        title: "NFT Burn",
+                        description: "Due to browser compatibility issues, please use the terminal method with your burn files. See instructions below.",
+                        variant: "default",
+                      });
+                    }}
+                    disabled={!isConnected || !nftAssetId.trim()}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="button-collection-burn"
+                  >
+                    <Flame className="h-5 w-5" />
+                    Collection Burn
+                  </button>
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-blue-200">
+                      <p className="font-medium mb-2">How to Use Your Burn Files:</p>
+                      <ol className="space-y-1 text-blue-300 list-decimal list-inside">
+                        <li>Copy the Asset ID from the input field above</li>
+                        <li>Edit the assetId in either <code className="bg-slate-700 px-1 rounded">single burn.ts</code> or <code className="bg-slate-700 px-1 rounded">colection burn.ts</code></li>
+                        <li>Run in terminal: <code className="bg-slate-700 px-1 rounded">tsx single burn.ts</code> or <code className="bg-slate-700 px-1 rounded">tsx colection burn.ts</code></li>
+                      </ol>
                     </div>
                   </div>
                 </div>
