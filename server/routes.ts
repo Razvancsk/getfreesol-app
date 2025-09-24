@@ -1265,278 +1265,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Scan wallet for NFTs
-  app.get("/api/nfts/scan/:address", async (req, res) => {
+
+
+  app.get("/api/transactions/history", async (req, res) => {
     try {
-      const { address } = req.params;
-      const { type } = req.query; // standard, pnft, ocp, core, cnft
+      const { wallet, limit = 10, offset = 0 } = req.query;
       
-      // Validate address
-      try {
-        new PublicKey(address);
-      } catch (error) {
-        return res.status(400).json({ error: "Invalid wallet address" });
-      }
-
-      // Get RPC connection
-      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: "Helius API key is required for NFT scanning" });
-      }
-
-      console.log(`Using RPC endpoint: https://mainnet.helius-rpc.com/?api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`);
-
-      const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-
-      // Get all NFT assets owned by this wallet
-      const heliusResponse = await fetch(heliusRpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 'nft-scan',
-          method: 'getAssetsByOwner',
-          params: {
-            ownerAddress: address,
-            page: 1,
-            limit: 1000,
-            displayOptions: {
-              showFungible: false,
-              showNativeBalance: false
-            }
-          }
-        })
-      });
-
-      if (!heliusResponse.ok) {
-        throw new Error(`Helius API error: ${heliusResponse.statusText}`);
-      }
-
-      const heliusData = await heliusResponse.json();
-      console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
-
-      let nfts: any[] = [];
-      const items = heliusData.result?.items || [];
-
-      for (const asset of items) {
-        const { interface: assetInterface, compression, burnt } = asset;
-        const assetName = asset.content?.metadata?.name || 'Unnamed';
-        
-        console.log(`🔍 Processing asset: ${assetName}`);
-        console.log(`   Interface: ${assetInterface}`);
-        console.log(`   Burnt: ${burnt}`);
-        console.log(`   Compressed: ${compression?.compressed}`);
-        
-        // Only process Metaplex Core NFTs
-        if (assetInterface !== 'MplCoreAsset') {
-          console.log(`❌ Skipping ${assetName} - Interface: ${assetInterface} (expected: MplCoreAsset)`);
-          continue;
-        }
-        
-        // Skip burned NFTs (they still show in DAS with burnt: true)
-        if (burnt === true) {
-          console.log(`Skipping burned NFT: ${asset.content?.metadata?.name || asset.id}`);
-          continue;
-        }
-        
-        // Skip compressed NFTs (shouldn't happen with Core but check anyway)
-        if (compression?.compressed) {
-          continue;
-        }
-        
-        const nftType = 'core';
-
-        // Filter by type if specified (only 'core' supported now)
-        if (type && type !== 'core') {
-          continue;
-        }
-
-        // Filter out NFTs that should not be burned
-        const name = asset.content?.metadata?.name || '';
-        const description = asset.content?.metadata?.description || '';
-        
-        // Check for "DO NOT BURN" indicators
-        const doNotBurnPatterns = [
-          /do\s*not\s*burn/i,
-          /don\'?t\s*burn/i,
-          /no\s*burn/i,
-          /keep/i,
-          /hold/i
-        ];
-        
-        const shouldNotBurn = doNotBurnPatterns.some(pattern => 
-          pattern.test(name) || pattern.test(description)
+      let transactionHistory;
+      if (wallet) {
+        transactionHistory = await storage.getTransactionLedgerByWallet(
+          wallet as string, 
+          parseInt(limit as string), 
+          parseInt(offset as string)
         );
-        
-        if (shouldNotBurn) {
-          console.log(`❌ Skipping ${name} - Contains "do not burn" indicator`);
-          continue;
-        }
-        
-        // Filter out position/utility NFTs
-        const positionPatterns = [
-          /position/i,
-          /meteora/i,
-          /liquidity/i,
-          /lp\s*token/i,
-          /utility/i,
-          /staking/i,
-          /vault/i,
-          /receipt/i
-        ];
-        
-        const isPositionNft = positionPatterns.some(pattern => 
-          pattern.test(name) || pattern.test(description)
+      } else {
+        transactionHistory = await storage.getTransactionLedger(
+          parseInt(limit as string), 
+          parseInt(offset as string)
         );
-        
-        if (isPositionNft) {
-          console.log(`❌ Skipping ${name} - Identified as position/utility NFT`);
-          continue;
-        }
-        
-        console.log(`✅ ${name} passed all filters - Adding to burnable NFTs list`);
-
-        const nftInfo = {
-          mint: asset.id,
-          name: asset.content?.metadata?.name || 'Unknown NFT',
-          symbol: asset.content?.metadata?.symbol || '',
-          image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
-          description: asset.content?.metadata?.description || '',
-          type: 'core',
-          interface: 'MplCoreAsset',
-          tokenStandard: '',
-          compressed: false,
-          creators: asset.creators || [],
-          collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null,
-          attributes: asset.content?.metadata?.attributes || []
-        };
-
-        nfts.push(nftInfo);
       }
 
-
-      // All NFTs are Core type now
-      const counts = {
-        core: nfts.length
-      };
-
-      // Prevent caching to ensure fresh data
-      res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      });
+      const formattedHistory = transactionHistory.map(tx => ({
+        id: tx.id,
+        signature: tx.signature,
+        walletAddress: tx.walletAddress,
+        type: tx.transactionType,
+        solRecovered: parseFloat(tx.solRecovered),
+        netAmount: parseFloat(tx.netAmount),
+        feeAmount: parseFloat(tx.feeAmount),
+        itemsProcessed: tx.itemsProcessed,
+        details: tx.itemDetails ? JSON.parse(tx.itemDetails) : null,
+        processedAt: tx.processedAt.toISOString()
+      }));
 
       res.json({
         success: true,
-        nfts,
-        counts,
-        total: nfts.length
+        transactions: formattedHistory
       });
     } catch (error) {
-      console.error('Error scanning NFTs:', error);
-      res.status(500).json({ error: "Failed to scan NFTs" });
+      console.error("Failed to get transaction history:", error);
+      res.status(500).json({ error: "Failed to get transaction history" });
     }
   });
 
-  // SIMPLE CORE NFT BURNING using only the official SDK approach
-  app.post('/api/nfts/burn/core', async (req, res) => {
-    try {
-      const { walletAddress, mintAddress } = req.body;
-      
-      if (!walletAddress || !mintAddress) {
-        return res.status(400).json({
-          success: false,
-          error: 'walletAddress and mintAddress are required'
-        });
-      }
-
-      console.log(`🔥 Burning Core NFT using YOUR EXACT SDK: ${mintAddress}`);
-      
-      // Use your exact imports and approach
-      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { publicKey, generateSigner, signerIdentity } = await import('@metaplex-foundation/umi');
-      const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
-      
-      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
-      
-      const umi = createUmi(rpcUrl);
-      
-      // Add dummy signer using the signerIdentity method (as error message suggests)
-      const dummySigner = generateSigner(umi);
-      umi.use(signerIdentity(dummySigner));
-      
-      // EXACTLY your code approach:
-      const assetId = publicKey(mintAddress);
-      const asset = await fetchAsset(umi, assetId);
-
-      const collectionId = collectionAddress(asset);
-      let collection = undefined;
-
-      if (collectionId) {
-        collection = await fetchCollection(umi, collectionId); // Your exact code
-      }
-
-      // Build your exact burn transaction (but don't sign/send - client will do that)
-      const burnTransaction = burn(umi, {
-        asset: asset,
-        collection: collection,
-      });
-
-      // Build the transaction for client-side signing
-      const tx = await burnTransaction.buildAndSign(umi);
-      const serialized = umi.transactions.serialize(tx);
-      const base64Tx = Buffer.from(serialized).toString('base64');
-
-      const estimatedRent = 0.007; // Your Core NFT rent estimate
-      const feePercentage = 0.15; // 15% fee
-      const feeAmount = estimatedRent * feePercentage;
-      const netAmount = estimatedRent - feeAmount;
-
-      res.json({
-        success: true,
-        message: 'Core NFT burn transaction built using your exact SDK - ready for wallet signing!',
-        transaction: base64Tx,
-        mintAddress,
-        assetId: asset.publicKey,
-        nftsProcessed: 1, // Frontend expects this
-        solRecovered: estimatedRent.toFixed(6), // Frontend expects this  
-        netAmount: netAmount.toFixed(6), // Frontend expects this
-        feeAmount: feeAmount.toFixed(6) // Frontend expects this
-      });
-
-    } catch (error: any) {
-      console.error('❌ Error burning Core NFT with official SDK:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to burn Core NFT: ' + (error.message || 'Unknown error') 
-      });
-    }
-  });
-
-  // OFFICIAL METAPLEX CORE - Build Core NFT burn transactions
-  app.post('/api/nfts/burn/build', async (req, res) => {
-    try {
-      const { walletAddress, nftMints, nftType } = req.body;
-      
-      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftType !== 'core') {
-        return res.status(400).json({
-          success: false, 
-          error: 'Invalid request - requires walletAddress, nftMints array, and nftType="core"'
-        });
-      }
-
-      if (nftMints.length === 0 || nftMints.length > 50) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid NFT count - must be between 1 and 50 NFTs'
-        });
-      }
-
-      console.log('🔧 Building Core NFT burn transactions using OFFICIAL Metaplex Core SDK for', nftMints.length, 'NFTs');
-
-      // Initialize UMI with bundle defaults to register all required interfaces
+  app.get("/api/transactions/stats", async (req, res) => {
       const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
       const { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       const { publicKey } = await import('@metaplex-foundation/umi');
