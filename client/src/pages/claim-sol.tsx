@@ -24,8 +24,6 @@ import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import logoImage from '@assets/image_1757882056840.png';
 import { burnSingleAsset, burnAssetWithCollection } from '@/lib/nftBurn';
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 
 interface EmptyTokenAccount {
   id: number;
@@ -681,7 +679,12 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      const umi = createUmi('https://api.mainnet-beta.solana.com')
+      // Dynamically import UMI to avoid browser compatibility issues
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+      const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+
+      const rpcEndpoint = 'https://api.mainnet-beta.solana.com';
+      const umi = createUmi(rpcEndpoint)
         .use(walletAdapterIdentity({
           publicKey,
           signTransaction,
@@ -714,7 +717,12 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      const umi = createUmi('https://api.mainnet-beta.solana.com')
+      // Dynamically import UMI to avoid browser compatibility issues
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+      const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+
+      const rpcEndpoint = 'https://api.mainnet-beta.solana.com';
+      const umi = createUmi(rpcEndpoint)
         .use(walletAdapterIdentity({
           publicKey,
           signTransaction,
