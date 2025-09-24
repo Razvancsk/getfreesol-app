@@ -1455,7 +1455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use your exact imports and approach
       const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { publicKey, createSignerFromKeypair, generateSigner } = await import('@metaplex-foundation/umi');
+      const { publicKey, generateSigner, signerIdentity } = await import('@metaplex-foundation/umi');
       const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
@@ -1463,9 +1463,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const umi = createUmi(rpcUrl);
       
-      // Add dummy signer just for building transactions (client will sign with real wallet)
+      // Add dummy signer using the signerIdentity method (as error message suggests)
       const dummySigner = generateSigner(umi);
-      umi.use({ install: (umi) => { umi.identity = createSignerFromKeypair(umi, dummySigner); } });
+      umi.use(signerIdentity(dummySigner));
       
       // EXACTLY your code approach:
       const assetId = publicKey(mintAddress);
