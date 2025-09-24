@@ -669,6 +669,7 @@ export default function SolRefund() {
       });
     },
   });
+
   // Selection handlers
   const toggleTokenSelection = (mintAddress: string) => {
     const newSelection = new Set(selectedTokens);
