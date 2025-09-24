@@ -1584,6 +1584,18 @@ export default function SolRefund() {
                           description: "Preparing transaction for single asset burn",
                         });
 
+                        // Initialize UMI with dynamic imports
+                        const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+                        const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+
+                        const rpcEndpoint = 'https://api.mainnet-beta.solana.com';
+                        const umi = createUmi(rpcEndpoint)
+                          .use(walletAdapterIdentity({
+                            publicKey,
+                            signTransaction,
+                            signAllTransactions: signAllTransactions!,
+                          }));
+
                         // Use the burn utility
                         const result = await burnSingleAsset(umi, nftAssetId.trim());
 
@@ -1636,6 +1648,18 @@ export default function SolRefund() {
                           title: "Starting Collection NFT Burn...",
                           description: "Preparing transaction with collection handling",
                         });
+
+                        // Initialize UMI with dynamic imports
+                        const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+                        const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+
+                        const rpcEndpoint = 'https://api.mainnet-beta.solana.com';
+                        const umi = createUmi(rpcEndpoint)
+                          .use(walletAdapterIdentity({
+                            publicKey,
+                            signTransaction,
+                            signAllTransactions: signAllTransactions!,
+                          }));
 
                         // Use the collection burn utility
                         const result = await burnAssetWithCollection(umi, nftAssetId.trim());
