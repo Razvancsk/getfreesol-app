@@ -1451,19 +1451,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`🔥 Burning Core NFT using ONLY official SDK: ${mintAddress}`);
+      console.log(`🔥 Burning Core NFT using YOUR EXACT SDK: ${mintAddress}`);
       
-      // Initialize UMI with bundle defaults (as user instructed)
+      // Use your exact imports and approach
       const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       const { publicKey } = await import('@metaplex-foundation/umi');
+      const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
       
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
       
       const umi = createUmi(rpcUrl);
       
-      // Follow the EXACT approach the user showed me
+      // EXACTLY your code approach:
       const assetId = publicKey(mintAddress);
       const asset = await fetchAsset(umi, assetId);
 
@@ -1471,30 +1471,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let collection = undefined;
 
       if (collectionId) {
-        try {
-          // Fixed the bug in user's example - use collectionId not collection
-          collection = await fetchCollection(umi, collectionId);
-          console.log(`✅ Found collection: ${collection.publicKey}`);
-        } catch (error) {
-          console.log(`⚠️ Collection fetch failed, proceeding without collection`);
-        }
+        collection = await fetchCollection(umi, collectionId); // Your exact code
       }
 
-      // Build the burn transaction exactly as user showed
-      const burnTransaction = burn(umi, {
+      // Your exact burn call with sendAndConfirm
+      const result = await burn(umi, {
         asset: asset,
         collection: collection,
-      });
-
-      // For server-side, we build the transaction but let client sign
-      const tx = await burnTransaction.buildAndSign(umi);
-      const serialized = umi.transactions.serialize(tx);
-      const base64Tx = Buffer.from(serialized).toString('base64');
+      }).sendAndConfirm(umi);
 
       res.json({
         success: true,
-        message: 'Core NFT burn transaction built using official SDK',
-        transaction: base64Tx,
+        message: 'Core NFT burned successfully using your exact SDK!',
+        signature: result.signature,
         mintAddress,
         assetId: asset.publicKey,
         estimatedRent: 0.0035 // Simple estimate for Core NFT
