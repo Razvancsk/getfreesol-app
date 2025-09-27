@@ -824,7 +824,12 @@ export default function SolRefund() {
                 });
 
               } catch (signError) {
-                console.error(`❌ Failed to sign/send transaction for Core NFT ${burnTx.nftId}:`, signError);
+                console.error(`❌ Failed to sign/send transaction for Core NFT ${burnTx.nftId}:`, {
+                  error: signError,
+                  message: signError instanceof Error ? signError.message : String(signError),
+                  stack: signError instanceof Error ? signError.stack : undefined,
+                  details: signError
+                });
                 
                 // Record the failed burn attempt
                 try {
@@ -863,7 +868,12 @@ export default function SolRefund() {
             return;
 
           } catch (coreError: any) {
-            console.error('❌ Core NFT burning failed:', coreError);
+            console.error('❌ Core NFT burning failed:', {
+              error: coreError,
+              message: coreError instanceof Error ? coreError.message : String(coreError),
+              stack: coreError instanceof Error ? coreError.stack : undefined,
+              details: coreError
+            });
             
             toast({
               title: "Core NFT Burning Failed",

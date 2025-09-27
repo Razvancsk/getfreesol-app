@@ -11,6 +11,7 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
 import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
+import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 import { z } from 'zod';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2015,10 +2016,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
           
           // Build the transaction without signing
-          const builtTransaction = await burnTx.buildWithLatestBlockhash(umi);
+          const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
           
-          // Convert to base64 for client signing 
-          const base64Transaction = Buffer.from(builtTransaction.serializedMessage).toString('base64');
+          // Convert UMI transaction to Web3.js format, then serialize for client signing
+          const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
+          const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
           
           burnTransactions.push({
             nftId,
