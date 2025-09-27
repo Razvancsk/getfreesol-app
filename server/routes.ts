@@ -834,19 +834,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tokens = burnableTokens.map((asset: any) => {
               const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
               const isEmpty = balance === 0;
-              let logo = asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null;
               
-              // Fallback to Jupiter Token List if no logo from Helius
-              if (!logo && jupiterTokenMap[asset.id]) {
+              // Use Helius CDN URLs first (optimized), then fallbacks
+              let logo = null;
+              
+              // Priority 1: Helius CDN URL (optimized)
+              if (asset.content?.files?.[0]?.cdn_uri) {
+                logo = asset.content.files[0].cdn_uri;
+              }
+              // Priority 2: Original URI from files
+              else if (asset.content?.files?.[0]?.uri) {
+                logo = asset.content.files[0].uri;
+              }
+              // Priority 3: Metadata image
+              else if (asset.content?.metadata?.image) {
+                logo = asset.content.metadata.image;
+              }
+              // Priority 4: Jupiter Token List fallback
+              else if (jupiterTokenMap[asset.id]) {
                 logo = jupiterTokenMap[asset.id];
                 console.log(`🔄 Using Jupiter logo for ${asset.content?.metadata?.symbol}: ${logo}`);
               }
               
               console.log(`🖼️  Token ${asset.content?.metadata?.symbol || 'Unknown'} logo data:`, {
-                files: asset.content?.files,
-                image: asset.content?.metadata?.image,
+                hasCdnUri: !!asset.content?.files?.[0]?.cdn_uri,
+                cdnUri: asset.content?.files?.[0]?.cdn_uri,
+                originalUri: asset.content?.files?.[0]?.uri,
+                metadataImage: asset.content?.metadata?.image,
                 jupiterLogo: jupiterTokenMap[asset.id],
-                finalLogo: logo
+                finalLogo: logo,
+                selectedPriority: asset.content?.files?.[0]?.cdn_uri ? 'CDN' : 
+                                asset.content?.files?.[0]?.uri ? 'Original' :
+                                asset.content?.metadata?.image ? 'Metadata' :
+                                jupiterTokenMap[asset.id] ? 'Jupiter' : 'None'
               });
               
               return {
