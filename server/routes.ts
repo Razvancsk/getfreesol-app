@@ -2009,16 +2009,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const burnTx = new TransactionBuilder()
             .add(
               burn(umi, {
-                asset: umiPublicKey(nftId),
+                asset: asset,
                 authority: umi.identity, // will be replaced by client signer
               })
             );
           
           // Build the transaction without signing
-          const transaction = await burnTx.buildWithLatestBlockhash(umi);
+          const builtTransaction = await burnTx.buildWithLatestBlockhash(umi);
           
-          // Convert to base64 for client signing
-          const base64Transaction = Buffer.from(transaction.serialize()).toString('base64');
+          // Convert to base64 for client signing 
+          const base64Transaction = Buffer.from(builtTransaction.serializedMessage).toString('base64');
           
           burnTransactions.push({
             nftId,
