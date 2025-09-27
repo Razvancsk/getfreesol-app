@@ -7,7 +7,11 @@ import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
-// Metaplex Core burning - currently disabled due to technical challenges
+// Metaplex Core burning - server-side UMI implementation
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { mplCore, burn, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
+import { publicKey as umiPublicKey, createNoopSigner } from '@metaplex-foundation/umi';
+import { z } from 'zod';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
@@ -1961,6 +1965,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (recordError) {
       console.error('Error recording NFT burn:', recordError);
       res.status(500).json({ error: "Failed to record NFT burn" });
+    }
+  });
+
+  // Prepare Core NFT burn transactions (server-side UMI)
+  app.post("/api/core-nfts/prepare-burn", async (req, res) => {
+    try {
+      // Validate request body
+      const prepareBurnSchema = z.object({
+        coreNftIds: z.array(z.string().min(1, "NFT ID is required")),
+        walletAddress: z.string().min(1, "Wallet address is required")
+      });
+
+      const { coreNftIds, walletAddress } = prepareBurnSchema.parse(req.body);
+
+      // Get RPC configuration
+      const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = apiKey ? 
+        `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
+        'https://api.mainnet-beta.solana.com';
+
+      console.log(`🔥 Preparing ${coreNftIds.length} Core NFT burn transactions...`);
+
+      // Initialize UMI with bundle defaults (works in Node.js)
+      const umi = createUmi(rpcUrl).use(mplCore());
+      
+      // Use a no-op signer - we'll return unsigned transactions
+      const noopSigner = createNoopSigner(umiPublicKey(walletAddress));
+      umi.use({ install: (ctx) => { ctx.identity = noopSigner; ctx.payer = noopSigner; }});
+
+      const burnTransactions = [];
+      let totalExpectedRent = 0;
+
+      for (const nftId of coreNftIds) {
+        try {
+          console.log(`🔍 Processing Core NFT: ${nftId}`);
+          
+          // Fetch asset to validate it exists and is Core
+          const asset = await fetchAssetV1(umi, umiPublicKey(nftId));
+          console.log(`✅ Core asset validated: ${asset.publicKey}`);
+
+          // Build burn transaction
+          const burnTx = burn(umi, { asset: umiPublicKey(nftId) });
+          
+          // Build the transaction without signing
+          const transaction = await burnTx.getTransaction(umi);
+          
+          // Convert to base64 for client signing
+          const base64Transaction = Buffer.from(transaction.serialize()).toString('base64');
+          
+          burnTransactions.push({
+            nftId,
+            transaction: base64Transaction,
+            expectedRent: 0.004 // Approximate rent for Core NFTs
+          });
+
+          totalExpectedRent += 0.004;
+          console.log(`✅ Core NFT burn transaction prepared: ${nftId}`);
+
+        } catch (nftError) {
+          console.error(`❌ Failed to prepare burn for Core NFT ${nftId}:`, nftError);
+          burnTransactions.push({
+            nftId,
+            error: nftError instanceof Error ? nftError.message : 'Unknown error',
+            expectedRent: 0
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        burnTransactions,
+        totalExpectedRentSol: totalExpectedRent,
+        message: `Prepared ${burnTransactions.filter(tx => tx.transaction).length} burn transactions`
+      });
+
+    } catch (error) {
+      console.error('Error preparing Core NFT burn transactions:', error);
+      res.status(500).json({ 
+        error: "Failed to prepare Core NFT burn transactions",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

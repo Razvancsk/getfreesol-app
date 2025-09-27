@@ -20,12 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import { createUmi } from '@metaplex-foundation/umi';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
-import { mplCore, burn, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
-import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
+import { VersionedTransaction } from '@solana/web3.js';
 import logoImage from '@assets/image_1757882056840.png';
 
 interface EmptyTokenAccount {
@@ -722,11 +718,11 @@ export default function SolRefund() {
         throw new Error('No valid NFTs selected');
       }
 
-      // Group NFTs by type (excluding cNFTs and Core NFTs)
+      // Group NFTs by type (only excluding cNFTs - Core NFTs are now supported)
       const nftsByType: { [key: string]: any[] } = {};
       selectedNfts.forEach((nft: any) => {
-        // Skip cNFTs and Core NFTs entirely
-        if (nft.type === 'cnft' || nft.type === 'core') {
+        // Skip cNFTs only (Core NFTs are now supported with official Metaplex integration)
+        if (nft.type === 'cnft') {
           return;
         }
         if (!nftsByType[nft.type]) {
@@ -743,83 +739,128 @@ export default function SolRefund() {
 
         const nftMints = nfts.map(nft => nft.mint);
 
-        // Handle Core NFTs with Official Metaplex Core Implementation
+        // Handle Core NFTs with Server-Side UMI Implementation  
         if (nftType === 'core') {
           try {
-            console.log('🔥 Starting Official Metaplex Core NFT burning...');
+            console.log('🔥 Starting Core NFT burning with server-side UMI...');
             
             if (!wallet.publicKey) {
               throw new Error('Wallet not connected');
             }
 
-            // Create UMI instance for Core NFT operations (browser-safe)
-            const umi = createUmi()
-              .use(web3JsRpc(rpcConnection))
-              .use(walletAdapterIdentity(wallet.wallet!))
-              .use(mplCore());
+            // Prepare Core NFT IDs (use the actual ID from the NFT objects)
+            const coreNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
+            console.log(`📦 Preparing burn transactions for ${coreNftIds.length} Core NFTs...`);
 
-            console.log('✅ UMI initialized with official Metaplex Core plugin');
+            // Call server to prepare burn transactions
+            const prepareResponse = await apiRequest('/api/core-nfts/prepare-burn', {
+              method: 'POST',
+              body: JSON.stringify({
+                coreNftIds,
+                walletAddress: wallet.publicKey.toString()
+              }),
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+
+            console.log('🔧 Server prepared burn transactions:', prepareResponse);
+
+            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
+              throw new Error('Server failed to prepare burn transactions');
+            }
 
             const successfulBurns = [];
             let totalRentRecovered = 0;
 
-            for (const mintAddress of nftMints) {
+            // Process each prepared transaction
+            for (const burnTx of prepareResponse.burnTransactions) {
+              if (burnTx.error) {
+                console.error(`❌ Server error for NFT ${burnTx.nftId}:`, burnTx.error);
+                continue;
+              }
+
+              if (!burnTx.transaction) {
+                console.error(`❌ No transaction prepared for NFT ${burnTx.nftId}`);
+                continue;
+              }
+
               try {
-                console.log(`🔥 Burning Core NFT: ${mintAddress}`);
-                
-                // Convert mint address to UMI public key
-                const assetId = umiPublicKey(mintAddress);
-                
-                // Fetch the asset to validate it exists and is a Core asset
-                console.log('📋 Fetching Core asset details...');
-                const asset = await fetchAssetV1(umi, assetId);
-                console.log('✅ Core asset fetched successfully:', asset.publicKey);
+                console.log(`🔐 Signing and sending transaction for Core NFT: ${burnTx.nftId}`);
 
-                // Build and send the burn instruction using official Metaplex Core
-                console.log('🔥 Executing official Core NFT burn...');
-                const burnResult = await burn(umi, {
-                  asset: assetId,
-                }).sendAndConfirm(umi);
+                // Deserialize the transaction from base64
+                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
+                const transaction = VersionedTransaction.deserialize(transactionBuffer);
 
-                console.log('✅ Core NFT burn transaction confirmed:', burnResult.signature);
+                // Sign the transaction with the wallet
+                const signedTransaction = await wallet.wallet!.adapter.signTransaction!(transaction);
 
-                // Calculate rent recovered (Core NFTs typically recover ~0.004 SOL)
-                const rentRecovered = 0.004; // Standard Core NFT rent
-                totalRentRecovered += rentRecovered;
+                // Send the signed transaction
+                const signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
+                  skipPreflight: false,
+                  preflightCommitment: 'confirmed'
+                });
+
+                // Wait for confirmation
+                await rpcConnection.confirmTransaction(signature, 'confirmed');
+
+                console.log('✅ Core NFT burned successfully:', signature);
+
+                totalRentRecovered += burnTx.expectedRent;
+
+                // Record the successful burn in our database
+                try {
+                  await apiRequest('/api/nfts/burn/record', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      signature,
+                      nftMint: burnTx.nftId,
+                      rentRecovered: burnTx.expectedRent,
+                      walletAddress: wallet.publicKey.toString(),
+                      nftType: 'core',
+                      success: true
+                    }),
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  console.log('✅ Core NFT burn recorded in database');
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Core NFT burn in database:', recordError);
+                }
 
                 successfulBurns.push({
-                  mint: mintAddress,
-                  signature: burnResult.signature,
-                  rentRecovered: rentRecovered
+                  mint: burnTx.nftId,
+                  signature,
+                  rentRecovered: burnTx.expectedRent
                 });
 
-                console.log(`💰 Rent recovered: ${rentRecovered} SOL`);
-
-                // Record the burn in our database
-                await apiRequest('POST', '/api/nfts/burn/record', {
-                  signature: burnResult.signature,
-                  nftMint: mintAddress,
-                  rentRecovered: rentRecovered,
-                  walletAddress: wallet.publicKey.toString(),
-                  nftType: 'core'
-                });
-
-              } catch (burnError: any) {
-                console.error(`❌ Failed to burn Core NFT ${mintAddress}:`, burnError);
+              } catch (signError) {
+                console.error(`❌ Failed to sign/send transaction for Core NFT ${burnTx.nftId}:`, signError);
                 
-                // Record failed attempt
-                await apiRequest('POST', '/api/nfts/burn/record', {
-                  nftMint: mintAddress,
-                  walletAddress: wallet.publicKey.toString(),
-                  nftType: 'core',
-                  error: burnError.message,
-                  success: false
-                });
+                // Record the failed burn attempt
+                try {
+                  await apiRequest('/api/nfts/burn/record', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      nftMint: burnTx.nftId,
+                      walletAddress: wallet.publicKey.toString(),
+                      nftType: 'core',
+                      error: signError instanceof Error ? signError.message : 'Unknown error',
+                      success: false
+                    }),
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Core NFT burn failure in database:', recordError);
+                }
               }
             }
 
             if (successfulBurns.length === 0) {
-              throw new Error('Failed to burn any Core NFTs');
+              throw new Error('No Core NFTs were successfully burned');
             }
 
             console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
@@ -828,7 +869,7 @@ export default function SolRefund() {
             // Show success message
             toast({
               title: "Core NFTs Burned Successfully! 🔥",
-              description: `Burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered} SOL`,
+              description: `Burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered.toFixed(4)} SOL`,
               variant: "default",
             });
 
