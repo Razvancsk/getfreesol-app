@@ -907,7 +907,7 @@ export default function SolRefund() {
             // Show success message with green styling and transaction signature
             const firstSignature = successfulBurns[0]?.signature || '';
             toast({
-              title: `Successfully burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered.toFixed(6)} SOL!`,
+              title: `Successfully burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''}`,
               description: `Transaction: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
             });
