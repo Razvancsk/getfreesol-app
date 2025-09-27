@@ -936,8 +936,8 @@ export default function SolRefund() {
               className: "bg-green-600 text-white border-green-600",
             });
 
-            // Just invalidate the query - don't refresh immediately to avoid overriding optimistic update
-            queryClient.invalidateQueries({ queryKey: ['/api/nfts/scan', publicKey?.toString()] });
+            // Don't invalidate immediately - let optimistic update handle UI state
+            // We'll rely on the next manual refresh or page load to sync with server
 
             return;
 
@@ -1484,11 +1484,8 @@ export default function SolRefund() {
         className: "bg-green-600 text-white border-green-600",
       });
 
-      // Clear selection and refresh NFT list
+      // Clear selection but don't refresh immediately - let optimistic update handle UI state
       setSelectedNfts(new Set());
-      if (publicKey) {
-        scanNftsMutation.mutate(publicKey.toString());
-      }
 
       // Refresh stats if SOL was recovered
       if (hasRentRecovery) {
