@@ -758,9 +758,23 @@ export default function SolRefund() {
               walletAddress: wallet.publicKey.toString()
             });
 
-            console.log('🔧 Server prepared burn transactions:', prepareResponse);
+            console.log('🔧 Server prepared burn transactions:', {
+              rawResponse: prepareResponse,
+              hasSuccess: 'success' in prepareResponse,
+              successValue: prepareResponse.success,
+              hasBurnTransactions: 'burnTransactions' in prepareResponse,
+              burnTransactionsValue: prepareResponse.burnTransactions,
+              burnTransactionsType: typeof prepareResponse.burnTransactions,
+              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
+            });
 
             if (!prepareResponse.success || !prepareResponse.burnTransactions) {
+              console.error('❌ Server response validation failed:', {
+                success: prepareResponse.success,
+                burnTransactions: prepareResponse.burnTransactions,
+                successCheck: !prepareResponse.success,
+                burnTransactionsCheck: !prepareResponse.burnTransactions
+              });
               throw new Error('Server failed to prepare burn transactions');
             }
 
