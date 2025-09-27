@@ -2232,6 +2232,9 @@ export default function SolRefund() {
                             : 'Empty account - can close for ~0.002 SOL'
                           }
                         </div>
+                        <div className="text-xs text-gray-400 truncate font-mono">
+                          {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
+                        </div>
                       </div>
                     </div>
                   </div>
