@@ -1816,10 +1816,13 @@ export default function SolRefund() {
                   🔥 Burn Tokens
                 </button>
                 <button
-                  disabled={true}
-                  className="px-4 py-2 text-sm font-medium rounded transition-all bg-transparent text-purple-400/50 cursor-not-allowed opacity-60"
+                  onClick={() => setBurnSubTab('nft')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    burnSubTab === 'nft' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
+                  }`}
                   data-testid="button-burn-nft"
-                  title="NFT burning feature coming soon"
                 >
                   🚧 Burn NFT - Soon
                 </button>
