@@ -889,19 +889,25 @@ export default function SolRefund() {
 
             // Optimistically remove burned NFTs from local state immediately
             const burnedIds = successfulBurns.map(burn => burn.mint);
-            if (nftData?.nfts) {
-              // Remove burned NFTs from local state for immediate UI update
-              nftData.nfts = nftData.nfts.filter((nft: any) => {
-                const nftId = nft.id || nft.mint || nft.assetId;
-                return !burnedIds.includes(nftId);
-              });
-            }
             
-            // Clear burned NFTs from selection
+            // Clear burned NFTs from selection first
             setSelectedNfts(prev => {
               const newSet = new Set(prev);
               burnedIds.forEach(id => newSet.delete(id));
               return newSet;
+            });
+
+            // Update local NFT data state to remove burned NFTs immediately  
+            setNftData(prev => {
+              if (!prev?.nfts) return prev;
+              
+              return {
+                ...prev,
+                nfts: prev.nfts.filter((nft: any) => {
+                  const nftId = nft.id || nft.mint || nft.assetId;
+                  return !burnedIds.includes(nftId);
+                })
+              };
             });
 
             // Show success message with green styling and transaction signature
