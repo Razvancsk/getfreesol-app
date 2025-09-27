@@ -675,7 +675,7 @@ export default function SolRefund() {
     },
     onSuccess: (result) => {
       toast({
-        title: `Successfully processed ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''} and recovered ${result.netAmount} SOL!`,
+        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''} and recovered ${result.netAmount} SOL!`,
         description: `Transaction: ${result.signature.substring(0, 8)}...`,
         className: "bg-green-600 text-white border-green-600",
       });
@@ -907,7 +907,7 @@ export default function SolRefund() {
             // Show success message with green styling and transaction signature
             const firstSignature = successfulBurns[0]?.signature || '';
             toast({
-              title: `Successfully processed ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered.toFixed(6)} SOL!`,
+              title: `Successfully burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered.toFixed(6)} SOL!`,
               description: `Transaction: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
             });
