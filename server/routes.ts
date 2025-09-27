@@ -2006,6 +2006,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const asset = await fetchAssetV1(umi, umiPublicKey(nftId));
           console.log(`✅ Core asset validated: ${asset.publicKey}`);
 
+          // CRITICAL: Check if wallet is asset authority (owner or update authority)
+          const walletPubkey = umiPublicKey(walletAddress);
+          const isOwner = asset.owner === walletPubkey;
+          const isUpdateAuthority = asset.updateAuthority?.type === 'Address' && asset.updateAuthority.address === walletPubkey;
+          
+          if (!isOwner && !isUpdateAuthority) {
+            throw new Error(`Wallet ${walletAddress} is not authorized to burn Core NFT ${nftId}. Owner: ${asset.owner}, Update Authority: ${asset.updateAuthority?.type === 'Address' ? asset.updateAuthority.address : 'N/A'}`);
+          }
+          console.log(`✅ Authority validated - wallet ${walletAddress} can burn Core NFT ${nftId}`);
+
           // Build burn transaction using TransactionBuilder
           const burnTx = new TransactionBuilder()
             .add(
@@ -2041,12 +2051,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
+      const responseData = {
         success: true,
         burnTransactions,
         totalExpectedRentSol: totalExpectedRent,
         message: `Prepared ${burnTransactions.filter(tx => tx.transaction).length} burn transactions`
+      };
+      
+      console.log(`🔧 Server returning response:`, {
+        success: responseData.success,
+        burnTransactionsCount: responseData.burnTransactions.length,
+        transactionsWithData: responseData.burnTransactions.filter(tx => tx.transaction).length,
+        transactionsWithErrors: responseData.burnTransactions.filter(tx => tx.error).length,
+        firstTransaction: responseData.burnTransactions[0] || 'none'
       });
+
+      res.json(responseData);
 
     } catch (error) {
       console.error('Error preparing Core NFT burn transactions:', error);
