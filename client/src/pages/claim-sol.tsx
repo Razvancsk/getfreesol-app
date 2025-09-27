@@ -675,8 +675,9 @@ export default function SolRefund() {
     },
     onSuccess: (result) => {
       toast({
-        title: "Success!",
-        description: `Burned ${result.tokensProcessed} tokens! Net recovery: ${result.netAmount} SOL (${result.feeAmount} SOL fee)`,
+        title: `Successfully processed ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''} and recovered ${result.netAmount} SOL!`,
+        description: `Transaction: ${result.signature.substring(0, 8)}...`,
+        className: "bg-green-600 text-white border-green-600",
       });
       // Clear selections and refresh
       setSelectedTokens(new Set());
@@ -903,11 +904,12 @@ export default function SolRefund() {
               return newSet;
             });
 
-            // Show success message with signature links
+            // Show success message with green styling and transaction signature
+            const firstSignature = successfulBurns[0]?.signature || '';
             toast({
-              title: "Core NFTs Burned Successfully! 🔥",
-              description: `Burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered.toFixed(4)} SOL. Check Solscan for details.`,
-              variant: "default",
+              title: `Successfully processed ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered.toFixed(6)} SOL!`,
+              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
+              className: "bg-green-600 text-white border-green-600",
             });
 
             // Invalidate and refresh NFT scan query
