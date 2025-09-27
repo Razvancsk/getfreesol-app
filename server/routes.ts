@@ -1265,8 +1265,648 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Scan wallet for NFTs
+  app.get("/api/nfts/scan/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const { type } = req.query; // standard, pnft, ocp, core, cnft
+      
+      // Validate address
+      try {
+        new PublicKey(address);
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid wallet address" });
+      }
+
+      // Get RPC connection
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: "Helius API key is required for NFT scanning" });
+      }
+
+      console.log(`Using RPC endpoint: https://mainnet.helius-rpc.com/?api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`);
+
+      const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+
+      // Get all NFT assets owned by this wallet
+      const heliusResponse = await fetch(heliusRpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'nft-scan',
+          method: 'getAssetsByOwner',
+          params: {
+            ownerAddress: address,
+            page: 1,
+            limit: 1000,
+            displayOptions: {
+              showFungible: false,
+              showNativeBalance: false
+            }
+          }
+        })
+      });
+
+      if (!heliusResponse.ok) {
+        throw new Error(`Helius API error: ${heliusResponse.statusText}`);
+      }
+
+      const heliusData = await heliusResponse.json();
+      console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
+
+      let nfts: any[] = [];
+      const items = heliusData.result?.items || [];
+
+      for (const asset of items) {
+        const { interface: assetInterface, compression, burnt } = asset;
+        
+        // Only process Metaplex Core NFTs
+        if (assetInterface !== 'MplCoreAsset') {
+          continue;
+        }
+        
+        // Skip burned NFTs (they still show in DAS with burnt: true)
+        if (burnt === true) {
+          console.log(`Skipping burned NFT: ${asset.content?.metadata?.name || asset.id}`);
+          continue;
+        }
+        
+        // Skip compressed NFTs (shouldn't happen with Core but check anyway)
+        if (compression?.compressed) {
+          continue;
+        }
+        
+        const nftType = 'core';
+
+        // Filter by type if specified (only 'core' supported now)
+        if (type && type !== 'core') {
+          continue;
+        }
+
+        // Filter out NFTs that should not be burned
+        const name = asset.content?.metadata?.name || '';
+        const description = asset.content?.metadata?.description || '';
+        
+        // Check for "DO NOT BURN" indicators
+        const doNotBurnPatterns = [
+          /do\s*not\s*burn/i,
+          /don\'?t\s*burn/i,
+          /no\s*burn/i,
+          /keep/i,
+          /hold/i
+        ];
+        
+        const shouldNotBurn = doNotBurnPatterns.some(pattern => 
+          pattern.test(name) || pattern.test(description)
+        );
+        
+        if (shouldNotBurn) {
+          continue;
+        }
+        
+        // Filter out position/utility NFTs
+        const positionPatterns = [
+          /position/i,
+          /meteora/i,
+          /liquidity/i,
+          /lp\s*token/i,
+          /utility/i,
+          /staking/i,
+          /vault/i,
+          /receipt/i
+        ];
+        
+        const isPositionNft = positionPatterns.some(pattern => 
+          pattern.test(name) || pattern.test(description)
+        );
+        
+        if (isPositionNft) {
+          continue;
+        }
+
+        const nftInfo = {
+          mint: asset.id,
+          name: asset.content?.metadata?.name || 'Unknown NFT',
+          symbol: asset.content?.metadata?.symbol || '',
+          image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
+          description: asset.content?.metadata?.description || '',
+          type: 'core',
+          interface: 'MplCoreAsset',
+          tokenStandard: '',
+          compressed: false,
+          creators: asset.creators || [],
+          collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null,
+          attributes: asset.content?.metadata?.attributes || []
+        };
+
+        nfts.push(nftInfo);
+      }
 
 
+      // All NFTs are Core type now
+      const counts = {
+        core: nfts.length
+      };
+
+      res.json({
+        success: true,
+        nfts,
+        counts,
+        total: nfts.length
+      });
+    } catch (error) {
+      console.error('Error scanning NFTs:', error);
+      res.status(500).json({ error: "Failed to scan NFTs" });
+    }
+  });
+
+  // NEW HYBRID API - Build Core NFT burn transactions (TEMPORARILY DISABLED)
+  app.post('/api/nfts/burn/build', async (req, res) => {
+    // Core NFT burning temporarily disabled - being rebuilt with official Metaplex Core
+    return res.status(501).json({
+      success: false,
+      error: 'Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!'
+    });
+    try {
+      const { walletAddress, nftMints, nftType } = req.body;
+      
+      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftType !== 'core') {
+        return res.status(400).json({
+          success: false, 
+          error: 'Invalid request - requires walletAddress, nftMints array, and nftType="core"'
+        });
+      }
+
+      if (nftMints.length === 0 || nftMints.length > 50) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid NFT count - must be between 1 and 50 NFTs'
+        });
+      }
+
+      console.log('🔧 Building Core NFT burn transactions for', nftMints.length, 'NFTs');
+      
+      const userPubkey = new PublicKey(walletAddress);
+      const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+      
+      const builtTransactions = [];
+      let totalExpectedRentLamports = 0;
+      
+      // Get fresh blockhash for all transactions
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const { blockhash } = await connection.getLatestBlockhash();
+      
+      for (const mintAddress of nftMints) {
+        try {
+          console.log(`🔍 Building transaction for Core NFT: ${mintAddress}`);
+          const assetPubkey = new PublicKey(mintAddress);
+          
+          // Verify account exists and get rent amount
+          const accountInfo = await connection.getAccountInfo(assetPubkey);
+          if (!accountInfo) {
+            console.log(`⚠️ Asset ${mintAddress} not found, skipping`);
+            continue;
+          }
+          
+          if (!accountInfo.owner.equals(CORE_PROGRAM_ID)) {
+            console.log(`⚠️ Asset ${mintAddress} not owned by Core program, skipping`);
+            continue;
+          }
+          
+          const rentLamports = accountInfo.lamports;
+          totalExpectedRentLamports += rentLamports;
+          console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL`);
+          
+          // 🚀 ENHANCED CORE BURN with better rent reclamation
+          const { TransactionInstruction, ComputeBudgetProgram, SystemProgram } = await import('@solana/web3.js');
+          
+          console.log(`🔍 Building enhanced Core burn for proper rent reclamation: ${mintAddress}`);
+          
+          // 🔥 CORE NFT: Just burn + close the asset account (that's all!)
+          console.log(`🔥 Core NFT: burn + close asset account for rent recovery`);
+          console.log(`🔍 Core Asset: ${assetPubkey.toString()}`);
+          console.log(`💰 Account rent: ${rentLamports / 1e9} SOL`);
+          
+          // STEP 1: Burn Core NFT (clears the NFT data)
+          const burnInstructionData = Buffer.from([7]); // Burn discriminator
+          const burnInstruction = new TransactionInstruction({
+            keys: [
+              { pubkey: assetPubkey, isSigner: false, isWritable: true },
+              { pubkey: userPubkey, isSigner: true, isWritable: true },
+              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            ],
+            programId: CORE_PROGRAM_ID,
+            data: burnInstructionData,
+          });
+          
+          // STEP 2: Close asset account (user receives rent)
+          const closeInstructionData = Buffer.from([1]); // Close discriminator
+          const closeInstruction = new TransactionInstruction({
+            keys: [
+              { pubkey: assetPubkey, isSigner: false, isWritable: true },   // Asset to close
+              { pubkey: userPubkey, isSigner: true, isWritable: false },   // Authority (signer)
+              { pubkey: userPubkey, isSigner: false, isWritable: true },   // Recipient (USER gets rent!)
+            ],
+            programId: CORE_PROGRAM_ID,
+            data: closeInstructionData,
+          });
+          
+          // Build transaction
+          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 });
+          const transaction = new Transaction({
+            recentBlockhash: blockhash,
+            feePayer: userPubkey
+          });
+          
+          transaction.add(computeBudgetIx);
+          transaction.add(burnInstruction);  // 1. Burn Core NFT
+          transaction.add(closeInstruction); // 2. Close asset → rent to user
+          
+          console.log(`✅ Enhanced Core burn transaction built for ${mintAddress}`);
+          console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL (rent from closed account)`);
+          
+          // Serialize unsigned transaction for frontend signing
+          const serialized = transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
+          
+          builtTransactions.push({
+            mint: mintAddress,
+            transaction: serialized.toString('base64'),
+            expectedRentLamports: rentLamports
+          });
+          
+          console.log(`✅ Enhanced burn transaction built for ${mintAddress} - rent will be reclaimed to user wallet`);
+          
+        } catch (error: any) {
+          console.error(`❌ Failed to build transaction for ${mintAddress}:`, error);
+          continue;
+        }
+      }
+      
+      if (builtTransactions.length === 0) {
+        return res.status(400).json({ success: false, error: 'No valid Core NFTs found to burn' });
+      }
+      
+      console.log(`🎯 Built ${builtTransactions.length} burn transactions`);
+      console.log(`💰 Total expected rent recovery: ${totalExpectedRentLamports / 1e9} SOL`);
+      
+      res.json({
+        success: true,
+        message: `Built ${builtTransactions.length} Core NFT burn transactions`,
+        transactions: builtTransactions,
+        totalExpectedRentLamports,
+        totalExpectedRentSol: totalExpectedRentLamports / 1e9
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Error building Core NFT burn transactions:', error);
+      res.status(500).json({ success: false, error: 'Failed to build burn transactions: ' + (error.message || 'Unknown error') });
+    }
+  });
+
+  // NEW HYBRID API - Submit signed Core NFT burn transactions
+  app.post('/api/nfts/burn/submit', async (req, res) => {
+    try {
+      const { signedTransactions, walletAddress } = req.body;
+      
+      if (!signedTransactions || !Array.isArray(signedTransactions) || !walletAddress) {
+        return res.status(400).json({ success: false, error: 'Invalid request - requires signedTransactions array and walletAddress' });
+      }
+      
+      console.log(`🚀 Submitting ${signedTransactions.length} signed Core NFT burn transactions`);
+      
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      const results = [];
+      let totalActualRecoveredLamports = 0;
+      
+      for (const { mint, signedTransaction } of signedTransactions) {
+        try {
+          console.log(`📤 Submitting burn transaction for ${mint}`);
+          
+          // Send the signed transaction
+          const signature = await connection.sendRawTransaction(Buffer.from(signedTransaction, 'base64'));
+          console.log(`🚀 Transaction submitted: ${signature}`);
+          
+          // Confirm the transaction
+          const confirmation = await connection.confirmTransaction(signature);
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          }
+          
+          // Get transaction details for rent calculation
+          const txDetails = await connection.getTransaction(signature, { commitment: 'confirmed' });
+          
+          let rentRecoveredLamports = 0;
+          if (txDetails?.meta) {
+            const preBalances = txDetails.meta.preBalances;
+            const postBalances = txDetails.meta.postBalances;
+            const walletIndex = txDetails.transaction.message.accountKeys.findIndex(key => key.toString() === walletAddress);
+            
+            if (walletIndex >= 0) {
+              const balanceChange = postBalances[walletIndex] - preBalances[walletIndex];
+              rentRecoveredLamports = balanceChange + txDetails.meta.fee; // Add back transaction fee
+            }
+          }
+          
+          totalActualRecoveredLamports += rentRecoveredLamports;
+          
+          results.push({
+            mint,
+            signature,
+            success: true,
+            rentRecoveredLamports,
+            rentRecoveredSol: rentRecoveredLamports / 1e9
+          });
+          
+          console.log(`✅ ${mint} burned successfully! Recovered: ${rentRecoveredLamports / 1e9} SOL`);
+          
+        } catch (error: any) {
+          console.error(`❌ Failed to submit transaction for ${mint}:`, error);
+          results.push({ mint, success: false, error: error.message || 'Transaction submission failed' });
+        }
+      }
+      
+      const successfulBurns = results.filter(r => r.success).length;
+      console.log(`🎉 Completed: ${successfulBurns}/${results.length} burns successful`);
+      console.log(`💰 Total actual rent recovered: ${totalActualRecoveredLamports / 1e9} SOL`);
+      
+      res.json({
+        success: true,
+        message: `Processed ${results.length} transactions, ${successfulBurns} successful`,
+        results,
+        summary: {
+          totalProcessed: results.length,
+          successful: successfulBurns,
+          failed: results.length - successfulBurns,
+          totalRentRecoveredLamports: totalActualRecoveredLamports,
+          totalRentRecoveredSol: totalActualRecoveredLamports / 1e9
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Error submitting Core NFT burn transactions:', error);
+      res.status(500).json({ success: false, error: 'Failed to submit transactions: ' + (error.message || 'Unknown error') });
+    }
+  });
+
+  // LEGACY API - Burn NFTs (for non-Core NFTs)
+  app.post("/api/nfts/burn", async (req, res) => {
+    try {
+      const { walletAddress, nftMints, nftType, referralCode } = req.body;
+      
+      if (!walletAddress || !nftMints || !Array.isArray(nftMints) || nftMints.length === 0) {
+        return res.status(400).json({ error: "Wallet address and NFT mints array are required" });
+      }
+
+      if (!nftType || nftType !== 'core') {
+        return res.status(400).json({ error: "Only Metaplex Core NFTs are supported" });
+      }
+
+      // Core NFT burning temporarily disabled - being rebuilt with official Metaplex Core
+      return res.status(501).json({
+        success: false,
+        error: 'Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!'
+      });
+
+      // Handle referral code logic (same as token burning)
+      let referralCodeData = null;
+      let permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      
+      if (permanentAssociation) {
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+      } else if (referralCode) {
+        const tempReferralData = await storage.getReferralCodeByCode(referralCode);
+        if (tempReferralData) {
+          try {
+            permanentAssociation = await storage.createWalletReferralAssociation({
+              walletAddress,
+              referralCodeId: tempReferralData.id,
+              referralCode: referralCode
+            });
+            referralCodeData = tempReferralData;
+          } catch (error) {
+            permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+            if (permanentAssociation) {
+              referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+            }
+          }
+        }
+      }
+
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const ownerPublicKey = new PublicKey(walletAddress);
+      
+      // Create transaction based on NFT type
+      const transaction = new Transaction();
+      
+      // Metaplex Core NFTs burning - REAL IMPLEMENTATION
+      if (nftType === 'core') {
+        console.log(`🔥 Preparing REAL Core NFT burn transactions for ${nftMints.length} NFTs`);
+        console.log('🔧 NFT mints to burn:', nftMints);
+        
+        try {
+          // Direct Solana approach - bypass UMI entirely
+          const { Transaction, TransactionInstruction, ComputeBudgetProgram } = await import('@solana/web3.js');
+          const bs58 = await import('bs58');
+          
+          console.log('✅ Using direct Solana transaction approach (bypassing UMI)');
+          
+          const burnTransactions = [];
+          let totalExpectedRent = 0;
+          
+          // Metaplex Core program ID
+          const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+          
+          // Build burn transaction for each Core NFT using direct instructions
+          for (const assetAddress of nftMints) {
+            try {
+              console.log(`🔍 Processing Core NFT: ${assetAddress}`);
+              
+              const assetPubkey = new PublicKey(assetAddress);
+              const userPubkey = new PublicKey(walletAddress);
+              
+              // Get account info to estimate rent recovery
+              const accountInfo = await connection.getAccountInfo(assetPubkey);
+              if (!accountInfo) {
+                console.log(`⚠️ Asset ${assetAddress} not found or already burned`);
+                continue;
+              }
+              
+              const rentLamports = accountInfo.lamports;
+              totalExpectedRent += rentLamports;
+              console.log(`💰 Expected rent recovery: ${rentLamports / 1e9} SOL`);
+              
+              // Check if account is owned by Core program
+              if (!accountInfo.owner.equals(CORE_PROGRAM_ID)) {
+                console.log(`⚠️ Asset ${assetAddress} not owned by Core program, skipping`);
+                continue;
+              }
+              
+              // Build PROPER Core burn instruction according to Metaplex Core spec
+              // Burn discriminator is [7] for Core program
+              const instructionData = Buffer.from([7]);
+              
+              const burnInstruction = new TransactionInstruction({
+                keys: [
+                  { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn
+                  { pubkey: userPubkey, isSigner: true, isWritable: true },     // Owner/authority
+                  { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+                ],
+                programId: CORE_PROGRAM_ID,
+                data: instructionData,
+              });
+              
+              // Add compute budget to ensure transaction has enough compute
+              const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+                units: 200_000, // Enough compute for Core burn
+              });
+              
+              // Build transaction using proper Transaction class
+              const { blockhash } = await connection.getLatestBlockhash();
+              
+              const transaction = new Transaction({
+                recentBlockhash: blockhash,
+                feePayer: userPubkey
+              });
+              
+              // Add compute budget and burn instructions
+              transaction.add(computeBudgetIx);
+              transaction.add(burnInstruction);
+              
+              // Serialize the transaction (unsigned)
+              const serializedTx = transaction.serialize({
+                requireAllSignatures: false, // We don't want to sign on server
+                verifySignatures: false
+              });
+              const base64Tx = Buffer.from(serializedTx).toString('base64');
+              
+              console.log(`✅ Built DIRECT Core burn transaction for ${assetAddress}`);
+              
+              burnTransactions.push({
+                asset: assetAddress,
+                name: `Core NFT ${assetAddress.slice(0, 8)}...`,
+                transaction: base64Tx,
+                expectedRentSol: rentLamports / 1e9
+              });
+              
+            } catch (assetError) {
+              console.error(`❌ Failed to process asset ${assetAddress}:`, assetError);
+              // Continue with other assets
+            }
+          }
+          
+          if (burnTransactions.length === 0) {
+            return res.status(400).json({
+              success: false,
+              error: 'No valid Core NFTs found to burn'
+            });
+          }
+          
+          console.log(`🎯 Prepared ${burnTransactions.length} REAL burn transactions`);
+          console.log(`💰 Total expected rent recovery: ${totalExpectedRent / 1e9} SOL`);
+          
+          // Return prepared transactions for client to sign and submit
+          return res.json({
+            success: true,
+            message: "Real Core NFT burn transactions prepared",
+            burnTransactions: burnTransactions,
+            totalExpectedRentSol: totalExpectedRent / 1e9,
+            instructions: "These are REAL transactions that will DESTROY your NFTs and recover rent. Sign and submit each transaction to complete the burn."
+          });
+          
+        } catch (error) {
+          console.error('❌ Failed to prepare Core NFT burn transactions:', error);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to prepare burn transactions: ' + (error as Error).message
+          });
+        }
+        
+      } else {
+        // For other NFT types (pNFT, OCP), return a placeholder transaction for now
+        return res.status(501).json({ 
+          error: `${nftType.toUpperCase()} burning is not yet implemented. Coming soon!` 
+        });
+      }
+      
+      if (transaction.instructions.length === 0) {
+        return res.status(400).json({ error: "No valid NFTs found to burn" });
+      }
+
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = ownerPublicKey;
+      
+      // Calculate platform fee (15% of estimated SOL recovery)
+      // Standard NFTs estimate 0.002 SOL per NFT (others provide no recovery yet)
+      const estimatedSolRecovery = nftType === 'standard' ? nftMints.length * 0.002 : 0;
+      const platformFeeAmount = estimatedSolRecovery * 0.15; // 15% platform fee
+      const referralFeeAmount = referralCodeData ? platformFeeAmount * 0.35 : 0; // 35% of platform fee goes to referral
+      const finalPlatformFeeAmount = platformFeeAmount - referralFeeAmount;
+      
+      // Add platform fee transfer
+      const platformWallet = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
+      if (finalPlatformFeeAmount > 0.001) { // Only add if significant
+        const platformFeeInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: platformWallet,
+          lamports: Math.floor(finalPlatformFeeAmount * 1_000_000_000)
+        });
+        transaction.add(platformFeeInstruction);
+      }
+
+      // Add referral fee transfer if applicable
+      if (referralCodeData && referralFeeAmount > 0.001) {
+        const referralWallet = new PublicKey(referralCodeData.walletAddress);
+        const referralFeeInstruction = SystemProgram.transfer({
+          fromPubkey: ownerPublicKey,
+          toPubkey: referralWallet,
+          lamports: Math.floor(referralFeeAmount * 1_000_000_000)
+        });
+        transaction.add(referralFeeInstruction);
+      }
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false
+      });
+      
+      const base64Transaction = Buffer.from(serializedTransaction).toString('base64');
+      
+      res.json({
+        success: true,
+        transaction: base64Transaction,
+        message: nftType === 'standard' 
+          ? `Prepared ${nftType.toUpperCase()} burn transaction for ${nftMints.length} NFTs`
+          : `Prepared ${nftType.toUpperCase()} burn transaction for ${nftMints.length} NFTs (no rent recovery yet)`,
+        nftsProcessed: nftMints.length,
+        solRecovered: estimatedSolRecovery.toString(),
+        netAmount: (estimatedSolRecovery * 0.85).toString(), // 85% after 15% fee
+        feeAmount: platformFeeAmount.toString(),
+        platformFee: finalPlatformFeeAmount,
+        referralFee: referralFeeAmount,
+        referralCode: referralCodeData?.code || null
+      });
+    } catch (error) {
+      console.error('Error creating NFT burn transaction:', error);
+      res.status(500).json({ error: "Failed to create NFT burn transaction" });
+    }
+  });
+
+  // Get comprehensive transaction history
   app.get("/api/transactions/history", async (req, res) => {
     try {
       const { wallet, limit = 10, offset = 0 } = req.query;
@@ -1300,14 +1940,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        transactions: formattedHistory
+        transactions: formattedHistory,
+        count: formattedHistory.length,
+        hasMore: formattedHistory.length === parseInt(limit as string)
       });
+
     } catch (error) {
-      console.error("Failed to get transaction history:", error);
+      console.error("Transaction history error:", error);
       res.status(500).json({ error: "Failed to get transaction history" });
     }
   });
 
+  // Get enhanced statistics including all transaction types
   app.get("/api/transactions/stats", async (req, res) => {
     try {
       const [
@@ -1345,129 +1989,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Enhanced stats error:", error);
       res.status(500).json({ error: "Failed to get enhanced statistics" });
-    }
-  });
-
-  // NFT Burning endpoints - Server-side transaction creation for mainnet
-  app.post('/api/nft/burn-single', async (req, res) => {
-    try {
-      const { assetId, walletPublicKey } = req.body;
-      
-      if (!assetId || !walletPublicKey) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Asset ID and wallet public key are required' 
-        });
-      }
-
-      console.log('Creating single NFT burn transaction for asset:', assetId);
-
-      // Import UMI on server side where it works properly
-      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { publicKey } = await import('@metaplex-foundation/umi');
-      const { burn, fetchAsset } = await import('@metaplex-foundation/mpl-core');
-      const { keypairIdentity, generateSigner } = await import('@metaplex-foundation/umi');
-
-      // Use mainnet RPC
-      const umi = createUmi('https://api.mainnet-beta.solana.com');
-      
-      // Create a temporary signer just for transaction building (not signing)
-      const tempSigner = generateSigner(umi);
-      umi.use(keypairIdentity(tempSigner));
-      
-      const assetPublicKey = publicKey(assetId);
-      const asset = await fetchAsset(umi, assetPublicKey);
-      
-      // Create burn transaction
-      const transaction = burn(umi, {
-        asset: asset,
-        authority: publicKey(walletPublicKey),
-      });
-
-      // Set recent blockhash before building
-      const latestBlockhash = await umi.rpc.getLatestBlockhash();
-      transaction.setBlockhash(latestBlockhash);
-      
-      // Build transaction but don't sign it
-      const builtTransaction = await transaction.build(umi);
-      
-      res.json({
-        success: true,
-        transaction: Buffer.from(builtTransaction.serializedMessage).toString('base64'),
-        message: 'Single NFT burn transaction ready for mainnet signing'
-      });
-
-    } catch (error: any) {
-      console.error('Single NFT burn error:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Failed to create burn transaction'
-      });
-    }
-  });
-
-  app.post('/api/nft/burn-collection', async (req, res) => {
-    try {
-      const { assetId, walletPublicKey } = req.body;
-      
-      if (!assetId || !walletPublicKey) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Asset ID and wallet public key are required' 
-        });
-      }
-
-      console.log('Creating collection NFT burn transaction for asset:', assetId);
-
-      // Import UMI on server side where it works properly  
-      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { publicKey } = await import('@metaplex-foundation/umi');
-      const { burn, fetchAsset, collectionAddress, fetchCollection } = await import('@metaplex-foundation/mpl-core');
-      const { keypairIdentity, generateSigner } = await import('@metaplex-foundation/umi');
-
-      // Use mainnet RPC
-      const umi = createUmi('https://api.mainnet-beta.solana.com');
-      
-      // Create a temporary signer just for transaction building (not signing)
-      const tempSigner = generateSigner(umi);
-      umi.use(keypairIdentity(tempSigner));
-      
-      const assetPublicKey = publicKey(assetId);
-      const asset = await fetchAsset(umi, assetPublicKey);
-      
-      const collectionId = collectionAddress(asset);
-      let collection = undefined;
-      
-      if (collectionId) {
-        collection = await fetchCollection(umi, collectionId);
-      }
-      
-      // Create burn transaction with collection
-      const transaction = burn(umi, {
-        asset: asset,
-        collection: collection,
-        authority: publicKey(walletPublicKey),
-      });
-
-      // Set recent blockhash before building
-      const latestBlockhash = await umi.rpc.getLatestBlockhash();
-      transaction.setBlockhash(latestBlockhash);
-      
-      // Build transaction but don't sign it
-      const builtTransaction = await transaction.build(umi);
-      
-      res.json({
-        success: true,
-        transaction: Buffer.from(builtTransaction.serializedMessage).toString('base64'),
-        message: 'Collection NFT burn transaction ready for mainnet signing'
-      });
-
-    } catch (error: any) {
-      console.error('Collection NFT burn error:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Failed to create collection burn transaction'
-      });
     }
   });
 

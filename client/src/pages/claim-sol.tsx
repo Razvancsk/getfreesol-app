@@ -19,9 +19,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Connection, VersionedTransaction, Transaction } from '@solana/web3.js';
+import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
+import { createUmi } from '@metaplex-foundation/umi';
+// Core NFT imports removed - will be re-added with official implementation
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
+import { signerIdentity, createSignerFromKeypair } from '@metaplex-foundation/umi';
+import bs58 from 'bs58';
 import logoImage from '@assets/image_1757882056840.png';
 
 interface EmptyTokenAccount {
@@ -70,14 +75,13 @@ export default function SolRefund() {
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
-  const [nftAssetId, setNftAssetId] = useState<string>('');
+  const [nftData, setNftData] = useState<any>(null);
+  const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
-  
-  const [successMessage, setSuccessMessage] = useState<string>('');
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -135,6 +139,8 @@ export default function SolRefund() {
       } else if (activeTab === 'burnTokens') {
         if (burnSubTab === 'tokens') {
           scanTokensMutation.mutate(publicKey.toString());
+        } else if (burnSubTab === 'nft') {
+          scanNftsMutation.mutate(publicKey.toString());
         }
       }
     }
@@ -459,6 +465,27 @@ export default function SolRefund() {
     },
   });
 
+  const scanNftsMutation = useMutation({
+    mutationFn: async (address: string) => {
+      const response = await fetch(`/api/nfts/scan/${address}`);
+      if (!response.ok) {
+        throw new Error('Failed to scan NFTs');
+      }
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      setNftData(data);
+      // Clear NFT selection when data changes
+      setSelectedNfts(new Set());
+    },
+    onError: (error: any) => {
+      toast({
+        title: "NFT Scan Failed",
+        description: error.message || "Failed to scan wallet for NFTs",
+        variant: "destructive",
+      });
+    },
+  });
 
 
 
@@ -671,6 +698,606 @@ export default function SolRefund() {
     },
   });
 
+  // Burn NFTs mutation
+  const burnNftsMutation = useMutation({
+    mutationFn: async (selectedNftIds: string[]) => {
+      if (!isConnected || !publicKey) {
+        throw new Error('Wallet not connected');
+      }
+
+      // Get the NFT data to group by type
+      if (!nftData || !nftData.nfts) {
+        throw new Error('No NFT data available');
+      }
+
+      // Find the selected NFTs and group them by type
+      const selectedNfts = nftData.nfts.filter((nft: any) => {
+        const nftId = nft.mint || nft.id || nft.assetId;
+        return selectedNftIds.includes(nftId);
+      });
+
+      if (selectedNfts.length === 0) {
+        throw new Error('No valid NFTs selected');
+      }
+
+      // Group NFTs by type (excluding cNFTs and Core NFTs)
+      const nftsByType: { [key: string]: any[] } = {};
+      selectedNfts.forEach((nft: any) => {
+        // Skip cNFTs and Core NFTs entirely
+        if (nft.type === 'cnft' || nft.type === 'core') {
+          return;
+        }
+        if (!nftsByType[nft.type]) {
+          nftsByType[nft.type] = [];
+        }
+        nftsByType[nft.type].push(nft);
+      });
+
+      const results = [];
+
+      // Process each type separately
+      for (const [nftType, nfts] of Object.entries(nftsByType)) {
+        console.log(`Burning ${nfts.length} ${nftType} NFTs...`);
+
+        const nftMints = nfts.map(nft => nft.mint);
+
+        // Handle Core NFTs - TEMPORARILY DISABLED (being rebuilt with official Metaplex Core)
+        if (nftType === 'core') {
+          throw new Error('Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!');
+        }
+        
+        // Core NFT burning will be re-implemented with official Metaplex Core
+        if (false) { // Disabled legacy Core NFT code
+          try {
+            console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
+
+            // Ensure wallet is properly connected with adapter
+            if (!wallet.wallet?.adapter || !wallet.publicKey) {
+              throw new Error('Wallet adapter not properly connected for Core NFT burning');
+            }
+            console.log('✅ Wallet adapter validated');
+
+            // Set up UMI according to official Metaplex documentation
+            console.log('🔧 Creating UMI instance with RPC endpoint...');
+            const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
+            
+            console.log('🚀 BREAKTHROUGH: Using DIRECT SOLANA TRANSACTIONS (copying working server approach)!');
+            console.log('✅ Abandoning UMI completely - using exact same method that works on server');
+            
+            // Import necessary Solana classes 
+            const { Transaction, TransactionInstruction, ComputeBudgetProgram, SystemProgram } = await import('@solana/web3.js');
+            
+            // Import PublicKey for Core program constants
+            const { PublicKey } = await import('@solana/web3.js');
+            
+            // Core program constants (same as server)
+            const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+            const userPubkey = wallet.publicKey!;
+            
+            console.log('✅ Direct Solana transaction approach initialized');
+            console.log('💰 User pubkey:', userPubkey.toString());
+
+            // Now burn Core NFTs using direct Solana transactions (same as server)
+            console.log('🔥 Attempting Core NFT burn with DIRECT TRANSACTIONS (server approach)...');
+            
+            let burnedCount = 0;
+            const burnResults = [];
+            let totalActualRecovered = 0;
+
+            for (const mintAddress of nftMints) {
+              try {
+                console.log(`🔥 Burning Core NFT with DIRECT TRANSACTION: ${mintAddress}`);
+                const assetPubkey = new PublicKey(mintAddress);
+
+                console.log('📄 Starting Core NFT burn - letting server handle RPC verification...');
+
+                // Build DIRECT Core burn instruction (EXACT SAME AS SERVER)
+                const instructionData = Buffer.from([7]); // Burn discriminator
+
+                const burnInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },     // Owner/authority  
+                    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+                  ],
+                  programId: CORE_PROGRAM_ID,
+                  data: instructionData,
+                });
+
+                // Add compute budget (same as server)
+                const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+                  units: 200_000, // Enough compute for Core burn
+                });
+
+                // 🚀 HYBRID APPROACH: Server builds transaction, frontend signs
+                console.log('🔥 Using hybrid approach - server builds, frontend signs...');
+                
+                // Step 1: Server builds the transaction  
+                const buildResponse = await apiRequest('POST', '/api/nfts/burn/build', {
+                  walletAddress: userPubkey.toString(),
+                  nftMints: [mintAddress],
+                  nftType: 'core',
+                  referralCode: referralCode || undefined
+                });
+                
+                if (!buildResponse.ok) {
+                  const error = await buildResponse.text();
+                  throw new Error(`Server build failed: ${error}`);
+                }
+                
+                const { transactions } = await buildResponse.json();
+                
+                // Step 2: Sign all transactions
+                const unsignedTxs = transactions.map((tx: any) => 
+                  Transaction.from(Buffer.from(tx.transaction, 'base64'))
+                );
+                
+                const signedTxs = await wallet.signAllTransactions!(unsignedTxs);
+                
+                // Step 3: Serialize signed transactions for server
+                const signedTransactions = signedTxs.map(tx => 
+                  Buffer.from(tx.serialize()).toString('base64')
+                );
+                
+                // Step 4: Server submits the signed transactions  
+                const signedTransactionsWithMints = signedTransactions.map((signedTx, index) => ({
+                  mint: nftMints[index], // Match transaction to mint
+                  signedTransaction: signedTx
+                }));
+                
+                const submitResponse = await apiRequest('POST', '/api/nfts/burn/submit', {
+                  signedTransactions: signedTransactionsWithMints,
+                  walletAddress: userPubkey.toString()
+                });
+                
+                if (!submitResponse.ok) {
+                  const error = await submitResponse.text(); 
+                  throw new Error(`Server submit failed: ${error}`);
+                }
+                
+                const submitResult = await submitResponse.json();
+                const txSignature = submitResult.results?.[0]?.signature || null;
+
+                console.log('🎉 Core NFT burn succeeded with DIRECT TRANSACTIONS!');
+                console.log('✅ Transaction confirmed:', txSignature);
+
+                // ✅ Server handles rent calculation, no frontend RPC calls
+                const actualRecovered = 0.004; // Standard Core NFT rent recovery (~0.004 SOL)
+
+                console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
+                  signature: txSignature,
+                  explorer: `https://solscan.io/tx/${txSignature}`,
+                  rentRecovered: `${actualRecovered} SOL`
+                });
+
+                totalActualRecovered += actualRecovered;
+                burnedCount++;
+                burnResults.push({
+                  mint: mintAddress,
+                  signature: txSignature,
+                  actualRentRecovered: actualRecovered,
+                  success: true
+                });
+
+              } catch (burnError: any) {
+                console.error(`Failed to burn Core NFT ${mintAddress}:`, {
+                  message: burnError?.message || 'Unknown error',
+                  stack: burnError?.stack,
+                  name: burnError?.name,
+                  code: burnError?.code,
+                  cause: burnError?.cause,
+                  fullError: burnError
+                });
+                burnResults.push({
+                  mint: mintAddress,
+                  error: burnError.message || 'Unknown error',
+                  success: false
+                });
+              }
+            }
+
+            // Success - return results from UMI approach
+            const actualTotalRent = burnResults
+              .filter(r => r.success)
+              .reduce((sum, r) => sum + (r.actualRentRecovered || 0), 0);
+
+            results.push({
+              type: nftType,
+              nftsProcessed: burnedCount,
+              totalAttempted: nftMints.length,
+              solRecovered: actualTotalRent,
+              netAmount: actualTotalRent,
+              feeAmount: 0,
+              signatures: burnResults.filter(r => r.success).map(r => r.signature)
+            });
+
+            continue; // Skip to next NFT type
+            
+          } catch (coreError: any) {
+            console.log('❌ UMI approach failed. Trying server-side burn fallback...');
+            
+            // Fallback to server-side burn
+            try {
+              // Get real burn transactions from server
+            console.log('🔄 Requesting REAL Core NFT burn transactions from server...');
+            const burnPrepResponse = await apiRequest('POST', '/api/nfts/burn', {
+              nftMints: nftMints,
+              nftType: 'core',
+              walletAddress: wallet.publicKey!.toString()
+            });
+
+            const burnPrepData = await burnPrepResponse.json();
+            console.log('📋 Received burn transaction preparation:', burnPrepData);
+
+            if (!burnPrepData.success || !burnPrepData.burnTransactions) {
+              throw new Error('Failed to prepare burn transactions: ' + burnPrepData.error);
+            }
+
+            console.log(`🎯 Got ${burnPrepData.burnTransactions.length} REAL burn transactions to sign`);
+            console.log(`💰 Expected total rent recovery: ${burnPrepData.totalExpectedRentSol} SOL`);
+
+            // Sign and submit each real burn transaction
+            const completedBurns = [];
+            let totalActualRecovered = 0;
+
+            for (const burnTx of burnPrepData.burnTransactions) {
+              try {
+                console.log(`🔥 Signing REAL burn transaction for ${burnTx.name} (${burnTx.asset})`);
+                console.log(`💰 Expected rent recovery: ${burnTx.expectedRentSol} SOL`);
+
+                // Decode the prepared transaction (legacy Transaction, not VersionedTransaction)
+                const { Transaction } = await import('@solana/web3.js');
+                const transaction = Transaction.from(
+                  Buffer.from(burnTx.transaction, 'base64')
+                );
+
+                console.log('📝 Transaction decoded, requesting wallet signature...');
+
+                // Get user's balance before transaction
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
+                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
+
+                // ❌ REMOVED: Frontend RPC calls cause 403 errors - hybrid approach handles this on server
+
+                // Sign and send the REAL burn transaction using the wallet adapter's signTransaction method
+                console.log('🚀 About to sign transaction with wallet adapter...');
+                console.log('🔍 Wallet info:', {
+                  connected: isConnected,
+                  publicKey: publicKey?.toString(),
+                  walletName: walletName
+                });
+
+                let signature: string;
+                try {
+                  // Use the wallet adapter's signTransaction instead of sendTransaction
+                  console.log('✏️ Signing transaction...');
+                  const signedTransaction = await signTransaction(transaction);
+                  console.log('✅ Transaction signed successfully');
+
+                  // Send the signed transaction using RPC connection
+                  console.log('📡 Sending signed transaction to network...');
+                  signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
+                    skipPreflight: false,
+                    preflightCommitment: 'confirmed',
+                    maxRetries: 3
+                  });
+
+                  console.log(`✅ Transaction sent successfully: ${signature}`);
+                } catch (sendError: any) {
+                  console.error('❌ Transaction signing/sending error:', sendError);
+
+                  // Try to extract meaningful error info
+                  let errorMsg = 'Transaction failed';
+                  if (sendError?.message) {
+                    if (sendError.message.includes('User rejected')) {
+                      errorMsg = 'Transaction was cancelled by user';
+                    } else {
+                      errorMsg = sendError.message;
+                    }
+                  }
+
+                  throw new Error(errorMsg);
+                }
+
+                console.log(`✅ REAL burn transaction signed! Signature: ${signature}`);
+                console.log(`🔗 Explorer: https://solscan.io/tx/${signature}`);
+
+                // Wait for confirmation
+                await rpcConnection.confirmTransaction(signature, 'confirmed');
+                console.log('✅ Transaction confirmed on blockchain!');
+
+                // Check actual rent recovered
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
+                const txDetails = await rpcConnection.getTransaction(signature, {
+                  commitment: 'confirmed',
+                  maxSupportedTransactionVersion: 0
+                });
+                const transactionFee = txDetails?.meta?.fee || 5000;
+                const actualRecovered = (balanceAfter - balanceBefore + transactionFee) / 1e9;
+
+                console.log(`💰 Actual SOL recovered: ${actualRecovered} SOL (after ${transactionFee / 1e9} SOL fee)`);
+                console.log(`🔥 NFT ${burnTx.name} DESTROYED and rent recovered!`);
+
+                totalActualRecovered += actualRecovered;
+                completedBurns.push({
+                  mint: burnTx.asset,
+                  name: burnTx.name,
+                  signature: signature,
+                  solRecovered: actualRecovered,
+                  success: true
+                });
+
+              } catch (txError) {
+                console.error(`❌ Failed to burn ${burnTx.name}:`, txError);
+                completedBurns.push({
+                  mint: burnTx.asset,
+                  name: burnTx.name,
+                  error: txError instanceof Error ? txError.message : 'Unknown error',
+                  success: false
+                });
+              }
+            }
+
+            const successfulBurns = completedBurns.filter(b => b.success);
+
+            if (successfulBurns.length === 0) {
+              throw new Error('Failed to burn any Core NFTs');
+            }
+
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
+            console.log(`💰 Total actual SOL recovered: ${totalActualRecovered} SOL`);
+
+            results.push({
+              type: nftType,
+              nftsProcessed: successfulBurns.length,
+              totalAttempted: nftMints.length,
+              solRecovered: totalActualRecovered,
+              netAmount: totalActualRecovered,
+              feeAmount: 0,
+              signatures: successfulBurns.map(b => b.signature).filter(Boolean),
+              transactions: completedBurns
+            });
+
+            continue; // Skip the rest of the UMI approach
+
+            let burnedCount = 0;
+            const burnResults = [];
+
+            for (const mintAddress of nftMints) {
+              try {
+                // Use the Core asset ID directly (not mint address)
+                const assetPublicKey = umiPublicKey(mintAddress);
+
+                console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
+                console.log('💰 User wallet:', wallet.publicKey?.toString());
+
+                // Get wallet balance before burn
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
+                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
+
+                // Try alternative approach: Use Raw Solana transaction
+                console.log('🔧 Alternative approach: Direct Solana transaction...');
+
+                let txSignature: string = '';
+                try {
+                  // Fetch asset info first (this should work)
+                  console.log('📄 Fetching asset data...');
+                  const asset = await fetchAsset(umi, assetPublicKey);
+                  console.log('✅ Asset fetched successfully:', asset.name);
+
+                  // Try collection-aware burn
+                  console.log('🔥 Attempting collection-aware burn...');
+                  const collectionId = collectionAddress(asset);
+                  let collection = undefined;
+
+                  if (collectionId) {
+                    console.log('🏛️ Fetching collection:', collectionId);
+                    collection = await fetchCollection(umi, collectionId as any);
+                    console.log('✅ Collection fetched');
+                  }
+
+                  // Attempt burn with minimal setup
+                  console.log('🔥 Executing burn transaction...');
+                  const result = await burn(umi, {
+                    asset: asset,
+                    collection: collection,
+                    authority: umi.identity,
+                    payer: umi.identity,
+                  }).sendAndConfirm(umi);
+
+                  console.log('🎉 Burn succeeded with alternative approach!');
+
+                  // Properly encode signature for Solana RPC
+                  txSignature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature as Uint8Array);
+                  console.log('✅ Transaction confirmed:', txSignature);
+
+                } catch (burnError) {
+                  console.error('💥 Alternative burn approach failed:', burnError);
+                  throw burnError;
+                }
+
+                // Get transaction details with error handling
+                let txDetails = null;
+                let networkFee = 5000; // Default Solana fee estimate
+                try {
+                  txDetails = await rpcConnection.getTransaction(txSignature, {
+                    commitment: 'confirmed',
+                    maxSupportedTransactionVersion: 0
+                  });
+                  networkFee = txDetails?.meta?.fee || 5000;
+                } catch (error) {
+                  console.warn('Could not fetch transaction details, using estimated fee');
+                }
+
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
+                const actualRentRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9; // Accurate with fees
+                console.log('💰 Balance after:', balanceAfter / 1e9, 'SOL');
+
+                console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
+                  signature: txSignature,
+                  explorer: `https://solscan.io/tx/${txSignature}`,
+                  rentRecovered: `${actualRentRecovered} SOL`,
+                  networkFee: `${networkFee / 1e9} SOL`,
+                  balanceBefore: balanceBefore / 1e9,
+                  balanceAfter: balanceAfter / 1e9
+                });
+
+                // Note: Asset verification removed - using direct transactions
+
+                burnedCount++;
+                burnResults.push({
+                  mint: mintAddress,
+                  signature: txSignature,
+                  actualRentRecovered,
+                  success: true
+                });
+
+              } catch (error: any) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                console.error(`❌ Failed to burn Core NFT ${mintAddress}:`, {
+                  message: error?.message || 'Unknown error',
+                  stack: error?.stack,
+                  name: error?.name,
+                  code: error?.code,
+                  cause: error?.cause,
+                  fullError: error
+                });
+                burnResults.push({
+                  mint: mintAddress,
+                  error: errorMessage,
+                  success: false
+                });
+              }
+            }
+
+            if (burnedCount === 0) {
+              throw new Error('All UMI Core NFT burns failed');
+            }
+
+            console.log(`✅ Successfully burned ${burnedCount} Core NFTs with UMI!`);
+            
+            } catch (serverError: any) {
+              console.error('❌ Server-side burn fallback also failed:', {
+                message: serverError?.message || 'Unknown error',
+                stack: serverError?.stack,
+                name: serverError?.name,
+                code: serverError?.code,
+                cause: serverError?.cause,
+                fullError: serverError
+              });
+              throw new Error(`Core NFT burning failed: ${serverError.message || 'All approaches failed'}`);
+            }
+          }
+        }
+
+        // For non-Core NFTs, use server API (will return error for unsupported types)
+        const response = await fetch('/api/nfts/burn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: publicKey.toString(),
+            nftMints,
+            nftType,
+            referralCode: referralCode || undefined
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`${nftType} NFT burning: ${errorData.error || 'This NFT type is not supported for burning'}`);
+        }
+
+        const { transaction, nftsProcessed, solRecovered, netAmount, feeAmount } = await response.json();
+
+        // Sign and send transaction using connected wallet
+        const { Connection, Transaction } = await import('@solana/web3.js');
+
+        const heliusResponse = await fetch('/api/helius-config');
+        const rpcConfig = await heliusResponse.json();
+
+        const connection = new Connection(
+          rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+          'confirmed'
+        );
+
+        const txBuffer = Buffer.from(transaction, 'base64');
+        const tx = Transaction.from(txBuffer);
+
+        const signedTx = await signTransaction(tx);
+        const signature = await connection.sendRawTransaction(signedTx.serialize());
+
+        // Wait for confirmation
+        try {
+          await connection.confirmTransaction(signature, 'confirmed');
+          console.log(`${nftType} NFT burn transaction confirmed:`, signature);
+        } catch (confirmError: any) {
+          console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
+        }
+
+        results.push({
+          type: nftType,
+          count: nftsProcessed,
+          signature,
+          solRecovered: parseFloat(solRecovered || '0'),
+          netAmount: parseFloat(netAmount || '0'),
+          feeAmount: parseFloat(feeAmount || '0')
+        });
+      }
+
+      return results;
+    },
+    onSuccess: (results) => {
+      const totalBurned = results.reduce((sum, r) => sum + r.count, 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + r.solRecovered, 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + r.netAmount, 0);
+
+      const hasRentRecovery = totalSolRecovered > 0;
+
+      // Generate Solscan links for each transaction
+      const transactionLinks = results.map(result => 
+        `${result.type.toUpperCase()}: https://solscan.io/tx/${result.signature}`
+      ).join('\n');
+
+      toast({
+        title: hasRentRecovery ? "NFTs Burned Successfully!" : "Burn Requests Recorded",
+        description: hasRentRecovery 
+          ? `Burned ${totalBurned} NFTs and recovered ${totalNetAmount.toFixed(6)} SOL (after 15% fee)\n\nView on Solscan:\n${transactionLinks}`
+          : `Recorded burn requests for ${totalBurned} NFTs (compressed NFTs cannot be burned via this interface yet)\n\nView transaction on Solscan:\n${transactionLinks}`,
+        className: "bg-green-600 text-white border-green-600",
+      });
+
+      // Clear selection and refresh NFT list
+      setSelectedNfts(new Set());
+      if (publicKey) {
+        scanNftsMutation.mutate(publicKey.toString());
+      }
+
+      // Refresh stats if SOL was recovered
+      if (hasRentRecovery) {
+        queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error burning NFTs:', error);
+
+      let errorMessage = "Failed to burn NFTs. Please try again.";
+      if (error.message) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('wallet not found')) {
+          errorMessage = "Please install and connect your wallet.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Selection handlers
   const toggleTokenSelection = (mintAddress: string) => {
@@ -1189,15 +1816,12 @@ export default function SolRefund() {
                   🔥 Burn Tokens
                 </button>
                 <button
-                  onClick={() => setBurnSubTab('nft')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    burnSubTab === 'nft' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
-                  }`}
+                  disabled={true}
+                  className="px-4 py-2 text-sm font-medium rounded transition-all bg-transparent text-purple-400/50 cursor-not-allowed opacity-60"
                   data-testid="button-burn-nft"
+                  title="NFT burning feature coming soon"
                 >
-                  🖼️ Burn NFT
+                  🚧 Burn NFT - Soon
                 </button>
               </div>
             </div>
@@ -1445,236 +2069,39 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* NFT Burning Interface - Simplified using user's 2 burn methods */}
+          {/* NFT Burning Interface */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">Core NFT Burning</h3>
-                <div className="text-sm text-purple-200">
-                  Using Metaplex Core SDK
-                </div>
-              </div>
-
-              {/* Core NFT Info Banner */}
-              <div className="mb-6 bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-200 text-sm">
-                  <span className="font-medium">✨ Simplified NFT Burning</span>
-                  <span className="block text-blue-300/80 mt-1">Using your custom burn methods: Single Asset Burn and Collection Burn with proper collection handling.</span>
-                </p>
-              </div>
-
-              {/* NFT Burning Interface */}
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-purple-200 mb-2">
-                    NFT Asset ID
-                  </label>
-                  <input
-                    type="text"
-                    value={nftAssetId}
-                    onChange={(e) => setNftAssetId(e.target.value)}
-                    placeholder="Enter NFT Asset ID (public key) to burn..."
-                    className="w-full px-4 py-3 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 focus:outline-none transition-colors"
-                    data-testid="input-nft-asset-id"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Single Burn Button */}
-                  <button
-                    onClick={async () => {
-                      if (!nftAssetId.trim()) {
-                        toast({
-                          title: "Error",
-                          description: "Please enter an NFT Asset ID",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      
-                      if (!isConnected || !publicKey || !signTransaction) {
-                        toast({
-                          title: "Wallet not connected",
-                          description: "Please connect your wallet first",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-
-                      try {
-                        toast({
-                          title: "Starting NFT Burn...",
-                          description: "Preparing transaction for single asset burn",
-                        });
-
-                        // Call server endpoint to create the burn transaction
-                        const response = await fetch('/api/nft/burn-single', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            assetId: nftAssetId.trim(),
-                            walletPublicKey: publicKey.toString()
-                          })
-                        });
-
-                        const data = await response.json();
-                        
-                        if (!data.success) {
-                          throw new Error(data.message);
-                        }
-
-                        // Convert base64 transaction back to bytes and sign with wallet
-                        const transactionBuffer = Buffer.from(data.transaction, 'base64');
-                        const transaction = Transaction.from(transactionBuffer);
-                        
-                        // Sign with wallet
-                        const signedTransaction = await signTransaction(transaction);
-                        
-                        // Send to blockchain
-                        const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-                        
-                        const result = { success: true, signature };
-
-                        toast({
-                          title: "NFT Burned Successfully!",
-                          description: `Transaction: ${result.signature}`,
-                        });
-                        
-                        setNftAssetId('');
-                      } catch (error: any) {
-                        console.error('Single burn failed:', error);
-                        toast({
-                          title: "NFT Burn Failed",
-                          description: error?.message || "Unknown error occurred",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    disabled={!isConnected || !nftAssetId.trim()}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                    data-testid="button-single-burn"
-                  >
-                    <Flame className="h-5 w-5" />
-                    Single Burn
-                  </button>
-
-                  {/* Collection Burn Button */}
-                  <button
-                    onClick={async () => {
-                      if (!nftAssetId.trim()) {
-                        toast({
-                          title: "Error",
-                          description: "Please enter an NFT Asset ID",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      
-                      if (!isConnected || !publicKey || !signTransaction) {
-                        toast({
-                          title: "Wallet not connected",
-                          description: "Please connect your wallet first",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-
-                      try {
-                        toast({
-                          title: "Starting Collection NFT Burn...",
-                          description: "Preparing transaction with collection handling",
-                        });
-
-                        // Call server endpoint to create the collection burn transaction
-                        const response = await fetch('/api/nft/burn-collection', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            assetId: nftAssetId.trim(),
-                            walletPublicKey: publicKey.toString()
-                          })
-                        });
-
-                        const data = await response.json();
-                        
-                        if (!data.success) {
-                          throw new Error(data.message);
-                        }
-
-                        // Convert base64 transaction back to bytes and sign with wallet
-                        const transactionBuffer = Buffer.from(data.transaction, 'base64');
-                        const transaction = Transaction.from(transactionBuffer);
-                        
-                        // Sign with wallet
-                        const signedTransaction = await signTransaction(transaction);
-                        
-                        // Send to blockchain
-                        const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-                        
-                        const result = { success: true, signature };
-
-                        toast({
-                          title: "NFT Burned Successfully!",
-                          description: `Transaction: ${result.signature}`,
-                        });
-                        
-                        setNftAssetId('');
-                      } catch (error: any) {
-                        console.error('Collection burn failed:', error);
-                        toast({
-                          title: "Collection NFT Burn Failed",
-                          description: error?.message || "Unknown error occurred",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    disabled={!isConnected || !nftAssetId.trim()}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                    data-testid="button-collection-burn"
-                  >
-                    <Flame className="h-5 w-5" />
-                    Collection Burn
-                  </button>
-                </div>
-
-                {/* Instructions */}
-                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Info className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-blue-200">
-                      <p className="font-medium mb-2">How to Use Your Burn Files:</p>
-                      <ol className="space-y-1 text-blue-300 list-decimal list-inside">
-                        <li>Copy the Asset ID from the input field above</li>
-                        <li>Edit the assetId in either <code className="bg-slate-700 px-1 rounded">single burn.ts</code> or <code className="bg-slate-700 px-1 rounded">colection burn.ts</code></li>
-                        <li>Run in terminal: <code className="bg-slate-700 px-1 rounded">tsx single burn.ts</code> or <code className="bg-slate-700 px-1 rounded">tsx colection burn.ts</code></li>
-                      </ol>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* File Locations */}
-              <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <TreePine className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-purple-200">
-                    <p className="font-medium mb-2">Your Files are Located in Project Root:</p>
-                    <ul className="space-y-1 text-purple-300 font-mono">
-                      <li>📄 ./single burn.ts</li>
-                      <li>📄 ./colection burn.ts</li>
-                    </ul>
-                    <p className="mt-3 text-purple-300">
-                      Simply edit the asset ID in any file and execute it directly using tsx or node to burn your NFTs with the official Metaplex Core SDK.
+              {/* Coming Soon Message */}
+              <div className="text-center py-12">
+                <div className="max-w-md mx-auto">
+                  <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/20 border border-orange-500/30 rounded-xl p-8 mb-6">
+                    <div className="text-6xl mb-4">🚧</div>
+                    <h3 className="text-2xl font-bold text-white mb-3">Coming Soon!</h3>
+                    <p className="text-orange-200 text-lg">
+                      NFT burning functionality is currently under development and will be available soon.
                     </p>
+                  </div>
+                  
+                  <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-purple-200 text-left">
+                        <p className="font-medium mb-2">What's Coming:</p>
+                        <ul className="space-y-1 text-purple-300">
+                          <li>• Burn Metaplex Core NFTs and recover rent</li>
+                          <li>• Support for OCP and Programmable NFTs (pNFTs)</li>
+                          <li>• Batch burning of multiple NFTs</li>
+                          <li>• Automatic SOL rent recovery to your wallet</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
+
           {/* Referrals Tab Content */}
           {activeTab === 'referrals' && (
             <div className="space-y-8">
