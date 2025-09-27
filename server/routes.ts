@@ -2016,6 +2016,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           console.log(`✅ Authority validated - wallet ${walletAddress} can burn Core NFT ${nftId}`);
 
+          // Get ACTUAL rent amount from the asset account
+          const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+          const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+          const connection = new Connection(rpcUrl, 'confirmed');
+          
+          const assetAccountInfo = await connection.getAccountInfo(new PublicKey(nftId));
+          const actualRentLamports = assetAccountInfo?.lamports || 2268960; // Fallback to known amount
+          const actualRentSol = actualRentLamports / 1e9;
+          console.log(`💰 ACTUAL rent in Core NFT account: ${actualRentSol} SOL (${actualRentLamports} lamports)`);
+
           // Build burn transaction using TransactionBuilder
           const burnTx = new TransactionBuilder()
             .add(
@@ -2036,10 +2046,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           burnTransactions.push({
             nftId,
             transaction: base64Transaction,
-            expectedRent: 0.004 // Approximate rent for Core NFTs
+            expectedRent: actualRentSol // REAL rent amount from account!
           });
 
-          totalExpectedRent += 0.004;
+          totalExpectedRent += actualRentSol;
           console.log(`✅ Core NFT burn transaction prepared: ${nftId}`);
 
         } catch (nftError) {
