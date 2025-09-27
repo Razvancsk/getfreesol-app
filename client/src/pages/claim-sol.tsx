@@ -753,15 +753,9 @@ export default function SolRefund() {
             console.log(`📦 Preparing burn transactions for ${coreNftIds.length} Core NFTs...`);
 
             // Call server to prepare burn transactions
-            const prepareResponse = await apiRequest('/api/core-nfts/prepare-burn', {
-              method: 'POST',
-              body: JSON.stringify({
-                coreNftIds,
-                walletAddress: wallet.publicKey.toString()
-              }),
-              headers: {
-                'Content-Type': 'application/json'
-              }
+            const prepareResponse = await apiRequest('POST', '/api/core-nfts/prepare-burn', {
+              coreNftIds,
+              walletAddress: wallet.publicKey.toString()
             });
 
             console.log('🔧 Server prepared burn transactions:', prepareResponse);
@@ -810,19 +804,13 @@ export default function SolRefund() {
 
                 // Record the successful burn in our database
                 try {
-                  await apiRequest('/api/nfts/burn/record', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      signature,
-                      nftMint: burnTx.nftId,
-                      rentRecovered: burnTx.expectedRent,
-                      walletAddress: wallet.publicKey.toString(),
-                      nftType: 'core',
-                      success: true
-                    }),
-                    headers: {
-                      'Content-Type': 'application/json'
-                    }
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    signature,
+                    nftMint: burnTx.nftId,
+                    rentRecovered: burnTx.expectedRent,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'core',
+                    success: true
                   });
                   console.log('✅ Core NFT burn recorded in database');
                 } catch (recordError) {
@@ -840,18 +828,12 @@ export default function SolRefund() {
                 
                 // Record the failed burn attempt
                 try {
-                  await apiRequest('/api/nfts/burn/record', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      nftMint: burnTx.nftId,
-                      walletAddress: wallet.publicKey.toString(),
-                      nftType: 'core',
-                      error: signError instanceof Error ? signError.message : 'Unknown error',
-                      success: false
-                    }),
-                    headers: {
-                      'Content-Type': 'application/json'
-                    }
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    nftMint: burnTx.nftId,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'core',
+                    error: signError instanceof Error ? signError.message : 'Unknown error',
+                    success: false
                   });
                 } catch (recordError) {
                   console.warn('⚠️ Failed to record Core NFT burn failure in database:', recordError);

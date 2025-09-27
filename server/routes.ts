@@ -10,7 +10,7 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
-import { publicKey as umiPublicKey, createNoopSigner } from '@metaplex-foundation/umi';
+import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2005,11 +2005,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const asset = await fetchAssetV1(umi, umiPublicKey(nftId));
           console.log(`✅ Core asset validated: ${asset.publicKey}`);
 
-          // Build burn transaction
-          const burnTx = burn(umi, { asset: umiPublicKey(nftId) });
+          // Build burn transaction using TransactionBuilder
+          const burnTx = new TransactionBuilder()
+            .add(
+              burn(umi, {
+                asset: umiPublicKey(nftId),
+                authority: umi.identity, // will be replaced by client signer
+              })
+            );
           
           // Build the transaction without signing
-          const transaction = await burnTx.getTransaction(umi);
+          const transaction = await burnTx.buildWithLatestBlockhash(umi);
           
           // Convert to base64 for client signing
           const base64Transaction = Buffer.from(transaction.serialize()).toString('base64');
