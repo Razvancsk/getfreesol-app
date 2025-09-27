@@ -2351,10 +2351,8 @@ export default function SolRefund() {
                             nftsByType[nft.type].push(nft);
                           });
 
-                          // Process each NFT type
-                          Object.entries(nftsByType).forEach(([nftType, nfts]) => {
-                            burnNftsMutation.mutate({ nftType, nfts });
-                          });
+                          // Call burn mutation with selected NFT IDs
+                          burnNftsMutation.mutate(selectedIds);
                         }}
                         disabled={burnNftsMutation.isPending || !publicKey}
                         className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
