@@ -1389,10 +1389,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const asset of items) {
         const { interface: assetInterface, compression, burnt } = asset;
         
+        // Log burn status for debugging
+        console.log(`🔍 Asset ${asset.content?.metadata?.name || asset.id}: burnt=${burnt}, interface=${assetInterface}`);
+        
         // Skip burned NFTs (they still show in DAS with burnt: true)
+        // BUT: Be less strict since Helius sometimes incorrectly reports burn status
         if (burnt === true) {
-          console.log(`Skipping burned NFT: ${asset.content?.metadata?.name || asset.id}`);
-          continue;
+          console.log(`⚠️ Asset marked as burned but checking further: ${asset.content?.metadata?.name || asset.id}`);
+          
+          // For pNFTs and Core NFTs, do additional verification
+          if (assetInterface === 'ProgrammableNFT' || assetInterface === 'MplCoreAsset') {
+            console.log(`🔧 Allowing potentially mis-flagged ${assetInterface} through for verification`);
+            // Don't skip - let it through for further processing
+          } else {
+            console.log(`Skipping confirmed burned NFT: ${asset.content?.metadata?.name || asset.id}`);
+            continue;
+          }
         }
         
         // Skip compressed NFTs 
@@ -1466,14 +1478,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const nftInfo = {
           mint: asset.id,
+          id: asset.id, // Add id field for consistency
+          assetId: asset.id, // Add assetId field for consistency  
           name: asset.content?.metadata?.name || 'Unknown NFT',
           symbol: asset.content?.metadata?.symbol || '',
           image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
           description: asset.content?.metadata?.description || '',
-          type: 'core',
-          interface: 'MplCoreAsset',
-          tokenStandard: '',
-          compressed: false,
+          type: nftType, // Use the detected NFT type instead of hardcoding 'core'
+          interface: assetInterface, // Use the actual interface instead of hardcoding 'MplCoreAsset'
+          tokenStandard: asset.token_info?.token_standard || '',
+          compressed: compression?.compressed || false,
           creators: asset.creators || [],
           collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null,
           attributes: asset.content?.metadata?.attributes || []
@@ -1483,10 +1497,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
 
-      // All NFTs are Core type now
-      const counts = {
-        core: nfts.length
-      };
+      // Count NFTs by type
+      const counts = nfts.reduce((acc: any, nft: any) => {
+        acc[nft.type] = (acc[nft.type] || 0) + 1;
+        return acc;
+      }, {});
 
       res.json({
         success: true,
