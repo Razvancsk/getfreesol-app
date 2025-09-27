@@ -20,9 +20,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { createUmi } from '@metaplex-foundation/umi';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
+import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
 import { mplCore, burn, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
 import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
 import logoImage from '@assets/image_1757882056840.png';
@@ -751,8 +752,9 @@ export default function SolRefund() {
               throw new Error('Wallet not connected');
             }
 
-            // Create UMI instance for Core NFT operations
-            const umi = createUmi(rpcConnection.rpcEndpoint)
+            // Create UMI instance for Core NFT operations (browser-safe)
+            const umi = createUmi()
+              .use(web3JsRpc(rpcConnection))
               .use(walletAdapterIdentity(wallet.wallet!))
               .use(mplCore());
 
