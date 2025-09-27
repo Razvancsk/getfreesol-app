@@ -2205,15 +2205,20 @@ export default function SolRefund() {
                       className="w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600"
                     />
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      {token.logo && (
+                      {token.logo ? (
                         <img 
                           src={token.logo} 
                           alt={token.symbol || 'Token'} 
                           className="w-8 h-8 rounded-full flex-shrink-0"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
+                            // Replace broken image with default token icon
+                            e.currentTarget.outerHTML = '<div class="w-8 h-8 rounded-full flex-shrink-0 bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">' + (token.symbol?.charAt(0) || 'T') + '</div>';
                           }}
                         />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full flex-shrink-0 bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                          {(token.symbol?.charAt(0) || 'T')}
+                        </div>
                       )}
                       <div className="flex-1 min-w-0 overflow-hidden">
                         <div className="flex items-center space-x-2">

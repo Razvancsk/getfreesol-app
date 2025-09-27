@@ -815,9 +815,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
 
+            // Add Jupiter Token List fallback for logos
+            let jupiterTokenMap: any = {};
+            try {
+              const jupiterResponse = await fetch('https://token.jup.ag/strict');
+              if (jupiterResponse.ok) {
+                const jupiterTokens = await jupiterResponse.json();
+                jupiterTokenMap = jupiterTokens.reduce((map: any, token: any) => {
+                  map[token.address] = token.logoURI;
+                  return map;
+                }, {});
+                console.log(`📋 Loaded ${Object.keys(jupiterTokenMap).length} tokens from Jupiter registry`);
+              }
+            } catch (error) {
+              console.log(`⚠️  Failed to load Jupiter token list:`, error);
+            }
+
             tokens = burnableTokens.map((asset: any) => {
               const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
               const isEmpty = balance === 0;
+              let logo = asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null;
+              
+              // Fallback to Jupiter Token List if no logo from Helius
+              if (!logo && jupiterTokenMap[asset.id]) {
+                logo = jupiterTokenMap[asset.id];
+                console.log(`🔄 Using Jupiter logo for ${asset.content?.metadata?.symbol}: ${logo}`);
+              }
+              
+              console.log(`🖼️  Token ${asset.content?.metadata?.symbol || 'Unknown'} logo data:`, {
+                files: asset.content?.files,
+                image: asset.content?.metadata?.image,
+                jupiterLogo: jupiterTokenMap[asset.id],
+                finalLogo: logo
+              });
               
               return {
                 mint: asset.id,
@@ -825,7 +855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 decimals: asset.token_info?.decimals || 0,
                 name: asset.content?.metadata?.name || 'Unknown Token',
                 symbol: asset.content?.metadata?.symbol || 'TOKEN',
-                logo: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || null,
+                logo: logo,
                 isFrozen: false,
                 isEmpty: isEmpty,
                 status: isEmpty ? 'Empty' : 'Active'
