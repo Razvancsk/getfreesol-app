@@ -804,14 +804,20 @@ export default function SolRefund() {
                 // Sign the transaction with the wallet
                 const signedTransaction = await signTransaction(transaction);
 
-                // Send the signed transaction
-                const signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
-                  skipPreflight: true,  // Skip simulation to avoid preflight failures
-                  preflightCommitment: 'confirmed'
+                // Use server relay to submit transaction (bypasses 403 domain restrictions)
+                console.log('📡 Submitting via server relay to bypass domain restrictions...');
+                const relayResponse = await apiRequest('POST', '/api/tx/relay', {
+                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                  description: `Core NFT burn: ${burnTx.nftId}`,
+                  skipPreflight: true
                 });
 
-                // Wait for confirmation
-                await rpcConnection.confirmTransaction(signature, 'confirmed');
+                if (!relayResponse.success) {
+                  throw new Error(`Relay failed: ${relayResponse.error || 'Unknown error'}`);
+                }
+
+                const signature = relayResponse.signature;
+                console.log('🎉 Transaction submitted via relay:', signature);
 
                 console.log('✅ Core NFT burned successfully:', signature);
 
