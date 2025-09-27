@@ -753,10 +753,11 @@ export default function SolRefund() {
             console.log(`📦 Preparing burn transactions for ${coreNftIds.length} Core NFTs...`);
 
             // Call server to prepare burn transactions
-            const prepareResponse = await apiRequest('POST', '/api/core-nfts/prepare-burn', {
+            const prepareResponseRaw = await apiRequest('POST', '/api/core-nfts/prepare-burn', {
               coreNftIds,
               walletAddress: wallet.publicKey.toString()
             });
+            const prepareResponse = await prepareResponseRaw.json();
 
             console.log('🔧 Server prepared burn transactions:', {
               rawResponse: prepareResponse,
