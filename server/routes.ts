@@ -2022,6 +2022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               burn(umi, {
                 asset: asset,
                 authority: umi.identity, // will be replaced by client signer
+                recipient: walletPubkey, // USER gets the rent SOL back!
               })
             );
           
