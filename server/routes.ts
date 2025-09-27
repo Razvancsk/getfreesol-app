@@ -12,6 +12,9 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
 import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
+// Metaplex Token Metadata for pNFT burning
+import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, TokenStandard, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1377,13 +1380,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let nfts: any[] = [];
       const items = heliusData.result?.items || [];
 
+      // Programmable NFT program IDs
+      const PROGRAMMABLE_NFT_PROGRAM_IDS = [
+        'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s', // Token Metadata Program
+        'F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7'  // pNFT Authorization Program
+      ];
+
       for (const asset of items) {
         const { interface: assetInterface, compression, burnt } = asset;
-        
-        // Only process Metaplex Core NFTs
-        if (assetInterface !== 'MplCoreAsset') {
-          continue;
-        }
         
         // Skip burned NFTs (they still show in DAS with burnt: true)
         if (burnt === true) {
@@ -1391,15 +1395,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // Skip compressed NFTs (shouldn't happen with Core but check anyway)
+        // Skip compressed NFTs 
         if (compression?.compressed) {
           continue;
         }
         
-        const nftType = 'core';
+        let nftType: string;
+        
+        // Identify NFT type based on interface and ownership
+        if (assetInterface === 'MplCoreAsset') {
+          nftType = 'core';
+        } else if (assetInterface === 'ProgrammableNFT' || 
+                   (asset.ownership?.owner && PROGRAMMABLE_NFT_PROGRAM_IDS.includes(asset.ownership.owner)) ||
+                   (asset.authorities && asset.authorities.some((auth: any) => PROGRAMMABLE_NFT_PROGRAM_IDS.includes(auth.address)))) {
+          nftType = 'pnft';
+          console.log(`📋 Found Programmable NFT: ${asset.content?.metadata?.name || asset.id}`);
+        } else if (assetInterface === 'V1_NFT' || assetInterface === 'Legacy') {
+          nftType = 'standard';
+        } else {
+          // Skip unsupported NFT types
+          console.log(`⚠️ Skipping unsupported NFT type: ${assetInterface} - ${asset.content?.metadata?.name || asset.id}`);
+          continue;
+        }
 
-        // Filter by type if specified (only 'core' supported now)
-        if (type && type !== 'core') {
+        // Filter by type if specified
+        if (type && type !== nftType) {
           continue;
         }
 
@@ -2162,6 +2182,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error preparing Core NFT burn transactions:', error);
       res.status(500).json({ 
         error: "Failed to prepare Core NFT burn transactions",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Prepare Programmable NFT burn transactions (server-side UMI)
+  app.post("/api/pnfts/prepare-burn", async (req, res) => {
+    try {
+      // Validate request body
+      const prepareBurnSchema = z.object({
+        pNftIds: z.array(z.string().min(1, "pNFT ID is required")),
+        walletAddress: z.string().min(1, "Wallet address is required")
+      });
+
+      const { pNftIds, walletAddress } = prepareBurnSchema.parse(req.body);
+
+      // Get RPC configuration
+      const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = apiKey ? 
+        `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
+        'https://api.mainnet-beta.solana.com';
+
+      console.log(`🔥 Preparing ${pNftIds.length} Programmable NFT burn transactions...`);
+
+      // Initialize UMI with token metadata support
+      const umi = createUmi(rpcUrl).use(mplTokenMetadata());
+      
+      // Use a no-op signer - we'll return unsigned transactions
+      const noopSigner = createNoopSigner(umiPublicKey(walletAddress));
+      umi.use({ install: (ctx) => { ctx.identity = noopSigner; ctx.payer = noopSigner; }});
+
+      const burnTransactions = [];
+      let totalExpectedRent = 0;
+
+      for (const nftId of pNftIds) {
+        try {
+          console.log(`🔍 Processing Programmable NFT: ${nftId}`);
+          
+          // Fetch the pNFT Asset with the Token Account
+          const mintId = umiPublicKey(nftId);
+          const assetWithToken = await fetchDigitalAssetWithAssociatedToken(
+            umi,
+            mintId,
+            umi.identity.publicKey
+          );
+          console.log(`✅ pNFT asset validated: ${assetWithToken.publicKey}`);
+
+          // Determine if the pNFT Asset is in a collection
+          const collectionMint = unwrapOption(assetWithToken.metadata.collection);
+          
+          // If there's a collection find the collection metadata PDAs
+          const collectionMetadata = collectionMint
+            ? findMetadataPda(umi, { mint: collectionMint.key })
+            : null;
+
+          console.log(`📋 Collection metadata: ${collectionMetadata ? 'Found' : 'None'}`);
+
+          // Build burn transaction for pNFT using burnV1
+          const burnTx = burnV1(umi, {
+            mint: mintId,
+            collectionMetadata: collectionMetadata || undefined,
+            token: assetWithToken.token.publicKey,
+            tokenRecord: assetWithToken.tokenRecord?.publicKey,
+            tokenStandard: TokenStandard.ProgrammableNonFungible,
+          });
+
+          // Build the transaction without signing
+          const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
+          
+          // Convert UMI transaction to Web3.js format, then serialize for client signing
+          const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
+          const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
+
+          // Calculate expected rent (pNFTs have multiple accounts)
+          const connection = new Connection(rpcUrl, 'confirmed');
+          let expectedRent = 0;
+          
+          // Get rent from token account
+          if (assetWithToken.token.publicKey) {
+            const tokenAccountInfo = await connection.getAccountInfo(new PublicKey(assetWithToken.token.publicKey.toString()));
+            if (tokenAccountInfo) {
+              expectedRent += tokenAccountInfo.lamports;
+            }
+          }
+          
+          // Get rent from token record if it exists
+          if (assetWithToken.tokenRecord?.publicKey) {
+            const tokenRecordInfo = await connection.getAccountInfo(new PublicKey(assetWithToken.tokenRecord.publicKey.toString()));
+            if (tokenRecordInfo) {
+              expectedRent += tokenRecordInfo.lamports;
+            }
+          }
+
+          const expectedRentSol = expectedRent / 1e9;
+          
+          burnTransactions.push({
+            nftId,
+            transaction: base64Transaction,
+            expectedRent: expectedRentSol
+          });
+
+          totalExpectedRent += expectedRentSol;
+          console.log(`✅ Programmable NFT burn transaction prepared: ${nftId} (${expectedRentSol} SOL expected)`);
+
+        } catch (nftError) {
+          console.error(`❌ Failed to prepare burn for Programmable NFT ${nftId}:`, nftError);
+          burnTransactions.push({
+            nftId,
+            error: nftError instanceof Error ? nftError.message : 'Unknown error',
+            expectedRent: 0
+          });
+        }
+      }
+
+      const responseData = {
+        success: true,
+        burnTransactions,
+        totalExpectedRentSol: totalExpectedRent,
+        message: `Prepared ${burnTransactions.filter(tx => tx.transaction).length} pNFT burn transactions`
+      };
+      
+      console.log(`🔧 pNFT Server returning response:`, {
+        success: responseData.success,
+        burnTransactionsCount: responseData.burnTransactions.length,
+        transactionsWithData: responseData.burnTransactions.filter(tx => tx.transaction).length,
+        transactionsWithErrors: responseData.burnTransactions.filter(tx => tx.error).length,
+        firstTransaction: responseData.burnTransactions[0] || 'none'
+      });
+
+      res.json(responseData);
+
+    } catch (error) {
+      console.error('Error preparing Programmable NFT burn transactions:', error);
+      res.status(500).json({ 
+        error: "Failed to prepare Programmable NFT burn transactions",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
