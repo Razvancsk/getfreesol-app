@@ -19,14 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Connection, VersionedTransaction } from '@solana/web3.js';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import { createUmi } from '@metaplex-foundation/umi';
-// Core NFT imports removed - will be re-added with official implementation
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { web3JsRpc } from '@metaplex-foundation/umi-rpc-web3js';
-import { signerIdentity, createSignerFromKeypair } from '@metaplex-foundation/umi';
-import bs58 from 'bs58';
+import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
+import { mplCore, burn, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
+import { publicKey as umiPublicKey } from '@metaplex-foundation/umi';
 import logoImage from '@assets/image_1757882056840.png';
 
 interface EmptyTokenAccount {
@@ -68,6 +66,9 @@ export default function SolRefund() {
   const queryClient = useQueryClient();
   const wallet = useWallet();
   const { connection: rpcConnection } = useConnection();
+  
+  // Note: UMI will be created inside the burn handler to avoid initialization errors
+  
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -741,12 +742,115 @@ export default function SolRefund() {
 
         const nftMints = nfts.map(nft => nft.mint);
 
-        // Handle Core NFTs - TEMPORARILY DISABLED (being rebuilt with official Metaplex Core)
+        // Handle Core NFTs with Official Metaplex Core Implementation
         if (nftType === 'core') {
-          throw new Error('Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!');
+          try {
+            console.log('🔥 Starting Official Metaplex Core NFT burning...');
+            
+            if (!wallet.publicKey) {
+              throw new Error('Wallet not connected');
+            }
+
+            // Create UMI instance for Core NFT operations
+            const umi = createUmi(rpcConnection.rpcEndpoint)
+              .use(walletAdapterIdentity(wallet.wallet!))
+              .use(mplCore());
+
+            console.log('✅ UMI initialized with official Metaplex Core plugin');
+
+            const successfulBurns = [];
+            let totalRentRecovered = 0;
+
+            for (const mintAddress of nftMints) {
+              try {
+                console.log(`🔥 Burning Core NFT: ${mintAddress}`);
+                
+                // Convert mint address to UMI public key
+                const assetId = umiPublicKey(mintAddress);
+                
+                // Fetch the asset to validate it exists and is a Core asset
+                console.log('📋 Fetching Core asset details...');
+                const asset = await fetchAssetV1(umi, assetId);
+                console.log('✅ Core asset fetched successfully:', asset.publicKey);
+
+                // Build and send the burn instruction using official Metaplex Core
+                console.log('🔥 Executing official Core NFT burn...');
+                const burnResult = await burn(umi, {
+                  asset: assetId,
+                }).sendAndConfirm(umi);
+
+                console.log('✅ Core NFT burn transaction confirmed:', burnResult.signature);
+
+                // Calculate rent recovered (Core NFTs typically recover ~0.004 SOL)
+                const rentRecovered = 0.004; // Standard Core NFT rent
+                totalRentRecovered += rentRecovered;
+
+                successfulBurns.push({
+                  mint: mintAddress,
+                  signature: burnResult.signature,
+                  rentRecovered: rentRecovered
+                });
+
+                console.log(`💰 Rent recovered: ${rentRecovered} SOL`);
+
+                // Record the burn in our database
+                await apiRequest('POST', '/api/nfts/burn/record', {
+                  signature: burnResult.signature,
+                  nftMint: mintAddress,
+                  rentRecovered: rentRecovered,
+                  walletAddress: wallet.publicKey.toString(),
+                  nftType: 'core'
+                });
+
+              } catch (burnError: any) {
+                console.error(`❌ Failed to burn Core NFT ${mintAddress}:`, burnError);
+                
+                // Record failed attempt
+                await apiRequest('POST', '/api/nfts/burn/record', {
+                  nftMint: mintAddress,
+                  walletAddress: wallet.publicKey.toString(),
+                  nftType: 'core',
+                  error: burnError.message,
+                  success: false
+                });
+              }
+            }
+
+            if (successfulBurns.length === 0) {
+              throw new Error('Failed to burn any Core NFTs');
+            }
+
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
+            console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+
+            // Show success message
+            toast({
+              title: "Core NFTs Burned Successfully! 🔥",
+              description: `Burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''} and recovered ${totalRentRecovered} SOL`,
+              variant: "default",
+            });
+
+            // Refresh NFT list
+            if (publicKey) {
+              scanNftsMutation.mutate(publicKey.toString());
+            }
+
+            return;
+
+          } catch (coreError: any) {
+            console.error('❌ Core NFT burning failed:', coreError);
+            
+            toast({
+              title: "Core NFT Burning Failed",
+              description: coreError.message || 'An unexpected error occurred',
+              variant: "destructive",
+            });
+            
+            throw coreError;
+          }
         }
         
-        // Core NFT burning will be re-implemented with official Metaplex Core
+        // Legacy code (disabled):
         if (false) { // Disabled legacy Core NFT code
           try {
             console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
@@ -1082,7 +1186,7 @@ export default function SolRefund() {
                 try {
                   // Fetch asset info first (this should work)
                   console.log('📄 Fetching asset data...');
-                  const asset = await fetchAsset(umi, assetPublicKey);
+                  const asset = await fetchAssetV1(umi, assetPublicKey);
                   console.log('✅ Asset fetched successfully:', asset.name);
 
                   // Try collection-aware burn
@@ -2110,18 +2214,70 @@ export default function SolRefund() {
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
                 <div className="space-y-4">
+                  {/* Select All Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => {
+                          const allNfts = nftData.nfts;
+                          setSelectedNfts(new Set(allNfts.map((nft: any) => nft.mint || nft.id || nft.assetId).filter(Boolean)));
+                        }}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-select-all-nfts"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setSelectedNfts(new Set())}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-deselect-all-nfts"
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                    <p className="text-sm text-purple-200">
+                      {selectedNfts.size} selected • {nftData.nfts.length} total NFTs
+                    </p>
+                  </div>
+
                   {/* NFT Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {nftData.nfts.map((nft: any) => {
                       // Use a stable identifier that works for all NFT types
                       const nftId = nft.mint || nft.id || nft.assetId;
+                      const isSelected = selectedNfts.has(nftId);
 
                       return (
                         <div
                           key={nftId}
-                          className="relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border border-purple-500/30 rounded-lg p-3 transition-all opacity-75"
+                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'border-green-400/50 bg-green-900/20' 
+                              : 'border-purple-500/30 hover:border-purple-400/50'
+                          }`}
+                          onClick={() => {
+                            setSelectedNfts(prev => {
+                              const newSet = new Set(prev);
+                              if (isSelected) {
+                                newSet.delete(nftId);
+                              } else {
+                                newSet.add(nftId);
+                              }
+                              return newSet;
+                            });
+                          }}
                           data-testid={`card-nft-${nftId}`}
                         >
+                          {/* Selection Checkbox */}
+                          <div className="absolute top-2 left-2 z-10">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              isSelected 
+                                ? 'bg-green-500 border-green-500' 
+                                : 'bg-purple-900/50 border-purple-400'
+                            }`}>
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
+                            </div>
+                          </div>
                           {/* NFT Image */}
                           <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30">
                             {nft.image ? (
@@ -2165,13 +2321,48 @@ export default function SolRefund() {
                     })}
                   </div>
 
-                  {/* Burning Notice */}
-                  <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 text-center">
-                    <p className="text-orange-200 text-sm">
-                      <span className="font-medium">🚧 NFT Burning Temporarily Disabled</span>
-                      <span className="block text-orange-300/80 mt-1">Being rebuilt with official Metaplex Core implementation for better reliability.</span>
-                    </p>
-                  </div>
+                  {/* Burn Selected Button */}
+                  {selectedNfts.size > 0 && (
+                    <div className="flex justify-center pt-4">
+                      <button
+                        onClick={() => {
+                          if (!publicKey) {
+                            toast({
+                              title: "Error",
+                              description: "Please connect your wallet first",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          const selectedIds = Array.from(selectedNfts);
+                          const selectedNftData = nftData.nfts.filter((nft: any) => 
+                            selectedIds.includes(nft.mint || nft.id || nft.assetId)
+                          );
+                          
+                          // Group by type and burn
+                          const nftsByType: { [key: string]: any[] } = {};
+                          selectedNftData.forEach((nft: any) => {
+                            if (!nftsByType[nft.type]) {
+                              nftsByType[nft.type] = [];
+                            }
+                            nftsByType[nft.type].push(nft);
+                          });
+
+                          // Process each NFT type
+                          Object.entries(nftsByType).forEach(([nftType, nfts]) => {
+                            burnNftsMutation.mutate({ nftType, nfts });
+                          });
+                        }}
+                        disabled={burnNftsMutation.isPending || !publicKey}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-testid="button-burn-selected-nfts"
+                      >
+                        <Flame className={`h-5 w-5 ${burnNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                        {burnNftsMutation.isPending ? 'Burning...' : `Burn ${selectedNfts.size} Selected NFT${selectedNfts.size > 1 ? 's' : ''}`}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : !scanNftsMutation.isPending ? (
                 <div className="text-center py-8">

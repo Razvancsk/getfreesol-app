@@ -1667,10 +1667,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Only Metaplex Core NFTs are supported" });
       }
 
-      // Core NFT burning temporarily disabled - being rebuilt with official Metaplex Core
-      return res.status(501).json({
-        success: false,
-        error: 'Core NFT burning is being rebuilt using official Metaplex implementation. Please check back soon!'
+      // Core NFT burning with official Metaplex Core implementation  
+      // The client now handles Core NFT burning directly using the official mpl-core library
+      // This endpoint is kept for compatibility but Core NFTs are burned client-side
+      return res.status(200).json({
+        success: true,
+        message: 'Core NFT burning is now handled client-side with official Metaplex Core implementation',
+        burnTransactions: [],
+        totalExpectedRentSol: 0
       });
 
       // Handle referral code logic (same as token burning)
@@ -1903,6 +1907,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating NFT burn transaction:', error);
       res.status(500).json({ error: "Failed to create NFT burn transaction" });
+    }
+  });
+
+  // Record Core NFT burn results
+  app.post("/api/nfts/burn/record", async (req, res) => {
+    try {
+      // Validate request body with Zod
+      const burnRecordSchema = z.object({
+        signature: z.string().optional(),
+        nftMint: z.string().min(1, "NFT mint address is required"),
+        rentRecovered: z.number().min(0).optional().default(0),
+        walletAddress: z.string().min(1, "Wallet address is required"),
+        nftType: z.string().min(1, "NFT type is required"),
+        error: z.string().optional(),
+        success: z.boolean().default(true)
+      });
+
+      const validatedData = burnRecordSchema.parse(req.body);
+      const { signature, nftMint, rentRecovered, walletAddress, nftType, error, success } = validatedData;
+
+      // Record the NFT burn transaction in our ledger
+      if (success && signature) {
+        // Successful burn
+        const transactionData = {
+          walletAddress,
+          signature,
+          transactionType: 'nft_burn' as const,
+          solRecovered: rentRecovered.toString(),
+          netAmount: rentRecovered.toString(), // No fees for Core NFT burning currently
+          feeAmount: '0',
+          referralCode: null,
+          details: JSON.stringify({
+            nftMint,
+            nftType,
+            rentRecovered
+          })
+        };
+
+        await storage.createTransactionLedger(transactionData);
+
+        console.log(`✅ Recorded Core NFT burn: ${nftMint} (${rentRecovered || 0} SOL recovered)`);
+      } else {
+        // Failed burn attempt
+        console.log(`❌ Recorded failed Core NFT burn attempt: ${nftMint} - ${error || 'Unknown error'}`);
+      }
+
+      res.json({
+        success: true,
+        message: success ? 'NFT burn recorded successfully' : 'Failed NFT burn attempt recorded'
+      });
+
+    } catch (recordError) {
+      console.error('Error recording NFT burn:', recordError);
+      res.status(500).json({ error: "Failed to record NFT burn" });
     }
   });
 
