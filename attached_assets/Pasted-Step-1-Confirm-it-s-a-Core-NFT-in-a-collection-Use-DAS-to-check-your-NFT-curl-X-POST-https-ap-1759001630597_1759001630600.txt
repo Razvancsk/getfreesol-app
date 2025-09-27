@@ -1,0 +1,80 @@
+Step 1: Confirm it’s a Core NFT in a collection
+
+Use DAS to check your NFT:
+
+curl -X POST https://api.mainnet-beta.solana.com \
+-H "Content-Type: application/json" \
+-d '{
+  "jsonrpc": "2.0",
+  "id": "getAsset",
+  "method": "getAsset",
+  "params": { "id": "YOUR_CORE_ASSET_ID" }
+}'
+
+
+Look for:
+
+"ownership.owner" → your wallet (you must be owner)
+
+"collection.verified": true → NFT belongs to a collection
+
+"compression.compressed": false → non-compressed (Core burn applies)
+
+🔹 Step 2: Use the Core Asset ID
+
+Important: use the Core Asset ID (asset.id), not the mint address.
+
+This is the account representing the NFT on-chain.
+
+🔹 Step 3: Prepare the burn instruction
+
+Even though it’s in a collection:
+
+Collection authority is NOT required to burn.
+
+Owner alone can burn, unless the collection has explicit guards (rare).
+
+Include recipient to get the rent SOL back.
+
+Example in Node.js / UMI:
+
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { burn } from "@metaplex-foundation/mpl-core";
+import { keypairIdentity, publicKey } from "@metaplex-foundation/umi";
+import bs58 from "bs58";
+
+const RPC = "https://api.mainnet-beta.solana.com";
+const PRIVATE_KEY = "YOUR_PRIVATE_KEY_IN_BASE58";
+const ASSET_ID = "CORE_ASSET_ID_FROM_DAS";
+
+const umi = createUmi(RPC).use(
+  keypairIdentity(
+    umi.eddsa.createKeypairFromSecretKey(bs58.decode(PRIVATE_KEY))
+  )
+);
+
+async function burnCollectionNFT() {
+  try {
+    const tx = await burn(umi, {
+      asset: publicKey(ASSET_ID),
+      authority: umi.identity,              // owner
+      recipient: umi.identity.publicKey,    // reclaim rent
+    }).sendAndConfirm(umi, { skipPreflight: true });
+
+    console.log("✅ Burn successful! TX Signature:", tx.signature);
+  } catch (err) {
+    console.error("❌ Burn failed:", err);
+  }
+}
+
+burnCollectionNFT();
+
+🔹 Step 4: What happens
+
+The NFT asset account is closed.
+
+Metadata may also be deleted.
+
+Any rent SOL is returned to recipient.
+
+The collection account itself remains intact; only the NFT is removed.
