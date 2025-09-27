@@ -9,7 +9,7 @@ import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstructi
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { mplCore, burn, fetchAssetV1 } from '@metaplex-foundation/mpl-core';
+import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
 import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 import { z } from 'zod';
@@ -1942,15 +1942,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           solRecovered: rentRecovered.toString(),
           netAmount: rentRecovered.toString(), // No fees for Core NFT burning currently
           feeAmount: '0',
-          referralCode: null,
-          details: JSON.stringify({
+          itemsProcessed: 1, // One NFT burned
+          itemDetails: JSON.stringify({
             nftMint,
             nftType,
             rentRecovered
           })
         };
 
-        await storage.createTransactionLedger(transactionData);
+        await storage.createTransactionLedgerEntry(transactionData);
 
         console.log(`✅ Recorded Core NFT burn: ${nftMint} (${rentRecovered || 0} SOL recovered)`);
       } else {
@@ -2002,8 +2002,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🔍 Processing Core NFT: ${nftId}`);
           
-          // Fetch asset to validate it exists and is Core
-          const asset = await fetchAssetV1(umi, umiPublicKey(nftId));
+          // Fetch asset to validate it exists and is Core (using proper fetchAsset)
+          const asset = await fetchAsset(umi, umiPublicKey(nftId));
           console.log(`✅ Core asset validated: ${asset.publicKey}`);
 
           // CRITICAL: Check if wallet is asset authority (owner or update authority)
@@ -2016,6 +2016,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           console.log(`✅ Authority validated - wallet ${walletAddress} can burn Core NFT ${nftId}`);
 
+          // Get collection address from asset
+          const collectionId = collectionAddress(asset);
+          let collection = undefined;
+
+          // Fetch collection if it exists
+          if (collectionId) {
+            try {
+              collection = await fetchCollection(umi, collectionId);
+              console.log(`✅ Collection fetched: ${collectionId}`);
+            } catch (collectionError) {
+              console.log(`⚠️ Could not fetch collection ${collectionId}, proceeding without it`);
+            }
+          }
+
           // Get ACTUAL rent amount from the asset account
           const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
           const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
@@ -2026,13 +2040,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const actualRentSol = actualRentLamports / 1e9;
           console.log(`💰 ACTUAL rent in Core NFT account: ${actualRentSol} SOL (${actualRentLamports} lamports)`);
 
-          // Build burn transaction using TransactionBuilder
+          // Build burn transaction using PROPER Core NFT approach
           const burnTx = new TransactionBuilder()
             .add(
               burn(umi, {
                 asset: asset,
+                collection: collection, // Include collection if exists
                 authority: umi.identity, // will be replaced by client signer
-                recipient: walletPubkey, // USER gets the rent SOL back!
               })
             );
           
