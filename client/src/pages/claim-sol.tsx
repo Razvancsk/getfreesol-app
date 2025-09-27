@@ -2075,30 +2075,124 @@ export default function SolRefund() {
           {/* NFT Burning Interface */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              {/* Coming Soon Message */}
-              <div className="text-center py-12">
-                <div className="max-w-md mx-auto">
-                  <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/20 border border-orange-500/30 rounded-xl p-8 mb-6">
-                    <div className="text-6xl mb-4">🚧</div>
-                    <h3 className="text-2xl font-bold text-white mb-3">Coming Soon!</h3>
-                    <p className="text-orange-200 text-lg">
-                      NFT burning functionality is currently under development and will be available soon.
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white">NFT Burning</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanNftsMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanNftsMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-nft"
+                >
+                  Click to Refresh
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {/* NFT Summary */}
+              {nftData && nftData.nfts && nftData.nfts.length > 0 && (
+                <div className="mb-4 space-y-2">
+                  <p className="text-white text-sm">
+                    <span className="font-semibold">NFTs Found:</span>
+                    <span className="text-purple-300 ml-2">Burning functionality is being rebuilt with official Metaplex Core implementation.</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Individual NFT Grid */}
+              {scanNftsMutation.isPending ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
+                  <p className="text-purple-200">Scanning for NFTs...</p>
+                </div>
+              ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
+                <div className="space-y-4">
+                  {/* NFT Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {nftData.nfts.map((nft: any) => {
+                      // Use a stable identifier that works for all NFT types
+                      const nftId = nft.mint || nft.id || nft.assetId;
+
+                      return (
+                        <div
+                          key={nftId}
+                          className="relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border border-purple-500/30 rounded-lg p-3 transition-all opacity-75"
+                          data-testid={`card-nft-${nftId}`}
+                        >
+                          {/* NFT Image */}
+                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30">
+                            {nft.image ? (
+                              <img
+                                src={nft.image}
+                                alt={nft.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling!.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
+                              <Image className="h-8 w-8 text-purple-400" />
+                            </div>
+                          </div>
+
+                          {/* NFT Details */}
+                          <div className="space-y-1">
+                            <h4 className="text-white text-sm font-medium truncate" title={nft.name}>
+                              {nft.name || 'Unknown NFT'}
+                            </h4>
+
+                            {/* Type Badge */}
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                nft.type === 'standard' ? 'bg-blue-500/20 text-blue-300' :
+                                nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
+                                nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
+                                nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
+                                'bg-gray-500/20 text-gray-300'
+                              }`}>
+                                {nft.type.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Burning Notice */}
+                  <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 text-center">
+                    <p className="text-orange-200 text-sm">
+                      <span className="font-medium">🚧 NFT Burning Temporarily Disabled</span>
+                      <span className="block text-orange-300/80 mt-1">Being rebuilt with official Metaplex Core implementation for better reliability.</span>
                     </p>
                   </div>
-                  
-                  <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-purple-200 text-left">
-                        <p className="font-medium mb-2">What's Coming:</p>
-                        <ul className="space-y-1 text-purple-300">
-                          <li>• Burn Metaplex Core NFTs and recover rent</li>
-                          <li>• Support for OCP and Programmable NFTs (pNFTs)</li>
-                          <li>• Batch burning of multiple NFTs</li>
-                          <li>• Automatic SOL rent recovery to your wallet</li>
-                        </ul>
-                      </div>
-                    </div>
+                </div>
+              ) : !scanNftsMutation.isPending ? (
+                <div className="text-center py-8">
+                  <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">No NFTs Found</h3>
+                  <p className="text-purple-200">Scan your wallet to find NFTs in your collection.</p>
+                </div>
+              ) : null}
+
+              {/* Burn Instructions */}
+              <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-purple-200">
+                    <p className="font-medium mb-2">About NFT Burning:</p>
+                    <ul className="space-y-1 text-purple-300">
+                      <li>• Burn unwanted NFTs and recover SOL rent deposits</li>
+                      <li>• Each Core NFT typically recovers ~0.004 SOL</li>
+                      <li>• Burning permanently destroys the NFT and its metadata</li>
+                      <li>• Feature will return soon with official Metaplex Core support</li>
+                    </ul>
                   </div>
                 </div>
               </div>
