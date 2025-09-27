@@ -889,6 +889,8 @@ export default function SolRefund() {
 
             // Optimistically remove burned NFTs from local state immediately
             const burnedIds = successfulBurns.map(burn => burn.mint);
+            console.log(`🔥 Debug: burnedIds:`, burnedIds);
+            console.log(`🔥 Debug: current nftData:`, nftData);
             
             // Clear burned NFTs from selection first
             setSelectedNfts(prev => {
@@ -899,15 +901,31 @@ export default function SolRefund() {
 
             // Update local NFT data state to remove burned NFTs immediately  
             setNftData(prev => {
-              if (!prev?.nfts) return prev;
+              console.log(`🔥 Debug: setNftData prev:`, prev);
+              if (!prev?.nfts) {
+                console.log(`🔥 Debug: No NFTs in prev data`);
+                return prev;
+              }
               
-              return {
+              const currentIds = prev.nfts.map((nft: any) => nft.id || nft.mint || nft.assetId);
+              console.log(`🔥 Debug: current NFT IDs:`, currentIds);
+              
+              const filtered = prev.nfts.filter((nft: any) => {
+                const nftId = nft.id || nft.mint || nft.assetId;
+                const shouldKeep = !burnedIds.includes(nftId);
+                console.log(`🔥 Debug: NFT ${nftId} - Keep: ${shouldKeep}`);
+                return shouldKeep;
+              });
+              
+              console.log(`🔥 Debug: Filtered NFTs:`, filtered);
+              
+              const result = {
                 ...prev,
-                nfts: prev.nfts.filter((nft: any) => {
-                  const nftId = nft.id || nft.mint || nft.assetId;
-                  return !burnedIds.includes(nftId);
-                })
+                nfts: filtered
               };
+              
+              console.log(`🔥 Debug: Final result:`, result);
+              return result;
             });
 
             // Show success message with green styling and transaction signature
@@ -918,11 +936,8 @@ export default function SolRefund() {
               className: "bg-green-600 text-white border-green-600",
             });
 
-            // Invalidate and refresh NFT scan query
+            // Just invalidate the query - don't refresh immediately to avoid overriding optimistic update
             queryClient.invalidateQueries({ queryKey: ['/api/nfts/scan', publicKey?.toString()] });
-            if (publicKey) {
-              scanNftsMutation.mutate(publicKey.toString());
-            }
 
             return;
 
