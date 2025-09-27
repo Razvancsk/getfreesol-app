@@ -2040,15 +2040,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const actualRentSol = actualRentLamports / 1e9;
           console.log(`💰 ACTUAL rent in Core NFT account: ${actualRentSol} SOL (${actualRentLamports} lamports)`);
 
-          // Build burn transaction using PROPER Core NFT approach
+          // Build burn transaction using PROPER Core NFT approach with required program IDs
+          const coreProgram = umiPublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+          const additionalProgram = umiPublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7');
+          
+          console.log(`🔧 Including required program IDs: Core=${coreProgram}, Additional=${additionalProgram}`);
+          
+          // Create burn instruction with proper Core NFT programs
+          const burnInstruction = burn(umi, {
+            asset: asset,
+            collection: collection, // Include collection if exists
+            authority: umi.identity, // will be replaced by client signer
+          });
+          
+          // Manually add required program accounts to ensure they're included
           const burnTx = new TransactionBuilder()
-            .add(
-              burn(umi, {
-                asset: asset,
-                collection: collection, // Include collection if exists
-                authority: umi.identity, // will be replaced by client signer
-              })
-            );
+            .add(burnInstruction)
+            .addRemainingAccounts([
+              { pubkey: coreProgram, isSigner: false, isWritable: false },
+              { pubkey: additionalProgram, isSigner: false, isWritable: false }
+            ]);
           
           // Build the transaction without signing
           const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
