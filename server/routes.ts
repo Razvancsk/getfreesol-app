@@ -2188,6 +2188,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Transaction Relay - Submit signed transactions via server to bypass domain restrictions
+  app.post("/api/tx/relay", async (req, res) => {
+    try {
+      // Validate request body
+      const relaySchema = z.object({
+        signedTxBase64: z.string().min(1, "Signed transaction is required"),
+        description: z.string().optional().default("Transaction relay"),
+        skipPreflight: z.boolean().optional().default(false),
+        maxRetries: z.number().min(0).max(5).optional().default(2)
+      });
+
+      const { signedTxBase64, description, skipPreflight, maxRetries } = relaySchema.parse(req.body);
+
+      console.log(`🔗 Relaying transaction: ${description}`);
+
+      // Get server RPC connection with Helius API key
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? 
+        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
+        'https://api.mainnet-beta.solana.com';
+
+      const connection = new Connection(rpcUrl, 'confirmed');
+
+      // Convert base64 back to Buffer
+      const txBuffer = Buffer.from(signedTxBase64, 'base64');
+
+      console.log(`📡 Submitting transaction via server RPC: ${rpcUrl.includes('api-key=') ? rpcUrl.replace(/api-key=[^&]*/, 'api-key=****') : rpcUrl}`);
+
+      // Submit the signed transaction
+      const signature = await connection.sendRawTransaction(txBuffer, {
+        skipPreflight,
+        maxRetries
+      });
+
+      console.log(`✅ Transaction submitted successfully: ${signature}`);
+
+      // Get latest blockhash for confirmation
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed');
+
+      // Confirm the transaction
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        ...latestBlockhash
+      }, 'confirmed');
+
+      if (confirmation.value.err) {
+        console.error(`❌ Transaction confirmation failed:`, confirmation.value.err);
+        return res.status(400).json({ 
+          error: "Transaction failed on-chain",
+          signature,
+          details: confirmation.value.err
+        });
+      }
+
+      console.log(`🎉 Transaction confirmed: ${signature}`);
+
+      res.json({
+        success: true,
+        signature,
+        confirmed: true,
+        slot: confirmation.context.slot,
+        message: "Transaction submitted and confirmed via server relay"
+      });
+
+    } catch (error) {
+      console.error('Transaction relay error:', error);
+      res.status(500).json({ 
+        error: "Failed to relay transaction",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
