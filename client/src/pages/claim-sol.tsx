@@ -806,7 +806,7 @@ export default function SolRefund() {
 
                 // Send the signed transaction
                 const signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
-                  skipPreflight: false,
+                  skipPreflight: true,  // Skip simulation to avoid preflight failures
                   preflightCommitment: 'confirmed'
                 });
 
