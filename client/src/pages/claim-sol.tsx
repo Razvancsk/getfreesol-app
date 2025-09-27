@@ -802,7 +802,7 @@ export default function SolRefund() {
                 const transaction = VersionedTransaction.deserialize(transactionBuffer);
 
                 // Sign the transaction with the wallet
-                const signedTransaction = await wallet.wallet!.adapter.signTransaction!(transaction);
+                const signedTransaction = await signTransaction(transaction);
 
                 // Send the signed transaction
                 const signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
@@ -1161,7 +1161,7 @@ export default function SolRefund() {
                 console.log('✅ Transaction confirmed on blockchain!');
 
                 // Check actual rent recovered
-                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey);
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
                 const txDetails = await rpcConnection.getTransaction(signature, {
                   commitment: 'confirmed',
                   maxSupportedTransactionVersion: 0
@@ -1181,12 +1181,12 @@ export default function SolRefund() {
                   success: true
                 });
 
-              } catch (txError) {
+              } catch (txError: any) {
                 console.error(`❌ Failed to burn ${burnTx.name}:`, txError);
                 completedBurns.push({
                   mint: burnTx.asset,
                   name: burnTx.name,
-                  error: txError instanceof Error ? txError.message : 'Unknown error',
+                  error: txError instanceof Error ? txError.message : String(txError),
                   success: false
                 });
               }
@@ -1214,6 +1214,8 @@ export default function SolRefund() {
 
             continue; // Skip the rest of the UMI approach
 
+            // UNREACHABLE CODE - This section is commented out as it's after a continue statement
+            /*
             let burnedCount = 0;
             const burnResults = [];
 
@@ -1329,6 +1331,7 @@ export default function SolRefund() {
             }
 
             console.log(`✅ Successfully burned ${burnedCount} Core NFTs with UMI!`);
+            */
             
             } catch (serverError: any) {
               console.error('❌ Server-side burn fallback also failed:', {
@@ -1401,9 +1404,11 @@ export default function SolRefund() {
       return results;
     },
     onSuccess: (results) => {
-      const totalBurned = results.reduce((sum, r) => sum + r.count, 0);
-      const totalSolRecovered = results.reduce((sum, r) => sum + r.solRecovered, 0);
-      const totalNetAmount = results.reduce((sum, r) => sum + r.netAmount, 0);
+      if (!results) return;
+      
+      const totalBurned = results.reduce((sum, r) => sum + (r.count || 0), 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
 
       const hasRentRecovery = totalSolRecovered > 0;
 
