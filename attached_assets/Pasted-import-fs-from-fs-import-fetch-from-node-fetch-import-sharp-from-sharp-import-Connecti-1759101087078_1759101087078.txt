@@ -1,0 +1,96 @@
+import fs from "fs";
+import fetch from "node-fetch";
+import sharp from "sharp";
+import { Connection, clusterApiUrl, Keypair, PublicKey } from "@solana/web3.js";
+import {
+  Metaplex,
+  keypairIdentity,
+  bundlrStorage
+} from "@metaplex-foundation/js";
+
+// --------------------
+// CONFIG
+// --------------------
+const RPC = clusterApiUrl("devnet"); // change to mainnet-beta when ready
+const connection = new Connection(RPC);
+const wallet = Keypair.fromSecretKey(
+  Uint8Array.from(JSON.parse(fs.readFileSync("wallet.json"))) // load your wallet
+);
+
+const metaplex = Metaplex.make(connection)
+  .use(keypairIdentity(wallet))
+  .use(bundlrStorage());
+
+// --------------------
+// 1. Fetch NFT metadata
+// --------------------
+async function getNFTMetadata(mintAddress) {
+  const nft = await metaplex.nfts().findByMint({ mintAddress: new PublicKey(mintAddress) });
+  const metadataUrl = nft.uri;
+
+  console.log("Current metadata URI:", metadataUrl);
+
+  const metadata = await fetch(metadataUrl).then(res => res.json());
+  console.log("Current NFT metadata:", metadata);
+
+  return { nft, metadata };
+}
+
+// --------------------
+// 2. Download + Resize image
+// --------------------
+async function resizeImage(imageUrl, outputPath, width, height) {
+  const response = await fetch(imageUrl);
+  const buffer = await response.buffer();
+
+  await sharp(buffer).resize(width, height).png().toFile(outputPath);
+  console.log(`Resized image saved: ${outputPath}`);
+}
+
+// --------------------
+// 3. Upload resized image + metadata
+// --------------------
+async function uploadResizedMetadata(originalMetadata, resizedImagePath) {
+  const { uri } = await metaplex.nfts().uploadMetadata({
+    ...originalMetadata,
+    name: `${originalMetadata.name} (Resized)`,
+    image: resizedImagePath, // local file path
+  });
+
+  console.log("New metadata uploaded:", uri);
+  return uri;
+}
+
+// --------------------
+// 4. Update NFT metadata
+// --------------------
+async function updateNFT(nft, newUri) {
+  const { response } = await metaplex.nfts().update({
+    nftOrSft: nft,
+    uri: newUri,
+  });
+
+  console.log("NFT updated! Signature:", response.signature);
+}
+
+// --------------------
+// MAIN FLOW
+// --------------------
+async function resizeNFTFlow(mintAddress) {
+  const { nft, metadata } = await getNFTMetadata(mintAddress);
+
+  // 1. Resize image
+  const resizedImagePath = "resized.png";
+  await resizeImage(metadata.image, resizedImagePath, 512, 512); // choose size
+
+  // 2. Upload resized image + new JSON
+  const newUri = await uploadResizedMetadata(metadata, resizedImagePath);
+
+  // 3. Update NFT on-chain
+  await updateNFT(nft, newUri);
+}
+
+// --------------------
+// RUN
+// --------------------
+resizeNFTFlow("YOUR_NFT_MINT_ADDRESS_HERE");
