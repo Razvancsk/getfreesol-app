@@ -2247,8 +2247,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Calculate platform fees (15% of recovered rent)
           const donationFactor = 0.15; // 15% fee for Core NFT burning
           const requestedFeeLamports = Math.floor(actualRentLamports * donationFactor);
-          const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
-          const maxAllowedFeeLamports = Math.max(0, actualRentLamports - safetyBufferLamports);
+          const networkFeesLamports = 1900000; // 0.0019 SOL for Solana network transaction fees (priority fees + base fees + compute costs)
+          const maxAllowedFeeLamports = Math.max(0, actualRentLamports - networkFeesLamports);
           const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
           
           let referralFeeLamports = 0;
