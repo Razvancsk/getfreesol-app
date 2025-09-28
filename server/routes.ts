@@ -10,9 +10,10 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
-import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
+import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder, transactionBuilder, createSignerFromKeypair, signerIdentity } from '@metaplex-foundation/umi';
 import { transferSol } from '@metaplex-foundation/mpl-toolbox';
-import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
+import { toWeb3JsTransaction, fromWeb3JsInstruction } from '@metaplex-foundation/umi-web3js-adapters';
+import { dasApi } from '@metaplex-foundation/digital-asset-standard-api';
 // Metaplex Token Metadata for pNFT burning
 import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata, fetchDigitalAsset, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { unwrapOption, base58 } from '@metaplex-foundation/umi';
@@ -2958,6 +2959,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error preparing Traditional NFT burn transactions:', error);
       res.status(500).json({ 
         error: "Failed to prepare Traditional NFT burn transactions",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Bulk NFT burn endpoint - burns multiple NFTs in single transaction
+  app.post("/api/nfts/bulk-burn", async (req, res) => {
+    try {
+      const { nftIds, walletAddress, referralCode } = req.body;
+
+      if (!nftIds || !Array.isArray(nftIds) || nftIds.length === 0) {
+        return res.status(400).json({ error: "NFT IDs array is required" });
+      }
+
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address is required" });
+      }
+
+      console.log(`🔥 Starting bulk NFT burn for ${nftIds.length} NFTs...`);
+
+      // Use the same endpoint approach as individual burns but combine into one transaction
+      const coreNfts = [];
+      const pnfts = [];
+      const standardNfts = [];
+
+      // Use the existing individual endpoints to prepare transactions
+      // Core NFTs
+      const coreIds = [];
+      for (const nftId of nftIds) {
+        // Try as Core NFT first
+        try {
+          const coreResponse = await fetch(`${req.protocol}://${req.get('host')}/api/core-nfts/prepare-burn`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              coreNftIds: [nftId],
+              walletAddress,
+              referralCode
+            })
+          });
+          
+          const coreResult = await coreResponse.json();
+          if (coreResult.success && coreResult.burnTransactions?.length > 0) {
+            coreIds.push(nftId);
+          }
+        } catch (error) {
+          // Not a core NFT, continue
+        }
+      }
+
+      // PNFT check
+      const pnftIds = [];
+      for (const nftId of nftIds) {
+        if (!coreIds.includes(nftId)) {
+          try {
+            const pnftResponse = await fetch(`${req.protocol}://${req.get('host')}/api/pnfts/prepare-burn`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                pnftIds: [nftId],
+                walletAddress,
+                referralCode
+              })
+            });
+            
+            const pnftResult = await pnftResponse.json();
+            if (pnftResult.success && pnftResult.burnTransactions?.length > 0) {
+              pnftIds.push(nftId);
+            }
+          } catch (error) {
+            // Not a PNFT, continue
+          }
+        }
+      }
+
+      // Standard NFTs (remaining)
+      const standardIds = nftIds.filter(id => !coreIds.includes(id) && !pnftIds.includes(id));
+
+      // If we have a mix of types, combine them into a simpler response for now
+      // Later we can implement true batching, but for now return individual transaction data
+      let totalExpectedRent = 0;
+      const batchTransactions = [];
+
+      // Get Core NFT transactions
+      if (coreIds.length > 0) {
+        try {
+          const coreResponse = await fetch(`${req.protocol}://${req.get('host')}/api/core-nfts/prepare-burn`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              coreNftIds: coreIds,
+              walletAddress,
+              referralCode
+            })
+          });
+          
+          const coreResult = await coreResponse.json();
+          if (coreResult.success && coreResult.burnTransactions) {
+            batchTransactions.push(...coreResult.burnTransactions);
+            totalExpectedRent += coreResult.totalExpectedRentSol || 0;
+          }
+        } catch (error) {
+          console.log('Error preparing core NFTs:', error);
+        }
+      }
+
+      // Get PNFT transactions
+      if (pnftIds.length > 0) {
+        try {
+          const pnftResponse = await fetch(`${req.protocol}://${req.get('host')}/api/pnfts/prepare-burn`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pnftIds: pnftIds,
+              walletAddress,
+              referralCode
+            })
+          });
+          
+          const pnftResult = await pnftResponse.json();
+          if (pnftResult.success && pnftResult.burnTransactions) {
+            batchTransactions.push(...pnftResult.burnTransactions);
+            totalExpectedRent += pnftResult.totalExpectedRentSol || 0;
+          }
+        } catch (error) {
+          console.log('Error preparing PNFTs:', error);
+        }
+      }
+
+      // Get Standard NFT transactions
+      if (standardIds.length > 0) {
+        try {
+          const standardResponse = await fetch(`${req.protocol}://${req.get('host')}/api/standard-nfts/prepare-burn`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              standardNftIds: standardIds,
+              walletAddress,
+              referralCode
+            })
+          });
+          
+          const standardResult = await standardResponse.json();
+          if (standardResult.success && standardResult.burnTransactions) {
+            batchTransactions.push(...standardResult.burnTransactions);
+            totalExpectedRent += standardResult.totalExpectedRentSol || 0;
+          }
+        } catch (error) {
+          console.log('Error preparing standard NFTs:', error);
+        }
+      }
+
+      console.log(`✅ Bulk NFT burn prepared: ${batchTransactions.length} transactions for ${nftIds.length} NFTs`);
+
+      res.json({
+        success: true,
+        batchTransactions: batchTransactions,
+        totalNfts: nftIds.length,
+        totalExpectedRent: totalExpectedRent,
+        message: `Prepared ${batchTransactions.length} batch transactions for ${nftIds.length} NFTs`
+      });
+
+    } catch (error) {
+      console.error('Error preparing bulk NFT burn transaction:', error);
+      res.status(500).json({ 
+        error: "Failed to prepare bulk NFT burn transaction",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
