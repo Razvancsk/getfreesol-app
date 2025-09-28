@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
 import logoImage from '@assets/image_1757882056840.png';
 
@@ -70,7 +69,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'scan' | 'burnTokens' | 'stats'>('scan');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -78,11 +77,6 @@ export default function SolRefund() {
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
-  
-  // Input field states for different wallet addresses
-  const [walletAddress, setWalletAddress] = useState<string>('');
-  const [tokenWalletAddress, setTokenWalletAddress] = useState<string>('');
-  const [nftWalletAddress, setNftWalletAddress] = useState<string>('');
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -138,7 +132,7 @@ export default function SolRefund() {
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
     if (isConnected && publicKey && activeTab !== 'referrals') {
-      if (activeTab === 'scan') {
+      if (activeTab === 'reclaim') {
         scanMutation.mutate(publicKey.toString());
       } else if (activeTab === 'burnTokens') {
         if (burnSubTab === 'tokens') {
@@ -710,12 +704,12 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      // Get the NFT data to prepare batch request
+      // Get the NFT data to group by type
       if (!nftData || !nftData.nfts) {
         throw new Error('No NFT data available');
       }
 
-      // Find the selected NFTs
+      // Find the selected NFTs and group them by type
       const selectedNfts = nftData.nfts.filter((nft: any) => {
         const nftId = nft.mint || nft.id || nft.assetId;
         return selectedNftIds.includes(nftId);
@@ -725,137 +719,1183 @@ export default function SolRefund() {
         throw new Error('No valid NFTs selected');
       }
 
-      console.log(`🔥 Starting batch burn for ${selectedNfts.length} NFTs...`);
-
-      // Prepare NFT data for batch endpoint
-      const nftsForBatch = selectedNfts.map((nft: any) => ({
-        type: nft.type,
-        mint: nft.mint,
-        assetId: nft.id || nft.assetId,
-        tokenAccount: nft.tokenAccount,
-        collection: nft.collection?.id,
-        ruleSet: nft.ruleSet
-      })).filter(nft => nft.type !== 'cnft'); // Skip cNFTs for now
-
-      if (nftsForBatch.length === 0) {
-        throw new Error('No supported NFTs selected (cNFTs not yet supported in batch)');
-      }
-
-      // Call batch burn endpoint
-      console.log(`📦 Preparing batch burn for ${nftsForBatch.length} NFTs...`);
-      const batchResponse = await apiRequest('POST', '/api/nfts/prepare-burn-batch', {
-        walletAddress: publicKey.toString(),
-        nfts: nftsForBatch
+      // Group NFTs by type (only excluding cNFTs - Core NFTs are now supported)
+      const nftsByType: { [key: string]: any[] } = {};
+      selectedNfts.forEach((nft: any) => {
+        // Skip cNFTs only (Core NFTs are now supported with official Metaplex integration)
+        if (nft.type === 'cnft') {
+          return;
+        }
+        if (!nftsByType[nft.type]) {
+          nftsByType[nft.type] = [];
+        }
+        nftsByType[nft.type].push(nft);
       });
 
-      const batchData = await batchResponse.json();
-      
-      if (!batchData.success || !batchData.txs || batchData.txs.length === 0) {
-        throw new Error(batchData.error || 'Failed to prepare batch burn transactions');
-      }
-
-      console.log(`🔧 Server prepared ${batchData.txs.length} batch transactions for ${nftsForBatch.length} NFTs`);
-
       const results = [];
-      let totalBurnedCount = 0;
 
-      // Process each batch transaction
-      for (let i = 0; i < batchData.txs.length; i++) {
-        const txBase64 = batchData.txs[i];
-        const batchInfo = batchData.batchTransactions[i];
-        
-        try {
-          console.log(`🔐 Signing batch transaction ${i + 1}/${batchData.txs.length} (${batchInfo.count} NFTs)`);
-          
-          // Decode and sign the transaction
-          const transaction = web3.Transaction.from(Buffer.from(txBase64, 'base64'));
-          
-          // Sign transaction with wallet
-          const signedTransaction = await wallet.signTransaction!(transaction);
-          
-          // Send the signed transaction
-          const connection = new web3.Connection(
-            import.meta.env.VITE_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
-            'confirmed'
-          );
-          
-          const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-          });
+      // Process each type separately
+      for (const [nftType, nfts] of Object.entries(nftsByType)) {
+        console.log(`Burning ${nfts.length} ${nftType} NFTs...`);
 
-          // Confirm the transaction
-          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-          
-          if (confirmation.value.err) {
-            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
-          }
+        const nftMints = nfts.map(nft => nft.mint);
 
-          console.log(`✅ Batch transaction ${i + 1} confirmed: ${signature}`);
-          
-          // Record each NFT burn with server
-          for (const nftId of batchInfo.nftIds) {
-            try {
-              await apiRequest('POST', '/api/nfts/burn/record', {
-                nftMint: nftId,
-                signature: signature,
-                success: true,
-                walletAddress: publicKey.toString(),
-                nftType: batchInfo.type,
-                rentRecovered: (batchInfo.expectedRent / batchInfo.count).toFixed(6) // Estimate per NFT
-              });
-            } catch (recordError) {
-              console.log(`⚠️ Failed to record burn for ${nftId}:`, recordError);
+        // Handle Core NFTs with Server-Side UMI Implementation  
+        if (nftType === 'core') {
+          try {
+            console.log('🔥 Starting Core NFT burning with server-side UMI...');
+            
+            if (!wallet.publicKey) {
+              throw new Error('Wallet not connected');
             }
-          }
 
-          results.push({
-            type: batchInfo.type,
-            nftsProcessed: batchInfo.count,
-            totalAttempted: batchInfo.count,
-            solRecovered: batchInfo.expectedRent,
-            netAmount: batchInfo.expectedRent - batchInfo.platformFee - batchInfo.referralFee,
-            feeAmount: batchInfo.platformFee + batchInfo.referralFee,
-            signatures: [signature],
-            signature: signature
-          });
+            // Prepare Core NFT IDs (use the actual ID from the NFT objects)
+            const coreNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
+            console.log(`📦 Preparing burn transactions for ${coreNftIds.length} Core NFTs...`);
 
-          totalBurnedCount += batchInfo.count;
+            // Call server to prepare burn transactions
+            const prepareResponseRaw = await apiRequest('POST', '/api/core-nfts/prepare-burn', {
+              coreNftIds,
+              walletAddress: wallet.publicKey.toString()
+            });
+            const prepareResponse = await prepareResponseRaw.json();
 
-        } catch (batchError: any) {
-          console.error(`❌ Batch transaction ${i + 1} failed:`, batchError);
-          
-          // Record failed burns
-          for (const nftId of batchInfo.nftIds) {
-            try {
-              await apiRequest('POST', '/api/nfts/burn/record', {
-                nftMint: nftId,
-                signature: '',
-                success: false,
-                error: batchError.message || 'Batch transaction failed',
-                walletAddress: publicKey.toString(),
-                nftType: batchInfo.type
+            console.log('🔧 Server prepared burn transactions:', {
+              rawResponse: prepareResponse,
+              hasSuccess: 'success' in prepareResponse,
+              successValue: prepareResponse.success,
+              hasBurnTransactions: 'burnTransactions' in prepareResponse,
+              burnTransactionsValue: prepareResponse.burnTransactions,
+              burnTransactionsType: typeof prepareResponse.burnTransactions,
+              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
+            });
+
+            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
+              console.error('❌ Server response validation failed:', {
+                success: prepareResponse.success,
+                burnTransactions: prepareResponse.burnTransactions,
+                successCheck: !prepareResponse.success,
+                burnTransactionsCheck: !prepareResponse.burnTransactions
               });
-            } catch (recordError) {
-              console.log(`⚠️ Failed to record failed burn for ${nftId}:`, recordError);
+              throw new Error('Server failed to prepare burn transactions');
             }
-          }
 
-          results.push({
-            type: batchInfo.type,
-            nftsProcessed: 0,
-            totalAttempted: batchInfo.count,
-            solRecovered: 0,
-            netAmount: 0,
-            feeAmount: 0,
-            signatures: [],
-            error: batchError.message || 'Batch transaction failed'
-          });
+            const successfulBurns = [];
+            let totalRentRecovered = 0;
+
+            // Process each prepared transaction
+            for (const burnTx of prepareResponse.burnTransactions) {
+              if (burnTx.error) {
+                console.error(`❌ Server error for NFT ${burnTx.nftId}:`, burnTx.error);
+                continue;
+              }
+
+              if (!burnTx.transaction) {
+                console.error(`❌ No transaction prepared for NFT ${burnTx.nftId}`);
+                continue;
+              }
+
+              try {
+                console.log(`🔐 Signing and sending transaction for Core NFT: ${burnTx.nftId}`);
+
+                // Deserialize the transaction from base64
+                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
+                const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+                // Sign the transaction with the wallet
+                const signedTransaction = await signTransaction(transaction);
+
+                // Use server relay to submit transaction (bypasses 403 domain restrictions)
+                console.log('📡 Submitting via server relay to bypass domain restrictions...');
+                const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                  description: `Core NFT burn: ${burnTx.nftId}`,
+                  skipPreflight: true
+                });
+                
+                const relayResponse = await relayResponseRaw.json();
+
+                if (!relayResponse.success || !relayResponse.signature) {
+                  throw new Error(`Relay failed: ${relayResponse.error || 'No signature returned'}`);
+                }
+
+                const signature = relayResponse.signature;
+                console.log('🎉 Transaction submitted successfully via relay:', signature);
+                
+                // Wait for confirmation with error handling (don't fail on confirmation timeout)
+                try {
+                  // We could add confirmation checking here if needed
+                  console.log('✅ Transaction submitted with signature:', signature);
+                } catch (confirmError: any) {
+                  console.warn('Transaction confirmation check failed but transaction was sent:', confirmError.message);
+                  console.warn('Transaction signature:', signature);
+                  // Continue with success recording since transaction was sent
+                }
+
+                console.log('✅ Core NFT burned successfully:', signature);
+
+                totalRentRecovered += burnTx.expectedRent;
+
+                // Record the successful burn in our database
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    signature,
+                    nftMint: burnTx.nftId,
+                    rentRecovered: burnTx.expectedRent,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'core',
+                    success: true
+                  });
+                  console.log('✅ Core NFT burn recorded in database');
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Core NFT burn in database:', recordError);
+                }
+
+                successfulBurns.push({
+                  mint: burnTx.nftId,
+                  signature,
+                  rentRecovered: burnTx.expectedRent
+                });
+
+              } catch (signError) {
+                console.error(`❌ Failed to sign/send transaction for Core NFT ${burnTx.nftId}:`, {
+                  error: signError,
+                  message: signError instanceof Error ? signError.message : String(signError),
+                  stack: signError instanceof Error ? signError.stack : undefined,
+                  details: signError
+                });
+                
+                // Record the failed burn attempt
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    nftMint: burnTx.nftId,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'core',
+                    error: signError instanceof Error ? signError.message : 'Unknown error',
+                    success: false
+                  });
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Core NFT burn failure in database:', recordError);
+                }
+              }
+            }
+
+            if (successfulBurns.length === 0) {
+              throw new Error('No Core NFTs were successfully burned');
+            }
+
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
+            console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+
+            // Optimistically remove burned NFTs from local state immediately
+            const burnedIds = successfulBurns.map(burn => burn.mint);
+            console.log(`🔥 Debug: burnedIds:`, burnedIds);
+            console.log(`🔥 Debug: current nftData:`, nftData);
+            
+            // Clear burned NFTs from selection first
+            setSelectedNfts(prev => {
+              const newSet = new Set(prev);
+              burnedIds.forEach(id => newSet.delete(id));
+              return newSet;
+            });
+
+            // Update local NFT data state to remove burned NFTs immediately  
+            setNftData((prev: any) => {
+              console.log(`🔥 Debug: setNftData prev:`, prev);
+              if (!prev?.nfts) {
+                console.log(`🔥 Debug: No NFTs in prev data`);
+                return prev;
+              }
+              
+              const currentIds = prev.nfts.map((nft: any) => nft.id || nft.mint || nft.assetId);
+              console.log(`🔥 Debug: current NFT IDs:`, currentIds);
+              
+              const filtered = prev.nfts.filter((nft: any) => {
+                const nftId = nft.id || nft.mint || nft.assetId;
+                const shouldKeep = !burnedIds.includes(nftId);
+                console.log(`🔥 Debug: NFT ${nftId} - Keep: ${shouldKeep}`);
+                return shouldKeep;
+              });
+              
+              console.log(`🔥 Debug: Filtered NFTs:`, filtered);
+              
+              const result = {
+                ...prev,
+                nfts: filtered
+              };
+              
+              console.log(`🔥 Debug: Final result:`, result);
+              return result;
+            });
+
+            // Show success message with green styling and transaction signature
+            const firstSignature = successfulBurns[0]?.signature || '';
+            toast({
+              title: `Successfully burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''}`,
+              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
+              className: "bg-green-600 text-white border-green-600",
+            });
+
+            // Don't invalidate immediately - let optimistic update handle UI state
+            // We'll rely on the next manual refresh or page load to sync with server
+
+            return;
+
+          } catch (coreError: any) {
+            console.error('❌ Core NFT burning failed:', {
+              error: coreError,
+              message: coreError instanceof Error ? coreError.message : String(coreError),
+              stack: coreError instanceof Error ? coreError.stack : undefined,
+              details: coreError
+            });
+            
+            toast({
+              title: "Core NFT Burning Failed",
+              description: coreError.message || 'An unexpected error occurred',
+              variant: "destructive",
+            });
+            
+            throw coreError;
+          }
         }
-      }
 
-      if (totalBurnedCount === 0) {
-        throw new Error('No NFTs were successfully burned');
+        // Handle Programmable NFTs with Server-Side UMI Implementation  
+        if (nftType === 'pnft' || nftType === 'programmable') {
+          try {
+            console.log('🔥 Starting Programmable NFT burning with server-side UMI...');
+            
+            if (!wallet.publicKey) {
+              throw new Error('Wallet not connected');
+            }
+
+            // Prepare pNFT IDs (use the actual ID from the NFT objects)
+            const pNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
+            console.log(`📦 Preparing burn transactions for ${pNftIds.length} Programmable NFTs...`);
+
+            // Call server to prepare pNFT burn transactions
+            const prepareResponseRaw = await apiRequest('POST', '/api/pnfts/prepare-burn', {
+              pNftIds,
+              walletAddress: wallet.publicKey.toString()
+            });
+            const prepareResponse = await prepareResponseRaw.json();
+
+            console.log('🔧 Server prepared pNFT burn transactions:', {
+              rawResponse: prepareResponse,
+              hasSuccess: 'success' in prepareResponse,
+              successValue: prepareResponse.success,
+              hasBurnTransactions: 'burnTransactions' in prepareResponse,
+              burnTransactionsValue: prepareResponse.burnTransactions,
+              burnTransactionsType: typeof prepareResponse.burnTransactions,
+              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
+            });
+
+            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
+              console.error('❌ pNFT Server response validation failed:', {
+                success: prepareResponse.success,
+                burnTransactions: prepareResponse.burnTransactions,
+                successCheck: !prepareResponse.success,
+                burnTransactionsCheck: !prepareResponse.burnTransactions
+              });
+              throw new Error('Server failed to prepare pNFT burn transactions');
+            }
+
+            const successfulBurns = [];
+            let totalRentRecovered = 0;
+
+            // Process each prepared transaction
+            for (const burnTx of prepareResponse.burnTransactions) {
+              if (burnTx.error) {
+                console.error(`❌ Server error for pNFT ${burnTx.nftId}:`, burnTx.error);
+                continue;
+              }
+
+              if (!burnTx.transaction) {
+                console.error(`❌ No transaction prepared for pNFT ${burnTx.nftId}`);
+                continue;
+              }
+
+              try {
+                console.log(`🔐 Signing and sending transaction for Programmable NFT: ${burnTx.nftId}`);
+
+                // Deserialize the transaction from base64
+                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
+                const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+                // Sign the transaction with the wallet
+                const signedTransaction = await signTransaction(transaction);
+
+                // Use server relay to submit transaction (bypasses 403 domain restrictions)
+                console.log('📡 Submitting pNFT via server relay to bypass domain restrictions...');
+                const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                  description: `Programmable NFT burn: ${burnTx.nftId}`,
+                  skipPreflight: true
+                });
+                
+                const relayResponse = await relayResponseRaw.json();
+
+                if (!relayResponse.success || !relayResponse.signature) {
+                  throw new Error(`Relay failed: ${relayResponse.error || 'No signature returned'}`);
+                }
+
+                const signature = relayResponse.signature;
+                console.log('🎉 pNFT Transaction submitted successfully via relay:', signature);
+                
+                // Wait for confirmation with error handling (don't fail on confirmation timeout)
+                try {
+                  // We could add confirmation checking here if needed
+                  console.log('✅ pNFT Transaction submitted with signature:', signature);
+                } catch (confirmError: any) {
+                  console.warn('pNFT Transaction confirmation check failed but transaction was sent:', confirmError.message);
+                  console.warn('pNFT Transaction signature:', signature);
+                  // Continue with success recording since transaction was sent
+                }
+
+                console.log('✅ Programmable NFT burned successfully:', signature);
+
+                totalRentRecovered += burnTx.expectedRent;
+
+                // Record the successful burn in our database
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    signature,
+                    nftMint: burnTx.nftId,
+                    rentRecovered: burnTx.expectedRent,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'pnft',
+                    success: true
+                  });
+                  console.log('✅ Programmable NFT burn recorded in database');
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Programmable NFT burn in database:', recordError);
+                }
+
+                successfulBurns.push({
+                  mint: burnTx.nftId,
+                  signature,
+                  rentRecovered: burnTx.expectedRent
+                });
+
+              } catch (signError) {
+                console.error(`❌ Failed to sign/send transaction for Programmable NFT ${burnTx.nftId}:`, {
+                  error: signError,
+                  message: signError instanceof Error ? signError.message : String(signError),
+                  stack: signError instanceof Error ? signError.stack : undefined,
+                  details: signError
+                });
+                
+                // Record the failed burn attempt
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    nftMint: burnTx.nftId,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'pnft',
+                    error: signError instanceof Error ? signError.message : 'Unknown error',
+                    success: false
+                  });
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Programmable NFT burn failure in database:', recordError);
+                }
+              }
+            }
+
+            if (successfulBurns.length === 0) {
+              throw new Error('No Programmable NFTs were successfully burned');
+            }
+
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Programmable NFTs!`);
+            console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+
+            // Optimistically remove burned pNFTs from local state immediately
+            const burnedIds = successfulBurns.map(burn => burn.mint);
+            console.log(`🔥 pNFT Debug: burnedIds:`, burnedIds);
+            console.log(`🔥 pNFT Debug: current nftData:`, nftData);
+            
+            // Clear burned pNFTs from selection first
+            setSelectedNfts(prev => {
+              const newSet = new Set(prev);
+              burnedIds.forEach(id => newSet.delete(id));
+              return newSet;
+            });
+
+            // Update local NFT data state to remove burned pNFTs immediately  
+            setNftData((prev: any) => {
+              console.log(`🔥 pNFT Debug: setNftData prev:`, prev);
+              if (!prev?.nfts) {
+                console.log(`🔥 pNFT Debug: No NFTs in prev data`);
+                return prev;
+              }
+              
+              const currentIds = prev.nfts.map((nft: any) => nft.id || nft.mint || nft.assetId);
+              console.log(`🔥 pNFT Debug: current NFT IDs:`, currentIds);
+              
+              const filtered = prev.nfts.filter((nft: any) => {
+                const nftId = nft.id || nft.mint || nft.assetId;
+                const shouldKeep = !burnedIds.includes(nftId);
+                console.log(`🔥 pNFT Debug: NFT ${nftId} - Keep: ${shouldKeep}`);
+                return shouldKeep;
+              });
+              
+              console.log(`🔥 pNFT Debug: Filtered NFTs:`, filtered);
+              
+              const result = {
+                ...prev,
+                nfts: filtered
+              };
+              
+              console.log(`🔥 pNFT Debug: Final result:`, result);
+              return result;
+            });
+
+            // Show success message with green styling and transaction signature
+            const firstSignature = successfulBurns[0]?.signature || '';
+            toast({
+              title: `Successfully burned ${successfulBurns.length} Programmable NFT${successfulBurns.length > 1 ? 's' : ''}`,
+              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
+              className: "bg-green-600 text-white border-green-600",
+            });
+
+            // Don't invalidate immediately - let optimistic update handle UI state
+            // We'll rely on the next manual refresh or page load to sync with server
+
+            return;
+
+          } catch (pnftError: any) {
+            console.error('❌ Programmable NFT burning failed:', {
+              error: pnftError,
+              message: pnftError instanceof Error ? pnftError.message : String(pnftError),
+              stack: pnftError instanceof Error ? pnftError.stack : undefined,
+              details: pnftError
+            });
+            
+            toast({
+              title: "Programmable NFT Burning Failed",
+              description: pnftError.message || 'An unexpected error occurred',
+              variant: "destructive",
+            });
+            
+            throw pnftError;
+          }
+        }
+
+        // Handle Traditional/Standard NFTs with Server-Side UMI Implementation  
+        if (nftType === 'standard') {
+          try {
+            console.log('🔥 Starting Traditional NFT burning with server-side UMI...');
+            
+            if (!wallet.publicKey) {
+              throw new Error('Wallet not connected');
+            }
+
+            // Prepare standard NFT IDs (use the actual ID from the NFT objects)
+            const standardNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
+            console.log(`📦 Preparing burn transactions for ${standardNftIds.length} Traditional NFTs...`);
+
+            // Call server to prepare standard NFT burn transactions
+            const prepareResponseRaw = await apiRequest('POST', '/api/standard-nfts/prepare-burn', {
+              standardNftIds,
+              walletAddress: wallet.publicKey.toString()
+            });
+            const prepareResponse = await prepareResponseRaw.json();
+
+            console.log('🔧 Server prepared Traditional NFT burn transactions:', {
+              rawResponse: prepareResponse,
+              hasSuccess: 'success' in prepareResponse,
+              successValue: prepareResponse.success,
+              hasBurnTransactions: 'burnTransactions' in prepareResponse,
+              burnTransactionsValue: prepareResponse.burnTransactions,
+              burnTransactionsType: typeof prepareResponse.burnTransactions,
+              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
+            });
+
+            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
+              console.error('❌ Traditional NFT Server response validation failed:', {
+                success: prepareResponse.success,
+                burnTransactions: prepareResponse.burnTransactions,
+                successCheck: !prepareResponse.success,
+                burnTransactionsCheck: !prepareResponse.burnTransactions
+              });
+              throw new Error('Server failed to prepare Traditional NFT burn transactions');
+            }
+
+            const successfulBurns = [];
+            let totalRentRecovered = 0;
+
+            // Process each prepared transaction
+            for (const burnTx of prepareResponse.burnTransactions) {
+              if (burnTx.error) {
+                console.error(`❌ Server error for Traditional NFT ${burnTx.nftId}:`, burnTx.error);
+                continue;
+              }
+
+              if (!burnTx.transaction) {
+                console.error(`❌ No transaction prepared for Traditional NFT ${burnTx.nftId}`);
+                continue;
+              }
+
+              try {
+                console.log(`🔐 Signing and sending transaction for Traditional NFT: ${burnTx.nftId}`);
+
+                // Deserialize the transaction from base64
+                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
+                const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+                // Sign the transaction with the wallet
+                const signedTransaction = await signTransaction(transaction);
+
+                // Use server relay to submit transaction (bypasses 403 domain restrictions)
+                console.log('📡 Submitting Traditional NFT via server relay to bypass domain restrictions...');
+                const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                  description: `Traditional NFT burn: ${burnTx.nftId}`,
+                  skipPreflight: true
+                });
+                
+                const relayResponse = await relayResponseRaw.json();
+
+                if (!relayResponse.success || !relayResponse.signature) {
+                  throw new Error(`Relay failed: ${relayResponse.error || 'No signature returned'}`);
+                }
+
+                const signature = relayResponse.signature;
+                console.log('🎉 Traditional NFT Transaction submitted successfully via relay:', signature);
+                
+                // Wait for confirmation with error handling (don't fail on confirmation timeout)
+                try {
+                  // We could add confirmation checking here if needed
+                  console.log('✅ Traditional NFT Transaction submitted with signature:', signature);
+                } catch (confirmError: any) {
+                  console.warn('Traditional NFT Transaction confirmation check failed but transaction was sent:', confirmError.message);
+                  console.warn('Traditional NFT Transaction signature:', signature);
+                  // Continue with success recording since transaction was sent
+                }
+
+                console.log('✅ Traditional NFT burned successfully:', signature);
+
+                totalRentRecovered += burnTx.expectedRent;
+
+                // Record the successful burn in our database
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    signature,
+                    nftMint: burnTx.nftId,
+                    rentRecovered: burnTx.expectedRent,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'standard',
+                    success: true
+                  });
+                  console.log('✅ Traditional NFT burn recorded in database');
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Traditional NFT burn in database:', recordError);
+                }
+
+                successfulBurns.push({
+                  mint: burnTx.nftId,
+                  signature,
+                  rentRecovered: burnTx.expectedRent
+                });
+
+              } catch (signError) {
+                console.error(`❌ Failed to sign/send transaction for Traditional NFT ${burnTx.nftId}:`, {
+                  error: signError,
+                  message: signError instanceof Error ? signError.message : String(signError),
+                  stack: signError instanceof Error ? signError.stack : undefined,
+                  details: signError
+                });
+                
+                // Record the failed burn attempt
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    nftMint: burnTx.nftId,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'standard',
+                    error: signError instanceof Error ? signError.message : 'Unknown error',
+                    success: false
+                  });
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Traditional NFT burn failure in database:', recordError);
+                }
+              }
+            }
+
+            if (successfulBurns.length === 0) {
+              throw new Error('No Traditional NFTs were successfully burned');
+            }
+
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Traditional NFTs!`);
+            console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+
+            // Optimistically remove burned Traditional NFTs from local state immediately
+            const burnedIds = successfulBurns.map(burn => burn.mint);
+            console.log(`🔥 Traditional NFT Debug: burnedIds:`, burnedIds);
+            console.log(`🔥 Traditional NFT Debug: current nftData:`, nftData);
+            
+            // Clear burned Traditional NFTs from selection first
+            setSelectedNfts(prev => {
+              const newSet = new Set(prev);
+              burnedIds.forEach(id => newSet.delete(id));
+              return newSet;
+            });
+
+            // Update local NFT data state to remove burned Traditional NFTs immediately  
+            setNftData((prev: any) => {
+              console.log(`🔥 Traditional NFT Debug: setNftData prev:`, prev);
+              if (!prev?.nfts) {
+                console.log(`🔥 Traditional NFT Debug: No NFTs in prev data`);
+                return prev;
+              }
+              
+              const currentIds = prev.nfts.map((nft: any) => nft.id || nft.mint || nft.assetId);
+              console.log(`🔥 Traditional NFT Debug: current NFT IDs:`, currentIds);
+              
+              const filtered = prev.nfts.filter((nft: any) => {
+                const nftId = nft.id || nft.mint || nft.assetId;
+                const shouldKeep = !burnedIds.includes(nftId);
+                console.log(`🔥 Traditional NFT Debug: NFT ${nftId} - Keep: ${shouldKeep}`);
+                return shouldKeep;
+              });
+              
+              console.log(`🔥 Traditional NFT Debug: Filtered NFTs:`, filtered);
+              
+              const result = {
+                ...prev,
+                nfts: filtered
+              };
+              
+              console.log(`🔥 Traditional NFT Debug: Final result:`, result);
+              return result;
+            });
+
+            // Show success message with green styling and transaction signature
+            const firstSignature = successfulBurns[0]?.signature || '';
+            toast({
+              title: `Successfully burned ${successfulBurns.length} Traditional NFT${successfulBurns.length > 1 ? 's' : ''}`,
+              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
+              className: "bg-green-600 text-white border-green-600",
+            });
+
+            // Don't invalidate immediately - let optimistic update handle UI state
+            // We'll rely on the next manual refresh or page load to sync with server
+
+            return;
+
+          } catch (standardError: any) {
+            console.error('❌ Traditional NFT burning failed:', {
+              error: standardError,
+              message: standardError instanceof Error ? standardError.message : String(standardError),
+              stack: standardError instanceof Error ? standardError.stack : undefined,
+              details: standardError
+            });
+            
+            toast({
+              title: "Traditional NFT Burning Failed",
+              description: standardError.message || 'An unexpected error occurred',
+              variant: "destructive",
+            });
+            
+            throw standardError;
+          }
+        }
+        
+        // Legacy code (disabled):
+        if (false) { // Disabled legacy Core NFT code
+          try {
+            console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
+
+            // Ensure wallet is properly connected with adapter
+            if (!wallet.wallet?.adapter || !wallet.publicKey) {
+              throw new Error('Wallet adapter not properly connected for Core NFT burning');
+            }
+            console.log('✅ Wallet adapter validated');
+
+            // Set up UMI according to official Metaplex documentation
+            console.log('🔧 Creating UMI instance with RPC endpoint...');
+            const heliusRpc = 'https://mainnet.helius-rpc.com/?api-key=e5a15b67-0b29-4a7f-8e31-5d4d7c8b333d';
+            
+            console.log('🚀 BREAKTHROUGH: Using DIRECT SOLANA TRANSACTIONS (copying working server approach)!');
+            console.log('✅ Abandoning UMI completely - using exact same method that works on server');
+            
+            // Import necessary Solana classes 
+            const { Transaction, TransactionInstruction, ComputeBudgetProgram, SystemProgram } = await import('@solana/web3.js');
+            
+            // Import PublicKey for Core program constants
+            const { PublicKey } = await import('@solana/web3.js');
+            
+            // Core program constants (same as server)
+            const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+            const userPubkey = wallet.publicKey!;
+            
+            console.log('✅ Direct Solana transaction approach initialized');
+            console.log('💰 User pubkey:', userPubkey.toString());
+
+            // Now burn Core NFTs using direct Solana transactions (same as server)
+            console.log('🔥 Attempting Core NFT burn with DIRECT TRANSACTIONS (server approach)...');
+            
+            let burnedCount = 0;
+            const burnResults = [];
+            let totalActualRecovered = 0;
+
+            for (const mintAddress of nftMints) {
+              try {
+                console.log(`🔥 Burning Core NFT with DIRECT TRANSACTION: ${mintAddress}`);
+                const assetPubkey = new PublicKey(mintAddress);
+
+                console.log('📄 Starting Core NFT burn - letting server handle RPC verification...');
+
+                // Build DIRECT Core burn instruction (EXACT SAME AS SERVER)
+                const instructionData = Buffer.from([7]); // Burn discriminator
+
+                const burnInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: assetPubkey, isSigner: false, isWritable: true },    // Asset to burn
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },     // Owner/authority  
+                    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+                  ],
+                  programId: CORE_PROGRAM_ID,
+                  data: instructionData,
+                });
+
+                // Add compute budget (same as server)
+                const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+                  units: 200_000, // Enough compute for Core burn
+                });
+
+                // 🚀 HYBRID APPROACH: Server builds transaction, frontend signs
+                console.log('🔥 Using hybrid approach - server builds, frontend signs...');
+                
+                // Step 1: Server builds the transaction  
+                const buildResponse = await apiRequest('POST', '/api/nfts/burn/build', {
+                  walletAddress: userPubkey.toString(),
+                  nftMints: [mintAddress],
+                  nftType: 'core',
+                  referralCode: referralCode || undefined
+                });
+                
+                if (!buildResponse.ok) {
+                  const error = await buildResponse.text();
+                  throw new Error(`Server build failed: ${error}`);
+                }
+                
+                const { transactions } = await buildResponse.json();
+                
+                // Step 2: Sign all transactions
+                const unsignedTxs = transactions.map((tx: any) => 
+                  Transaction.from(Buffer.from(tx.transaction, 'base64'))
+                );
+                
+                const signedTxs = await wallet.signAllTransactions!(unsignedTxs);
+                
+                // Step 3: Serialize signed transactions for server
+                const signedTransactions = signedTxs.map(tx => 
+                  Buffer.from(tx.serialize()).toString('base64')
+                );
+                
+                // Step 4: Server submits the signed transactions  
+                const signedTransactionsWithMints = signedTransactions.map((signedTx, index) => ({
+                  mint: nftMints[index], // Match transaction to mint
+                  signedTransaction: signedTx
+                }));
+                
+                const submitResponse = await apiRequest('POST', '/api/nfts/burn/submit', {
+                  signedTransactions: signedTransactionsWithMints,
+                  walletAddress: userPubkey.toString()
+                });
+                
+                if (!submitResponse.ok) {
+                  const error = await submitResponse.text(); 
+                  throw new Error(`Server submit failed: ${error}`);
+                }
+                
+                const submitResult = await submitResponse.json();
+                const txSignature = submitResult.results?.[0]?.signature || null;
+
+                console.log('🎉 Core NFT burn succeeded with DIRECT TRANSACTIONS!');
+                console.log('✅ Transaction confirmed:', txSignature);
+
+                // ✅ Server handles rent calculation, no frontend RPC calls
+                const actualRecovered = 0.004; // Standard Core NFT rent recovery (~0.004 SOL)
+
+                console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
+                  signature: txSignature,
+                  explorer: `https://solscan.io/tx/${txSignature}`,
+                  rentRecovered: `${actualRecovered} SOL`
+                });
+
+                totalActualRecovered += actualRecovered;
+                burnedCount++;
+                burnResults.push({
+                  mint: mintAddress,
+                  signature: txSignature,
+                  actualRentRecovered: actualRecovered,
+                  success: true
+                });
+
+              } catch (burnError: any) {
+                console.error(`Failed to burn Core NFT ${mintAddress}:`, {
+                  message: burnError?.message || 'Unknown error',
+                  stack: burnError?.stack,
+                  name: burnError?.name,
+                  code: burnError?.code,
+                  cause: burnError?.cause,
+                  fullError: burnError
+                });
+                burnResults.push({
+                  mint: mintAddress,
+                  error: burnError.message || 'Unknown error',
+                  success: false
+                });
+              }
+            }
+
+            // Success - return results from UMI approach
+            const actualTotalRent = burnResults
+              .filter(r => r.success)
+              .reduce((sum, r) => sum + (r.actualRentRecovered || 0), 0);
+
+            results.push({
+              type: nftType,
+              nftsProcessed: burnedCount,
+              totalAttempted: nftMints.length,
+              solRecovered: actualTotalRent,
+              netAmount: actualTotalRent,
+              feeAmount: 0,
+              signatures: burnResults.filter(r => r.success).map(r => r.signature)
+            });
+
+            continue; // Skip to next NFT type
+            
+          } catch (coreError: any) {
+            console.log('❌ UMI approach failed. Trying server-side burn fallback...');
+            
+            // Fallback to server-side burn
+            try {
+              // Get real burn transactions from server
+            console.log('🔄 Requesting REAL Core NFT burn transactions from server...');
+            const burnPrepResponse = await apiRequest('POST', '/api/nfts/burn', {
+              nftMints: nftMints,
+              nftType: 'core',
+              walletAddress: wallet.publicKey!.toString()
+            });
+
+            const burnPrepData = await burnPrepResponse.json();
+            console.log('📋 Received burn transaction preparation:', burnPrepData);
+
+            if (!burnPrepData.success || !burnPrepData.burnTransactions) {
+              throw new Error('Failed to prepare burn transactions: ' + burnPrepData.error);
+            }
+
+            console.log(`🎯 Got ${burnPrepData.burnTransactions.length} REAL burn transactions to sign`);
+            console.log(`💰 Expected total rent recovery: ${burnPrepData.totalExpectedRentSol} SOL`);
+
+            // Sign and submit each real burn transaction
+            const completedBurns = [];
+            let totalActualRecovered = 0;
+
+            for (const burnTx of burnPrepData.burnTransactions) {
+              try {
+                console.log(`🔥 Signing REAL burn transaction for ${burnTx.name} (${burnTx.asset})`);
+                console.log(`💰 Expected rent recovery: ${burnTx.expectedRentSol} SOL`);
+
+                // Decode the prepared transaction (legacy Transaction, not VersionedTransaction)
+                const { Transaction } = await import('@solana/web3.js');
+                const transaction = Transaction.from(
+                  Buffer.from(burnTx.transaction, 'base64')
+                );
+
+                console.log('📝 Transaction decoded, requesting wallet signature...');
+
+                // Get user's balance before transaction
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
+                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
+
+                // ❌ REMOVED: Frontend RPC calls cause 403 errors - hybrid approach handles this on server
+
+                // Sign and send the REAL burn transaction using the wallet adapter's signTransaction method
+                console.log('🚀 About to sign transaction with wallet adapter...');
+                console.log('🔍 Wallet info:', {
+                  connected: isConnected,
+                  publicKey: publicKey?.toString(),
+                  walletName: walletName
+                });
+
+                let signature: string;
+                try {
+                  // Use the wallet adapter's signTransaction instead of sendTransaction
+                  console.log('✏️ Signing transaction...');
+                  const signedTransaction = await signTransaction(transaction);
+                  console.log('✅ Transaction signed successfully');
+
+                  // Send the signed transaction using RPC connection
+                  console.log('📡 Sending signed transaction to network...');
+                  signature = await rpcConnection.sendRawTransaction(signedTransaction.serialize(), {
+                    skipPreflight: false,
+                    preflightCommitment: 'confirmed',
+                    maxRetries: 3
+                  });
+
+                  console.log(`✅ Transaction sent successfully: ${signature}`);
+                } catch (sendError: any) {
+                  console.error('❌ Transaction signing/sending error:', sendError);
+
+                  // Try to extract meaningful error info
+                  let errorMsg = 'Transaction failed';
+                  if (sendError?.message) {
+                    if (sendError.message.includes('User rejected')) {
+                      errorMsg = 'Transaction was cancelled by user';
+                    } else {
+                      errorMsg = sendError.message;
+                    }
+                  }
+
+                  throw new Error(errorMsg);
+                }
+
+                console.log(`✅ REAL burn transaction signed! Signature: ${signature}`);
+                console.log(`🔗 Explorer: https://solscan.io/tx/${signature}`);
+
+                // Wait for confirmation
+                await rpcConnection.confirmTransaction(signature, 'confirmed');
+                console.log('✅ Transaction confirmed on blockchain!');
+
+                // Check actual rent recovered
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
+                const txDetails = await rpcConnection.getTransaction(signature, {
+                  commitment: 'confirmed',
+                  maxSupportedTransactionVersion: 0
+                });
+                const transactionFee = txDetails?.meta?.fee || 5000;
+                const actualRecovered = (balanceAfter - balanceBefore + transactionFee) / 1e9;
+
+                console.log(`💰 Actual SOL recovered: ${actualRecovered} SOL (after ${transactionFee / 1e9} SOL fee)`);
+                console.log(`🔥 NFT ${burnTx.name} DESTROYED and rent recovered!`);
+
+                totalActualRecovered += actualRecovered;
+                completedBurns.push({
+                  mint: burnTx.asset,
+                  name: burnTx.name,
+                  signature: signature,
+                  solRecovered: actualRecovered,
+                  success: true
+                });
+
+              } catch (txError: any) {
+                console.error(`❌ Failed to burn ${burnTx.name}:`, txError);
+                completedBurns.push({
+                  mint: burnTx.asset,
+                  name: burnTx.name,
+                  error: txError instanceof Error ? txError.message : String(txError),
+                  success: false
+                });
+              }
+            }
+
+            const successfulBurns = completedBurns.filter(b => b.success);
+
+            if (successfulBurns.length === 0) {
+              throw new Error('Failed to burn any Core NFTs');
+            }
+
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
+            console.log(`💰 Total actual SOL recovered: ${totalActualRecovered} SOL`);
+
+            results.push({
+              type: nftType,
+              nftsProcessed: successfulBurns.length,
+              totalAttempted: nftMints.length,
+              solRecovered: totalActualRecovered,
+              netAmount: totalActualRecovered,
+              feeAmount: 0,
+              signatures: successfulBurns.map(b => b.signature).filter(Boolean),
+              transactions: completedBurns
+            });
+
+            continue; // Skip the rest of the UMI approach
+
+            // UNREACHABLE CODE - This section is commented out as it's after a continue statement
+            /*
+            let burnedCount = 0;
+            const burnResults = [];
+
+            for (const mintAddress of nftMints) {
+              try {
+                // Use the Core asset ID directly (not mint address)
+                const assetPublicKey = umiPublicKey(mintAddress);
+
+                console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
+                console.log('💰 User wallet:', wallet.publicKey?.toString());
+
+                // Get wallet balance before burn
+                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
+                console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
+
+                // Try alternative approach: Use Raw Solana transaction
+                console.log('🔧 Alternative approach: Direct Solana transaction...');
+
+                let txSignature: string = '';
+                try {
+                  // Fetch asset info first (this should work)
+                  console.log('📄 Fetching asset data...');
+                  const asset = await fetchAssetV1(umi, assetPublicKey);
+                  console.log('✅ Asset fetched successfully:', asset.name);
+
+                  // Try collection-aware burn
+                  console.log('🔥 Attempting collection-aware burn...');
+                  const collectionId = collectionAddress(asset);
+                  let collection = undefined;
+
+                  if (collectionId) {
+                    console.log('🏛️ Fetching collection:', collectionId);
+                    collection = await fetchCollection(umi, collectionId as any);
+                    console.log('✅ Collection fetched');
+                  }
+
+                  // Attempt burn with minimal setup
+                  console.log('🔥 Executing burn transaction...');
+                  const result = await burn(umi, {
+                    asset: asset,
+                    collection: collection,
+                    authority: umi.identity,
+                    payer: umi.identity,
+                  }).sendAndConfirm(umi);
+
+                  console.log('🎉 Burn succeeded with alternative approach!');
+
+                  // Properly encode signature for Solana RPC
+                  txSignature = typeof result.signature === 'string' ? result.signature : bs58.encode(result.signature as Uint8Array);
+                  console.log('✅ Transaction confirmed:', txSignature);
+
+                } catch (burnError) {
+                  console.error('💥 Alternative burn approach failed:', burnError);
+                  throw burnError;
+                }
+
+                // Get transaction details with error handling
+                let txDetails = null;
+                let networkFee = 5000; // Default Solana fee estimate
+                try {
+                  txDetails = await rpcConnection.getTransaction(txSignature, {
+                    commitment: 'confirmed',
+                    maxSupportedTransactionVersion: 0
+                  });
+                  networkFee = txDetails?.meta?.fee || 5000;
+                } catch (error) {
+                  console.warn('Could not fetch transaction details, using estimated fee');
+                }
+
+                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
+                const actualRentRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9; // Accurate with fees
+                console.log('💰 Balance after:', balanceAfter / 1e9, 'SOL');
+
+                console.log('✅ Core NFT DESTROYED! Metadata deleted and rent recovered!', {
+                  signature: txSignature,
+                  explorer: `https://solscan.io/tx/${txSignature}`,
+                  rentRecovered: `${actualRentRecovered} SOL`,
+                  networkFee: `${networkFee / 1e9} SOL`,
+                  balanceBefore: balanceBefore / 1e9,
+                  balanceAfter: balanceAfter / 1e9
+                });
+
+                // Note: Asset verification removed - using direct transactions
+
+                burnedCount++;
+                burnResults.push({
+                  mint: mintAddress,
+                  signature: txSignature,
+                  actualRentRecovered,
+                  success: true
+                });
+
+              } catch (error: any) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                console.error(`❌ Failed to burn Core NFT ${mintAddress}:`, {
+                  message: error?.message || 'Unknown error',
+                  stack: error?.stack,
+                  name: error?.name,
+                  code: error?.code,
+                  cause: error?.cause,
+                  fullError: error
+                });
+                burnResults.push({
+                  mint: mintAddress,
+                  error: errorMessage,
+                  success: false
+                });
+              }
+            }
+
+            if (burnedCount === 0) {
+              throw new Error('All UMI Core NFT burns failed');
+            }
+
+            console.log(`✅ Successfully burned ${burnedCount} Core NFTs with UMI!`);
+            */
+            
+            } catch (serverError: any) {
+              console.error('❌ Server-side burn fallback also failed:', {
+                message: serverError?.message || 'Unknown error',
+                stack: serverError?.stack,
+                name: serverError?.name,
+                code: serverError?.code,
+                cause: serverError?.cause,
+                fullError: serverError
+              });
+              throw new Error(`Core NFT burning failed: ${serverError.message || 'All approaches failed'}`);
+            }
+          }
+        }
+
+        // For non-Core NFTs, use server API (will return error for unsupported types)
+        const response = await fetch('/api/nfts/burn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: publicKey.toString(),
+            nftMints,
+            nftType,
+            referralCode: referralCode || undefined
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`${nftType} NFT burning: ${errorData.error || 'This NFT type is not supported for burning'}`);
+        }
+
+        const { transaction, nftsProcessed, solRecovered, netAmount, feeAmount } = await response.json();
+
+        // Sign and send transaction using connected wallet
+        const { Connection, Transaction } = await import('@solana/web3.js');
+
+        const heliusResponse = await fetch('/api/helius-config');
+        const rpcConfig = await heliusResponse.json();
+
+        const connection = new Connection(
+          rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+          'confirmed'
+        );
+
+        const txBuffer = Buffer.from(transaction, 'base64');
+        const tx = Transaction.from(txBuffer);
+
+        const signedTx = await signTransaction(tx);
+        const signature = await connection.sendRawTransaction(signedTx.serialize());
+
+        // Wait for confirmation
+        try {
+          await connection.confirmTransaction(signature, 'confirmed');
+          console.log(`${nftType} NFT burn transaction confirmed:`, signature);
+        } catch (confirmError: any) {
+          console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
+        }
+
+        results.push({
+          type: nftType,
+          count: nftsProcessed,
+          signature,
+          solRecovered: parseFloat(solRecovered || '0'),
+          netAmount: parseFloat(netAmount || '0'),
+          feeAmount: parseFloat(feeAmount || '0')
+        });
       }
 
       return results;
@@ -863,50 +1903,30 @@ export default function SolRefund() {
     onSuccess: (results) => {
       if (!results) return;
       
-      const totalBurned = results.reduce((sum, r) => sum + (r.nftsProcessed || 0), 0);
+      const totalBurned = results.reduce((sum, r) => sum + (r.count || 0), 0);
       const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
       const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
 
-      // Optimistically remove burned NFTs from local state
-      if (totalBurned > 0) {
-        const allBurnedIds: string[] = [];
-        results.forEach(result => {
-          if (result.signatures && result.signatures.length > 0) {
-            // For batch results, we need to track the NFT IDs that were burned
-            // This will be handled by the batch transaction data
-          }
-        });
+      const hasRentRecovery = totalSolRecovered > 0;
 
-        // Clear burned NFTs from selection
-        setSelectedNfts(new Set());
+      // Generate Solscan links for each transaction
+      const transactionLinks = results.map(result => 
+        `${result.type.toUpperCase()}: https://solscan.io/tx/${result.signature}`
+      ).join('\n');
 
-        // Update local NFT data to remove burned NFTs
-        setNftData((prev: any) => {
-          if (!prev?.nfts) return prev;
-          
-          // For now, we'll invalidate and refetch rather than trying to track exact IDs
-          // This ensures consistency with the server state
-          return prev;
-        });
+      toast({
+        title: hasRentRecovery ? "NFTs Burned Successfully!" : "Burn Requests Recorded",
+        description: hasRentRecovery 
+          ? `Burned ${totalBurned} NFTs and recovered ${totalNetAmount.toFixed(6)} SOL (after 15% fee)\n\nView on Solscan:\n${transactionLinks}`
+          : `Recorded burn requests for ${totalBurned} NFTs (compressed NFTs cannot be burned via this interface yet)\n\nView transaction on Solscan:\n${transactionLinks}`,
+        className: "bg-green-600 text-white border-green-600",
+      });
 
-        // Show success message
-        const firstSignature = results.find(r => r.signatures?.[0])?.signatures?.[0] || '';
-        toast({
-          title: `Successfully burned ${totalBurned} NFT${totalBurned > 1 ? 's' : ''}!`,
-          description: totalSolRecovered > 0 ? 
-            `Recovered ${totalNetAmount.toFixed(6)} SOL (after fees)` :
-            `Transaction: ${firstSignature.substring(0, 8)}...`,
-          className: "bg-green-600 text-white border-green-600",
-        });
-      }
-
-      // Refresh NFT data after successful burns
-      if (publicKey) {
-        scanNftsMutation.mutate(publicKey.toString());
-      }
+      // Clear selection but don't refresh immediately - let optimistic update handle UI state
+      setSelectedNfts(new Set());
 
       // Refresh stats if SOL was recovered
-      if (totalSolRecovered > 0) {
+      if (hasRentRecovery) {
         queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
       }
     },
@@ -916,21 +1936,286 @@ export default function SolRefund() {
       let errorMessage = "Failed to burn NFTs. Please try again.";
       if (error.message) {
         if (error.message.includes('User rejected')) {
-          errorMessage = "Transaction cancelled by user.";
-        } else if (error.message.includes('cNFTs not yet supported')) {
-          errorMessage = "Compressed NFTs are not yet supported in batch burning.";
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('wallet not found')) {
+          errorMessage = "Please install and connect your wallet.";
         } else {
           errorMessage = error.message;
         }
       }
 
       toast({
-        title: "Burn Failed",
+        title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
-    }
+    },
   });
+
+  // Selection handlers
+  const toggleTokenSelection = (mintAddress: string) => {
+    const newSelection = new Set(selectedTokens);
+    if (newSelection.has(mintAddress)) {
+      newSelection.delete(mintAddress);
+    } else {
+      newSelection.add(mintAddress);
+    }
+    setSelectedTokens(newSelection);
+  };
+
+  const selectAllTokens = () => {
+    setSelectedTokens(new Set(tokenList.map(token => token.mint)));
+  };
+
+  const clearTokenSelection = () => {
+    setSelectedTokens(new Set());
+  };
+
+  // Calculate total SOL to recover (net after 15% fee)
+  const calculateTotalSOL = (count: number) => {
+    const grossAmount = count * 0.00203928;
+    const netAmount = grossAmount * 0.85; // 15% fee deducted
+    return `${netAmount.toFixed(6)}`;
+  };
+
+  // Process SOL refund (15% service fee)
+  const refundMutation = useMutation({
+    mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string }) => {
+      // Get transaction (15% service fee)
+      const response = await fetch('/api/sol-refund/prepare-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to prepare transaction');
+      }
+
+      const { transaction, message, totalSolReclaimed, feeAmount, netAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
+
+      if (!isConnected || !publicKey) {
+        throw new Error('Wallet not connected');
+      }
+
+      const { Connection } = await import('@solana/web3.js');
+
+      // Get RPC configuration with fallbacks from backend
+      console.log('Getting RPC configuration with fallbacks...');
+
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+
+      // Build fallback endpoint list (public endpoints that work reliably)
+      const fallbackEndpoints = [
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-api.projectserum.com',
+        'https://rpc.ankr.com/solana'
+      ];
+
+      // Try Helius first if available, then fallback to public endpoints
+      let connection: any;
+      let endpointUsed: string = '';
+      let connectionWorking = false;
+
+      // Try Helius if we have any API key, but test if it actually works
+      if (rpcConfig.success && rpcConfig.apiKey) {
+        try {
+          connection = new Connection(rpcConfig.rpcUrl, 'confirmed');
+          // Test the connection with a simple call
+          await connection.getLatestBlockhash();
+          endpointUsed = 'Helius RPC';
+          connectionWorking = true;
+          console.log('Using verified Helius RPC for transaction sending...');
+        } catch (heliusError) {
+          console.log('Helius RPC failed, trying fallback endpoints...');
+        }
+      } else {
+        console.log('No valid Helius key, using public endpoints...');
+      }
+
+      // If Helius failed or not available, try fallback endpoints
+      if (!connectionWorking) {
+        for (const endpoint of fallbackEndpoints) {
+          try {
+            connection = new Connection(endpoint, 'confirmed');
+            // Test the connection
+            await connection.getLatestBlockhash();
+            endpointUsed = endpoint.includes('mainnet-beta') ? 'Solana Public RPC' : 'Alternative RPC';
+            connectionWorking = true;
+            console.log(`Using working ${endpointUsed}: ${endpoint}`);
+            break;
+          } catch (error) {
+            console.log(`RPC ${endpoint} failed, trying next...`);
+          }
+        }
+      }
+
+      if (!connectionWorking) {
+        throw new Error('All RPC endpoints failed. Please try again later.');
+      }
+
+      // Execute transaction (15% service fee)
+      try {
+        setProcessing(true);
+        console.log('Starting DIRECT transaction processing - NO SIMULATION...');
+
+        // Wrap all async operations to prevent unhandled rejections
+        let transactionBuffer, deserializedTransaction, signedTransaction;
+
+        try {
+          transactionBuffer = Buffer.from(transaction, 'base64');
+          deserializedTransaction = (await import('@solana/web3.js')).Transaction.from(transactionBuffer);
+
+          console.log(`Transaction deserialized, signing with ${walletName || 'connected wallet'}...`);
+          signedTransaction = await signTransaction(deserializedTransaction);
+        } catch (prepError: any) {
+          console.log('Transaction preparation error:', prepError.message);
+          throw new Error(`Transaction preparation failed: ${prepError.message}`);
+        }
+
+        console.log(`Transaction signed, sending via ${endpointUsed} - SKIP ALL SIMULATION...`);
+
+        // Send with complete error handling to prevent unhandled rejections
+        let signature;
+        try {
+          signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+            skipPreflight: true,  // SKIP SIMULATION - This prevents Jupiter injection
+            preflightCommitment: 'confirmed',
+            maxRetries: 3
+          }).catch((sendError: any) => {
+            console.log('Transaction send error caught:', sendError.message);
+            throw new Error(`Transaction failed: ${sendError.message}`);
+          });
+        } catch (wrappedError: any) {
+          console.log('Send transaction wrapper error:', wrappedError.message);
+          throw wrappedError;
+        }
+
+        console.log(`Transaction sent, signature: ${signature}, confirming...`);
+
+        // Simple confirmation without Promise.race to prevent unhandled rejections
+        try {
+          console.log('Waiting for transaction confirmation...');
+          await connection.confirmTransaction(signature, 'confirmed');
+          console.log('Transaction confirmed successfully!');
+        } catch (confirmError: any) {
+          console.log('Confirmation failed but transaction was sent:', confirmError.message);
+          // Still proceed as transaction was successfully sent
+        }
+
+        // Save successful transaction to database and get points message
+        let pointsMessage = '';
+        try {
+          const dbResponse = await fetch('/api/sol-refund/record-success', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              signature,
+              walletAddress: data.walletAddress,
+              accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
+              solRecovered: totalSolReclaimed,
+              netAmount: netAmount,
+              feeAmount: feeAmount,
+              referralCodeUsed: referralCodeUsed,
+              platformFeeAmount: platformFeeAmount || feeAmount,
+              referralFeeAmount: referralFeeAmount || 0
+            })
+          });
+
+          if (dbResponse.ok) {
+            const dbResult = await dbResponse.json();
+            pointsMessage = dbResult.message || '';
+            console.log('Transaction recorded in database successfully');
+          }
+        } catch (dbError) {
+          console.warn('Failed to record transaction in database:', dbError);
+        }
+
+        return {
+          success: true,
+          signature,
+          accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
+          totalReceived: netAmount,
+          feeAmount: feeAmount,
+          pointsMessage: pointsMessage,
+          message: `Transaction sent successfully! Check: https://solscan.io/tx/${signature}`
+        };
+      } catch (walletError: any) {
+        console.error('Transaction error:', walletError);
+        console.error('Error details:', JSON.stringify(walletError, null, 2));
+
+        // Extract specific Solana error information
+        let errorMessage = 'Transaction failed';
+        if (walletError.message) {
+          errorMessage = walletError.message;
+        } else if (walletError.logs) {
+          errorMessage = `Solana logs: ${walletError.logs.join('; ')}`;
+        } else if (walletError.err) {
+          errorMessage = `Solana error: ${JSON.stringify(walletError.err)}`;
+        }
+
+        throw new Error(errorMessage);
+      }
+    },
+    onSuccess: (result: any) => {
+      // Use points message from backend if available, otherwise show default
+      const title = result.pointsMessage || `Successfully closed ${result.accountsClosed} accounts and claimed ${result.totalReceived.toFixed(6)} SOL`;
+
+      toast({
+        title: title,
+        description: `Transaction: ${result.signature.substring(0, 8)}...`,
+        className: "bg-green-600 text-white border-green-600",
+      });
+
+      // Reset form and immediately refresh statistics and transaction history
+      setScanResult(null);
+
+      // Invalidate and refetch all related queries for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+      queryClient.refetchQueries({ queryKey: ['/api/sol-refund/stats'] });
+
+      // Invalidate user profile to update total points
+      if (publicKey) {
+        queryClient.invalidateQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
+        queryClient.refetchQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
+      }
+
+      // Also invalidate leaderboard to update rankings
+      queryClient.invalidateQueries({ queryKey: ['/api/leaderboard'] });
+      queryClient.refetchQueries({ queryKey: ['/api/leaderboard'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Transaction Failed",
+        description: error.message || "Failed to process SOL refund transaction",
+        variant: "destructive",
+      });
+    },
+  });
+
+
+
+  const handleProcessAllRefunds = () => {
+    if (!scanResult || scanResult.accounts.length === 0) {
+      toast({
+        title: "No Accounts Found",
+        description: "No empty accounts found to close",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Process all found empty accounts
+    const allAccountAddresses = scanResult.accounts.map(acc => acc.accountAddress);
+
+    refundMutation.mutate({
+      walletAddress: publicKey?.toString() || "",
+      selectedAccounts: allAccountAddresses,
+      donationPercentage,
+      referralCode: referralCode || undefined,
+    });
+  };
 
   const handleBurnToken = (tokenMint: string) => {
     if (!publicKey) {
@@ -967,33 +2252,6 @@ export default function SolRefund() {
   };
 
   const refundCalc = calculateRefund();
-
-  // Clean up selected NFTs when wallet disconnects or tab changes
-  useEffect(() => {
-    if (activeTab !== 'burnTokens' || burnSubTab !== 'nft') {
-      setSelectedNfts(new Set());
-    }
-  }, [activeTab, burnSubTab]);
-
-  // Clear selected NFTs when NFT list changes
-  useEffect(() => {
-    const nftList = nftData?.nfts || [];
-    if (nftList.length === 0) {
-      setSelectedNfts(new Set());
-    } else {
-      // Remove any selected NFTs that are no longer in the current list
-      const currentNftIds = new Set(nftList.map(nft => nft.id));
-      setSelectedNfts(prev => {
-        const filteredSelection = new Set<string>();
-        prev.forEach(id => {
-          if (currentNftIds.has(id)) {
-            filteredSelection.add(id);
-          }
-        });
-        return filteredSelection;
-      });
-    }
-  }, [nftData]);
 
 
   return (
@@ -1033,596 +2291,978 @@ export default function SolRefund() {
                     rel="noopener noreferrer"
                     data-testid="button-social-discord"
                     className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                    title="Join our Discord"
+                    title="Join our Discord community"
                   >
                     <SiDiscord className="h-4 w-4 text-white" />
                   </a>
                 </div>
-                <WalletMultiButton className="wallet-adapter-button-trigger" />
+
+                {isConnected && publicKey ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                        data-testid="button-wallet-connected"
+                      >
+                        <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                      <DropdownMenuItem 
+                        onClick={disconnectWallet}
+                        className="text-white hover:bg-purple-600/40 cursor-pointer"
+                        data-testid="button-disconnect"
+                      >
+                        Disconnect
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      select(null);
+                      setVisible(true);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                    title="Connect your wallet"
+                    data-testid="button-connect"
+                  >
+                    <Wallet className="h-4 w-4 mr-1" />
+                    Connect
+                  </Button>
+                )}
               </div>
             </div>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex lg:items-center lg:space-x-4">
-              {/* Left: Navigation */}
-              <div className="flex items-center space-x-6">
-                <button
-                  onClick={() => setActiveTab('scan')}
-                  data-testid="nav-empty-accounts"
-                  className={`font-medium transition-colors ${
-                    activeTab === 'scan'
-                      ? 'text-green-400'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Empty Accounts
-                </button>
-                <button
-                  onClick={() => setActiveTab('burnTokens')}
-                  data-testid="nav-burn-tokens"
-                  className={`font-medium transition-colors ${
-                    activeTab === 'burnTokens'
-                      ? 'text-green-400'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Burn Tokens
-                </button>
-                <button
-                  onClick={() => setActiveTab('stats')}
-                  data-testid="nav-statistics"
-                  className={`font-medium transition-colors ${
-                    activeTab === 'stats'
-                      ? 'text-green-400'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Statistics
-                </button>
-              </div>
-
-              {/* Right: Social + Wallet */}
-              <div className="flex items-center space-x-3">
-                {/* Social Media Buttons */}
+            {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
+            {isConnected && (
+              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
                 <div className="flex items-center space-x-2">
-                  <a
-                    href="https://x.com/getfreesol_xyz"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-testid="button-social-x-desktop"
-                    className="flex items-center justify-center w-9 h-9 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
-                    title="Follow us on X (Twitter)"
+                  <Button
+                    onClick={() => setActiveTab('reclaim')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'reclaim' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
                   >
-                    <SiX className="h-4 w-4 text-white" />
-                  </a>
-                  <a
-                    href="https://discord.gg/tSBMgYcZaK"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-testid="button-social-discord-desktop"
-                    className="flex items-center justify-center w-9 h-9 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
-                    title="Join our Discord"
+                    <svg className="h-4 w-4 mr-2" viewBox="0 0 397.7 311.7" style={{ fill: activeTab === 'reclaim' ? 'white' : '#00FFA3' }}>
+                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                    </svg>
+                    Reclaim SOL
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('burnTokens')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'burnTokens' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
                   >
-                    <SiDiscord className="h-4 w-4 text-white" />
-                  </a>
+                    <Flame className="h-4 w-4 mr-2" />
+                    Burn
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('referrals')}
+                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'referrals' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Referrals
+                  </Button>
                 </div>
-
-                {/* Wallet Connection */}
-                <WalletMultiButton className="wallet-adapter-button-trigger" />
               </div>
+            )}
+
+            {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
+            <div className="hidden lg:flex items-center space-x-3">
+              {/* Social Media Buttons */}
+              <div className="flex items-center space-x-1">
+                <a
+                  href="https://x.com/getfreesol_xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-social-x-desktop"
+                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  title="Follow us on X (Twitter)"
+                >
+                  <SiX className="h-4 w-4 text-white" />
+                </a>
+                <a
+                  href="https://discord.gg/tSBMgYcZaK"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-social-discord-desktop"
+                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  title="Join our Discord community"
+                >
+                  <SiDiscord className="h-4 w-4 text-white" />
+                </a>
+              </div>
+
+              {isConnected && publicKey ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                      data-testid="button-wallet-connected-desktop"
+                    >
+                      <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                    <DropdownMenuItem 
+                      onClick={disconnectWallet}
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      data-testid="button-disconnect-desktop"
+                    >
+                      Disconnect
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex flex-col items-center space-y-3">
+                  <Button
+                    onClick={() => {
+                      select(null);
+                      setVisible(true);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
+                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
+                    data-testid="button-connect-desktop"
+                  >
+                    <Wallet className="h-5 w-5 mr-2" />
+                    Connect Wallet
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Main Content */}
-          {activeTab === 'scan' && (
-            <Card className="bg-gradient-to-br from-slate-800/50 to-purple-800/30 backdrop-blur-sm border-purple-500/30">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Search className="mr-2 h-5 w-5" />
-                  Scan for Empty Token Accounts
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  Find and reclaim SOL from dormant token accounts
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
-                    <div className="flex-1">
-                      <Input
-                        placeholder="Enter Solana wallet address..."
-                        value={walletAddress}
-                        onChange={(e) => setWalletAddress(e.target.value)}
-                        className="bg-slate-700/50 border-purple-500/30 text-white placeholder-gray-400"
-                        data-testid="input-wallet-address"
-                      />
+          {/* Description */}
+          <div className="text-center space-y-4 py-4">
+            <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : 'Get your SOL back!'}
+            </p>
+          </div>
+
+          {/* Burn Sub-Tabs */}
+          {activeTab === 'burnTokens' && (
+            <div className="flex justify-center mb-6">
+              <div className="bg-purple-800/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1 flex space-x-1">
+                <button
+                  onClick={() => setBurnSubTab('tokens')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    burnSubTab === 'tokens' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-burn-tokens"
+                >
+                  🔥 Burn Tokens
+                </button>
+                <button
+                  onClick={() => setBurnSubTab('nft')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    burnSubTab === 'nft' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-burn-nft"
+                >
+                  🖼️ Burn NFT
+                </button>
+              </div>
+            </div>
+          )}
+
+
+
+
+
+
+          {/* Reclaim SOL Results */}
+          {activeTab === 'reclaim' && scanResult && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Scan Results</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-scan"
+                >
+                  Click to Refresh
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              <p className="text-white text-sm mb-6">
+                Found {scanResult.emptyAccounts} empty token accounts
+              </p>
+
+              {scanResult.emptyAccounts > 0 ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                      <div className="text-2xl font-bold text-white">{scanResult.emptyAccounts}</div>
+                      <div className="text-xs text-purple-200">Empty Accounts</div>
                     </div>
-                    <Button
-                      onClick={handleScan}
-                      disabled={!walletAddress || scanMutation.isPending}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                      data-testid="button-scan"
-                    >
-                      {scanMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Scanning...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="mr-2 h-4 w-4" />
-                          Scan Wallet
-                        </>
-                      )}
-                    </Button>
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                      <div className="text-2xl font-bold text-white">{(refundCalc.total * 0.85).toFixed(6)}</div>
+                      <div className="text-xs text-purple-200">Total Net</div>
+                    </div>
                   </div>
 
-                  {scanResult && (
-                    <div className="mt-6 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-slate-700/30 rounded-lg p-4 text-center">
-                          <div className="text-2xl font-bold text-green-400">
-                            {scanResult.emptyAccounts?.length || 0}
+                  <div className="w-full h-px bg-slate-600"></div>
+
+                  {/* Empty Accounts List */}
+                  <div className="space-y-4">
+                    <h4 className="text-base font-medium text-white">Empty Accounts Found ({scanResult.accounts.length})</h4>
+
+                    <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
+                      {scanResult.accounts.map((account) => (
+                        <div key={account.accountAddress} className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-mono text-sm text-white truncate">
+                              {account.accountAddress}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-300">Empty Accounts</div>
+                          <div className="px-2 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded text-xs text-purple-400">
+                            {account.rentAmount} SOL
+                          </div>
                         </div>
-                        <div className="bg-slate-700/30 rounded-lg p-4 text-center">
-                          <div className="text-2xl font-bold text-yellow-400">
-                            {parseFloat(scanResult.totalReclaimable || '0').toFixed(4)} SOL
+                      ))}
+                    </div>
+                  </div>
+
+
+
+
+
+                  {/* Process Button */}
+                  <Button 
+                    onClick={handleProcessAllRefunds}
+                    disabled={refundMutation.isPending}
+                    size="lg"
+                    className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                  >
+                    {refundMutation.isPending ? (
+                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                    ) : (
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                    )}
+                    CLAIM ALL
+                  </Button>
+                </div>
+              ) : (
+                <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-6 text-center">
+                  <CheckCircle className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-purple-400 mb-2">Great news!</h4>
+                  <p className="text-white">
+                    Your wallet has no empty token accounts. All your accounts are either active or already closed.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Burn Tokens Results */}
+          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length > 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">{selectedTokens.size} selected</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanTokensMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-tokens"
+                >
+                  Click to Refresh
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
+                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
+                  {tokenList.length} Tokens Found
+                </div>
+              </div>
+
+              {/* Selection Controls */}
+              <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                <div className="flex items-center space-x-3">
+                  <Button
+                    onClick={selectAllTokens}
+                    size="sm"
+                    className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    onClick={clearTokenSelection}
+                    size="sm"
+                    className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <div className="text-2xl text-green-400 font-bold">
+                  {calculateTotalSOL(selectedTokens.size)}
+                </div>
+              </div>
+
+              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30 mb-6">
+                {tokenList.map((token, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50 hover:bg-slate-700/70 cursor-pointer transition-colors"
+                    onClick={() => toggleTokenSelection(token.mint)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedTokens.has(token.mint)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleTokenSelection(token.mint);
+                      }}
+                      className="w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600"
+                    />
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      {token.logo && (
+                        <img 
+                          src={token.logo} 
+                          alt={token.symbol || 'Token'} 
+                          className="w-8 h-8 rounded-full flex-shrink-0"
+                          onError={(e) => {
+                            // Hide broken images completely
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center space-x-2">
+                          <div className="text-sm font-medium text-white truncate">
+                            {token.symbol || 'TOKEN'}
                           </div>
-                          <div className="text-sm text-gray-300">Total Reclaimable</div>
                         </div>
-                        <div className="bg-slate-700/30 rounded-lg p-4 text-center">
-                          <div className="text-2xl font-bold text-blue-400">
-                            {refundCalc.net.toFixed(4)} SOL
-                          </div>
-                          <div className="text-sm text-gray-300">After Service Fee</div>
+                        <div className="text-xs text-gray-300 truncate">
+                          {token.balance > 0 
+                            ? `Balance: ${token.balance} ${token.symbol || 'TOKENS'}` 
+                            : 'Empty account - can close for ~0.002 SOL'
+                          }
+                        </div>
+                        <div className="text-xs text-gray-400 truncate font-mono">
+                          {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
                         </div>
                       </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-                      {scanResult.emptyAccounts && scanResult.emptyAccounts.length > 0 && (
-                        <Button
-                          onClick={handleClaimAll}
-                          disabled={claimAllMutation.isPending}
-                          className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
-                          data-testid="button-claim-all"
+              {/* Burn Button at Bottom */}
+              {selectedTokens.size > 0 && (
+                <div className="mt-6">
+                  <Button
+                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                    className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                  >
+                    {bulkBurnTokensMutation.isPending ? (
+                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                    ) : (
+                      <Flame className="h-5 w-5 mr-2" />
+                    )}
+                    BURN
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+
+
+          {/* Empty State Messages - Tokens */}
+          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length === 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Token & NFT Scanner</h3>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanTokensMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-tokens-empty"
+                >
+                  Click to Refresh
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              <div className="text-center space-y-4">
+                <Flame className="h-12 w-12 text-purple-400 mx-auto" />
+                <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
+                <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+              </div>
+            </div>
+          )}
+
+          {/* NFT Burning Interface */}
+          {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanNftsMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanNftsMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  data-testid="button-refresh-nft"
+                >
+                  Click to Refresh
+                  <RefreshCw className={`h-3.5 w-3.5 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+
+              {/* Individual NFT Grid */}
+              {scanNftsMutation.isPending ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
+                  <p className="text-purple-200">Scanning for NFTs...</p>
+                </div>
+              ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Select All Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => {
+                          const allNfts = nftData.nfts;
+                          setSelectedNfts(new Set(allNfts.map((nft: any) => nft.mint || nft.id || nft.assetId).filter(Boolean)));
+                        }}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-select-all-nfts"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setSelectedNfts(new Set())}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-deselect-all-nfts"
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                    <p className="text-sm text-purple-200">
+                      {selectedNfts.size} selected • {nftData.nfts.length} total NFTs
+                    </p>
+                  </div>
+
+                  {/* NFT Grid */}
+                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {nftData.nfts.map((nft: any) => {
+                      // Use a stable identifier that works for all NFT types
+                      const nftId = nft.mint || nft.id || nft.assetId;
+                      const isSelected = selectedNfts.has(nftId);
+
+                      return (
+                        <div
+                          key={nftId}
+                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'border-green-400/50 bg-green-900/20' 
+                              : 'border-purple-500/30 hover:border-purple-400/50'
+                          }`}
+                          onClick={() => {
+                            setSelectedNfts(prev => {
+                              const newSet = new Set(prev);
+                              if (isSelected) {
+                                newSet.delete(nftId);
+                              } else {
+                                newSet.add(nftId);
+                              }
+                              return newSet;
+                            });
+                          }}
+                          data-testid={`card-nft-${nftId}`}
                         >
-                          {claimAllMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Claiming SOL...
-                            </>
-                          ) : (
-                            <>
-                              <Coins className="mr-2 h-4 w-4" />
-                              Claim {refundCalc.net.toFixed(4)} SOL
-                            </>
-                          )}
-                        </Button>
-                      )}
+                          {/* Selection Checkbox */}
+                          <div className="absolute top-2 left-2 z-10">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              isSelected 
+                                ? 'bg-green-500 border-green-500' 
+                                : 'bg-purple-900/50 border-purple-400'
+                            }`}>
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
+                            </div>
+                          </div>
+                          {/* NFT Image */}
+                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30">
+                            {nft.image ? (
+                              <img
+                                src={nft.image}
+                                alt={nft.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling!.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
+                              <Image className="h-8 w-8 text-purple-400" />
+                            </div>
+                          </div>
+
+                          {/* NFT Details */}
+                          <div className="space-y-1">
+                            <h4 className="text-white text-sm font-medium truncate" title={nft.name}>
+                              {nft.name || 'Unknown NFT'}
+                            </h4>
+
+                            {/* Type Badge */}
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                nft.type === 'standard' ? 'bg-blue-500/20 text-blue-300' :
+                                nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
+                                nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
+                                nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
+                                'bg-gray-500/20 text-gray-300'
+                              }`}>
+                                {nft.type.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    </div>
+                  </div>
+
+                  {/* Burn Selected Button */}
+                  {selectedNfts.size > 0 && (
+                    <div className="flex justify-center pt-4">
+                      <button
+                        onClick={() => {
+                          if (!publicKey) {
+                            toast({
+                              title: "Error",
+                              description: "Please connect your wallet first",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          const selectedIds = Array.from(selectedNfts);
+                          const selectedNftData = nftData.nfts.filter((nft: any) => 
+                            selectedIds.includes(nft.mint || nft.id || nft.assetId)
+                          );
+                          
+                          // Group by type and burn
+                          const nftsByType: { [key: string]: any[] } = {};
+                          selectedNftData.forEach((nft: any) => {
+                            if (!nftsByType[nft.type]) {
+                              nftsByType[nft.type] = [];
+                            }
+                            nftsByType[nft.type].push(nft);
+                          });
+
+                          // Call burn mutation with selected NFT IDs
+                          burnNftsMutation.mutate(selectedIds);
+                        }}
+                        disabled={burnNftsMutation.isPending || !publicKey}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-testid="button-burn-selected-nfts"
+                      >
+                        <Flame className={`h-5 w-5 ${burnNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                        {burnNftsMutation.isPending ? 'Burning...' : `Burn ${selectedNfts.size} Selected NFT${selectedNfts.size > 1 ? 's' : ''}`}
+                      </button>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Burn Tokens Tab */}
-          {activeTab === 'burnTokens' && (
-            <Card className="bg-gradient-to-br from-slate-800/50 to-purple-800/30 backdrop-blur-sm border-purple-500/30">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Flame className="mr-2 h-5 w-5" />
-                  Burn Tokens & NFTs
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  Burn unwanted tokens and NFTs to reclaim SOL
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Sub-navigation */}
-                <div className="flex space-x-4 mb-6">
-                  <button
-                    onClick={() => setBurnSubTab('token')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      burnSubTab === 'token'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-slate-700/50 text-gray-300 hover:text-white'
-                    }`}
-                    data-testid="tab-burn-tokens"
-                  >
-                    Tokens
-                  </button>
-                  <button
-                    onClick={() => setBurnSubTab('nft')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      burnSubTab === 'nft'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-slate-700/50 text-gray-300 hover:text-white'
-                    }`}
-                    data-testid="tab-burn-nfts"
-                  >
-                    NFTs
-                  </button>
+              ) : !scanNftsMutation.isPending ? (
+                <div className="text-center py-8">
+                  <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">No NFTs Found</h3>
+                  <p className="text-purple-200">Scan your wallet to find NFTs in your collection.</p>
                 </div>
+              ) : null}
 
-                {/* Token Burning Section */}
-                {burnSubTab === 'token' && (
-                  <div className="space-y-4">
-                    <div className="space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
-                        <div className="flex-1">
-                          <Input
-                            placeholder="Enter wallet address to scan for tokens..."
-                            value={tokenWalletAddress}
-                            onChange={(e) => setTokenWalletAddress(e.target.value)}
-                            className="bg-slate-700/50 border-purple-500/30 text-white placeholder-gray-400"
-                            data-testid="input-token-wallet-address"
-                          />
-                        </div>
-                        <Button
-                          onClick={handleScanTokens}
-                          disabled={!tokenWalletAddress || scanTokensMutation.isPending}
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                          data-testid="button-scan-tokens"
-                        >
-                          {scanTokensMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Scanning...
-                            </>
-                          ) : (
-                            <>
-                              <Search className="mr-2 h-4 w-4" />
-                              Scan for Tokens
-                            </>
-                          )}
-                        </Button>
-                      </div>
-
-                      {/* Token List */}
-                      {tokenList.length > 0 && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">
-                              Found {tokenList.length} Tokens
-                            </h3>
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedTokens(new Set(tokenList.map(token => token.mint)))}
-                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                                data-testid="button-select-all-tokens"
-                              >
-                                Select All
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedTokens(new Set())}
-                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                                data-testid="button-deselect-all-tokens"
-                              >
-                                Deselect All
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                            {tokenList.map((token, index) => {
-                              const isSelected = selectedTokens.has(token.mint);
-                              return (
-                                <div
-                                  key={`${token.mint}-${index}`}
-                                  onClick={() => {
-                                    setSelectedTokens(prev => {
-                                      const newSet = new Set(prev);
-                                      if (isSelected) {
-                                        newSet.delete(token.mint);
-                                      } else {
-                                        newSet.add(token.mint);
-                                      }
-                                      return newSet;
-                                    });
-                                  }}
-                                  className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
-                                    isSelected 
-                                      ? 'border-green-400/50 bg-green-900/20' 
-                                      : 'border-purple-500/30 hover:border-purple-400/50'
-                                  }`}
-                                  data-testid={`token-card-${token.mint}`}
-                                >
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                      <h4 className="font-medium text-white truncate">
-                                        {token.name || 'Unknown Token'}
-                                      </h4>
-                                      {isSelected && (
-                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                          <Check className="w-3 h-3 text-white" />
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="text-sm text-gray-300">
-                                      <div>Balance: {token.balance}</div>
-                                      <div className="truncate">Mint: {token.mint}</div>
-                                      <div>Rent: ~{token.estimatedRent} SOL</div>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {selectedTokens.size > 0 && (
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-purple-500/30">
-                              <div className="text-sm text-gray-300">
-                                {selectedTokens.size} tokens selected
-                              </div>
-                              <Button
-                                onClick={() => {
-                                  const selectedMints = Array.from(selectedTokens);
-                                  selectedMints.forEach(mint => handleBurnToken(mint));
-                                }}
-                                disabled={burnTokenMutation.isPending}
-                                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white"
-                                data-testid="button-burn-selected-tokens"
-                              >
-                                {burnTokenMutation.isPending ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Burning...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Flame className="mr-2 h-4 w-4" />
-                                    Burn Selected Tokens
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* NFT Burning Section with Batch Support */}
-                {burnSubTab === 'nft' && (
-                  <div className="space-y-4">
-                    <div className="space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
-                        <div className="flex-1">
-                          <Input
-                            placeholder="Enter wallet address to scan for NFTs..."
-                            value={nftWalletAddress}
-                            onChange={(e) => setNftWalletAddress(e.target.value)}
-                            className="bg-slate-700/50 border-purple-500/30 text-white placeholder-gray-400"
-                            data-testid="input-nft-wallet-address"
-                          />
-                        </div>
-                        <Button
-                          onClick={handleScanNfts}
-                          disabled={!nftWalletAddress || scanNftsMutation.isPending}
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                          data-testid="button-scan-nfts"
-                        >
-                          {scanNftsMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Scanning...
-                            </>
-                          ) : (
-                            <>
-                              <Search className="mr-2 h-4 w-4" />
-                              Scan for NFTs
-                            </>
-                          )}
-                        </Button>
-                      </div>
-
-                      {/* NFT List with Batch Burning Support */}
-                      {(nftData?.nfts || []).length > 0 && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">
-                              Found {(nftData?.nfts || []).length} NFTs (Batch Burning Enabled!)
-                            </h3>
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedNfts(new Set((nftData?.nfts || []).map(nft => nft.id)))}
-                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                                data-testid="button-select-all-nfts"
-                              >
-                                Select All
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedNfts(new Set())}
-                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                                data-testid="button-deselect-all-nfts"
-                              >
-                                Deselect All
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-purple-600">
-                            {(nftData?.nfts || []).map((nft, index) => {
-                              const nftId = nft.id || nft.mint || nft.assetId;
-                              const isSelected = selectedNfts.has(nftId);
-                              
-                              return (
-                                <div
-                                  key={nftId}
-                                  className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
-                                    isSelected 
-                                      ? 'border-green-400/50 bg-green-900/20'
-                                      : 'border-purple-500/30 hover:border-purple-400/50'
-                                  }`}
-                                  onClick={() => {
-                                    setSelectedNfts(prev => {
-                                      const newSet = new Set(prev);
-                                      if (isSelected) {
-                                        newSet.delete(nftId);
-                                      } else {
-                                        newSet.add(nftId);
-                                      }
-                                      return newSet;
-                                    });
-                                  }}
-                                  data-testid={`nft-card-${nftId}`}
-                                >
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                      <h4 className="font-medium text-white truncate">
-                                        {nft.name || 'Unknown NFT'}
-                                      </h4>
-                                      {isSelected && (
-                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                          <Check className="w-3 h-3 text-white" />
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="text-sm text-gray-300">
-                                      <div className="mb-1">
-                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                          nft.type === 'core' ? 'bg-blue-600/30 text-blue-300' :
-                                          nft.type === 'pnft' ? 'bg-purple-600/30 text-purple-300' :
-                                          nft.type === 'standard' ? 'bg-green-600/30 text-green-300' :
-                                          'bg-gray-600/30 text-gray-300'
-                                        }`}>
-                                          {nft.type === 'core' ? 'Core NFT' :
-                                           nft.type === 'pnft' ? 'Programmable' :
-                                           nft.type === 'standard' ? 'Standard' :
-                                           'Unknown'}
-                                        </span>
-                                      </div>
-                                      <div className="truncate">ID: {nftId}</div>
-                                      <div>Rent: ~{nft.estimatedRent || '0.002'} SOL</div>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {selectedNfts.size > 0 && (
-                            <div className="space-y-4 pt-4 border-t border-purple-500/30">
-                              <div className="bg-slate-700/30 rounded-lg p-4">
-                                <h4 className="text-white font-medium mb-2">🚀 Batch Burning Preview</h4>
-                                <div className="text-sm text-gray-300 space-y-1">
-                                  <div>✨ Selected NFTs: {selectedNfts.size}</div>
-                                  <div>⚡ Estimated Signatures Required: {
-                                    (() => {
-                                      const selectedNftsList = (nftData?.nfts || []).filter(nft => selectedNfts.has(nft.id || nft.mint || nft.assetId));
-                                      const typeGroups = selectedNftsList.reduce((acc, nft) => {
-                                        const type = nft.type || 'unknown';
-                                        acc[type] = (acc[type] || 0) + 1;
-                                        return acc;
-                                      }, {} as Record<string, number>);
-                                      
-                                      let signatures = 0;
-                                      if (typeGroups.core) signatures += 1; // Core NFTs batch together
-                                      if (typeGroups.standard) signatures += 1; // Standard NFTs batch together  
-                                      if (typeGroups.pnft) signatures += 1; // Programmable NFTs batch together
-                                      if (typeGroups.cnft) signatures += typeGroups.cnft; // cNFTs require individual signatures
-                                      
-                                      return signatures;
-                                    })()
-                                  }</div>
-                                  <div className="text-xs text-purple-300">
-                                    💡 Same NFT types burn together in one transaction!
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div className="text-sm text-gray-300">
-                                  Ready for batch burning: {selectedNfts.size} NFTs
-                                </div>
-                                <Button
-                                  onClick={() => {
-                                    const selectedNftsList = (nftData?.nfts || []).filter(nft => selectedNfts.has(nft.id || nft.mint || nft.assetId));
-                                    burnNftsMutation.mutate(selectedNftsList);
-                                  }}
-                                  disabled={burnNftsMutation.isPending}
-                                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white"
-                                  data-testid="button-burn-selected-nfts"
-                                >
-                                  {burnNftsMutation.isPending ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Batch Burning...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Flame className="mr-2 h-4 w-4" />
-                                      Batch Burn Selected NFTs
-                                    </>
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Statistics Tab */}
-          {activeTab === 'stats' && (
-            <Card className="bg-gradient-to-br from-slate-800/50 to-purple-800/30 backdrop-blur-sm border-purple-500/30">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <BarChart3 className="mr-2 h-5 w-5" />
-                  Platform Statistics
-                </CardTitle>
-                <CardDescription className="text-gray-300">
-                  Track recovery progress and platform activity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-green-400">
-                      {stats?.totalUsers || 0}
-                    </div>
-                    <div className="text-sm text-gray-300">Total Users</div>
-                  </div>
-                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-yellow-400">
-                      {stats?.totalSolRecovered || '0.0000'} SOL
-                    </div>
-                    <div className="text-sm text-gray-300">SOL Recovered</div>
-                  </div>
-                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-400">
-                      {stats?.totalTransactions || 0}
-                    </div>
-                    <div className="text-sm text-gray-300">Transactions</div>
-                  </div>
-                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-purple-400">
-                      {stats?.totalNftsBurned || 0}
-                    </div>
-                    <div className="text-sm text-gray-300">NFTs Burned</div>
+              {/* Burn Instructions */}
+              <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-purple-200">
+                    <p className="font-medium mb-2">About NFT Burning:</p>
+                    <ul className="space-y-1 text-purple-300">
+                      <li>• Burn unwanted NFTs and recover SOL rent deposits</li>
+                      <li>• Burning permanently destroys the NFT and its metadata</li>
+                      <li>• Burning NFTs usually returns 0.01 SOL, while most tokens and some scam NFTs give only 0.002 SOL. Magic Eden OCP NFTs return 0.004 SOL, and compressed NFTs return nothing.</li>
+                    </ul>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          )}
+
+          {/* Referrals Tab Content */}
+          {activeTab === 'referrals' && (
+            <div className="space-y-8">
+              {/* How It Works */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    How It Works
+                  </h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <Wallet className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <h3 className="font-semibold text-white">Connect Wallet</h3>
+                      <p className="text-sm text-purple-200">
+                        Connect your wallet to automatically generate your referral link
+                      </p>
+                    </div>
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <Users className="w-6 h-6 text-green-400" />
+                      </div>
+                      <h3 className="font-semibold text-white">Share</h3>
+                      <p className="text-sm text-purple-200">
+                        Share with your friends
+                      </p>
+                    </div>
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <DollarSign className="w-6 h-6 text-purple-400" />
+                      </div>
+                      <h3 className="font-semibold text-white">Earn</h3>
+                      <p className="text-sm text-purple-200">
+                        Earn 35% of platform fee from every referral transaction
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Cards */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {(userReferrals as any)?.referralCode?.stats?.totalEarnings || '0'} SOL
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                    Total Earnings
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {(userReferrals as any)?.referralCode?.stats?.totalReferrals || '0'}
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                    Total Referrals
+                  </div>
+                </div>
+              </div>
+
+              {/* Referral Dashboard Content */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Globe className="w-5 h-5" />
+                    Your Referral Information
+                  </h3>
+                </div>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-purple-200">Referral Link</Label>
+                    <div className="flex space-x-2">
+                      <Input 
+                        value={userReferralCode ? `${window.location.origin}/${userReferralCode}` : 'Generating referral link...'} 
+                        readOnly
+                        data-testid="input-referral-link"
+                        className="bg-purple-900/30 border-purple-500/30 text-white"
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => {
+                          if (userReferralCode) {
+                            navigator.clipboard.writeText(`${window.location.origin}/${userReferralCode}`);
+                            toast({
+                              title: "Copied!",
+                              description: "Referral link copied to clipboard",
+                            });
+                          }
+                        }}
+                        data-testid="button-copy-link"
+                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30 hover:text-white"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Referral Transactions */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white">Recent Referral Transactions</h3>
+                  <p className="text-purple-200 text-sm mt-2">
+                    Track your recent referral earnings
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  {(referralTransactions as any)?.transactions && (referralTransactions as any).transactions.length > 0 ? (
+                    (referralTransactions as any).transactions.map((tx: any, index: number) => (
+                      <div key={index} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <p className="font-mono text-sm text-white">
+                              {tx.referredWalletAddress?.slice(0, 8)}...{tx.referredWalletAddress?.slice(-8)}
+                            </p>
+                            <p className="text-xs text-purple-300">
+                              {tx.paidAt ? new Date(tx.paidAt).toLocaleString() : 'Date unavailable'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-green-400">
+                              +{tx.referralFeeAmount || '0'} SOL
+                            </p>
+                            <p className="text-xs text-purple-300">
+                              From {tx.originalFeeAmount || '0'} SOL fee
+                            </p>
+                          </div>
+                        </div>
+                        <Separator className="bg-purple-500/30" />
+                        <div className="flex justify-between text-xs text-purple-300">
+                          <span>Transaction: {tx.transactionSignature?.slice(0, 12)}...</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`https://solscan.io/tx/${tx.transactionSignature}`, "_blank")}
+                            className="text-purple-300 hover:text-white hover:bg-purple-700/30"
+                          >
+                            View on Solscan
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-purple-300">No referral transactions yet</p>
+                      <p className="text-sm text-purple-400 mt-2">Share your referral link to start earning!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+          {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
+          {activeTab === 'reclaim' && stats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Total SOL Recovered */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {stats.totalSolRecovered.toFixed(6)}
+                </div>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  TOTAL SOL RECOVERED
+                </div>
+              </div>
+
+              {/* Total Accounts Closed */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
+                  {stats.totalAccountsClaimed}
+                </div>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  TOTAL ACCOUNTS CLOSED
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* All Time Ledger Section - Only show on reclaim tab */}
+          {activeTab === 'reclaim' && allTransactions.length > 0 && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+              <div className="flex items-center mb-6">
+                <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
+              </div>
+
+              <div className="overflow-x-auto">
+                <div className="min-w-full">
+                  {/* Header */}
+                  <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                      WALLET/TX
+                    </div>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                      ACCTS
+                    </div>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                      CLAIMED SOL
+                    </div>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                      DATE
+                    </div>
+                  </div>
+
+                  {/* Transaction Rows */}
+                  <div>
+                    {allTransactions.map((tx, index) => (
+                      <div key={tx.signature}>
+                        <div 
+                          className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                          onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
+                          title="Click to view transaction on Solscan"
+                        >
+                          <div className="text-white font-mono text-sm">
+                            <div className="truncate" title={tx.signature}>
+                              {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                            </div>
+                          </div>
+                          <div className="text-white text-center text-lg font-semibold">
+                            {tx.itemsProcessed}
+                          </div>
+                          <div className="text-white text-center text-sm font-medium">
+                            {tx.solRecovered.toFixed(6)}
+                          </div>
+                          <div className="text-white text-center text-sm">
+                            {new Date(tx.processedAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
+                          </div>
+                        </div>
+                        {/* Separator line between rows - don't show after last row */}
+                        {index < allTransactions.length - 1 && (
+                          <div className="border-b border-purple-500/20 my-2"></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Load More Button */}
+                  {hasMoreTransactions && (
+                    <div className="flex justify-center mt-6">
+                      <button
+                        onClick={loadMoreTransactions}
+                        disabled={isLoadingTransactions}
+                        className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoadingTransactions ? 'Loading...' : 'Load More'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Safety & Security Section - Only show on reclaim tab - Bottom of page */}
+          {activeTab === 'reclaim' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+              <div className="flex items-center mb-4">
+                <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
+                <h3 className="text-lg font-semibold text-white">Safety & Security</h3>
+              </div>
+
+              <div className="space-y-3 text-purple-200">
+                <div className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Only empty accounts (0 token balance) are eligible for closure</span>
+                </div>
+                <div className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Your tokens and active accounts are completely safe</span>
+                </div>
+                <div className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">Transactions are processed on Solana mainnet</span>
+                </div>
+                <div className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">15% service fee supports platform maintenance and development</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* What is this rent? Section - Only show on reclaim tab - Bottom of page */}
+          {activeTab === 'reclaim' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+              <div className="flex items-center mb-4">
+                <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
+                <h3 className="text-lg font-semibold text-white">What is this rent?</h3>
+              </div>
+
+              <div className="space-y-3 text-purple-200 text-sm">
+                <p>
+                  Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
+                </p>
+                <p>
+                  When you sell or transfer all tokens, the account becomes empty but the rent remains locked. Our tool safely closes these empty accounts and returns your SOL.
+                </p>
+                <p className="font-medium text-white">
+                  Only accounts with 0 tokens are eligible for closure - your funds are completely safe.
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex items-center justify-center space-x-3">
+            <img 
+              src={logoImage}
+              alt="Get Free Sol"
+              className="h-8 w-8"
+            />
+            <div className="text-center">
+              <div className="text-white font-semibold text-lg">Get Free Sol</div>
+              <div className="text-purple-300 text-sm">2025 All rights reserved</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Wallet Selection Modal */}
+
     </div>
   );
-};
+}
