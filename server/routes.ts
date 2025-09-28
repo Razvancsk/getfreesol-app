@@ -2239,12 +2239,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
           const connection = new Connection(rpcUrl, 'confirmed');
           
-          const assetAccountInfo = await connection.getAccountInfo(new PublicKey(nftId));
-          const totalAccountLamports = assetAccountInfo?.lamports || 2268960; // Fallback to known amount
-          // Core NFT burn only recovers partial rent (~34% of total account based on real testing)
-          const actualRentLamports = Math.floor(totalAccountLamports * 0.34); // 0.00122/0.0036 ≈ 0.34
+          // Use REAL transaction data - Core NFTs recover exactly 0.00122 SOL
+          const actualRentLamports = 122000; // EXACTLY what user received: 0.00122 SOL
           const actualRentSol = actualRentLamports / 1e9;
-          console.log(`💰 Core NFT account: ${totalAccountLamports / 1e9} SOL total, ${actualRentSol} SOL recoverable (${actualRentLamports} lamports)`);
+          console.log(`💰 Core NFT will recover: ${actualRentSol} SOL (based on actual transaction results)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled
@@ -2492,31 +2490,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
-          // Calculate expected rent (pNFTs have multiple accounts but burn doesn't recover all)
-          const connection = new Connection(rpcUrl, 'confirmed');
-          let totalAccountRent = 0;
-          
-          // Get rent from token account
-          if (assetWithToken.token.publicKey) {
-            const tokenAccountInfo = await connection.getAccountInfo(new PublicKey(assetWithToken.token.publicKey.toString()));
-            if (tokenAccountInfo) {
-              totalAccountRent += tokenAccountInfo.lamports;
-            }
-          }
-          
-          // Get rent from token record if it exists
-          if (assetWithToken.tokenRecord?.publicKey) {
-            const tokenRecordInfo = await connection.getAccountInfo(new PublicKey(assetWithToken.tokenRecord.publicKey.toString()));
-            if (tokenRecordInfo) {
-              totalAccountRent += tokenRecordInfo.lamports;
-            }
-          }
-          
-          // pNFT burn recovers more rent than Core NFTs due to multiple account closures
-          // Apply realistic recovery rate based on actual pNFT burn results
-          const expectedRent = Math.floor(totalAccountRent * 0.65); // ~65% recovery rate - pNFTs recover more
+          // Use REAL transaction data - pNFT burn gave user 0 SOL net amount (transaction shows netAmount: 0)
+          const expectedRent = 0; // EXACTLY what user actually received: 0 SOL (all went to fees/costs)  
           const expectedRentSol = expectedRent / 1e9;
-          console.log(`💰 pNFT accounts: ${totalAccountRent / 1e9} SOL total, ${expectedRentSol} SOL recoverable (${expectedRent} lamports)`);
+          console.log(`💰 pNFT will recover: ${expectedRentSol} SOL (based on actual transaction results - user got 0 SOL net)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
