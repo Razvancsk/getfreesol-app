@@ -2563,7 +2563,11 @@ export default function SolRefund() {
                 {tokenList.map((token, index) => (
                   <div 
                     key={index} 
-                    className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50 hover:bg-slate-700/70 cursor-pointer transition-colors"
+                    className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition-colors relative ${
+                      selectedTokens.has(token.mint)
+                        ? 'bg-red-900/30 border-2 border-red-500 hover:bg-red-900/40' 
+                        : 'bg-slate-700/50 border border-slate-700/50 hover:bg-slate-700/70'
+                    }`}
                     onClick={() => toggleTokenSelection(token.mint)}
                   >
                     <input
@@ -2604,6 +2608,13 @@ export default function SolRefund() {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* MARKED FOR BURN indicator */}
+                    {selectedTokens.has(token.mint) && (
+                      <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+                        MARKED FOR BURN
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
