@@ -2678,7 +2678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 🚀 BUILD ONE TRANSACTION WITH MULTIPLE BURN INSTRUCTIONS
       const coreProgram = umiPublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
-      const additionalProgram = umiPublicKey('F6fmDVCQfvnEq2KR8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
+      const additionalProgram = umiPublicKey('F6fmDVCQfvnEq2KR8ypY1SxRMZTcVPm7R94rH4PZNhX7');
       
       let batchedTransaction = new TransactionBuilder()
         .addRemainingAccounts([
