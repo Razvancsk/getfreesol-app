@@ -1118,11 +1118,21 @@ export default function SolRefund() {
               details: pnftError
             });
             
-            toast({
-              title: "Programmable NFT Burning Failed",
-              description: pnftError.message || 'An unexpected error occurred',
-              variant: "destructive",
-            });
+            // Check if this is a user cancellation - if so, don't show error toast
+            const isUserCancellation = pnftError?.error?.code === 4001 || 
+              pnftError?.code === 4001 ||
+              pnftError?.message?.includes('User rejected') ||
+              pnftError?.message?.includes('rejected the request') ||
+              pnftError?.error?.message?.includes('User rejected') ||
+              pnftError?.error?.message?.includes('rejected the request');
+            
+            if (!isUserCancellation) {
+              toast({
+                title: "Programmable NFT Burning Failed",
+                description: pnftError.message || 'An unexpected error occurred',
+                variant: "destructive",
+              });
+            }
             
             throw pnftError;
           }
@@ -1852,22 +1862,30 @@ export default function SolRefund() {
     onError: (error: any) => {
       console.error('Error burning NFTs:', error);
 
-      let errorMessage = "Failed to burn NFTs. Please try again.";
-      if (error.message) {
-        if (error.message.includes('User rejected')) {
-          errorMessage = "Transaction was cancelled by user.";
-        } else if (error.message.includes('wallet not found')) {
-          errorMessage = "Please install and connect your wallet.";
-        } else {
-          errorMessage = error.message;
+      // Check if this is a user cancellation - if so, don't show error toast
+      const isUserCancellation = error?.error?.code === 4001 || 
+        error?.code === 4001 ||
+        error?.message?.includes('User rejected') ||
+        error?.message?.includes('rejected the request') ||
+        error?.error?.message?.includes('User rejected') ||
+        error?.error?.message?.includes('rejected the request');
+      
+      if (!isUserCancellation) {
+        let errorMessage = "Failed to burn NFTs. Please try again.";
+        if (error.message) {
+          if (error.message.includes('wallet not found')) {
+            errorMessage = "Please install and connect your wallet.";
+          } else {
+            errorMessage = error.message;
+          }
         }
-      }
 
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     },
   });
 
