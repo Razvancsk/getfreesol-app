@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, burnPrepareRequestSchema, type BurnPrepareRequest, type BurnBatch, type BurnItem } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
@@ -3340,6 +3340,340 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error preparing Traditional NFT burn transactions:', error);
       res.status(500).json({ 
         error: "Failed to prepare Traditional NFT burn transactions",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // UNIFIED NFT BURN ENDPOINT - Handles all NFT types in mixed 5-item batches
+  app.post("/api/nfts/burn/prepare", async (req, res) => {
+    try {
+      console.log('🔥 UNIFIED BURN: Starting mixed-type NFT burn preparation...');
+      
+      // Validate request body using the new unified schema
+      const { walletAddress, referralCode, items } = burnPrepareRequestSchema.parse(req.body);
+      
+      console.log(`🔥 UNIFIED BURN: Processing ${items.length} NFTs of mixed types`);
+      console.log('📋 NFT breakdown:', items.reduce((acc, item) => {
+        acc[item.type] = (acc[item.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>));
+
+      // Check for referral data (same logic as other endpoints)
+      let referralCodeData = null;
+      let permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      
+      if (permanentAssociation) {
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+        console.log('UNIFIED BURN - Using permanent referral association:', permanentAssociation.referralCode);
+      } else if (referralCode) {
+        const tempReferralData = await storage.getReferralCodeByCode(referralCode);
+        if (tempReferralData) {
+          try {
+            permanentAssociation = await storage.createWalletReferralAssociation({
+              walletAddress,
+              referralCodeId: tempReferralData.id,
+              referralCode: referralCode
+            });
+            referralCodeData = tempReferralData;
+            console.log('UNIFIED BURN - Created new permanent referral association:', referralCode, 'for wallet:', walletAddress);
+          } catch (error) {
+            console.log('UNIFIED BURN - Failed to create association (might already exist):', error);
+            permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+            if (permanentAssociation) {
+              referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+            }
+          }
+        }
+      }
+
+      // Get RPC configuration
+      const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = apiKey ? 
+        `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
+        'https://api.mainnet-beta.solana.com';
+
+      // Initialize UMI with all required plugins
+      const umi = createUmi(rpcUrl)
+        .use(mplCore())
+        .use(mplTokenMetadata());
+      
+      // Use a no-op signer - we'll return unsigned transactions
+      const noopSigner = createNoopSigner(umiPublicKey(walletAddress));
+      umi.use({ install: () => { umi.identity = noopSigner; } });
+
+      const connection = new Connection(rpcUrl, 'confirmed');
+
+      // Chunk items into batches of 5 (mixed types)
+      const BATCH_SIZE = 5;
+      const batches: BurnBatch[] = [];
+      const unprocessed: BurnItem[] = [];
+
+      for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const batchItems = items.slice(i, i + BATCH_SIZE);
+        const batchIndex = Math.floor(i / BATCH_SIZE) + 1;
+        
+        console.log(`🔧 UNIFIED BURN: Processing batch ${batchIndex} with ${batchItems.length} mixed NFTs`);
+        
+        try {
+          // Build unified transaction with mixed NFT types
+          let batchTransaction = new TransactionBuilder();
+          let totalEstimatedRent = 0;
+          let totalFeeLamports = 0;
+          let totalReferralFeeLamports = 0;
+          
+          const breakdown = { core: 0, pnft: 0, standard: 0, cnft: 0, ocp: 0 };
+          const processedItemIds: string[] = [];
+
+          // Process each item in the batch
+          for (const item of batchItems) {
+            try {
+              console.log(`🔧 Processing ${item.type} NFT: ${item.id}`);
+              
+              let estimatedRent = 0;
+              let burnInstruction: TransactionBuilder | null = null;
+
+              // Handle each NFT type
+              switch (item.type) {
+                case 'core':
+                  try {
+                    // Fetch and validate Core NFT
+                    const asset = await fetchAsset(umi, umiPublicKey(item.id), { skipDerivePlugins: false });
+                    
+                    // Validate ownership
+                    if (asset.owner.toString() !== walletAddress) {
+                      throw new Error(`Core NFT ${item.id} not owned by wallet ${walletAddress}`);
+                    }
+
+                    // Build Core NFT burn instruction
+                    burnInstruction = burn(umi, {
+                      asset: asset,
+                      collection: asset.updateAuthority.type === 'Collection' ? asset.updateAuthority : undefined,
+                    });
+                    
+                    estimatedRent = 0.001; // Core NFT rent estimate
+                    breakdown.core++;
+                    
+                  } catch (error) {
+                    console.error(`❌ Failed to process Core NFT ${item.id}:`, error);
+                    unprocessed.push(item);
+                    continue;
+                  }
+                  break;
+
+                case 'pnft':
+                  try {
+                    // Fetch and validate pNFT
+                    const digitalAsset = await fetchDigitalAssetWithAssociatedToken(umi, umiPublicKey(item.id), umiPublicKey(walletAddress));
+                    
+                    // Validate ownership
+                    if (digitalAsset.token.owner.toString() !== walletAddress) {
+                      throw new Error(`pNFT ${item.id} not owned by wallet ${walletAddress}`);
+                    }
+
+                    // Get collection metadata if exists
+                    let collectionMetadataPda = undefined;
+                    if (digitalAsset.metadata.collection && digitalAsset.metadata.collection.__option === 'Some') {
+                      const collection = digitalAsset.metadata.collection.value;
+                      if (collection.verified) {
+                        collectionMetadataPda = findMetadataPda(umi, { mint: collection.key })[0];
+                      }
+                    }
+
+                    // Build pNFT burn instruction
+                    burnInstruction = burnV1(umi, {
+                      mint: digitalAsset.publicKey,
+                      authority: umi.identity,
+                      tokenOwner: umi.identity.publicKey,
+                      tokenStandard: TokenStandard.ProgrammableNonFungible,
+                      collectionMetadata: collectionMetadataPda,
+                    });
+                    
+                    estimatedRent = 0.009; // pNFT rent estimate
+                    breakdown.pnft++;
+                    
+                  } catch (error) {
+                    console.error(`❌ Failed to process pNFT ${item.id}:`, error);
+                    unprocessed.push(item);
+                    continue;
+                  }
+                  break;
+
+                case 'standard':
+                  try {
+                    // Fetch and validate standard NFT
+                    const digitalAsset = await fetchDigitalAssetWithAssociatedToken(umi, umiPublicKey(item.id), umiPublicKey(walletAddress));
+                    
+                    // Validate ownership
+                    if (digitalAsset.token.owner.toString() !== walletAddress) {
+                      throw new Error(`Standard NFT ${item.id} not owned by wallet ${walletAddress}`);
+                    }
+
+                    // Get collection metadata if exists
+                    let collectionMetadataPda = undefined;
+                    if (digitalAsset.metadata.collection && digitalAsset.metadata.collection.__option === 'Some') {
+                      const collection = digitalAsset.metadata.collection.value;
+                      if (collection.verified) {
+                        collectionMetadataPda = findMetadataPda(umi, { mint: collection.key })[0];
+                      }
+                    }
+
+                    // Build standard NFT burn instruction
+                    burnInstruction = burnV1(umi, {
+                      mint: digitalAsset.publicKey,
+                      authority: umi.identity,
+                      tokenOwner: umi.identity.publicKey,
+                      tokenStandard: TokenStandard.NonFungible,
+                      collectionMetadata: collectionMetadataPda,
+                    });
+                    
+                    estimatedRent = 0.008; // Standard NFT rent estimate
+                    breakdown.standard++;
+                    
+                  } catch (error) {
+                    console.error(`❌ Failed to process Standard NFT ${item.id}:`, error);
+                    unprocessed.push(item);
+                    continue;
+                  }
+                  break;
+
+                default:
+                  console.error(`❌ Unsupported NFT type: ${item.type}`);
+                  unprocessed.push(item);
+                  continue;
+              }
+
+              // Add the burn instruction to the batch transaction
+              if (burnInstruction) {
+                batchTransaction = batchTransaction.add(burnInstruction);
+                totalEstimatedRent += estimatedRent;
+                processedItemIds.push(item.id);
+                console.log(`✅ Added ${item.type} NFT ${item.id} to batch (rent: ${estimatedRent} SOL)`);
+              }
+
+            } catch (itemError) {
+              console.error(`❌ Failed to process item ${item.id}:`, itemError);
+              unprocessed.push(item);
+            }
+          }
+
+          // Skip empty batches
+          if (processedItemIds.length === 0) {
+            console.log(`⚠️ Batch ${batchIndex} has no processable items, skipping`);
+            continue;
+          }
+
+          // Calculate fees for this batch
+          const donationFactor = 0.15; // 15% fee
+          const requestedFeeLamports = Math.floor(totalEstimatedRent * 1e9 * donationFactor);
+          const safetyBufferLamports = 50000; // 0.00005 SOL buffer
+          const maxAllowedFeeLamports = Math.max(0, totalEstimatedRent * 1e9 - safetyBufferLamports);
+          totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
+          
+          let platformFeeLamports = totalFeeLamports;
+          totalReferralFeeLamports = 0;
+
+          // Check referral wallet and split fees if valid
+          if (referralCodeData && totalFeeLamports > 0) {
+            try {
+              const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+              const referralBalance = await connection.getBalance(referralWalletPublicKey);
+              const referralWalletExists = referralBalance > 0;
+              
+              if (referralWalletExists) {
+                totalReferralFeeLamports = Math.floor(totalFeeLamports * 0.35); // 35% to referral
+                platformFeeLamports = totalFeeLamports - totalReferralFeeLamports; // 65% to platform
+                console.log(`✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${totalReferralFeeLamports}`);
+              }
+            } catch (error) {
+              console.log('❌ Failed to check referral wallet, using full platform fee');
+            }
+          }
+
+          // Add fee transfers to the batch transaction
+          const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
+          
+          if (platformFeeLamports > 0) {
+            const platformTransfer = transferSol(umi, {
+              source: umi.identity,
+              destination: umiPublicKey(platformWalletAddress),
+              amount: { 
+                basisPoints: BigInt(platformFeeLamports), 
+                identifier: 'SOL', 
+                decimals: 9 
+              },
+            });
+            batchTransaction = batchTransaction.add(platformTransfer);
+            console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL`);
+          }
+
+          if (totalReferralFeeLamports > 0 && referralCodeData) {
+            const referralTransfer = transferSol(umi, {
+              source: umi.identity,
+              destination: umiPublicKey(referralCodeData.walletAddress),
+              amount: { 
+                basisPoints: BigInt(totalReferralFeeLamports), 
+                identifier: 'SOL', 
+                decimals: 9 
+              },
+            });
+            batchTransaction = batchTransaction.add(referralTransfer);
+            console.log(`💰 Added referral fee transfer: ${totalReferralFeeLamports / 1e9} SOL`);
+          }
+
+          // Build and serialize the transaction
+          const umiTransaction = await batchTransaction.buildWithLatestBlockhash(umi);
+          const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
+          const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
+          
+          // Calculate net amount
+          const netAmount = totalEstimatedRent - (totalFeeLamports / 1e9);
+
+          // Create batch response
+          const batch: BurnBatch = {
+            index: batchIndex,
+            base64Tx: base64Transaction,
+            itemIds: processedItemIds,
+            breakdown,
+            feeLamports: totalFeeLamports,
+            estimatedRentRecovery: totalEstimatedRent,
+            platformFee: platformFeeLamports / 1e9,
+            referralFee: totalReferralFeeLamports / 1e9,
+            netAmount
+          };
+
+          batches.push(batch);
+          console.log(`✅ Batch ${batchIndex} completed: ${processedItemIds.length} NFTs, net: ${netAmount} SOL`);
+
+        } catch (batchError) {
+          console.error(`❌ Failed to process batch ${batchIndex}:`, batchError);
+          // Add all items from failed batch to unprocessed
+          unprocessed.push(...batchItems);
+        }
+      }
+
+      // Response
+      const response = {
+        success: true,
+        batches,
+        unprocessed: unprocessed.length > 0 ? unprocessed : undefined
+      };
+
+      console.log(`🎉 UNIFIED BURN: Prepared ${batches.length} mixed-type batches for ${items.length} NFTs`);
+      console.log('📊 Final breakdown:', batches.reduce((acc, batch) => {
+        Object.keys(batch.breakdown).forEach(type => {
+          acc[type] = (acc[type] || 0) + batch.breakdown[type as keyof typeof batch.breakdown];
+        });
+        return acc;
+      }, {} as Record<string, number>));
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('❌ UNIFIED BURN: Error preparing mixed NFT burn transactions:', error);
+      res.status(500).json({ 
+        success: false,
+        error: "Failed to prepare unified NFT burn transactions",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
