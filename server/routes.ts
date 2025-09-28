@@ -1404,7 +1404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { interface: assetInterface, compression, burnt } = asset;
         
         // Log burn status for debugging
-        console.log(`🔍 Asset ${asset.content?.metadata?.name || asset.id}: burnt=${burnt}, interface=${assetInterface}`);
+        console.log(`🔍 Asset ${asset.content?.metadata?.name || asset.content?.metadata?.symbol || asset.id}: burnt=${burnt}, interface=${assetInterface}`);
         
         // Skip burned NFTs using multiple checks
         // Check 1: DAS burnt flag
@@ -1516,11 +1516,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mintAddress = asset.mint || asset.id;
         }
 
+        // Handle missing name field - try multiple fallbacks
+        let nftName = asset.content?.metadata?.name;
+        if (!nftName) {
+          // Fallback 1: Use symbol if available  
+          if (asset.content?.metadata?.symbol) {
+            nftName = asset.content.metadata.symbol;
+          }
+          // Fallback 2: Extract from description if it contains meaningful info
+          else if (asset.content?.metadata?.description) {
+            const desc = asset.content.metadata.description;
+            // Look for patterns like "The market has determined, it needs More Monkes."
+            const match = desc.match(/it needs (.+)\./);
+            if (match) {
+              nftName = match[1];
+            } else {
+              nftName = desc.split('.')[0].substring(0, 50); // First sentence, max 50 chars
+            }
+          }
+          else {
+            nftName = 'Unknown NFT';
+          }
+        }
+
         const nftInfo = {
           mint: mintAddress,
           id: identifier, 
           assetId: assetId,
-          name: asset.content?.metadata?.name || 'Unknown NFT',
+          name: nftName,
           symbol: asset.content?.metadata?.symbol || '',
           image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
           description: asset.content?.metadata?.description || '',
