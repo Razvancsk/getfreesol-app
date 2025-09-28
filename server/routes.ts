@@ -1544,83 +1544,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const uri = metadataOnChain.uri;
             console.log(`🔍 On-chain metadata URI: ${uri}`);
             
-            // Fetch off-chain JSON metadata with timeout
+            // Fetch off-chain JSON metadata with multiple IPFS gateway fallbacks
             if (uri && uri.trim()) {
-              try {
-                // Create a fetch with timeout (5 seconds)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                
-                const response = await fetch(uri, {
-                  signal: controller.signal,
-                  headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0'
-                  }
-                });
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                  const metadataJson = await response.json();
-                  console.log(`✅ Found proper NFT metadata:`, { name: metadataJson.name, image: metadataJson.image });
+              let metadataJson = null;
+              
+              // Multiple IPFS gateways to try as fallbacks (using most reliable ones)
+              const ipfsGateways = [
+                uri, // Original URI
+                uri.replace('https://nftstorage.link/ipfs/', 'https://cf-ipfs.com/ipfs/'),
+                uri.replace('https://nftstorage.link/ipfs/', 'https://w3s.link/ipfs/'),
+                uri.replace('https://nftstorage.link/ipfs/', 'https://gateway.ipfs.io/ipfs/'),
+                uri.replace('https://nftstorage.link/ipfs/', 'https://hardbin.com/ipfs/'),
+                uri.replace('https://nftstorage.link/ipfs/', 'https://4everland.io/ipfs/')
+              ];
+              
+              for (const gatewayUri of ipfsGateways) {
+                try {
+                  console.log(`🔄 Trying IPFS gateway: ${gatewayUri}`);
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout per gateway
                   
-                  // Use the proper name from JSON metadata
-                  if (metadataJson.name && metadataJson.name.trim()) {
-                    nftName = metadataJson.name;
-                    console.log(`✅ Found proper NFT name: "${nftName}"`);
-                  }
-                  
-                  // Use the proper image from JSON metadata
-                  if (metadataJson.image && metadataJson.image.trim()) {
-                    nftImage = metadataJson.image;
-                    console.log(`✅ Found proper image: ${nftImage}`);
-                  }
-                  
-                  // Use the proper description from JSON metadata
-                  if (metadataJson.description && metadataJson.description.trim()) {
-                    nftDescription = metadataJson.description;
-                    console.log(`✅ Found proper description: ${nftDescription}`);
-                  }
-                } else {
-                  console.log(`⚠️ Failed to fetch JSON metadata from URI. Status: ${response.status}`);
-                  // Fallback: Extract NFT number from URI if IPFS fails
-                  const numberMatch = uri.match(/\/(\d+)\.json$/);
-                  if (numberMatch) {
-                    const nftNumber = numberMatch[1];
-                    // Use on-chain name if available, otherwise try to construct from collection + number
-                    if (metadataOnChain.name && metadataOnChain.name.trim()) {
-                      nftName = metadataOnChain.name;
-                    } else {
-                      // Try to get collection name and combine with number
-                      const collectionName = nftDescription ? nftDescription.match(/it needs (.+)\./)?.[1] : null;
-                      if (collectionName) {
-                        nftName = `${collectionName} #${nftNumber}`;
-                        console.log(`✅ Constructed NFT name from URI: "${nftName}"`);
-                      }
+                  const response = await fetch(gatewayUri, {
+                    signal: controller.signal,
+                    headers: {
+                      'Accept': 'application/json',
+                      'User-Agent': 'Mozilla/5.0'
                     }
-                  }
-                }
-              } catch (fetchError) {
-                if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-                  console.log(`⚠️ JSON metadata fetch timed out for ${uri}`);
-                } else {
-                  console.log(`⚠️ Error fetching JSON metadata:`, fetchError);
-                }
-                // Fallback: Extract NFT number from URI if IPFS fails  
-                const numberMatch = uri.match(/\/(\d+)\.json$/);
-                if (numberMatch) {
-                  const nftNumber = numberMatch[1];
-                  // Use on-chain name if available, otherwise try to construct from collection + number
-                  if (metadataOnChain.name && metadataOnChain.name.trim()) {
-                    nftName = metadataOnChain.name;
+                  });
+                  clearTimeout(timeoutId);
+                  
+                  if (response.ok) {
+                    metadataJson = await response.json();
+                    console.log(`✅ Successfully fetched metadata from: ${gatewayUri}`);
+                    console.log(`✅ Found proper NFT metadata:`, { name: metadataJson.name, image: metadataJson.image });
+                    break; // Success! Stop trying other gateways
                   } else {
-                    // Try to get collection name and combine with number
-                    const collectionName = nftDescription ? nftDescription.match(/it needs (.+)\./)?.[1] : null;
-                    if (collectionName) {
-                      nftName = `${collectionName} #${nftNumber}`;
-                      console.log(`✅ Constructed NFT name from URI after timeout: "${nftName}"`);
-                    }
+                    console.log(`⚠️ Gateway ${gatewayUri} returned status: ${response.status}`);
                   }
+                } catch (fetchError) {
+                  if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+                    console.log(`⚠️ Gateway ${gatewayUri} timed out`);
+                  } else {
+                    console.log(`⚠️ Gateway ${gatewayUri} error:`, fetchError);
+                  }
+                  // Continue to next gateway
+                }
+              }
+              
+              // If we successfully fetched the JSON metadata, use it
+              if (metadataJson) {
+                // Use the proper name from JSON metadata (this contains the real edition number)
+                if (metadataJson.name && metadataJson.name.trim()) {
+                  nftName = metadataJson.name;
+                  console.log(`✅ Found proper NFT name with edition: "${nftName}"`);
+                }
+                
+                // Use the proper image from JSON metadata
+                if (metadataJson.image && metadataJson.image.trim()) {
+                  nftImage = metadataJson.image;
+                  console.log(`✅ Found proper image: ${nftImage}`);
+                }
+                
+                // Use the proper description from JSON metadata
+                if (metadataJson.description && metadataJson.description.trim()) {
+                  nftDescription = metadataJson.description;
+                  console.log(`✅ Found proper description: ${nftDescription}`);
+                }
+              } else {
+                console.log(`⚠️ All IPFS gateways failed, using fallback metadata`);
+                // Only fall back to collection name without number since URI filename is unreliable
+                const collectionName = nftDescription ? nftDescription.match(/it needs (.+)\./)?.[1] : null;
+                if (collectionName) {
+                  nftName = collectionName;
+                  console.log(`✅ Using collection name as fallback: "${nftName}"`);
                 }
               }
             }
