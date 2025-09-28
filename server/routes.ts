@@ -2443,14 +2443,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Build burn transaction for traditional NFT using burnV1
+          // Integrate both program IDs: abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r and metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s
           const burnTx = burnV1(umi, {
             mint: mintId,
             authority: umi.identity, // UMI signer as authority
             tokenOwner: umi.identity.publicKey, // Owner's public key
             tokenStandard: TokenStandard.NonFungible, // Traditional NFT standard
             collectionMetadata: collectionMetadata || undefined, // Optional collection
-            authorizationRules: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), // Custom burn authorization rules
-          });
+          })
+          .addRemainingAccounts([
+            // Add Authorization Rules Program ID
+            { pubkey: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), isSigner: false, isWritable: false },
+            // Add Token Metadata Program ID  
+            { pubkey: umiPublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"), isSigner: false, isWritable: false }
+          ]);
 
           // Build the transaction without signing
           const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
