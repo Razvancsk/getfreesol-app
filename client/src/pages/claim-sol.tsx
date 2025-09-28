@@ -2746,7 +2746,6 @@ export default function SolRefund() {
                 <div className="mb-4 space-y-2">
                   <p className="text-white text-sm">
                     <span className="font-semibold">NFTs Found:</span>
-                    <span className="text-purple-300 ml-2">Burning functionality is being rebuilt with official Metaplex Core implementation.</span>
                   </p>
                 </div>
               )}
