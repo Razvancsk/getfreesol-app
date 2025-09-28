@@ -314,8 +314,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate net amount after fees (what user actually receives)
-      const netLamports = totalRecoveredLamports - totalFeeLamports;
+      // Account for additional transaction costs (tx fees, compute fees, etc.)
+      const additionalTxCosts = 500000; // ~0.0005 SOL buffer for real-world costs
+      const netLamports = Math.max(0, totalRecoveredLamports - totalFeeLamports - additionalTxCosts);
       
       // Add fee transfer instructions AFTER close instructions
       // Fees are paid from SOL recovered by closing accounts
