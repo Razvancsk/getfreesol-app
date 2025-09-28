@@ -2299,9 +2299,6 @@ export default function SolRefund() {
                         : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                     }`}
                   >
-                    <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center mr-2">
-                      <Flame className="h-3 w-3 text-white" />
-                    </div>
                     Burn
                   </Button>
                   <Button
