@@ -2497,18 +2497,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
-          // Calculate expected rent (traditional NFTs typically have token account + metadata)
+          // Calculate expected rent (traditional NFTs close multiple accounts)
           let expectedRent = 0;
           
-          // Try to estimate rent recovery from metadata account
+          // 1. Metadata account rent
           try {
             const metadataInfo = await connection.getAccountInfo(new PublicKey(metadataPda[0].toString()));
             if (metadataInfo) {
               expectedRent += metadataInfo.lamports;
+              console.log(`📊 Metadata account rent: ${(metadataInfo.lamports / 1e9).toFixed(6)} SOL`);
             }
           } catch (rentError) {
-            console.log(`⚠️ Could not get rent info for traditional NFT ${nftId}, using estimate`);
-            expectedRent = 2039280; // Typical metadata account rent
+            console.log(`⚠️ Could not get metadata rent info for ${nftId}, using estimate`);
+            expectedRent += 2039280; // Typical metadata account rent
+          }
+          
+          // 2. Token account rent (where the NFT sits)
+          try {
+            const ownerPublicKey = new PublicKey(walletAddress);
+            const mintPublicKey = new PublicKey(nftId);
+            const tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey);
+            const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
+            if (tokenAccountInfo) {
+              expectedRent += tokenAccountInfo.lamports;
+              console.log(`📊 Token account rent: ${(tokenAccountInfo.lamports / 1e9).toFixed(6)} SOL`);
+            }
+          } catch (tokenError) {
+            console.log(`⚠️ Could not get token account rent info for ${nftId}, using estimate`);
+            expectedRent += 2039280; // Typical token account rent
+          }
+          
+          // 3. Master Edition account rent (if it gets closed)
+          try {
+            const masterEditionInfo = await connection.getAccountInfo(new PublicKey(masterEditionPda[0].toString()));
+            if (masterEditionInfo) {
+              expectedRent += masterEditionInfo.lamports;
+              console.log(`📊 Master Edition account rent: ${(masterEditionInfo.lamports / 1e9).toFixed(6)} SOL`);
+            }
+          } catch (masterError) {
+            console.log(`⚠️ Could not get master edition rent info for ${nftId}, using estimate`);
+            expectedRent += 1461600; // Typical master edition rent (smaller)
           }
 
           const expectedRentSol = expectedRent / 1e9;
