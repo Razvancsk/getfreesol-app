@@ -3133,7 +3133,7 @@ export default function SolRefund() {
                       ACCTS
                     </div>
                     <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
-                      NET RECEIVED
+                      CLAIMED SOL
                     </div>
                     <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
                       DATE
