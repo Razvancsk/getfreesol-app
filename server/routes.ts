@@ -10,7 +10,8 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
-import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder, signerIdentity, createSignerFromKeypair, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
+import { publicKey as umiPublicKey, createNoopSigner, signerIdentity } from '@metaplex-foundation/umi';
+import type { TransactionBuilder } from '@metaplex-foundation/umi';
 import { transferSol } from '@metaplex-foundation/mpl-toolbox';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 // Metaplex Token Metadata for pNFT burning
@@ -3178,6 +3179,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('BATCH BURN - No referral code data - using full platform fee');
       }
 
+      // Initialize UMI for batch operations
+      const umi = createUmi(heliusEndpoint).use(mplCore()).use(mplTokenMetadata());
+
       // Group NFTs by type
       const nftsByType: { [key: string]: any[] } = {};
       nfts.forEach((nft) => {
@@ -3205,10 +3209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`🔧 Processing ${nftType} chunk ${chunkIndex + 1} with ${chunk.length} NFTs...`);
 
           try {
-            // Create UMI instance for this chunk
-            const dummyKeypair = UmiKeypair.generate();
-            const dummySigner = signerIdentity(createSignerFromKeypair(umi, dummyKeypair));
-            const chunkUmi = umi.use(dummySigner);
+            // Create UMI instance for this chunk with noop signer
+            const chunkUmi = umi.use(signerIdentity(createNoopSigner(umiPublicKey(walletAddress))));
 
             if (nftType === 'core') {
               const result = await buildCoreBatchTransaction(chunk, referralCodeData, chunkUmi);
