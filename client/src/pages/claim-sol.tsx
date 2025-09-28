@@ -2752,16 +2752,9 @@ export default function SolRefund() {
                             </div>
                           </div>
 
-                          {/* Flame Icon for Selected NFTs */}
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 z-10">
-                              <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center shadow-lg animate-pulse">
-                                <Flame className="h-4 w-4 text-white" />
-                              </div>
-                            </div>
-                          )}
+                          
                           {/* NFT Image */}
-                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30">
+                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30 relative">
                             {nft.image ? (
                               <img
                                 src={nft.image}
@@ -2777,6 +2770,15 @@ export default function SolRefund() {
                             <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
                               <Image className="h-8 w-8 text-purple-400" />
                             </div>
+                            
+                            {/* Big Flame Icon Overlay for Selected NFTs */}
+                            {isSelected && (
+                              <div className="absolute inset-0 flex items-center justify-center z-20">
+                                <div className="w-12 h-12 rounded-full bg-orange-500/90 backdrop-blur-sm flex items-center justify-center shadow-xl animate-pulse">
+                                  <Flame className="h-8 w-8 text-white drop-shadow-lg" />
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* NFT Details */}
