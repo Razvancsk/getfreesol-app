@@ -755,10 +755,11 @@ export default function SolRefund() {
             console.log(`📦 Preparing burn transactions for ${coreNftIds.length} Core NFTs...`);
 
             // Call server to prepare burn transactions (new batching API)
-            const prepareResponse = await apiRequest('/api/core-nfts/prepare-burn', {
-              method: 'POST',
-              body: JSON.stringify({ nftIds: coreNftIds })
+            const prepareResponseRaw = await apiRequest('POST', '/api/core-nfts/prepare-burn', { 
+              coreNftIds,
+              walletAddress: wallet.publicKey.toString()
             });
+            const prepareResponse = await prepareResponseRaw.json();
 
             console.log('🔧 Server prepared burn batches:', {
               rawResponse: prepareResponse,
@@ -813,14 +814,12 @@ export default function SolRefund() {
 
               // Submit the signed batch transaction via server relay
               console.log(`📡 Submitting batch ${batch.batchIndex} transaction via server relay...`);
-              const relayResponse = await apiRequest('/api/tx/relay', {
-                method: 'POST',
-                body: JSON.stringify({
-                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
-                  description: `Core NFT batch burn ${batch.batchIndex}: ${batch.nftCount} NFTs`,
-                  skipPreflight: true
-                })
+              const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+                signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                description: `Core NFT batch burn ${batch.batchIndex}: ${batch.nftCount} NFTs`,
+                skipPreflight: true
               });
+              const relayResponse = await relayResponseRaw.json();
 
               if (!relayResponse.success || !relayResponse.signature) {
                 throw new Error(`Batch ${batch.batchIndex} relay failed: ${relayResponse.error || 'No signature returned'}`);
@@ -832,20 +831,17 @@ export default function SolRefund() {
               // Record each NFT burn in the database for this batch
               for (const nftId of batch.nftIds) {
                 try {
-                  await apiRequest('/api/nfts/burn/record', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      signature,
-                      nftMint: nftId,
-                      rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent
-                      netAmount: batch.netAmount / batch.nftCount, // Split batch net
-                      feeAmount: (batch.platformFee + batch.referralFee) / batch.nftCount,
-                      platformFeeAmount: batch.platformFee / batch.nftCount,
-                      referralFeeAmount: batch.referralFee / batch.nftCount,
-                      walletAddress: wallet.publicKey.toString(),
-                      nftType: 'core',
-                      success: true
-                    })
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    signature,
+                    nftMint: nftId,
+                    rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent
+                    netAmount: batch.netAmount / batch.nftCount, // Split batch net
+                    feeAmount: (batch.platformFee + batch.referralFee) / batch.nftCount,
+                    platformFeeAmount: batch.platformFee / batch.nftCount,
+                    referralFeeAmount: batch.referralFee / batch.nftCount,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'core',
+                    success: true
                   });
                   console.log(`✅ Core NFT burn recorded in database: ${nftId}`);
                   
