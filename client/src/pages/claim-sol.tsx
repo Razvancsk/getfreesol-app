@@ -70,7 +70,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'scan' | 'burnTokens' | 'stats'>('scan');
+  const [activeTab, setActiveTab] = useState<'scan' | 'burnTokens' | 'stats' | 'referrals' | 'reclaim'>('scan');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -137,7 +137,7 @@ export default function SolRefund() {
 
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
-    if (isConnected && publicKey && activeTab !== 'referrals') {
+    if (isConnected && publicKey && activeTab !== 'referrals' && activeTab !== 'reclaim') {
       if (activeTab === 'scan') {
         scanMutation.mutate(publicKey.toString());
       } else if (activeTab === 'burnTokens') {
@@ -401,7 +401,7 @@ export default function SolRefund() {
   useEffect(() => {
     if (!isConnected || !publicKey) {
       setScanResult(null);
-      setActiveTab('reclaim'); // Reset to first page when wallet disconnects
+      setActiveTab('scan'); // Reset to first page when wallet disconnects
     }
   }, [isConnected, publicKey]);
 
