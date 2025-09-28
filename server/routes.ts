@@ -2613,7 +2613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Platform fees enabled at 15% for Core NFT burning
           const donationFactor = 0.15; // 15% platform fee for Core NFT burning
           const requestedFeeLamports = Math.floor(actualRentSol * 1e9 * donationFactor);
-          const networkFeesLamports = 1900000; // 0.0019 SOL for Solana network transaction fees (priority fees + base fees + compute costs)
+          const networkFeesLamports = 10000; // 0.00001 SOL for reasonable network transaction fees
           const maxAllowedFeeLamports = Math.max(0, actualRentSol * 1e9 - networkFeesLamports);
           const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
           
