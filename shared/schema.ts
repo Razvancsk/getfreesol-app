@@ -126,10 +126,10 @@ export const burnItemSchema = z.object({
     required_error: "NFT type is required",
     invalid_type_error: "Invalid NFT type"
   }),
-  mint: z.string().optional(), // For backward compatibility and metadata
-  name: z.string().optional(),
-  image: z.string().optional(),
-  collectionAddress: z.string().optional(),
+  mint: z.string().nullable().optional(), // For backward compatibility and metadata
+  name: z.string().nullable().optional(),
+  image: z.string().nullable().optional(),
+  collectionAddress: z.string().nullable().optional(), // Allow null collection addresses
   // Additional type-specific metadata as needed
   metadata: z.record(z.any()).optional()
 });
