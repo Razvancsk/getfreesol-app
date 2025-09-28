@@ -2363,7 +2363,7 @@ export default function SolRefund() {
                     }`}
                   >
                     <Flame className="h-4 w-4 mr-2" />
-                    Burn Tokens
+                    Burn
                   </Button>
                   <Button
                     onClick={() => setActiveTab('referrals')}
