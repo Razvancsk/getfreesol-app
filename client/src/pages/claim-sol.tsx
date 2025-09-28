@@ -2913,9 +2913,8 @@ export default function SolRefund() {
                     <p className="font-medium mb-2">About NFT Burning:</p>
                     <ul className="space-y-1 text-purple-300">
                       <li>• Burn unwanted NFTs and recover SOL rent deposits</li>
-                      <li>• Each Core NFT typically recovers ~0.004 SOL</li>
                       <li>• Burning permanently destroys the NFT and its metadata</li>
-                      <li>• Feature will return soon with official Metaplex Core support</li>
+                      <li>• Burning NFTs usually returns 0.01 SOL, while most tokens and some scam NFTs give only 0.002 SOL. Magic Eden OCP NFTs return 0.004 SOL, and compressed NFTs return nothing.</li>
                     </ul>
                   </div>
                 </div>
