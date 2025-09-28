@@ -2299,8 +2299,7 @@ export default function SolRefund() {
                         : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                     }`}
                   >
-                    <Flame className="h-4 w-4 mr-2" />
-                    Burn
+                    🔥 Burn
                   </Button>
                   <Button
                     onClick={() => setActiveTab('referrals')}
