@@ -2751,6 +2751,15 @@ export default function SolRefund() {
                               {isSelected && <Check className="h-3 w-3 text-white" />}
                             </div>
                           </div>
+
+                          {/* Flame Icon for Selected NFTs */}
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center shadow-lg animate-pulse">
+                                <Flame className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          )}
                           {/* NFT Image */}
                           <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30">
                             {nft.image ? (
