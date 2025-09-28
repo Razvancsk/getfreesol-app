@@ -548,6 +548,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create referral code" });
     }
   });
+
+  // Settlement endpoint to analyze confirmed transactions and get exact SOL amounts
+  app.post('/api/burns/settlement', async (req, res) => {
+    console.log('🚀 Settlement endpoint called with body:', JSON.stringify(req.body, null, 2));
+    
+    try {
+      const { signature, walletAddress } = req.body;
+      
+      if (!signature || !walletAddress) {
+        console.log('❌ Missing fields - returning 400 error');
+        return res.status(400).json({ 
+          error: 'Missing required fields: signature and walletAddress' 
+        });
+      }
+
+      console.log(`🔍 Analyzing transaction ${signature} for wallet ${walletAddress}`);
+
+      // Connect to RPC
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+
+      // Fetch the confirmed transaction
+      const txInfo = await connection.getParsedTransaction(signature, {
+        maxSupportedTransactionVersion: 0,
+        commitment: 'confirmed'
+      });
+
+      if (!txInfo) {
+        return res.status(404).json({ 
+          error: 'Transaction not found or not yet confirmed' 
+        });
+      }
+
+      if (txInfo.meta?.err) {
+        return res.status(400).json({ 
+          error: 'Transaction failed on-chain',
+          details: txInfo.meta.err 
+        });
+      }
+
+      // Extract balance data
+      const preBalances = txInfo.meta?.preBalances || [];
+      const postBalances = txInfo.meta?.postBalances || [];
+      const accounts = txInfo.transaction.message.accountKeys;
+      
+      // Find the user's account index
+      let userAccountIndex = -1;
+      for (let i = 0; i < accounts.length; i++) {
+        const account = accounts[i];
+        const accountPubkey = typeof account === 'string' ? account : account.pubkey.toString();
+        if (accountPubkey === walletAddress) {
+          userAccountIndex = i;
+          break;
+        }
+      }
+
+      if (userAccountIndex === -1) {
+        return res.status(400).json({ 
+          error: 'Wallet address not found in transaction accounts' 
+        });
+      }
+
+      // Calculate exact amounts
+      const preBalance = preBalances[userAccountIndex] || 0;
+      const postBalance = postBalances[userAccountIndex] || 0;
+      const userDelta = postBalance - preBalance; // Net change to user (can be negative)
+      const networkFeeLamports = txInfo.meta?.fee || 0;
+
+      // Calculate outgoing transfers from user (platform fees, etc.)
+      let outgoingTransfersFromUser = 0;
+      const instructions = txInfo.meta?.innerInstructions || [];
+      instructions.forEach(innerInstruction => {
+        innerInstruction.instructions.forEach(instruction => {
+          // Check if it's a parsed system instruction
+          if ('parsed' in instruction && instruction.programId.toString() === '11111111111111111111111111111112') {
+            const parsed = instruction.parsed as any;
+            if (parsed?.type === 'transfer') {
+              const transferInfo = parsed.info;
+              if (transferInfo?.source === walletAddress) {
+                outgoingTransfersFromUser += transferInfo.lamports || 0;
+              }
+            }
+          }
+        });
+      });
+
+      // Exact amounts calculation
+      const netToUserLamports = userDelta; // What user actually received/paid
+      const grossRentRecoveredLamports = userDelta + networkFeeLamports + outgoingTransfersFromUser;
+
+      // Convert to SOL
+      const netToUserSOL = netToUserLamports / 1e9;
+      const grossRentRecoveredSOL = grossRentRecoveredLamports / 1e9;
+      const networkFeeSOL = networkFeeLamports / 1e9;
+      const platformFeeSOL = outgoingTransfersFromUser / 1e9;
+
+      console.log(`✅ Transaction analysis complete:`);
+      console.log(`   Net to user: ${netToUserSOL} SOL`);
+      console.log(`   Gross rent recovered: ${grossRentRecoveredSOL} SOL`);
+      console.log(`   Network fee: ${networkFeeSOL} SOL`);
+      console.log(`   Platform fee: ${platformFeeSOL} SOL`);
+
+      // Return exact amounts
+      res.type('application/json');
+      return res.status(200).json({
+        success: true,
+        signature,
+        walletAddress,
+        analysis: {
+          netToUser: netToUserSOL,
+          grossRentRecovered: grossRentRecoveredSOL,
+          networkFee: networkFeeSOL,
+          platformFee: platformFeeSOL,
+          blockTime: txInfo.blockTime ? new Date(txInfo.blockTime * 1000).toISOString() : null
+        }
+      });
+
+    } catch (error) {
+      console.error('Error analyzing transaction:', error);
+      return res.status(500).json({ 
+        error: 'Failed to analyze transaction',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
   
   // Get referral code by wallet
   app.get("/api/referrals/wallet/:address", async (req, res) => {
@@ -2239,16 +2365,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
           const connection = new Connection(rpcUrl, 'confirmed');
           
-          // Use REAL transaction data - Core NFTs recover exactly 0.00122 SOL
-          const actualRentLamports = 122000; // EXACTLY what user received: 0.00122 SOL
-          const actualRentSol = actualRentLamports / 1e9;
-          console.log(`💰 Core NFT will recover: ${actualRentSol} SOL (based on actual transaction results)`);
+          // Use temporary estimate until transaction is confirmed, then we'll check exact amount
+          const actualRentSol = 0.001; // Temporary estimate - exact amount determined post-confirmation
+          console.log(`💰 Core NFT estimate: ${actualRentSol} SOL (exact amount calculated after transaction confirmation)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled
-          const requestedFeeLamports = Math.floor(actualRentLamports * donationFactor);
+          const requestedFeeLamports = Math.floor(actualRentSol * 1e9 * donationFactor);
           const networkFeesLamports = 1900000; // 0.0019 SOL for Solana network transaction fees (priority fees + base fees + compute costs)
-          const maxAllowedFeeLamports = Math.max(0, actualRentLamports - networkFeesLamports);
+          const maxAllowedFeeLamports = Math.max(0, actualRentSol * 1e9 - networkFeesLamports);
           const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
           
           let referralFeeLamports = 0;
@@ -2490,16 +2615,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
-          // EXACT amount user actually received in wallet from pNFT burn: 0.009552640 SOL
-          const expectedRent = 9552640; // EXACTLY what user received in wallet: 0.009552640 SOL
-          const expectedRentSol = expectedRent / 1e9;
-          console.log(`💰 pNFT will recover: ${expectedRentSol} SOL (EXACT amount user received in wallet from blockchain transaction)`);
+          // Use temporary estimate until transaction is confirmed, then we'll check exact amount
+          const expectedRentSol = 0.008; // Temporary estimate - exact amount determined post-confirmation
+          console.log(`💰 pNFT estimate: ${expectedRentSol} SOL (exact amount calculated after transaction confirmation)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
-          const requestedFeeLamports = Math.floor(expectedRent * donationFactor);
+          const requestedFeeLamports = Math.floor(expectedRentSol * 1e9 * donationFactor);
           const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
-          const maxAllowedFeeLamports = Math.max(0, expectedRent - safetyBufferLamports);
+          const maxAllowedFeeLamports = Math.max(0, expectedRentSol * 1e9 - safetyBufferLamports);
           const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
           
           let referralFeeLamports = 0;
@@ -2810,9 +2934,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Calculate platform fees (15% of recovered rent)
           const donationFactor = 0.15; // 15% fee for Traditional NFT burning
-          const requestedFeeLamports = Math.floor(expectedRent * donationFactor);
+          const requestedFeeLamports = Math.floor(expectedRentSol * 1e9 * donationFactor);
           const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
-          const maxAllowedFeeLamports = Math.max(0, expectedRent - safetyBufferLamports);
+          const maxAllowedFeeLamports = Math.max(0, expectedRentSol * 1e9 - safetyBufferLamports);
           const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
           
           let referralFeeLamports = 0;
@@ -3111,6 +3235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
 
 
   const httpServer = createServer(app);
