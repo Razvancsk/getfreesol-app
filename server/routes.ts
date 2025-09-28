@@ -2564,9 +2564,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Create REAL resize transaction using RSZE program exactly as specified
         try {
-          const { PublicKey, Transaction, TransactionInstruction, ComputeBudgetProgram } = await import('@solana/web3.js');
+          const { Connection, Keypair, Transaction, PublicKey, TransactionInstruction } = await import('@solana/web3.js');
           const userPubkey = new PublicKey(walletAddress);
-          const RSZE_PROGRAM_ID = new PublicKey('RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4');
+          const resizeProgramId = new PublicKey('RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4');
           
           // Get fresh blockhash
           const { blockhash } = await connection.getLatestBlockhash();
@@ -2577,25 +2577,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             feePayer: userPubkey
           });
           
-          // Add RSZE instruction for each NFT in this batch (no compute budget instructions)
+          // Add RSZE instruction for each NFT in this batch
           for (const nft of batchNfts) {
-            const nftMintPubkey = new PublicKey(nft.mint);
+            const metadataAccount = new PublicKey(nft.mint);
             
             console.log(`🔧 Adding RSZE instruction for NFT: ${nft.mint}`);
             
-            // RSZE instruction: resize NFT metadata to reduce size and recover SOL
-            const resizeInstructionData = Buffer.alloc(16);
-            resizeInstructionData.writeUInt8(1, 0); // resize instruction discriminator
-            resizeInstructionData.writeUInt32LE(800, 4); // new size (smaller = more SOL recovered)
-            
+            // Construct the resize instruction
             const resizeInstruction = new TransactionInstruction({
               keys: [
-                { pubkey: nftMintPubkey, isSigner: false, isWritable: true },      // NFT mint
-                { pubkey: userPubkey, isSigner: true, isWritable: true },          // Authority (user)
-                { pubkey: userPubkey, isSigner: false, isWritable: true },         // Recipient of recovered SOL
+                { pubkey: metadataAccount, isSigner: false, isWritable: true },
+                { pubkey: userPubkey, isSigner: true, isWritable: false },
               ],
-              programId: RSZE_PROGRAM_ID,
-              data: resizeInstructionData,
+              programId: resizeProgramId,
+              data: Buffer.from([]), // Add any required data here
             });
             
             transaction.add(resizeInstruction);
