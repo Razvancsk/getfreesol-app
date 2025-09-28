@@ -2512,8 +2512,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const expectedRentSol = expectedRent / 1e9;
 
-          // Calculate platform fees (15% of recovered rent)
-          const donationFactor = 0.15; // 15% fee for Programmable NFT burning
+          // Temporarily disabled platform fees for testing
+          const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
           const requestedFeeLamports = Math.floor(expectedRent * donationFactor);
           const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
           const maxAllowedFeeLamports = Math.max(0, expectedRent - safetyBufferLamports);
