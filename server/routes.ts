@@ -10,7 +10,7 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
-import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
+import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder, transferSol } from '@metaplex-foundation/umi';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 // Metaplex Token Metadata for pNFT burning
 import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata, fetchDigitalAsset, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
@@ -2142,10 +2142,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body
       const prepareBurnSchema = z.object({
         coreNftIds: z.array(z.string().min(1, "NFT ID is required")),
-        walletAddress: z.string().min(1, "Wallet address is required")
+        walletAddress: z.string().min(1, "Wallet address is required"),
+        referralCode: z.string().optional()
       });
 
-      const { coreNftIds, walletAddress } = prepareBurnSchema.parse(req.body);
+      const { coreNftIds, walletAddress, referralCode } = prepareBurnSchema.parse(req.body);
+
+      // Check for referral data (similar to token burning)
+      let referralCodeData = null;
+      let permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      
+      if (permanentAssociation) {
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+        console.log('CORE NFT BURN - Using permanent referral association:', permanentAssociation.referralCode);
+      } else if (referralCode) {
+        const tempReferralData = await storage.getReferralCodeByCode(referralCode);
+        if (tempReferralData) {
+          try {
+            permanentAssociation = await storage.createWalletReferralAssociation({
+              walletAddress,
+              referralCodeId: tempReferralData.id,
+              referralCode: referralCode
+            });
+            referralCodeData = tempReferralData;
+            console.log('CORE NFT BURN - Created new permanent referral association:', referralCode, 'for wallet:', walletAddress);
+          } catch (error) {
+            console.log('CORE NFT BURN - Failed to create association (might already exist):', error);
+            permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+            if (permanentAssociation) {
+              referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+            }
+          }
+        }
+      }
 
       // Get RPC configuration
       const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
@@ -2207,6 +2236,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const actualRentSol = actualRentLamports / 1e9;
           console.log(`💰 ACTUAL rent in Core NFT account: ${actualRentSol} SOL (${actualRentLamports} lamports)`);
 
+          // Calculate platform fees (15% of recovered rent)
+          const donationFactor = 0.15; // 15% fee for Core NFT burning
+          const requestedFeeLamports = Math.floor(actualRentLamports * donationFactor);
+          const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
+          const maxAllowedFeeLamports = Math.max(0, actualRentLamports - safetyBufferLamports);
+          const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
+          
+          let referralFeeLamports = 0;
+          let platformFeeLamports = totalFeeLamports;
+          
+          // Check referral wallet BEFORE calculating final fees
+          let referralWalletExists = false;
+          if (referralCodeData && totalFeeLamports > 0) {
+            const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+            
+            try {
+              const referralBalance = await connection.getBalance(referralWalletPublicKey);
+              referralWalletExists = referralBalance > 0;
+              console.log(`CORE NFT BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
+            } catch (error) {
+              console.log('CORE NFT BURN - Failed to check referral wallet balance:', error);
+              referralWalletExists = false;
+            }
+            
+            if (referralWalletExists) {
+              // 35% of fee goes to referral
+              referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
+              // 65% of fee stays with platform
+              platformFeeLamports = totalFeeLamports - referralFeeLamports;
+              console.log(`CORE NFT BURN ✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${referralFeeLamports}`);
+            } else {
+              platformFeeLamports = totalFeeLamports;
+              referralFeeLamports = 0;
+              console.log(`CORE NFT BURN ❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - all fees to platform: ${platformFeeLamports}`);
+            }
+          } else {
+            console.log('CORE NFT BURN - No referral code data - using full platform fee');
+          }
+
           // Build burn transaction using PROPER Core NFT approach with required program IDs
           const coreProgram = umiPublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
           const additionalProgram = umiPublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7');
@@ -2220,13 +2288,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             authority: umi.identity, // will be replaced by client signer
           });
           
-          // Manually add required program accounts to ensure they're included
+          // Start building transaction with burn instruction
           const burnTx = new TransactionBuilder()
             .add(burnInstruction)
             .addRemainingAccounts([
               { pubkey: coreProgram, isSigner: false, isWritable: false },
               { pubkey: additionalProgram, isSigner: false, isWritable: false }
             ]);
+
+          // Add platform fee transfer if there are fees to collect
+          const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
+          if (platformFeeLamports > 0) {
+            const platformTransfer = transferSol(umi, {
+              source: umi.identity, // from wallet
+              destination: umiPublicKey(platformWalletAddress),
+              amount: { 
+                basisPoints: BigInt(platformFeeLamports), 
+                identifier: 'SOL', 
+                decimals: 9 
+              },
+            });
+            burnTx.add(platformTransfer);
+            console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
+          }
+
+          // Add referral fee transfer if applicable
+          if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
+            const referralTransfer = transferSol(umi, {
+              source: umi.identity, // from wallet
+              destination: umiPublicKey(referralCodeData.walletAddress),
+              amount: { 
+                basisPoints: BigInt(referralFeeLamports), 
+                identifier: 'SOL', 
+                decimals: 9 
+              },
+            });
+            burnTx.add(referralTransfer);
+            console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
+          }
           
           // Build the transaction without signing
           const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
@@ -2235,14 +2334,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
           
+          // Calculate net amount after fees
+          const netAmount = actualRentSol - (totalFeeLamports / 1e9);
+          
           burnTransactions.push({
             nftId,
             transaction: base64Transaction,
-            expectedRent: actualRentSol // REAL rent amount from account!
+            expectedRent: actualRentSol, // REAL rent amount from account!
+            platformFee: platformFeeLamports / 1e9,
+            referralFee: referralFeeLamports / 1e9,
+            netAmount: netAmount
           });
 
           totalExpectedRent += actualRentSol;
-          console.log(`✅ Core NFT burn transaction prepared: ${nftId}`);
+          console.log(`✅ Core NFT burn transaction prepared: ${nftId} (net: ${netAmount} SOL after ${totalFeeLamports / 1e9} SOL fees)`);
 
         } catch (nftError) {
           console.error(`❌ Failed to prepare burn for Core NFT ${nftId}:`, nftError);
