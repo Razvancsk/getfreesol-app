@@ -2509,6 +2509,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // RESIZE NFT ENDPOINTS
+
+  // Prepare NFT resize transactions using Metaplex RSZE program
+  app.post('/api/nfts/resize/prepare', async (req, res) => {
+    try {
+      const { nfts, walletAddress, referralCode } = req.body;
+      
+      if (!nfts || !Array.isArray(nfts) || nfts.length === 0) {
+        return res.status(400).json({ error: 'Invalid nfts array' });
+      }
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: 'Wallet address is required' });
+      }
+
+      console.log(`🔧 Preparing resize transactions for ${nfts.length} NFTs...`);
+
+      // Load NFT metadata to calculate rent deltas
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const { Connection } = await import('@solana/web3.js');
+      const connection = new Connection(rpcUrl, 'confirmed');
+
+      // Process NFTs in batches of 5 to avoid transaction size limits
+      const maxNftsPerBatch = 5;
+      const batches = [];
+      let totalExpectedRentSOL = 0;
+
+      for (let i = 0; i < nfts.length; i += maxNftsPerBatch) {
+        const batchNfts = nfts.slice(i, i + maxNftsPerBatch);
+        
+        // Calculate expected rent delta for this batch
+        let batchRentDelta = 0;
+        for (const nft of batchNfts) {
+          // Estimate rent delta (typically 0.002 SOL for resizing)
+          batchRentDelta += 0.002;
+        }
+
+        // Calculate fees (15% platform fee)
+        const platformFeePercent = 0.15;
+        const platformFee = batchRentDelta * platformFeePercent;
+        
+        // Handle referral fees
+        let referralFee = 0;
+        if (referralCode) {
+          const referralCodeData = await storage.getReferralCodeByCode(referralCode);
+          if (referralCodeData && referralCodeData.isActive) {
+            referralFee = platformFee * 0.5; // 50% of platform fee goes to referrer
+          }
+        }
+
+        const netAmount = batchRentDelta - platformFee;
+
+        // Create resize transaction instruction (placeholder for now - actual Metaplex RSZE integration needed)
+        const resizeTransaction = {
+          programId: 'RSZE1NgJy3zdmyTWPeT4yKbsUrhAwrh4mXBL1rMvHt4',
+          nfts: batchNfts,
+          walletAddress,
+          rentDelta: batchRentDelta,
+          platformFee,
+          referralFee,
+          netAmount
+        };
+
+        batches.push({
+          transaction: Buffer.from(JSON.stringify(resizeTransaction)).toString('base64'), // Placeholder
+          batchIndex: Math.floor(i / maxNftsPerBatch) + 1,
+          nftIds: batchNfts.map(nft => nft.mint),
+          nftCount: batchNfts.length,
+          expectedRent: batchRentDelta,
+          platformFee,
+          referralFee,
+          netAmount
+        });
+
+        totalExpectedRentSOL += batchRentDelta;
+      }
+
+      console.log(`🔧 Prepared ${batches.length} resize batches for ${nfts.length} NFTs`);
+
+      res.json({
+        success: true,
+        totalNfts: nfts.length,
+        totalBatches: batches.length,
+        batches,
+        totalExpectedRentSOL,
+        failedNfts: [],
+        message: `Prepared ${batches.length} batches for ${nfts.length} NFTs (max ${maxNftsPerBatch} per signature)`
+      });
+
+    } catch (error) {
+      console.error('Error preparing NFT resize transactions:', error);
+      res.status(500).json({ 
+        error: "Failed to prepare NFT resize transactions",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Record NFT resize transactions
+  app.post('/api/nfts/resize/record', async (req, res) => {
+    try {
+      const { 
+        signature, 
+        walletAddress, 
+        nftMint, 
+        oldSize, 
+        newSize, 
+        rentDelta, 
+        platformFee, 
+        referralFee, 
+        netAmount,
+        referralCode 
+      } = req.body;
+      
+      if (!signature || !walletAddress || !nftMint) {
+        return res.status(400).json({ error: 'Missing required fields: signature, walletAddress, nftMint' });
+      }
+
+      // Create resize record
+      const nftResizeRecord = await storage.createNftResizeRecord({
+        signature,
+        walletAddress,
+        nftMint,
+        oldSize: oldSize || 0,
+        newSize: newSize || 0,
+        rentDelta: rentDelta || 0,
+        platformFee: platformFee || 0,
+        referralFee: referralFee || 0,
+        netAmount: netAmount || 0,
+        resizedAt: new Date()
+      });
+
+      // Create transaction ledger entry
+      await storage.createTransactionLedger({
+        signature,
+        transactionType: 'nft_resize',
+        walletAddress,
+        solRecovered: (rentDelta || 0).toString(),
+        netAmount: (netAmount || 0).toString(),
+        feeAmount: (platformFee || 0).toString(),
+        itemsProcessed: 1,
+        itemDetails: JSON.stringify({
+          nftMint,
+          oldSize,
+          newSize,
+          rentDelta,
+          platformFee,
+          referralFee,
+          netAmount
+        }),
+        referralCode,
+        referralFee: referralFee || 0,
+        processedAt: new Date()
+      });
+
+      // Handle referral transaction if applicable
+      if (referralCode && referralFee && referralFee > 0) {
+        const referralCodeData = await storage.getReferralCodeByCode(referralCode);
+        if (referralCodeData) {
+          await storage.createReferralTransaction({
+            referralCodeId: referralCodeData.id,
+            signature,
+            transactionType: 'nft_resize',
+            feeAmount: referralFee,
+            processedAt: new Date()
+          });
+        }
+      }
+
+      console.log(`🔧 Recorded NFT resize: ${nftMint} by ${walletAddress} (${rentDelta} SOL recovered)`);
+
+      res.json({ success: true, nftResizeRecord });
+    } catch (error) {
+      console.error('Error recording NFT resize:', error);
+      res.status(500).json({ error: 'Failed to record NFT resize' });
+    }
+  });
+
   // Prepare Core NFT burn transactions (server-side UMI)
   app.post("/api/core-nfts/prepare-burn", async (req, res) => {
     try {
