@@ -76,6 +76,7 @@ export default function SolRefund() {
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [nftData, setNftData] = useState<any>(null);
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
+  const [selectedResizeNfts, setSelectedResizeNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
 
@@ -2911,62 +2912,149 @@ export default function SolRefund() {
                 </button>
               </div>
 
-              {/* NFT Grid for Resize */}
-              {nftData && nftData.nfts && nftData.nfts.length > 0 ? (
+              {/* Individual NFT Grid for Resize */}
+              {scanNftsMutation.isPending ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
+                  <p className="text-purple-200">Scanning for NFTs...</p>
+                </div>
+              ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="text-sm text-purple-200 mb-4">
-                    Found {nftData.nfts.filter((nft: any) => nft.standard !== 'CompressedNft' && nft.standard !== 'Core').length} NFTs that can be resized (Standard and Programmable NFTs only)
+                  {/* Select All Controls for Resize */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => {
+                          const resizableNfts = nftData.nfts.filter((nft: any) => nft.standard !== 'CompressedNft' && nft.standard !== 'Core');
+                          setSelectedResizeNfts(new Set(resizableNfts.map((nft: any) => nft.mint || nft.id || nft.assetId).filter(Boolean)));
+                        }}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-select-all-resize-nfts"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        onClick={() => setSelectedResizeNfts(new Set())}
+                        className="text-sm text-purple-300 hover:text-white transition-colors"
+                        data-testid="button-deselect-all-resize-nfts"
+                      >
+                        Deselect All
+                      </button>
+                    </div>
+                    <p className="text-sm text-purple-200">
+                      {selectedResizeNfts.size} selected • {nftData.nfts.filter((nft: any) => nft.standard !== 'CompressedNft' && nft.standard !== 'Core').length} resizable NFTs
+                    </p>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                  {/* NFT Grid */}
+                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {nftData.nfts
                       .filter((nft: any) => nft.standard !== 'CompressedNft' && nft.standard !== 'Core') // Only Standard and Programmable NFTs
-                      .map((nft: any, index: number) => (
-                      <div 
-                        key={index} 
-                        className="bg-slate-700/50 rounded-lg border border-slate-600/50 hover:bg-slate-700/70 p-4 transition-colors"
-                        data-testid={`nft-resize-card-${index}`}
-                      >
-                        <div className="flex items-center space-x-3 mb-3">
-                          {nft.metadata?.image && (
-                            <img 
-                              src={nft.metadata.image} 
-                              alt={nft.metadata?.name || 'NFT'} 
-                              className="w-12 h-12 rounded object-cover flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-white truncate">
-                              {nft.metadata?.name || 'Unnamed NFT'}
+                      .map((nft: any) => {
+                      // Use a stable identifier that works for all NFT types
+                      const nftId = nft.mint || nft.id || nft.assetId;
+                      const isSelected = selectedResizeNfts.has(nftId);
+
+                      return (
+                        <div
+                          key={nftId}
+                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'border-green-400/50 bg-green-900/20' 
+                              : 'border-purple-500/30 hover:border-purple-400/50'
+                          }`}
+                          onClick={() => {
+                            setSelectedResizeNfts(prev => {
+                              const newSet = new Set(prev);
+                              if (isSelected) {
+                                newSet.delete(nftId);
+                              } else {
+                                newSet.add(nftId);
+                              }
+                              return newSet;
+                            });
+                          }}
+                          data-testid={`card-resize-nft-${nftId}`}
+                        >
+                          {/* Selection Checkbox */}
+                          <div className="absolute top-2 left-2 z-10">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              isSelected 
+                                ? 'bg-green-500 border-green-500' 
+                                : 'bg-purple-900/50 border-purple-400'
+                            }`}>
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
                             </div>
-                            <div className="text-xs text-gray-400 truncate font-mono">
-                              {nft.mint?.slice(0, 8)}...{nft.mint?.slice(-8)}
+                          </div>
+
+                          {/* NFT Image */}
+                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30 relative">
+                            {nft.image ? (
+                              <img
+                                src={nft.image}
+                                alt={nft.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling!.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
+                              <Image className="h-8 w-8 text-purple-400" />
                             </div>
-                            <div className="text-xs text-purple-300">
-                              {nft.standard} NFT
+                            
+                            {/* Big Wrench Icon Overlay for Selected NFTs */}
+                            {isSelected && (
+                              <div className="absolute inset-0 flex items-center justify-center z-20">
+                                <span className="text-9xl drop-shadow-2xl animate-pulse">🔧</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* NFT Details */}
+                          <div className="space-y-1">
+                            <h4 className="text-white text-sm font-medium truncate" title={nft.name}>
+                              {nft.name || 'Unknown NFT'}
+                            </h4>
+
+                            {/* Type Badge */}
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                nft.type === 'standard' ? 'bg-blue-500/20 text-blue-300' :
+                                nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
+                                nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
+                                nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
+                                'bg-gray-500/20 text-gray-300'
+                              }`}>
+                                {nft.type.toUpperCase()}
+                              </span>
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Resize Controls */}
-                        <div className="space-y-2">
-                          <div className="text-xs text-gray-300">Current Size: ~1KB</div>
-                          <div className="flex items-center space-x-2">
-                            <button className="flex-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-white border border-blue-500/30 hover:border-blue-400 rounded px-3 py-2 text-xs transition-colors">
-                              Resize to 2KB
-                            </button>
-                            <button className="flex-1 bg-green-600/20 hover:bg-green-600/40 text-green-300 hover:text-white border border-green-500/30 hover:border-green-400 rounded px-3 py-2 text-xs transition-colors">
-                              Resize to 4KB
-                            </button>
-                          </div>
-                          <div className="text-xs text-yellow-300">Cost: ~0.002 SOL + 15% fee</div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                    </div>
                   </div>
+
+                  {/* Resize Selected Button */}
+                  {selectedResizeNfts.size > 0 && (
+                    <div className="flex justify-center pt-4">
+                      <button
+                        onClick={() => {
+                          // TODO: Implement resize functionality
+                          console.log('Resize selected NFTs:', Array.from(selectedResizeNfts));
+                        }}
+                        disabled={selectedResizeNfts.size === 0}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-testid="button-resize-selected-nfts"
+                      >
+                        🔧 Resize {selectedResizeNfts.size} Selected NFT{selectedResizeNfts.size > 1 ? 's' : ''}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length === 0 ? (
                 <div className="text-center py-8">
