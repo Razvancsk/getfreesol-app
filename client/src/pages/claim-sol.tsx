@@ -2299,7 +2299,9 @@ export default function SolRefund() {
                         : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                     }`}
                   >
-                    <Flame className="h-4 w-4 mr-2" />
+                    <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center mr-2">
+                      <Flame className="h-3 w-3 text-white" />
+                    </div>
                     Burn
                   </Button>
                   <Button
@@ -2771,14 +2773,6 @@ export default function SolRefund() {
                               <Image className="h-8 w-8 text-purple-400" />
                             </div>
                             
-                            {/* Big Flame Icon Overlay for Selected NFTs */}
-                            {isSelected && (
-                              <div className="absolute inset-0 flex items-center justify-center z-20">
-                                <div className="w-32 h-32 rounded-full bg-orange-500/90 backdrop-blur-sm flex items-center justify-center shadow-xl animate-pulse">
-                                  <Flame className="h-24 w-24 text-white drop-shadow-lg" />
-                                </div>
-                              </div>
-                            )}
                           </div>
 
                           {/* NFT Details */}
