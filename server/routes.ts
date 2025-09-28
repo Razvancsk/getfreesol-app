@@ -2566,7 +2566,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const { PublicKey, Transaction, TransactionInstruction, ComputeBudgetProgram } = await import('@solana/web3.js');
           const userPubkey = new PublicKey(walletAddress);
-          const RSZE_PROGRAM_ID = new PublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7');
+          const RSZE_PROGRAM_ID_1 = new PublicKey('RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4');
+          const RSZE_PROGRAM_ID_2 = new PublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7');
           
           // Get fresh blockhash
           const { blockhash } = await connection.getLatestBlockhash();
@@ -2594,14 +2595,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 { pubkey: userPubkey, isSigner: true, isWritable: true },          // Authority (user)
                 { pubkey: userPubkey, isSigner: false, isWritable: true },         // Recipient of recovered SOL
               ],
-              programId: RSZE_PROGRAM_ID,
+              programId: RSZE_PROGRAM_ID_1,
               data: resizeInstructionData,
             });
             
             transaction.add(resizeInstruction);
+            
+            // Add second RSZE instruction using the second program ID
+            console.log(`🔧 Adding second RSZE instruction for NFT: ${nft.mint}`);
+            
+            const resizeInstruction2 = new TransactionInstruction({
+              keys: [
+                { pubkey: nftMintPubkey, isSigner: false, isWritable: true },      // NFT mint
+                { pubkey: userPubkey, isSigner: true, isWritable: true },          // Authority (user)
+                { pubkey: userPubkey, isSigner: false, isWritable: true },         // Recipient of recovered SOL
+              ],
+              programId: RSZE_PROGRAM_ID_2,
+              data: resizeInstructionData,
+            });
+            
+            transaction.add(resizeInstruction2);
           }
           
-          console.log(`✅ Built RSZE transaction for ${batchNfts.length} NFTs using program F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7 (batch ${Math.floor(i / maxNftsPerBatch) + 1})`);
+          console.log(`✅ Built RSZE transaction for ${batchNfts.length} NFTs using BOTH programs RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4 and F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7 (batch ${Math.floor(i / maxNftsPerBatch) + 1})`);
           
           // Serialize unsigned transaction for frontend signing
           const serialized = transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
