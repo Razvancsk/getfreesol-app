@@ -2678,7 +2678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 🚀 BUILD ONE TRANSACTION WITH MULTIPLE BURN INSTRUCTIONS
       const coreProgram = umiPublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
-      const additionalProgram = umiPublicKey('F6fmDVCQfvnEq2KR8ypY1SxRMZTcVPm7R94rH4PZNhX7');
+      const additionalProgram = umiPublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7');
       
       let batchedTransaction = new TransactionBuilder()
         .addRemainingAccounts([
@@ -2728,22 +2728,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`💰 Added TOTAL referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
       }
 
-      // Build the final batched transaction as VersionedTransaction v0
+      // Build the final batched transaction
       const umiTransaction = await batchedTransaction.buildWithLatestBlockhash(umi);
-      const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
       
-      // Convert to VersionedTransaction v0 (required by frontend)
-      const { VersionedTransaction, TransactionMessage, AddressLookupTableAccount } = await import('@solana/web3.js');
-      const versionedTx = new VersionedTransaction(
-        TransactionMessage.compile({
-          payerKey: web3jsTransaction.feePayer!,
-          instructions: web3jsTransaction.instructions,
-          recentBlockhash: web3jsTransaction.recentBlockhash!,
-          addressLookupTableAccounts: [] as AddressLookupTableAccount[]
-        })
-      );
+      // Convert UMI transaction to proper VersionedTransaction
+      const { toWeb3JsLegacyTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
+      const legacyTransaction = toWeb3JsLegacyTransaction(umiTransaction);
       
-      const base64Transaction = Buffer.from(versionedTx.serialize()).toString('base64');
+      const base64Transaction = Buffer.from(legacyTransaction.serialize()).toString('base64');
 
       // Calculate net amount after fees
       const totalNetAmount = totalExpectedRent - (totalFeeLamports / 1e9);

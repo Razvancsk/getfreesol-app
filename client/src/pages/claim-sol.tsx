@@ -803,12 +803,13 @@ export default function SolRefund() {
 
             console.log(`🔐 Signing BATCHED transaction for ${batchedBurn.nftCount} Core NFTs (single signature!)...`);
 
-            // Deserialize the batched transaction from base64
+            // Deserialize the batched transaction from base64 (legacy transaction)
             const transactionBuffer = Buffer.from(batchedBurn.transaction, 'base64');
-            const transaction = VersionedTransaction.deserialize(transactionBuffer);
+            const { Transaction } = await import('@solana/web3.js');
+            const transaction = Transaction.from(transactionBuffer);
 
             // Sign the batched transaction ONCE
-            const signedTransaction = await signTransaction(transaction);
+            const signedTransaction = await wallet.signTransaction(transaction);
             console.log(`✅ BATCHED transaction signed for ${batchedBurn.nftCount} Core NFTs!`);
 
             // Submit the signed batched transaction via server relay
