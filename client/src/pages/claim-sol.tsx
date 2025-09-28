@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Loader2, BarChart3 } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -995,6 +995,99 @@ export default function SolRefund() {
     }
   }, [nftData]);
 
+  // Handler functions for scanning
+  const handleScan = () => {
+    if (!walletAddress) {
+      toast({
+        title: "Error",
+        description: "Please enter a wallet address",
+        variant: "destructive",
+      });
+      return;
+    }
+    scanMutation.mutate(walletAddress);
+  };
+
+  const handleScanTokens = () => {
+    if (!tokenWalletAddress) {
+      toast({
+        title: "Error", 
+        description: "Please enter a wallet address",
+        variant: "destructive",
+      });
+      return;
+    }
+    scanTokensMutation.mutate(tokenWalletAddress);
+  };
+
+  const handleScanNfts = () => {
+    if (!nftWalletAddress) {
+      toast({
+        title: "Error",
+        description: "Please enter a wallet address", 
+        variant: "destructive",
+      });
+      return;
+    }
+    scanNftsMutation.mutate(nftWalletAddress);
+  };
+
+  // Claim all mutation for bulk claiming
+  const claimAllMutation = useMutation({
+    mutationFn: async () => {
+      if (!scanResult || !publicKey) {
+        throw new Error('No scan result or wallet not connected');
+      }
+      
+      const response = await fetch('/api/sol-refund/claim-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey.toString(),
+          accounts: scanResult.accounts,
+          referralCode: referralCode || undefined
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to claim SOL');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success!",
+        description: `Claimed ${data.solRecovered} SOL from ${data.accountsClosed} accounts`,
+      });
+      // Refresh scan to update the results
+      if (publicKey) {
+        scanMutation.mutate(publicKey.toString());
+      }
+      // Refresh stats
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+    },
+    onError: (error) => {
+      console.error('Error claiming SOL:', error);
+      toast({
+        title: "Claim Failed",
+        description: error.message || "Failed to claim SOL. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleClaimAll = () => {
+    if (!scanResult || scanResult.emptyAccounts === 0) {
+      toast({
+        title: "Error",
+        description: "No empty accounts to claim",
+        variant: "destructive",
+      });
+      return;
+    }
+    claimAllMutation.mutate();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
