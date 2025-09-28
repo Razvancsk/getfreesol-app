@@ -219,15 +219,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create transaction - close to user, then immediately transfer fees
+      // Create transaction to close token accounts
       const transaction = new Transaction();
-      const ownerPublicKey = new PublicKey(walletAddress);
       
       // Add close account instructions for each empty account
       const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
+        const ownerPublicKey = new PublicKey(walletAddress);
         
         const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         transaction.add(platformFeeTransferInstruction);
-        console.log(`Platform fee transfer: ${platformFeeLamports} lamports (${(platformFeeLamports / 1e9).toFixed(6)} SOL)`);
+        console.log(`Platform fee transfer added: ${platformFeeLamports} lamports`);
       }
       
       // Add referral fee transfer only if referral wallet exists
@@ -344,10 +344,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         transaction.add(referralFeeTransferInstruction);
-        console.log(`Referral fee transfer: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
+        console.log(`Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
       }
       
-      console.log(`🔄 Transaction structure: Close accounts (+${(totalRecoveredLamports/1e9).toFixed(6)} SOL) → Transfer fees (-${(totalFeeLamports/1e9).toFixed(6)} SOL) → Net result: +${(netLamports/1e9).toFixed(6)} SOL`);
 
       // Serialize transaction
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
@@ -360,11 +359,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const referralFeeAmount = referralFeeLamports / 1e9;
       const netAmount = netLamports / 1e9;
       
-      console.log(`💰 SOL Recovery: Gross=${totalSolReclaimed.toFixed(6)} SOL, Fees=${totalFeeAmount.toFixed(6)} SOL, Net=${netAmount.toFixed(6)} SOL`);
 
       res.json({
         transaction: transactionBase64,
-        message: `Prepared transaction to close ${accountsToClose.length} accounts. Net result: ${netAmount.toFixed(6)} SOL`,
+        message: `Prepared transaction to close ${accountsToClose.length} accounts`,
         totalSolReclaimed: totalSolReclaimed,
         feeAmount: totalFeeAmount,
         platformFeeAmount: platformFeeAmount,
