@@ -2477,7 +2477,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-burn-nft"
                 >
-                  🚧 Burn NFT - Soon
+                  ⚡ Burn NFT
                 </button>
               </div>
             </div>
