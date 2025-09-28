@@ -13,7 +13,7 @@ import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@
 import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 // Metaplex Token Metadata for pNFT burning
-import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata, fetchDigitalAsset } from '@metaplex-foundation/mpl-token-metadata';
 import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 
@@ -2455,26 +2455,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           console.log(`✅ Traditional NFT master edition confirmed: ${masterEditionPda[0].toString()}`);
           
-          // 3. Optional: Check for collection metadata if it belongs to a verified collection
-          let collectionMetadata = undefined;
-          try {
-            // Try to detect if this NFT belongs to a collection by examining the metadata
-            // This is optional for traditional NFTs
-            console.log(`📋 Traditional NFT collection metadata: None (standalone NFT)`);
-          } catch (collectionError) {
-            console.log(`📋 Traditional NFT collection detection skipped`);
-          }
-
-          // Build burn transaction for traditional NFT using burnV1 (using clean code structure)
-          // Optional: Get collection metadata if it belongs to a verified collection
+          // 3. Detect collection metadata for verified collection NFTs
           let collectionMetadataPda = undefined;
           try {
-            // For collection NFTs, find the collection metadata PDA
-            if (collectionMetadata) {
-              collectionMetadataPda = findMetadataPda(umi, { mint: umiPublicKey(collectionMetadata) });
+            // Fetch the NFT's digital asset to check for collection metadata
+            const digitalAsset = await fetchDigitalAsset(umi, mintId);
+            const collectionOption = digitalAsset.metadata.collection;
+            
+            if (collectionOption && collectionOption.__option === 'Some') {
+              const { key: collectionMint, verified } = unwrapOption(collectionOption);
+              if (verified) {
+                // Generate collection metadata PDA for verified collections
+                collectionMetadataPda = findMetadataPda(umi, { mint: collectionMint });
+                console.log(`✅ Verified collection detected for ${nftId}: ${collectionMint.toString()}`);
+              } else {
+                console.log(`ℹ️ Collection present but unverified for ${nftId}; skipping collectionMetadata`);
+              }
+            } else {
+              console.log(`ℹ️ No collection field for ${nftId}; standalone NFT`);
             }
-          } catch (error) {
-            console.log(`📋 Collection metadata PDA generation skipped for ${nftId}`);
+          } catch (collectionError) {
+            console.log(`📋 Collection detection failed for ${nftId}:`, collectionError);
+            // Continue without collection metadata - will work for standalone NFTs
           }
 
           const burnTx = burnV1(umi, {
