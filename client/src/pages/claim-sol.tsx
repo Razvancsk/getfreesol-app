@@ -2774,7 +2774,7 @@ export default function SolRefund() {
                             {isSelected && (
                               <div className="absolute inset-0 flex items-center justify-center z-20">
                                 <div className="w-32 h-32 rounded-full bg-orange-500/90 backdrop-blur-sm flex items-center justify-center shadow-xl animate-pulse">
-                                  <Flame className="h-24 w-24 text-white drop-shadow-lg" />
+                                  <span className="text-6xl">🔥</span>
                                 </div>
                               </div>
                             )}
