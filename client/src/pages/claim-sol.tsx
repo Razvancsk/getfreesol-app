@@ -2725,7 +2725,6 @@ export default function SolRefund() {
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">NFT Burning</h3>
                 <button 
                   onClick={() => {
                     if (publicKey) {
@@ -2741,14 +2740,6 @@ export default function SolRefund() {
                 </button>
               </div>
 
-              {/* NFT Summary */}
-              {nftData && nftData.nfts && nftData.nfts.length > 0 && (
-                <div className="mb-4 space-y-2">
-                  <p className="text-white text-sm">
-                    <span className="font-semibold">NFTs Found:</span>
-                  </p>
-                </div>
-              )}
 
               {/* Individual NFT Grid */}
               {scanNftsMutation.isPending ? (
