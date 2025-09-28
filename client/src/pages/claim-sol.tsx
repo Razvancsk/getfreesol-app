@@ -704,12 +704,12 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      // Get the NFT data to group by type
+      // Get the NFT data to prepare batch request
       if (!nftData || !nftData.nfts) {
         throw new Error('No NFT data available');
       }
 
-      // Find the selected NFTs and group them by type
+      // Find the selected NFTs
       const selectedNfts = nftData.nfts.filter((nft: any) => {
         const nftId = nft.mint || nft.id || nft.assetId;
         return selectedNftIds.includes(nftId);
@@ -719,271 +719,251 @@ export default function SolRefund() {
         throw new Error('No valid NFTs selected');
       }
 
-      // Group NFTs by type (only excluding cNFTs - Core NFTs are now supported)
-      const nftsByType: { [key: string]: any[] } = {};
-      selectedNfts.forEach((nft: any) => {
-        // Skip cNFTs only (Core NFTs are now supported with official Metaplex integration)
-        if (nft.type === 'cnft') {
-          return;
-        }
-        if (!nftsByType[nft.type]) {
-          nftsByType[nft.type] = [];
-        }
-        nftsByType[nft.type].push(nft);
+      console.log(`🔥 Starting batch burn for ${selectedNfts.length} NFTs...`);
+
+      // Prepare NFT data for batch endpoint
+      const nftsForBatch = selectedNfts.map((nft: any) => ({
+        type: nft.type,
+        mint: nft.mint,
+        assetId: nft.id || nft.assetId,
+        tokenAccount: nft.tokenAccount,
+        collection: nft.collection?.id,
+        ruleSet: nft.ruleSet
+      })).filter(nft => nft.type !== 'cnft'); // Skip cNFTs for now
+
+      if (nftsForBatch.length === 0) {
+        throw new Error('No supported NFTs selected (cNFTs not yet supported in batch)');
+      }
+
+      // Call batch burn endpoint
+      console.log(`📦 Preparing batch burn for ${nftsForBatch.length} NFTs...`);
+      const batchResponse = await apiRequest('POST', '/api/nfts/prepare-burn-batch', {
+        walletAddress: publicKey.toString(),
+        nfts: nftsForBatch
       });
 
+      const batchData = await batchResponse.json();
+      
+      if (!batchData.success || !batchData.txs || batchData.txs.length === 0) {
+        throw new Error(batchData.error || 'Failed to prepare batch burn transactions');
+      }
+
+      console.log(`🔧 Server prepared ${batchData.txs.length} batch transactions for ${nftsForBatch.length} NFTs`);
+
       const results = [];
+      let totalBurnedCount = 0;
 
-      // Process each type separately
-      for (const [nftType, nfts] of Object.entries(nftsByType)) {
-        console.log(`Burning ${nfts.length} ${nftType} NFTs...`);
+      // Process each batch transaction
+      for (let i = 0; i < batchData.txs.length; i++) {
+        const txBase64 = batchData.txs[i];
+        const batchInfo = batchData.batchTransactions[i];
+        
+        try {
+          console.log(`🔐 Signing batch transaction ${i + 1}/${batchData.txs.length} (${batchInfo.count} NFTs)`);
+          
+          // Decode and sign the transaction
+          const transaction = web3.Transaction.from(Buffer.from(txBase64, 'base64'));
+          
+          // Sign transaction with wallet
+          const signedTransaction = await wallet.signTransaction!(transaction);
+          
+          // Send the signed transaction
+          const connection = new web3.Connection(
+            import.meta.env.VITE_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+            'confirmed'
+          );
+          
+          const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+          });
 
-        const nftMints = nfts.map(nft => nft.mint);
-
-        // Handle Core NFTs with Server-Side UMI Implementation  
-        if (nftType === 'core') {
-          try {
-            console.log('🔥 Starting Core NFT burning with server-side UMI...');
-            
-            if (!wallet.publicKey) {
-              throw new Error('Wallet not connected');
-            }
-
-            // Prepare Core NFT IDs (use the actual ID from the NFT objects)
-            const coreNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
-            console.log(`📦 Preparing burn transactions for ${coreNftIds.length} Core NFTs...`);
-
-            // Call server to prepare burn transactions
-            const prepareResponseRaw = await apiRequest('POST', '/api/core-nfts/prepare-burn', {
-              coreNftIds,
-              walletAddress: wallet.publicKey.toString()
-            });
-            const prepareResponse = await prepareResponseRaw.json();
-
-            console.log('🔧 Server prepared burn transactions:', {
-              rawResponse: prepareResponse,
-              hasSuccess: 'success' in prepareResponse,
-              successValue: prepareResponse.success,
-              hasBurnTransactions: 'burnTransactions' in prepareResponse,
-              burnTransactionsValue: prepareResponse.burnTransactions,
-              burnTransactionsType: typeof prepareResponse.burnTransactions,
-              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
-            });
-
-            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
-              console.error('❌ Server response validation failed:', {
-                success: prepareResponse.success,
-                burnTransactions: prepareResponse.burnTransactions,
-                successCheck: !prepareResponse.success,
-                burnTransactionsCheck: !prepareResponse.burnTransactions
-              });
-              throw new Error('Server failed to prepare burn transactions');
-            }
-
-            const successfulBurns = [];
-            let totalRentRecovered = 0;
-
-            // Process each prepared transaction
-            for (const burnTx of prepareResponse.burnTransactions) {
-              if (burnTx.error) {
-                console.error(`❌ Server error for NFT ${burnTx.nftId}:`, burnTx.error);
-                continue;
-              }
-
-              if (!burnTx.transaction) {
-                console.error(`❌ No transaction prepared for NFT ${burnTx.nftId}`);
-                continue;
-              }
-
-              try {
-                console.log(`🔐 Signing and sending transaction for Core NFT: ${burnTx.nftId}`);
-
-                // Deserialize the transaction from base64
-                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
-                const transaction = VersionedTransaction.deserialize(transactionBuffer);
-
-                // Sign the transaction with the wallet
-                const signedTransaction = await signTransaction(transaction);
-
-                // Use server relay to submit transaction (bypasses 403 domain restrictions)
-                console.log('📡 Submitting via server relay to bypass domain restrictions...');
-                const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
-                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
-                  description: `Core NFT burn: ${burnTx.nftId}`,
-                  skipPreflight: true
-                });
-                
-                const relayResponse = await relayResponseRaw.json();
-
-                if (!relayResponse.success || !relayResponse.signature) {
-                  throw new Error(`Relay failed: ${relayResponse.error || 'No signature returned'}`);
-                }
-
-                const signature = relayResponse.signature;
-                console.log('🎉 Transaction submitted successfully via relay:', signature);
-                
-                // Wait for confirmation with error handling (don't fail on confirmation timeout)
-                try {
-                  // We could add confirmation checking here if needed
-                  console.log('✅ Transaction submitted with signature:', signature);
-                } catch (confirmError: any) {
-                  console.warn('Transaction confirmation check failed but transaction was sent:', confirmError.message);
-                  console.warn('Transaction signature:', signature);
-                  // Continue with success recording since transaction was sent
-                }
-
-                console.log('✅ Core NFT burned successfully:', signature);
-
-                totalRentRecovered += burnTx.expectedRent;
-
-                // Record the successful burn in our database
-                try {
-                  await apiRequest('POST', '/api/nfts/burn/record', {
-                    signature,
-                    nftMint: burnTx.nftId,
-                    rentRecovered: burnTx.expectedRent,
-                    walletAddress: wallet.publicKey.toString(),
-                    nftType: 'core',
-                    success: true
-                  });
-                  console.log('✅ Core NFT burn recorded in database');
-                } catch (recordError) {
-                  console.warn('⚠️ Failed to record Core NFT burn in database:', recordError);
-                }
-
-                successfulBurns.push({
-                  mint: burnTx.nftId,
-                  signature,
-                  rentRecovered: burnTx.expectedRent
-                });
-
-              } catch (signError) {
-                console.error(`❌ Failed to sign/send transaction for Core NFT ${burnTx.nftId}:`, {
-                  error: signError,
-                  message: signError instanceof Error ? signError.message : String(signError),
-                  stack: signError instanceof Error ? signError.stack : undefined,
-                  details: signError
-                });
-                
-                // Record the failed burn attempt
-                try {
-                  await apiRequest('POST', '/api/nfts/burn/record', {
-                    nftMint: burnTx.nftId,
-                    walletAddress: wallet.publicKey.toString(),
-                    nftType: 'core',
-                    error: signError instanceof Error ? signError.message : 'Unknown error',
-                    success: false
-                  });
-                } catch (recordError) {
-                  console.warn('⚠️ Failed to record Core NFT burn failure in database:', recordError);
-                }
-              }
-            }
-
-            if (successfulBurns.length === 0) {
-              throw new Error('No Core NFTs were successfully burned');
-            }
-
-            console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
-            console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
-
-            // Optimistically remove burned NFTs from local state immediately
-            const burnedIds = successfulBurns.map(burn => burn.mint);
-            console.log(`🔥 Debug: burnedIds:`, burnedIds);
-            console.log(`🔥 Debug: current nftData:`, nftData);
-            
-            // Clear burned NFTs from selection first
-            setSelectedNfts(prev => {
-              const newSet = new Set(prev);
-              burnedIds.forEach(id => newSet.delete(id));
-              return newSet;
-            });
-
-            // Update local NFT data state to remove burned NFTs immediately  
-            setNftData((prev: any) => {
-              console.log(`🔥 Debug: setNftData prev:`, prev);
-              if (!prev?.nfts) {
-                console.log(`🔥 Debug: No NFTs in prev data`);
-                return prev;
-              }
-              
-              const currentIds = prev.nfts.map((nft: any) => nft.id || nft.mint || nft.assetId);
-              console.log(`🔥 Debug: current NFT IDs:`, currentIds);
-              
-              const filtered = prev.nfts.filter((nft: any) => {
-                const nftId = nft.id || nft.mint || nft.assetId;
-                const shouldKeep = !burnedIds.includes(nftId);
-                console.log(`🔥 Debug: NFT ${nftId} - Keep: ${shouldKeep}`);
-                return shouldKeep;
-              });
-              
-              console.log(`🔥 Debug: Filtered NFTs:`, filtered);
-              
-              const result = {
-                ...prev,
-                nfts: filtered
-              };
-              
-              console.log(`🔥 Debug: Final result:`, result);
-              return result;
-            });
-
-            // Show success message with green styling and transaction signature
-            const firstSignature = successfulBurns[0]?.signature || '';
-            toast({
-              title: `Successfully burned ${successfulBurns.length} NFT${successfulBurns.length > 1 ? 's' : ''}`,
-              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
-              className: "bg-green-600 text-white border-green-600",
-            });
-
-            // Don't invalidate immediately - let optimistic update handle UI state
-            // We'll rely on the next manual refresh or page load to sync with server
-
-            return;
-
-          } catch (coreError: any) {
-            console.error('❌ Core NFT burning failed:', {
-              error: coreError,
-              message: coreError instanceof Error ? coreError.message : String(coreError),
-              stack: coreError instanceof Error ? coreError.stack : undefined,
-              details: coreError
-            });
-            
-            toast({
-              title: "Core NFT Burning Failed",
-              description: coreError.message || 'An unexpected error occurred',
-              variant: "destructive",
-            });
-            
-            throw coreError;
+          // Confirm the transaction
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+          
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
           }
-        }
 
-        // Handle Programmable NFTs with Server-Side UMI Implementation  
-        if (nftType === 'pnft' || nftType === 'programmable') {
-          try {
-            console.log('🔥 Starting Programmable NFT burning with server-side UMI...');
-            
-            if (!wallet.publicKey) {
-              throw new Error('Wallet not connected');
+          console.log(`✅ Batch transaction ${i + 1} confirmed: ${signature}`);
+          
+          // Record each NFT burn with server
+          for (const nftId of batchInfo.nftIds) {
+            try {
+              await apiRequest('POST', '/api/nfts/burn/record', {
+                nftMint: nftId,
+                signature: signature,
+                success: true,
+                walletAddress: publicKey.toString(),
+                nftType: batchInfo.type,
+                rentRecovered: (batchInfo.expectedRent / batchInfo.count).toFixed(6) // Estimate per NFT
+              });
+            } catch (recordError) {
+              console.log(`⚠️ Failed to record burn for ${nftId}:`, recordError);
             }
+          }
 
-            // Prepare pNFT IDs (use the actual ID from the NFT objects)
-            const pNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
-            console.log(`📦 Preparing burn transactions for ${pNftIds.length} Programmable NFTs...`);
+          results.push({
+            type: batchInfo.type,
+            nftsProcessed: batchInfo.count,
+            totalAttempted: batchInfo.count,
+            solRecovered: batchInfo.expectedRent,
+            netAmount: batchInfo.expectedRent - batchInfo.platformFee - batchInfo.referralFee,
+            feeAmount: batchInfo.platformFee + batchInfo.referralFee,
+            signatures: [signature],
+            signature: signature
+          });
 
-            // Call server to prepare pNFT burn transactions
-            const prepareResponseRaw = await apiRequest('POST', '/api/pnfts/prepare-burn', {
-              pNftIds,
-              walletAddress: wallet.publicKey.toString()
-            });
-            const prepareResponse = await prepareResponseRaw.json();
+          totalBurnedCount += batchInfo.count;
 
-            console.log('🔧 Server prepared pNFT burn transactions:', {
-              rawResponse: prepareResponse,
-              hasSuccess: 'success' in prepareResponse,
-              successValue: prepareResponse.success,
-              hasBurnTransactions: 'burnTransactions' in prepareResponse,
+        } catch (batchError: any) {
+          console.error(`❌ Batch transaction ${i + 1} failed:`, batchError);
+          
+          // Record failed burns
+          for (const nftId of batchInfo.nftIds) {
+            try {
+              await apiRequest('POST', '/api/nfts/burn/record', {
+                nftMint: nftId,
+                signature: '',
+                success: false,
+                error: batchError.message || 'Batch transaction failed',
+                walletAddress: publicKey.toString(),
+                nftType: batchInfo.type
+              });
+            } catch (recordError) {
+              console.log(`⚠️ Failed to record failed burn for ${nftId}:`, recordError);
+            }
+          }
+
+          results.push({
+            type: batchInfo.type,
+            nftsProcessed: 0,
+            totalAttempted: batchInfo.count,
+            solRecovered: 0,
+            netAmount: 0,
+            feeAmount: 0,
+            signatures: [],
+            error: batchError.message || 'Batch transaction failed'
+          });
+        }
+      }
+
+      if (totalBurnedCount === 0) {
+        throw new Error('No NFTs were successfully burned');
+      }
+
+      return results;
+    },
+    onSuccess: (results) => {
+      if (!results) return;
+      
+      const totalBurned = results.reduce((sum, r) => sum + (r.nftsProcessed || 0), 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
+
+      // Optimistically remove burned NFTs from local state
+      if (totalBurned > 0) {
+        const allBurnedIds: string[] = [];
+        results.forEach(result => {
+          if (result.signatures && result.signatures.length > 0) {
+            // For batch results, we need to track the NFT IDs that were burned
+            // This will be handled by the batch transaction data
+          }
+        });
+
+        // Clear burned NFTs from selection
+        setSelectedNfts(new Set());
+
+        // Update local NFT data to remove burned NFTs
+        setNftData((prev: any) => {
+          if (!prev?.nfts) return prev;
+          
+          // For now, we'll invalidate and refetch rather than trying to track exact IDs
+          // This ensures consistency with the server state
+          return prev;
+        });
+
+        // Show success message
+        const firstSignature = results.find(r => r.signatures?.[0])?.signatures?.[0] || '';
+        toast({
+          title: `Successfully burned ${totalBurned} NFT${totalBurned > 1 ? 's' : ''}!`,
+          description: totalSolRecovered > 0 ? 
+            `Recovered ${totalNetAmount.toFixed(6)} SOL (after fees)` :
+            `Transaction: ${firstSignature.substring(0, 8)}...`,
+          className: "bg-green-600 text-white border-green-600",
+        });
+      }
+
+      // Refresh NFT data after successful burns
+      if (publicKey) {
+        scanNftsMutation.mutate(publicKey.toString());
+      }
+
+      // Refresh stats if SOL was recovered
+      if (totalSolRecovered > 0) {
+        queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error burning NFTs:', error);
+
+      let errorMessage = "Failed to burn NFTs. Please try again.";
+      if (error.message) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction cancelled by user.";
+        } else if (error.message.includes('cNFTs not yet supported')) {
+          errorMessage = "Compressed NFTs are not yet supported in batch burning.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast({
+        title: "Burn Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleBurnToken = (tokenMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+    burnTokenMutation.mutate(tokenMint);
+  };
+
+  const handleBurnNFT = (nftMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error", 
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+    burnTokenMutation.mutate(nftMint);
+  };
+
+  const calculateRefund = () => {
+    if (!scanResult) return { total: 0, donation: 0, net: 0 };
+
+    const total = parseFloat(scanResult.totalReclaimable);
+    const donation = total * 0.15; // 15% service fee
+    const net = total - donation; // 85% to user
+
+    return { total, donation, net };
+  };
+
+  const refundCalc = calculateRefund();
+
+
+  return (
               burnTransactionsValue: prepareResponse.burnTransactions,
               burnTransactionsType: typeof prepareResponse.burnTransactions,
               burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
