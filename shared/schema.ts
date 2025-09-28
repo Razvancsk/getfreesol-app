@@ -81,6 +81,9 @@ export const nftBurnRecords = pgTable("nft_burn_records", {
   nftImage: text("nft_image"),
   collectionAddress: text("collection_address"),
   solRecovered: decimal("sol_recovered", { precision: 18, scale: 9 }).notNull(),
+  platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).default("0").notNull(),
+  referralFee: decimal("referral_fee", { precision: 18, scale: 9 }).default("0").notNull(),
+  netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(),
   burnedAt: timestamp("burned_at").notNull().defaultNow(),
 });
 
