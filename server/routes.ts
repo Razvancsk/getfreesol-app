@@ -219,39 +219,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create transaction with user-controlled temp account
+      // Create transaction to close token accounts
       const transaction = new Transaction();
-      const ownerPublicKey = new PublicKey(walletAddress);
       
-      // Create a temporary account derived from user's wallet
-      const seed = `temp-${Date.now().toString().slice(-8)}`;
-      const tempAccount = await PublicKey.createWithSeed(
-        ownerPublicKey,
-        seed,
-        SystemProgram.programId
-      );
-      
-      // Create the temporary account (user controls it)
-      const createTempInstruction = SystemProgram.createAccountWithSeed({
-        fromPubkey: ownerPublicKey,
-        basePubkey: ownerPublicKey,
-        seed: seed,
-        newAccountPubkey: tempAccount,
-        lamports: 0, // Will be funded by closing accounts
-        space: 0,
-        programId: SystemProgram.programId,
-      });
-      transaction.add(createTempInstruction);
-      
-      // Close accounts to temp account (not main wallet)
+      // Add close account instructions for each empty account
       const { createCloseAccountInstruction } = await import('@solana/spl-token');
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
+        const ownerPublicKey = new PublicKey(walletAddress);
         
         const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
-          tempAccount, // Send SOL to temp account
+          ownerPublicKey, // destination (user receives SOL)
           ownerPublicKey  // owner
         );
         
@@ -338,43 +318,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const additionalTxCosts = 500000; // ~0.0005 SOL buffer for real-world costs
       const netLamports = Math.max(0, totalRecoveredLamports - totalFeeLamports - additionalTxCosts);
       
-      // Transfer platform fees from temp account
+      // Add fee transfer instructions AFTER close instructions
+      // Fees are paid from SOL recovered by closing accounts
       if (platformFeeLamports > 0) {
         const feeCollectorPublicKey = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
         
-        const platformFeeInstruction = SystemProgram.transfer({
-          fromPubkey: tempAccount,
+        const platformFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
           toPubkey: feeCollectorPublicKey,
           lamports: platformFeeLamports,
         });
         
-        transaction.add(platformFeeInstruction);
-        console.log(`Platform fee from temp: ${platformFeeLamports} lamports`);
+        transaction.add(platformFeeTransferInstruction);
+        console.log(`Platform fee transfer added: ${platformFeeLamports} lamports`);
       }
       
-      // Transfer referral fees from temp account if applicable
+      // Add referral fee transfer only if referral wallet exists
       if (referralFeeLamports > 0 && referralCodeData && referralWalletExists) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
-        const referralFeeInstruction = SystemProgram.transfer({
-          fromPubkey: tempAccount,
+        const referralFeeTransferInstruction = SystemProgram.transfer({
+          fromPubkey: new PublicKey(walletAddress),
           toPubkey: referralWalletPublicKey,
           lamports: referralFeeLamports,
         });
         
-        transaction.add(referralFeeInstruction);
-        console.log(`Referral fee from temp: ${referralFeeLamports} lamports`);
+        transaction.add(referralFeeTransferInstruction);
+        console.log(`Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
       }
-      
-      // Transfer ONLY NET amount to your main wallet (what wallet shows!)
-      const netTransferInstruction = SystemProgram.transfer({
-        fromPubkey: tempAccount,
-        toPubkey: ownerPublicKey,
-        lamports: netLamports, // Only net amount!
-      });
-      
-      transaction.add(netTransferInstruction);
-      console.log(`🎯 WALLET SHOWS NET: ${(netLamports/1e9).toFixed(6)} SOL`);
       
 
       // Serialize transaction
@@ -391,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         transaction: transactionBase64,
-        message: `Wallet will show NET: ${(netLamports/1e9).toFixed(6)} SOL (not gross)`,
+        message: `Prepared transaction to close ${accountsToClose.length} accounts`,
         totalSolReclaimed: totalSolReclaimed,
         feeAmount: totalFeeAmount,
         platformFeeAmount: platformFeeAmount,
