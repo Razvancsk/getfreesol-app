@@ -2232,28 +2232,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Record the NFT burn transaction in our ledger
       if (success && signature) {
-        // Successful burn
+        // Get REAL amounts from actual transaction analysis instead of estimates
+        let realRentRecovered = rentRecovered;
+        let realNetAmount = netAmount;
+        let realFeeAmount = feeAmount;
+
+        try {
+          console.log(`🔍 Analyzing actual transaction ${signature} to get real amounts instead of estimates...`);
+          
+          // Connect to RPC for settlement analysis
+          const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+          const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+          const { Connection } = await import('@solana/web3.js');
+          const connection = new Connection(rpcUrl, 'confirmed');
+
+          // Fetch the confirmed transaction
+          const txInfo = await connection.getParsedTransaction(signature, {
+            maxSupportedTransactionVersion: 0,
+            commitment: 'confirmed'
+          });
+
+          if (txInfo && !txInfo.meta?.err) {
+            // Extract balance data
+            const preBalances = txInfo.meta?.preBalances || [];
+            const postBalances = txInfo.meta?.postBalances || [];
+            const accounts = txInfo.transaction.message.accountKeys;
+            
+            // Find the user's account index
+            let userAccountIndex = -1;
+            for (let i = 0; i < accounts.length; i++) {
+              const account = accounts[i];
+              const accountPubkey = typeof account === 'string' ? account : account.pubkey.toString();
+              if (accountPubkey === walletAddress) {
+                userAccountIndex = i;
+                break;
+              }
+            }
+
+            if (userAccountIndex !== -1) {
+              // Calculate exact amounts from actual transaction
+              const preBalance = preBalances[userAccountIndex] || 0;
+              const postBalance = postBalances[userAccountIndex] || 0;
+              const userDelta = postBalance - preBalance; // Net change to user
+              const networkFeeLamports = txInfo.meta?.fee || 0;
+
+              // Calculate outgoing transfers from user (platform fees, etc.)
+              let outgoingTransfersFromUser = 0;
+              const instructions = txInfo.meta?.innerInstructions || [];
+              instructions.forEach(innerInstruction => {
+                innerInstruction.instructions.forEach(instruction => {
+                  // Check if it's a parsed system instruction
+                  if ('parsed' in instruction && instruction.programId.toString() === '11111111111111111111111111111112') {
+                    const parsed = instruction.parsed as any;
+                    if (parsed?.type === 'transfer') {
+                      const transferInfo = parsed.info;
+                      if (transferInfo?.source === walletAddress) {
+                        outgoingTransfersFromUser += transferInfo.lamports || 0;
+                      }
+                    }
+                  }
+                });
+              });
+
+              // Exact amounts calculation
+              const netToUserLamports = userDelta; // What user actually received/paid
+              const grossRentRecoveredLamports = userDelta + networkFeeLamports + outgoingTransfersFromUser;
+
+              // Convert to SOL and update with real amounts
+              realNetAmount = netToUserLamports / 1e9;
+              realRentRecovered = grossRentRecoveredLamports / 1e9;
+              realFeeAmount = outgoingTransfersFromUser / 1e9;
+
+              console.log(`✅ Real transaction analysis complete for ${signature}:`);
+              console.log(`   Estimated: ${rentRecovered} SOL recovered, ${netAmount} SOL net`);
+              console.log(`   REAL: ${realRentRecovered} SOL recovered, ${realNetAmount} SOL net`);
+              console.log(`   Real platform fee: ${realFeeAmount} SOL`);
+            } else {
+              console.log(`⚠️ Could not find wallet ${walletAddress} in transaction accounts - using estimates`);
+            }
+          } else {
+            console.log(`⚠️ Transaction ${signature} not found or failed - using estimates`);
+          }
+        } catch (settlementError) {
+          console.error('❌ Failed to analyze real transaction amounts, using estimates:', settlementError);
+          // Keep original estimates if analysis fails
+        }
+
+        // Successful burn with REAL amounts
         const transactionData = {
           walletAddress,
           signature,
           transactionType: 'nft_burn' as const,
-          solRecovered: rentRecovered.toString(),
-          netAmount: netAmount.toString(), // Actual amount user receives after fees
-          feeAmount: feeAmount.toString(), // Platform + referral fees
+          solRecovered: realRentRecovered.toString(),
+          netAmount: realNetAmount.toString(), // REAL amount user received
+          feeAmount: realFeeAmount.toString(), // REAL platform + referral fees
           itemsProcessed: 1, // One NFT burned
           itemDetails: JSON.stringify({
             nftMint,
             nftType,
-            rentRecovered,
-            netAmount,
-            platformFeeAmount,
-            referralFeeAmount
+            rentRecovered: realRentRecovered, // Store real amounts in details too
+            netAmount: realNetAmount,
+            platformFeeAmount: realFeeAmount,
+            referralFeeAmount: 0,
+            originalEstimate: rentRecovered, // Keep original estimate for comparison
+            settlementAnalyzed: true
           })
         };
 
-        await storage.createTransactionLedgerEntry(transactionData);
+        // Check if transaction already exists (to avoid duplicate key error)
+        try {
+          await storage.createTransactionLedgerEntry(transactionData);
+        } catch (insertError: any) {
+          // If it's a duplicate key error, update the existing record with real amounts
+          if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
+            console.log(`🔄 Transaction ${signature} already exists, updating with real amounts...`);
+            
+            // Update existing record with real amounts
+            const updateResult = await storage.updateTransactionLedgerBySig(signature, {
+              solRecovered: realRentRecovered.toString(),
+              netAmount: realNetAmount.toString(),
+              feeAmount: realFeeAmount.toString(),
+              itemDetails: JSON.stringify({
+                nftMint,
+                nftType,
+                rentRecovered: realRentRecovered,
+                netAmount: realNetAmount,
+                platformFeeAmount: realFeeAmount,
+                referralFeeAmount: 0,
+                originalEstimate: rentRecovered,
+                settlementAnalyzed: true,
+                correctedAt: new Date().toISOString()
+              })
+            });
+            
+            console.log(`✅ Updated existing record with real amounts for ${signature}`);
+          } else {
+            throw insertError; // Re-throw if it's a different error
+          }
+        }
 
-        console.log(`✅ Recorded NFT burn: ${nftMint} (${rentRecovered || 0} SOL gross, ${netAmount || 0} SOL net after fees)`);
+        console.log(`✅ Recorded NFT burn with REAL amounts: ${nftMint} (${realRentRecovered} SOL gross, ${realNetAmount} SOL net after fees)`);
       } else {
         // Failed burn attempt
         console.log(`❌ Recorded failed Core NFT burn attempt: ${nftMint} - ${error || 'Unknown error'}`);

@@ -171,6 +171,15 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
   }
 
+  async updateTransactionLedgerBySig(signature: string, updateData: Partial<Pick<TransactionLedger, 'solRecovered' | 'netAmount' | 'feeAmount' | 'itemDetails'>>): Promise<TransactionLedger | undefined> {
+    const [updatedEntry] = await db
+      .update(transactionLedger)
+      .set(updateData)
+      .where(eq(transactionLedger.signature, signature))
+      .returning();
+    return updatedEntry || undefined;
+  }
+
   // Token Burn Records
   async createTokenBurnRecord(record: InsertTokenBurnRecord): Promise<TokenBurnRecord> {
     const [burnRecord] = await db
