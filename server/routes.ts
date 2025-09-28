@@ -2091,6 +2091,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         signature: z.string().optional(),
         nftMint: z.string().min(1, "NFT mint address is required"),
         rentRecovered: z.number().min(0).optional().default(0),
+        netAmount: z.number().min(0).optional().default(0),
+        feeAmount: z.number().min(0).optional().default(0),
+        platformFeeAmount: z.number().min(0).optional().default(0),
+        referralFeeAmount: z.number().min(0).optional().default(0),
         walletAddress: z.string().min(1, "Wallet address is required"),
         nftType: z.string().min(1, "NFT type is required"),
         error: z.string().optional(),
@@ -2098,7 +2102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const validatedData = burnRecordSchema.parse(req.body);
-      const { signature, nftMint, rentRecovered, walletAddress, nftType, error, success } = validatedData;
+      const { signature, nftMint, rentRecovered, netAmount, feeAmount, platformFeeAmount, referralFeeAmount, walletAddress, nftType, error, success } = validatedData;
 
       // Record the NFT burn transaction in our ledger
       if (success && signature) {
@@ -2108,19 +2112,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           signature,
           transactionType: 'nft_burn' as const,
           solRecovered: rentRecovered.toString(),
-          netAmount: rentRecovered.toString(), // No fees for Core NFT burning currently
-          feeAmount: '0',
+          netAmount: netAmount.toString(), // Actual amount user receives after fees
+          feeAmount: feeAmount.toString(), // Platform + referral fees
           itemsProcessed: 1, // One NFT burned
           itemDetails: JSON.stringify({
             nftMint,
             nftType,
-            rentRecovered
+            rentRecovered,
+            netAmount,
+            platformFeeAmount,
+            referralFeeAmount
           })
         };
 
         await storage.createTransactionLedgerEntry(transactionData);
 
-        console.log(`✅ Recorded Core NFT burn: ${nftMint} (${rentRecovered || 0} SOL recovered)`);
+        console.log(`✅ Recorded NFT burn: ${nftMint} (${rentRecovered || 0} SOL gross, ${netAmount || 0} SOL net after fees)`);
       } else {
         // Failed burn attempt
         console.log(`❌ Recorded failed Core NFT burn attempt: ${nftMint} - ${error || 'Unknown error'}`);

@@ -843,6 +843,10 @@ export default function SolRefund() {
                     signature,
                     nftMint: burnTx.nftId,
                     rentRecovered: burnTx.expectedRent,
+                    netAmount: burnTx.netAmount,
+                    feeAmount: burnTx.platformFee + burnTx.referralFee,
+                    platformFeeAmount: burnTx.platformFee,
+                    referralFeeAmount: burnTx.referralFee,
                     walletAddress: wallet.publicKey.toString(),
                     nftType: 'core',
                     success: true
