@@ -2290,7 +2290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           // Start building transaction with burn instruction
-          const burnTx = new TransactionBuilder()
+          let burnTx = new TransactionBuilder()
             .add(burnInstruction)
             .addRemainingAccounts([
               { pubkey: coreProgram, isSigner: false, isWritable: false },
@@ -2481,7 +2481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Convert UMI transaction to Web3.js format, then serialize for client signing
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
-          const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
+          let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
           // Calculate expected rent (pNFTs have multiple accounts)
           const connection = new Connection(rpcUrl, 'confirmed');
