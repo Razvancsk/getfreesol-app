@@ -1178,135 +1178,105 @@ export default function SolRefund() {
             });
             const prepareResponse = await prepareResponseRaw.json();
 
-            console.log('🔧 Server prepared Traditional NFT burn transactions:', {
+            console.log('🔧 Server prepared Traditional NFT burn batches:', {
               rawResponse: prepareResponse,
               hasSuccess: 'success' in prepareResponse,
               successValue: prepareResponse.success,
-              hasBurnTransactions: 'burnTransactions' in prepareResponse,
-              burnTransactionsValue: prepareResponse.burnTransactions,
-              burnTransactionsType: typeof prepareResponse.burnTransactions,
-              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
+              hasBatches: 'batches' in prepareResponse,
+              batchesValue: prepareResponse.batches,
+              batchesType: typeof prepareResponse.batches,
+              batchesLength: Array.isArray(prepareResponse.batches) ? prepareResponse.batches.length : 'not array'
             });
 
-            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
-              console.error('❌ Traditional NFT Server response validation failed:', {
-                success: prepareResponse.success,
-                burnTransactions: prepareResponse.burnTransactions,
-                successCheck: !prepareResponse.success,
-                burnTransactionsCheck: !prepareResponse.burnTransactions
-              });
-              throw new Error('Server failed to prepare Traditional NFT burn transactions');
+            // 🚀 NEW: Handle multiple batches (max 5 NFTs per signature!)
+            if (!prepareResponse.batches || prepareResponse.batches.length === 0) {
+              throw new Error('No Traditional NFT burn batches prepared by server');
             }
 
-            const successfulBurns = [];
+            console.log(`🔥 Processing ${prepareResponse.totalBatches} batches for ${prepareResponse.totalNfts} Traditional NFTs (max 5 per signature)...`);
+
+            const allBatchResults = [];
             let totalRentRecovered = 0;
+            let totalBurned = 0;
 
-            // Process each prepared transaction
-            for (const burnTx of prepareResponse.burnTransactions) {
-              if (burnTx.error) {
-                console.error(`❌ Server error for Traditional NFT ${burnTx.nftId}:`, burnTx.error);
-                continue;
+            // Process each batch sequentially (user signs each one)
+            for (let i = 0; i < prepareResponse.batches.length; i++) {
+              const batch = prepareResponse.batches[i];
+              console.log(`🔐 Signing batch ${batch.batchIndex}/${prepareResponse.totalBatches} with ${batch.nftCount} Traditional NFTs...`);
+
+              if (!batch.transaction) {
+                throw new Error(`No transaction in batch ${batch.batchIndex}`);
               }
 
-              if (!burnTx.transaction) {
-                console.error(`❌ No transaction prepared for Traditional NFT ${burnTx.nftId}`);
-                continue;
+              if (!batch.nftIds || !Array.isArray(batch.nftIds)) {
+                throw new Error(`Invalid batch ${batch.batchIndex} format - missing nftIds array`);
               }
 
-              try {
-                console.log(`🔐 Signing and sending transaction for Traditional NFT: ${burnTx.nftId}`);
+              // Deserialize the batch transaction from base64 (versioned transaction for Traditional NFTs)
+              const transactionBuffer = Buffer.from(batch.transaction, 'base64');
+              const transaction = VersionedTransaction.deserialize(transactionBuffer);
 
-                // Deserialize the transaction from base64
-                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
-                const transaction = VersionedTransaction.deserialize(transactionBuffer);
+              // Sign this batch transaction
+              const signedTransaction = await signTransaction(transaction);
+              console.log(`✅ Batch ${batch.batchIndex} transaction signed for ${batch.nftCount} Traditional NFTs!`);
 
-                // Sign the transaction with the wallet
-                const signedTransaction = await signTransaction(transaction);
+              // Submit the signed batch transaction via server relay
+              console.log(`📡 Submitting batch ${batch.batchIndex} transaction via server relay...`);
+              const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+                signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                description: `Traditional NFT batch burn ${batch.batchIndex}: ${batch.nftCount} NFTs`,
+                skipPreflight: true
+              });
+              const relayResponse = await relayResponseRaw.json();
 
-                // Use server relay to submit transaction (bypasses 403 domain restrictions)
-                console.log('📡 Submitting Traditional NFT via server relay to bypass domain restrictions...');
-                const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
-                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
-                  description: `Traditional NFT burn: ${burnTx.nftId}`,
-                  skipPreflight: true
-                });
-                
-                const relayResponse = await relayResponseRaw.json();
+              if (!relayResponse.success || !relayResponse.signature) {
+                throw new Error(`Batch ${batch.batchIndex} relay failed: ${relayResponse.error || 'No signature returned'}`);
+              }
 
-                if (!relayResponse.success || !relayResponse.signature) {
-                  throw new Error(`Relay failed: ${relayResponse.error || 'No signature returned'}`);
-                }
+              const signature = relayResponse.signature;
+              console.log(`🚀 Batch ${batch.batchIndex} confirmed: ${signature}`);
 
-                const signature = relayResponse.signature;
-                console.log('🎉 Traditional NFT Transaction submitted successfully via relay:', signature);
-                
-                // Wait for confirmation with error handling (don't fail on confirmation timeout)
-                try {
-                  // We could add confirmation checking here if needed
-                  console.log('✅ Traditional NFT Transaction submitted with signature:', signature);
-                } catch (confirmError: any) {
-                  console.warn('Traditional NFT Transaction confirmation check failed but transaction was sent:', confirmError.message);
-                  console.warn('Traditional NFT Transaction signature:', signature);
-                  // Continue with success recording since transaction was sent
-                }
-
-                console.log('✅ Traditional NFT burned successfully:', signature);
-
-                totalRentRecovered += burnTx.expectedRent;
-
-                // Record the successful burn in our database
+              // Record each NFT burn in the database for this batch
+              for (const nftId of batch.nftIds) {
                 try {
                   await apiRequest('POST', '/api/nfts/burn/record', {
                     signature,
-                    nftMint: burnTx.nftId,
-                    rentRecovered: burnTx.expectedRent,
+                    nftMint: nftId,
+                    rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent evenly
                     walletAddress: wallet.publicKey.toString(),
                     nftType: 'standard',
                     success: true
                   });
-                  console.log('✅ Traditional NFT burn recorded in database');
                 } catch (recordError) {
-                  console.warn('⚠️ Failed to record Traditional NFT burn in database:', recordError);
-                }
-
-                successfulBurns.push({
-                  mint: burnTx.nftId,
-                  signature,
-                  rentRecovered: burnTx.expectedRent
-                });
-
-              } catch (signError) {
-                console.error(`❌ Failed to sign/send transaction for Traditional NFT ${burnTx.nftId}:`, {
-                  error: signError,
-                  message: signError instanceof Error ? signError.message : String(signError),
-                  stack: signError instanceof Error ? signError.stack : undefined,
-                  details: signError
-                });
-                
-                // Record the failed burn attempt
-                try {
-                  await apiRequest('POST', '/api/nfts/burn/record', {
-                    nftMint: burnTx.nftId,
-                    walletAddress: wallet.publicKey.toString(),
-                    nftType: 'standard',
-                    error: signError instanceof Error ? signError.message : 'Unknown error',
-                    success: false
-                  });
-                } catch (recordError) {
-                  console.warn('⚠️ Failed to record Traditional NFT burn failure in database:', recordError);
+                  console.warn(`⚠️ Failed to record Traditional NFT burn for ${nftId}:`, recordError);
                 }
               }
+
+              // Track batch results
+              allBatchResults.push({
+                batchIndex: batch.batchIndex,
+                signature,
+                nftIds: batch.nftIds,
+                nftCount: batch.nftCount,
+                rentRecovered: batch.expectedRent,
+                netAmount: batch.netAmount
+              });
+
+              totalRentRecovered += batch.expectedRent;
+              totalBurned += batch.nftCount;
+
+              console.log(`✅ Batch ${batch.batchIndex} processed: ${batch.nftCount} Traditional NFTs burned, ${batch.expectedRent} SOL recovered`);
             }
 
-            if (successfulBurns.length === 0) {
+            if (allBatchResults.length === 0 || totalBurned === 0) {
               throw new Error('No Traditional NFTs were successfully burned');
             }
 
-            console.log(`🎉 Successfully burned ${successfulBurns.length} Traditional NFTs!`);
+            console.log(`🎉 Successfully burned ${totalBurned} Traditional NFTs in ${allBatchResults.length} batches!`);
             console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
 
             // Optimistically remove burned Traditional NFTs from local state immediately
-            const burnedIds = successfulBurns.map(burn => burn.mint);
+            const burnedIds = allBatchResults.flatMap(batch => batch.nftIds);
             console.log(`🔥 Traditional NFT Debug: burnedIds:`, burnedIds);
             console.log(`🔥 Traditional NFT Debug: current nftData:`, nftData);
             
@@ -1347,9 +1317,9 @@ export default function SolRefund() {
             });
 
             // Show success message with green styling and transaction signature
-            const firstSignature = successfulBurns[0]?.signature || '';
+            const firstSignature = allBatchResults[0]?.signature || '';
             toast({
-              title: `Successfully burned ${successfulBurns.length} Traditional NFT${successfulBurns.length > 1 ? 's' : ''}`,
+              title: `Successfully burned ${totalBurned} Traditional NFT${totalBurned > 1 ? 's' : ''}`,
               description: `Transaction: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
             });
