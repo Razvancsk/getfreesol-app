@@ -22,7 +22,7 @@ import {
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { VersionedTransaction, Transaction } from '@solana/web3.js';
+import { VersionedTransaction } from '@solana/web3.js';
 import logoImage from '@assets/image_1757882056840.png';
 
 interface EmptyTokenAccount {
@@ -70,7 +70,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'scan' | 'burnTokens' | 'stats'>('scan');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -78,6 +78,11 @@ export default function SolRefund() {
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
+  
+  // Input field states for different wallet addresses
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [tokenWalletAddress, setTokenWalletAddress] = useState<string>('');
+  const [nftWalletAddress, setNftWalletAddress] = useState<string>('');
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -133,7 +138,7 @@ export default function SolRefund() {
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
     if (isConnected && publicKey && activeTab !== 'referrals') {
-      if (activeTab === 'reclaim') {
+      if (activeTab === 'scan') {
         scanMutation.mutate(publicKey.toString());
       } else if (activeTab === 'burnTokens') {
         if (burnSubTab === 'tokens') {
@@ -705,12 +710,12 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      // Get the NFT data to group by type
+      // Get the NFT data to prepare batch request
       if (!nftData || !nftData.nfts) {
         throw new Error('No NFT data available');
       }
 
-      // Find the selected NFTs and prepare data for batch burning
+      // Find the selected NFTs
       const selectedNfts = nftData.nfts.filter((nft: any) => {
         const nftId = nft.mint || nft.id || nft.assetId;
         return selectedNftIds.includes(nftId);
@@ -722,218 +727,274 @@ export default function SolRefund() {
 
       console.log(`🔥 Starting batch burn for ${selectedNfts.length} NFTs...`);
 
-      // Prepare NFT data for the batch endpoint
+      // Prepare NFT data for batch endpoint
       const nftsForBatch = selectedNfts.map((nft: any) => ({
-        id: nft.mint || nft.id || nft.assetId,
-        type: nft.type === 'cnft' ? 'core' : nft.type, // Skip cNFTs by treating as unsupported, map others correctly
-        mint: nft.mint || nft.id || nft.assetId,
+        type: nft.type,
+        mint: nft.mint,
+        assetId: nft.id || nft.assetId,
         tokenAccount: nft.tokenAccount,
-        collection: nft.collection,
-        masterEdition: nft.masterEdition, 
-        metadata: nft.metadata,
-        ruleSet: nft.ruleSet,
-        name: nft.name
-      })).filter(nft => nft.type !== 'cnft'); // Filter out compressed NFTs
+        collection: nft.collection?.id,
+        ruleSet: nft.ruleSet
+      })).filter(nft => nft.type !== 'cnft'); // Skip cNFTs for now
 
       if (nftsForBatch.length === 0) {
-        throw new Error('No supported NFTs selected (compressed NFTs are not supported)');
+        throw new Error('No supported NFTs selected (cNFTs not yet supported in batch)');
       }
 
-      // Call the new batch burning endpoint
-      console.log(`📦 Calling batch burn endpoint for ${nftsForBatch.length} NFTs...`);
-      const batchResponse = await apiRequest('POST', '/api/nfts/burn/batch', {
-        nfts: nftsForBatch,
-        walletAddress: publicKey.toString()
+      // Call batch burn endpoint
+      console.log(`📦 Preparing batch burn for ${nftsForBatch.length} NFTs...`);
+      const batchResponse = await apiRequest('POST', '/api/nfts/prepare-burn-batch', {
+        walletAddress: publicKey.toString(),
+        nfts: nftsForBatch
       });
 
       const batchData = await batchResponse.json();
-      console.log('🔧 Server prepared batch transactions:', batchData);
-
-      if (!batchData.success || !batchData.batchTransactions || batchData.batchTransactions.length === 0) {
-        throw new Error(batchData.message || 'Failed to prepare batch transactions');
+      
+      if (!batchData.success || !batchData.txs || batchData.txs.length === 0) {
+        throw new Error(batchData.error || 'Failed to prepare batch burn transactions');
       }
 
-      console.log(`🔐 Signing ${batchData.batchTransactions.length} batch transactions...`);
+      console.log(`🔧 Server prepared ${batchData.txs.length} batch transactions for ${nftsForBatch.length} NFTs`);
 
-      // Convert base64 transactions to Transaction objects
-      const transactions = batchData.batchTransactions.map((batch: any) => {
-        const txBuffer = Buffer.from(batch.transaction, 'base64');
-        return Transaction.from(txBuffer);
-      });
+      const results = [];
+      let totalBurnedCount = 0;
 
-      let signedTransactions;
-      let successfulBurns = 0;
-      let totalRecovered = 0;
-
-      try {
-        // Try to sign all transactions at once if wallet supports it
-        if (wallet.signAllTransactions) {
-          console.log('📝 Using signAllTransactions for batch signing...');
-          signedTransactions = await wallet.signAllTransactions(transactions);
-        } else {
-          console.log('📝 Signing transactions individually...');
-          signedTransactions = [];
-          for (let i = 0; i < transactions.length; i++) {
-            console.log(`🔐 Signing transaction ${i + 1}/${transactions.length}...`);
-            const signed = await wallet.signTransaction(transactions[i]);
-            signedTransactions.push(signed);
-          }
-        }
-
-        // Submit each signed transaction
-        for (let i = 0; i < signedTransactions.length; i++) {
-          const batch = batchData.batchTransactions[i];
-          const signedTx = signedTransactions[i];
+      // Process each batch transaction
+      for (let i = 0; i < batchData.txs.length; i++) {
+        const txBase64 = batchData.txs[i];
+        const batchInfo = batchData.batchTransactions[i];
+        
+        try {
+          console.log(`🔐 Signing batch transaction ${i + 1}/${batchData.txs.length} (${batchInfo.count} NFTs)`);
           
-          try {
-            console.log(`📡 Submitting batch transaction ${i + 1}/${signedTransactions.length}...`);
-            
-            // Submit the signed transaction
-            const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-              skipPreflight: false,
-              maxRetries: 3
-            });
+          // Decode and sign the transaction
+          const transaction = web3.Transaction.from(Buffer.from(txBase64, 'base64'));
+          
+          // Sign transaction with wallet
+          const signedTransaction = await wallet.signTransaction!(transaction);
+          
+          // Send the signed transaction
+          const connection = new web3.Connection(
+            import.meta.env.VITE_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+            'confirmed'
+          );
+          
+          const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+          });
 
-            // Wait for confirmation
-            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-            
-            if (!confirmation.value.err) {
-              console.log(`✅ Batch transaction ${i + 1} confirmed: ${signature}`);
-              successfulBurns += batch.items.length;
-              totalRecovered += batch.netAmount;
+          // Confirm the transaction
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+          
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          }
 
-              // Record each NFT burn in the batch
-              for (const item of batch.items) {
-                try {
-                  await apiRequest('POST', '/api/nfts/burn/record', {
-                    nftId: item.id,
-                    signature: signature,
-                    walletAddress: publicKey.toString(),
-                    success: true,
-                    rentRecovered: item.expectedRent,
-                    fees: item.fees
-                  });
-                } catch (recordError) {
-                  console.warn(`Failed to record burn for NFT ${item.id}:`, recordError);
-                }
-              }
-            } else {
-              console.error(`❌ Batch transaction ${i + 1} failed:`, confirmation.value.err);
-              // Record failures for NFTs in this batch
-              for (const item of batch.items) {
-                try {
-                  await apiRequest('POST', '/api/nfts/burn/record', {
-                    nftId: item.id,
-                    signature: signature,
-                    walletAddress: publicKey.toString(),
-                    success: false,
-                    error: JSON.stringify(confirmation.value.err)
-                  });
-                } catch (recordError) {
-                  console.warn(`Failed to record failed burn for NFT ${item.id}:`, recordError);
-                }
-              }
-            }
-          } catch (txError) {
-            console.error(`❌ Failed to submit batch transaction ${i + 1}:`, txError);
-            
-            // Record failures for NFTs in this batch
-            for (const item of batch.items) {
-              try {
-                await apiRequest('POST', '/api/nfts/burn/record', {
-                  nftId: item.id,
-                  walletAddress: publicKey.toString(),
-                  success: false,
-                  error: txError instanceof Error ? txError.message : 'Transaction submission failed'
-                });
-              } catch (recordError) {
-                console.warn(`Failed to record failed burn for NFT ${item.id}:`, recordError);
-              }
+          console.log(`✅ Batch transaction ${i + 1} confirmed: ${signature}`);
+          
+          // Record each NFT burn with server
+          for (const nftId of batchInfo.nftIds) {
+            try {
+              await apiRequest('POST', '/api/nfts/burn/record', {
+                nftMint: nftId,
+                signature: signature,
+                success: true,
+                walletAddress: publicKey.toString(),
+                nftType: batchInfo.type,
+                rentRecovered: (batchInfo.expectedRent / batchInfo.count).toFixed(6) // Estimate per NFT
+              });
+            } catch (recordError) {
+              console.log(`⚠️ Failed to record burn for ${nftId}:`, recordError);
             }
           }
-        }
 
-        if (successfulBurns === 0) {
-          throw new Error('No NFTs were successfully burned');
-        }
+          results.push({
+            type: batchInfo.type,
+            nftsProcessed: batchInfo.count,
+            totalAttempted: batchInfo.count,
+            solRecovered: batchInfo.expectedRent,
+            netAmount: batchInfo.expectedRent - batchInfo.platformFee - batchInfo.referralFee,
+            feeAmount: batchInfo.platformFee + batchInfo.referralFee,
+            signatures: [signature],
+            signature: signature
+          });
 
-        console.log(`🎉 Successfully burned ${successfulBurns} NFTs, recovered ${totalRecovered} SOL`);
-        
-        return {
-          success: true,
-          burnedCount: successfulBurns,
-          totalRecovered,
-          message: `Successfully burned ${successfulBurns} NFT${successfulBurns > 1 ? 's' : ''}`
-        };
+          totalBurnedCount += batchInfo.count;
 
-      } catch (signingError) {
-        console.error('❌ Failed to sign transactions:', signingError);
-        
-        // Record all as failures
-        for (const nft of nftsForBatch) {
-          try {
-            await apiRequest('POST', '/api/nfts/burn/record', {
-              nftId: nft.id,
-              walletAddress: publicKey.toString(),
-              success: false,
-              error: signingError instanceof Error ? signingError.message : 'Transaction signing failed'
-            });
-          } catch (recordError) {
-            console.warn(`Failed to record failed burn for NFT ${nft.id}:`, recordError);
+        } catch (batchError: any) {
+          console.error(`❌ Batch transaction ${i + 1} failed:`, batchError);
+          
+          // Record failed burns
+          for (const nftId of batchInfo.nftIds) {
+            try {
+              await apiRequest('POST', '/api/nfts/burn/record', {
+                nftMint: nftId,
+                signature: '',
+                success: false,
+                error: batchError.message || 'Batch transaction failed',
+                walletAddress: publicKey.toString(),
+                nftType: batchInfo.type
+              });
+            } catch (recordError) {
+              console.log(`⚠️ Failed to record failed burn for ${nftId}:`, recordError);
+            }
           }
+
+          results.push({
+            type: batchInfo.type,
+            nftsProcessed: 0,
+            totalAttempted: batchInfo.count,
+            solRecovered: 0,
+            netAmount: 0,
+            feeAmount: 0,
+            signatures: [],
+            error: batchError.message || 'Batch transaction failed'
+          });
         }
-        
-        throw signingError;
+      }
+
+      if (totalBurnedCount === 0) {
+        throw new Error('No NFTs were successfully burned');
+      }
+
+      return results;
+    },
+    onSuccess: (results) => {
+      if (!results) return;
+      
+      const totalBurned = results.reduce((sum, r) => sum + (r.nftsProcessed || 0), 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
+      const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
+
+      // Optimistically remove burned NFTs from local state
+      if (totalBurned > 0) {
+        const allBurnedIds: string[] = [];
+        results.forEach(result => {
+          if (result.signatures && result.signatures.length > 0) {
+            // For batch results, we need to track the NFT IDs that were burned
+            // This will be handled by the batch transaction data
+          }
+        });
+
+        // Clear burned NFTs from selection
+        setSelectedNfts(new Set());
+
+        // Update local NFT data to remove burned NFTs
+        setNftData((prev: any) => {
+          if (!prev?.nfts) return prev;
+          
+          // For now, we'll invalidate and refetch rather than trying to track exact IDs
+          // This ensures consistency with the server state
+          return prev;
+        });
+
+        // Show success message
+        const firstSignature = results.find(r => r.signatures?.[0])?.signatures?.[0] || '';
+        toast({
+          title: `Successfully burned ${totalBurned} NFT${totalBurned > 1 ? 's' : ''}!`,
+          description: totalSolRecovered > 0 ? 
+            `Recovered ${totalNetAmount.toFixed(6)} SOL (after fees)` :
+            `Transaction: ${firstSignature.substring(0, 8)}...`,
+          className: "bg-green-600 text-white border-green-600",
+        });
+      }
+
+      // Refresh NFT data after successful burns
+      if (publicKey) {
+        scanNftsMutation.mutate(publicKey.toString());
+      }
+
+      // Refresh stats if SOL was recovered
+      if (totalSolRecovered > 0) {
+        queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
       }
     },
-    onSuccess: (result) => {
-      console.log(`🎉 NFT burning completed:`, result);
-      
-      toast({
-        title: "Success!",
-        description: result.message,
-        variant: "default",
-      });
-
-      // Clear selection after successful burn
-      setSelectedNfts(new Set());
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/nfts/scan'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions/history'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
-    },
-    onError: (error) => {
-      console.error('❌ NFT burning failed:', error);
+    onError: (error: any) => {
       console.error('Error burning NFTs:', error);
-      
+
+      let errorMessage = "Failed to burn NFTs. Please try again.";
+      if (error.message) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction cancelled by user.";
+        } else if (error.message.includes('cNFTs not yet supported')) {
+          errorMessage = "Compressed NFTs are not yet supported in batch burning.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to burn NFTs',
+        title: "Burn Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   });
 
-
-  // Handler functions
-  const handleScanWallet = () => {
-    if (publicKey) {
-      scanMutation.mutate(publicKey.toString());
+  const handleBurnToken = (tokenMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
     }
+    burnTokenMutation.mutate(tokenMint);
   };
 
-  const handleScanTokens = () => {
-    if (publicKey) {
-      scanTokensMutation.mutate(publicKey.toString());
+  const handleBurnNFT = (nftMint: string) => {
+    if (!publicKey) {
+      toast({
+        title: "Error", 
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
     }
+    burnTokenMutation.mutate(nftMint);
   };
 
-  const handleScanNfts = () => {
-    if (publicKey) {
-      scanNftsMutation.mutate(publicKey.toString());
-    }
+  const calculateRefund = () => {
+    if (!scanResult) return { total: 0, donation: 0, net: 0 };
+
+    const total = parseFloat(scanResult.totalReclaimable);
+    const donation = total * 0.15; // 15% service fee
+    const net = total - donation; // 85% to user
+
+    return { total, donation, net };
   };
+
+  const refundCalc = calculateRefund();
+
+  // Clean up selected NFTs when wallet disconnects or tab changes
+  useEffect(() => {
+    if (activeTab !== 'burnTokens' || burnSubTab !== 'nft') {
+      setSelectedNfts(new Set());
+    }
+  }, [activeTab, burnSubTab]);
+
+  // Clear selected NFTs when NFT list changes
+  useEffect(() => {
+    const nftList = nftData?.nfts || [];
+    if (nftList.length === 0) {
+      setSelectedNfts(new Set());
+    } else {
+      // Remove any selected NFTs that are no longer in the current list
+      const currentNftIds = new Set(nftList.map(nft => nft.id));
+      setSelectedNfts(prev => {
+        const filteredSelection = new Set<string>();
+        prev.forEach(id => {
+          if (currentNftIds.has(id)) {
+            filteredSelection.add(id);
+          }
+        });
+        return filteredSelection;
+      });
+    }
+  }, [nftData]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -941,172 +1002,624 @@ export default function SolRefund() {
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-3">
-              <img src={logoImage} alt="Logo" className="h-8 w-8 rounded-md" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-                Get Your SOL Back!
-              </h1>
+            {/* Top row: Logo and Wallet Connection (mobile) */}
+            <div className="flex items-center justify-between">
+              {/* Logo */}
+              <div className="flex items-center">
+                <img 
+                  src={logoImage}
+                  alt="Get your SOL back!"
+                  className="h-[100px] w-[100px]"
+                />
+              </div>
+
+              {/* Mobile Wallet Connection */}
+              <div className="lg:hidden flex items-center space-x-2">
+                {/* Social Media Buttons */}
+                <div className="flex items-center space-x-1">
+                  <a
+                    href="https://x.com/getfreesol_xyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-x"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="Follow us on X (Twitter)"
+                  >
+                    <SiX className="h-4 w-4 text-white" />
+                  </a>
+                  <a
+                    href="https://discord.gg/tSBMgYcZaK"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-discord"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="Join our Discord"
+                  >
+                    <SiDiscord className="h-4 w-4 text-white" />
+                  </a>
+                </div>
+                <WalletMultiButton className="wallet-adapter-button-trigger" />
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <WalletMultiButton />
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex lg:items-center lg:space-x-4">
+              {/* Left: Navigation */}
+              <div className="flex items-center space-x-6">
+                <button
+                  onClick={() => setActiveTab('scan')}
+                  data-testid="nav-empty-accounts"
+                  className={`font-medium transition-colors ${
+                    activeTab === 'scan'
+                      ? 'text-green-400'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Empty Accounts
+                </button>
+                <button
+                  onClick={() => setActiveTab('burnTokens')}
+                  data-testid="nav-burn-tokens"
+                  className={`font-medium transition-colors ${
+                    activeTab === 'burnTokens'
+                      ? 'text-green-400'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Burn Tokens
+                </button>
+                <button
+                  onClick={() => setActiveTab('stats')}
+                  data-testid="nav-statistics"
+                  className={`font-medium transition-colors ${
+                    activeTab === 'stats'
+                      ? 'text-green-400'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Statistics
+                </button>
+              </div>
+
+              {/* Right: Social + Wallet */}
+              <div className="flex items-center space-x-3">
+                {/* Social Media Buttons */}
+                <div className="flex items-center space-x-2">
+                  <a
+                    href="https://x.com/getfreesol_xyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-x-desktop"
+                    className="flex items-center justify-center w-9 h-9 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
+                    title="Follow us on X (Twitter)"
+                  >
+                    <SiX className="h-4 w-4 text-white" />
+                  </a>
+                  <a
+                    href="https://discord.gg/tSBMgYcZaK"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-discord-desktop"
+                    className="flex items-center justify-center w-9 h-9 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg transition-colors border border-purple-500/30"
+                    title="Join our Discord"
+                  >
+                    <SiDiscord className="h-4 w-4 text-white" />
+                  </a>
+                </div>
+
+                {/* Wallet Connection */}
+                <WalletMultiButton className="wallet-adapter-button-trigger" />
+              </div>
             </div>
           </div>
 
           {/* Main Content */}
-          {isConnected && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Scan Wallet Section */}
-              <div className="lg:col-span-1">
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  <h2 className="text-xl font-bold text-white mb-4">Scan Your Wallet</h2>
-                  <div className="space-y-4">
-                    <Button 
-                      onClick={handleScanWallet}
-                      disabled={scanMutation.isPending}
-                      className="w-full bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white"
+          {activeTab === 'scan' && (
+            <Card className="bg-gradient-to-br from-slate-800/50 to-purple-800/30 backdrop-blur-sm border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Search className="mr-2 h-5 w-5" />
+                  Scan for Empty Token Accounts
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Find and reclaim SOL from dormant token accounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="Enter Solana wallet address..."
+                        value={walletAddress}
+                        onChange={(e) => setWalletAddress(e.target.value)}
+                        className="bg-slate-700/50 border-purple-500/30 text-white placeholder-gray-400"
+                        data-testid="input-wallet-address"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleScan}
+                      disabled={!walletAddress || scanMutation.isPending}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      data-testid="button-scan"
                     >
                       {scanMutation.isPending ? (
-                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Scanning...
+                        </>
                       ) : (
-                        <Search className="h-4 w-4 mr-2" />
+                        <>
+                          <Search className="mr-2 h-4 w-4" />
+                          Scan Wallet
+                        </>
                       )}
-                      Scan SOL Refunds
-                    </Button>
-                    
-                    <Button 
-                      onClick={handleScanTokens}
-                      disabled={scanTokensMutation.isPending}
-                      className="w-full bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white"
-                    >
-                      {scanTokensMutation.isPending ? (
-                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Search className="h-4 w-4 mr-2" />
-                      )}
-                      Scan Tokens
-                    </Button>
-                    
-                    <Button 
-                      onClick={handleScanNfts}
-                      disabled={scanNftsMutation.isPending}
-                      className="w-full bg-black/20 backdrop-blur-sm border border-purple-500/30 hover:bg-black/30 hover:border-purple-400/50 text-white"
-                    >
-                      {scanNftsMutation.isPending ? (
-                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Search className="h-4 w-4 mr-2" />
-                      )}
-                      Scan NFTs
                     </Button>
                   </div>
-                </div>
-              </div>
 
-              {/* NFT Burning Section */}
-              {nftData && nftData.nfts && nftData.nfts.length > 0 && (
-                <div className="lg:col-span-2">
-                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold text-white">Burn NFTs</h2>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          onClick={() => setSelectedNfts(new Set(nftData.nfts.map((nft: any) => nft.id || nft.mint || nft.assetId)))}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                        >
-                          Select All
-                        </Button>
-                        <Button
-                          onClick={() => setSelectedNfts(new Set())}
-                          variant="outline"
-                          size="sm"
-                          className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                        >
-                          Clear All
-                        </Button>
-                        <Button
-                          onClick={() => burnNftsMutation.mutate(Array.from(selectedNfts))}
-                          disabled={selectedNfts.size === 0 || burnNftsMutation.isPending}
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          {burnNftsMutation.isPending ? (
-                            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Flame className="h-4 w-4 mr-2" />
-                          )}
-                          Burn Selected ({selectedNfts.size})
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-purple-300">
-                      {nftData.nfts.map((nft: any) => {
-                        const nftId = nft.id || nft.mint || nft.assetId;
-                        const isSelected = selectedNfts.has(nftId);
-                        
-                        return (
-                          <div
-                            key={nftId}
-                            className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                              isSelected 
-                                ? 'border-purple-500 bg-purple-500/20' 
-                                : 'border-purple-500/30 hover:border-purple-400/50'
-                            }`}
-                            onClick={() => {
-                              const newSet = new Set(selectedNfts);
-                              if (isSelected) {
-                                newSet.delete(nftId);
-                              } else {
-                                newSet.add(nftId);
-                              }
-                              setSelectedNfts(newSet);
-                            }}
-                          >
-                            <div className="aspect-square">
-                              {nft.image ? (
-                                <img 
-                                  src={nft.image} 
-                                  alt={nft.name || 'NFT'} 
-                                  className="w-full h-full object-cover rounded-lg"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-purple-800/50 rounded-lg flex items-center justify-center">
-                                  <span className="text-purple-300">No Image</span>
-                                </div>
-                              )}
-                            </div>
-                            {isSelected && (
-                              <div className="absolute top-2 right-2 bg-purple-500 rounded-full w-6 h-6 flex items-center justify-center">
-                                <Check className="h-4 w-4 text-white" />
-                              </div>
-                            )}
-                            <div className="p-2">
-                              <p className="text-sm text-white font-medium truncate">
-                                {nft.name || 'Unnamed NFT'}
-                              </p>
-                              <p className="text-xs text-purple-300 capitalize">
-                                {nft.type || 'Unknown'}
-                              </p>
-                            </div>
+                  {scanResult && (
+                    <div className="mt-6 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                          <div className="text-2xl font-bold text-green-400">
+                            {scanResult.emptyAccounts?.length || 0}
                           </div>
-                        );
-                      })}
+                          <div className="text-sm text-gray-300">Empty Accounts</div>
+                        </div>
+                        <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                          <div className="text-2xl font-bold text-yellow-400">
+                            {parseFloat(scanResult.totalReclaimable || '0').toFixed(4)} SOL
+                          </div>
+                          <div className="text-sm text-gray-300">Total Reclaimable</div>
+                        </div>
+                        <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                          <div className="text-2xl font-bold text-blue-400">
+                            {refundCalc.net.toFixed(4)} SOL
+                          </div>
+                          <div className="text-sm text-gray-300">After Service Fee</div>
+                        </div>
+                      </div>
+
+                      {scanResult.emptyAccounts && scanResult.emptyAccounts.length > 0 && (
+                        <Button
+                          onClick={handleClaimAll}
+                          disabled={claimAllMutation.isPending}
+                          className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
+                          data-testid="button-claim-all"
+                        >
+                          {claimAllMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Claiming SOL...
+                            </>
+                          ) : (
+                            <>
+                              <Coins className="mr-2 h-4 w-4" />
+                              Claim {refundCalc.net.toFixed(4)} SOL
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           )}
 
-          {!isConnected && (
-            <div className="text-center py-12">
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-8">
-                <Wallet className="h-16 w-16 text-purple-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
-                <p className="text-purple-300">Connect your wallet to start reclaiming SOL and burning NFTs</p>
-              </div>
-            </div>
+          {/* Burn Tokens Tab */}
+          {activeTab === 'burnTokens' && (
+            <Card className="bg-gradient-to-br from-slate-800/50 to-purple-800/30 backdrop-blur-sm border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Flame className="mr-2 h-5 w-5" />
+                  Burn Tokens & NFTs
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Burn unwanted tokens and NFTs to reclaim SOL
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Sub-navigation */}
+                <div className="flex space-x-4 mb-6">
+                  <button
+                    onClick={() => setBurnSubTab('token')}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      burnSubTab === 'token'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-700/50 text-gray-300 hover:text-white'
+                    }`}
+                    data-testid="tab-burn-tokens"
+                  >
+                    Tokens
+                  </button>
+                  <button
+                    onClick={() => setBurnSubTab('nft')}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      burnSubTab === 'nft'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-700/50 text-gray-300 hover:text-white'
+                    }`}
+                    data-testid="tab-burn-nfts"
+                  >
+                    NFTs
+                  </button>
+                </div>
+
+                {/* Token Burning Section */}
+                {burnSubTab === 'token' && (
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Enter wallet address to scan for tokens..."
+                            value={tokenWalletAddress}
+                            onChange={(e) => setTokenWalletAddress(e.target.value)}
+                            className="bg-slate-700/50 border-purple-500/30 text-white placeholder-gray-400"
+                            data-testid="input-token-wallet-address"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleScanTokens}
+                          disabled={!tokenWalletAddress || scanTokensMutation.isPending}
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                          data-testid="button-scan-tokens"
+                        >
+                          {scanTokensMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Scanning...
+                            </>
+                          ) : (
+                            <>
+                              <Search className="mr-2 h-4 w-4" />
+                              Scan for Tokens
+                            </>
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Token List */}
+                      {tokenList.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-white">
+                              Found {tokenList.length} Tokens
+                            </h3>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedTokens(new Set(tokenList.map(token => token.mint)))}
+                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                                data-testid="button-select-all-tokens"
+                              >
+                                Select All
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedTokens(new Set())}
+                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                                data-testid="button-deselect-all-tokens"
+                              >
+                                Deselect All
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                            {tokenList.map((token, index) => {
+                              const isSelected = selectedTokens.has(token.mint);
+                              return (
+                                <div
+                                  key={`${token.mint}-${index}`}
+                                  onClick={() => {
+                                    setSelectedTokens(prev => {
+                                      const newSet = new Set(prev);
+                                      if (isSelected) {
+                                        newSet.delete(token.mint);
+                                      } else {
+                                        newSet.add(token.mint);
+                                      }
+                                      return newSet;
+                                    });
+                                  }}
+                                  className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
+                                    isSelected 
+                                      ? 'border-green-400/50 bg-green-900/20' 
+                                      : 'border-purple-500/30 hover:border-purple-400/50'
+                                  }`}
+                                  data-testid={`token-card-${token.mint}`}
+                                >
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <h4 className="font-medium text-white truncate">
+                                        {token.name || 'Unknown Token'}
+                                      </h4>
+                                      {isSelected && (
+                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-300">
+                                      <div>Balance: {token.balance}</div>
+                                      <div className="truncate">Mint: {token.mint}</div>
+                                      <div>Rent: ~{token.estimatedRent} SOL</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {selectedTokens.size > 0 && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-purple-500/30">
+                              <div className="text-sm text-gray-300">
+                                {selectedTokens.size} tokens selected
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  const selectedMints = Array.from(selectedTokens);
+                                  selectedMints.forEach(mint => handleBurnToken(mint));
+                                }}
+                                disabled={burnTokenMutation.isPending}
+                                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white"
+                                data-testid="button-burn-selected-tokens"
+                              >
+                                {burnTokenMutation.isPending ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Burning...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Flame className="mr-2 h-4 w-4" />
+                                    Burn Selected Tokens
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* NFT Burning Section with Batch Support */}
+                {burnSubTab === 'nft' && (
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Enter wallet address to scan for NFTs..."
+                            value={nftWalletAddress}
+                            onChange={(e) => setNftWalletAddress(e.target.value)}
+                            className="bg-slate-700/50 border-purple-500/30 text-white placeholder-gray-400"
+                            data-testid="input-nft-wallet-address"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleScanNfts}
+                          disabled={!nftWalletAddress || scanNftsMutation.isPending}
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                          data-testid="button-scan-nfts"
+                        >
+                          {scanNftsMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Scanning...
+                            </>
+                          ) : (
+                            <>
+                              <Search className="mr-2 h-4 w-4" />
+                              Scan for NFTs
+                            </>
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* NFT List with Batch Burning Support */}
+                      {(nftData?.nfts || []).length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-white">
+                              Found {(nftData?.nfts || []).length} NFTs (Batch Burning Enabled!)
+                            </h3>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedNfts(new Set((nftData?.nfts || []).map(nft => nft.id)))}
+                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                                data-testid="button-select-all-nfts"
+                              >
+                                Select All
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedNfts(new Set())}
+                                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                                data-testid="button-deselect-all-nfts"
+                              >
+                                Deselect All
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-purple-600">
+                            {(nftData?.nfts || []).map((nft, index) => {
+                              const nftId = nft.id || nft.mint || nft.assetId;
+                              const isSelected = selectedNfts.has(nftId);
+                              
+                              return (
+                                <div
+                                  key={nftId}
+                                  className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
+                                    isSelected 
+                                      ? 'border-green-400/50 bg-green-900/20'
+                                      : 'border-purple-500/30 hover:border-purple-400/50'
+                                  }`}
+                                  onClick={() => {
+                                    setSelectedNfts(prev => {
+                                      const newSet = new Set(prev);
+                                      if (isSelected) {
+                                        newSet.delete(nftId);
+                                      } else {
+                                        newSet.add(nftId);
+                                      }
+                                      return newSet;
+                                    });
+                                  }}
+                                  data-testid={`nft-card-${nftId}`}
+                                >
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <h4 className="font-medium text-white truncate">
+                                        {nft.name || 'Unknown NFT'}
+                                      </h4>
+                                      {isSelected && (
+                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-300">
+                                      <div className="mb-1">
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                          nft.type === 'core' ? 'bg-blue-600/30 text-blue-300' :
+                                          nft.type === 'pnft' ? 'bg-purple-600/30 text-purple-300' :
+                                          nft.type === 'standard' ? 'bg-green-600/30 text-green-300' :
+                                          'bg-gray-600/30 text-gray-300'
+                                        }`}>
+                                          {nft.type === 'core' ? 'Core NFT' :
+                                           nft.type === 'pnft' ? 'Programmable' :
+                                           nft.type === 'standard' ? 'Standard' :
+                                           'Unknown'}
+                                        </span>
+                                      </div>
+                                      <div className="truncate">ID: {nftId}</div>
+                                      <div>Rent: ~{nft.estimatedRent || '0.002'} SOL</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {selectedNfts.size > 0 && (
+                            <div className="space-y-4 pt-4 border-t border-purple-500/30">
+                              <div className="bg-slate-700/30 rounded-lg p-4">
+                                <h4 className="text-white font-medium mb-2">🚀 Batch Burning Preview</h4>
+                                <div className="text-sm text-gray-300 space-y-1">
+                                  <div>✨ Selected NFTs: {selectedNfts.size}</div>
+                                  <div>⚡ Estimated Signatures Required: {
+                                    (() => {
+                                      const selectedNftsList = (nftData?.nfts || []).filter(nft => selectedNfts.has(nft.id || nft.mint || nft.assetId));
+                                      const typeGroups = selectedNftsList.reduce((acc, nft) => {
+                                        const type = nft.type || 'unknown';
+                                        acc[type] = (acc[type] || 0) + 1;
+                                        return acc;
+                                      }, {} as Record<string, number>);
+                                      
+                                      let signatures = 0;
+                                      if (typeGroups.core) signatures += 1; // Core NFTs batch together
+                                      if (typeGroups.standard) signatures += 1; // Standard NFTs batch together  
+                                      if (typeGroups.pnft) signatures += 1; // Programmable NFTs batch together
+                                      if (typeGroups.cnft) signatures += typeGroups.cnft; // cNFTs require individual signatures
+                                      
+                                      return signatures;
+                                    })()
+                                  }</div>
+                                  <div className="text-xs text-purple-300">
+                                    💡 Same NFT types burn together in one transaction!
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div className="text-sm text-gray-300">
+                                  Ready for batch burning: {selectedNfts.size} NFTs
+                                </div>
+                                <Button
+                                  onClick={() => {
+                                    const selectedNftsList = (nftData?.nfts || []).filter(nft => selectedNfts.has(nft.id || nft.mint || nft.assetId));
+                                    burnNftsMutation.mutate(selectedNftsList);
+                                  }}
+                                  disabled={burnNftsMutation.isPending}
+                                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white"
+                                  data-testid="button-burn-selected-nfts"
+                                >
+                                  {burnNftsMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Batch Burning...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Flame className="mr-2 h-4 w-4" />
+                                      Batch Burn Selected NFTs
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Statistics Tab */}
+          {activeTab === 'stats' && (
+            <Card className="bg-gradient-to-br from-slate-800/50 to-purple-800/30 backdrop-blur-sm border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <BarChart3 className="mr-2 h-5 w-5" />
+                  Platform Statistics
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Track recovery progress and platform activity
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-green-400">
+                      {stats?.totalUsers || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Total Users</div>
+                  </div>
+                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-yellow-400">
+                      {stats?.totalSolRecovered || '0.0000'} SOL
+                    </div>
+                    <div className="text-sm text-gray-300">SOL Recovered</div>
+                  </div>
+                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-400">
+                      {stats?.totalTransactions || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Transactions</div>
+                  </div>
+                  <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-400">
+                      {stats?.totalNftsBurned || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">NFTs Burned</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
