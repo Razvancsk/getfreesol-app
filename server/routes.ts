@@ -11,6 +11,7 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
 import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
+import { transferSol } from '@metaplex-foundation/mpl-toolbox';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 // Metaplex Token Metadata for pNFT burning
 import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata, fetchDigitalAsset, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
@@ -2299,49 +2300,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add platform fee transfer if there are fees to collect
           const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
           if (platformFeeLamports > 0) {
-            // Create SOL transfer instruction using Solana web3.js SystemProgram
-            const platformTransferIx = SystemProgram.transfer({
-              fromPubkey: new PublicKey(walletAddress),
-              toPubkey: new PublicKey(platformWalletAddress),
-              lamports: platformFeeLamports,
-            });
-            
-            // Convert web3.js instruction to UMI instruction
-            const platformTransferUmi = {
-              instruction: {
-                programId: umiPublicKey(SystemProgram.programId.toString()),
-                accounts: [
-                  { pubkey: umiPublicKey(walletAddress), isSigner: true, isWritable: true },
-                  { pubkey: umiPublicKey(platformWalletAddress), isSigner: false, isWritable: true },
-                ],
-                data: new Uint8Array(platformTransferIx.data),
+            const platformTransfer = transferSol(umi, {
+              source: umi.identity,
+              destination: umiPublicKey(platformWalletAddress),
+              amount: { 
+                basisPoints: BigInt(platformFeeLamports), 
+                identifier: 'SOL', 
+                decimals: 9 
               },
-            };
-            burnTx.add(platformTransferUmi);
+            });
+            burnTx = burnTx.add(platformTransfer);
             console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
           }
 
           // Add referral fee transfer if applicable
           if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
-            // Create SOL transfer instruction using Solana web3.js SystemProgram
-            const referralTransferIx = SystemProgram.transfer({
-              fromPubkey: new PublicKey(walletAddress),
-              toPubkey: new PublicKey(referralCodeData.walletAddress),
-              lamports: referralFeeLamports,
-            });
-            
-            // Convert web3.js instruction to UMI instruction
-            const referralTransferUmi = {
-              instruction: {
-                programId: umiPublicKey(SystemProgram.programId.toString()),
-                accounts: [
-                  { pubkey: umiPublicKey(walletAddress), isSigner: true, isWritable: true },
-                  { pubkey: umiPublicKey(referralCodeData.walletAddress), isSigner: false, isWritable: true },
-                ],
-                data: new Uint8Array(referralTransferIx.data),
+            const referralTransfer = transferSol(umi, {
+              source: umi.identity,
+              destination: umiPublicKey(referralCodeData.walletAddress),
+              amount: { 
+                basisPoints: BigInt(referralFeeLamports), 
+                identifier: 'SOL', 
+                decimals: 9 
               },
-            };
-            burnTx.add(referralTransferUmi);
+            });
+            burnTx = burnTx.add(referralTransfer);
             console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
           }
           
@@ -2575,49 +2558,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Add platform fee transfer if there are fees to collect
             if (platformFeeLamports > 0) {
-              // Create SOL transfer instruction using Solana web3.js SystemProgram
-              const platformTransferIx = SystemProgram.transfer({
-                fromPubkey: new PublicKey(walletAddress),
-                toPubkey: new PublicKey(platformWalletAddress),
-                lamports: platformFeeLamports,
-              });
-              
-              // Convert web3.js instruction to UMI instruction
-              const platformTransferUmi = {
-                instruction: {
-                  programId: umiPublicKey(SystemProgram.programId.toString()),
-                  accounts: [
-                    { pubkey: umiPublicKey(walletAddress), isSigner: true, isWritable: true },
-                    { pubkey: umiPublicKey(platformWalletAddress), isSigner: false, isWritable: true },
-                  ],
-                  data: new Uint8Array(platformTransferIx.data),
+              const platformTransfer = transferSol(umi, {
+                source: umi.identity,
+                destination: umiPublicKey(platformWalletAddress),
+                amount: { 
+                  basisPoints: BigInt(platformFeeLamports), 
+                  identifier: 'SOL', 
+                  decimals: 9 
                 },
-              };
-              burnTxWithFees = burnTxWithFees.add(platformTransferUmi);
+              });
+              burnTxWithFees = burnTxWithFees.add(platformTransfer);
               console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
             }
 
             // Add referral fee transfer if applicable
             if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
-              // Create SOL transfer instruction using Solana web3.js SystemProgram
-              const referralTransferIx = SystemProgram.transfer({
-                fromPubkey: new PublicKey(walletAddress),
-                toPubkey: new PublicKey(referralCodeData.walletAddress),
-                lamports: referralFeeLamports,
-              });
-              
-              // Convert web3.js instruction to UMI instruction
-              const referralTransferUmi = {
-                instruction: {
-                  programId: umiPublicKey(SystemProgram.programId.toString()),
-                  accounts: [
-                    { pubkey: umiPublicKey(walletAddress), isSigner: true, isWritable: true },
-                    { pubkey: umiPublicKey(referralCodeData.walletAddress), isSigner: false, isWritable: true },
-                  ],
-                  data: new Uint8Array(referralTransferIx.data),
+              const referralTransfer = transferSol(umi, {
+                source: umi.identity,
+                destination: umiPublicKey(referralCodeData.walletAddress),
+                amount: { 
+                  basisPoints: BigInt(referralFeeLamports), 
+                  identifier: 'SOL', 
+                  decimals: 9 
                 },
-              };
-              burnTxWithFees = burnTxWithFees.add(referralTransferUmi);
+              });
+              burnTxWithFees = burnTxWithFees.add(referralTransfer);
               console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
             }
 
@@ -2910,49 +2875,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Add platform fee transfer if there are fees to collect
             if (platformFeeLamports > 0) {
-              // Create SOL transfer instruction using Solana web3.js SystemProgram
-              const platformTransferIx = SystemProgram.transfer({
-                fromPubkey: new PublicKey(walletAddress),
-                toPubkey: new PublicKey(platformWalletAddress),
-                lamports: platformFeeLamports,
-              });
-              
-              // Convert web3.js instruction to UMI instruction
-              const platformTransferUmi = {
-                instruction: {
-                  programId: umiPublicKey(SystemProgram.programId.toString()),
-                  accounts: [
-                    { pubkey: umiPublicKey(walletAddress), isSigner: true, isWritable: true },
-                    { pubkey: umiPublicKey(platformWalletAddress), isSigner: false, isWritable: true },
-                  ],
-                  data: new Uint8Array(platformTransferIx.data),
+              const platformTransfer = transferSol(umi, {
+                source: umi.identity,
+                destination: umiPublicKey(platformWalletAddress),
+                amount: { 
+                  basisPoints: BigInt(platformFeeLamports), 
+                  identifier: 'SOL', 
+                  decimals: 9 
                 },
-              };
-              burnTxWithFees = burnTxWithFees.add(platformTransferUmi);
+              });
+              burnTxWithFees = burnTxWithFees.add(platformTransfer);
               console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
             }
 
             // Add referral fee transfer if applicable
             if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
-              // Create SOL transfer instruction using Solana web3.js SystemProgram
-              const referralTransferIx = SystemProgram.transfer({
-                fromPubkey: new PublicKey(walletAddress),
-                toPubkey: new PublicKey(referralCodeData.walletAddress),
-                lamports: referralFeeLamports,
-              });
-              
-              // Convert web3.js instruction to UMI instruction
-              const referralTransferUmi = {
-                instruction: {
-                  programId: umiPublicKey(SystemProgram.programId.toString()),
-                  accounts: [
-                    { pubkey: umiPublicKey(walletAddress), isSigner: true, isWritable: true },
-                    { pubkey: umiPublicKey(referralCodeData.walletAddress), isSigner: false, isWritable: true },
-                  ],
-                  data: new Uint8Array(referralTransferIx.data),
+              const referralTransfer = transferSol(umi, {
+                source: umi.identity,
+                destination: umiPublicKey(referralCodeData.walletAddress),
+                amount: { 
+                  basisPoints: BigInt(referralFeeLamports), 
+                  identifier: 'SOL', 
+                  decimals: 9 
                 },
-              };
-              burnTxWithFees = burnTxWithFees.add(referralTransferUmi);
+              });
+              burnTxWithFees = burnTxWithFees.add(referralTransfer);
               console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
             }
 
