@@ -2776,7 +2776,8 @@ export default function SolRefund() {
                   </div>
 
                   {/* NFT Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {nftData.nfts.map((nft: any) => {
                       // Use a stable identifier that works for all NFT types
                       const nftId = nft.mint || nft.id || nft.assetId;
@@ -2854,6 +2855,7 @@ export default function SolRefund() {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
 
                   {/* Burn Selected Button */}
