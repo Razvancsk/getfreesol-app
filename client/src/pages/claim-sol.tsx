@@ -2402,6 +2402,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-burn-tokens"
                 >
+                  <Coins className="h-4 w-4 mr-2" />
                   Burn Tokens
                 </button>
                 <button
