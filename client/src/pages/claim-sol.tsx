@@ -2528,6 +2528,20 @@ export default function SolRefund() {
                     </div>
                   </div>
 
+                  {/* Important Notice */}
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <div className="space-y-2">
+                        <h4 className="text-yellow-400 font-medium text-sm">Important: Wallet Confirmation</h4>
+                        <p className="text-yellow-200 text-xs leading-relaxed">
+                          Your wallet will show the <strong>full amount recovered</strong> ({refundCalc.total.toFixed(6)} SOL) from closing accounts. 
+                          However, you'll actually receive <strong>{(refundCalc.total * 0.85).toFixed(6)} SOL</strong> after the 15% platform fee is automatically deducted.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="w-full h-px bg-slate-600"></div>
 
                   {/* Empty Accounts List */}
