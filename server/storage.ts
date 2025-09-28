@@ -13,6 +13,8 @@ import {
   type InsertTokenBurnRecord,
   type NftBurnRecord,
   type InsertNftBurnRecord,
+  type NftResizeRecord,
+  type InsertNftResizeRecord,
   type ReferralCode,
   type InsertReferralCode,
   type ReferralTransaction,
@@ -26,6 +28,7 @@ import {
   transactionLedger,
   tokenBurnRecords,
   nftBurnRecords,
+  nftResizeRecords,
   referralCodes,
   referralTransactions,
   walletReferralAssociations
@@ -60,6 +63,11 @@ export interface IStorage {
   getNftBurnRecords(limit?: number): Promise<NftBurnRecord[]>;
   getNftBurnRecordsByWallet(walletAddress: string, limit?: number): Promise<NftBurnRecord[]>;
   
+  // NFT Resize Records
+  createNftResizeRecord(record: InsertNftResizeRecord): Promise<NftResizeRecord>;
+  getNftResizeRecords(limit?: number): Promise<NftResizeRecord[]>;
+  getNftResizeRecordsByWallet(walletAddress: string, limit?: number): Promise<NftResizeRecord[]>;
+  
   // Empty Token Accounts
   createEmptyTokenAccount(account: InsertEmptyTokenAccount): Promise<EmptyTokenAccount>;
   getEmptyTokenAccountsByWallet(walletAddress: string): Promise<EmptyTokenAccount[]>;
@@ -74,6 +82,7 @@ export interface IStorage {
   getTotalAccountsClaimed(): Promise<number>;
   getTotalTokensBurned(): Promise<number>;
   getTotalNftsBurned(): Promise<number>;
+  getTotalNftsResized(): Promise<number>;
   
   // Referral System
   createReferralCode(referral: InsertReferralCode): Promise<ReferralCode>;
@@ -232,6 +241,32 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  // NFT Resize Records
+  async createNftResizeRecord(record: InsertNftResizeRecord): Promise<NftResizeRecord> {
+    const [resizeRecord] = await db
+      .insert(nftResizeRecords)
+      .values(record)
+      .returning();
+    return resizeRecord;
+  }
+
+  async getNftResizeRecords(limit: number = 100): Promise<NftResizeRecord[]> {
+    return await db
+      .select()
+      .from(nftResizeRecords)
+      .orderBy(desc(nftResizeRecords.resizedAt))
+      .limit(limit);
+  }
+
+  async getNftResizeRecordsByWallet(walletAddress: string, limit: number = 50): Promise<NftResizeRecord[]> {
+    return await db
+      .select()
+      .from(nftResizeRecords)
+      .where(eq(nftResizeRecords.walletAddress, walletAddress))
+      .orderBy(desc(nftResizeRecords.resizedAt))
+      .limit(limit);
+  }
+
   // Empty Token Accounts
   async createEmptyTokenAccount(account: InsertEmptyTokenAccount): Promise<EmptyTokenAccount> {
     const [emptyTokenAccount] = await db
@@ -301,7 +336,8 @@ export class DatabaseStorage implements IStorage {
       .where(or(
         eq(transactionLedger.transactionType, 'sol_reclaim'),
         eq(transactionLedger.transactionType, 'token_burn'),
-        eq(transactionLedger.transactionType, 'nft_burn')
+        eq(transactionLedger.transactionType, 'nft_burn'),
+        eq(transactionLedger.transactionType, 'nft_resize')
       ));
     return parseInt(result[0]?.total || "0");
   }
@@ -317,6 +353,13 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ total: sql<string>`count(*)` })
       .from(nftBurnRecords);
+    return parseInt(result[0]?.total || "0");
+  }
+
+  async getTotalNftsResized(): Promise<number> {
+    const result = await db
+      .select({ total: sql<string>`count(*)` })
+      .from(nftResizeRecords);
     return parseInt(result[0]?.total || "0");
   }
 
