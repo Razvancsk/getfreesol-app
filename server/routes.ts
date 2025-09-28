@@ -2991,9 +2991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Build the batch transaction
         const umiTransaction = await batchTransaction.buildWithLatestBlockhash(umi);
         const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
-        const base64Transaction = Buffer.from(web3jsTransaction.serialize({
-          verifySignatures: false 
-        })).toString('base64');
+        const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
         // Calculate net amount for this batch (PNFTs use exact amount user receives)
         const batchExpectedRentSOL = batchExpectedRentLamports / 1e9;
@@ -3324,9 +3322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Build the batch transaction
         const umiTransaction = await batchTransaction.buildWithLatestBlockhash(umi);
         const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
-        const base64Transaction = Buffer.from(web3jsTransaction.serialize({
-          verifySignatures: false 
-        })).toString('base64');
+        const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
         // Calculate net amount for this batch
         const batchExpectedRentSOL = batchExpectedRentLamports / 1e9;
