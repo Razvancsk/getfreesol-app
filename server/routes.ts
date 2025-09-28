@@ -2337,6 +2337,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prepare Traditional/Standard NFT burn transactions (server-side UMI)
+  app.post("/api/standard-nfts/prepare-burn", async (req, res) => {
+    try {
+      // Validate request body
+      const prepareBurnSchema = z.object({
+        standardNftIds: z.array(z.string().min(1, "Standard NFT ID is required")),
+        walletAddress: z.string().min(1, "Wallet address is required")
+      });
+
+      const { standardNftIds, walletAddress } = prepareBurnSchema.parse(req.body);
+
+      // Get RPC configuration
+      const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = apiKey ? 
+        `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
+        'https://api.mainnet-beta.solana.com';
+
+      console.log(`🔥 Preparing ${standardNftIds.length} Traditional NFT burn transactions...`);
+
+      // Initialize UMI with token metadata support
+      const umi = createUmi(rpcUrl).use(mplTokenMetadata());
+      
+      // Use a no-op signer - we'll return unsigned transactions
+      const noopSigner = createNoopSigner(umiPublicKey(walletAddress));
+      umi.use({ install: (ctx) => { ctx.identity = noopSigner; ctx.payer = noopSigner; }});
+
+      const burnTransactions = [];
+      let totalExpectedRent = 0;
+
+      for (const nftId of standardNftIds) {
+        try {
+          console.log(`🔍 Processing Traditional NFT: ${nftId}`);
+          
+          // For traditional NFTs, we need to get the mint and collection info differently
+          const mintId = umiPublicKey(nftId);
+          
+          // Fetch token metadata to check for collection
+          const metadataPda = findMetadataPda(umi, { mint: mintId });
+          
+          // Check if NFT is part of a collection (optional for traditional NFTs)
+          let collectionMetadata = undefined;
+          try {
+            // Try to get collection info - this is optional for traditional NFTs
+            const connection = new Connection(rpcUrl, 'confirmed');
+            const metadataAccountInfo = await connection.getAccountInfo(new PublicKey(metadataPda[0].toString()));
+            
+            if (metadataAccountInfo) {
+              // For traditional NFTs, collection detection is simpler
+              console.log(`📋 Traditional NFT metadata found`);
+            }
+          } catch (metadataError) {
+            console.log(`⚠️ No metadata found for traditional NFT ${nftId}, proceeding without collection`);
+          }
+
+          console.log(`📋 Traditional NFT collection metadata: ${collectionMetadata ? 'Found' : 'None'}`);
+
+          // Build burn transaction for traditional NFT using burnV1
+          const burnTx = burnV1(umi, {
+            mint: mintId,
+            authority: umi.identity, // UMI signer as authority
+            tokenOwner: umi.identity.publicKey, // Owner's public key
+            tokenStandard: TokenStandard.NonFungible, // Traditional NFT standard
+            collectionMetadata: collectionMetadata || undefined, // Optional collection
+          });
+
+          // Build the transaction without signing
+          const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
+          
+          // Convert UMI transaction to Web3.js format, then serialize for client signing
+          const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
+          const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
+
+          // Calculate expected rent (traditional NFTs typically have token account + metadata)
+          const connection = new Connection(rpcUrl, 'confirmed');
+          let expectedRent = 0;
+          
+          // Try to estimate rent recovery from metadata account
+          try {
+            const metadataInfo = await connection.getAccountInfo(new PublicKey(metadataPda[0].toString()));
+            if (metadataInfo) {
+              expectedRent += metadataInfo.lamports;
+            }
+          } catch (rentError) {
+            console.log(`⚠️ Could not get rent info for traditional NFT ${nftId}, using estimate`);
+            expectedRent = 2039280; // Typical metadata account rent
+          }
+
+          const expectedRentSol = expectedRent / 1e9;
+          
+          burnTransactions.push({
+            nftId,
+            transaction: base64Transaction,
+            expectedRent: expectedRentSol
+          });
+
+          totalExpectedRent += expectedRentSol;
+          console.log(`✅ Traditional NFT burn transaction prepared: ${nftId} (${expectedRentSol} SOL expected)`);
+
+        } catch (nftError) {
+          console.error(`❌ Failed to prepare burn for Traditional NFT ${nftId}:`, nftError);
+          burnTransactions.push({
+            nftId,
+            error: nftError instanceof Error ? nftError.message : 'Unknown error',
+            expectedRent: 0
+          });
+        }
+      }
+
+      const responseData = {
+        success: true,
+        burnTransactions,
+        totalExpectedRentSol: totalExpectedRent,
+        message: `Prepared ${burnTransactions.filter(tx => tx.transaction).length} traditional NFT burn transactions`
+      };
+      
+      console.log(`🔧 Traditional NFT Server returning response:`, {
+        success: responseData.success,
+        burnTransactionsCount: responseData.burnTransactions.length,
+        transactionsWithData: responseData.burnTransactions.filter(tx => tx.transaction).length,
+        transactionsWithErrors: responseData.burnTransactions.filter(tx => tx.error).length,
+        firstTransaction: responseData.burnTransactions[0] || 'none'
+      });
+
+      res.json(responseData);
+
+    } catch (error) {
+      console.error('Error preparing Traditional NFT burn transactions:', error);
+      res.status(500).json({ 
+        error: "Failed to prepare Traditional NFT burn transactions",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get comprehensive transaction history
   app.get("/api/transactions/history", async (req, res) => {
     try {
