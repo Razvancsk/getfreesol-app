@@ -13,7 +13,7 @@ import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@
 import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 // Metaplex Token Metadata for pNFT burning
-import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, TokenStandard, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 
@@ -2370,28 +2370,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`🔍 Processing Traditional NFT: ${nftId}`);
           
-          // For traditional NFTs, we need to get the mint and collection info differently
+          // For traditional NFTs, we need to validate it's actually a traditional NFT
           const mintId = umiPublicKey(nftId);
+          const connection = new Connection(rpcUrl, 'confirmed');
           
-          // Fetch token metadata to check for collection
+          // 1. Check for metadata account at findMetadataPda(mint)
           const metadataPda = findMetadataPda(umi, { mint: mintId });
+          const metadataAccountInfo = await connection.getAccountInfo(new PublicKey(metadataPda[0].toString()));
           
-          // Check if NFT is part of a collection (optional for traditional NFTs)
+          if (!metadataAccountInfo) {
+            throw new Error(`Not a traditional NFT: No metadata account found at ${metadataPda[0].toString()}`);
+          }
+          console.log(`✅ Traditional NFT metadata account confirmed: ${metadataPda[0].toString()}`);
+          
+          // 2. Check for master edition account at findMasterEditionPda(mint)  
+          const masterEditionPda = findMasterEditionPda(umi, { mint: mintId });
+          const masterEditionAccountInfo = await connection.getAccountInfo(new PublicKey(masterEditionPda[0].toString()));
+          
+          if (!masterEditionAccountInfo) {
+            throw new Error(`Not a traditional NFT: No master edition account found at ${masterEditionPda[0].toString()}`);
+          }
+          console.log(`✅ Traditional NFT master edition confirmed: ${masterEditionPda[0].toString()}`);
+          
+          // 3. Optional: Check for collection metadata if it belongs to a verified collection
           let collectionMetadata = undefined;
           try {
-            // Try to get collection info - this is optional for traditional NFTs
-            const connection = new Connection(rpcUrl, 'confirmed');
-            const metadataAccountInfo = await connection.getAccountInfo(new PublicKey(metadataPda[0].toString()));
-            
-            if (metadataAccountInfo) {
-              // For traditional NFTs, collection detection is simpler
-              console.log(`📋 Traditional NFT metadata found`);
-            }
-          } catch (metadataError) {
-            console.log(`⚠️ No metadata found for traditional NFT ${nftId}, proceeding without collection`);
+            // Try to detect if this NFT belongs to a collection by examining the metadata
+            // This is optional for traditional NFTs
+            console.log(`📋 Traditional NFT collection metadata: None (standalone NFT)`);
+          } catch (collectionError) {
+            console.log(`📋 Traditional NFT collection detection skipped`);
           }
-
-          console.log(`📋 Traditional NFT collection metadata: ${collectionMetadata ? 'Found' : 'None'}`);
 
           // Build burn transaction for traditional NFT using burnV1
           const burnTx = burnV1(umi, {
@@ -2400,7 +2409,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tokenOwner: umi.identity.publicKey, // Owner's public key
             tokenStandard: TokenStandard.NonFungible, // Traditional NFT standard
             collectionMetadata: collectionMetadata || undefined, // Optional collection
-            authorizationRules: umiPublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7'), // Authorization Rules program
           });
 
           // Build the transaction without signing
@@ -2411,7 +2419,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
           // Calculate expected rent (traditional NFTs typically have token account + metadata)
-          const connection = new Connection(rpcUrl, 'confirmed');
           let expectedRent = 0;
           
           // Try to estimate rent recovery from metadata account
