@@ -1516,26 +1516,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mintAddress = asset.mint || asset.id;
         }
 
-        // Handle missing name field - try multiple fallbacks
+        // Handle missing name field - try multiple fallbacks with collection-aware logic
         let nftName = asset.content?.metadata?.name;
-        if (!nftName) {
-          // Fallback 1: Use symbol if available  
-          if (asset.content?.metadata?.symbol) {
-            nftName = asset.content.metadata.symbol;
-          }
-          // Fallback 2: Extract from description if it contains meaningful info
-          else if (asset.content?.metadata?.description) {
-            const desc = asset.content.metadata.description;
-            // Look for patterns like "The market has determined, it needs More Monkes."
-            const match = desc.match(/it needs (.+)\./);
-            if (match) {
-              nftName = match[1];
-            } else {
-              nftName = desc.split('.')[0].substring(0, 50); // First sentence, max 50 chars
+        const hasCollection = asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value;
+        
+        if (!nftName || nftName.trim() === '') {
+          
+          // For collection NFTs, try to extract collection name and number
+          if (hasCollection) {
+            let collectionName = '';
+            let nftNumber = '';
+            
+            // Extract collection name from description
+            if (asset.content?.metadata?.description) {
+              const desc = asset.content.metadata.description;
+              // Look for patterns like "it needs More Monkes."
+              const collectionMatch = desc.match(/it needs (.+)\./);
+              if (collectionMatch) {
+                collectionName = collectionMatch[1];
+              }
             }
-          }
-          else {
-            nftName = 'Unknown NFT';
+            
+            // Extract NFT number from various sources
+            // Try image URL first (e.g., "506.png" -> "#506")
+            if (asset.content?.files?.[0]?.uri || asset.content?.metadata?.image) {
+              const imageUrl = asset.content?.files?.[0]?.uri || asset.content.metadata.image;
+              const imageNumberMatch = imageUrl.match(/\/(\d+)\.png/);
+              if (imageNumberMatch) {
+                nftNumber = `#${imageNumberMatch[1]}`;
+              }
+            }
+            
+            // Try attributes for number/id/rank
+            if (!nftNumber && asset.content?.metadata?.attributes) {
+              const numberAttr = asset.content.metadata.attributes.find((attr: any) => 
+                ['number', 'id', 'rank', 'edition'].includes(attr.trait_type?.toLowerCase())
+              );
+              if (numberAttr) {
+                nftNumber = `#${numberAttr.value}`;
+              }
+            }
+            
+            // Combine collection name and number
+            if (collectionName && nftNumber) {
+              nftName = `${collectionName} ${nftNumber}`;
+            } else if (collectionName) {
+              nftName = collectionName;
+            } else {
+              // Fallback to symbol for collection NFTs
+              nftName = asset.content?.metadata?.symbol || 'Collection NFT';
+            }
+          } else {
+            // Non-collection NFT fallbacks
+            if (asset.content?.metadata?.symbol) {
+              nftName = asset.content.metadata.symbol;
+            } else if (asset.content?.metadata?.description) {
+              const desc = asset.content.metadata.description;
+              nftName = desc.split('.')[0].substring(0, 50); // First sentence, max 50 chars
+            } else {
+              nftName = 'Unknown NFT';
+            }
           }
         }
 
