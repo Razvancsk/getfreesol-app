@@ -70,7 +70,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'scan' | 'burnTokens' | 'stats'>('scan');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -78,6 +78,11 @@ export default function SolRefund() {
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
+  
+  // Input field states for different wallet addresses
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [tokenWalletAddress, setTokenWalletAddress] = useState<string>('');
+  const [nftWalletAddress, setNftWalletAddress] = useState<string>('');
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -133,7 +138,7 @@ export default function SolRefund() {
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
     if (isConnected && publicKey && activeTab !== 'referrals') {
-      if (activeTab === 'reclaim') {
+      if (activeTab === 'scan') {
         scanMutation.mutate(publicKey.toString());
       } else if (activeTab === 'burnTokens') {
         if (burnSubTab === 'tokens') {
