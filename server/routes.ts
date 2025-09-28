@@ -2400,6 +2400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tokenOwner: umi.identity.publicKey, // Owner's public key
             tokenStandard: TokenStandard.NonFungible, // Traditional NFT standard
             collectionMetadata: collectionMetadata || undefined, // Optional collection
+            authorizationRules: umiPublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7'), // Authorization Rules program
           });
 
           // Build the transaction without signing
