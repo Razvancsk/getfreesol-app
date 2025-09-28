@@ -2442,20 +2442,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`📋 Traditional NFT collection detection skipped`);
           }
 
-          // Build burn transaction for traditional NFT using burnV1
-          // Integrate both program IDs: abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r and metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s
+          // Build burn transaction for traditional NFT using burnV1 (using clean code structure)
+          // Optional: Get collection metadata if it belongs to a verified collection
+          let collectionMetadataPda = undefined;
+          try {
+            // For collection NFTs, find the collection metadata PDA
+            if (collectionMetadata) {
+              collectionMetadataPda = findMetadataPda(umi, { mint: umiPublicKey(collectionMetadata) });
+            }
+          } catch (error) {
+            console.log(`📋 Collection metadata PDA generation skipped for ${nftId}`);
+          }
+
           const burnTx = burnV1(umi, {
             mint: mintId,
-            authority: umi.identity, // UMI signer as authority
-            tokenOwner: umi.identity.publicKey, // Owner's public key
-            tokenStandard: TokenStandard.NonFungible, // Traditional NFT standard
-            collectionMetadata: collectionMetadata || undefined, // Optional collection
+            authority: umi.identity,         // owner of NFT
+            tokenOwner: umi.identity.publicKey,
+            tokenStandard: TokenStandard.NonFungible,
+            collectionMetadata: collectionMetadataPda, // only if part of collection
           })
           .addRemainingAccounts([
-            // Add Authorization Rules Program ID
-            { pubkey: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), isSigner: false, isWritable: false },
-            // Add Token Metadata Program ID  
-            { pubkey: umiPublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"), isSigner: false, isWritable: false }
+            // Integrate both program IDs as requested
+            { pubkey: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), isSigner: false, isWritable: false }, // Authorization Rules Program
+            { pubkey: umiPublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"), isSigner: false, isWritable: false }  // Token Metadata Program
           ]);
 
           // Build the transaction without signing
