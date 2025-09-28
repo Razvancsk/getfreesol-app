@@ -291,7 +291,8 @@ export class DatabaseStorage implements IStorage {
       .from(transactionLedger)
       .where(or(
         eq(transactionLedger.transactionType, 'sol_reclaim'),
-        eq(transactionLedger.transactionType, 'token_burn')
+        eq(transactionLedger.transactionType, 'token_burn'),
+        eq(transactionLedger.transactionType, 'nft_burn')
       ));
     return parseInt(result[0]?.total || "0");
   }

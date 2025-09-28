@@ -1926,10 +1926,9 @@ export default function SolRefund() {
       // Clear selection but don't refresh immediately - let optimistic update handle UI state
       setSelectedNfts(new Set());
 
-      // Refresh stats if SOL was recovered
-      if (hasRentRecovery) {
-        queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
-      }
+      // Always refresh stats and transaction history after NFT burns
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/history'] });
     },
     onError: (error: any) => {
       console.error('Error burning NFTs:', error);
