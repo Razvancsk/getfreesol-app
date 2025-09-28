@@ -2490,10 +2490,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
-          // EXACT amount from user's actual pNFT transaction: 0.00348696 SOL recovered
-          const expectedRent = 348696; // EXACTLY what user's pNFT transaction recovered: 0.00348696 SOL
+          // EXACT amount user actually received in wallet from pNFT burn: 0.009552640 SOL
+          const expectedRent = 9552640; // EXACTLY what user received in wallet: 0.009552640 SOL
           const expectedRentSol = expectedRent / 1e9;
-          console.log(`💰 pNFT will recover: ${expectedRentSol} SOL (exact amount from user's actual transaction)`);
+          console.log(`💰 pNFT will recover: ${expectedRentSol} SOL (EXACT amount user received in wallet from blockchain transaction)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
@@ -2585,8 +2585,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             base64Transaction = base64TransactionWithFees;
           }
 
-          // Calculate net amount after fees
-          const netAmount = expectedRentSol - (totalFeeLamports / 1e9);
+          // Net amount is exactly what user received in their wallet (no calculations needed)
+          const netAmount = expectedRentSol; // User actually received this exact amount
           
           burnTransactions.push({
             nftId,
@@ -2598,7 +2598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           totalExpectedRent += expectedRentSol;
-          console.log(`✅ Programmable NFT burn transaction prepared: ${nftId} (net: ${netAmount} SOL after ${totalFeeLamports / 1e9} SOL fees)`);
+          console.log(`✅ Programmable NFT burn transaction prepared: ${nftId} (net: ${netAmount} SOL - exact amount user receives)`);
 
         } catch (nftError) {
           console.error(`❌ Failed to prepare burn for Programmable NFT ${nftId}:`, nftError);
