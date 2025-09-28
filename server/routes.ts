@@ -1380,6 +1380,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let nfts: any[] = [];
       const items = heliusData.result?.items || [];
 
+      // Get locally burned asset IDs to filter them out (handles DAS lag)
+      const burnedAssetIds = new Set<string>();
+      try {
+        const localBurnRecords = await storage.getNftBurnRecordsByWallet(address);
+        for (const record of localBurnRecords) {
+          if (record.success) {
+            burnedAssetIds.add(record.nftMint);
+          }
+        }
+        console.log(`📋 Found ${burnedAssetIds.size} locally burned assets to filter out`);
+      } catch (error) {
+        console.warn('⚠️ Could not load local burn records:', error);
+      }
+
       // Programmable NFT program IDs
       const PROGRAMMABLE_NFT_PROGRAM_IDS = [
         'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s', // Token Metadata Program
@@ -1392,19 +1406,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Log burn status for debugging
         console.log(`🔍 Asset ${asset.content?.metadata?.name || asset.id}: burnt=${burnt}, interface=${assetInterface}`);
         
-        // Skip burned NFTs (they still show in DAS with burnt: true)
-        // BUT: Be less strict since Helius sometimes incorrectly reports burn status
+        // Skip burned NFTs using multiple checks
+        // Check 1: DAS burnt flag
         if (burnt === true) {
-          console.log(`⚠️ Asset marked as burned but checking further: ${asset.content?.metadata?.name || asset.id}`);
-          
-          // For pNFTs and Core NFTs, do additional verification
-          if (assetInterface === 'ProgrammableNFT' || assetInterface === 'MplCoreAsset') {
-            console.log(`🔧 Allowing potentially mis-flagged ${assetInterface} through for verification`);
-            // Don't skip - let it through for further processing
-          } else {
-            console.log(`Skipping confirmed burned NFT: ${asset.content?.metadata?.name || asset.id}`);
-            continue;
-          }
+          console.log(`Skipping burned NFT: ${asset.content?.metadata?.name || asset.id}`);
+          continue;
+        }
+        
+        // Check 2: Ownership is null (burned assets lose ownership)
+        if (!asset.ownership?.owner) {
+          console.log(`Skipping NFT with no owner (likely burned): ${asset.content?.metadata?.name || asset.id}`);
+          continue;
         }
         
         // Skip compressed NFTs 
@@ -1427,6 +1439,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           // Skip unsupported NFT types
           console.log(`⚠️ Skipping unsupported NFT type: ${assetInterface} - ${asset.content?.metadata?.name || asset.id}`);
+          continue;
+        }
+
+        // Check 3: Locally burned assets (handles DAS lag) - check after NFT type is determined
+        let assetIdentifier;
+        if (nftType === 'core') {
+          assetIdentifier = asset.id; // Core NFTs use asset.id
+        } else {
+          assetIdentifier = asset.mint || asset.id; // Standard/pNFT use mint address
+        }
+        
+        if (burnedAssetIds.has(assetIdentifier)) {
+          console.log(`Skipping locally burned NFT: ${asset.content?.metadata?.name || asset.id}`);
           continue;
         }
 
@@ -1476,16 +1501,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
+        // Use proper identifiers based on NFT type
+        let mintAddress, assetId, identifier;
+        
+        if (nftType === 'core') {
+          // Core NFTs: use asset.id as primary identifier (no SPL mint)
+          identifier = asset.id;
+          assetId = asset.id;
+          mintAddress = asset.id; // For compatibility, though Core NFTs don't have SPL mints
+        } else {
+          // Standard/pNFT: use asset.mint (SPL mint address) as primary identifier  
+          identifier = asset.mint || asset.id;
+          assetId = asset.id;
+          mintAddress = asset.mint || asset.id;
+        }
+
         const nftInfo = {
-          mint: asset.id,
-          id: asset.id, // Add id field for consistency
-          assetId: asset.id, // Add assetId field for consistency  
+          mint: mintAddress,
+          id: identifier, 
+          assetId: assetId,
           name: asset.content?.metadata?.name || 'Unknown NFT',
           symbol: asset.content?.metadata?.symbol || '',
           image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
           description: asset.content?.metadata?.description || '',
-          type: nftType, // Use the detected NFT type instead of hardcoding 'core'
-          interface: assetInterface, // Use the actual interface instead of hardcoding 'MplCoreAsset'
+          type: nftType,
+          interface: assetInterface,
           tokenStandard: asset.token_info?.token_standard || '',
           compressed: compression?.compressed || false,
           creators: asset.creators || [],
