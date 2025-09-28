@@ -900,7 +900,7 @@ export default function SolRefund() {
             });
 
             // Update local NFT data state to remove burned NFTs immediately  
-            setNftData(prev => {
+            setNftData((prev: any) => {
               console.log(`🔥 Debug: setNftData prev:`, prev);
               if (!prev?.nfts) {
                 console.log(`🔥 Debug: No NFTs in prev data`);
@@ -1119,7 +1119,7 @@ export default function SolRefund() {
             });
 
             // Update local NFT data state to remove burned pNFTs immediately  
-            setNftData(prev => {
+            setNftData((prev: any) => {
               console.log(`🔥 pNFT Debug: setNftData prev:`, prev);
               if (!prev?.nfts) {
                 console.log(`🔥 pNFT Debug: No NFTs in prev data`);
@@ -1338,7 +1338,7 @@ export default function SolRefund() {
             });
 
             // Update local NFT data state to remove burned Traditional NFTs immediately  
-            setNftData(prev => {
+            setNftData((prev: any) => {
               console.log(`🔥 Traditional NFT Debug: setNftData prev:`, prev);
               if (!prev?.nfts) {
                 console.log(`🔥 Traditional NFT Debug: No NFTs in prev data`);
@@ -2477,7 +2477,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-burn-nft"
                 >
-                  ⚡ Burn NFT
+                  🖼️ Burn NFT
                 </button>
               </div>
             </div>
