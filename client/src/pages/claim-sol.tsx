@@ -3133,7 +3133,7 @@ export default function SolRefund() {
                       ACCTS
                     </div>
                     <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
-                      CLAIMED SOL
+                      NET RECEIVED
                     </div>
                     <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
                       DATE
@@ -3158,7 +3158,7 @@ export default function SolRefund() {
                             {tx.itemsProcessed}
                           </div>
                           <div className="text-white text-center text-sm font-medium">
-                            {tx.solRecovered.toFixed(6)}
+                            {(tx.netAmount || tx.solRecovered * 0.85).toFixed(6)}
                           </div>
                           <div className="text-white text-center text-sm">
                             {new Date(tx.processedAt).toLocaleDateString('en-US', {
