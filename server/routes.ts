@@ -2566,7 +2566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const { PublicKey, Transaction, TransactionInstruction, ComputeBudgetProgram } = await import('@solana/web3.js');
           const userPubkey = new PublicKey(walletAddress);
-          const RSZE_PROGRAM_ID = new PublicKey('RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4');
+          const RSZE_PROGRAM_ID = new PublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7');
           
           // Get fresh blockhash
           const { blockhash } = await connection.getLatestBlockhash();
@@ -2601,7 +2601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             transaction.add(resizeInstruction);
           }
           
-          console.log(`✅ Built RSZE transaction for ${batchNfts.length} NFTs using program RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4 (batch ${Math.floor(i / maxNftsPerBatch) + 1})`);
+          console.log(`✅ Built RSZE transaction for ${batchNfts.length} NFTs using program F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7 (batch ${Math.floor(i / maxNftsPerBatch) + 1})`);
           
           // Serialize unsigned transaction for frontend signing
           const serialized = transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
