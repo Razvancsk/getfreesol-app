@@ -781,116 +781,95 @@ export default function SolRefund() {
               throw new Error('Server failed to prepare burn transactions');
             }
 
+            // 🚀 NEW: Handle batched transaction (single signature for multiple NFTs!)
+            if (!prepareResponse.burnTransactions || prepareResponse.burnTransactions.length === 0) {
+              throw new Error('No burn transactions prepared by server');
+            }
+
+            const batchedBurn = prepareResponse.burnTransactions[0]; // Single batched transaction
+            const failedNfts = prepareResponse.burnTransactions.slice(1).filter(tx => tx.error); // Any individual errors
+
+            if (batchedBurn.error) {
+              throw new Error(`Server error: ${batchedBurn.error}`);
+            }
+
+            if (!batchedBurn.transaction) {
+              throw new Error('No batched transaction prepared by server');
+            }
+
+            if (!batchedBurn.nftIds || !Array.isArray(batchedBurn.nftIds)) {
+              throw new Error('Invalid batched transaction format - missing nftIds array');
+            }
+
+            console.log(`🔐 Signing BATCHED transaction for ${batchedBurn.nftCount} Core NFTs (single signature!)...`);
+
+            // Deserialize the batched transaction from base64
+            const transactionBuffer = Buffer.from(batchedBurn.transaction, 'base64');
+            const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+            // Sign the batched transaction ONCE
+            const signedTransaction = await signTransaction(transaction);
+            console.log(`✅ BATCHED transaction signed for ${batchedBurn.nftCount} Core NFTs!`);
+
+            // Submit the signed batched transaction via server relay
+            console.log('📡 Submitting BATCHED transaction via server relay...');
+            const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+              signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+              description: `Batched Core NFT burn: ${batchedBurn.nftCount} NFTs`,
+              skipPreflight: true
+            });
+            
+            const relayResponse = await relayResponseRaw.json();
+
+            if (!relayResponse.success || !relayResponse.signature) {
+              throw new Error(`Batched transaction relay failed: ${relayResponse.error || 'No signature returned'}`);
+            }
+
+            const signature = relayResponse.signature;
+            console.log(`🚀 BATCHED transaction confirmed for ${batchedBurn.nftCount} Core NFTs: ${signature}`);
+
+            // Record the batched burn in the database for each NFT
             const successfulBurns = [];
-            let totalRentRecovered = 0;
-
-            // Process each prepared transaction
-            for (const burnTx of prepareResponse.burnTransactions) {
-              if (burnTx.error) {
-                console.error(`❌ Server error for NFT ${burnTx.nftId}:`, burnTx.error);
-                continue;
-              }
-
-              if (!burnTx.transaction) {
-                console.error(`❌ No transaction prepared for NFT ${burnTx.nftId}`);
-                continue;
-              }
-
+            for (const nftId of batchedBurn.nftIds) {
               try {
-                console.log(`🔐 Signing and sending transaction for Core NFT: ${burnTx.nftId}`);
-
-                // Deserialize the transaction from base64
-                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
-                const transaction = VersionedTransaction.deserialize(transactionBuffer);
-
-                // Sign the transaction with the wallet
-                const signedTransaction = await signTransaction(transaction);
-
-                // Use server relay to submit transaction (bypasses 403 domain restrictions)
-                console.log('📡 Submitting via server relay to bypass domain restrictions...');
-                const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
-                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
-                  description: `Core NFT burn: ${burnTx.nftId}`,
-                  skipPreflight: true
-                });
-                
-                const relayResponse = await relayResponseRaw.json();
-
-                if (!relayResponse.success || !relayResponse.signature) {
-                  throw new Error(`Relay failed: ${relayResponse.error || 'No signature returned'}`);
-                }
-
-                const signature = relayResponse.signature;
-                console.log('🎉 Transaction submitted successfully via relay:', signature);
-                
-                // Wait for confirmation with error handling (don't fail on confirmation timeout)
-                try {
-                  // We could add confirmation checking here if needed
-                  console.log('✅ Transaction submitted with signature:', signature);
-                } catch (confirmError: any) {
-                  console.warn('Transaction confirmation check failed but transaction was sent:', confirmError.message);
-                  console.warn('Transaction signature:', signature);
-                  // Continue with success recording since transaction was sent
-                }
-
-                console.log('✅ Core NFT burned successfully:', signature);
-
-                totalRentRecovered += burnTx.expectedRent;
-
-                // Record the successful burn in our database
-                try {
-                  await apiRequest('POST', '/api/nfts/burn/record', {
-                    signature,
-                    nftMint: burnTx.nftId,
-                    rentRecovered: burnTx.expectedRent,
-                    netAmount: burnTx.netAmount,
-                    feeAmount: burnTx.platformFee + burnTx.referralFee,
-                    platformFeeAmount: burnTx.platformFee,
-                    referralFeeAmount: burnTx.referralFee,
-                    walletAddress: wallet.publicKey.toString(),
-                    nftType: 'core',
-                    success: true
-                  });
-                  console.log('✅ Core NFT burn recorded in database');
-                } catch (recordError) {
-                  console.warn('⚠️ Failed to record Core NFT burn in database:', recordError);
-                }
-
-                successfulBurns.push({
-                  mint: burnTx.nftId,
+                await apiRequest('POST', '/api/nfts/burn/record', {
                   signature,
-                  rentRecovered: burnTx.expectedRent
+                  nftMint: nftId,
+                  rentRecovered: batchedBurn.expectedRent / batchedBurn.nftCount, // Split total rent
+                  netAmount: batchedBurn.netAmount / batchedBurn.nftCount, // Split total net
+                  feeAmount: (batchedBurn.platformFee + batchedBurn.referralFee) / batchedBurn.nftCount,
+                  platformFeeAmount: batchedBurn.platformFee / batchedBurn.nftCount,
+                  referralFeeAmount: batchedBurn.referralFee / batchedBurn.nftCount,
+                  walletAddress: wallet.publicKey.toString(),
+                  nftType: 'core',
+                  success: true
                 });
-
-              } catch (signError) {
-                console.error(`❌ Failed to sign/send transaction for Core NFT ${burnTx.nftId}:`, {
-                  error: signError,
-                  message: signError instanceof Error ? signError.message : String(signError),
-                  stack: signError instanceof Error ? signError.stack : undefined,
-                  details: signError
-                });
+                console.log(`✅ Core NFT burn recorded in database: ${nftId}`);
                 
-                // Record the failed burn attempt
-                try {
-                  await apiRequest('POST', '/api/nfts/burn/record', {
-                    nftMint: burnTx.nftId,
-                    walletAddress: wallet.publicKey.toString(),
-                    nftType: 'core',
-                    error: signError instanceof Error ? signError.message : 'Unknown error',
-                    success: false
-                  });
-                } catch (recordError) {
-                  console.warn('⚠️ Failed to record Core NFT burn failure in database:', recordError);
-                }
+                successfulBurns.push({
+                  mint: nftId,
+                  signature,
+                  rentRecovered: batchedBurn.expectedRent / batchedBurn.nftCount
+                });
+              } catch (recordError) {
+                console.warn(`⚠️ Failed to record Core NFT burn in database for ${nftId}:`, recordError);
               }
             }
+
+            const totalRentRecovered = batchedBurn.expectedRent;
 
             if (successfulBurns.length === 0) {
-              throw new Error('No Core NFTs were successfully burned');
+              throw new Error('Failed to record any NFT burns in database');
             }
 
-            console.log(`🎉 Successfully burned ${successfulBurns.length} Core NFTs!`);
+            console.log(`🎉 Successfully burned ${batchedBurn.nftCount} Core NFTs in ONE transaction!`);
             console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+            console.log(`💰 Net amount received: ${batchedBurn.netAmount} SOL after fees`);
+
+            // Show any failed NFTs as warnings
+            if (failedNfts.length > 0) {
+              console.warn(`⚠️ ${failedNfts.length} NFTs failed validation:`, failedNfts.map(f => f.nftId));
+            }
 
             // Optimistically remove burned NFTs from local state immediately
             const burnedIds = successfulBurns.map(burn => burn.mint);
