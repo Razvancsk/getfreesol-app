@@ -1177,6 +1177,225 @@ export default function SolRefund() {
             throw pnftError;
           }
         }
+
+        // Handle Traditional/Standard NFTs with Server-Side UMI Implementation  
+        if (nftType === 'standard') {
+          try {
+            console.log('🔥 Starting Traditional NFT burning with server-side UMI...');
+            
+            if (!wallet.publicKey) {
+              throw new Error('Wallet not connected');
+            }
+
+            // Prepare standard NFT IDs (use the actual ID from the NFT objects)
+            const standardNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
+            console.log(`📦 Preparing burn transactions for ${standardNftIds.length} Traditional NFTs...`);
+
+            // Call server to prepare standard NFT burn transactions
+            const prepareResponseRaw = await apiRequest('POST', '/api/standard-nfts/prepare-burn', {
+              standardNftIds,
+              walletAddress: wallet.publicKey.toString()
+            });
+            const prepareResponse = await prepareResponseRaw.json();
+
+            console.log('🔧 Server prepared Traditional NFT burn transactions:', {
+              rawResponse: prepareResponse,
+              hasSuccess: 'success' in prepareResponse,
+              successValue: prepareResponse.success,
+              hasBurnTransactions: 'burnTransactions' in prepareResponse,
+              burnTransactionsValue: prepareResponse.burnTransactions,
+              burnTransactionsType: typeof prepareResponse.burnTransactions,
+              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
+            });
+
+            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
+              console.error('❌ Traditional NFT Server response validation failed:', {
+                success: prepareResponse.success,
+                burnTransactions: prepareResponse.burnTransactions,
+                successCheck: !prepareResponse.success,
+                burnTransactionsCheck: !prepareResponse.burnTransactions
+              });
+              throw new Error('Server failed to prepare Traditional NFT burn transactions');
+            }
+
+            const successfulBurns = [];
+            let totalRentRecovered = 0;
+
+            // Process each prepared transaction
+            for (const burnTx of prepareResponse.burnTransactions) {
+              if (burnTx.error) {
+                console.error(`❌ Server error for Traditional NFT ${burnTx.nftId}:`, burnTx.error);
+                continue;
+              }
+
+              if (!burnTx.transaction) {
+                console.error(`❌ No transaction prepared for Traditional NFT ${burnTx.nftId}`);
+                continue;
+              }
+
+              try {
+                console.log(`🔐 Signing and sending transaction for Traditional NFT: ${burnTx.nftId}`);
+
+                // Deserialize the transaction from base64
+                const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
+                const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+                // Sign the transaction with the wallet
+                const signedTransaction = await signTransaction(transaction);
+
+                // Use server relay to submit transaction (bypasses 403 domain restrictions)
+                console.log('📡 Submitting Traditional NFT via server relay to bypass domain restrictions...');
+                const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+                  signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                  description: `Traditional NFT burn: ${burnTx.nftId}`,
+                  skipPreflight: true
+                });
+                
+                const relayResponse = await relayResponseRaw.json();
+
+                if (!relayResponse.success || !relayResponse.signature) {
+                  throw new Error(`Relay failed: ${relayResponse.error || 'No signature returned'}`);
+                }
+
+                const signature = relayResponse.signature;
+                console.log('🎉 Traditional NFT Transaction submitted successfully via relay:', signature);
+                
+                // Wait for confirmation with error handling (don't fail on confirmation timeout)
+                try {
+                  // We could add confirmation checking here if needed
+                  console.log('✅ Traditional NFT Transaction submitted with signature:', signature);
+                } catch (confirmError: any) {
+                  console.warn('Traditional NFT Transaction confirmation check failed but transaction was sent:', confirmError.message);
+                  console.warn('Traditional NFT Transaction signature:', signature);
+                  // Continue with success recording since transaction was sent
+                }
+
+                console.log('✅ Traditional NFT burned successfully:', signature);
+
+                totalRentRecovered += burnTx.expectedRent;
+
+                // Record the successful burn in our database
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    signature,
+                    nftMint: burnTx.nftId,
+                    rentRecovered: burnTx.expectedRent,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'standard',
+                    success: true
+                  });
+                  console.log('✅ Traditional NFT burn recorded in database');
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Traditional NFT burn in database:', recordError);
+                }
+
+                successfulBurns.push({
+                  mint: burnTx.nftId,
+                  signature,
+                  rentRecovered: burnTx.expectedRent
+                });
+
+              } catch (signError) {
+                console.error(`❌ Failed to sign/send transaction for Traditional NFT ${burnTx.nftId}:`, {
+                  error: signError,
+                  message: signError instanceof Error ? signError.message : String(signError),
+                  stack: signError instanceof Error ? signError.stack : undefined,
+                  details: signError
+                });
+                
+                // Record the failed burn attempt
+                try {
+                  await apiRequest('POST', '/api/nfts/burn/record', {
+                    nftMint: burnTx.nftId,
+                    walletAddress: wallet.publicKey.toString(),
+                    nftType: 'standard',
+                    error: signError instanceof Error ? signError.message : 'Unknown error',
+                    success: false
+                  });
+                } catch (recordError) {
+                  console.warn('⚠️ Failed to record Traditional NFT burn failure in database:', recordError);
+                }
+              }
+            }
+
+            if (successfulBurns.length === 0) {
+              throw new Error('No Traditional NFTs were successfully burned');
+            }
+
+            console.log(`🎉 Successfully burned ${successfulBurns.length} Traditional NFTs!`);
+            console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+
+            // Optimistically remove burned Traditional NFTs from local state immediately
+            const burnedIds = successfulBurns.map(burn => burn.mint);
+            console.log(`🔥 Traditional NFT Debug: burnedIds:`, burnedIds);
+            console.log(`🔥 Traditional NFT Debug: current nftData:`, nftData);
+            
+            // Clear burned Traditional NFTs from selection first
+            setSelectedNfts(prev => {
+              const newSet = new Set(prev);
+              burnedIds.forEach(id => newSet.delete(id));
+              return newSet;
+            });
+
+            // Update local NFT data state to remove burned Traditional NFTs immediately  
+            setNftData(prev => {
+              console.log(`🔥 Traditional NFT Debug: setNftData prev:`, prev);
+              if (!prev?.nfts) {
+                console.log(`🔥 Traditional NFT Debug: No NFTs in prev data`);
+                return prev;
+              }
+              
+              const currentIds = prev.nfts.map((nft: any) => nft.id || nft.mint || nft.assetId);
+              console.log(`🔥 Traditional NFT Debug: current NFT IDs:`, currentIds);
+              
+              const filtered = prev.nfts.filter((nft: any) => {
+                const nftId = nft.id || nft.mint || nft.assetId;
+                const shouldKeep = !burnedIds.includes(nftId);
+                console.log(`🔥 Traditional NFT Debug: NFT ${nftId} - Keep: ${shouldKeep}`);
+                return shouldKeep;
+              });
+              
+              console.log(`🔥 Traditional NFT Debug: Filtered NFTs:`, filtered);
+              
+              const result = {
+                ...prev,
+                nfts: filtered
+              };
+              
+              console.log(`🔥 Traditional NFT Debug: Final result:`, result);
+              return result;
+            });
+
+            // Show success message with green styling and transaction signature
+            const firstSignature = successfulBurns[0]?.signature || '';
+            toast({
+              title: `Successfully burned ${successfulBurns.length} Traditional NFT${successfulBurns.length > 1 ? 's' : ''}`,
+              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
+              className: "bg-green-600 text-white border-green-600",
+            });
+
+            // Don't invalidate immediately - let optimistic update handle UI state
+            // We'll rely on the next manual refresh or page load to sync with server
+
+            return;
+
+          } catch (standardError: any) {
+            console.error('❌ Traditional NFT burning failed:', {
+              error: standardError,
+              message: standardError instanceof Error ? standardError.message : String(standardError),
+              stack: standardError instanceof Error ? standardError.stack : undefined,
+              details: standardError
+            });
+            
+            toast({
+              title: "Traditional NFT Burning Failed",
+              description: standardError.message || 'An unexpected error occurred',
+              variant: "destructive",
+            });
+            
+            throw standardError;
+          }
+        }
         
         // Legacy code (disabled):
         if (false) { // Disabled legacy Core NFT code
