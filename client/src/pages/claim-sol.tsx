@@ -2293,13 +2293,13 @@ export default function SolRefund() {
                   </Button>
                   <Button
                     onClick={() => setActiveTab('burnTokens')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    className={`px-6 py-3 text-sm font-medium rounded transition-all ${
                       activeTab === 'burnTokens' 
                         ? 'bg-purple-600 text-white' 
                         : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                     }`}
                   >
-                    <Flame className="h-4 w-4 mr-2" />
+                    <Flame className="h-8 w-8 mr-3" />
                     Burn
                   </Button>
                   <Button
@@ -2771,14 +2771,6 @@ export default function SolRefund() {
                               <Image className="h-8 w-8 text-purple-400" />
                             </div>
                             
-                            {/* Big Flame Icon Overlay for Selected NFTs */}
-                            {isSelected && (
-                              <div className="absolute inset-0 flex items-center justify-center z-20">
-                                <div className="w-32 h-32 rounded-full bg-orange-500/90 backdrop-blur-sm flex items-center justify-center shadow-xl animate-pulse">
-                                  <Flame className="h-24 w-24 text-white drop-shadow-lg" />
-                                </div>
-                              </div>
-                            )}
                           </div>
 
                           {/* NFT Details */}
