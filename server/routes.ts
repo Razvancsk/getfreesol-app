@@ -549,6 +549,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fix existing records with real transaction amounts
+  app.post('/api/burns/fix-amounts', async (req, res) => {
+    try {
+      const { signatures } = req.body;
+      
+      if (!signatures || !Array.isArray(signatures)) {
+        return res.status(400).json({ error: 'Signatures array required' });
+      }
+
+      const results = [];
+      
+      for (const signature of signatures) {
+        try {
+          // Get existing record
+          const existingRecord = await storage.getTransactionLedgerBySignature(signature);
+          if (!existingRecord) {
+            results.push({ signature, status: 'not_found' });
+            continue;
+          }
+
+          // Analyze real transaction 
+          const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+          const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+          const { Connection } = await import('@solana/web3.js');
+          const connection = new Connection(rpcUrl, 'confirmed');
+
+          const txInfo = await connection.getParsedTransaction(signature, {
+            maxSupportedTransactionVersion: 0,
+            commitment: 'confirmed'
+          });
+
+          if (!txInfo || txInfo.meta?.err) {
+            results.push({ signature, status: 'transaction_failed' });
+            continue;
+          }
+
+          // Calculate real amounts
+          const preBalances = txInfo.meta?.preBalances || [];
+          const postBalances = txInfo.meta?.postBalances || [];
+          const accounts = txInfo.transaction.message.accountKeys;
+          
+          let userAccountIndex = -1;
+          for (let i = 0; i < accounts.length; i++) {
+            const account = accounts[i];
+            const accountPubkey = typeof account === 'string' ? account : account.pubkey.toString();
+            if (accountPubkey === existingRecord.walletAddress) {
+              userAccountIndex = i;
+              break;
+            }
+          }
+
+          if (userAccountIndex === -1) {
+            results.push({ signature, status: 'wallet_not_found' });
+            continue;
+          }
+
+          const preBalance = preBalances[userAccountIndex] || 0;
+          const postBalance = postBalances[userAccountIndex] || 0;
+          const userDelta = postBalance - preBalance;
+          const networkFeeLamports = txInfo.meta?.fee || 0;
+
+          let outgoingTransfersFromUser = 0;
+          const instructions = txInfo.meta?.innerInstructions || [];
+          instructions.forEach(innerInstruction => {
+            innerInstruction.instructions.forEach(instruction => {
+              if ('parsed' in instruction && instruction.programId.toString() === '11111111111111111111111111111112') {
+                const parsed = instruction.parsed as any;
+                if (parsed?.type === 'transfer') {
+                  const transferInfo = parsed.info;
+                  if (transferInfo?.source === existingRecord.walletAddress) {
+                    outgoingTransfersFromUser += transferInfo.lamports || 0;
+                  }
+                }
+              }
+            });
+          });
+
+          const realNetAmount = userDelta / 1e9;
+          const realGrossAmount = (userDelta + networkFeeLamports + outgoingTransfersFromUser) / 1e9;
+          const realFeeAmount = outgoingTransfersFromUser / 1e9;
+
+          // Update with real amounts
+          await storage.updateTransactionLedgerBySig(signature, {
+            solRecovered: realGrossAmount.toString(),
+            netAmount: realNetAmount.toString(),
+            feeAmount: realFeeAmount.toString(),
+            itemDetails: JSON.stringify({
+              ...JSON.parse(existingRecord.itemDetails || '{}'),
+              realAmountCalculated: true,
+              realNetAmount,
+              realGrossAmount,
+              realFeeAmount,
+              correctedAt: new Date().toISOString()
+            })
+          });
+
+          results.push({ 
+            signature, 
+            status: 'updated',
+            oldAmount: parseFloat(existingRecord.netAmount),
+            newAmount: realNetAmount
+          });
+
+        } catch (error) {
+          results.push({ 
+            signature, 
+            status: 'error', 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          });
+        }
+      }
+
+      res.json({ success: true, results });
+    } catch (error) {
+      console.error('Error fixing amounts:', error);
+      res.status(500).json({ error: 'Failed to fix amounts' });
+    }
+  });
+
   // Settlement endpoint to analyze confirmed transactions and get exact SOL amounts
   app.post('/api/burns/settlement', async (req, res) => {
     console.log('🚀 Settlement endpoint called with body:', JSON.stringify(req.body, null, 2));
@@ -2733,9 +2852,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
-          // Use temporary estimate until transaction is confirmed, then we'll check exact amount
-          const expectedRentSol = 0.008; // Temporary estimate - exact amount determined post-confirmation
-          console.log(`💰 pNFT estimate: ${expectedRentSol} SOL (exact amount calculated after transaction confirmation)`);
+          // Use placeholder - real amount will be calculated from confirmed transaction
+          const expectedRentSol = 0.009; // Placeholder estimate - REAL amount calculated after transaction confirmation
+          console.log(`💰 pNFT placeholder: ${expectedRentSol} SOL (REAL amount calculated from actual transaction)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
