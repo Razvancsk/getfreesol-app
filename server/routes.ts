@@ -2240,9 +2240,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const connection = new Connection(rpcUrl, 'confirmed');
           
           const assetAccountInfo = await connection.getAccountInfo(new PublicKey(nftId));
-          const actualRentLamports = assetAccountInfo?.lamports || 2268960; // Fallback to known amount
+          const totalAccountLamports = assetAccountInfo?.lamports || 2268960; // Fallback to known amount
+          // Core NFT burn only recovers partial rent (~34% of total account based on real testing)
+          const actualRentLamports = Math.floor(totalAccountLamports * 0.34); // 0.00122/0.0036 ≈ 0.34
           const actualRentSol = actualRentLamports / 1e9;
-          console.log(`💰 ACTUAL rent in Core NFT account: ${actualRentSol} SOL (${actualRentLamports} lamports)`);
+          console.log(`💰 Core NFT account: ${totalAccountLamports / 1e9} SOL total, ${actualRentSol} SOL recoverable (${actualRentLamports} lamports)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled
