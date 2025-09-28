@@ -2577,11 +2577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             feePayer: userPubkey
           });
           
-          // Add compute budget instruction
-          const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
-          transaction.add(computeBudgetIx);
-          
-          // Add RSZE instruction for each NFT in this batch
+          // Add RSZE instruction for each NFT in this batch (no compute budget instructions)
           for (const nft of batchNfts) {
             const nftMintPubkey = new PublicKey(nft.mint);
             
