@@ -13,7 +13,7 @@ import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@
 import { publicKey as umiPublicKey, createNoopSigner, TransactionBuilder } from '@metaplex-foundation/umi';
 import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 // Metaplex Token Metadata for pNFT burning
-import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata, fetchDigitalAsset } from '@metaplex-foundation/mpl-token-metadata';
+import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata, fetchDigitalAsset, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 
@@ -1521,67 +1521,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let nftImage = asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '';
         let nftDescription = asset.content?.metadata?.description || '';
         
-        // If metadata name is missing or just a symbol, try Helius getAsset for better data
+        // If metadata name is missing or just a symbol, use proper Metaplex metadata fetching
         if (!nftName || nftName.trim() === '' || nftName === 'MM') {
           try {
-            console.log(`🔍 Fetching enhanced metadata for ${asset.id} using Helius getAsset`);
+            console.log(`🔍 Fetching proper metadata for ${asset.id} using Metaplex Token Metadata`);
             
-            // Use Helius getAsset endpoint which is faster and has better metadata
-            const heliusResponse = await fetch(heliusRpcUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                jsonrpc: '2.0',
-                id: 'enhanced-metadata',
-                method: 'getAsset',
-                params: {
-                  id: asset.id,
-                  displayOptions: {
-                    showCollectionMetadata: true,
-                    showGrandTotal: true,
-                    showUnverifiedCollections: false,
-                    showNativeBalance: false,
-                    showInscription: false
+            // Create UMI instance for metadata fetching
+            const umi = createUmi(heliusRpcUrl).use(mplTokenMetadata());
+            
+            // Find metadata PDA
+            const metadataPda = findMetadataPda(umi, { mint: umiPublicKey(mintAddress) });
+            
+            // Fetch on-chain metadata
+            const metadataOnChain = await fetchMetadata(umi, metadataPda);
+            console.log(`🔍 On-chain metadata object:`, metadataOnChain);
+            
+            if (!metadataOnChain || !metadataOnChain.uri) {
+              console.log(`⚠️ No metadata URI found for ${asset.id}`);
+              throw new Error(`No metadata URI found`);
+            }
+            
+            const uri = metadataOnChain.uri;
+            console.log(`🔍 On-chain metadata URI: ${uri}`);
+            
+            // Fetch off-chain JSON metadata with timeout
+            if (uri && uri.trim()) {
+              try {
+                // Create a fetch with timeout (5 seconds)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch(uri, {
+                  signal: controller.signal,
+                  headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0'
+                  }
+                });
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                  const metadataJson = await response.json();
+                  console.log(`✅ Found proper NFT metadata:`, { name: metadataJson.name, image: metadataJson.image });
+                  
+                  // Use the proper name from JSON metadata
+                  if (metadataJson.name && metadataJson.name.trim()) {
+                    nftName = metadataJson.name;
+                    console.log(`✅ Found proper NFT name: "${nftName}"`);
+                  }
+                  
+                  // Use the proper image from JSON metadata
+                  if (metadataJson.image && metadataJson.image.trim()) {
+                    nftImage = metadataJson.image;
+                    console.log(`✅ Found proper image: ${nftImage}`);
+                  }
+                  
+                  // Use the proper description from JSON metadata
+                  if (metadataJson.description && metadataJson.description.trim()) {
+                    nftDescription = metadataJson.description;
+                    console.log(`✅ Found proper description: ${nftDescription}`);
+                  }
+                } else {
+                  console.log(`⚠️ Failed to fetch JSON metadata from URI. Status: ${response.status}`);
+                  // Fallback: Extract NFT number from URI if IPFS fails
+                  const numberMatch = uri.match(/\/(\d+)\.json$/);
+                  if (numberMatch) {
+                    const nftNumber = numberMatch[1];
+                    // Use on-chain name if available, otherwise try to construct from collection + number
+                    if (metadataOnChain.name && metadataOnChain.name.trim()) {
+                      nftName = metadataOnChain.name;
+                    } else {
+                      // Try to get collection name and combine with number
+                      const collectionName = nftDescription ? nftDescription.match(/it needs (.+)\./)?.[1] : null;
+                      if (collectionName) {
+                        nftName = `${collectionName} #${nftNumber}`;
+                        console.log(`✅ Constructed NFT name from URI: "${nftName}"`);
+                      }
+                    }
                   }
                 }
-              })
-            });
-            
-            if (heliusResponse.ok) {
-              const enhancedData = await heliusResponse.json();
-              const enhancedAsset = enhancedData.result;
-              
-              // Use enhanced metadata if available
-              if (enhancedAsset?.content?.metadata?.name && enhancedAsset.content.metadata.name.trim()) {
-                nftName = enhancedAsset.content.metadata.name;
-                console.log(`✅ Found enhanced NFT name: "${nftName}"`);
-              }
-              
-              if (enhancedAsset?.content?.files?.[0]?.uri || enhancedAsset?.content?.metadata?.image) {
-                const enhancedImage = enhancedAsset.content.files[0]?.uri || enhancedAsset.content.metadata.image;
-                if (enhancedImage && enhancedImage.trim()) {
-                  nftImage = enhancedImage;
-                  console.log(`✅ Found enhanced NFT image: ${nftImage}`);
+              } catch (fetchError) {
+                if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+                  console.log(`⚠️ JSON metadata fetch timed out for ${uri}`);
+                } else {
+                  console.log(`⚠️ Error fetching JSON metadata:`, fetchError);
                 }
-              }
-              
-              if (enhancedAsset?.content?.metadata?.description && enhancedAsset.content.metadata.description.trim()) {
-                nftDescription = enhancedAsset.content.metadata.description;
+                // Fallback: Extract NFT number from URI if IPFS fails  
+                const numberMatch = uri.match(/\/(\d+)\.json$/);
+                if (numberMatch) {
+                  const nftNumber = numberMatch[1];
+                  // Use on-chain name if available, otherwise try to construct from collection + number
+                  if (metadataOnChain.name && metadataOnChain.name.trim()) {
+                    nftName = metadataOnChain.name;
+                  } else {
+                    // Try to get collection name and combine with number
+                    const collectionName = nftDescription ? nftDescription.match(/it needs (.+)\./)?.[1] : null;
+                    if (collectionName) {
+                      nftName = `${collectionName} #${nftNumber}`;
+                      console.log(`✅ Constructed NFT name from URI after timeout: "${nftName}"`);
+                    }
+                  }
+                }
               }
             }
           } catch (metadataError) {
-            console.log(`⚠️ Could not fetch enhanced metadata for ${asset.id}:`, metadataError);
+            console.log(`⚠️ Could not fetch proper metadata for ${asset.id}:`, metadataError);
           }
         }
         
-        // Fallback logic if still no name after fetching metadata
+        // Final fallback logic if still no name after fetching metadata
         if (!nftName || nftName.trim() === '') {
           const hasCollection = asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value;
           
           if (hasCollection) {
-            // For collection NFTs, try to extract collection name and number
+            // For collection NFTs, just use collection name from description (no number from image URL)
             let collectionName = '';
-            let nftNumber = '';
             
             // Extract collection name from description
             if (nftDescription) {
@@ -1591,18 +1645,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Extract NFT number from image URL
-            if (nftImage) {
-              const imageNumberMatch = nftImage.match(/\/(\d+)\.png/);
-              if (imageNumberMatch) {
-                nftNumber = `#${imageNumberMatch[1]}`;
-              }
-            }
-            
-            // Combine collection name and number
-            if (collectionName && nftNumber) {
-              nftName = `${collectionName} ${nftNumber}`;
-            } else if (collectionName) {
+            // Use collection name without trying to extract wrong number from image URL
+            if (collectionName) {
               nftName = collectionName;
             } else {
               nftName = asset.content?.metadata?.symbol || 'Collection NFT';
