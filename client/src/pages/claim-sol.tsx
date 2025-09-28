@@ -1935,8 +1935,7 @@ export default function SolRefund() {
 
       console.log(`🔧 Prepared ${prepareData.totalBatches} resize batches for ${prepareData.totalNfts} NFTs (keeps NFTs intact)`);
 
-      // For now, since this is placeholder implementation, we'll simulate the resize process
-      // IMPORTANT: This does NOT burn/destroy NFTs - it only reduces their size using RSZE program
+      // Process each batch and get user signatures
       const results = [];
       let totalResized = 0;
       let totalRecovered = 0;
@@ -1944,34 +1943,76 @@ export default function SolRefund() {
       for (const batch of prepareData.batches) {
         console.log(`🔧 Processing batch ${batch.batchIndex}/${prepareData.totalBatches} with ${batch.nftCount} NFTs (resize only, no burning)...`);
 
-        // Simulate the resize process for now
-        // In real implementation, this would sign and submit the actual RSZE transactions
-        for (const nftId of batch.nftIds) {
-          const nft = selectedNfts.find((n: any) => n.mint === nftId);
-          if (nft) {
-            // Record the resize operation (NFT remains intact!)
-            await apiRequest('POST', '/api/nfts/resize/record', {
-              signature: `resize_${nftId}_${Date.now()}`, // Placeholder signature
-              walletAddress: publicKey.toString(),
-              nftMint: nftId,
-              oldSize: 1000, // Placeholder old size
-              newSize: 800,  // Placeholder new size
-              rentDelta: 0.002,
-              platformFee: 0.0003,
-              referralFee: 0,
-              netAmount: 0.0017
-            });
+        try {
+          // Get the transaction from the backend
+          const transactionBuffer = Buffer.from(batch.transaction, 'base64');
+          let deserializedTransaction: any;
+          let signedTransaction: any;
 
-            totalResized++;
-            totalRecovered += 0.0017; // Net amount after fees
+          // Try to deserialize as VersionedTransaction first (for newer programs)
+          try {
+            deserializedTransaction = (await import('@solana/web3.js')).VersionedTransaction.deserialize(transactionBuffer);
+            console.log(`🔧 Resize transaction deserialized as VersionedTransaction, signing with ${walletName || 'connected wallet'}...`);
+            signedTransaction = await signTransaction(deserializedTransaction);
+          } catch (versionedError: any) {
+            // Fallback to legacy Transaction
+            deserializedTransaction = (await import('@solana/web3.js')).Transaction.from(transactionBuffer);
+            console.log(`🔧 Resize transaction deserialized as legacy Transaction, signing with ${walletName || 'connected wallet'}...`);
+            signedTransaction = await signTransaction(deserializedTransaction);
           }
-        }
 
-        results.push({
-          batchIndex: batch.batchIndex,
-          nftCount: batch.nftCount,
-          success: true
-        });
+          console.log(`✅ Batch ${batch.batchIndex} resize transaction signed for ${batch.nftCount} NFTs (keeps them intact)!`);
+
+          // Submit the signed transaction
+          const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+          console.log(`🚀 Batch ${batch.batchIndex} resize transaction submitted: ${signature}`);
+
+          // Wait for confirmation
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+          if (confirmation.value.err) {
+            throw new Error(`Batch ${batch.batchIndex} resize transaction failed: ${confirmation.value.err}`);
+          }
+
+          console.log(`✅ Batch ${batch.batchIndex} resize transaction confirmed: ${signature}`);
+
+          // Record each NFT resize in this batch
+          for (const nftId of batch.nftIds) {
+            const nft = selectedNfts.find((n: any) => n.mint === nftId);
+            if (nft) {
+              await apiRequest('POST', '/api/nfts/resize/record', {
+                signature: signature,
+                walletAddress: publicKey.toString(),
+                nftMint: nftId,
+                oldSize: 1000, // Will be calculated from actual metadata
+                newSize: 800,  // Will be calculated from actual metadata
+                rentDelta: 0.002,
+                platformFee: 0.0003,
+                referralFee: 0,
+                netAmount: 0.0017
+              });
+
+              totalResized++;
+              totalRecovered += 0.0017; // Net amount after fees
+            }
+          }
+
+          results.push({
+            batchIndex: batch.batchIndex,
+            nftCount: batch.nftCount,
+            success: true,
+            signature: signature
+          });
+
+        } catch (batchError: any) {
+          console.error(`❌ Batch ${batch.batchIndex} resize failed:`, batchError);
+          results.push({
+            batchIndex: batch.batchIndex,
+            nftCount: batch.nftCount,
+            success: false,
+            error: batchError.message
+          });
+          // Continue with other batches
+        }
       }
 
       return {
