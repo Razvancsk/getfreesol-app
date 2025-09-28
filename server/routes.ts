@@ -2606,8 +2606,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const actualRentSol = 0.001; // Temporary estimate - exact amount determined post-confirmation
           console.log(`💰 Core NFT estimate: ${actualRentSol} SOL (exact amount calculated after transaction confirmation)`);
 
-          // Temporarily disabled platform fees for testing
-          const donationFactor = 0.0; // 0% fee temporarily disabled
+          // Platform fees enabled at 15% for Core NFT burning
+          const donationFactor = 0.15; // 15% platform fee for Core NFT burning
           const requestedFeeLamports = Math.floor(actualRentSol * 1e9 * donationFactor);
           const networkFeesLamports = 1900000; // 0.0019 SOL for Solana network transaction fees (priority fees + base fees + compute costs)
           const maxAllowedFeeLamports = Math.max(0, actualRentSol * 1e9 - networkFeesLamports);
@@ -2856,8 +2856,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const expectedRentSol = 0.009; // Placeholder estimate - REAL amount calculated after transaction confirmation
           console.log(`💰 pNFT placeholder: ${expectedRentSol} SOL (REAL amount calculated from actual transaction)`);
 
-          // Temporarily disabled platform fees for testing
-          const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
+          // Platform fees enabled at 15% for Programmable NFT burning
+          const donationFactor = 0.15; // 15% platform fee for Programmable NFT burning
           const requestedFeeLamports = Math.floor(expectedRentSol * 1e9 * donationFactor);
           const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
           const maxAllowedFeeLamports = Math.max(0, expectedRentSol * 1e9 - safetyBufferLamports);
