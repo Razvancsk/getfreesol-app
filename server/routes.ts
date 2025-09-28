@@ -2735,7 +2735,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { toWeb3JsLegacyTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
       const legacyTransaction = toWeb3JsLegacyTransaction(umiTransaction);
       
-      const base64Transaction = Buffer.from(legacyTransaction.serialize()).toString('base64');
+      // Serialize unsigned transaction (requireAllSignatures: false allows unsigned)
+      const base64Transaction = Buffer.from(legacyTransaction.serialize({ 
+        requireAllSignatures: false,
+        verifySignatures: false 
+      })).toString('base64');
 
       // Calculate net amount after fees
       const totalNetAmount = totalExpectedRent - (totalFeeLamports / 1e9);
