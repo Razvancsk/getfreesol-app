@@ -2490,10 +2490,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
-          // Use REAL transaction data - pNFT burns do give you SOL (user confirmed they got SOL)
-          const expectedRent = 220000; // User actually received SOL from pNFT burn (~0.0022 SOL - more than Core NFT)
+          // EXACT amount from user's actual pNFT transaction: 0.00348696 SOL recovered
+          const expectedRent = 348696; // EXACTLY what user's pNFT transaction recovered: 0.00348696 SOL
           const expectedRentSol = expectedRent / 1e9;
-          console.log(`💰 pNFT will recover: ${expectedRentSol} SOL (user confirmed they received SOL from pNFT burn)`);
+          console.log(`💰 pNFT will recover: ${expectedRentSol} SOL (exact amount from user's actual transaction)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
