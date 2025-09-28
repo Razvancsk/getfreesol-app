@@ -1516,44 +1516,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mintAddress = asset.mint || asset.id;
         }
 
-        // Handle missing name field - try multiple fallbacks with collection-aware logic
+        // Try to get accurate metadata using Helius getAsset endpoint instead of slow IPFS
         let nftName = asset.content?.metadata?.name;
-        const hasCollection = asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value;
+        let nftImage = asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '';
+        let nftDescription = asset.content?.metadata?.description || '';
         
+        // If metadata name is missing or just a symbol, try Helius getAsset for better data
+        if (!nftName || nftName.trim() === '' || nftName === 'MM') {
+          try {
+            console.log(`🔍 Fetching enhanced metadata for ${asset.id} using Helius getAsset`);
+            
+            // Use Helius getAsset endpoint which is faster and has better metadata
+            const heliusResponse = await fetch(heliusRpcUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 'enhanced-metadata',
+                method: 'getAsset',
+                params: {
+                  id: asset.id,
+                  displayOptions: {
+                    showCollectionMetadata: true,
+                    showGrandTotal: true,
+                    showUnverifiedCollections: false,
+                    showNativeBalance: false,
+                    showInscription: false
+                  }
+                }
+              })
+            });
+            
+            if (heliusResponse.ok) {
+              const enhancedData = await heliusResponse.json();
+              const enhancedAsset = enhancedData.result;
+              
+              // Use enhanced metadata if available
+              if (enhancedAsset?.content?.metadata?.name && enhancedAsset.content.metadata.name.trim()) {
+                nftName = enhancedAsset.content.metadata.name;
+                console.log(`✅ Found enhanced NFT name: "${nftName}"`);
+              }
+              
+              if (enhancedAsset?.content?.files?.[0]?.uri || enhancedAsset?.content?.metadata?.image) {
+                const enhancedImage = enhancedAsset.content.files[0]?.uri || enhancedAsset.content.metadata.image;
+                if (enhancedImage && enhancedImage.trim()) {
+                  nftImage = enhancedImage;
+                  console.log(`✅ Found enhanced NFT image: ${nftImage}`);
+                }
+              }
+              
+              if (enhancedAsset?.content?.metadata?.description && enhancedAsset.content.metadata.description.trim()) {
+                nftDescription = enhancedAsset.content.metadata.description;
+              }
+            }
+          } catch (metadataError) {
+            console.log(`⚠️ Could not fetch enhanced metadata for ${asset.id}:`, metadataError);
+          }
+        }
+        
+        // Fallback logic if still no name after fetching metadata
         if (!nftName || nftName.trim() === '') {
+          const hasCollection = asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value;
           
-          // For collection NFTs, try to extract collection name and number
           if (hasCollection) {
+            // For collection NFTs, try to extract collection name and number
             let collectionName = '';
             let nftNumber = '';
             
             // Extract collection name from description
-            if (asset.content?.metadata?.description) {
-              const desc = asset.content.metadata.description;
-              // Look for patterns like "it needs More Monkes."
-              const collectionMatch = desc.match(/it needs (.+)\./);
+            if (nftDescription) {
+              const collectionMatch = nftDescription.match(/it needs (.+)\./);
               if (collectionMatch) {
                 collectionName = collectionMatch[1];
               }
             }
             
-            // Extract NFT number from various sources
-            // Try image URL first (e.g., "506.png" -> "#506")
-            if (asset.content?.files?.[0]?.uri || asset.content?.metadata?.image) {
-              const imageUrl = asset.content?.files?.[0]?.uri || asset.content.metadata.image;
-              const imageNumberMatch = imageUrl.match(/\/(\d+)\.png/);
+            // Extract NFT number from image URL
+            if (nftImage) {
+              const imageNumberMatch = nftImage.match(/\/(\d+)\.png/);
               if (imageNumberMatch) {
                 nftNumber = `#${imageNumberMatch[1]}`;
-              }
-            }
-            
-            // Try attributes for number/id/rank
-            if (!nftNumber && asset.content?.metadata?.attributes) {
-              const numberAttr = asset.content.metadata.attributes.find((attr: any) => 
-                ['number', 'id', 'rank', 'edition'].includes(attr.trait_type?.toLowerCase())
-              );
-              if (numberAttr) {
-                nftNumber = `#${numberAttr.value}`;
               }
             }
             
@@ -1563,19 +1605,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else if (collectionName) {
               nftName = collectionName;
             } else {
-              // Fallback to symbol for collection NFTs
               nftName = asset.content?.metadata?.symbol || 'Collection NFT';
             }
           } else {
             // Non-collection NFT fallbacks
-            if (asset.content?.metadata?.symbol) {
-              nftName = asset.content.metadata.symbol;
-            } else if (asset.content?.metadata?.description) {
-              const desc = asset.content.metadata.description;
-              nftName = desc.split('.')[0].substring(0, 50); // First sentence, max 50 chars
-            } else {
-              nftName = 'Unknown NFT';
-            }
+            nftName = asset.content?.metadata?.symbol || 'Unknown NFT';
           }
         }
 
@@ -1585,8 +1619,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           assetId: assetId,
           name: nftName,
           symbol: asset.content?.metadata?.symbol || '',
-          image: asset.content?.files?.[0]?.uri || asset.content?.metadata?.image || '',
-          description: asset.content?.metadata?.description || '',
+          image: nftImage, // Use the enhanced image from metadata fetch
+          description: nftDescription, // Use the enhanced description from metadata fetch
           type: nftType,
           interface: assetInterface,
           tokenStandard: asset.token_info?.token_standard || '',
