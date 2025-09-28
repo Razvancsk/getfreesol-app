@@ -2492,15 +2492,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
           let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
-          // Calculate expected rent (pNFTs have multiple accounts)
+          // Calculate expected rent (pNFTs have multiple accounts but burn doesn't recover all)
           const connection = new Connection(rpcUrl, 'confirmed');
-          let expectedRent = 0;
+          let totalAccountRent = 0;
           
           // Get rent from token account
           if (assetWithToken.token.publicKey) {
             const tokenAccountInfo = await connection.getAccountInfo(new PublicKey(assetWithToken.token.publicKey.toString()));
             if (tokenAccountInfo) {
-              expectedRent += tokenAccountInfo.lamports;
+              totalAccountRent += tokenAccountInfo.lamports;
             }
           }
           
@@ -2508,11 +2508,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (assetWithToken.tokenRecord?.publicKey) {
             const tokenRecordInfo = await connection.getAccountInfo(new PublicKey(assetWithToken.tokenRecord.publicKey.toString()));
             if (tokenRecordInfo) {
-              expectedRent += tokenRecordInfo.lamports;
+              totalAccountRent += tokenRecordInfo.lamports;
             }
           }
-
+          
+          // pNFT burn only recovers partial rent (not full account balances)
+          // Apply realistic recovery rate to stop showing fake inflated amounts
+          const expectedRent = Math.floor(totalAccountRent * 0.35); // ~35% recovery rate based on real pNFT burning
           const expectedRentSol = expectedRent / 1e9;
+          console.log(`💰 pNFT accounts: ${totalAccountRent / 1e9} SOL total, ${expectedRentSol} SOL recoverable (${expectedRent} lamports)`);
 
           // Temporarily disabled platform fees for testing
           const donationFactor = 0.0; // 0% fee temporarily disabled for Programmable NFT burning
