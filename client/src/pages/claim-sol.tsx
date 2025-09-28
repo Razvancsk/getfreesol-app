@@ -709,7 +709,6 @@ export default function SolRefund() {
       }
 
       console.log(`🔥 Starting batch burn for ${selectedNftIds.length} NFTs...`);
-      console.log('📦 Calling batch burn endpoint for', selectedNftIds.length, 'NFTs...');
 
       // Call bulk burn endpoint
       const batchResponse = await apiRequest('POST', '/api/nfts/bulk-burn', {
@@ -719,7 +718,6 @@ export default function SolRefund() {
       });
 
       const batchResult = await batchResponse.json();
-      console.log('🔧 Server prepared batch transactions:', batchResult);
 
       if (!batchResult.success) {
         throw new Error(batchResult.error || 'Failed to prepare batch transactions');
@@ -728,8 +726,6 @@ export default function SolRefund() {
       if (!batchResult.batchTransactions || batchResult.batchTransactions.length === 0) {
         throw new Error('No transactions prepared for batch burn');
       }
-
-      console.log(`🔐 Processing ${batchResult.batchTransactions.length} batch transactions...`);
 
       // Import Solana dependencies
       const { VersionedTransaction } = await import('@solana/web3.js');
@@ -751,7 +747,7 @@ export default function SolRefund() {
         }
 
         try {
-          console.log(`🔐 Signing and sending transaction for NFT: ${burnTx.nftId}`);
+          console.log(`🔐 Signing transaction for NFT: ${burnTx.nftId}`);
 
           // Deserialize the transaction from base64
           const transactionBuffer = Buffer.from(burnTx.transaction, 'base64');
@@ -760,8 +756,7 @@ export default function SolRefund() {
           // Sign the transaction with the wallet
           const signedTransaction = await signTransaction(transaction);
 
-          // Use server relay to submit transaction (bypasses 403 domain restrictions)
-          console.log('📡 Submitting NFT via server relay to bypass domain restrictions...');
+          // Use server relay to submit transaction
           const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
             signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
             description: `Batch NFT burn: ${burnTx.nftId}`,
@@ -775,13 +770,13 @@ export default function SolRefund() {
           }
 
           const signature = relayResponse.signature;
-          console.log('🎉 NFT Transaction submitted successfully via relay:', signature);
+          console.log('🎉 NFT burned successfully:', signature);
           
           successfulBurns++;
           totalRentRecovered += burnTx.expectedRent || 0;
           signatures.push(signature);
 
-          // Record the successful burn in our database
+          // Record the successful burn
           try {
             await apiRequest('POST', '/api/nfts/burn/record', {
               signature,
@@ -791,18 +786,12 @@ export default function SolRefund() {
               nftType: 'batch',
               success: true
             });
-            console.log('✅ NFT burn recorded in database');
           } catch (recordError) {
             console.warn('⚠️ Failed to record NFT burn in database:', recordError);
           }
 
         } catch (signError) {
-          console.error(`❌ Failed to sign/send transaction for NFT ${burnTx.nftId}:`, {
-            error: signError,
-            message: signError instanceof Error ? signError.message : String(signError),
-            stack: signError instanceof Error ? signError.stack : undefined,
-            details: signError
-          });
+          console.error(`❌ Failed to sign/send transaction for NFT ${burnTx.nftId}:`, signError);
           
           // Record the failed burn attempt
           try {
@@ -829,53 +818,122 @@ export default function SolRefund() {
         signatures,
         nftsProcessed: successfulBurns
       };
+    },
+    onSuccess: (result) => {
+      toast({
+        title: `Successfully burned ${result.successfulBurns} NFT${result.successfulBurns > 1 ? 's' : ''}!`,
+        description: `Recovered ${result.totalRentRecovered.toFixed(6)} SOL from ${result.signatures.length} transactions`,
+        className: "bg-green-600 text-white border-green-600",
+      });
 
-        // Handle Core NFTs with Server-Side UMI Implementation  
-        if (nftType === 'core') {
-          try {
-            console.log('🔥 Starting Core NFT burning with server-side UMI...');
-            
-            if (!wallet.publicKey) {
-              throw new Error('Wallet not connected');
-            }
+      // Clear selection and refresh data
+      setSelectedNfts(new Set());
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+    },
+    onError: (error: any) => {
+      console.error('Error burning NFTs:', error);
 
-            // Prepare Core NFT IDs (use the actual ID from the NFT objects)
-            const coreNftIds = nfts.map(nft => nft.id || nft.mint || nft.assetId);
-            console.log(`📦 Preparing burn transactions for ${coreNftIds.length} Core NFTs...`);
+      let errorMessage = "Failed to burn NFTs. Please try again.";
+      if (error.message) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = "Transaction was cancelled by user.";
+        } else if (error.message.includes('wallet not found')) {
+          errorMessage = "Please install and connect your wallet.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
 
-            // Call server to prepare burn transactions
-            const prepareResponseRaw = await apiRequest('POST', '/api/core-nfts/prepare-burn', {
-              coreNftIds,
-              walletAddress: wallet.publicKey.toString()
-            });
-            const prepareResponse = await prepareResponseRaw.json();
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
 
-            console.log('🔧 Server prepared burn transactions:', {
-              rawResponse: prepareResponse,
-              hasSuccess: 'success' in prepareResponse,
-              successValue: prepareResponse.success,
-              hasBurnTransactions: 'burnTransactions' in prepareResponse,
-              burnTransactionsValue: prepareResponse.burnTransactions,
-              burnTransactionsType: typeof prepareResponse.burnTransactions,
-              burnTransactionsLength: Array.isArray(prepareResponse.burnTransactions) ? prepareResponse.burnTransactions.length : 'not array'
-            });
+  // Selection handlers
+  const toggleTokenSelection = (mintAddress: string) => {
+    const newSelection = new Set(selectedTokens);
+    if (newSelection.has(mintAddress)) {
+      newSelection.delete(mintAddress);
+    } else {
+      newSelection.add(mintAddress);
+    }
+    setSelectedTokens(newSelection);
+  };
 
-            if (!prepareResponse.success || !prepareResponse.burnTransactions) {
-              console.error('❌ Server response validation failed:', {
-                success: prepareResponse.success,
-                burnTransactions: prepareResponse.burnTransactions,
-                successCheck: !prepareResponse.success,
-                burnTransactionsCheck: !prepareResponse.burnTransactions
-              });
-              throw new Error('Server failed to prepare burn transactions');
-            }
+  const selectAllTokens = () => {
+    setSelectedTokens(new Set(tokenList.map(token => token.mint)));
+  };
 
-            const successfulBurns = [];
-            let totalRentRecovered = 0;
+  const clearTokenSelection = () => {
+    setSelectedTokens(new Set());
+  };
 
-            // Process each prepared transaction
-            for (const burnTx of prepareResponse.burnTransactions) {
-              if (burnTx.error) {
+  // Calculate total SOL to recover (net after 15% fee)
+  const calculateTotalSOL = (count: number) => {
+    const grossAmount = count * 0.00203928;
+    const netAmount = grossAmount * 0.85; // 15% fee deducted
+    return `${netAmount.toFixed(6)}`;
+  };
+
+  // Process SOL refund (15% service fee)
+  const refundMutation = useMutation({
+    mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string }) => {
+      // Get transaction (15% service fee)
+      const response = await fetch('/api/sol-refund/transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to prepare refund transaction');
+      }
+
+      const result = await response.json();
+      return result;
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "SOL Recovery Successful!",
+        description: `Recovered ${result.netAmount} SOL from ${result.accountsClosed} accounts`,
+        className: "bg-green-600 text-white border-green-600",
+      });
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process SOL refund transaction",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // NFT selection handlers
+  const toggleNftSelection = (nftId: string) => {
+    const newSelection = new Set(selectedNfts);
+    if (newSelection.has(nftId)) {
+      newSelection.delete(nftId);
+    } else {
+      newSelection.add(nftId);
+    }
+    setSelectedNfts(newSelection);
+  };
+
+  const selectAllNfts = () => {
+    if (nftData?.nfts) {
+      const allNftIds = nftData.nfts.map((nft: any) => nft.mint || nft.id || nft.assetId);
+      setSelectedNfts(new Set(allNftIds));
+    }
+  };
+
+  const clearNftSelection = () => {
+    setSelectedNfts(new Set());
+  };
                 console.error(`❌ Server error for NFT ${burnTx.nftId}:`, burnTx.error);
                 continue;
               }
