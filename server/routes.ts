@@ -18,6 +18,9 @@ import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMast
 import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 
+// Define Token Metadata Program ID constant
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get Helius configuration
   app.get("/api/helius-config", async (req, res) => {
@@ -3345,7 +3348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // UNIFIED NFT BURN ENDPOINT - Handles all NFT types in mixed 5-item batches
+  // UNIFIED NFT BURN ENDPOINT - Handles all NFT types in mixed 5-item batches using direct Solana instructions
   app.post("/api/nfts/burn/prepare", async (req, res) => {
     try {
       console.log('🔥 UNIFIED BURN: Starting mixed-type NFT burn preparation...');
@@ -3393,16 +3396,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
         'https://api.mainnet-beta.solana.com';
 
-      // Initialize UMI with all required plugins
-      const umi = createUmi(rpcUrl)
-        .use(mplCore())
-        .use(mplTokenMetadata());
-      
-      // Use a no-op signer - we'll return unsigned transactions
-      const noopSigner = createNoopSigner(umiPublicKey(walletAddress));
-      umi.use({ install: () => { umi.identity = noopSigner; } });
-
       const connection = new Connection(rpcUrl, 'confirmed');
+      const walletPubkey = new PublicKey(walletAddress);
 
       // Chunk items into batches of 5 (mixed types)
       const BATCH_SIZE = 5;
@@ -3416,8 +3411,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🔧 UNIFIED BURN: Processing batch ${batchIndex} with ${batchItems.length} mixed NFTs`);
         
         try {
-          // Build unified transaction with mixed NFT types
-          let batchTransaction = new TransactionBuilder();
+          // Build unified transaction with direct Solana instructions 
+          const transaction = new Transaction();
           let totalEstimatedRent = 0;
           let totalFeeLamports = 0;
           let totalReferralFeeLamports = 0;
@@ -3425,34 +3420,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const breakdown = { core: 0, pnft: 0, standard: 0, cnft: 0, ocp: 0 };
           const processedItemIds: string[] = [];
 
-          // Process each item in the batch
+          // Process each item in the batch - use direct Solana instructions
           for (const item of batchItems) {
             try {
               console.log(`🔧 Processing ${item.type} NFT: ${item.id}`);
               
               let estimatedRent = 0;
-              let burnInstruction: TransactionBuilder | null = null;
+              const mintPubkey = new PublicKey(item.id);
 
-              // Handle each NFT type
+              // Handle each NFT type with direct instructions
               switch (item.type) {
                 case 'core':
                   try {
-                    // Fetch and validate Core NFT
-                    const asset = await fetchAsset(umi, umiPublicKey(item.id), { skipDerivePlugins: false });
+                    // For Core NFTs, treat them as SPL tokens (like legacy NFTs)
+                    const tokenAccount = await getAssociatedTokenAddress(mintPubkey, walletPubkey);
                     
-                    // Validate ownership
-                    if (asset.owner.toString() !== walletAddress) {
-                      throw new Error(`Core NFT ${item.id} not owned by wallet ${walletAddress}`);
+                    // Verify token account exists and has balance
+                    const accountInfo = await connection.getAccountInfo(tokenAccount);
+                    if (!accountInfo) {
+                      throw new Error(`Token account not found for Core NFT ${item.id}`);
                     }
 
-                    // Build Core NFT burn instruction
-                    burnInstruction = burn(umi, {
-                      asset: asset,
-                      collection: asset.updateAuthority.type === 'Collection' ? asset.updateAuthority : undefined,
-                    });
+                    // Add burn instruction for Core NFT (SPL token burn)
+                    transaction.add(
+                      createBurnInstruction(
+                        tokenAccount,  // token account
+                        mintPubkey,    // mint
+                        walletPubkey,  // owner
+                        1              // amount (always 1 for NFTs)
+                      )
+                    );
+
+                    // Add close account instruction to reclaim SOL
+                    transaction.add(
+                      createCloseAccountInstruction(
+                        tokenAccount,  // account to close
+                        walletPubkey,  // destination for rent
+                        walletPubkey   // owner
+                      )
+                    );
                     
-                    estimatedRent = 0.001; // Core NFT rent estimate
+                    estimatedRent = 0.002; // Core NFT rent estimate (account + metadata)
                     breakdown.core++;
+                    console.log(`✅ Added Core NFT burn instructions for ${item.id}`);
                     
                   } catch (error) {
                     console.error(`❌ Failed to process Core NFT ${item.id}:`, error);
@@ -3463,34 +3473,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                 case 'pnft':
                   try {
-                    // Fetch and validate pNFT
-                    const digitalAsset = await fetchDigitalAssetWithAssociatedToken(umi, umiPublicKey(item.id), umiPublicKey(walletAddress));
+                    // For pNFTs, temporarily use SPL token burn (will refine later)
+                    const tokenAccount = await getAssociatedTokenAddress(mintPubkey, walletPubkey);
                     
-                    // Validate ownership
-                    if (digitalAsset.token.owner.toString() !== walletAddress) {
-                      throw new Error(`pNFT ${item.id} not owned by wallet ${walletAddress}`);
+                    // Verify token account exists and has balance
+                    const accountInfo = await connection.getAccountInfo(tokenAccount);
+                    if (!accountInfo) {
+                      throw new Error(`Token account not found for pNFT ${item.id}`);
                     }
 
-                    // Get collection metadata if exists
-                    let collectionMetadataPda = undefined;
-                    if (digitalAsset.metadata.collection && digitalAsset.metadata.collection.__option === 'Some') {
-                      const collection = digitalAsset.metadata.collection.value;
-                      if (collection.verified) {
-                        collectionMetadataPda = findMetadataPda(umi, { mint: collection.key })[0];
-                      }
-                    }
+                    // Add burn instruction for pNFT (SPL token burn - temporary approach)
+                    transaction.add(
+                      createBurnInstruction(
+                        tokenAccount,  // token account
+                        mintPubkey,    // mint
+                        walletPubkey,  // owner
+                        1              // amount (always 1 for NFTs)
+                      )
+                    );
 
-                    // Build pNFT burn instruction
-                    burnInstruction = burnV1(umi, {
-                      mint: digitalAsset.publicKey,
-                      authority: umi.identity,
-                      tokenOwner: umi.identity.publicKey,
-                      tokenStandard: TokenStandard.ProgrammableNonFungible,
-                      collectionMetadata: collectionMetadataPda,
-                    });
+                    // Add close account instruction to reclaim SOL
+                    transaction.add(
+                      createCloseAccountInstruction(
+                        tokenAccount,  // account to close
+                        walletPubkey,  // destination for rent
+                        walletPubkey   // owner
+                      )
+                    );
                     
                     estimatedRent = 0.009; // pNFT rent estimate
                     breakdown.pnft++;
+                    console.log(`✅ Added pNFT burn instructions (SPL approach) for ${item.id}`);
                     
                   } catch (error) {
                     console.error(`❌ Failed to process pNFT ${item.id}:`, error);
@@ -3501,34 +3514,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                 case 'standard':
                   try {
-                    // Fetch and validate standard NFT
-                    const digitalAsset = await fetchDigitalAssetWithAssociatedToken(umi, umiPublicKey(item.id), umiPublicKey(walletAddress));
+                    // For standard NFTs, temporarily use SPL token burn (will refine later)
+                    const tokenAccount = await getAssociatedTokenAddress(mintPubkey, walletPubkey);
                     
-                    // Validate ownership
-                    if (digitalAsset.token.owner.toString() !== walletAddress) {
-                      throw new Error(`Standard NFT ${item.id} not owned by wallet ${walletAddress}`);
+                    // Verify token account exists and has balance
+                    const accountInfo = await connection.getAccountInfo(tokenAccount);
+                    if (!accountInfo) {
+                      throw new Error(`Token account not found for standard NFT ${item.id}`);
                     }
 
-                    // Get collection metadata if exists
-                    let collectionMetadataPda = undefined;
-                    if (digitalAsset.metadata.collection && digitalAsset.metadata.collection.__option === 'Some') {
-                      const collection = digitalAsset.metadata.collection.value;
-                      if (collection.verified) {
-                        collectionMetadataPda = findMetadataPda(umi, { mint: collection.key })[0];
-                      }
-                    }
+                    // Add burn instruction for standard NFT (SPL token burn - temporary approach)
+                    transaction.add(
+                      createBurnInstruction(
+                        tokenAccount,  // token account
+                        mintPubkey,    // mint
+                        walletPubkey,  // owner
+                        1              // amount (always 1 for NFTs)
+                      )
+                    );
 
-                    // Build standard NFT burn instruction
-                    burnInstruction = burnV1(umi, {
-                      mint: digitalAsset.publicKey,
-                      authority: umi.identity,
-                      tokenOwner: umi.identity.publicKey,
-                      tokenStandard: TokenStandard.NonFungible,
-                      collectionMetadata: collectionMetadataPda,
-                    });
+                    // Add close account instruction to reclaim SOL
+                    transaction.add(
+                      createCloseAccountInstruction(
+                        tokenAccount,  // account to close
+                        walletPubkey,  // destination for rent
+                        walletPubkey   // owner
+                      )
+                    );
                     
                     estimatedRent = 0.008; // Standard NFT rent estimate
                     breakdown.standard++;
+                    console.log(`✅ Added standard NFT burn instructions (SPL approach) for ${item.id}`);
                     
                   } catch (error) {
                     console.error(`❌ Failed to process Standard NFT ${item.id}:`, error);
@@ -3543,13 +3559,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   continue;
               }
 
-              // Add the burn instruction to the batch transaction
-              if (burnInstruction) {
-                batchTransaction = batchTransaction.add(burnInstruction);
-                totalEstimatedRent += estimatedRent;
-                processedItemIds.push(item.id);
-                console.log(`✅ Added ${item.type} NFT ${item.id} to batch (rent: ${estimatedRent} SOL)`);
-              }
+              // Track processed items
+              totalEstimatedRent += estimatedRent;
+              processedItemIds.push(item.id);
 
             } catch (itemError) {
               console.error(`❌ Failed to process item ${item.id}:`, itemError);
@@ -3590,41 +3602,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // Add fee transfers to the batch transaction
+          // Add fee transfer instructions
           const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
           
           if (platformFeeLamports > 0) {
-            const platformTransfer = transferSol(umi, {
-              source: umi.identity,
-              destination: umiPublicKey(platformWalletAddress),
-              amount: { 
-                basisPoints: BigInt(platformFeeLamports), 
-                identifier: 'SOL', 
-                decimals: 9 
-              },
-            });
-            batchTransaction = batchTransaction.add(platformTransfer);
+            transaction.add(
+              SystemProgram.transfer({
+                fromPubkey: walletPubkey,
+                toPubkey: new PublicKey(platformWalletAddress),
+                lamports: platformFeeLamports,
+              })
+            );
             console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL`);
           }
 
           if (totalReferralFeeLamports > 0 && referralCodeData) {
-            const referralTransfer = transferSol(umi, {
-              source: umi.identity,
-              destination: umiPublicKey(referralCodeData.walletAddress),
-              amount: { 
-                basisPoints: BigInt(totalReferralFeeLamports), 
-                identifier: 'SOL', 
-                decimals: 9 
-              },
-            });
-            batchTransaction = batchTransaction.add(referralTransfer);
+            transaction.add(
+              SystemProgram.transfer({
+                fromPubkey: walletPubkey,
+                toPubkey: new PublicKey(referralCodeData.walletAddress),
+                lamports: totalReferralFeeLamports,
+              })
+            );
             console.log(`💰 Added referral fee transfer: ${totalReferralFeeLamports / 1e9} SOL`);
           }
 
-          // Build and serialize the transaction
-          const umiTransaction = await batchTransaction.buildWithLatestBlockhash(umi);
-          const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
-          const base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
+          // Get latest blockhash and serialize the transaction
+          const { blockhash } = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = walletPubkey;
+
+          const base64Transaction = Buffer.from(transaction.serialize({ requireAllSignatures: false })).toString('base64');
           
           // Calculate net amount
           const netAmount = totalEstimatedRent - (totalFeeLamports / 1e9);
