@@ -2774,8 +2774,8 @@ export default function SolRefund() {
                             {/* Big Flame Icon Overlay for Selected NFTs */}
                             {isSelected && (
                               <div className="absolute inset-0 flex items-center justify-center z-20">
-                                <div className="w-12 h-12 rounded-full bg-orange-500/90 backdrop-blur-sm flex items-center justify-center shadow-xl animate-pulse">
-                                  <Flame className="h-8 w-8 text-white drop-shadow-lg" />
+                                <div className="w-20 h-20 rounded-full bg-orange-500/90 backdrop-blur-sm flex items-center justify-center shadow-xl animate-pulse">
+                                  <Flame className="h-14 w-14 text-white drop-shadow-lg" />
                                 </div>
                               </div>
                             )}
