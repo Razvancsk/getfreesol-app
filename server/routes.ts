@@ -2635,15 +2635,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nftMint,
         oldSize: oldSize || 0,
         newSize: newSize || 0,
-        rentDelta: rentDelta || 0,
-        platformFee: platformFee || 0,
-        referralFee: referralFee || 0,
-        netAmount: netAmount || 0,
-        resizedAt: new Date()
+        rentDelta: (rentDelta || 0).toString(),
+        platformFee: (platformFee || 0).toString(),
+        referralFee: (referralFee || 0).toString(),
+        netAmount: (netAmount || 0).toString()
       });
 
       // Create transaction ledger entry
-      await storage.createTransactionLedger({
+      await storage.createTransactionLedgerEntry({
         signature,
         transactionType: 'nft_resize',
         walletAddress,
@@ -2659,10 +2658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platformFee,
           referralFee,
           netAmount
-        }),
-        referralCode,
-        referralFee: referralFee || 0,
-        processedAt: new Date()
+        })
       });
 
       // Handle referral transaction if applicable
@@ -2671,10 +2667,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (referralCodeData) {
           await storage.createReferralTransaction({
             referralCodeId: referralCodeData.id,
-            signature,
-            transactionType: 'nft_resize',
-            feeAmount: referralFee,
-            processedAt: new Date()
+            transactionSignature: signature,
+            referredWalletAddress: walletAddress,
+            originalFeeAmount: (platformFee || 0).toString(),
+            referralFeeAmount: (referralFee || 0).toString(),
+            platformFeeAmount: (platformFee || 0).toString()
           });
         }
       }
