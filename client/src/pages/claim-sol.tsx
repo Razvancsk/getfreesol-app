@@ -2466,7 +2466,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-burn-tokens"
                 >
-                  🔥 Burn
+                  🔥 Burn Tokens
                 </button>
                 <button
                   onClick={() => setBurnSubTab('nft')}
