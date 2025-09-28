@@ -2244,8 +2244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const actualRentSol = actualRentLamports / 1e9;
           console.log(`💰 ACTUAL rent in Core NFT account: ${actualRentSol} SOL (${actualRentLamports} lamports)`);
 
-          // Calculate platform fees (15% of recovered rent)
-          const donationFactor = 0.15; // 15% fee for Core NFT burning
+          // Temporarily disabled platform fees for testing
+          const donationFactor = 0.0; // 0% fee temporarily disabled
           const requestedFeeLamports = Math.floor(actualRentLamports * donationFactor);
           const networkFeesLamports = 1900000; // 0.0019 SOL for Solana network transaction fees (priority fees + base fees + compute costs)
           const maxAllowedFeeLamports = Math.max(0, actualRentLamports - networkFeesLamports);
