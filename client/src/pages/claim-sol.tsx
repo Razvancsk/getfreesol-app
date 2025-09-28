@@ -698,19 +698,19 @@ export default function SolRefund() {
     },
   });
 
-  // Burn NFTs mutation (UNIFIED: All NFT types in mixed batches)
+  // Burn NFTs mutation
   const burnNftsMutation = useMutation({
     mutationFn: async (selectedNftIds: string[]) => {
       if (!isConnected || !publicKey) {
         throw new Error('Wallet not connected');
       }
 
-      // Get the NFT data
+      // Get the NFT data to group by type
       if (!nftData || !nftData.nfts) {
         throw new Error('No NFT data available');
       }
 
-      // Find the selected NFTs
+      // Find the selected NFTs and group them by type
       const selectedNfts = nftData.nfts.filter((nft: any) => {
         const nftId = nft.mint || nft.id || nft.assetId;
         return selectedNftIds.includes(nftId);
@@ -720,178 +720,22 @@ export default function SolRefund() {
         throw new Error('No valid NFTs selected');
       }
 
-      // Filter out unsupported types (cNFTs only - Core, pNFT, Standard are all supported)
-      const supportedNfts = selectedNfts.filter((nft: any) => nft.type !== 'cnft');
-      
-      if (supportedNfts.length === 0) {
-        throw new Error('No supported NFTs selected (cNFTs are not supported)');
-      }
-
-      console.log(`🔥 Starting unified NFT burning for ${supportedNfts.length} NFTs...`);
-
-      // NEW UNIFIED APPROACH: Prepare BurnItem[] for all NFT types
-      const burnItems = supportedNfts.map((nft: any) => ({
-        id: nft.id || nft.mint || nft.assetId,
-        type: nft.type === 'programmable' ? 'pnft' : nft.type, // Normalize 'programmable' to 'pnft'
-        mint: nft.mint,
-        name: nft.name || null,
-        image: nft.image || null,
-        collectionAddress: nft.collectionAddress || null
-      }));
-
-      console.log(`📦 Sending ${burnItems.length} NFTs to unified endpoint:`, burnItems);
-
-      // Call unified endpoint for mixed batching
-      const prepareResponseRaw = await apiRequest('POST', '/api/nfts/burn/prepare', {
-        items: burnItems,
-        walletAddress: publicKey.toString(),
-        referralCode: referralCode || undefined
-      });
-      const prepareResponse = await prepareResponseRaw.json();
-
-      console.log('🔧 Unified endpoint response:', prepareResponse);
-
-      if (!prepareResponse.success || !prepareResponse.batches) {
-        throw new Error(`Server failed to prepare unified burn batches: ${prepareResponse.message || 'Unknown error'}`);
-      }
-
-      const { batches, totalExpectedRentSOL, failedNfts } = prepareResponse;
-
-      if (batches.length === 0) {
-        throw new Error('No valid NFTs could be prepared for burning');
-      }
-
-      console.log(`🔥 Processing ${batches.length} mixed-type batches (max 5 NFTs per signature)...`);
-
-      const allBurnedItems = [];
-      let totalNetAmount = 0;
-      let totalBurnedCount = 0;
-
-      // Process each batch sequentially (user signs each one)
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        console.log(`🔐 Signing batch ${batch.batchIndex}/${batches.length} with ${batch.nftCount} mixed NFTs...`);
-
-        if (!batch.transaction) {
-          throw new Error(`No transaction in batch ${batch.batchIndex}`);
+      // Group NFTs by type (only excluding cNFTs - Core NFTs are now supported)
+      const nftsByType: { [key: string]: any[] } = {};
+      selectedNfts.forEach((nft: any) => {
+        // Skip cNFTs only (Core NFTs are now supported with official Metaplex integration)
+        if (nft.type === 'cnft') {
+          return;
         }
-
-        // Deserialize the batch transaction from base64
-        const transactionBuffer = Buffer.from(batch.transaction, 'base64');
-        const { Transaction } = await import('@solana/web3.js');
-        const transaction = Transaction.from(transactionBuffer);
-
-        // Sign this batch transaction
-        const signedTransaction = await wallet.signTransaction(transaction);
-        console.log(`✅ Batch ${batch.batchIndex} transaction signed for ${batch.nftCount} mixed NFTs!`);
-
-        // Submit the signed batch transaction via server relay
-        console.log(`📡 Submitting batch ${batch.batchIndex} transaction via server relay...`);
-        const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
-          signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
-          description: `Mixed NFT batch burn ${batch.batchIndex}: ${batch.nftCount} NFTs`,
-          skipPreflight: true
-        });
-        const relayResponse = await relayResponseRaw.json();
-
-        if (!relayResponse.success || !relayResponse.signature) {
-          throw new Error(`Batch ${batch.batchIndex} relay failed: ${relayResponse.error || 'No signature returned'}`);
+        if (!nftsByType[nft.type]) {
+          nftsByType[nft.type] = [];
         }
-
-        const signature = relayResponse.signature;
-        console.log(`🚀 Batch ${batch.batchIndex} confirmed: ${signature}`);
-
-        // Record each NFT burn in the database for this batch
-        for (const nftId of batch.nftIds) {
-          try {
-            await apiRequest('POST', '/api/nfts/burn/record', {
-              signature,
-              nftMint: nftId,
-              rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent
-              netAmount: batch.netAmount / batch.nftCount, // Split batch net
-              feeAmount: (batch.platformFee + batch.referralFee) / batch.nftCount,
-              platformFeeAmount: batch.platformFee / batch.nftCount,
-              referralFeeAmount: batch.referralFee / batch.nftCount,
-              walletAddress: publicKey.toString(),
-              nftType: 'unified', // Mark as unified burn
-              success: true
-            });
-            console.log(`✅ Mixed NFT burn recorded in database: ${nftId}`);
-            
-            allBurnedItems.push({
-              mint: nftId,
-              signature,
-              rentRecovered: batch.expectedRent / batch.nftCount
-            });
-          } catch (recordError) {
-            console.warn(`⚠️ Failed to record mixed NFT burn in database for ${nftId}:`, recordError);
-          }
-        }
-
-        // Track totals across all batches
-        totalNetAmount += batch.netAmount;
-        totalBurnedCount += batch.nftCount;
-        console.log(`✅ Batch ${batch.batchIndex} completed: ${batch.nftCount} NFTs, net: ${batch.netAmount} SOL`);
-      }
-
-      // All batches completed successfully
-      if (allBurnedItems.length === 0) {
-        throw new Error('Failed to record any NFT burns in database');
-      }
-
-      console.log(`🎉 Successfully burned ${totalBurnedCount} mixed NFTs across ${batches.length} batches!`);
-      console.log(`💰 Total net amount received: ${totalNetAmount} SOL after fees`);
-
-      // Show any failed NFTs as warnings
-      if (failedNfts && failedNfts.length > 0) {
-        console.warn(`⚠️ ${failedNfts.length} NFTs failed validation:`, failedNfts.map(f => f.nftId));
-      }
-
-      // Optimistically remove burned NFTs from local state immediately
-      const burnedIds = allBurnedItems.map(burn => burn.mint);
-      console.log(`🔥 Debug: burnedIds from all unified batches:`, burnedIds);
-      
-      // Clear burned NFTs from selection first
-      setSelectedNfts(prev => {
-        const newSet = new Set(prev);
-        burnedIds.forEach(id => newSet.delete(id));
-        return newSet;
+        nftsByType[nft.type].push(nft);
       });
 
-      // Update local NFT data state to remove burned NFTs immediately  
-      setNftData((prev: any) => {
-        if (!prev?.nfts) {
-          return prev;
-        }
-        
-        const filtered = prev.nfts.filter((nft: any) => {
-          const nftId = nft.id || nft.mint || nft.assetId;
-          return !burnedIds.includes(nftId);
-        });
-        
-        return {
-          ...prev,
-          nfts: filtered
-        };
-      });
+      const results = [];
 
-      // Show success message with green styling and transaction signature
-      const firstSignature = allBurnedItems[0]?.signature || '';
-      toast({
-        title: `Successfully burned ${totalBurnedCount} NFT${totalBurnedCount > 1 ? 's' : ''} in ${batches.length} batch${batches.length > 1 ? 'es' : ''}`,
-        description: `${totalNetAmount.toFixed(6)} SOL claimed | First tx: ${firstSignature.substring(0, 8)}...`,
-        className: "bg-green-600 text-white border-green-600",
-      });
-
-      return {
-        totalBurned: totalBurnedCount,
-        totalNetAmount,
-        batchCount: batches.length,
-        signatures: allBurnedItems.map(r => r.signature),
-        allBurnedItems
-      };
-
-      // OLD TYPE-SPECIFIC CODE BELOW (will be removed after testing)
+      // Process each type separately
       for (const [nftType, nfts] of Object.entries(nftsByType)) {
         console.log(`Burning ${nfts.length} ${nftType} NFTs...`);
 

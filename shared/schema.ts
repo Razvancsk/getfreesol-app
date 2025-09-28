@@ -119,52 +119,6 @@ export const walletReferralAssociations = pgTable("wallet_referral_associations"
   associatedAt: timestamp("associated_at").notNull().defaultNow(),
 });
 
-// Unified NFT batching types for mixed-type burning
-export const burnItemSchema = z.object({
-  id: z.string().min(1, "NFT ID is required"), // mint address or asset ID
-  type: z.enum(['core', 'pnft', 'standard', 'cnft', 'ocp'], {
-    required_error: "NFT type is required",
-    invalid_type_error: "Invalid NFT type"
-  }),
-  mint: z.string().nullable().optional(), // For backward compatibility and metadata
-  name: z.string().nullable().optional(),
-  image: z.string().nullable().optional(),
-  collectionAddress: z.string().nullable().optional(), // Allow null collection addresses
-  // Additional type-specific metadata as needed
-  metadata: z.record(z.any()).optional()
-});
-
-export const burnPrepareRequestSchema = z.object({
-  walletAddress: z.string().min(1, "Wallet address is required"),
-  referralCode: z.string().optional(),
-  items: z.array(burnItemSchema).min(1, "At least one NFT is required").max(50, "Too many NFTs selected")
-});
-
-export const burnBatchSchema = z.object({
-  index: z.number().int().min(0),
-  base64Tx: z.string().min(1, "Transaction data is required"),
-  itemIds: z.array(z.string()).min(1, "At least one item ID is required"),
-  breakdown: z.object({
-    core: z.number().int().min(0).default(0),
-    pnft: z.number().int().min(0).default(0),
-    standard: z.number().int().min(0).default(0),
-    cnft: z.number().int().min(0).default(0),
-    ocp: z.number().int().min(0).default(0)
-  }),
-  feeLamports: z.number().int().min(0),
-  estimatedRentRecovery: z.number().min(0),
-  platformFee: z.number().min(0),
-  referralFee: z.number().min(0).default(0),
-  netAmount: z.number().min(0)
-});
-
-export const burnPrepareResponseSchema = z.object({
-  success: z.boolean(),
-  batches: z.array(burnBatchSchema),
-  unprocessed: z.array(burnItemSchema).optional(),
-  error: z.string().optional()
-});
-
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -239,9 +193,3 @@ export type ReferralTransaction = typeof referralTransactions.$inferSelect;
 export type InsertReferralTransaction = z.infer<typeof insertReferralTransactionSchema>;
 export type WalletReferralAssociation = typeof walletReferralAssociations.$inferSelect;
 export type InsertWalletReferralAssociation = z.infer<typeof insertWalletReferralAssociationSchema>;
-
-// Unified NFT batching types
-export type BurnItem = z.infer<typeof burnItemSchema>;
-export type BurnPrepareRequest = z.infer<typeof burnPrepareRequestSchema>;
-export type BurnBatch = z.infer<typeof burnBatchSchema>;
-export type BurnPrepareResponse = z.infer<typeof burnPrepareResponseSchema>;
