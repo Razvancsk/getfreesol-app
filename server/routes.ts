@@ -2841,9 +2841,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const noopSigner = createNoopSigner(umiPublicKey(walletAddress));
       umi.use({ install: (ctx) => { ctx.identity = noopSigner; ctx.payer = noopSigner; }});
 
-      const burnTransactions = [];
-      let totalExpectedRent = 0;
+      // ✅ NEW: Implement chunking system for PNFTs (5 NFTs max per signature)
+      const MAX_NFTS_PER_BATCH = 5;
+      const validNfts = [];
+      const failedNfts = [];
+      const connection = new Connection(rpcUrl, 'confirmed');
 
+      // First pass: Validate and prepare all PNFTs
       for (const nftId of pNftIds) {
         try {
           console.log(`🔍 Processing Programmable NFT: ${nftId}`);
@@ -2867,154 +2871,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`📋 Collection metadata: ${collectionMetadata ? 'Found' : 'None'}`);
 
-          // Build burn transaction for pNFT using burnV1
-          const burnTx = burnV1(umi, {
-            mint: mintId,
-            collectionMetadata: collectionMetadata || undefined,
-            token: assetWithToken.token.publicKey,
-            tokenRecord: assetWithToken.tokenRecord?.publicKey,
-            tokenStandard: TokenStandard.ProgrammableNonFungible,
-          });
-
-          // Build the transaction without signing
-          const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
-          
-          // Convert UMI transaction to Web3.js format, then serialize for client signing
-          const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
-          let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
-
           // Use placeholder - real amount will be calculated from confirmed transaction
           const expectedRentSol = 0.009; // Placeholder estimate - REAL amount calculated after transaction confirmation
           console.log(`💰 pNFT placeholder: ${expectedRentSol} SOL (REAL amount calculated from actual transaction)`);
 
-          // Platform fees enabled at 15% for Programmable NFT burning
-          const donationFactor = 0.15; // 15% platform fee for Programmable NFT burning
-          const requestedFeeLamports = Math.floor(expectedRentSol * 1e9 * donationFactor);
-          const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
-          const maxAllowedFeeLamports = Math.max(0, expectedRentSol * 1e9 - safetyBufferLamports);
-          const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
-          
-          let referralFeeLamports = 0;
-          let platformFeeLamports = totalFeeLamports;
-          
-          // Check referral wallet BEFORE calculating final fees
-          let referralWalletExists = false;
-          if (referralCodeData && totalFeeLamports > 0) {
-            const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-            
-            try {
-              const referralBalance = await connection.getBalance(referralWalletPublicKey);
-              referralWalletExists = referralBalance > 0;
-              console.log(`PROGRAMMABLE NFT BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
-            } catch (error) {
-              console.log('PROGRAMMABLE NFT BURN - Failed to check referral wallet balance:', error);
-              referralWalletExists = false;
-            }
-            
-            if (referralWalletExists) {
-              // 35% of fee goes to referral
-              referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
-              // 65% of fee stays with platform
-              platformFeeLamports = totalFeeLamports - referralFeeLamports;
-              console.log(`PROGRAMMABLE NFT BURN ✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${referralFeeLamports}`);
-            } else {
-              platformFeeLamports = totalFeeLamports;
-              referralFeeLamports = 0;
-              console.log(`PROGRAMMABLE NFT BURN ❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - all fees to platform: ${platformFeeLamports}`);
-            }
-          } else {
-            console.log('PROGRAMMABLE NFT BURN - No referral code data - using full platform fee');
-          }
-
-          // Add platform fee transfer to existing burn transaction if there are fees to collect
-          const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
-          if (platformFeeLamports > 0 || referralFeeLamports > 0) {
-            // Rebuild transaction with fee transfers
-            let burnTxWithFees = burnV1(umi, {
-              mint: mintId,
-              collectionMetadata: collectionMetadata || undefined,
-              token: assetWithToken.token.publicKey,
-              tokenRecord: assetWithToken.tokenRecord?.publicKey,
-              tokenStandard: TokenStandard.ProgrammableNonFungible,
-            });
-
-            // Add platform fee transfer if there are fees to collect
-            if (platformFeeLamports > 0) {
-              const platformTransfer = transferSol(umi, {
-                source: umi.identity,
-                destination: umiPublicKey(platformWalletAddress),
-                amount: { 
-                  basisPoints: BigInt(platformFeeLamports), 
-                  identifier: 'SOL', 
-                  decimals: 9 
-                },
-              });
-              burnTxWithFees = burnTxWithFees.add(platformTransfer);
-              console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
-            }
-
-            // Add referral fee transfer if applicable
-            if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
-              const referralTransfer = transferSol(umi, {
-                source: umi.identity,
-                destination: umiPublicKey(referralCodeData.walletAddress),
-                amount: { 
-                  basisPoints: BigInt(referralFeeLamports), 
-                  identifier: 'SOL', 
-                  decimals: 9 
-                },
-              });
-              burnTxWithFees = burnTxWithFees.add(referralTransfer);
-              console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
-            }
-
-            // Build the transaction with fees
-            const umiTransactionWithFees = await burnTxWithFees.buildWithLatestBlockhash(umi);
-            const web3jsTransactionWithFees = toWeb3JsTransaction(umiTransactionWithFees);
-            const base64TransactionWithFees = Buffer.from(web3jsTransactionWithFees.serialize()).toString('base64');
-            
-            // Use the transaction with fees
-            base64Transaction = base64TransactionWithFees;
-          }
-
-          // Net amount is exactly what user received in their wallet (no calculations needed)
-          const netAmount = expectedRentSol; // User actually received this exact amount
-          
-          burnTransactions.push({
+          // Store validated PNFT data for batch processing
+          validNfts.push({
             nftId,
-            transaction: base64Transaction,
-            expectedRent: expectedRentSol,
-            platformFee: platformFeeLamports / 1e9,
-            referralFee: referralFeeLamports / 1e9,
-            netAmount: netAmount
+            mintId,
+            assetWithToken,
+            collectionMetadata,
+            expectedRent: expectedRentSol
           });
 
-          totalExpectedRent += expectedRentSol;
-          console.log(`✅ Programmable NFT burn transaction prepared: ${nftId} (net: ${netAmount} SOL - exact amount user receives)`);
-
         } catch (nftError) {
-          console.error(`❌ Failed to prepare burn for Programmable NFT ${nftId}:`, nftError);
-          burnTransactions.push({
+          console.error(`❌ Failed to validate Programmable NFT ${nftId}:`, nftError);
+          failedNfts.push({
             nftId,
-            error: nftError instanceof Error ? nftError.message : 'Unknown error',
-            expectedRent: 0
+            error: nftError instanceof Error ? nftError.message : 'Unknown error'
           });
         }
       }
 
+      if (validNfts.length === 0) {
+        return res.status(400).json({
+          error: "No valid Programmable NFTs found",
+          failedNfts
+        });
+      }
+
+      // ✅ Second pass: Create batched transactions
+      const batchChunks = [];
+      for (let i = 0; i < validNfts.length; i += MAX_NFTS_PER_BATCH) {
+        batchChunks.push(validNfts.slice(i, i + MAX_NFTS_PER_BATCH));
+      }
+
+      console.log(`🔥 Creating ${batchChunks.length} batches for ${validNfts.length} Programmable NFTs (max ${MAX_NFTS_PER_BATCH} per batch)`);
+
+      // Check referral wallet availability once
+      let referralWalletExists = false;
+      if (referralCodeData) {
+        try {
+          const referralBalance = await connection.getBalance(new PublicKey(referralCodeData.walletAddress));
+          referralWalletExists = referralBalance > 0;
+          console.log(`PROGRAMMABLE NFT BURN - Referral wallet ${referralCodeData.walletAddress} exists: ${referralWalletExists}`);
+        } catch (error) {
+          console.log('PROGRAMMABLE NFT BURN - Failed to check referral wallet:', error);
+          referralWalletExists = false;
+        }
+      }
+
+      const allBatchTransactions = [];
+      const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
+
+      // Process each batch separately  
+      for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
+        const batchNfts = batchChunks[batchIndex];
+        console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchNfts.length} Programmable NFTs...`);
+
+        // Calculate batch-specific fees
+        const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.15); // 15% fee
+        const NETWORK_BUFFER = 10000; // Small buffer for network fees
+        const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
+        const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
+
+        // Split fees per batch
+        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.35) : 0;
+        const platformFeeLamports = batchFeeLamports - referralFeeLamports;
+
+        console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
+
+        // Build transaction for this batch only
+        let batchTransaction = new TransactionBuilder();
+
+        // Add burn instructions for each PNFT in this batch
+        for (const nft of batchNfts) {
+          const burnInstruction = burnV1(umi, {
+            mint: nft.mintId,
+            collectionMetadata: nft.collectionMetadata || undefined,
+            token: nft.assetWithToken.token.publicKey,
+            tokenRecord: nft.assetWithToken.tokenRecord?.publicKey,
+            tokenStandard: TokenStandard.ProgrammableNonFungible,
+          });
+          
+          batchTransaction = batchTransaction.add(burnInstruction);
+        }
+
+        // Add platform fee transfer if there are fees to collect
+        if (platformFeeLamports > 0) {
+          const platformTransfer = transferSol(umi, {
+            source: umi.identity,
+            destination: umiPublicKey(platformWalletAddress),
+            amount: { 
+              basisPoints: BigInt(platformFeeLamports), 
+              identifier: 'SOL', 
+              decimals: 9 
+            },
+          });
+          batchTransaction = batchTransaction.add(platformTransfer);
+          console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
+        }
+
+        // Add referral fee transfer if applicable
+        if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
+          const referralTransfer = transferSol(umi, {
+            source: umi.identity,
+            destination: umiPublicKey(referralCodeData.walletAddress),
+            amount: { 
+              basisPoints: BigInt(referralFeeLamports), 
+              identifier: 'SOL', 
+              decimals: 9 
+            },
+          });
+          batchTransaction = batchTransaction.add(referralTransfer);
+          console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
+        }
+
+        // Build the batch transaction
+        const umiTransaction = await batchTransaction.buildWithLatestBlockhash(umi);
+        const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
+        const base64Transaction = Buffer.from(web3jsTransaction.serialize({
+          verifySignatures: false 
+        })).toString('base64');
+
+        // Calculate net amount for this batch (PNFTs use exact amount user receives)
+        const batchExpectedRentSOL = batchExpectedRentLamports / 1e9;
+        const batchNetAmount = batchExpectedRentSOL; // For PNFTs, net amount equals expected (placeholders)
+
+        // Add this batch to the array
+        allBatchTransactions.push({
+          transaction: base64Transaction,
+          batchIndex: batchIndex + 1,
+          nftIds: batchNfts.map(nft => nft.nftId),
+          nftCount: batchNfts.length,
+          expectedRent: batchExpectedRentSOL,
+          platformFee: platformFeeLamports / 1e9,
+          referralFee: referralFeeLamports / 1e9,
+          netAmount: batchNetAmount
+        });
+
+        console.log(`✅ Batch ${batchIndex + 1} prepared: ${batchNfts.length} PNFTs, net: ${batchNetAmount} SOL`);
+      }
+
+      // Calculate totals across all batches
+      const totalExpectedRent = validNfts.reduce((sum, nft) => sum + nft.expectedRent, 0);
+      const totalNfts = validNfts.length;
+
       const responseData = {
         success: true,
-        burnTransactions,
-        totalExpectedRentSol: totalExpectedRent,
-        message: `Prepared ${burnTransactions.filter(tx => tx.transaction).length} pNFT burn transactions`
+        totalNfts,
+        totalBatches: batchChunks.length,
+        batches: allBatchTransactions,
+        totalExpectedRentSOL: totalExpectedRent,
+        failedNfts,
+        message: `Prepared ${allBatchTransactions.length} batches for ${totalNfts} Programmable NFTs (max 5 per signature)`
       };
       
       console.log(`🔧 pNFT Server returning response:`, {
         success: responseData.success,
-        burnTransactionsCount: responseData.burnTransactions.length,
-        transactionsWithData: responseData.burnTransactions.filter(tx => tx.transaction).length,
-        transactionsWithErrors: responseData.burnTransactions.filter(tx => tx.error).length,
-        firstTransaction: responseData.burnTransactions[0] || 'none'
+        totalNfts: responseData.totalNfts,
+        totalBatches: responseData.totalBatches,
+        batchesCount: responseData.batches.length,
+        firstBatch: responseData.batches[0] || 'none',
+        failedNfts: responseData.failedNfts.length
       });
 
       res.json(responseData);
@@ -3083,16 +3103,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const noopSigner = createNoopSigner(umiPublicKey(walletAddress));
       umi.use({ install: (ctx) => { ctx.identity = noopSigner; ctx.payer = noopSigner; }});
 
-      const burnTransactions = [];
-      let totalExpectedRent = 0;
+      // ✅ NEW: Implement chunking system for Standard NFTs (5 NFTs max per signature)
+      const MAX_NFTS_PER_BATCH = 5;
+      const validNfts = [];
+      const failedNfts = [];
+      const connection = new Connection(rpcUrl, 'confirmed');
 
+      // First pass: Validate and prepare all NFTs
       for (const nftId of standardNftIds) {
         try {
           console.log(`🔍 Processing Traditional NFT: ${nftId}`);
           
           // For traditional NFTs, we need to validate it's actually a traditional NFT
           const mintId = umiPublicKey(nftId);
-          const connection = new Connection(rpcUrl, 'confirmed');
           
           // 1. Check for metadata account at findMetadataPda(mint)
           const metadataPda = findMetadataPda(umi, { mint: mintId });
@@ -3135,26 +3158,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`📋 Collection detection failed for ${nftId}:`, collectionError);
             // Continue without collection metadata - will work for standalone NFTs
           }
-
-          const burnTx = burnV1(umi, {
-            mint: mintId,
-            authority: umi.identity,         // owner of NFT
-            tokenOwner: umi.identity.publicKey,
-            tokenStandard: TokenStandard.NonFungible,
-            collectionMetadata: collectionMetadataPda, // only if part of collection
-          })
-          .addRemainingAccounts([
-            // Integrate both program IDs as requested
-            { pubkey: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), isSigner: false, isWritable: false }, // Authorization Rules Program
-            { pubkey: umiPublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"), isSigner: false, isWritable: false }  // Token Metadata Program
-          ]);
-
-          // Build the transaction without signing
-          const umiTransaction = await burnTx.buildWithLatestBlockhash(umi);
-          
-          // Convert UMI transaction to Web3.js format, then serialize for client signing
-          const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
-          let base64Transaction = Buffer.from(web3jsTransaction.serialize()).toString('base64');
 
           // Calculate expected rent (traditional NFTs close multiple accounts)
           let expectedRent = 0;
@@ -3200,138 +3203,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const expectedRentSol = expectedRent / 1e9;
 
-          // Calculate platform fees (15% of recovered rent)
-          const donationFactor = 0.15; // 15% fee for Traditional NFT burning
-          const requestedFeeLamports = Math.floor(expectedRentSol * 1e9 * donationFactor);
-          const safetyBufferLamports = 50000; // 0.00005 SOL buffer for transaction fees
-          const maxAllowedFeeLamports = Math.max(0, expectedRentSol * 1e9 - safetyBufferLamports);
-          const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
-          
-          let referralFeeLamports = 0;
-          let platformFeeLamports = totalFeeLamports;
-          
-          // Check referral wallet BEFORE calculating final fees
-          let referralWalletExists = false;
-          if (referralCodeData && totalFeeLamports > 0) {
-            const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-            
-            try {
-              const referralBalance = await connection.getBalance(referralWalletPublicKey);
-              referralWalletExists = referralBalance > 0;
-              console.log(`TRADITIONAL NFT BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
-            } catch (error) {
-              console.log('TRADITIONAL NFT BURN - Failed to check referral wallet balance:', error);
-              referralWalletExists = false;
-            }
-            
-            if (referralWalletExists) {
-              // 35% of fee goes to referral
-              referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
-              // 65% of fee stays with platform
-              platformFeeLamports = totalFeeLamports - referralFeeLamports;
-              console.log(`TRADITIONAL NFT BURN ✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${referralFeeLamports}`);
-            } else {
-              platformFeeLamports = totalFeeLamports;
-              referralFeeLamports = 0;
-              console.log(`TRADITIONAL NFT BURN ❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - all fees to platform: ${platformFeeLamports}`);
-            }
-          } else {
-            console.log('TRADITIONAL NFT BURN - No referral code data - using full platform fee');
-          }
-
-          // Add platform fee transfer to existing burn transaction if there are fees to collect
-          const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
-          if (platformFeeLamports > 0 || referralFeeLamports > 0) {
-            // Rebuild transaction with fee transfers
-            let burnTxWithFees = burnV1(umi, {
-              mint: mintId,
-              authority: umi.identity,
-              tokenOwner: umi.identity.publicKey,
-              tokenStandard: TokenStandard.NonFungible,
-              collectionMetadata: collectionMetadataPda,
-            })
-            .addRemainingAccounts([
-              { pubkey: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), isSigner: false, isWritable: false },
-              { pubkey: umiPublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"), isSigner: false, isWritable: false }
-            ]);
-
-            // Add platform fee transfer if there are fees to collect
-            if (platformFeeLamports > 0) {
-              const platformTransfer = transferSol(umi, {
-                source: umi.identity,
-                destination: umiPublicKey(platformWalletAddress),
-                amount: { 
-                  basisPoints: BigInt(platformFeeLamports), 
-                  identifier: 'SOL', 
-                  decimals: 9 
-                },
-              });
-              burnTxWithFees = burnTxWithFees.add(platformTransfer);
-              console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
-            }
-
-            // Add referral fee transfer if applicable
-            if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
-              const referralTransfer = transferSol(umi, {
-                source: umi.identity,
-                destination: umiPublicKey(referralCodeData.walletAddress),
-                amount: { 
-                  basisPoints: BigInt(referralFeeLamports), 
-                  identifier: 'SOL', 
-                  decimals: 9 
-                },
-              });
-              burnTxWithFees = burnTxWithFees.add(referralTransfer);
-              console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
-            }
-
-            // Build the transaction with fees
-            const umiTransactionWithFees = await burnTxWithFees.buildWithLatestBlockhash(umi);
-            const web3jsTransactionWithFees = toWeb3JsTransaction(umiTransactionWithFees);
-            const base64TransactionWithFees = Buffer.from(web3jsTransactionWithFees.serialize()).toString('base64');
-            
-            // Use the transaction with fees
-            base64Transaction = base64TransactionWithFees;
-          }
-
-          // Calculate net amount after fees
-          const netAmount = expectedRentSol - (totalFeeLamports / 1e9);
-          
-          burnTransactions.push({
+          // Store validated NFT data for batch processing
+          validNfts.push({
             nftId,
-            transaction: base64Transaction,
-            expectedRent: expectedRentSol,
-            platformFee: platformFeeLamports / 1e9,
-            referralFee: referralFeeLamports / 1e9,
-            netAmount: netAmount
+            mintId,
+            metadataPda,
+            masterEditionPda,
+            collectionMetadataPda,
+            expectedRent: expectedRentSol
           });
 
-          totalExpectedRent += expectedRentSol;
-          console.log(`✅ Traditional NFT burn transaction prepared: ${nftId} (net: ${netAmount} SOL after ${totalFeeLamports / 1e9} SOL fees)`);
-
         } catch (nftError) {
-          console.error(`❌ Failed to prepare burn for Traditional NFT ${nftId}:`, nftError);
-          burnTransactions.push({
+          console.error(`❌ Failed to validate Traditional NFT ${nftId}:`, nftError);
+          failedNfts.push({
             nftId,
-            error: nftError instanceof Error ? nftError.message : 'Unknown error',
-            expectedRent: 0
+            error: nftError instanceof Error ? nftError.message : 'Unknown error'
           });
         }
       }
 
+      if (validNfts.length === 0) {
+        return res.status(400).json({
+          error: "No valid Traditional NFTs found",
+          failedNfts
+        });
+      }
+
+      // ✅ Second pass: Create batched transactions
+      const batchChunks = [];
+      for (let i = 0; i < validNfts.length; i += MAX_NFTS_PER_BATCH) {
+        batchChunks.push(validNfts.slice(i, i + MAX_NFTS_PER_BATCH));
+      }
+
+      console.log(`🔥 Creating ${batchChunks.length} batches for ${validNfts.length} Traditional NFTs (max ${MAX_NFTS_PER_BATCH} per batch)`);
+
+      // Check referral wallet availability once
+      let referralWalletExists = false;
+      if (referralCodeData) {
+        try {
+          const referralBalance = await connection.getBalance(new PublicKey(referralCodeData.walletAddress));
+          referralWalletExists = referralBalance > 0;
+          console.log(`TRADITIONAL NFT BURN - Referral wallet ${referralCodeData.walletAddress} exists: ${referralWalletExists}`);
+        } catch (error) {
+          console.log('TRADITIONAL NFT BURN - Failed to check referral wallet:', error);
+          referralWalletExists = false;
+        }
+      }
+
+      const allBatchTransactions = [];
+      const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
+
+      // Process each batch separately  
+      for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
+        const batchNfts = batchChunks[batchIndex];
+        console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchNfts.length} Traditional NFTs...`);
+
+        // Calculate batch-specific fees
+        const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.15); // 15% fee
+        const NETWORK_BUFFER = 10000; // Small buffer for network fees
+        const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
+        const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
+
+        // Split fees per batch
+        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.35) : 0;
+        const platformFeeLamports = batchFeeLamports - referralFeeLamports;
+
+        console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
+
+        // Build transaction for this batch only
+        let batchTransaction = new TransactionBuilder()
+          .addRemainingAccounts([
+            { pubkey: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), isSigner: false, isWritable: false }, // Authorization Rules Program
+            { pubkey: umiPublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"), isSigner: false, isWritable: false }  // Token Metadata Program
+          ]);
+
+        // Add burn instructions for each NFT in this batch
+        for (const nft of batchNfts) {
+          const burnInstruction = burnV1(umi, {
+            mint: nft.mintId,
+            authority: umi.identity,
+            tokenOwner: umi.identity.publicKey,
+            tokenStandard: TokenStandard.NonFungible,
+            collectionMetadata: nft.collectionMetadataPda,
+          });
+          
+          batchTransaction = batchTransaction.add(burnInstruction);
+        }
+
+        // Add platform fee transfer if there are fees to collect
+        if (platformFeeLamports > 0) {
+          const platformTransfer = transferSol(umi, {
+            source: umi.identity,
+            destination: umiPublicKey(platformWalletAddress),
+            amount: { 
+              basisPoints: BigInt(platformFeeLamports), 
+              identifier: 'SOL', 
+              decimals: 9 
+            },
+          });
+          batchTransaction = batchTransaction.add(platformTransfer);
+          console.log(`💰 Added platform fee transfer: ${platformFeeLamports / 1e9} SOL to ${platformWalletAddress}`);
+        }
+
+        // Add referral fee transfer if applicable
+        if (referralFeeLamports > 0 && referralWalletExists && referralCodeData) {
+          const referralTransfer = transferSol(umi, {
+            source: umi.identity,
+            destination: umiPublicKey(referralCodeData.walletAddress),
+            amount: { 
+              basisPoints: BigInt(referralFeeLamports), 
+              identifier: 'SOL', 
+              decimals: 9 
+            },
+          });
+          batchTransaction = batchTransaction.add(referralTransfer);
+          console.log(`💰 Added referral fee transfer: ${referralFeeLamports / 1e9} SOL to ${referralCodeData.walletAddress}`);
+        }
+
+        // Build the batch transaction
+        const umiTransaction = await batchTransaction.buildWithLatestBlockhash(umi);
+        const web3jsTransaction = toWeb3JsTransaction(umiTransaction);
+        const base64Transaction = Buffer.from(web3jsTransaction.serialize({
+          verifySignatures: false 
+        })).toString('base64');
+
+        // Calculate net amount for this batch
+        const batchExpectedRentSOL = batchExpectedRentLamports / 1e9;
+        const batchNetAmount = batchExpectedRentSOL - (batchFeeLamports / 1e9);
+
+        // Add this batch to the array
+        allBatchTransactions.push({
+          transaction: base64Transaction,
+          batchIndex: batchIndex + 1,
+          nftIds: batchNfts.map(nft => nft.nftId),
+          nftCount: batchNfts.length,
+          expectedRent: batchExpectedRentSOL,
+          platformFee: platformFeeLamports / 1e9,
+          referralFee: referralFeeLamports / 1e9,
+          netAmount: batchNetAmount
+        });
+
+        console.log(`✅ Batch ${batchIndex + 1} prepared: ${batchNfts.length} NFTs, net: ${batchNetAmount} SOL`);
+      }
+
+      // Calculate totals across all batches
+      const totalExpectedRent = validNfts.reduce((sum, nft) => sum + nft.expectedRent, 0);
+      const totalNfts = validNfts.length;
+
       const responseData = {
         success: true,
-        burnTransactions,
-        totalExpectedRentSol: totalExpectedRent,
-        message: `Prepared ${burnTransactions.filter(tx => tx.transaction).length} traditional NFT burn transactions`
+        totalNfts,
+        totalBatches: batchChunks.length,
+        batches: allBatchTransactions,
+        totalExpectedRentSOL: totalExpectedRent,
+        failedNfts,
+        message: `Prepared ${allBatchTransactions.length} batches for ${totalNfts} Traditional NFTs (max 5 per signature)`
       };
       
       console.log(`🔧 Traditional NFT Server returning response:`, {
         success: responseData.success,
-        burnTransactionsCount: responseData.burnTransactions.length,
-        transactionsWithData: responseData.burnTransactions.filter(tx => tx.transaction).length,
-        transactionsWithErrors: responseData.burnTransactions.filter(tx => tx.error).length,
-        firstTransaction: responseData.burnTransactions[0] || 'none'
+        totalNfts: responseData.totalNfts,
+        totalBatches: responseData.totalBatches,
+        batchesCount: responseData.batches.length,
+        firstBatch: responseData.batches[0] || 'none',
+        failedNfts: responseData.failedNfts.length
       });
 
       res.json(responseData);
