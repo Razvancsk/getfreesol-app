@@ -101,11 +101,9 @@ export class ObjectStorageService {
         }
       });
       
-      // Make file publicly readable
-      await file.makePublic();
-      
-      // Return public URL
-      return `https://storage.googleapis.com/${bucketName}/${objectName}`;
+      // Return a stable internal URL for the uploaded file
+      // This will be served through our API proxy to avoid public access issues
+      return `/api/storage/resized-images/${fileName}`;
     } catch (error) {
       console.error('Failed to upload resized image:', error);
       throw error;
