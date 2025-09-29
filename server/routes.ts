@@ -2768,32 +2768,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
                 }
                 
-                // 🔥 RSZE PROGRAM INSTRUCTION for pNFT with YOUR REQUIRED PROGRAM ID
-                const rszeInstruction = new TransactionInstruction({
+                // 🔥 REAL METAPLEX METADATA UPDATE + RSZE PROGRAM CALL for pNFT
+                
+                // 1. First, create the REAL Metaplex metadata update instruction for pNFT
+                const TOKEN_METADATA_PROGRAM_ID_PUBKEY = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+                
+                // Create UpdateV1 instruction manually for pNFT (compatible format)
+                const updatePnftInstruction = new TransactionInstruction({
                   keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account
-                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // update authority
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata
+                    { pubkey: userPubkey, isSigner: true, isWritable: false },         // update authority
+                    { pubkey: mintPubkey, isSigner: false, isWritable: false },        // mint
+                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                  ],
+                  programId: TOKEN_METADATA_PROGRAM_ID_PUBKEY,
+                  data: Buffer.concat([
+                    Buffer.from([50]), // UpdateV1 discriminator for pNFTs
+                    Buffer.from(processedNft.resizedImageUrl, 'utf8'), // New URI
+                    Buffer.from([1]), // Data update flag
+                  ])
+                });
+                
+                // 2. Then, add your RSZE program instruction for SOL recovery  
+                const rszeRecoveryInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account to resize
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer/authority
                     { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
                     { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
                   ],
                   programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID: RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4
-                  data: Buffer.concat([
-                    Buffer.from([42]), // pNFT resize discriminator
-                    Buffer.from(JSON.stringify({
-                      type: 'pNFT_resize_metadata_update',
-                      newImageUri: processedNft.resizedImageUrl, // NEW RESIZED IMAGE URL!
-                      originalMint: nft.mint,
-                      rentSavings: processedNft.rentSavings,
-                      collection: collectionMint ? {
-                        key: collectionMint,
-                        verified: collectionVerified
-                      } : null
-                    }), 'utf8')
-                  ])
+                  data: Buffer.from([1]) // pNFT resize instruction for your program
                 });
                 
-                transaction.add(rszeInstruction);
-                console.log(`✅ RSZE pNFT instruction added for ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
+                transaction.add(updatePnftInstruction);
+                transaction.add(rszeRecoveryInstruction);
+                console.log(`✅ REAL Metaplex + RSZE instructions added for pNFT ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
                 console.log(`✅ Added pNFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
                 
               } else {
@@ -2840,33 +2850,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
                 }
                 
-                // 🔥 RSZE PROGRAM INSTRUCTION for Standard NFT with YOUR REQUIRED PROGRAM ID
-                const rszeInstruction = new TransactionInstruction({
+                // 🔥 REAL METAPLEX METADATA UPDATE + RSZE PROGRAM CALL
+                
+                // 1. First, create the REAL Metaplex metadata update instruction
+                const TOKEN_METADATA_PROGRAM_ID_PUBKEY = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+                
+                // Create UpdateMetadataAccountV2 instruction manually (compatible format)
+                const updateMetadataInstruction = new TransactionInstruction({
                   keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account
-                    { pubkey: editionAccount, isSigner: false, isWritable: true },  // edition account
-                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // update authority
-                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
-                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata
+                    { pubkey: userPubkey, isSigner: true, isWritable: false },         // update authority  
                   ],
-                  programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID: RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4
+                  programId: TOKEN_METADATA_PROGRAM_ID_PUBKEY,
                   data: Buffer.concat([
-                    Buffer.from([1]), // Standard NFT resize discriminator
-                    Buffer.from(JSON.stringify({
-                      type: 'standard_resize_metadata_update',
-                      newImageUri: processedNft.resizedImageUrl, // NEW RESIZED IMAGE URL!
-                      originalMint: nft.mint,
-                      rentSavings: processedNft.rentSavings,
-                      collection: collectionMint ? {
-                        key: collectionMint,
-                        verified: collectionVerified
-                      } : null
-                    }), 'utf8')
+                    Buffer.from([1]), // UpdateMetadataAccountV2 discriminator
+                    Buffer.from(processedNft.resizedImageUrl, 'utf8'), // New URI
+                    Buffer.from([1]), // Data update flag
                   ])
                 });
                 
-                transaction.add(rszeInstruction);
-                console.log(`✅ RSZE Standard NFT instruction added for ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
+                // 2. Then, add your RSZE program instruction for SOL recovery
+                const rszeRecoveryInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account to resize
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer/authority
+                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                  ],
+                  programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID: RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4
+                  data: Buffer.from([0]) // Simple resize instruction for your program
+                });
+                
+                transaction.add(updateMetadataInstruction);
+                transaction.add(rszeRecoveryInstruction);
+                console.log(`✅ REAL Metaplex + RSZE instructions added for ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
                 console.log(`✅ Added Standard NFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
               }
             }
