@@ -2553,7 +2553,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : burnSubTab === 'nft' ? 'Burn Unwanted NFTs.' : 'Resize NFTs to optimize metadata storage!') : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : burnSubTab === 'nft' ? 'Burn Unwanted NFTs.' : 'NFT Resize Feature - Coming Soon!') : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -3059,205 +3059,26 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Resize NFTs Interface */}
+          {/* Resize NFTs Interface - Coming Soon */}
           {activeTab === 'burnTokens' && burnSubTab === 'resize' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white">NFT Resize Tool</h3>
-                <button 
-                  onClick={() => {
-                    if (publicKey) {
-                      scanNftsMutation.mutate(publicKey.toString());
-                    }
-                  }}
-                  disabled={scanNftsMutation.isPending || !publicKey}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
-                  data-testid="button-scan-nfts-resize"
-                >
-                  {scanNftsMutation.isPending ? 'Scanning...' : 'Scan for NFTs'}
-                  <RefreshCw className={`h-3.5 w-3.5 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-
-              {/* Individual NFT Grid for Resize */}
-              {scanNftsMutation.isPending ? (
-                <div className="text-center py-8">
-                  <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
-                  <p className="text-purple-200">Scanning for NFTs...</p>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-8">
+              <div className="text-center py-12">
+                <div className="text-6xl mb-6">🔧</div>
+                <h3 className="text-2xl font-bold text-white mb-4">NFT Resize Feature</h3>
+                <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                  <p className="text-yellow-300 font-semibold text-lg">Coming Soon!</p>
                 </div>
-              ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Select All Controls for Resize */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <button
-                        onClick={() => {
-                          const resizableNfts = nftData.nfts.filter((nft: any) => nft.standard !== 'CompressedNft' && nft.standard !== 'Core');
-                          setSelectedResizeNfts(new Set(resizableNfts.map((nft: any) => nft.mint || nft.id || nft.assetId).filter(Boolean)));
-                        }}
-                        className="text-sm text-purple-300 hover:text-white transition-colors"
-                        data-testid="button-select-all-resize-nfts"
-                      >
-                        Select All
-                      </button>
-                      <button
-                        onClick={() => setSelectedResizeNfts(new Set())}
-                        className="text-sm text-purple-300 hover:text-white transition-colors"
-                        data-testid="button-deselect-all-resize-nfts"
-                      >
-                        Deselect All
-                      </button>
-                    </div>
-                    <p className="text-sm text-purple-200">
-                      {selectedResizeNfts.size} selected • {nftData.nfts.filter((nft: any) => nft.standard !== 'CompressedNft' && nft.standard !== 'Core').length} resizable NFTs
-                    </p>
-                  </div>
-
-                  {/* NFT Grid */}
-                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {nftData.nfts
-                      .filter((nft: any) => nft.standard !== 'CompressedNft' && nft.standard !== 'Core') // Only Standard and Programmable NFTs
-                      .map((nft: any) => {
-                      // Use a stable identifier that works for all NFT types
-                      const nftId = nft.mint || nft.id || nft.assetId;
-                      const isSelected = selectedResizeNfts.has(nftId);
-
-                      return (
-                        <div
-                          key={nftId}
-                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
-                            isSelected 
-                              ? 'border-green-400/50 bg-green-900/20' 
-                              : 'border-purple-500/30 hover:border-purple-400/50'
-                          }`}
-                          onClick={() => {
-                            setSelectedResizeNfts(prev => {
-                              const newSet = new Set(prev);
-                              if (isSelected) {
-                                newSet.delete(nftId);
-                              } else {
-                                newSet.add(nftId);
-                              }
-                              return newSet;
-                            });
-                          }}
-                          data-testid={`card-resize-nft-${nftId}`}
-                        >
-                          {/* Selection Checkbox */}
-                          <div className="absolute top-2 left-2 z-10">
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              isSelected 
-                                ? 'bg-green-500 border-green-500' 
-                                : 'bg-purple-900/50 border-purple-400'
-                            }`}>
-                              {isSelected && <Check className="h-3 w-3 text-white" />}
-                            </div>
-                          </div>
-
-                          {/* NFT Image */}
-                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30 relative">
-                            {nft.image ? (
-                              <img
-                                src={nft.image}
-                                alt={nft.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  target.nextElementSibling!.classList.remove('hidden');
-                                }}
-                              />
-                            ) : null}
-                            <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
-                              <Image className="h-8 w-8 text-purple-400" />
-                            </div>
-                            
-                            {/* Big Wrench Icon Overlay for Selected NFTs */}
-                            {isSelected && (
-                              <div className="absolute inset-0 flex items-center justify-center z-20">
-                                <span className="text-9xl drop-shadow-2xl animate-pulse">🔧</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* NFT Details */}
-                          <div className="space-y-1">
-                            <h4 className="text-white text-sm font-medium truncate" title={nft.name}>
-                              {nft.name || 'Unknown NFT'}
-                            </h4>
-
-                            {/* Type Badge */}
-                            <div className="flex items-center justify-between">
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                nft.type === 'standard' ? 'bg-blue-500/20 text-blue-300' :
-                                nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
-                                nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
-                                nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
-                                'bg-gray-500/20 text-gray-300'
-                              }`}>
-                                {nft.type.toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    </div>
-                  </div>
-
-                  {/* Resize Selected Button */}
-                  {selectedResizeNfts.size > 0 && (
-                    <div className="flex justify-center pt-4">
-                      <button
-                        onClick={() => {
-                          const selectedIds = Array.from(selectedResizeNfts);
-                          console.log('Resize selected NFTs:', selectedIds);
-                          resizeNftsMutation.mutate(selectedIds);
-                        }}
-                        disabled={resizeNftsMutation.isPending || selectedResizeNfts.size === 0}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                        data-testid="button-resize-selected-nfts"
-                      >
-                        {resizeNftsMutation.isPending ? (
-                          <>
-                            <RefreshCw className="h-5 w-5 animate-spin" />
-                            Resizing...
-                          </>
-                        ) : (
-                          <>
-                            🔧 Resize {selectedResizeNfts.size} Selected NFT{selectedResizeNfts.size > 1 ? 's' : ''}
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : nftData && nftData.nfts && nftData.nfts.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-purple-400 mb-4 text-4xl">🔧</div>
-                  <h3 className="text-lg font-semibold text-white mb-2">No Resizable NFTs Found</h3>
-                  <p className="text-purple-200">Only Standard and Programmable NFTs can be resized.</p>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-purple-400 mb-4 text-4xl">🔧</div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Scan Your Wallet</h3>
-                  <p className="text-purple-200">Click "Scan for NFTs" to find NFTs that can be resized.</p>
-                </div>
-              )}
-
-              {/* Resize Instructions */}
-              <div className="mt-6 bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                <p className="text-purple-200 text-lg mb-6 max-w-2xl mx-auto">
+                  We're working hard to bring you the NFT resize feature. This tool will allow you to optimize your NFT metadata storage and recover SOL.
+                </p>
+                <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4 max-w-2xl mx-auto">
                   <div className="text-sm text-purple-200">
-                    <p className="font-medium mb-2">About NFT Resizing:</p>
-                    <ul className="space-y-1 text-purple-300">
-                      <li>• Resize NFT metadata storage to add more space for future updates</li>
-                      <li>• Only Standard and Programmable NFTs support resizing</li>
-                      <li>• Resizing costs additional rent + 15% platform fee</li>
-                      <li>• Compressed NFTs and Core NFTs cannot be resized</li>
+                    <p className="font-medium mb-2">What to expect:</p>
+                    <ul className="space-y-1 text-purple-300 text-left">
+                      <li>• Resize NFT metadata storage to optimize space</li>
+                      <li>• Support for Standard and Programmable NFTs</li>
+                      <li>• Recover SOL from metadata optimization</li>
+                      <li>• Keep your NFTs intact during the process</li>
                     </ul>
                   </div>
                 </div>
