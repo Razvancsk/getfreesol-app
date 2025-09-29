@@ -2722,19 +2722,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const isProgrammableNFT = nft.interface === 'ProgrammableNFT';
               console.log(`🔍 NFT ${nft.mint}: Type=${isProgrammableNFT ? 'pNFT' : 'Standard'} (interface: ${nft.interface})`);
               
+              // 📁 CHECK COLLECTION: Handle collection information properly
+              const hasCollection = nft.grouping && nft.grouping.length > 0;
+              let collectionMint = null;
+              let collectionVerified = false;
+              
+              if (hasCollection) {
+                const collectionInfo = nft.grouping.find(g => g.group_key === 'collection');
+                if (collectionInfo) {
+                  collectionMint = collectionInfo.group_value;
+                  collectionVerified = collectionInfo.verified || false;
+                  console.log(`📁 NFT ${nft.mint} is part of collection: ${collectionMint} (verified: ${collectionVerified})`);
+                }
+              }
+              
               if (isProgrammableNFT) {
-                // 🎯 PROGRAMMABLE NFT (pNFT) - requires auth rules, token standard, etc.
+                // 🎯 PROGRAMMABLE NFT (pNFT) - requires auth rules, token standard, collection handling
                 console.log(`🎯 Handling as pNFT (Programmable NFT): ${nft.name}`);
                 
-                // For pNFT, we need to use updateAsUpdateAuthorityV2 instruction format
-                // Based on your example code with TokenStandard.ProgrammableNonFungible
+                // Create collection account PDA if part of collection
+                let collectionMetadataAccount = null;
+                if (collectionMint) {
+                  const collectionMintPubkey = new PublicKey(collectionMint);
+                  const [collectionPDA] = PublicKey.findProgramAddressSync(
+                    [
+                      Buffer.from('metadata'),
+                      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                      collectionMintPubkey.toBuffer(),
+                    ],
+                    TOKEN_METADATA_PROGRAM_ID
+                  );
+                  collectionMetadataAccount = collectionPDA;
+                }
+                
+                // pNFT instruction with proper collection handling (based on your example)
+                const keys = [
+                  { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
+                  { pubkey: userPubkey, isSigner: true, isWritable: false },      // update authority
+                  { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
+                  { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                ];
+                
+                // Add collection metadata account if part of collection
+                if (collectionMetadataAccount) {
+                  keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
+                }
+                
                 const updatePNftInstruction = new TransactionInstruction({
-                  keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
-                    { pubkey: userPubkey, isSigner: true, isWritable: false },      // update authority
-                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
-                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
-                  ],
+                  keys,
                   programId: RSZE_PROGRAM_ID, // YOUR RSZE PROGRAM ID
                   data: Buffer.concat([
                     Buffer.from([42]), // pNFT update discriminator
@@ -2742,16 +2777,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       type: 'pNFT_resize',
                       tokenStandard: 'ProgrammableNonFungible',
                       newImageUri: processedNft.resizedImageUrl,
-                      rentSavings: processedNft.rentSavings
+                      rentSavings: processedNft.rentSavings,
+                      // Collection handling (based on your collectionToggle example)
+                      collection: collectionMint ? {
+                        key: collectionMint,
+                        verified: collectionVerified
+                      } : null
                     }), 'utf8')
                   ])
                 });
                 
                 transaction.add(updatePNftInstruction);
-                console.log(`✅ Added pNFT resize instruction for ${nft.name} using RSZE program`);
+                console.log(`✅ Added pNFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
                 
               } else {
-                // 📄 STANDARD NFT - simpler structure
+                // 📄 STANDARD NFT - simpler structure (also handle collections)
                 console.log(`📄 Handling as Standard NFT: ${nft.name}`);
                 
                 const [editionAccount] = PublicKey.findProgramAddressSync(
@@ -2764,29 +2804,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   TOKEN_METADATA_PROGRAM_ID
                 );
                 
-                // Standard NFT resize instruction
+                // Create collection account PDA if part of collection
+                let collectionMetadataAccount = null;
+                if (collectionMint) {
+                  const collectionMintPubkey = new PublicKey(collectionMint);
+                  const [collectionPDA] = PublicKey.findProgramAddressSync(
+                    [
+                      Buffer.from('metadata'),
+                      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                      collectionMintPubkey.toBuffer(),
+                    ],
+                    TOKEN_METADATA_PROGRAM_ID
+                  );
+                  collectionMetadataAccount = collectionPDA;
+                }
+                
+                // Standard NFT instruction with collection support
+                const keys = [
+                  { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
+                  { pubkey: editionAccount, isSigner: false, isWritable: true },  // edition
+                  { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
+                  { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer
+                  { pubkey: userPubkey, isSigner: true, isWritable: false },     // authority
+                  { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                ];
+                
+                // Add collection metadata account if part of collection
+                if (collectionMetadataAccount) {
+                  keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
+                }
+                
                 const updateStandardInstruction = new TransactionInstruction({
-                  keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
-                    { pubkey: editionAccount, isSigner: false, isWritable: true },  // edition
-                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
-                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer
-                    { pubkey: userPubkey, isSigner: true, isWritable: false },     // authority
-                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
-                  ],
+                  keys,
                   programId: RSZE_PROGRAM_ID, // YOUR RSZE PROGRAM ID
                   data: Buffer.concat([
                     Buffer.from([1]), // Standard NFT resize discriminator
                     Buffer.from(JSON.stringify({
                       type: 'standard_resize',
                       newImageUri: processedNft.resizedImageUrl,
-                      rentSavings: processedNft.rentSavings
+                      rentSavings: processedNft.rentSavings,
+                      // Collection handling for Standard NFTs too
+                      collection: collectionMint ? {
+                        key: collectionMint,
+                        verified: collectionVerified
+                      } : null
                     }), 'utf8')
                   ])
                 });
                 
                 transaction.add(updateStandardInstruction);
-                console.log(`✅ Added Standard NFT resize instruction for ${nft.name} using RSZE program`);
+                console.log(`✅ Added Standard NFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
               }
             }
             
