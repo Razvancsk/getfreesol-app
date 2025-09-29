@@ -2700,21 +2700,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (realisticRecoveryLamports > 1000000) { // Minimum 0.001 SOL
             const { TransactionInstruction } = await import('@solana/web3.js');
             
-            // Use EXACT Metaplex resize pattern with YOUR RSZE program ID
-            for (const processedNft of processedNfts) {
-              if (processedNft.rentSavings > 0) {
-                const mintPubkey = new PublicKey(processedNft.mint);
-                const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+            // Handle DIFFERENT NFT TYPES: pNFT vs Standard NFT (based on your example)
+            for (const nft of batchNfts) {
+              const processedNft = processedNfts.find(p => p.mint === nft.mint);
+              if (!processedNft || processedNft.rentSavings <= 0) continue;
+              
+              const mintPubkey = new PublicKey(processedNft.mint);
+              const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+              
+              // Create metadata account PDA
+              const [metadataAccount] = PublicKey.findProgramAddressSync(
+                [
+                  Buffer.from('metadata'),
+                  TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                  mintPubkey.toBuffer(),
+                ],
+                TOKEN_METADATA_PROGRAM_ID
+              );
+              
+              // 🔍 CHECK NFT TYPE: Programmable NFT vs Standard NFT
+              const isProgrammableNFT = nft.interface === 'ProgrammableNFT';
+              console.log(`🔍 NFT ${nft.mint}: Type=${isProgrammableNFT ? 'pNFT' : 'Standard'} (interface: ${nft.interface})`);
+              
+              if (isProgrammableNFT) {
+                // 🎯 PROGRAMMABLE NFT (pNFT) - requires auth rules, token standard, etc.
+                console.log(`🎯 Handling as pNFT (Programmable NFT): ${nft.name}`);
                 
-                // Create metadata and edition account PDAs (EXACT Metaplex pattern)
-                const [metadataAccount] = PublicKey.findProgramAddressSync(
-                  [
-                    Buffer.from('metadata'),
-                    TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-                    mintPubkey.toBuffer(),
+                // For pNFT, we need to use updateAsUpdateAuthorityV2 instruction format
+                // Based on your example code with TokenStandard.ProgrammableNonFungible
+                const updatePNftInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
+                    { pubkey: userPubkey, isSigner: true, isWritable: false },      // update authority
+                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
+                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
                   ],
-                  TOKEN_METADATA_PROGRAM_ID
-                );
+                  programId: RSZE_PROGRAM_ID, // YOUR RSZE PROGRAM ID
+                  data: Buffer.concat([
+                    Buffer.from([42]), // pNFT update discriminator
+                    Buffer.from(JSON.stringify({
+                      type: 'pNFT_resize',
+                      tokenStandard: 'ProgrammableNonFungible',
+                      newImageUri: processedNft.resizedImageUrl,
+                      rentSavings: processedNft.rentSavings
+                    }), 'utf8')
+                  ])
+                });
+                
+                transaction.add(updatePNftInstruction);
+                console.log(`✅ Added pNFT resize instruction for ${nft.name} using RSZE program`);
+                
+              } else {
+                // 📄 STANDARD NFT - simpler structure
+                console.log(`📄 Handling as Standard NFT: ${nft.name}`);
                 
                 const [editionAccount] = PublicKey.findProgramAddressSync(
                   [
@@ -2726,22 +2764,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   TOKEN_METADATA_PROGRAM_ID
                 );
                 
-                // EXACT Metaplex resize instruction format BUT with YOUR RSZE program ID
-                const metaplexResizeInstruction = new TransactionInstruction({
+                // Standard NFT resize instruction
+                const updateStandardInstruction = new TransactionInstruction({
                   keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata (writable)
-                    { pubkey: editionAccount, isSigner: false, isWritable: true },  // edition (writable)
-                    { pubkey: mintPubkey, isSigner: false, isWritable: false },      // mint (readonly)
-                    { pubkey: userPubkey, isSigner: true, isWritable: true },       // payer (writable, signer)
-                    { pubkey: userPubkey, isSigner: true, isWritable: false },      // authority (signer)
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
+                    { pubkey: editionAccount, isSigner: false, isWritable: true },  // edition
+                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer
+                    { pubkey: userPubkey, isSigner: true, isWritable: false },     // authority
                     { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
                   ],
-                  programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID instead of Metaplex's
-                  data: Buffer.alloc(0), // Empty data for resize instruction (as per Metaplex source)
+                  programId: RSZE_PROGRAM_ID, // YOUR RSZE PROGRAM ID
+                  data: Buffer.concat([
+                    Buffer.from([1]), // Standard NFT resize discriminator
+                    Buffer.from(JSON.stringify({
+                      type: 'standard_resize',
+                      newImageUri: processedNft.resizedImageUrl,
+                      rentSavings: processedNft.rentSavings
+                    }), 'utf8')
+                  ])
                 });
                 
-                transaction.add(metaplexResizeInstruction);
-                console.log(`✅ Added EXACT Metaplex resize format for ${processedNft.mint} using YOUR program ${RSZE_PROGRAM_ID.toString()}`);
+                transaction.add(updateStandardInstruction);
+                console.log(`✅ Added Standard NFT resize instruction for ${nft.name} using RSZE program`);
               }
             }
             
