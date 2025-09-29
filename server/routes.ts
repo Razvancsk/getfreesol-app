@@ -2768,50 +2768,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
                 }
                 
-                // 🔥 REAL METAPLEX UPDATE INSTRUCTION for pNFT
-                const { createUpdateV1Instruction } = await import('@metaplex-foundation/mpl-token-metadata');
+                // 🔥 RSZE PROGRAM INSTRUCTION for pNFT with YOUR REQUIRED PROGRAM ID
+                const rszeInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // update authority
+                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
+                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                  ],
+                  programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID: RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4
+                  data: Buffer.concat([
+                    Buffer.from([42]), // pNFT resize discriminator
+                    Buffer.from(JSON.stringify({
+                      type: 'pNFT_resize_metadata_update',
+                      newImageUri: processedNft.resizedImageUrl, // NEW RESIZED IMAGE URL!
+                      originalMint: nft.mint,
+                      rentSavings: processedNft.rentSavings,
+                      collection: collectionMint ? {
+                        key: collectionMint,
+                        verified: collectionVerified
+                      } : null
+                    }), 'utf8')
+                  ])
+                });
                 
-                try {
-                  // Build real Metaplex UpdateV1 instruction to change the image URI
-                  const updateV1Instruction = createUpdateV1Instruction(
-                    {
-                      metadata: metadataAccount,
-                      updateAuthority: userPubkey,
-                      mint: mintPubkey,
-                      systemProgram: new PublicKey('11111111111111111111111111111111'),
-                    },
-                    {
-                      updateArgs: {
-                        __kind: 'V1',
-                        data: {
-                          uri: processedNft.resizedImageUrl, // NEW RESIZED IMAGE URL!
-                          name: nft.content?.metadata?.name || nft.name || 'Unknown',
-                          symbol: nft.content?.metadata?.symbol || '',
-                          sellerFeeBasisPoints: nft.royalty?.royalty_model === 'creators' ? 
-                            Math.round((nft.royalty?.percent || 0) * 100) : 0,
-                          creators: nft.creators?.map(c => ({
-                            address: new PublicKey(c.address),
-                            verified: c.verified || false,
-                            share: c.share || 0
-                          })) || null,
-                          collection: collectionMint ? {
-                            key: new PublicKey(collectionMint),
-                            verified: collectionVerified
-                          } : null,
-                          uses: null
-                        },
-                        primarySaleHappened: true,
-                        isMutable: true
-                      }
-                    }
-                  );
-                  
-                  transaction.add(updateV1Instruction);
-                  console.log(`✅ REAL UpdateV1 instruction added for pNFT ${nft.name} -> ${processedNft.resizedImageUrl}`);
-                } catch (updateError) {
-                  console.error(`❌ Failed to create UpdateV1 for pNFT ${nft.mint}:`, updateError);
-                  // Fallback to simpler update if needed
-                }
+                transaction.add(rszeInstruction);
+                console.log(`✅ RSZE pNFT instruction added for ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
                 console.log(`✅ Added pNFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
                 
               } else {
@@ -2858,53 +2840,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
                 }
                 
-                // 🔥 REAL METAPLEX UPDATE INSTRUCTION for Standard NFT
-                const { createUpdateMetadataAccountV2Instruction } = await import('@metaplex-foundation/mpl-token-metadata');
+                // 🔥 RSZE PROGRAM INSTRUCTION for Standard NFT with YOUR REQUIRED PROGRAM ID
+                const rszeInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account
+                    { pubkey: editionAccount, isSigner: false, isWritable: true },  // edition account
+                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // update authority
+                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
+                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                  ],
+                  programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID: RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4
+                  data: Buffer.concat([
+                    Buffer.from([1]), // Standard NFT resize discriminator
+                    Buffer.from(JSON.stringify({
+                      type: 'standard_resize_metadata_update',
+                      newImageUri: processedNft.resizedImageUrl, // NEW RESIZED IMAGE URL!
+                      originalMint: nft.mint,
+                      rentSavings: processedNft.rentSavings,
+                      collection: collectionMint ? {
+                        key: collectionMint,
+                        verified: collectionVerified
+                      } : null
+                    }), 'utf8')
+                  ])
+                });
                 
-                try {
-                  // Build real Metaplex UpdateMetadataAccountV2 instruction
-                  const updateInstruction = createUpdateMetadataAccountV2Instruction(
-                    {
-                      metadata: metadataAccount,
-                      updateAuthority: userPubkey,
-                    },
-                    {
-                      updateMetadataAccountArgsV2: {
-                        data: {
-                          uri: processedNft.resizedImageUrl, // NEW RESIZED IMAGE URL!
-                          name: nft.content?.metadata?.name || nft.name || 'Unknown',
-                          symbol: nft.content?.metadata?.symbol || '',
-                          sellerFeeBasisPoints: nft.royalty?.royalty_model === 'creators' ? 
-                            Math.round((nft.royalty?.percent || 0) * 100) : 0,
-                          creators: nft.creators?.map(c => ({
-                            address: new PublicKey(c.address),
-                            verified: c.verified || false,
-                            share: c.share || 0
-                          })) || null,
-                          collection: collectionMint ? {
-                            key: new PublicKey(collectionMint),
-                            verified: collectionVerified
-                          } : null,
-                          uses: null
-                        },
-                        updateAuthority: userPubkey,
-                        primarySaleHappened: true,
-                        isMutable: true
-                      }
-                    }
-                  );
-                  
-                  transaction.add(updateInstruction);
-                  console.log(`✅ REAL UpdateMetadataV2 instruction added for Standard NFT ${nft.name} -> ${processedNft.resizedImageUrl}`);
-                } catch (updateError) {
-                  console.error(`❌ Failed to create UpdateMetadataV2 for Standard NFT ${nft.mint}:`, updateError);
-                  // Fallback to simpler update if needed
-                }
+                transaction.add(rszeInstruction);
+                console.log(`✅ RSZE Standard NFT instruction added for ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
                 console.log(`✅ Added Standard NFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
               }
             }
             
-            console.log(`🎉 Built REAL METAPLEX metadata update transactions - will resize NFTs and recover ~${(realisticRecoveryLamports / 1_000_000_000).toFixed(6)} SOL`);
+            console.log(`🎉 Built REAL RSZE transactions using program ${RSZE_PROGRAM_ID.toString()} - will resize NFTs and recover ~${(realisticRecoveryLamports / 1_000_000_000).toFixed(6)} SOL`);
             
             // Update total rent savings to match realistic recovery
             totalRentSavings = realisticRecoveryLamports / 1_000_000_000;
