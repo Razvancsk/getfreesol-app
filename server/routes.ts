@@ -2933,7 +2933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Standard NFT instruction with collection support
                 const keys = [
                   { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
-                  { pubkey: editionAccount, isSigner: false, isWritable: true },  // edition
+                  { pubkey: stdEditionAccount, isSigner: false, isWritable: true },  // edition
                   { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
                   { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer
                   { pubkey: userPubkey, isSigner: true, isWritable: false },     // authority
