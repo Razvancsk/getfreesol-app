@@ -273,17 +273,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate fees in lamports - no pre-balance capping needed since closes execute first
-      const donationFactor = donationPercentage / 100;
-      const requestedFeeLamports = Math.floor(totalRecoveredLamports * donationFactor);
-      const safetyBufferLamports = 50000; // 0.00005 SOL buffer
-      const maxAllowedFeeLamports = Math.max(0, totalRecoveredLamports - estimatedTxFeeLamports - safetyBufferLamports);
-      const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
-      
-      console.log(`Fee calculation: requested=${requestedFeeLamports}, maxAllowed=${maxAllowedFeeLamports}, final=${totalFeeLamports}`);
+      // Calculate fees in lamports - always charge 15% total (server-enforced)
+      const PLATFORM_FEE_PERCENTAGE = 15; // Server-enforced 15% total fee
+      const totalFeeLamports = Math.floor(totalRecoveredLamports * (PLATFORM_FEE_PERCENTAGE / 100));
       
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
+      
+      console.log(`Fee calculation: recovered=${totalRecoveredLamports} lamports, total fee=${totalFeeLamports} lamports (${PLATFORM_FEE_PERCENTAGE}%)`);
       
       // Check referral wallet BEFORE calculating final fees
       let referralWalletExists = false;
@@ -301,16 +298,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (referralWalletExists) {
-          // 35% of fee goes to referral
+          // 35% of total fee goes to referral, 65% stays with platform
           referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
-          // 65% of fee stays with platform
           platformFeeLamports = totalFeeLamports - referralFeeLamports;
-          console.log(`✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${referralFeeLamports}`);
+          console.log(`✅ Referral wallet exists - platform=${platformFeeLamports} (65% of 15%), referral=${referralFeeLamports} (35% of 15%)`);
         } else {
           // Referral wallet doesn't exist, all fees go to platform
           platformFeeLamports = totalFeeLamports;
           referralFeeLamports = 0;
-          console.log(`❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - all fees to platform: ${platformFeeLamports}`);
+          console.log(`❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - platform gets all: ${platformFeeLamports} lamports`);
         }
       }
       
@@ -368,12 +364,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralFeeAmount: referralFeeAmount,
         netAmount: netAmount,
         referralCodeUsed: referralCode || null,
-        feeCapInfo: {
-          requestedFeeLamports,
-          maxAllowedFeeLamports,
-          actualFeeLamports: totalFeeLamports,
-          estimatedTxFeeLamports,
-          safetyBufferLamports
+        feeInfo: {
+          feePercentage: PLATFORM_FEE_PERCENTAGE,
+          totalFeeLamports: totalFeeLamports,
+          platformFeeLamports: platformFeeLamports,
+          referralFeeLamports: referralFeeLamports,
+          estimatedTxFeeLamports: estimatedTxFeeLamports
         }
       });
 
