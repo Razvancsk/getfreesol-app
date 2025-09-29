@@ -2776,77 +2776,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // 🎯 PROGRAMMABLE NFT (pNFT) - requires auth rules, token standard, collection handling
                 console.log(`🎯 Handling as pNFT (Programmable NFT): ${nft.name}`);
                 
-                // Create collection account PDA if part of collection
-                let collectionMetadataAccount = null;
-                if (collectionMint) {
-                  const collectionMintPubkey = new PublicKey(collectionMint);
-                  const [collectionPDA] = PublicKey.findProgramAddressSync(
+                {  // Scoped block for pNFT variables
+                  // Create collection account PDA if part of collection
+                  let collectionMetadataAccount = null;
+                  if (collectionMint) {
+                    const collectionMintPubkey = new PublicKey(collectionMint);
+                    const [collectionPDA] = PublicKey.findProgramAddressSync(
+                      [
+                        Buffer.from('metadata'),
+                        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                        collectionMintPubkey.toBuffer(),
+                      ],
+                      TOKEN_METADATA_PROGRAM_ID
+                    );
+                    collectionMetadataAccount = collectionPDA;
+                  }
+                  
+                  // 🔥 BURN PROGRAMMABLE NFT TO RECLAIM MASTER EDITION RENT
+                  
+                  // Detect edition type and find correct PDA
+                  let pnftEditionAccount = null;
+                  let pnftIsMasterEdition = false;
+                  let pnftIsEditionV1 = false;
+                
+                // Check if this is a Master Edition v2 (most common)
+                try {
+                  const [masterEditionV2] = PublicKey.findProgramAddressSync(
                     [
                       Buffer.from('metadata'),
                       TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-                      collectionMintPubkey.toBuffer(),
+                      mintPubkey.toBuffer(),
+                      Buffer.from('edition')
                     ],
                     TOKEN_METADATA_PROGRAM_ID
                   );
-                  collectionMetadataAccount = collectionPDA;
+                  editionAccount = masterEditionV2;
+                  isMasterEdition = true;
+                  console.log(`🏆 Detected Master Edition v2 for ${nft.name}`);
+                } catch (e) {
+                  // Try Master Edition v1 (legacy)
+                  try {
+                    const [masterEditionV1] = PublicKey.findProgramAddressSync(
+                      [
+                        Buffer.from('metadata'),
+                        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                        mintPubkey.toBuffer(),
+                        Buffer.from('edition'),
+                        Buffer.from('v1')
+                      ],
+                      TOKEN_METADATA_PROGRAM_ID
+                    );
+                    editionAccount = masterEditionV1;
+                    isMasterEdition = true;
+                    isEditionV1 = true;
+                    console.log(`🏆 Detected Master Edition v1 for ${nft.name}`);
+                  } catch (e2) {
+                    // Try Print Edition
+                    const editionNumber = nft.edition_nonce || 1;
+                    const [printEdition] = PublicKey.findProgramAddressSync(
+                      [
+                        Buffer.from('metadata'),
+                        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                        mintPubkey.toBuffer(),
+                        Buffer.from('edition'),
+                        Buffer.from(editionNumber.toString())
+                      ],
+                      TOKEN_METADATA_PROGRAM_ID
+                    );
+                    editionAccount = printEdition;
+                    isMasterEdition = false;
+                    console.log(`📄 Detected Print Edition #${editionNumber} for ${nft.name}`);
+                  }
                 }
                 
-                // pNFT instruction with proper collection handling (based on your example)
-                const keys = [
-                  { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata
-                  { pubkey: userPubkey, isSigner: true, isWritable: false },      // update authority
-                  { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
-                  { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
-                ];
+                // Find user's token account
+                const associatedTokenProgram = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+                const [tokenAccount] = PublicKey.findProgramAddressSync(
+                  [
+                    userPubkey.toBuffer(),
+                    new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA').toBuffer(),
+                    mintPubkey.toBuffer()
+                  ],
+                  associatedTokenProgram
+                );
                 
-                // Add collection metadata account if part of collection
-                if (collectionMetadataAccount) {
-                  keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
+                // Create appropriate burn instruction based on edition type
+                let burnInstruction;
+                
+                if (isMasterEdition) {
+                  // Burn Master Edition (v1 or v2) - will close Master Edition account
+                  burnInstruction = new TransactionInstruction({
+                    keys: [
+                      { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata (will be closed)
+                      { pubkey: userPubkey, isSigner: true, isWritable: true },          // owner 
+                      { pubkey: mintPubkey, isSigner: false, isWritable: true },         // mint (will be closed)
+                      { pubkey: tokenAccount, isSigner: false, isWritable: true },       // token account
+                      { pubkey: editionAccount!, isSigner: false, isWritable: true },     // master edition (will be closed)
+                      { pubkey: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'), isSigner: false, isWritable: false }, // spl token
+                      { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                    ],
+                    programId: TOKEN_METADATA_PROGRAM_ID,
+                    data: Buffer.from([44]) // BurnV1 discriminator
+                  });
+                  console.log(`🔥 BURN Master Edition ${isEditionV1 ? 'v1' : 'v2'} instruction added for ${nft.name} - will reclaim ${isEditionV1 ? '0.0023' : '0.0023'} SOL`);
+                } else {
+                  // Burn Print Edition - will close Edition account but keep Master Edition
+                  burnInstruction = new TransactionInstruction({
+                    keys: [
+                      { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata (will be closed)
+                      { pubkey: userPubkey, isSigner: true, isWritable: true },          // owner 
+                      { pubkey: mintPubkey, isSigner: false, isWritable: true },         // mint (will be closed)
+                      { pubkey: tokenAccount, isSigner: false, isWritable: true },       // token account
+                      { pubkey: editionAccount!, isSigner: false, isWritable: true },     // edition (will be closed)
+                      { pubkey: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'), isSigner: false, isWritable: false }, // spl token
+                      { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                    ],
+                    programId: TOKEN_METADATA_PROGRAM_ID,
+                    data: Buffer.from([45]) // BurnEditionNft discriminator (different from BurnV1)
+                  });
+                  console.log(`🔥 BURN Print Edition instruction added for ${nft.name} - will reclaim 0.0019 SOL`);
                 }
                 
-                // 🔥 REAL METAPLEX METADATA UPDATE + RSZE PROGRAM CALL for pNFT
-                
-                // 1. First, create the REAL Metaplex metadata update instruction for pNFT
-                const TOKEN_METADATA_PROGRAM_ID_PUBKEY = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
-                
-                // Create UpdateV1 instruction manually for pNFT (compatible format)
-                const updatePnftInstruction = new TransactionInstruction({
-                  keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata
-                    { pubkey: userPubkey, isSigner: true, isWritable: false },         // update authority
-                    { pubkey: mintPubkey, isSigner: false, isWritable: false },        // mint
-                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
-                  ],
-                  programId: TOKEN_METADATA_PROGRAM_ID_PUBKEY,
-                  data: Buffer.concat([
-                    Buffer.from([50]), // UpdateV1 discriminator for pNFTs
-                    Buffer.from(processedNft.resizedImageUrl, 'utf8'), // New URI
-                    Buffer.from([1]), // Data update flag
-                  ])
-                });
-                
-                // 2. Then, add your RSZE program instruction for SOL recovery  
-                const rszeRecoveryInstruction = new TransactionInstruction({
-                  keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account to resize
-                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer/authority
-                    { pubkey: mintPubkey, isSigner: false, isWritable: false },     // mint
-                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
-                  ],
-                  programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID: RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4
-                  data: Buffer.from([1]) // pNFT resize instruction for your program
-                });
-                
-                transaction.add(updatePnftInstruction);
-                transaction.add(rszeRecoveryInstruction);
-                console.log(`✅ REAL Metaplex + RSZE instructions added for pNFT ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
-                console.log(`✅ Added pNFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
+                  transaction.add(burnInstruction);
+                  console.log(`✅ Added pNFT burn instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
+                }  // End scoped block for pNFT variables
                 
               } else {
                 // 📄 STANDARD NFT - simpler structure (also handle collections)
                 console.log(`📄 Handling as Standard NFT: ${nft.name}`);
                 
-                const [editionAccount] = PublicKey.findProgramAddressSync(
+                const [stdEditionAccount] = PublicKey.findProgramAddressSync(
                   [
                     Buffer.from('metadata'),
                     TOKEN_METADATA_PROGRAM_ID.toBuffer(),
@@ -2886,39 +2945,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   keys.push({ pubkey: collectionMetadataAccount, isSigner: false, isWritable: false }); // collection metadata
                 }
                 
-                // 🔥 REAL METAPLEX METADATA UPDATE + RSZE PROGRAM CALL
+                // 🔥 BURN STANDARD NFT TO RECLAIM MASTER EDITION RENT
                 
-                // 1. First, create the REAL Metaplex metadata update instruction
-                const TOKEN_METADATA_PROGRAM_ID_PUBKEY = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+                // Detect edition type and find correct PDA  
+                let editionAccount = null;
+                let isMasterEdition = false;
+                let isEditionV1 = false;
                 
-                // Create UpdateMetadataAccountV2 instruction manually (compatible format)
-                const updateMetadataInstruction = new TransactionInstruction({
-                  keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata
-                    { pubkey: userPubkey, isSigner: true, isWritable: false },         // update authority  
+                // Check if this is a Master Edition v2 (most common)
+                try {
+                  const [masterEditionV2] = PublicKey.findProgramAddressSync(
+                    [
+                      Buffer.from('metadata'),
+                      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                      mintPubkey.toBuffer(),
+                      Buffer.from('edition')
+                    ],
+                    TOKEN_METADATA_PROGRAM_ID
+                  );
+                  editionAccount = masterEditionV2;
+                  isMasterEdition = true;
+                  console.log(`🏆 Detected Master Edition v2 for ${nft.name}`);
+                } catch (e) {
+                  // Try Master Edition v1 (legacy)
+                  try {
+                    const [masterEditionV1] = PublicKey.findProgramAddressSync(
+                      [
+                        Buffer.from('metadata'),
+                        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                        mintPubkey.toBuffer(),
+                        Buffer.from('edition'),
+                        Buffer.from('v1')
+                      ],
+                      TOKEN_METADATA_PROGRAM_ID
+                    );
+                    editionAccount = masterEditionV1;
+                    isMasterEdition = true;
+                    isEditionV1 = true;
+                    console.log(`🏆 Detected Master Edition v1 for ${nft.name}`);
+                  } catch (e2) {
+                    // Try Print Edition
+                    const editionNumber = nft.edition_nonce || 1;
+                    const [printEdition] = PublicKey.findProgramAddressSync(
+                      [
+                        Buffer.from('metadata'),
+                        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+                        mintPubkey.toBuffer(),
+                        Buffer.from('edition'),
+                        Buffer.from(editionNumber.toString())
+                      ],
+                      TOKEN_METADATA_PROGRAM_ID
+                    );
+                    editionAccount = printEdition;
+                    isMasterEdition = false;
+                    console.log(`📄 Detected Print Edition #${editionNumber} for ${nft.name}`);
+                  }
+                }
+                
+                // Find user's token account
+                const associatedTokenProgram = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+                const [tokenAccount] = PublicKey.findProgramAddressSync(
+                  [
+                    userPubkey.toBuffer(),
+                    new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA').toBuffer(),
+                    mintPubkey.toBuffer()
                   ],
-                  programId: TOKEN_METADATA_PROGRAM_ID_PUBKEY,
-                  data: Buffer.concat([
-                    Buffer.from([1]), // UpdateMetadataAccountV2 discriminator
-                    Buffer.from(processedNft.resizedImageUrl, 'utf8'), // New URI
-                    Buffer.from([1]), // Data update flag
-                  ])
-                });
+                  associatedTokenProgram
+                );
                 
-                // 2. Then, add your RSZE program instruction for SOL recovery
-                const rszeRecoveryInstruction = new TransactionInstruction({
-                  keys: [
-                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // metadata account to resize
-                    { pubkey: userPubkey, isSigner: true, isWritable: true },      // payer/authority
-                    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
-                  ],
-                  programId: RSZE_PROGRAM_ID, // YOUR EXACT PROGRAM ID: RSZE1NgJy3zdmyTWPeT4yKbsUhrAwrh4mXBL1rMvHt4
-                  data: Buffer.from([0]) // Simple resize instruction for your program
-                });
+                // Create appropriate burn instruction based on edition type
+                let burnInstruction;
                 
-                transaction.add(updateMetadataInstruction);
-                transaction.add(rszeRecoveryInstruction);
-                console.log(`✅ REAL Metaplex + RSZE instructions added for ${nft.name} using program ${RSZE_PROGRAM_ID.toString()}`);
+                if (isMasterEdition) {
+                  // Burn Master Edition (v1 or v2) - will close Master Edition account  
+                  burnInstruction = new TransactionInstruction({
+                    keys: [
+                      { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata (will be closed)
+                      { pubkey: userPubkey, isSigner: true, isWritable: true },          // owner
+                      { pubkey: mintPubkey, isSigner: false, isWritable: true },         // mint (will be closed)
+                      { pubkey: tokenAccount, isSigner: false, isWritable: true },       // token account
+                      { pubkey: editionAccount!, isSigner: false, isWritable: true },     // master edition (will be closed)
+                      { pubkey: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'), isSigner: false, isWritable: false }, // spl token
+                      { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                    ],
+                    programId: TOKEN_METADATA_PROGRAM_ID,
+                    data: Buffer.from([44]) // BurnV1 discriminator
+                  });
+                  console.log(`🔥 BURN Master Edition ${isEditionV1 ? 'v1' : 'v2'} instruction added for ${nft.name} - will reclaim 0.0023 SOL`);
+                } else {
+                  // Burn Print Edition - will close Edition account but keep Master Edition
+                  burnInstruction = new TransactionInstruction({
+                    keys: [
+                      { pubkey: metadataAccount, isSigner: false, isWritable: true },     // metadata (will be closed)
+                      { pubkey: userPubkey, isSigner: true, isWritable: true },          // owner
+                      { pubkey: mintPubkey, isSigner: false, isWritable: true },         // mint (will be closed)
+                      { pubkey: tokenAccount, isSigner: false, isWritable: true },       // token account
+                      { pubkey: editionAccount!, isSigner: false, isWritable: true },     // edition (will be closed)
+                      { pubkey: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'), isSigner: false, isWritable: false }, // spl token
+                      { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system program
+                    ],
+                    programId: TOKEN_METADATA_PROGRAM_ID,
+                    data: Buffer.from([45]) // BurnEditionNft discriminator (different from BurnV1)
+                  });
+                  console.log(`🔥 BURN Print Edition instruction added for ${nft.name} - will reclaim 0.0019 SOL`);
+                }
+                
+                transaction.add(burnInstruction);
                 console.log(`✅ Added Standard NFT resize instruction for ${nft.name} with collection ${collectionMint || 'none'}`);
               }
             }
