@@ -2685,11 +2685,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (processedNft.rentSavings > 0) {
               console.log(`💰 Processing SOL recovery for ${processedNft.mint}`);
               
-              // Calculate rent recovery in lamports 
-              const rentRecoveryLamports = Math.floor(processedNft.rentSavings * 1_000_000_000);
+              // Find the original NFT data for TM detection
+              const originalNft = batchNfts.find(n => n.mint === processedNft.mint);
+              
+              // 🎯 TM NFT SPECIFIC RECOVERY AMOUNTS
+              const isTmNft = originalNft && (
+                originalNft.creators?.some(creator => 
+                  creator.address === 'TM_CREATOR_ADDRESS_HERE' || // Replace with actual TM creator address
+                  creator.address?.includes('TM')
+                ) ||
+                originalNft.grouping?.some(g => 
+                  g.group_value === 'TM_COLLECTION_ADDRESS_HERE' || // Replace with actual TM collection address
+                  g.group_value?.includes('TM')
+                ) ||
+                originalNft.content?.metadata?.name?.includes('TM') ||
+                originalNft.content?.metadata?.symbol?.includes('TM') ||
+                originalNft.name?.includes('TM')
+              ) || false;
+              
+              let finalRecoveryAmount = processedNft.rentSavings;
+              
+              if (isTmNft && originalNft) {
+                // Detect if this is a Master Edition or regular Edition
+                const isMasterEdition = originalNft.creators?.some(creator => creator.share === 100) || 
+                                      originalNft.content?.metadata?.name?.toLowerCase().includes('master') ||
+                                      originalNft.supply === 1 || // Master editions typically have supply of 1
+                                      originalNft.interface === 'MasterEditionV2';
+                
+                if (isMasterEdition) {
+                  finalRecoveryAmount = 0.0023; // 0.0023 excess SOL per Master Edition
+                  console.log(`🏆 TM Master Edition detected: ${originalNft.name} - Fixed recovery: ${finalRecoveryAmount} SOL`);
+                } else {
+                  finalRecoveryAmount = 0.0019; // 0.0019 excess SOL per Edition
+                  console.log(`📄 TM Edition detected: ${originalNft.name} - Fixed recovery: ${finalRecoveryAmount} SOL`);
+                }
+              }
+              
+              // Calculate rent recovery in lamports using final amount
+              const rentRecoveryLamports = Math.floor(finalRecoveryAmount * 1_000_000_000);
               totalRecoveredLamports += rentRecoveryLamports;
               
-              console.log(`✅ Will recover ${rentRecoveryLamports} lamports (${processedNft.rentSavings.toFixed(9)} SOL) from ${processedNft.mint}`);
+              console.log(`✅ Will recover ${rentRecoveryLamports} lamports (${finalRecoveryAmount.toFixed(9)} SOL) from ${processedNft.mint}${isTmNft ? ' (TM NFT)' : ''}`);
             }
           }
           
