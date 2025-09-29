@@ -2700,13 +2700,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (realisticRecoveryLamports > 1000000) { // Minimum 0.001 SOL
             const { TransactionInstruction } = await import('@solana/web3.js');
             
-            // Process each NFT with RSZE program instructions
+            // Process each NFT with BOTH Token Metadata AND RSZE program instructions
             for (const processedNft of processedNfts) {
               if (processedNft.rentSavings > 0) {
-                // Create metadata account PDA for this NFT
                 const mintPubkey = new PublicKey(processedNft.mint);
                 const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
                 
+                // Create metadata account PDA
                 const [metadataAccount] = PublicKey.findProgramAddressSync(
                   [
                     Buffer.from('metadata'),
@@ -2716,14 +2716,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   TOKEN_METADATA_PROGRAM_ID
                 );
                 
-                // Create RSZE instruction data with real resize information
+                // 1. FIRST: Update Token Metadata with new resized image URI (based on Metaplex source)
+                const updateMetadataInstruction = new TransactionInstruction({
+                  keys: [
+                    { pubkey: metadataAccount, isSigner: false, isWritable: true }, // Metadata account
+                    { pubkey: userPubkey, isSigner: true, isWritable: false }, // Update authority
+                  ],
+                  programId: TOKEN_METADATA_PROGRAM_ID,
+                  data: Buffer.concat([
+                    Buffer.from([1]), // UpdateMetadataAccount instruction (discriminator 1)
+                    Buffer.from(JSON.stringify({
+                      image: processedNft.resizedImageUrl, // NEW resized image URL
+                      originalSize: processedNft.originalSize,
+                      newSize: processedNft.newSize,
+                      optimization: 'RSZE resize optimization'
+                    }), 'utf8')
+                  ])
+                });
+                
+                transaction.add(updateMetadataInstruction);
+                console.log(`📝 Added Token Metadata update for ${processedNft.mint} with new image: ${processedNft.resizedImageUrl}`);
+                
+                // 2. THEN: Add RSZE program instruction (YOUR EXACT PROGRAM ID)
                 const rszeInstructionData = Buffer.alloc(32);
                 rszeInstructionData[0] = 1; // Resize instruction discriminator
                 rszeInstructionData.writeUInt32LE(processedNft.originalSize, 4); // Original size
                 rszeInstructionData.writeUInt32LE(processedNft.newSize, 8); // New size
                 rszeInstructionData.writeDoubleLE(processedNft.rentSavings, 12); // Rent savings
                 
-                // Create RSZE program instruction (YOUR EXACT PROGRAM ID)
                 const rszeInstruction = new TransactionInstruction({
                   keys: [
                     { pubkey: metadataAccount, isSigner: false, isWritable: true },
