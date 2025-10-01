@@ -2443,7 +2443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           solRecovered: realRentRecovered.toString(),
           netAmount: realNetAmount.toString(), // REAL amount user received
           feeAmount: realFeeAmount.toString(), // REAL platform + referral fees
-          itemsProcessed: 2, // NFT burn closes ~2 accounts (token + metadata)
+          itemsProcessed: 1, // 1 NFT = 1 account for display
           itemDetails: JSON.stringify({
             nftMint,
             nftType,
