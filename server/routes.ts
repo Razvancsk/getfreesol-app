@@ -2443,7 +2443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           solRecovered: realRentRecovered.toString(),
           netAmount: realNetAmount.toString(), // REAL amount user received
           feeAmount: realFeeAmount.toString(), // REAL platform + referral fees
-          itemsProcessed: 1, // 1 NFT = 1 account for display
+          itemsProcessed: 1, // One NFT burned
           itemDetails: JSON.stringify({
             nftMint,
             nftType,
@@ -2458,32 +2458,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Check if transaction already exists (to avoid duplicate key error)
         try {
-          console.log(`📝 Recording NFT burn: ${nftMint} in transaction ${signature}`);
           await storage.createTransactionLedgerEntry(transactionData);
-          console.log(`✅ First NFT recorded for transaction ${signature}`);
         } catch (insertError: any) {
-          // If it's a duplicate key error, increment the itemsProcessed count (batch burn)
+          // If it's a duplicate key error, update the existing record with real amounts
           if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
-            console.log(`🔄 Transaction ${signature} already exists, incrementing NFT count for batch burn...`);
-            console.log(`   NFT mint being added: ${nftMint}`);
+            console.log(`🔄 Transaction ${signature} already exists, updating with real amounts...`);
             
-            // Get existing record to increment itemsProcessed
-            const existingRecord = await storage.getTransactionLedgerBySignature(signature);
-            if (existingRecord) {
-              const newItemsProcessed = (existingRecord.itemsProcessed || 0) + 1;
-              console.log(`   📊 Incrementing itemsProcessed from ${existingRecord.itemsProcessed} to ${newItemsProcessed}`);
-              
-              // Update existing record - increment count for batch burns
-              await storage.updateTransactionLedgerBySig(signature, {
-                itemsProcessed: newItemsProcessed
-              });
-              
-              console.log(`✅ Updated batch burn count: ${newItemsProcessed} NFTs total in transaction ${signature}`);
-            } else {
-              console.error(`❌ Could not find existing record for ${signature} to increment`);
-            }
+            // Update existing record with real amounts
+            const updateResult = await storage.updateTransactionLedgerBySig(signature, {
+              solRecovered: realRentRecovered.toString(),
+              netAmount: realNetAmount.toString(),
+              feeAmount: realFeeAmount.toString(),
+              itemDetails: JSON.stringify({
+                nftMint,
+                nftType,
+                rentRecovered: realRentRecovered,
+                netAmount: realNetAmount,
+                platformFeeAmount: realFeeAmount,
+                referralFeeAmount: 0,
+                originalEstimate: rentRecovered,
+                settlementAnalyzed: true,
+                correctedAt: new Date().toISOString()
+              })
+            });
+            
+            console.log(`✅ Updated existing record with real amounts for ${signature}`);
           } else {
-            console.error(`❌ Insert error for ${signature}:`, insertError);
             throw insertError; // Re-throw if it's a different error
           }
         }
@@ -3195,7 +3195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         solRecovered: (rentDelta || 0).toString(),
         netAmount: (netAmount || 0).toString(),
         feeAmount: (platformFee || 0).toString(),
-        itemsProcessed: 1, // Resize operation on 1 NFT account
+        itemsProcessed: 1,
         itemDetails: JSON.stringify({
           nftMint,
           oldSize,

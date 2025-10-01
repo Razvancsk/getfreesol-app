@@ -180,7 +180,7 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
   }
 
-  async updateTransactionLedgerBySig(signature: string, updateData: Partial<Pick<TransactionLedger, 'solRecovered' | 'netAmount' | 'feeAmount' | 'itemDetails' | 'itemsProcessed'>>): Promise<TransactionLedger | undefined> {
+  async updateTransactionLedgerBySig(signature: string, updateData: Partial<Pick<TransactionLedger, 'solRecovered' | 'netAmount' | 'feeAmount' | 'itemDetails'>>): Promise<TransactionLedger | undefined> {
     const [updatedEntry] = await db
       .update(transactionLedger)
       .set(updateData)
