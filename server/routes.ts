@@ -2443,7 +2443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           solRecovered: realRentRecovered.toString(),
           netAmount: realNetAmount.toString(), // REAL amount user received
           feeAmount: realFeeAmount.toString(), // REAL platform + referral fees
-          itemsProcessed: 1, // One NFT burned
+          itemsProcessed: 2, // NFT burn closes ~2 accounts (token + metadata)
           itemDetails: JSON.stringify({
             nftMint,
             nftType,
@@ -3195,7 +3195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         solRecovered: (rentDelta || 0).toString(),
         netAmount: (netAmount || 0).toString(),
         feeAmount: (platformFee || 0).toString(),
-        itemsProcessed: 1,
+        itemsProcessed: 1, // Resize operation on 1 NFT account
         itemDetails: JSON.stringify({
           nftMint,
           oldSize,
