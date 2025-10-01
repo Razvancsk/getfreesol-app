@@ -2604,7 +2604,7 @@ export default function SolRefund() {
 
 
           {/* Reclaim SOL Results */}
-          {activeTab === 'reclaim' && scanResult && (
+          {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
@@ -2622,11 +2622,17 @@ export default function SolRefund() {
                   <RefreshCw className={`h-3.5 w-3.5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
                 </button>
               </div>
-              <p className="text-white text-sm mb-6">
-                Found {scanResult.emptyAccounts} empty token accounts
-              </p>
+              {!scanResult ? (
+                <div className="text-center text-purple-300 py-8">
+                  {scanMutation.isPending ? 'Scanning wallet...' : 'Connect wallet and scan to find empty accounts'}
+                </div>
+              ) : (
+                <>
+                  <p className="text-white text-sm mb-6">
+                    Found {scanResult.emptyAccounts} empty token accounts
+                  </p>
 
-              {scanResult.emptyAccounts > 0 ? (
+                  {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
@@ -2688,6 +2694,8 @@ export default function SolRefund() {
                     Your wallet has no empty token accounts. All your accounts are either active or already closed.
                   </p>
                 </div>
+              )}
+                </>
               )}
             </div>
           )}
@@ -3249,12 +3257,12 @@ export default function SolRefund() {
 
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
-          {activeTab === 'reclaim' && stats && (
+          {activeTab === 'reclaim' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Total SOL Recovered */}
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                 <div className="text-3xl font-bold text-white mb-2">
-                  {stats.totalSolRecovered.toFixed(6)}
+                  {stats ? stats.totalSolRecovered.toFixed(6) : '0.000000'}
                 </div>
                 <div className="text-sm text-purple-200 uppercase tracking-wider">
                   TOTAL SOL RECOVERED
@@ -3264,7 +3272,7 @@ export default function SolRefund() {
               {/* Total Accounts Closed */}
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                 <div className="text-3xl font-bold text-white mb-2">
-                  {stats.totalAccountsClaimed}
+                  {stats ? stats.totalAccountsClaimed : 0}
                 </div>
                 <div className="text-sm text-purple-200 uppercase tracking-wider">
                   TOTAL ACCOUNTS CLOSED
