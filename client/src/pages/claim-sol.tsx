@@ -3274,7 +3274,7 @@ export default function SolRefund() {
           )}
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
-          {activeTab === 'reclaim' && allTransactions.length > 0 && (
+          {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-6">
                 <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
@@ -3300,40 +3300,50 @@ export default function SolRefund() {
 
                   {/* Transaction Rows */}
                   <div>
-                    {allTransactions.map((tx, index) => (
-                      <div key={tx.signature}>
-                        <div 
-                          className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
-                          onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
-                          title="Click to view transaction on Solscan"
-                        >
-                          <div className="text-white font-mono text-sm">
-                            <div className="truncate" title={tx.signature}>
-                              {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                    {isLoadingTransactions && allTransactions.length === 0 ? (
+                      <div className="text-center text-purple-300 py-8">
+                        Loading transactions...
+                      </div>
+                    ) : allTransactions.length === 0 ? (
+                      <div className="text-center text-purple-300 py-8">
+                        No transactions yet
+                      </div>
+                    ) : (
+                      allTransactions.map((tx, index) => (
+                        <div key={tx.signature}>
+                          <div 
+                            className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                            onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
+                            title="Click to view transaction on Solscan"
+                          >
+                            <div className="text-white font-mono text-sm">
+                              <div className="truncate" title={tx.signature}>
+                                {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                              </div>
+                            </div>
+                            <div className="text-white text-center text-lg font-semibold">
+                              {tx.itemsProcessed}
+                            </div>
+                            <div className="text-white text-center text-sm font-medium">
+                              {(tx.netAmount || tx.solRecovered * 0.85).toFixed(6)}
+                            </div>
+                            <div className="text-white text-center text-sm">
+                              {new Date(tx.processedAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
                             </div>
                           </div>
-                          <div className="text-white text-center text-lg font-semibold">
-                            {tx.itemsProcessed}
-                          </div>
-                          <div className="text-white text-center text-sm font-medium">
-                            {(tx.netAmount || tx.solRecovered * 0.85).toFixed(6)}
-                          </div>
-                          <div className="text-white text-center text-sm">
-                            {new Date(tx.processedAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            })}
-                          </div>
+                          {/* Separator line between rows - don't show after last row */}
+                          {index < allTransactions.length - 1 && (
+                            <div className="border-b border-purple-500/20 my-2"></div>
+                          )}
                         </div>
-                        {/* Separator line between rows - don't show after last row */}
-                        {index < allTransactions.length - 1 && (
-                          <div className="border-b border-purple-500/20 my-2"></div>
-                        )}
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
 
                   {/* Load More Button */}
