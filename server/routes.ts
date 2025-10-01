@@ -2458,26 +2458,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Check if transaction already exists (to avoid duplicate key error)
         try {
+          console.log(`📝 Recording NFT burn: ${nftMint} in transaction ${signature}`);
           await storage.createTransactionLedgerEntry(transactionData);
+          console.log(`✅ First NFT recorded for transaction ${signature}`);
         } catch (insertError: any) {
           // If it's a duplicate key error, increment the itemsProcessed count (batch burn)
           if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
             console.log(`🔄 Transaction ${signature} already exists, incrementing NFT count for batch burn...`);
+            console.log(`   NFT mint being added: ${nftMint}`);
             
             // Get existing record to increment itemsProcessed
             const existingRecord = await storage.getTransactionLedgerBySignature(signature);
             if (existingRecord) {
               const newItemsProcessed = (existingRecord.itemsProcessed || 0) + 1;
-              console.log(`   Incrementing itemsProcessed from ${existingRecord.itemsProcessed} to ${newItemsProcessed}`);
+              console.log(`   📊 Incrementing itemsProcessed from ${existingRecord.itemsProcessed} to ${newItemsProcessed}`);
               
               // Update existing record - increment count for batch burns
               await storage.updateTransactionLedgerBySig(signature, {
                 itemsProcessed: newItemsProcessed
               });
               
-              console.log(`✅ Updated batch burn count: ${newItemsProcessed} NFTs in transaction ${signature}`);
+              console.log(`✅ Updated batch burn count: ${newItemsProcessed} NFTs total in transaction ${signature}`);
+            } else {
+              console.error(`❌ Could not find existing record for ${signature} to increment`);
             }
           } else {
+            console.error(`❌ Insert error for ${signature}:`, insertError);
             throw insertError; // Re-throw if it's a different error
           }
         }
