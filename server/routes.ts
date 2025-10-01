@@ -2460,29 +2460,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await storage.createTransactionLedgerEntry(transactionData);
         } catch (insertError: any) {
-          // If it's a duplicate key error, update the existing record with real amounts
+          // If it's a duplicate key error, increment the itemsProcessed count (batch burn)
           if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
-            console.log(`🔄 Transaction ${signature} already exists, updating with real amounts...`);
+            console.log(`🔄 Transaction ${signature} already exists, incrementing NFT count for batch burn...`);
             
-            // Update existing record with real amounts
-            const updateResult = await storage.updateTransactionLedgerBySig(signature, {
-              solRecovered: realRentRecovered.toString(),
-              netAmount: realNetAmount.toString(),
-              feeAmount: realFeeAmount.toString(),
-              itemDetails: JSON.stringify({
-                nftMint,
-                nftType,
-                rentRecovered: realRentRecovered,
-                netAmount: realNetAmount,
-                platformFeeAmount: realFeeAmount,
-                referralFeeAmount: 0,
-                originalEstimate: rentRecovered,
-                settlementAnalyzed: true,
-                correctedAt: new Date().toISOString()
-              })
-            });
-            
-            console.log(`✅ Updated existing record with real amounts for ${signature}`);
+            // Get existing record to increment itemsProcessed
+            const existingRecord = await storage.getTransactionLedgerBySignature(signature);
+            if (existingRecord) {
+              const newItemsProcessed = (existingRecord.itemsProcessed || 0) + 1;
+              console.log(`   Incrementing itemsProcessed from ${existingRecord.itemsProcessed} to ${newItemsProcessed}`);
+              
+              // Update existing record - increment count for batch burns
+              await storage.updateTransactionLedgerBySig(signature, {
+                itemsProcessed: newItemsProcessed
+              });
+              
+              console.log(`✅ Updated batch burn count: ${newItemsProcessed} NFTs in transaction ${signature}`);
+            }
           } else {
             throw insertError; // Re-throw if it's a different error
           }
