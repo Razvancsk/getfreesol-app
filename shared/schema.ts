@@ -87,21 +87,6 @@ export const nftBurnRecords = pgTable("nft_burn_records", {
   burnedAt: timestamp("burned_at").notNull().defaultNow(),
 });
 
-// NFT resize records
-export const nftResizeRecords = pgTable("nft_resize_records", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  signature: text("signature").notNull(),
-  walletAddress: text("wallet_address").notNull(),
-  nftMint: text("nft_mint").notNull(),
-  oldSize: integer("old_size").notNull(), // bytes
-  newSize: integer("new_size").notNull(), // bytes
-  rentDelta: decimal("rent_delta", { precision: 18, scale: 9 }).notNull(), // positive = rent paid
-  platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).default("0").notNull(),
-  referralFee: decimal("referral_fee", { precision: 18, scale: 9 }).default("0").notNull(),
-  netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(), // rent delta minus fees
-  resizedAt: timestamp("resized_at").notNull().defaultNow(),
-});
-
 // Referral system tables
 export const referralCodes = pgTable("referral_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -170,10 +155,6 @@ export const insertNftBurnRecordSchema = createInsertSchema(nftBurnRecords).omit
   burnedAt: true,
 });
 
-export const insertNftResizeRecordSchema = createInsertSchema(nftResizeRecords).omit({
-  id: true,
-  resizedAt: true,
-});
 
 export const insertReferralCodeSchema = createInsertSchema(referralCodes).omit({
   id: true,
@@ -207,8 +188,6 @@ export type TokenBurnRecord = typeof tokenBurnRecords.$inferSelect;
 export type InsertTokenBurnRecord = z.infer<typeof insertTokenBurnRecordSchema>;
 export type NftBurnRecord = typeof nftBurnRecords.$inferSelect;
 export type InsertNftBurnRecord = z.infer<typeof insertNftBurnRecordSchema>;
-export type NftResizeRecord = typeof nftResizeRecords.$inferSelect;
-export type InsertNftResizeRecord = z.infer<typeof insertNftResizeRecordSchema>;
 export type ReferralCode = typeof referralCodes.$inferSelect;
 export type InsertReferralCode = z.infer<typeof insertReferralCodeSchema>;
 export type ReferralTransaction = typeof referralTransactions.$inferSelect;

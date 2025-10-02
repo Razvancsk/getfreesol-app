@@ -71,12 +71,11 @@ export default function SolRefund() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
-  const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft' | 'resize'>('tokens');
+  const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [nftData, setNftData] = useState<any>(null);
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
-  const [selectedResizeNfts, setSelectedResizeNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
 
@@ -1890,172 +1889,6 @@ export default function SolRefund() {
     },
   });
 
-  // Resize NFTs mutation
-  const resizeNftsMutation = useMutation({
-    mutationFn: async (selectedNftIds: string[]) => {
-      if (!isConnected || !publicKey) {
-        throw new Error('Wallet not connected');
-      }
-
-      // Get the NFT data to filter resizable NFTs
-      if (!nftData || !nftData.nfts) {
-        throw new Error('No NFT data available');
-      }
-
-      // Find the selected NFTs and filter only resizable ones (Standard and Programmable NFTs)
-      const selectedNfts = nftData.nfts.filter((nft: any) => {
-        const nftId = nft.mint || nft.id || nft.assetId;
-        return selectedNftIds.includes(nftId) && 
-               (nft.type === 'standard' || nft.type === 'pnft') && 
-               nft.type !== 'cnft' && nft.type !== 'core';
-      });
-
-      if (selectedNfts.length === 0) {
-        throw new Error('No resizable NFTs selected. Only Standard and Programmable NFTs can be resized.');
-      }
-
-      console.log(`🔧 Starting NFT resize for ${selectedNfts.length} NFTs (keeps NFTs intact, reduces size for SOL recovery)...`);
-
-      // Prepare resize transactions on the backend
-      const prepareResponse = await apiRequest('POST', '/api/nfts/resize/prepare', {
-        nfts: selectedNfts.map((nft: any) => ({
-          mint: nft.mint,
-          type: nft.type,
-          name: nft.name || 'Unknown NFT',
-          image: nft.image || ''
-        })),
-        walletAddress: publicKey.toString()
-      });
-
-      const prepareData = await prepareResponse.json();
-
-      if (!prepareData.success || !prepareData.batches) {
-        throw new Error('Failed to prepare resize transactions');
-      }
-
-      console.log(`🔧 Prepared ${prepareData.totalBatches} resize batches for ${prepareData.totalNfts} NFTs (keeps NFTs intact)`);
-
-      // Process each batch and get user signatures
-      const results = [];
-      let totalResized = 0;
-      let totalRecovered = 0;
-
-      for (const batch of prepareData.batches) {
-        console.log(`🔧 Processing batch ${batch.batchIndex}/${prepareData.totalBatches} with ${batch.nftCount} NFTs (resize only, no burning)...`);
-
-        try {
-          // Get the transaction from the backend
-          const transactionBuffer = Buffer.from(batch.transaction, 'base64');
-          let deserializedTransaction: any;
-          let signedTransaction: any;
-
-          // Try to deserialize as VersionedTransaction first (for newer programs)
-          try {
-            deserializedTransaction = (await import('@solana/web3.js')).VersionedTransaction.deserialize(transactionBuffer);
-            console.log(`🔧 Resize transaction deserialized as VersionedTransaction, signing with ${walletName || 'connected wallet'}...`);
-            signedTransaction = await signTransaction(deserializedTransaction);
-          } catch (versionedError: any) {
-            // Fallback to legacy Transaction
-            deserializedTransaction = (await import('@solana/web3.js')).Transaction.from(transactionBuffer);
-            console.log(`🔧 Resize transaction deserialized as legacy Transaction, signing with ${walletName || 'connected wallet'}...`);
-            signedTransaction = await signTransaction(deserializedTransaction);
-          }
-
-          console.log(`✅ Batch ${batch.batchIndex} resize transaction signed for ${batch.nftCount} NFTs (keeps them intact)!`);
-
-          // Submit the signed transaction
-          const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-          console.log(`🚀 Batch ${batch.batchIndex} resize transaction submitted: ${signature}`);
-
-          // Wait for confirmation
-          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-          if (confirmation.value.err) {
-            throw new Error(`Batch ${batch.batchIndex} resize transaction failed: ${confirmation.value.err}`);
-          }
-
-          console.log(`✅ Batch ${batch.batchIndex} resize transaction confirmed: ${signature}`);
-
-          // Record each NFT resize in this batch
-          for (const nftId of batch.nftIds) {
-            const nft = selectedNfts.find((n: any) => n.mint === nftId);
-            if (nft) {
-              await apiRequest('POST', '/api/nfts/resize/record', {
-                signature: signature,
-                walletAddress: publicKey.toString(),
-                nftMint: nftId,
-                oldSize: 1000, // Will be calculated from actual metadata
-                newSize: 800,  // Will be calculated from actual metadata
-                rentDelta: 0.002,
-                platformFee: 0.0003,
-                referralFee: 0,
-                netAmount: 0.0017
-              });
-
-              totalResized++;
-              totalRecovered += 0.0017; // Net amount after fees
-            }
-          }
-
-          results.push({
-            batchIndex: batch.batchIndex,
-            nftCount: batch.nftCount,
-            success: true,
-            signature: signature
-          });
-
-        } catch (batchError: any) {
-          console.error(`❌ Batch ${batch.batchIndex} resize failed:`, batchError);
-          results.push({
-            batchIndex: batch.batchIndex,
-            nftCount: batch.nftCount,
-            success: false,
-            error: batchError.message
-          });
-          // Continue with other batches
-        }
-      }
-
-      return {
-        success: true,
-        totalResized,
-        totalRecovered,
-        batches: results
-      };
-    },
-    onSuccess: (data) => {
-      // Clear selection
-      setSelectedResizeNfts(new Set());
-      
-      // Refresh NFT data to reflect changes
-      if (publicKey) {
-        scanNftsMutation.mutate(publicKey.toString());
-      }
-      
-      toast({
-        title: "NFT Resize Complete!",
-        description: `${data.totalResized} NFT${data.totalResized > 1 ? 's' : ''} resized (kept intact), ${data.totalRecovered.toFixed(6)} SOL recovered.`,
-        variant: "default",
-      });
-    },
-    onError: (error) => {
-      console.error('Error resizing NFTs:', error);
-      
-      let errorMessage = "Failed to resize NFTs. Please try again.";
-      if (error.message) {
-        if (error.message.includes('wallet not found')) {
-          errorMessage = "Please install and connect your wallet.";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  });
 
   // Selection handlers
   const toggleTokenSelection = (mintAddress: string) => {
@@ -2553,7 +2386,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : burnSubTab === 'nft' ? 'Burn Unwanted NFTs.' : 'NFT Resize Feature - Coming Soon!') : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 35% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -2582,17 +2415,6 @@ export default function SolRefund() {
                   data-testid="button-burn-nft"
                 >
                   🖼️ Burn NFT
-                </button>
-                <button
-                  onClick={() => setBurnSubTab('resize')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    burnSubTab === 'resize' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-resize-nfts"
-                >
-                  🔧 Resize NFTs
                 </button>
               </div>
             </div>
@@ -3067,32 +2889,6 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Resize NFTs Interface - Coming Soon */}
-          {activeTab === 'burnTokens' && burnSubTab === 'resize' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-8">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-6">🔧</div>
-                <h3 className="text-2xl font-bold text-white mb-4">NFT Resize Feature</h3>
-                <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                  <p className="text-yellow-300 font-semibold text-lg">Coming Soon!</p>
-                </div>
-                <p className="text-purple-200 text-lg mb-6 max-w-2xl mx-auto">
-                  We're working hard to bring you the NFT resize feature. This tool will allow you to optimize your NFT metadata storage and recover SOL.
-                </p>
-                <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4 max-w-2xl mx-auto">
-                  <div className="text-sm text-purple-200">
-                    <p className="font-medium mb-2">What to expect:</p>
-                    <ul className="space-y-1 text-purple-300 text-left">
-                      <li>• Resize NFT metadata storage to optimize space</li>
-                      <li>• Support for Standard and Programmable NFTs</li>
-                      <li>• Recover SOL from metadata optimization</li>
-                      <li>• Keep your NFTs intact during the process</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Referrals Tab Content */}
           {activeTab === 'referrals' && (
