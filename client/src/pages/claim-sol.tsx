@@ -2396,27 +2396,25 @@ export default function SolRefund() {
               <div className="bg-purple-800/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1 flex space-x-1">
                 <button
                   onClick={() => setBurnSubTab('tokens')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all flex items-center ${
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
                     burnSubTab === 'tokens' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-burn-tokens"
                 >
-                  <Coins className="h-4 w-4 mr-2" />
-                  Burn Tokens
+                  🪙 Burn Tokens
                 </button>
                 <button
                   onClick={() => setBurnSubTab('nft')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all flex items-center ${
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
                     burnSubTab === 'nft' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-burn-nft"
                 >
-                  <Image className="h-4 w-4 mr-2" />
-                  Burn NFT
+                  🖼️ Burn NFT
                 </button>
               </div>
             </div>
