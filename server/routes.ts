@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
@@ -229,10 +229,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
+        // Detect if account is Token-2022 or standard Token Program
+        let programId = TOKEN_PROGRAM_ID;
+        try {
+          const accountInfo = await connection.getAccountInfo(accountPublicKey);
+          if (accountInfo && accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+            programId = TOKEN_2022_PROGRAM_ID;
+            console.log(`Account ${account.accountAddress} uses Token-2022`);
+          }
+        } catch (error) {
+          console.log(`Could not detect program for ${account.accountAddress}, using default`);
+        }
+        
         const closeInstruction = createCloseAccountInstruction(
           accountPublicKey,
           ownerPublicKey, // destination (user receives SOL)
-          ownerPublicKey  // owner
+          ownerPublicKey, // owner
+          [],             // no multisig
+          programId       // correct program ID
         );
         
         transaction.add(closeInstruction);
@@ -1261,10 +1275,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Step 2: Close the now-empty account to reclaim SOL
+        // Detect Token-2022 accounts
+        let programId = TOKEN_PROGRAM_ID;
+        try {
+          const tokenAccountInfo = await connection.getAccountInfo(token.account);
+          if (tokenAccountInfo && tokenAccountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+            programId = TOKEN_2022_PROGRAM_ID;
+          }
+        } catch (error) {
+          console.log(`Could not detect program for token account, using default`);
+        }
+        
         const closeInstruction = createCloseAccountInstruction(
           token.account,
           ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey  // owner
+          ownerPublicKey, // owner
+          [],             // no multisig
+          programId       // correct program ID
         );
         
         transaction.add(closeInstruction);
@@ -1452,10 +1479,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
+      // Detect Token-2022 accounts
+      let programId = TOKEN_PROGRAM_ID;
+      try {
+        const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
+        if (tokenAccountInfo && tokenAccountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+          programId = TOKEN_2022_PROGRAM_ID;
+        }
+      } catch (error) {
+        console.log(`Could not detect program for token account, using default`);
+      }
+      
       const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
         ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey  // owner
+        ownerPublicKey, // owner
+        [],             // no multisig
+        programId       // correct program ID
       );
       
       transaction.add(closeInstruction);
