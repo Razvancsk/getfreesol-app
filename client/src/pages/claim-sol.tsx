@@ -530,15 +530,15 @@ export default function SolRefund() {
       const signedTx = await signTransaction(tx);
       const signature = await connection.sendRawTransaction(signedTx.serialize());
 
-      // Wait for confirmation with error handling
-      try {
-        await connection.confirmTransaction(signature, 'confirmed');
-        console.log('Transaction confirmed successfully!');
-      } catch (confirmError: any) {
-        console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
-        console.warn('Transaction signature:', signature);
-        // Continue with success recording since transaction was sent
+      // Wait for confirmation and verify SUCCESS
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      // Check if transaction actually succeeded
+      const txStatus = await connection.getSignatureStatus(signature);
+      if (txStatus.value?.err) {
+        throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
       }
+      console.log('Transaction confirmed successfully!');
 
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
@@ -640,15 +640,15 @@ export default function SolRefund() {
       const signature = await connection.sendRawTransaction(signedTx.serialize());
       console.log('📡 Transaction sent to network:', signature);
 
-      // Wait for confirmation with error handling
-      try {
-        await connection.confirmTransaction(signature, 'confirmed');
-        console.log('✅ Transaction confirmed successfully!');
-      } catch (confirmError: any) {
-        console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
-        console.warn('Transaction signature:', signature);
-        // Continue with success recording since transaction was sent
+      // Wait for confirmation and verify SUCCESS
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      // Check if transaction actually succeeded
+      const txStatus = await connection.getSignatureStatus(signature);
+      if (txStatus.value?.err) {
+        throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
       }
+      console.log('✅ Transaction confirmed successfully!');
 
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
@@ -1810,13 +1810,15 @@ export default function SolRefund() {
         const signedTx = await signTransaction(tx);
         const signature = await connection.sendRawTransaction(signedTx.serialize());
 
-        // Wait for confirmation
-        try {
-          await connection.confirmTransaction(signature, 'confirmed');
-          console.log(`${nftType} NFT burn transaction confirmed:`, signature);
-        } catch (confirmError: any) {
-          console.warn('Transaction confirmation failed but transaction was sent:', confirmError.message);
+        // Wait for confirmation and verify SUCCESS
+        await connection.confirmTransaction(signature, 'confirmed');
+        
+        // Check if transaction actually succeeded
+        const txStatus = await connection.getSignatureStatus(signature);
+        if (txStatus.value?.err) {
+          throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
         }
+        console.log(`${nftType} NFT burn transaction confirmed:`, signature);
 
         results.push({
           type: nftType,
@@ -2032,15 +2034,17 @@ export default function SolRefund() {
 
         console.log(`Transaction sent, signature: ${signature}, confirming...`);
 
-        // Simple confirmation without Promise.race to prevent unhandled rejections
-        try {
-          console.log('Waiting for transaction confirmation...');
-          await connection.confirmTransaction(signature, 'confirmed');
-          console.log('Transaction confirmed successfully!');
-        } catch (confirmError: any) {
-          console.log('Confirmation failed but transaction was sent:', confirmError.message);
-          // Still proceed as transaction was successfully sent
+        // Verify transaction SUCCESS (not just confirmation)
+        console.log('Waiting for transaction confirmation...');
+        await connection.confirmTransaction(signature, 'confirmed');
+        
+        // Check if transaction actually succeeded
+        const txStatus = await connection.getSignatureStatus(signature);
+        if (txStatus.value?.err) {
+          throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
         }
+        
+        console.log('Transaction confirmed successfully!');
 
         // Save successful transaction to database and get points message
         let pointsMessage = '';
