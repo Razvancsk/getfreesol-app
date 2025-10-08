@@ -1040,7 +1040,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Use Solana RPC to check if tokens are actually burnable
             const { Connection, PublicKey } = await import('@solana/web3.js');
-            const { getAssociatedTokenAddress, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+            const { getAssociatedTokenAddress, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
             
             const connection = new Connection(rpcUrl, 'confirmed');
             const ownerPublicKey = new PublicKey(address);
@@ -1050,23 +1050,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const asset of fungibleTokens) {
               try {
                 const mintPublicKey = new PublicKey(asset.id);
-                const tokenAccount = await getAssociatedTokenAddress(
-                  mintPublicKey,
-                  ownerPublicKey
-                );
+                
+                // Try both Token Program and Token-2022 Program
+                let tokenAccount = null;
+                let accountInfo = null;
+                let programType = 'TOKEN_PROGRAM';
+                
+                // First try standard Token Program
+                try {
+                  tokenAccount = await getAssociatedTokenAddress(
+                    mintPublicKey,
+                    ownerPublicKey,
+                    false,
+                    TOKEN_PROGRAM_ID
+                  );
+                  accountInfo = await connection.getParsedAccountInfo(tokenAccount);
+                } catch (error) {
+                  // Silent fail, will try Token-2022 next
+                }
+                
+                // If not found, try Token-2022 Program
+                if (!accountInfo?.value) {
+                  try {
+                    tokenAccount = await getAssociatedTokenAddress(
+                      mintPublicKey,
+                      ownerPublicKey,
+                      false,
+                      TOKEN_2022_PROGRAM_ID
+                    );
+                    accountInfo = await connection.getParsedAccountInfo(tokenAccount);
+                    if (accountInfo?.value) {
+                      programType = 'TOKEN_2022_PROGRAM';
+                      console.log(`✨ Found Token-2022: ${asset.content?.metadata?.symbol || 'Unknown'}`);
+                    }
+                  } catch (error) {
+                    // Both failed
+                  }
+                }
                 
                 // Check if the token account actually exists and is accessible
-                const accountInfo = await connection.getParsedAccountInfo(tokenAccount);
-                
-                if (accountInfo.value && accountInfo.value.data) {
+                if (accountInfo?.value && accountInfo.value.data) {
                   const parsedInfo = accountInfo.value.data as any;
                   if (parsedInfo.parsed && parsedInfo.parsed.info) {
                     const tokenState = parsedInfo.parsed.info.state;
                     
                     // Only include tokens that are not frozen
                     if (tokenState !== 'frozen') {
-                      burnableTokens.push(asset);
-                      console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: BURNABLE (state=${tokenState})`);
+                      burnableTokens.push({
+                        ...asset,
+                        programType // Store which program this token uses
+                      });
+                      console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: BURNABLE (state=${tokenState}, program=${programType})`);
                     } else {
                       console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: FROZEN - excluded`);
                     }
@@ -1225,11 +1259,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const tokenMint of tokenMints) {
         try {
           const mintPublicKey = new PublicKey(tokenMint);
-          const tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey);
           
-          // Get token account info to verify it exists and get balance
-          const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
-          const parsedInfo = tokenAccountInfo.value?.data as any;
+          // Try both Token Program and Token-2022 Program
+          let tokenAccount = null;
+          let tokenAccountInfo = null;
+          
+          // First try standard Token Program
+          try {
+            tokenAccount = await getAssociatedTokenAddress(
+              mintPublicKey,
+              ownerPublicKey,
+              false,
+              TOKEN_PROGRAM_ID
+            );
+            tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+          } catch (error) {
+            // Will try Token-2022 next
+          }
+          
+          // If not found, try Token-2022 Program
+          if (!tokenAccountInfo?.value) {
+            try {
+              tokenAccount = await getAssociatedTokenAddress(
+                mintPublicKey,
+                ownerPublicKey,
+                false,
+                TOKEN_2022_PROGRAM_ID
+              );
+              tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+              if (tokenAccountInfo?.value) {
+                console.log(`Token ${tokenMint} is Token-2022`);
+              }
+            } catch (error) {
+              // Both failed
+            }
+          }
+          
+          const parsedInfo = tokenAccountInfo?.value?.data as any;
           
           if (!parsedInfo?.parsed?.info) {
             console.log(`Skipping ${tokenMint} - token account not found`);
@@ -1237,12 +1303,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Get actual account lamports
-          const accountInfo = await connection.getAccountInfo(tokenAccount);
+          const accountInfo = await connection.getAccountInfo(tokenAccount!);
           if (accountInfo) {
             totalRecoveredLamports += accountInfo.lamports;
             validTokens.push({
               mint: tokenMint,
-              account: tokenAccount,
+              account: tokenAccount!,
               balance: parsedInfo.parsed.info.tokenAmount.amount,
               lamports: accountInfo.lamports
             });
@@ -1447,15 +1513,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ownerPublicKey = new PublicKey(walletAddress);
       const mintPublicKey = new PublicKey(tokenMint);
       
-      // Get associated token account
-      const tokenAccount = await getAssociatedTokenAddress(
-        mintPublicKey,
-        ownerPublicKey
-      );
+      // Get associated token account - try both Token Program and Token-2022
+      let tokenAccount = null;
+      let tokenAccountInfo = null;
       
-      // Get token account info to determine balance and decimals
-      const tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
-      const parsedInfo = tokenAccountInfo.value?.data as any;
+      // First try standard Token Program
+      try {
+        tokenAccount = await getAssociatedTokenAddress(
+          mintPublicKey,
+          ownerPublicKey,
+          false,
+          TOKEN_PROGRAM_ID
+        );
+        tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+      } catch (error) {
+        // Will try Token-2022 next
+      }
+      
+      // If not found, try Token-2022 Program
+      if (!tokenAccountInfo?.value) {
+        tokenAccount = await getAssociatedTokenAddress(
+          mintPublicKey,
+          ownerPublicKey,
+          false,
+          TOKEN_2022_PROGRAM_ID
+        );
+        tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+        if (tokenAccountInfo?.value) {
+          console.log(`Token ${tokenMint} is Token-2022`);
+        }
+      }
+      
+      const parsedInfo = tokenAccountInfo?.value?.data as any;
       
       if (!parsedInfo?.parsed?.info) {
         throw new Error('Token account not found or invalid');
@@ -1463,6 +1552,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const balance = parsedInfo.parsed.info.tokenAmount.amount;
       const decimals = parsedInfo.parsed.info.tokenAmount.decimals;
+      
+      // Type guard
+      if (!tokenAccount) {
+        throw new Error('Token account not found');
+      }
       
       // Create transaction
       const transaction = new Transaction();
@@ -1482,8 +1576,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Detect Token-2022 accounts
       let programId = TOKEN_PROGRAM_ID;
       try {
-        const tokenAccountInfo = await connection.getAccountInfo(tokenAccount);
-        if (tokenAccountInfo && tokenAccountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+        const accountInfo = await connection.getAccountInfo(tokenAccount);
+        if (accountInfo && accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
           programId = TOKEN_2022_PROGRAM_ID;
         }
       } catch (error) {
