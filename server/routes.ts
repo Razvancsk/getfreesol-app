@@ -1307,11 +1307,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
-          // Get actual account lamports and detect program type
+          // Get actual account lamports and detect program type by checking the MINT
           const accountInfo = await connection.getAccountInfo(tokenAccount!);
           if (accountInfo) {
             totalRecoveredLamports += accountInfo.lamports;
-            const isToken2022 = accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+            
+            // Check if the MINT belongs to Token-2022 Program
+            const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
+            const isToken2022 = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) || false;
+            
+            if (isToken2022) {
+              console.log(`🔵 MINT ${tokenMint} is Token-2022 Program`);
+            }
+            
             validTokens.push({
               mint: tokenMint,
               account: tokenAccount!,
@@ -1568,13 +1576,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Token account not found');
       }
       
-      // Detect Token-2022
+      // Detect Token-2022 by checking the MINT (not the token account)
       const accountInfo = await connection.getAccountInfo(tokenAccount);
       if (!accountInfo) {
         throw new Error('Token account not found');
       }
-      const isToken2022 = accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+      
+      // Check if the MINT belongs to Token-2022 Program
+      const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
+      const isToken2022 = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) || false;
       const programId = isToken2022 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+      
+      if (isToken2022) {
+        console.log(`🔵 MINT ${tokenMint} is Token-2022 Program`);
+      }
       
       // Create transaction
       const transaction = new Transaction();
