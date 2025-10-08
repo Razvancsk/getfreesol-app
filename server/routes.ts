@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createCloseAccountInstruction } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction } from "@solana/spl-token";
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
@@ -1307,15 +1307,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
-          // Get actual account lamports
+          // Get actual account lamports and detect program type
           const accountInfo = await connection.getAccountInfo(tokenAccount!);
           if (accountInfo) {
             totalRecoveredLamports += accountInfo.lamports;
+            const isToken2022 = accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
             validTokens.push({
               mint: tokenMint,
               account: tokenAccount!,
               balance: parsedInfo.parsed.info.tokenAmount.amount,
-              lamports: accountInfo.lamports
+              decimals: parsedInfo.parsed.info.tokenAmount.decimals,
+              lamports: accountInfo.lamports,
+              programId: isToken2022 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID
             });
           }
         } catch (error) {
@@ -1333,36 +1336,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const token of validTokens) {
         const mintPublicKey = new PublicKey(token.mint);
+        const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
         
         // Step 1: Burn tokens (if balance > 0)
         if (token.balance > 0) {
-          const burnInstruction = createBurnInstruction(
-            token.account,    // Token account to burn from
-            mintPublicKey,    // Token mint
-            ownerPublicKey,   // Owner
-            token.balance     // Amount to burn (full balance)
-          );
+          // Use BurnChecked for Token-2022 (required for extensions like transfer fees)
+          const burnInstruction = isToken2022
+            ? createBurnCheckedInstruction(
+                token.account,      // Token account to burn from
+                mintPublicKey,      // Token mint
+                ownerPublicKey,     // Owner
+                token.balance,      // Amount to burn (full balance)
+                token.decimals,     // Decimals (required for checked instruction)
+                [],                 // Additional signers
+                TOKEN_2022_PROGRAM_ID  // Token-2022 program
+              )
+            : createBurnInstruction(
+                token.account,    // Token account to burn from
+                mintPublicKey,    // Token mint
+                ownerPublicKey,   // Owner
+                token.balance     // Amount to burn (full balance)
+              );
           transaction.add(burnInstruction);
+          console.log(`Added ${isToken2022 ? 'BurnChecked' : 'Burn'} instruction for ${token.mint}`);
         }
         
         // Step 2: Close the now-empty account to reclaim SOL
-        // Detect Token-2022 accounts
-        let programId = TOKEN_PROGRAM_ID;
-        try {
-          const tokenAccountInfo = await connection.getAccountInfo(token.account);
-          if (tokenAccountInfo && tokenAccountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
-            programId = TOKEN_2022_PROGRAM_ID;
-          }
-        } catch (error) {
-          console.log(`Could not detect program for token account, using default`);
-        }
-        
         const closeInstruction = createCloseAccountInstruction(
           token.account,
-          ownerPublicKey, // destination (receives SOL)
-          ownerPublicKey, // owner
-          [],             // no multisig
-          programId       // correct program ID
+          ownerPublicKey,     // destination (receives SOL)
+          ownerPublicKey,     // owner
+          [],                 // no multisig
+          token.programId     // correct program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
         );
         
         transaction.add(closeInstruction);
@@ -1563,38 +1568,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Token account not found');
       }
       
+      // Detect Token-2022
+      const accountInfo = await connection.getAccountInfo(tokenAccount);
+      if (!accountInfo) {
+        throw new Error('Token account not found');
+      }
+      const isToken2022 = accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+      const programId = isToken2022 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+      
       // Create transaction
       const transaction = new Transaction();
       
       // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        const burnInstruction = createBurnInstruction(
-          tokenAccount,     // Token account to burn from
-          mintPublicKey,    // Token mint
-          ownerPublicKey,   // Owner
-          balance           // Amount to burn (full balance)
-        );
+        // Use BurnChecked for Token-2022 (required for extensions like transfer fees)
+        const burnInstruction = isToken2022
+          ? createBurnCheckedInstruction(
+              tokenAccount,           // Token account to burn from
+              mintPublicKey,          // Token mint
+              ownerPublicKey,         // Owner
+              balance,                // Amount to burn (full balance)
+              decimals,               // Decimals (required for checked instruction)
+              [],                     // Additional signers
+              TOKEN_2022_PROGRAM_ID   // Token-2022 program
+            )
+          : createBurnInstruction(
+              tokenAccount,     // Token account to burn from
+              mintPublicKey,    // Token mint
+              ownerPublicKey,   // Owner
+              balance           // Amount to burn (full balance)
+            );
         transaction.add(burnInstruction);
+        console.log(`Added ${isToken2022 ? 'BurnChecked' : 'Burn'} instruction for ${tokenMint}`);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
-      // Detect Token-2022 accounts
-      let programId = TOKEN_PROGRAM_ID;
-      try {
-        const accountInfo = await connection.getAccountInfo(tokenAccount);
-        if (accountInfo && accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
-          programId = TOKEN_2022_PROGRAM_ID;
-        }
-      } catch (error) {
-        console.log(`Could not detect program for token account, using default`);
-      }
-      
       const closeInstruction = createCloseAccountInstruction(
         tokenAccount,
-        ownerPublicKey, // destination (receives SOL)
-        ownerPublicKey, // owner
-        [],             // no multisig
-        programId       // correct program ID
+        ownerPublicKey,     // destination (receives SOL)
+        ownerPublicKey,     // owner
+        [],                 // no multisig
+        programId           // correct program ID
       );
       
       transaction.add(closeInstruction);
