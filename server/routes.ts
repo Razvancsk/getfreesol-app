@@ -1263,6 +1263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Try both Token Program and Token-2022 Program
           let tokenAccount = null;
           let tokenAccountInfo = null;
+          let foundAccount = false;
           
           // First try standard Token Program
           try {
@@ -1273,12 +1274,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               TOKEN_PROGRAM_ID
             );
             tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
+            if (tokenAccountInfo?.value?.data) {
+              foundAccount = true;
+            }
           } catch (error) {
             // Will try Token-2022 next
           }
           
           // If not found, try Token-2022 Program
-          if (!tokenAccountInfo?.value) {
+          if (!foundAccount) {
             try {
               tokenAccount = await getAssociatedTokenAddress(
                 mintPublicKey,
@@ -1287,18 +1291,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 TOKEN_2022_PROGRAM_ID
               );
               tokenAccountInfo = await connection.getParsedAccountInfo(tokenAccount);
-              if (tokenAccountInfo?.value) {
-                console.log(`Token ${tokenMint} is Token-2022`);
+              if (tokenAccountInfo?.value?.data) {
+                foundAccount = true;
+                console.log(`✨ Token ${tokenMint} is Token-2022`);
               }
             } catch (error) {
-              // Both failed
+              console.log(`Error checking Token-2022 for ${tokenMint}:`, error);
             }
           }
           
           const parsedInfo = tokenAccountInfo?.value?.data as any;
           
           if (!parsedInfo?.parsed?.info) {
-            console.log(`Skipping ${tokenMint} - token account not found`);
+            console.log(`Skipping ${tokenMint} - token account not found (tried both TOKEN_PROGRAM and TOKEN_2022)`);
             continue;
           }
           
