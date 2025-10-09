@@ -24,6 +24,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
 import logoImage from '@assets/image_1757882056840.png';
+import bannerImage from '@assets/image_1760054282571.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2201,6 +2202,15 @@ export default function SolRefund() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
+        {/* Banner Image */}
+        <div className="flex justify-center mb-4">
+          <img 
+            src={bannerImage}
+            alt="Make every Solana - Earn more rewards"
+            className="w-full max-w-4xl rounded-lg"
+          />
+        </div>
+
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
