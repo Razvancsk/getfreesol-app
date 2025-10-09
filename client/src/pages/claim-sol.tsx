@@ -788,6 +788,7 @@ export default function SolRefund() {
 
             const allBatchResults = [];
             let totalNetAmount = 0;
+            let totalRentRecovered = 0;
             let totalBurned = 0;
 
             // Process each batch sequentially (user signs each one)
@@ -857,8 +858,9 @@ export default function SolRefund() {
 
               // Track totals across all batches
               totalNetAmount += batch.netAmount;
+              totalRentRecovered += batch.expectedRent;
               totalBurned += batch.nftCount;
-              console.log(`✅ Batch ${batch.batchIndex} completed: ${batch.nftCount} NFTs, net: ${batch.netAmount} SOL`);
+              console.log(`✅ Batch ${batch.batchIndex} completed: ${batch.nftCount} NFTs, rent: ${batch.expectedRent} SOL, net: ${batch.netAmount} SOL`);
             }
 
             // All batches completed successfully
@@ -906,7 +908,7 @@ export default function SolRefund() {
             const firstSignature = allBatchResults[0]?.signature || '';
             toast({
               title: `Successfully burned ${totalBurned} Core NFT${totalBurned > 1 ? 's' : ''} in ${prepareResponse.totalBatches} batch${prepareResponse.totalBatches > 1 ? 'es' : ''}`,
-              description: `${totalNetAmount.toFixed(6)} SOL claimed | First tx: ${firstSignature.substring(0, 8)}...`,
+              description: `${totalRentRecovered.toFixed(6)} SOL reclaimed | First tx: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
             });
 
