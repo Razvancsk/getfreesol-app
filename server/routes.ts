@@ -1815,6 +1815,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const asset of items) {
         const { interface: assetInterface, compression, burnt } = asset;
         
+        // Debug Bankmen NFT - dump full asset data
+        if (asset.content?.metadata?.name?.includes('Bankmen')) {
+          console.log(`🔍 FULL BANKMEN DATA:`, JSON.stringify(asset, null, 2));
+        }
+        
         // Log burn status for debugging
         console.log(`🔍 Asset ${asset.content?.metadata?.name || asset.content?.metadata?.symbol || asset.id}: burnt=${burnt}, interface=${assetInterface}`);
         
@@ -1966,9 +1971,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Check if NFT is frozen
+        // Check if NFT is frozen - for pNFTs, check delegate field in ownership
         const isFrozen = asset.token_info?.state === 'frozen' || 
-                        asset.ownership?.delegate_role === 'freeze';
+                        asset.ownership?.delegate_role === 'freeze' ||
+                        (nftType === 'pnft' && asset.ownership?.frozen === true) ||
+                        (nftType === 'pnft' && asset.ownership?.delegated === true);
 
         const nftInfo = {
           mint: mintAddress,
