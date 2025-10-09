@@ -1966,6 +1966,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Check if NFT is frozen
+        const isFrozen = asset.token_info?.state === 'frozen' || 
+                        asset.ownership?.delegate_role === 'freeze';
+
         const nftInfo = {
           mint: mintAddress,
           id: identifier, 
@@ -1980,7 +1984,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           compressed: compression?.compressed || false,
           creators: asset.creators || [],
           collection: asset.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || null,
-          attributes: asset.content?.metadata?.attributes || []
+          attributes: asset.content?.metadata?.attributes || [],
+          isFrozen: isFrozen || false
         };
 
         nfts.push(nftInfo);
