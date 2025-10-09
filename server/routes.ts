@@ -3675,21 +3675,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`✅ Transaction submitted successfully: ${signature}`);
 
-      // Get latest blockhash for confirmation
-      const latestBlockhash = await connection.getLatestBlockhash('confirmed');
+      // Poll for transaction confirmation with timeout (30 seconds max)
+      const startTime = Date.now();
+      const timeout = 30000; // 30 seconds
+      let confirmed = false;
+      let confirmationError: any = null;
 
-      // Confirm the transaction
-      const confirmation = await connection.confirmTransaction({
-        signature,
-        ...latestBlockhash
-      }, 'confirmed');
+      while (Date.now() - startTime < timeout) {
+        const status = await connection.getSignatureStatus(signature);
+        
+        if (status?.value?.confirmationStatus === 'confirmed' || 
+            status?.value?.confirmationStatus === 'finalized') {
+          confirmed = true;
+          confirmationError = status.value.err;
+          break;
+        }
+        
+        // Wait 500ms before next check
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
 
-      if (confirmation.value.err) {
-        console.error(`❌ Transaction confirmation failed:`, confirmation.value.err);
+      if (!confirmed) {
+        console.warn(`⏱️ Transaction confirmation timeout: ${signature} (may still process)`);
+        // Return success anyway - transaction was submitted successfully
+        return res.json({
+          success: true,
+          signature,
+          confirmed: false,
+          message: "Transaction submitted (confirmation pending)"
+        });
+      }
+
+      if (confirmationError) {
+        console.error(`❌ Transaction failed on-chain:`, confirmationError);
         return res.status(400).json({ 
           error: "Transaction failed on-chain",
           signature,
-          details: confirmation.value.err
+          details: confirmationError
         });
       }
 
