@@ -3721,7 +3721,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         signature,
         confirmed: true,
-        slot: confirmation.context.slot,
         message: "Transaction submitted and confirmed via server relay"
       });
 
