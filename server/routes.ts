@@ -1342,6 +1342,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction with burn+close instructions
       const transaction = new Transaction();
       
+      // Add priority fee instruction first (0.00001 SOL = 10,000 microlamports)
+      const { ComputeBudgetProgram } = await import('@solana/web3.js');
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: 10000 // Fixed priority fee for faster confirmation
+        })
+      );
+      
       for (const token of validTokens) {
         const mintPublicKey = new PublicKey(token.mint);
         const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
@@ -2857,7 +2865,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const coreProgram = umiPublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
         const additionalProgram = umiPublicKey('F6fmDVCQfvnEq2KR8hhfZSEczfM9JK9fWbCsYJNbTGn7');
         
+        // Import setComputeUnitPrice from @metaplex-foundation/mpl-toolbox
+        const { setComputeUnitPrice } = await import('@metaplex-foundation/mpl-toolbox');
+        
         let batchTransaction = new TransactionBuilder()
+          .add(setComputeUnitPrice(umi, { microLamports: 10000 })) // Fixed priority fee: 0.00001 SOL
           .addRemainingAccounts([
             { pubkey: coreProgram, isSigner: false, isWritable: false },
             { pubkey: additionalProgram, isSigner: false, isWritable: false }
@@ -3117,7 +3129,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
 
         // Build transaction for this batch only
-        let batchTransaction = new TransactionBuilder();
+        // Import setComputeUnitPrice from @metaplex-foundation/mpl-toolbox
+        const { setComputeUnitPrice } = await import('@metaplex-foundation/mpl-toolbox');
+        
+        let batchTransaction = new TransactionBuilder()
+          .add(setComputeUnitPrice(umi, { microLamports: 10000 })); // Fixed priority fee: 0.00001 SOL
 
         // Add burn instructions for each PNFT in this batch
         for (const nft of batchNfts) {
@@ -3444,7 +3460,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
 
         // Build transaction for this batch only
+        // Import setComputeUnitPrice from @metaplex-foundation/mpl-toolbox
+        const { setComputeUnitPrice } = await import('@metaplex-foundation/mpl-toolbox');
+        
         let batchTransaction = new TransactionBuilder()
+          .add(setComputeUnitPrice(umi, { microLamports: 10000 })) // Fixed priority fee: 0.00001 SOL
           .addRemainingAccounts([
             { pubkey: umiPublicKey("abrn446KXzKZxSowJdHN9XumbGfQi4DdAfWHBT7X81r"), isSigner: false, isWritable: false }, // Authorization Rules Program
             { pubkey: umiPublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"), isSigner: false, isWritable: false }  // Token Metadata Program
