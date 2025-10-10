@@ -2280,6 +2280,22 @@ export default function SolRefund() {
               </div>
             </div>
 
+            {/* Marinade Ad Banner - ALWAYS VISIBLE */}
+            <div className="flex justify-center py-2">
+              <a
+                href="https://marinade.finance"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:opacity-90 transition-opacity rounded-lg overflow-hidden bg-white"
+              >
+                <img 
+                  src={marinadeAdImage}
+                  alt="Marinade Finance"
+                  className="h-10 w-auto object-contain"
+                />
+              </a>
+            </div>
+
             {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
             {isConnected && (
               <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
@@ -2388,22 +2404,6 @@ export default function SolRefund() {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Marinade Ad Banner - ALWAYS VISIBLE */}
-          <div className="flex justify-center py-2">
-            <a
-              href="https://marinade.finance"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block hover:opacity-90 transition-opacity rounded-lg overflow-hidden bg-white"
-            >
-              <img 
-                src={marinadeAdImage}
-                alt="Marinade Finance"
-                className="h-10 w-auto object-contain"
-              />
-            </a>
           </div>
 
           {/* Description */}
