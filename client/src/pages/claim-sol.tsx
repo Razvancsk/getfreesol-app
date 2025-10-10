@@ -2298,7 +2298,7 @@ export default function SolRefund() {
 
             {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
             {isConnected && (
-              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 lg:mt-14">
+              <div className="flex justify-center">
                 <div className="flex items-center space-x-2">
                   <Button
                     onClick={() => setActiveTab('reclaim')}
