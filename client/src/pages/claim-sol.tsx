@@ -2396,16 +2396,12 @@ export default function SolRefund() {
               href="https://marinade.finance"
               target="_blank"
               rel="noopener noreferrer"
-              className="block hover:opacity-90 transition-opacity rounded-lg overflow-hidden"
+              className="block hover:opacity-90 transition-opacity"
             >
               <img 
                 src={marinadeAdImage}
                 alt="Marinade Finance"
-                className="h-16 w-auto max-w-2xl"
-                style={{ 
-                  objectFit: 'contain',
-                  clipPath: 'inset(2% 1% 2% 1%)'
-                }}
+                className="h-12 w-auto object-contain"
               />
             </a>
           </div>
