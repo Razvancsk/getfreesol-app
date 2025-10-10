@@ -2205,33 +2205,15 @@ export default function SolRefund() {
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            {/* Top row: Logo, Marinade Ad, and Wallet Connection */}
+            {/* Top row: Logo and Wallet Connection (mobile) */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {/* Logo */}
-                <div className="flex items-center">
-                  <img 
-                    src={logoImage} 
-                    alt="Get Your SOL Back" 
-                    className="h-14 w-auto"
-                  />
-                </div>
-
-                {/* Marinade Ad - IN LINE WITH LOGO */}
-                <div className="flex items-center">
-                  <a
-                    href="https://marinade.finance"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block hover:opacity-90 transition-opacity"
-                  >
-                    <img 
-                      src={marinadeAdImage}
-                      alt="Marinade Finance"
-                      className="h-12 w-auto object-contain"
-                    />
-                  </a>
-                </div>
+              {/* Logo */}
+              <div className="flex items-center">
+                <img 
+                  src={logoImage}
+                  alt="Get your SOL back!"
+                  className="h-[100px] w-[100px]"
+                />
               </div>
 
               {/* Mobile Wallet Connection */}
@@ -2406,6 +2388,22 @@ export default function SolRefund() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Marinade Ad Banner - ALWAYS VISIBLE */}
+          <div className="flex justify-center py-2">
+            <a
+              href="https://marinade.finance"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:opacity-90 transition-opacity"
+            >
+              <img 
+                src="https://i.imgur.com/pXK9Z5M.png"
+                alt="Marinade Finance"
+                className="h-12 w-auto object-contain"
+              />
+            </a>
           </div>
 
           {/* Description */}
