@@ -2289,7 +2289,7 @@ export default function SolRefund() {
                 className="block hover:opacity-90 transition-opacity"
               >
                 <img 
-                  src={marinadeAdImage}
+                  src="https://i.imgur.com/pXK9Z5M.png"
                   alt="Marinade Finance - Automated staking with +10% APY"
                   className="h-10 w-auto object-contain"
                 />
