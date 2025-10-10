@@ -2202,33 +2202,31 @@ export default function SolRefund() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
-        {/* Banner Image */}
-        <div className="flex justify-center mb-4">
-          <img 
-            src={bannerImage}
-            alt="Make every Solana - Earn more rewards"
-            className="w-full max-w-4xl rounded-lg"
-          />
-        </div>
-
         <div className="space-y-2">
-          {/* Header with Navigation and Wallet Connection */}
-          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            {/* Top row: Logo and Wallet Connection (mobile) */}
-            <div className="flex items-center justify-between">
-              {/* Logo */}
-              <div className="flex items-center">
-                <img 
-                  src={logoImage}
-                  alt="Get your SOL back!"
-                  className="h-[100px] w-[100px]"
-                />
-              </div>
+          {/* Header with Logo, Banner, and Wallet Connection */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-2">
+            {/* Logo */}
+            <div className="flex items-center flex-shrink-0">
+              <img 
+                src={logoImage}
+                alt="Get your SOL back!"
+                className="h-[100px] w-[100px]"
+              />
+            </div>
 
-              {/* Mobile Wallet Connection */}
-              <div className="lg:hidden flex items-center space-x-2">
-                {/* Social Media Buttons */}
-                <div className="flex items-center space-x-1">
+            {/* Banner in the middle - hidden on mobile, visible on desktop */}
+            <div className="hidden lg:flex lg:flex-1 lg:justify-center">
+              <img 
+                src={bannerImage}
+                alt="Make every Solana - Earn more rewards"
+                className="h-[60px] object-contain"
+              />
+            </div>
+
+            {/* Social Buttons and Wallet Connection */}
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              {/* Social Media Buttons */}
+              <div className="flex items-center space-x-1">
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
@@ -2288,116 +2286,51 @@ export default function SolRefund() {
                 )}
               </div>
             </div>
-
-            {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
-            {isConnected && (
-              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={() => setActiveTab('reclaim')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'reclaim' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <svg className="h-4 w-4 mr-2" viewBox="0 0 397.7 311.7" style={{ fill: activeTab === 'reclaim' ? 'white' : '#00FFA3' }}>
-                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                    </svg>
-                    Reclaim SOL
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('burnTokens')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'burnTokens' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    🔥 Burn
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('referrals')}
-                    className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'referrals' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Referrals
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
-            <div className="hidden lg:flex items-center space-x-3">
-              {/* Social Media Buttons */}
-              <div className="flex items-center space-x-1">
-                <a
-                  href="https://x.com/getfreesol_xyz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-social-x-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  title="Follow us on X (Twitter)"
-                >
-                  <SiX className="h-4 w-4 text-white" />
-                </a>
-                <a
-                  href="https://discord.gg/tSBMgYcZaK"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-social-discord-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  title="Join our Discord community"
-                >
-                  <SiDiscord className="h-4 w-4 text-white" />
-                </a>
-              </div>
-
-              {isConnected && publicKey ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
-                      data-testid="button-wallet-connected-desktop"
-                    >
-                      <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
-                    <DropdownMenuItem 
-                      onClick={disconnectWallet}
-                      className="text-white hover:bg-purple-600/40 cursor-pointer"
-                      data-testid="button-disconnect-desktop"
-                    >
-                      Disconnect
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <div className="flex flex-col items-center space-y-3">
-                  <Button
-                    onClick={() => {
-                      select(null);
-                      setVisible(true);
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
-                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
-                    data-testid="button-connect-desktop"
-                  >
-                    <Wallet className="h-5 w-5 mr-2" />
-                    Connect Wallet
-                  </Button>
-                </div>
-              )}
-            </div>
           </div>
+
+          {/* Navigation Buttons - Centered */}
+          {isConnected && (
+            <div className="flex justify-center mb-4">
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={() => setActiveTab('reclaim')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'reclaim' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                >
+                  <svg className="h-4 w-4 mr-2" viewBox="0 0 397.7 311.7" style={{ fill: activeTab === 'reclaim' ? 'white' : '#00FFA3' }}>
+                    <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                    <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                    <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                  </svg>
+                  Reclaim SOL
+                </Button>
+                <Button
+                  onClick={() => setActiveTab('burnTokens')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'burnTokens' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                >
+                  🔥 Burn
+                </Button>
+                <Button
+                  onClick={() => setActiveTab('referrals')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'referrals' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Referrals
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <div className="text-center space-y-4 py-4">
@@ -3274,7 +3207,7 @@ export default function SolRefund() {
       </div>
 
       {/* Wallet Selection Modal */}
-
+      <WalletMultiButton />
     </div>
   );
 }
