@@ -2215,6 +2215,22 @@ export default function SolRefund() {
                 />
               </div>
 
+              {/* Marinade Ad - Center (hidden on mobile, shown on desktop) */}
+              <div className="hidden lg:flex flex-1 justify-center px-4">
+                <a
+                  href="https://marinade.finance"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block hover:opacity-90 transition-opacity"
+                >
+                  <img 
+                    src="/marinade-ad.png"
+                    alt="Marinade Finance - Automated staking with +10% APY"
+                    className="h-10 w-auto object-contain"
+                  />
+                </a>
+              </div>
+
               {/* Mobile Wallet Connection */}
               <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
