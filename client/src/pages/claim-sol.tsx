@@ -2037,14 +2037,36 @@ export default function SolRefund() {
 
         console.log(`Transaction sent, signature: ${signature}, confirming...`);
 
-        // Verify transaction SUCCESS (not just confirmation)
-        console.log('Waiting for transaction confirmation...');
-        await connection.confirmTransaction(signature, 'confirmed');
-        
-        // Check if transaction actually succeeded
-        const txStatus = await connection.getSignatureStatus(signature);
-        if (txStatus.value?.err) {
-          throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
+        // Verify transaction SUCCESS with 60-second timeout using getSignatureStatus polling
+        console.log('Waiting for transaction confirmation (up to 60 seconds)...');
+        const startTime = Date.now();
+        const timeout = 60000; // 60 seconds
+        let confirmed = false;
+        let txError = null;
+
+        while (Date.now() - startTime < timeout) {
+          const statusResponse = await connection.getSignatureStatus(signature);
+          
+          if (statusResponse.value?.confirmationStatus === 'confirmed' || statusResponse.value?.confirmationStatus === 'finalized') {
+            if (statusResponse.value.err) {
+              txError = statusResponse.value.err;
+              break;
+            }
+            confirmed = true;
+            break;
+          }
+          
+          // Wait 500ms before checking again
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        if (txError) {
+          throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txError)}`);
+        }
+
+        if (!confirmed) {
+          // Transaction timed out - provide helpful message with signature
+          throw new Error(`Transaction was not confirmed in 60 seconds. It may still succeed. Check status at: https://solscan.io/tx/${signature}`);
         }
         
         console.log('Transaction confirmed successfully!');
