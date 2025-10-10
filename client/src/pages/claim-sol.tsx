@@ -2399,7 +2399,7 @@ export default function SolRefund() {
               className="block hover:opacity-90 transition-opacity"
             >
               <img 
-                src="https://i.imgur.com/pXK9Z5M.png"
+                src={marinadeAdImage}
                 alt="Marinade Finance"
                 className="h-12 w-auto object-contain"
               />
