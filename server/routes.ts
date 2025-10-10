@@ -1349,6 +1349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           microLamports: 10000 // Fixed priority fee for faster confirmation
         })
       );
+      console.log('⚡ Added priority fee instruction: 0.00001 SOL (10,000 microlamports) for faster transaction confirmation');
       
       for (const token of validTokens) {
         const mintPublicKey = new PublicKey(token.mint);
@@ -1479,6 +1480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Serialize transaction
+      console.log(`📦 Transaction contains ${transaction.instructions.length} instructions (priority fee + burn/close + fee transfers)`);
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
       
