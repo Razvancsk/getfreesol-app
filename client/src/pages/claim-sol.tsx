@@ -1935,7 +1935,7 @@ export default function SolRefund() {
         throw new Error('Failed to prepare transaction');
       }
 
-      const { transaction, message, totalSolReclaimed, feeAmount, netAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
+      const { transaction, message, totalSolReclaimed, feeAmount, netAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed, totalRentRecovered } = await response.json();
 
       if (!isConnected || !publicKey) {
         throw new Error('Wallet not connected');
@@ -2011,13 +2011,13 @@ export default function SolRefund() {
           transactionBuffer = Buffer.from(transaction, 'base64');
           deserializedTransaction = Transaction.from(transactionBuffer);
 
-          // Add small priority fee for faster confirmation (0.00005 SOL = 50,000 lamports)
+          // Add FIXED priority fee for everyone (0.00001 SOL = 10,000 lamports)
           const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: 50000, // Small priority fee that won't eat into user's recovered SOL
+            microLamports: 10000, // Fixed priority fee - same for all users
           });
           deserializedTransaction.add(priorityFeeInstruction);
 
-          console.log(`Transaction deserialized with priority fee, signing with ${walletName || 'connected wallet'}...`);
+          console.log(`Transaction with priority fee, signing with ${walletName || 'connected wallet'}...`);
           signedTransaction = await signTransaction(deserializedTransaction);
         } catch (prepError: any) {
           console.log('Transaction preparation error:', prepError.message);
