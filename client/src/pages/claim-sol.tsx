@@ -2391,17 +2391,17 @@ export default function SolRefund() {
           </div>
 
           {/* Marinade Ad Banner - ALWAYS VISIBLE */}
-          <div className="flex justify-center py-1">
+          <div className="flex justify-center py-2">
             <a
               href="https://marinade.finance"
               target="_blank"
               rel="noopener noreferrer"
-              className="block hover:opacity-90 transition-opacity"
+              className="block hover:opacity-90 transition-opacity rounded-lg overflow-hidden bg-white"
             >
               <img 
                 src={marinadeAdImage}
                 alt="Marinade Finance"
-                className="h-4 w-auto object-contain"
+                className="h-10 w-auto object-contain"
               />
             </a>
           </div>
