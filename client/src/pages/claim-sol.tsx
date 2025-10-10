@@ -2280,25 +2280,25 @@ export default function SolRefund() {
               </div>
             </div>
 
+            {/* Marinade Ad - Center, ALWAYS VISIBLE */}
+            <div className="hidden lg:flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
+              <a
+                href="https://marinade.finance"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:opacity-90 transition-opacity"
+              >
+                <img 
+                  src={marinadeAdImage}
+                  alt="Marinade Finance - Automated staking with +10% APY"
+                  className="h-10 w-auto object-contain"
+                />
+              </a>
+            </div>
+
             {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
             {isConnected && (
-              <div className="flex flex-col items-center justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 space-y-2">
-                {/* Marinade Ad - Above navigation buttons on desktop */}
-                <div className="hidden lg:block">
-                  <a
-                    href="https://marinade.finance"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block hover:opacity-90 transition-opacity"
-                  >
-                    <img 
-                      src={marinadeAdImage}
-                      alt="Marinade Finance - Automated staking with +10% APY"
-                      className="h-8 w-auto object-contain"
-                    />
-                  </a>
-                </div>
-                
+              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 lg:mt-12">
                 <div className="flex items-center space-x-2">
                   <Button
                     onClick={() => setActiveTab('reclaim')}
