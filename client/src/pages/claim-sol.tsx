@@ -2007,10 +2007,17 @@ export default function SolRefund() {
         let transactionBuffer, deserializedTransaction, signedTransaction;
 
         try {
+          const { Transaction, ComputeBudgetProgram } = await import('@solana/web3.js');
           transactionBuffer = Buffer.from(transaction, 'base64');
-          deserializedTransaction = (await import('@solana/web3.js')).Transaction.from(transactionBuffer);
+          deserializedTransaction = Transaction.from(transactionBuffer);
 
-          console.log(`Transaction deserialized, signing with ${walletName || 'connected wallet'}...`);
+          // Add priority fee to speed up transaction (0.001 SOL = 1,000,000 lamports)
+          const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: 100000, // 0.0001 SOL priority fee for faster confirmation
+          });
+          deserializedTransaction.add(priorityFeeInstruction);
+
+          console.log(`Transaction deserialized with priority fee, signing with ${walletName || 'connected wallet'}...`);
           signedTransaction = await signTransaction(deserializedTransaction);
         } catch (prepError: any) {
           console.log('Transaction preparation error:', prepError.message);
