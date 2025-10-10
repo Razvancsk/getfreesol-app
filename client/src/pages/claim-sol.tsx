@@ -2215,22 +2215,6 @@ export default function SolRefund() {
                 />
               </div>
 
-              {/* Marinade Ad - Center (hidden on mobile, shown on desktop) */}
-              <div className="hidden lg:flex flex-1 justify-center px-4">
-                <a
-                  href="https://marinade.finance"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block hover:opacity-90 transition-opacity"
-                >
-                  <img 
-                    src="/marinade-ad.png"
-                    alt="Marinade Finance - Automated staking with +10% APY"
-                    className="h-10 w-auto object-contain"
-                  />
-                </a>
-              </div>
-
               {/* Mobile Wallet Connection */}
               <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
@@ -2297,7 +2281,23 @@ export default function SolRefund() {
 
             {/* Center Navigation Buttons - Desktop: centered, Mobile: below logo */}
             {isConnected && (
-              <div className="flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
+              <div className="flex flex-col items-center justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2 space-y-2">
+                {/* Marinade Ad - Above navigation buttons on desktop */}
+                <div className="hidden lg:block">
+                  <a
+                    href="https://marinade.finance"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block hover:opacity-90 transition-opacity"
+                  >
+                    <img 
+                      src="/marinade-ad.png"
+                      alt="Marinade Finance - Automated staking with +10% APY"
+                      className="h-8 w-auto object-contain"
+                    />
+                  </a>
+                </div>
+                
                 <div className="flex items-center space-x-2">
                   <Button
                     onClick={() => setActiveTab('reclaim')}
