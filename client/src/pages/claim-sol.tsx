@@ -2203,6 +2203,22 @@ export default function SolRefund() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
         <div className="space-y-2">
+          {/* Marinade Ad Banner - TOP OF PAGE */}
+          <div className="flex justify-center py-3">
+            <a
+              href="https://marinade.finance"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:opacity-90 transition-opacity"
+            >
+              <img 
+                src={marinadeAdImage}
+                alt="Marinade Finance"
+                className="h-12 w-auto object-contain"
+              />
+            </a>
+          </div>
+
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
             {/* Top row: Logo and Wallet Connection (mobile) */}
@@ -2388,22 +2404,6 @@ export default function SolRefund() {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Marinade Ad Banner - ALWAYS VISIBLE */}
-          <div className="flex justify-center py-2">
-            <a
-              href="https://marinade.finance"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block hover:opacity-90 transition-opacity"
-            >
-              <img 
-                src="https://i.imgur.com/pXK9Z5M.png"
-                alt="Marinade Finance"
-                className="h-12 w-auto object-contain"
-              />
-            </a>
           </div>
 
           {/* Description */}
