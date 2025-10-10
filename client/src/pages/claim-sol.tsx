@@ -2280,6 +2280,22 @@ export default function SolRefund() {
               </div>
             </div>
 
+            {/* Marinade Ad Banner - Desktop: in header, Mobile: below */}
+            <div className="hidden lg:flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
+              <a
+                href="https://marinade.finance"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:opacity-90 transition-opacity rounded-lg overflow-hidden bg-white"
+              >
+                <img 
+                  src={marinadeAdImage}
+                  alt="Marinade Finance"
+                  className="h-10 w-auto object-contain"
+                />
+              </a>
+            </div>
+
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
@@ -2346,8 +2362,8 @@ export default function SolRefund() {
             </div>
           </div>
 
-          {/* Marinade Ad Banner - ALWAYS VISIBLE */}
-          <div className="flex justify-center py-2">
+          {/* Marinade Ad Banner - Mobile only */}
+          <div className="flex lg:hidden justify-center py-2">
             <a
               href="https://marinade.finance"
               target="_blank"
