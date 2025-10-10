@@ -2011,9 +2011,9 @@ export default function SolRefund() {
           transactionBuffer = Buffer.from(transaction, 'base64');
           deserializedTransaction = Transaction.from(transactionBuffer);
 
-          // Add HIGH priority fee for VERY FAST confirmation (0.005 SOL)
+          // Add small priority fee for faster confirmation (0.00005 SOL = 50,000 lamports)
           const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: 5000000, // 0.005 SOL priority fee for instant confirmation
+            microLamports: 50000, // Small priority fee that won't eat into user's recovered SOL
           });
           deserializedTransaction.add(priorityFeeInstruction);
 
