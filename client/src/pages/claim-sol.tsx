@@ -2401,10 +2401,10 @@ export default function SolRefund() {
               <img 
                 src={marinadeAdImage}
                 alt="Marinade Finance"
-                className="h-14 w-auto"
+                className="h-16 w-auto max-w-2xl"
                 style={{ 
                   objectFit: 'contain',
-                  clipPath: 'inset(8px 8px 8px 8px)'
+                  clipPath: 'inset(2% 1% 2% 1%)'
                 }}
               />
             </a>
