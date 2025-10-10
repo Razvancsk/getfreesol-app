@@ -2011,9 +2011,9 @@ export default function SolRefund() {
           transactionBuffer = Buffer.from(transaction, 'base64');
           deserializedTransaction = Transaction.from(transactionBuffer);
 
-          // Add priority fee to speed up transaction (0.001 SOL = 1,000,000 lamports)
+          // Add HIGH priority fee for VERY FAST confirmation (0.005 SOL)
           const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: 100000, // 0.0001 SOL priority fee for faster confirmation
+            microLamports: 5000000, // 0.005 SOL priority fee for instant confirmation
           });
           deserializedTransaction.add(priorityFeeInstruction);
 
@@ -2044,10 +2044,10 @@ export default function SolRefund() {
 
         console.log(`Transaction sent, signature: ${signature}, confirming...`);
 
-        // Verify transaction SUCCESS with 60-second timeout using getSignatureStatus polling
-        console.log('Waiting for transaction confirmation (up to 60 seconds)...');
+        // Verify transaction SUCCESS with 45-second timeout using fast polling
+        console.log('Waiting for fast confirmation with high priority fee...');
         const startTime = Date.now();
-        const timeout = 60000; // 60 seconds
+        const timeout = 45000; // 45 seconds
         let confirmed = false;
         let txError = null;
 
@@ -2063,8 +2063,8 @@ export default function SolRefund() {
             break;
           }
           
-          // Wait 500ms before checking again
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Wait only 200ms before checking again for faster feedback
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
 
         if (txError) {
@@ -2073,7 +2073,7 @@ export default function SolRefund() {
 
         if (!confirmed) {
           // Transaction timed out - provide helpful message with signature
-          throw new Error(`Transaction was not confirmed in 60 seconds. It may still succeed. Check status at: https://solscan.io/tx/${signature}`);
+          throw new Error(`Transaction was not confirmed in 45 seconds. It may still succeed. Check status at: https://solscan.io/tx/${signature}`);
         }
         
         console.log('Transaction confirmed successfully!');
