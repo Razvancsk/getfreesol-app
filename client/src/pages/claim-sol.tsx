@@ -24,6 +24,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
 import logoImage from '@assets/image_1757882056840.png';
+import marinadeAdImage from '@assets/marinade-ad.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2291,7 +2292,7 @@ export default function SolRefund() {
                     className="block hover:opacity-90 transition-opacity"
                   >
                     <img 
-                      src="/marinade-ad.png"
+                      src={marinadeAdImage}
                       alt="Marinade Finance - Automated staking with +10% APY"
                       className="h-8 w-auto object-contain"
                     />
