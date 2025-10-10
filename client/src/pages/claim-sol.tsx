@@ -2397,16 +2397,14 @@ export default function SolRefund() {
               target="_blank"
               rel="noopener noreferrer"
               className="block hover:opacity-90 transition-opacity"
-              style={{ filter: 'drop-shadow(0 0 0 transparent)' }}
             >
               <img 
                 src={marinadeAdImage}
                 alt="Marinade Finance"
-                className="h-12 w-auto object-cover"
+                className="h-14 w-auto"
                 style={{ 
-                  clipPath: 'inset(2px 2px 2px 2px)',
-                  marginLeft: '-2px',
-                  marginRight: '-2px'
+                  objectFit: 'contain',
+                  clipPath: 'inset(3px 3px 3px 3px)'
                 }}
               />
             </a>
