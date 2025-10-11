@@ -186,102 +186,83 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         
-        <div className="space-y-4">
-          {/* Buy/Sell Toggle */}
-          <div className="flex gap-2 bg-purple-900/50 p-1 rounded-lg">
-            <button
-              onClick={() => {
-                setFromToken(POPULAR_TOKENS.find(t => t.symbol === 'USDC') || POPULAR_TOKENS[1]);
-                setToToken(POPULAR_TOKENS[0]); // SOL
-              }}
-              className="flex-1 py-2 px-4 rounded-md bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
-            >
-              Buy SOL
-            </button>
-            <button
-              onClick={() => {
-                setFromToken(POPULAR_TOKENS[0]); // SOL
-                setToToken(POPULAR_TOKENS.find(t => t.symbol === 'USDC') || POPULAR_TOKENS[1]);
-              }}
-              className="flex-1 py-2 px-4 rounded-md bg-purple-700/50 hover:bg-purple-700 text-purple-200 hover:text-white font-medium transition-colors"
-            >
-              Sell SOL
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-purple-300">Amount ({fromToken.symbol})</label>
-              <button className="text-xs text-purple-300 hover:text-white">MAX</button>
+        <div className="space-y-5">
+          {/* Pay Section */}
+          <div className="space-y-2">
+            <label className="text-sm text-purple-300">Pay:</label>
+            <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+              <select
+                className="flex items-center gap-2 bg-transparent text-white border-none outline-none text-base font-medium"
+                value={fromToken.address}
+                onChange={(e) => {
+                  const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
+                  if (token) setFromToken(token);
+                }}
+              >
+                {POPULAR_TOKENS.map(token => (
+                  <option key={token.address} value={token.address} className="bg-purple-900">
+                    {token.symbol}
+                  </option>
+                ))}
+              </select>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={fromAmount}
+                onChange={(e) => {
+                  setFromAmount(e.target.value);
+                  getQuote(e.target.value);
+                }}
+                className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+                data-testid="input-swap-from-amount"
+              />
             </div>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={fromAmount}
-              onChange={(e) => {
-                setFromAmount(e.target.value);
-                getQuote(e.target.value);
-              }}
-              className="w-full bg-purple-900/30 border-purple-500/30 text-white text-lg h-12 rounded-lg"
-              data-testid="input-swap-from-amount"
-            />
           </div>
 
-          <div className="space-y-3">
-            <label className="text-sm text-purple-300">You receive ({toToken.symbol})</label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              value={toAmount}
-              readOnly
-              className="w-full bg-purple-900/30 border-purple-500/30 text-white text-lg h-12 rounded-lg"
-              data-testid="input-swap-to-amount"
-            />
-          </div>
-
-          {/* Token Selection */}
-          <div className="flex gap-2">
-            <select
-              className="flex-1 h-10 rounded-md border border-purple-500/30 bg-purple-900/40 text-white px-3 py-2 text-sm"
-              value={fromToken.address}
-              onChange={(e) => {
-                const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
-                if (token) setFromToken(token);
-              }}
-            >
-              {POPULAR_TOKENS.map(token => (
-                <option key={token.address} value={token.address}>
-                  From: {token.symbol}
-                </option>
-              ))}
-            </select>
+          {/* Swap Direction Button */}
+          <div className="flex justify-center">
             <Button
               variant="ghost"
               size="sm"
               onClick={swapTokens}
-              className="text-purple-300 hover:text-white hover:bg-purple-800/30"
+              className="text-purple-300 hover:text-white hover:bg-purple-800/30 rounded-full"
               data-testid="button-swap-direction"
             >
-              <ArrowDownUp className="h-4 w-4" />
+              <ArrowDownUp className="h-5 w-5" />
             </Button>
-            <select
-              className="flex-1 h-10 rounded-md border border-purple-500/30 bg-purple-900/40 text-white px-3 py-2 text-sm"
-              value={toToken.address}
-              onChange={(e) => {
-                const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
-                if (token) setToToken(token);
-              }}
-            >
-              {POPULAR_TOKENS.map(token => (
-                <option key={token.address} value={token.address}>
-                  To: {token.symbol}
-                </option>
-              ))}
-            </select>
+          </div>
+
+          {/* Receive Section */}
+          <div className="space-y-2">
+            <label className="text-sm text-purple-300">Receive:</label>
+            <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+              <select
+                className="flex items-center gap-2 bg-transparent text-white border-none outline-none text-base font-medium"
+                value={toToken.address}
+                onChange={(e) => {
+                  const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
+                  if (token) setToToken(token);
+                }}
+              >
+                {POPULAR_TOKENS.map(token => (
+                  <option key={token.address} value={token.address} className="bg-purple-900">
+                    {token.symbol}
+                  </option>
+                ))}
+              </select>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={toAmount}
+                readOnly
+                className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+                data-testid="input-swap-to-amount"
+              />
+            </div>
           </div>
 
           {isLoadingQuote && (
-            <div className="text-center text-sm text-purple-300">
+            <div className="text-center text-sm text-purple-300 py-2">
               <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
               Getting quote...
             </div>
@@ -299,7 +280,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
                 Swapping...
               </>
             ) : (
-              `Buy ${toToken.symbol}`
+              'Swap'
             )}
           </Button>
 
