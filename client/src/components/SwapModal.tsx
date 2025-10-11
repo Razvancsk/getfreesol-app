@@ -349,7 +349,34 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         <div className="space-y-5">
           {/* Pay Section */}
           <div className="space-y-2">
-            <label className="text-sm text-purple-300">Pay:</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-purple-300">Pay:</label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-purple-400">
+                  ≈ {(balances[fromToken.address] || 0).toFixed(8)} {fromToken.symbol}
+                </span>
+                <button 
+                  onClick={() => {
+                    const balance = balances[fromToken.address] || 0;
+                    setFromAmount((balance / 2).toString());
+                    getQuote((balance / 2).toString());
+                  }}
+                  className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                >
+                  HALF
+                </button>
+                <button 
+                  onClick={() => {
+                    const balance = balances[fromToken.address] || 0;
+                    setFromAmount(balance.toString());
+                    getQuote(balance.toString());
+                  }}
+                  className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                >
+                  MAX
+                </button>
+              </div>
+            </div>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
               <TokenSelector token={fromToken} onSelect={setFromToken} label="From" balances={balances} />
               <Input
@@ -363,31 +390,6 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
                 className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
                 data-testid="input-swap-from-amount"
               />
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-purple-400">
-                ≈ {(balances[fromToken.address] || 0).toFixed(8)} {fromToken.symbol}
-              </span>
-              <button 
-                onClick={() => {
-                  const balance = balances[fromToken.address] || 0;
-                  setFromAmount((balance / 2).toString());
-                  getQuote((balance / 2).toString());
-                }}
-                className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
-              >
-                HALF
-              </button>
-              <button 
-                onClick={() => {
-                  const balance = balances[fromToken.address] || 0;
-                  setFromAmount(balance.toString());
-                  getQuote(balance.toString());
-                }}
-                className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
-              >
-                MAX
-              </button>
             </div>
           </div>
 
