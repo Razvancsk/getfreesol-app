@@ -139,6 +139,66 @@ export default function SolRefund() {
     select
   } = useWalletAdapter();
 
+  // Load Jupiter Terminal script once on component mount
+  useEffect(() => {
+    // @ts-ignore
+    if (!window.Jupiter) {
+      const script = document.createElement('script');
+      script.src = 'https://terminal.jup.ag/main-v2.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  // Initialize Jupiter Terminal when modal opens
+  useEffect(() => {
+    if (jupiterModalOpen) {
+      const initJupiter = () => {
+        // @ts-ignore
+        if (window.Jupiter) {
+          // @ts-ignore
+          window.Jupiter.init({
+            displayMode: 'integrated',
+            integratedTargetId: 'jupiter-terminal',
+            endpoint: connection?.rpcEndpoint || 'https://mainnet.helius-rpc.com/?api-key=1e82824a-538f-41e5-bb2f-d50e43a8333d',
+            defaultExplorer: 'Solscan',
+            formProps: {
+              initialInputMint: 'So11111111111111111111111111111111111111112', // SOL
+              initialOutputMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+            },
+            enableWalletPassthrough: true,
+          });
+        }
+      };
+
+      // @ts-ignore
+      if (window.Jupiter) {
+        initJupiter();
+      } else {
+        // Wait for script to load if not ready
+        const checkInterval = setInterval(() => {
+          // @ts-ignore
+          if (window.Jupiter) {
+            clearInterval(checkInterval);
+            initJupiter();
+          }
+        }, 100);
+        
+        // Cleanup interval if modal closes before script loads
+        return () => clearInterval(checkInterval);
+      }
+      
+      // Cleanup Jupiter instance when modal closes
+      return () => {
+        // @ts-ignore
+        if (window.Jupiter?.close) {
+          // @ts-ignore
+          window.Jupiter.close();
+        }
+      };
+    }
+  }, [jupiterModalOpen, connection]);
+
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
     if (isConnected && publicKey && activeTab !== 'referrals') {
@@ -3399,14 +3459,11 @@ export default function SolRefund() {
               Swap your Solana tokens with the best rates
             </DialogDescription>
           </DialogHeader>
-          <div className="relative w-full" style={{ height: '600px' }}>
-            <iframe
-              src={`https://jup.ag/swap/SOL-USDC${publicKey ? `?wallet=${publicKey.toString()}` : ''}`}
-              className="w-full h-full border-0"
-              title="Jupiter Swap"
-              allow="clipboard-write"
-            />
-          </div>
+          <div 
+            id="jupiter-terminal" 
+            className="relative w-full" 
+            style={{ height: '600px', minHeight: '600px' }}
+          />
         </DialogContent>
       </Dialog>
 
