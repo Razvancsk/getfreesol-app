@@ -3405,9 +3405,13 @@ export default function SolRefund() {
             </text>
           </svg>
           
-          {/* Center circle with icon */}
+          {/* Center circle with logo */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center shadow-lg border-2 border-purple-400 group-hover:scale-110 transition-transform">
-            <Plane className="h-7 w-7 text-white transform rotate-45" />
+            <img 
+              src={logoImage} 
+              alt="Swap" 
+              className="h-10 w-10"
+            />
           </div>
         </div>
       </button>
