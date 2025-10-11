@@ -19,6 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -82,6 +88,7 @@ export default function SolRefund() {
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+  const [jupiterModalOpen, setJupiterModalOpen] = useState(false);
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -2329,6 +2336,26 @@ export default function SolRefund() {
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
               <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setJupiterModalOpen(true)}
+                  data-testid="button-jupiter-swap"
+                  className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#00D98E] via-[#3DCAFF] to-[#C549FF] hover:opacity-80 backdrop-blur-sm rounded-md transition-all border border-purple-500/30"
+                  title="Swap tokens on Jupiter"
+                >
+                  <svg viewBox="0 0 200 200" className="h-5 w-5" fill="none">
+                    <circle cx="100" cy="100" r="90" fill="url(#jup-gradient)" />
+                    <path d="M100 40 L160 80 L160 120 L100 160 L40 120 L40 80 Z" fill="white" opacity="0.2" />
+                    <path d="M100 60 L140 85 L140 115 L100 140 L60 115 L60 85 Z" fill="white" opacity="0.4" />
+                    <circle cx="100" cy="100" r="25" fill="white" />
+                    <defs>
+                      <linearGradient id="jup-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#C7F284" />
+                        <stop offset="50%" stopColor="#00D4AA" />
+                        <stop offset="100%" stopColor="#00BCD4" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </button>
                 <a
                   href="https://x.com/getfreesol_xyz"
                   target="_blank"
@@ -3326,6 +3353,38 @@ export default function SolRefund() {
       </div>
 
       {/* Wallet Selection Modal */}
+
+      {/* Jupiter Swap Modal */}
+      <Dialog open={jupiterModalOpen} onOpenChange={setJupiterModalOpen}>
+        <DialogContent className="max-w-[480px] bg-slate-900 border-purple-500/30 p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b border-purple-500/20">
+            <DialogTitle className="text-white flex items-center space-x-2">
+              <svg viewBox="0 0 200 200" className="h-6 w-6" fill="none">
+                <circle cx="100" cy="100" r="90" fill="url(#jup-gradient-modal)" />
+                <path d="M100 40 L160 80 L160 120 L100 160 L40 120 L40 80 Z" fill="white" opacity="0.2" />
+                <path d="M100 60 L140 85 L140 115 L100 140 L60 115 L60 85 Z" fill="white" opacity="0.4" />
+                <circle cx="100" cy="100" r="25" fill="white" />
+                <defs>
+                  <linearGradient id="jup-gradient-modal" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#C7F284" />
+                    <stop offset="50%" stopColor="#00D4AA" />
+                    <stop offset="100%" stopColor="#00BCD4" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span>Jupiter Swap</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full" style={{ height: '600px' }}>
+            <iframe
+              src={`https://jup.ag/swap/SOL-USDC${publicKey ? `?wallet=${publicKey.toString()}` : ''}`}
+              className="w-full h-full border-0"
+              title="Jupiter Swap"
+              allow="clipboard-write"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
