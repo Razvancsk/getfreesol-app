@@ -22,6 +22,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -3394,6 +3395,9 @@ export default function SolRefund() {
               </svg>
               <span>Jupiter Swap</span>
             </DialogTitle>
+            <DialogDescription className="text-purple-300">
+              Swap your Solana tokens with the best rates
+            </DialogDescription>
           </DialogHeader>
           <div className="relative w-full" style={{ height: '600px' }}>
             <iframe
