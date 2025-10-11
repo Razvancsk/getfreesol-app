@@ -96,12 +96,56 @@ function TokenSelector({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<TokenInfo[]>(POPULAR_TOKENS);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const filteredTokens = POPULAR_TOKENS.filter(t => 
-    t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Search tokens using Jupiter API
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults(POPULAR_TOKENS);
+      return;
+    }
+
+    const searchTokens = async () => {
+      setIsSearching(true);
+      try {
+        const response = await fetch(`https://ultra.jup.ag/v1/search?query=${encodeURIComponent(searchQuery)}`);
+        if (response.ok) {
+          const data = await response.json();
+          const tokens: TokenInfo[] = data.map((t: any) => ({
+            address: t.id || t.address,
+            symbol: t.symbol,
+            name: t.name,
+            decimals: t.decimals,
+            logoURI: t.icon || t.logoURI
+          }));
+          setSearchResults(tokens);
+        } else {
+          // Fallback to local search
+          setSearchResults(
+            POPULAR_TOKENS.filter(t => 
+              t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              t.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Token search error:', error);
+        // Fallback to local search
+        setSearchResults(
+          POPULAR_TOKENS.filter(t => 
+            t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            t.name.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        );
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounce = setTimeout(searchTokens, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
 
   return (
     <>
@@ -141,33 +185,44 @@ function TokenSelector({
 
             {/* Token List */}
             <div className="flex-1 overflow-y-auto p-2">
-              {filteredTokens.map((t) => {
-                const balance = balances[t.address] || 0;
-                return (
-                  <button
-                    key={t.address}
-                    onClick={() => {
-                      onSelect(t);
-                      setIsOpen(false);
-                      setSearchQuery('');
-                    }}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/30 rounded-lg transition-colors text-left"
-                  >
-                    <img src={t.logoURI} alt={t.symbol} className="w-10 h-10 rounded-full" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-medium">{t.symbol}</span>
+              {isSearching ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
+                  <span className="ml-2 text-purple-300">Searching tokens...</span>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="text-center py-8 text-purple-400">
+                  No tokens found
+                </div>
+              ) : (
+                searchResults.map((t) => {
+                  const balance = balances[t.address] || 0;
+                  return (
+                    <button
+                      key={t.address}
+                      onClick={() => {
+                        onSelect(t);
+                        setIsOpen(false);
+                        setSearchQuery('');
+                      }}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/30 rounded-lg transition-colors text-left"
+                    >
+                      <img src={t.logoURI} alt={t.symbol} className="w-10 h-10 rounded-full" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{t.symbol}</span>
+                        </div>
+                        <div className="text-sm text-purple-400">{t.name}</div>
+                        <div className="text-xs text-purple-500/70">{t.address.slice(0, 8)}...{t.address.slice(-6)}</div>
                       </div>
-                      <div className="text-sm text-purple-400">{t.name}</div>
-                      <div className="text-xs text-purple-500/70">{t.address.slice(0, 8)}...{t.address.slice(-6)}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white font-medium">{balance.toFixed(4)} {t.symbol}</div>
-                      <div className="text-xs text-purple-400">Balance</div>
-                    </div>
-                  </button>
-                );
-              })}
+                      <div className="text-right">
+                        <div className="text-white font-medium">{balance.toFixed(4)} {t.symbol}</div>
+                        <div className="text-xs text-purple-400">Balance</div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
