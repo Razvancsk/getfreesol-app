@@ -139,83 +139,6 @@ export default function SolRefund() {
     select
   } = useWalletAdapter();
 
-  // Load Jupiter Terminal script once on mount
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://terminal.jup.ag/main-v2.js';
-    script.async = true;
-    document.head.appendChild(script);
-    
-    return () => {
-      const existingScript = document.querySelector('script[src="https://terminal.jup.ag/main-v2.js"]');
-      if (existingScript) {
-        document.head.removeChild(existingScript);
-      }
-    };
-  }, []);
-
-  // Initialize Jupiter Terminal when modal opens
-  useEffect(() => {
-    if (!jupiterModalOpen) return;
-
-    const initTerminal = () => {
-      // @ts-ignore
-      if (window.Jupiter?.init) {
-        console.log('Initializing Jupiter Terminal...');
-        try {
-          // @ts-ignore
-          window.Jupiter.init({
-            displayMode: 'integrated',
-            integratedTargetId: 'jupiter-terminal',
-            endpoint: connection?.rpcEndpoint || 'https://mainnet.helius-rpc.com/?api-key=1e82824a-538f-41e5-bb2f-d50e43a8333d',
-            formProps: {
-              initialInputMint: 'So11111111111111111111111111111111111111112',
-              initialOutputMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-            },
-          });
-          console.log('Jupiter Terminal initialized successfully');
-        } catch (error) {
-          console.error('Error initializing Jupiter Terminal:', error);
-        }
-      } else {
-        console.log('window.Jupiter not available yet');
-      }
-    };
-
-    // @ts-ignore
-    if (window.Jupiter?.init) {
-      initTerminal();
-    } else {
-      console.log('Waiting for Jupiter script to load...');
-      const checkInterval = setInterval(() => {
-        // @ts-ignore
-        if (window.Jupiter?.init) {
-          clearInterval(checkInterval);
-          initTerminal();
-        }
-      }, 100);
-      
-      return () => clearInterval(checkInterval);
-    }
-  }, [jupiterModalOpen, connection]);
-
-  // Sync wallet state with Jupiter Terminal
-  useEffect(() => {
-    if (!jupiterModalOpen) return;
-
-    // @ts-ignore
-    if (window.Jupiter?.syncProps) {
-      // @ts-ignore
-      window.Jupiter.syncProps({
-        passthroughWalletContextState: {
-          publicKey,
-          connected: isConnected,
-          signTransaction,
-          signAllTransactions,
-        },
-      });
-    }
-  }, [jupiterModalOpen, publicKey, isConnected, signTransaction, signAllTransactions]);
 
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
@@ -3455,15 +3378,18 @@ export default function SolRefund() {
 
       {/* Jupiter Swap Modal */}
       <Dialog open={jupiterModalOpen} onOpenChange={setJupiterModalOpen}>
-        <DialogContent className="max-w-[480px] bg-slate-900 border-purple-500/30 p-0 overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Jupiter Swap</DialogTitle>
-            <DialogDescription>Swap tokens using Jupiter</DialogDescription>
+        <DialogContent className="max-w-[520px] h-[700px] bg-slate-900 border-purple-500/30 p-0">
+          <DialogHeader className="p-4 border-b border-purple-500/20">
+            <DialogTitle className="text-white">Jupiter Swap</DialogTitle>
+            <DialogDescription className="text-purple-300">
+              Swap tokens with best rates on Solana
+            </DialogDescription>
           </DialogHeader>
-          <div 
-            id="jupiter-terminal" 
-            className="w-full"
-            style={{ minHeight: '600px' }}
+          <iframe
+            src="https://jup.ag/swap/SOL-USDC"
+            className="w-full h-full border-0"
+            title="Jupiter Swap"
+            allow="clipboard-read; clipboard-write"
           />
         </DialogContent>
       </Dialog>
