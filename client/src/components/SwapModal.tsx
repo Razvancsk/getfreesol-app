@@ -4,7 +4,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowDownUp, Loader2, X, RefreshCw } from 'lucide-react';
+import { ArrowDownUp, Loader2, X, RefreshCw, Search, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,13 @@ const POPULAR_TOKENS: TokenInfo[] = [
     logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png'
   },
   {
+    address: '5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm',
+    symbol: 'solami',
+    name: 'Solami',
+    decimals: 9,
+    logoURI: 'https://img.fotofolio.xyz/?url=https%3A%2F%2Fbafkreifkvjqvyx7kggqa7vnu5xtccio6nyao4ckg42jpnk6xjpfob47jey.ipfs.nftstorage.link'
+  },
+  {
     address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
     symbol: 'USDC',
     name: 'USD Coin',
@@ -45,13 +52,119 @@ const POPULAR_TOKENS: TokenInfo[] = [
     logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.png'
   },
   {
+    address: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
+    symbol: 'JLP',
+    name: 'Jupiter Perps',
+    decimals: 6,
+    logoURI: 'https://static.jup.ag/jlp/icon.png'
+  },
+  {
     address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
     symbol: 'mSOL',
-    name: 'Marinade SOL',
+    name: 'Marinade staked SOL',
     decimals: 9,
     logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So/logo.png'
   },
+  {
+    address: 'jupSoLaHXQiZZTSfEWMTRRgpnyFm8f6sZdosWBjx93v',
+    symbol: 'JupSOL',
+    name: 'Jupiter Staked SOL',
+    decimals: 9,
+    logoURI: 'https://static.jup.ag/jupSOL/icon.png'
+  },
+  {
+    address: 'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn',
+    symbol: 'JitoSOL',
+    name: 'Jito Staked SOL',
+    decimals: 9,
+    logoURI: 'https://storage.googleapis.com/token-metadata/JitoSOL-256.png'
+  },
 ];
+
+// TokenSelector Component
+function TokenSelector({ 
+  token, 
+  onSelect, 
+  label 
+}: { 
+  token: TokenInfo; 
+  onSelect: (token: TokenInfo) => void; 
+  label: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredTokens = POPULAR_TOKENS.filter(t => 
+    t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.address.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-3 py-2 transition-colors"
+      >
+        <img src={token.logoURI} alt={token.symbol} className="w-6 h-6 rounded-full" />
+        <span className="text-white font-medium">{token.symbol}</span>
+        <ChevronDown className="w-4 h-4 text-purple-300" />
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setIsOpen(false)} />
+          <div className="relative bg-slate-900 rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b border-purple-500/30">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-semibold">Select Token</h3>
+                <button onClick={() => setIsOpen(false)} className="text-purple-300 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                <Input
+                  type="text"
+                  placeholder='Search any token. Include " " for exact match.'
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-slate-800 border-purple-500/30 text-white placeholder:text-purple-400/50"
+                />
+              </div>
+            </div>
+
+            {/* Token List */}
+            <div className="flex-1 overflow-y-auto p-2">
+              {filteredTokens.map((t) => (
+                <button
+                  key={t.address}
+                  onClick={() => {
+                    onSelect(t);
+                    setIsOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/30 rounded-lg transition-colors text-left"
+                >
+                  <img src={t.logoURI} alt={t.symbol} className="w-10 h-10 rounded-full" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-medium">{t.symbol}</span>
+                    </div>
+                    <div className="text-sm text-purple-400">{t.name}</div>
+                    <div className="text-xs text-purple-500/70">{t.address.slice(0, 8)}...{t.address.slice(-6)}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const { publicKey, signTransaction } = useWallet();
@@ -191,20 +304,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <div className="space-y-2">
             <label className="text-sm text-purple-300">Pay:</label>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <select
-                className="flex items-center gap-2 bg-transparent text-white border-none outline-none text-base font-medium"
-                value={fromToken.address}
-                onChange={(e) => {
-                  const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
-                  if (token) setFromToken(token);
-                }}
-              >
-                {POPULAR_TOKENS.map(token => (
-                  <option key={token.address} value={token.address} className="bg-purple-900">
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
+              <TokenSelector token={fromToken} onSelect={setFromToken} label="From" />
               <Input
                 type="number"
                 placeholder="0.00"
@@ -236,20 +336,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <div className="space-y-2">
             <label className="text-sm text-purple-300">Receive:</label>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <select
-                className="flex items-center gap-2 bg-transparent text-white border-none outline-none text-base font-medium"
-                value={toToken.address}
-                onChange={(e) => {
-                  const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
-                  if (token) setToToken(token);
-                }}
-              >
-                {POPULAR_TOKENS.map(token => (
-                  <option key={token.address} value={token.address} className="bg-purple-900">
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
+              <TokenSelector token={toToken} onSelect={setToToken} label="To" />
               <Input
                 type="number"
                 placeholder="0.00"
