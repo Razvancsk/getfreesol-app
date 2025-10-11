@@ -4,6 +4,7 @@
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
 ## Recent Updates (January 2025)
+- **Jupiter Swap Integration**: Added Jupiter Terminal widget for in-app token swapping with wallet passthrough
 - **Deployment Fixes Applied**: Complete server configuration overhaul for production deployment stability
 - **Enhanced Error Handling**: Comprehensive startup error handling with detailed logging and graceful failure modes
 - **Port Configuration**: Corrected server listening configuration using environment variables without object parameters
@@ -46,6 +47,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
+- **Jupiter Swap Integration**: In-app token swapping via Jupiter Terminal widget with wallet passthrough.
 - **Solana Integration**: Handles RPC interactions for account discovery and transaction submission.
 - **Data Persistence**: Stores scan results, transaction records, and user statistics.
 
