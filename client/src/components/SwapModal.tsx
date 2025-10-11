@@ -99,53 +99,49 @@ function TokenSelector({
   const [searchResults, setSearchResults] = useState<TokenInfo[]>(POPULAR_TOKENS);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Search tokens using Jupiter API
+  // Fetch all tokens from Jupiter on component mount
+  const [allTokens, setAllTokens] = useState<TokenInfo[]>(POPULAR_TOKENS);
+  
+  useEffect(() => {
+    const fetchAllTokens = async () => {
+      try {
+        const response = await fetch('https://tokens.jup.ag/tokens?tags=verified');
+        if (response.ok) {
+          const data = await response.json();
+          const tokens: TokenInfo[] = data.map((t: any) => ({
+            address: t.address,
+            symbol: t.symbol,
+            name: t.name,
+            decimals: t.decimals,
+            logoURI: t.logoURI
+          }));
+          setAllTokens(tokens);
+        }
+      } catch (error) {
+        console.error('Failed to fetch token list:', error);
+      }
+    };
+    fetchAllTokens();
+  }, []);
+
+  // Search tokens locally
   useEffect(() => {
     if (!searchQuery) {
       setSearchResults(POPULAR_TOKENS);
       return;
     }
 
-    const searchTokens = async () => {
-      setIsSearching(true);
-      try {
-        const response = await fetch(`https://ultra.jup.ag/v1/search?query=${encodeURIComponent(searchQuery)}`);
-        if (response.ok) {
-          const data = await response.json();
-          const tokens: TokenInfo[] = data.map((t: any) => ({
-            address: t.id || t.address,
-            symbol: t.symbol,
-            name: t.name,
-            decimals: t.decimals,
-            logoURI: t.icon || t.logoURI
-          }));
-          setSearchResults(tokens);
-        } else {
-          // Fallback to local search
-          setSearchResults(
-            POPULAR_TOKENS.filter(t => 
-              t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              t.name.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-          );
-        }
-      } catch (error) {
-        console.error('Token search error:', error);
-        // Fallback to local search
-        setSearchResults(
-          POPULAR_TOKENS.filter(t => 
-            t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.name.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        );
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    const debounce = setTimeout(searchTokens, 300);
-    return () => clearTimeout(debounce);
-  }, [searchQuery]);
+    setIsSearching(true);
+    const query = searchQuery.toLowerCase();
+    const filtered = allTokens.filter(t => 
+      t.symbol.toLowerCase().includes(query) ||
+      t.name.toLowerCase().includes(query) ||
+      t.address.toLowerCase().includes(query)
+    ).slice(0, 50); // Limit to 50 results
+    
+    setSearchResults(filtered);
+    setIsSearching(false);
+  }, [searchQuery, allTokens]);
 
   return (
     <>
