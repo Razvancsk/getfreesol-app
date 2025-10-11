@@ -139,65 +139,6 @@ export default function SolRefund() {
     select
   } = useWalletAdapter();
 
-  // Load Jupiter Terminal script once on component mount
-  useEffect(() => {
-    // @ts-ignore
-    if (!window.Jupiter) {
-      const script = document.createElement('script');
-      script.src = 'https://terminal.jup.ag/main-v2.js';
-      script.async = true;
-      document.body.appendChild(script);
-    }
-  }, []);
-
-  // Initialize Jupiter Terminal when modal opens
-  useEffect(() => {
-    if (jupiterModalOpen) {
-      const initJupiter = () => {
-        // @ts-ignore
-        if (window.Jupiter) {
-          // @ts-ignore
-          window.Jupiter.init({
-            displayMode: 'integrated',
-            integratedTargetId: 'jupiter-terminal',
-            endpoint: connection?.rpcEndpoint || 'https://mainnet.helius-rpc.com/?api-key=1e82824a-538f-41e5-bb2f-d50e43a8333d',
-            defaultExplorer: 'Solscan',
-            formProps: {
-              initialInputMint: 'So11111111111111111111111111111111111111112', // SOL
-              initialOutputMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-            },
-            enableWalletPassthrough: true,
-          });
-        }
-      };
-
-      // @ts-ignore
-      if (window.Jupiter) {
-        initJupiter();
-      } else {
-        // Wait for script to load if not ready
-        const checkInterval = setInterval(() => {
-          // @ts-ignore
-          if (window.Jupiter) {
-            clearInterval(checkInterval);
-            initJupiter();
-          }
-        }, 100);
-        
-        // Cleanup interval if modal closes before script loads
-        return () => clearInterval(checkInterval);
-      }
-      
-      // Cleanup Jupiter instance when modal closes
-      return () => {
-        // @ts-ignore
-        if (window.Jupiter?.close) {
-          // @ts-ignore
-          window.Jupiter.close();
-        }
-      };
-    }
-  }, [jupiterModalOpen, connection]);
 
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
@@ -3438,31 +3379,11 @@ export default function SolRefund() {
       {/* Jupiter Swap Modal */}
       <Dialog open={jupiterModalOpen} onOpenChange={setJupiterModalOpen}>
         <DialogContent className="max-w-[480px] bg-slate-900 border-purple-500/30 p-0 overflow-hidden">
-          <DialogHeader className="p-4 border-b border-purple-500/20">
-            <DialogTitle className="text-white flex items-center space-x-2">
-              <svg viewBox="0 0 200 200" className="h-6 w-6" fill="none">
-                <circle cx="100" cy="100" r="90" fill="url(#jup-gradient-modal)" />
-                <path d="M100 40 L160 80 L160 120 L100 160 L40 120 L40 80 Z" fill="white" opacity="0.2" />
-                <path d="M100 60 L140 85 L140 115 L100 140 L60 115 L60 85 Z" fill="white" opacity="0.4" />
-                <circle cx="100" cy="100" r="25" fill="white" />
-                <defs>
-                  <linearGradient id="jup-gradient-modal" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#C7F284" />
-                    <stop offset="50%" stopColor="#00D4AA" />
-                    <stop offset="100%" stopColor="#00BCD4" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <span>Jupiter Swap</span>
-            </DialogTitle>
-            <DialogDescription className="text-purple-300">
-              Swap your Solana tokens with the best rates
-            </DialogDescription>
-          </DialogHeader>
-          <div 
-            id="jupiter-terminal" 
-            className="relative w-full" 
-            style={{ height: '600px', minHeight: '600px' }}
+          <iframe
+            src="https://terminal.jup.ag/"
+            className="w-full border-0"
+            style={{ height: '660px' }}
+            title="Jupiter Terminal"
           />
         </DialogContent>
       </Dialog>
