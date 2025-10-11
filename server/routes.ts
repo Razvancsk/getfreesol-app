@@ -19,6 +19,46 @@ import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Token search endpoint
+  app.get("/api/tokens/search", async (req, res) => {
+    try {
+      const { q, limit = '50' } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.json({ tokens: [] });
+      }
+
+      const response = await fetch('https://tokens.jup.ag/tokens?tags=verified');
+      if (!response.ok) {
+        return res.json({ tokens: [] });
+      }
+
+      const allTokens = await response.json();
+      const query = q.toLowerCase();
+      const limitNum = parseInt(limit as string, 10);
+      
+      const filtered = allTokens
+        .filter((t: any) => 
+          t.symbol.toLowerCase().includes(query) ||
+          t.name.toLowerCase().includes(query) ||
+          t.address.toLowerCase().includes(query)
+        )
+        .slice(0, limitNum)
+        .map((t: any) => ({
+          address: t.address,
+          symbol: t.symbol,
+          name: t.name,
+          decimals: t.decimals,
+          logoURI: t.logoURI
+        }));
+
+      res.json({ tokens: filtered });
+    } catch (error) {
+      console.error('Token search error:', error);
+      res.json({ tokens: [] });
+    }
+  });
+
   // Get Helius configuration
   app.get("/api/helius-config", async (req, res) => {
     const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY || "";

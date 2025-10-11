@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { cn } from '@/lib/utils';
 import { getAccount, getAssociatedTokenAddress } from '@solana/spl-token';
+import { useQuery } from '@tanstack/react-query';
 
 interface SwapModalProps {
   open: boolean;
@@ -94,59 +95,31 @@ function TokenSelector({
   label: string;
   balances: Record<string, number>;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<TokenInfo[]>(POPULAR_TOKENS);
-  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
 
-  // Fetch all tokens from Jupiter on component mount
-  const [allTokens, setAllTokens] = useState<TokenInfo[]>(POPULAR_TOKENS);
-  
-  useEffect(() => {
-    const fetchAllTokens = async () => {
-      try {
-        const response = await fetch('https://tokens.jup.ag/tokens?tags=verified');
-        if (response.ok) {
-          const data = await response.json();
-          const tokens: TokenInfo[] = data.map((t: any) => ({
-            address: t.address,
-            symbol: t.symbol,
-            name: t.name,
-            decimals: t.decimals,
-            logoURI: t.logoURI
-          }));
-          setAllTokens(tokens);
-        }
-      } catch (error) {
-        console.error('Failed to fetch token list:', error);
-      }
-    };
-    fetchAllTokens();
-  }, []);
+  const { data: modalSearchData, isLoading: isModalSearching } = useQuery({
+    queryKey: ['jupiter-search', modalSearchQuery.trim()],
+    queryFn: async () => {
+      const url = `/api/tokens/search?q=${encodeURIComponent(modalSearchQuery.trim())}&limit=50`;
+      const response = await fetch(url);
+      return await response.json();
+    },
+    enabled: showSearchModal && modalSearchQuery.trim().length > 0,
+  });
 
-  // Search tokens locally
-  useEffect(() => {
-    if (!searchQuery) {
-      setSearchResults(POPULAR_TOKENS);
-      return;
-    }
+  const handleSearchInputClick = () => {
+    setShowSearchModal(true);
+  };
 
-    setIsSearching(true);
-    const query = searchQuery.toLowerCase();
-    const filtered = allTokens.filter(t => 
-      t.symbol.toLowerCase().includes(query) ||
-      t.name.toLowerCase().includes(query) ||
-      t.address.toLowerCase().includes(query)
-    ).slice(0, 50); // Limit to 50 results
-    
-    setSearchResults(filtered);
-    setIsSearching(false);
-  }, [searchQuery, allTokens]);
+  const searchResults = modalSearchQuery.trim().length > 0 && modalSearchData?.tokens 
+    ? modalSearchData.tokens 
+    : POPULAR_TOKENS;
 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => setShowSearchModal(true)}
         className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-3 py-2 transition-colors"
       >
         <img src={token.logoURI} alt={token.symbol} className="w-6 h-6 rounded-full" />
@@ -154,15 +127,15 @@ function TokenSelector({
         <ChevronDown className="w-4 h-4 text-purple-300" />
       </button>
 
-      {isOpen && (
+      {showSearchModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setIsOpen(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowSearchModal(false)} />
           <div className="relative bg-slate-900 rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-purple-500/30">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-white font-semibold">Select Token</h3>
-                <button onClick={() => setIsOpen(false)} className="text-purple-300 hover:text-white">
+                <button onClick={() => setShowSearchModal(false)} className="text-purple-300 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -172,8 +145,9 @@ function TokenSelector({
                 <Input
                   type="text"
                   placeholder='Search any token. Include " " for exact match.'
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={modalSearchQuery}
+                  onChange={(e) => setModalSearchQuery(e.target.value)}
+                  onClick={handleSearchInputClick}
                   className="pl-10 bg-slate-800 border-purple-500/30 text-white placeholder:text-purple-400/50"
                 />
               </div>
@@ -181,7 +155,7 @@ function TokenSelector({
 
             {/* Token List */}
             <div className="flex-1 overflow-y-auto p-2">
-              {isSearching ? (
+              {isModalSearching ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
                   <span className="ml-2 text-purple-300">Searching tokens...</span>
@@ -198,8 +172,8 @@ function TokenSelector({
                       key={t.address}
                       onClick={() => {
                         onSelect(t);
-                        setIsOpen(false);
-                        setSearchQuery('');
+                        setShowSearchModal(false);
+                        setModalSearchQuery('');
                       }}
                       className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/30 rounded-lg transition-colors text-left"
                     >
