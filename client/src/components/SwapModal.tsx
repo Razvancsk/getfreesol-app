@@ -4,7 +4,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowDownUp, Loader2, X } from 'lucide-react';
+import { ArrowDownUp, Loader2, X, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { cn } from '@/lib/utils';
@@ -161,13 +161,24 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       <DialogPortal>
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-purple-500/30 bg-slate-900/95 backdrop-blur-xl p-6 shadow-2xl duration-200",
+            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-purple-500/50 bg-gradient-to-br from-purple-900/95 to-purple-800/95 backdrop-blur-xl p-6 shadow-2xl duration-200",
             "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg"
           )}
         >
-          <DialogHeader>
-            <DialogTitle className="text-white">Swap Tokens</DialogTitle>
+          <DialogHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ArrowDownUp className="h-5 w-5 text-white" />
+              <DialogTitle className="text-white text-xl">Trade SOL</DialogTitle>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => getQuote(fromAmount)}
+              className="text-purple-300 hover:text-white hover:bg-purple-800/30"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </DialogHeader>
           
           <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none text-white">
@@ -176,38 +187,74 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           </DialogPrimitive.Close>
         
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white">From</label>
-            <div className="flex gap-2">
-              <select
-                className="flex h-10 rounded-md border border-purple-500/30 bg-slate-800/80 text-white px-3 py-2 text-sm"
-                value={fromToken.address}
-                onChange={(e) => {
-                  const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
-                  if (token) setFromToken(token);
-                }}
-              >
-                {POPULAR_TOKENS.map(token => (
-                  <option key={token.address} value={token.address}>
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={fromAmount}
-                onChange={(e) => {
-                  setFromAmount(e.target.value);
-                  getQuote(e.target.value);
-                }}
-                className="flex-1 bg-slate-800/80 border-purple-500/30 text-white"
-                data-testid="input-swap-from-amount"
-              />
-            </div>
+          {/* Buy/Sell Toggle */}
+          <div className="flex gap-2 bg-purple-900/50 p-1 rounded-lg">
+            <button
+              onClick={() => {
+                setFromToken(POPULAR_TOKENS.find(t => t.symbol === 'USDC') || POPULAR_TOKENS[1]);
+                setToToken(POPULAR_TOKENS[0]); // SOL
+              }}
+              className="flex-1 py-2 px-4 rounded-md bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
+            >
+              Buy SOL
+            </button>
+            <button
+              onClick={() => {
+                setFromToken(POPULAR_TOKENS[0]); // SOL
+                setToToken(POPULAR_TOKENS.find(t => t.symbol === 'USDC') || POPULAR_TOKENS[1]);
+              }}
+              className="flex-1 py-2 px-4 rounded-md bg-purple-700/50 hover:bg-purple-700 text-purple-200 hover:text-white font-medium transition-colors"
+            >
+              Sell SOL
+            </button>
           </div>
 
-          <div className="flex justify-center">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-purple-300">Amount ({fromToken.symbol})</label>
+              <button className="text-xs text-purple-300 hover:text-white">MAX</button>
+            </div>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={fromAmount}
+              onChange={(e) => {
+                setFromAmount(e.target.value);
+                getQuote(e.target.value);
+              }}
+              className="w-full bg-purple-900/30 border-purple-500/30 text-white text-lg h-12 rounded-lg"
+              data-testid="input-swap-from-amount"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm text-purple-300">You receive ({toToken.symbol})</label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={toAmount}
+              readOnly
+              className="w-full bg-purple-900/30 border-purple-500/30 text-white text-lg h-12 rounded-lg"
+              data-testid="input-swap-to-amount"
+            />
+          </div>
+
+          {/* Token Selection */}
+          <div className="flex gap-2">
+            <select
+              className="flex-1 h-10 rounded-md border border-purple-500/30 bg-purple-900/40 text-white px-3 py-2 text-sm"
+              value={fromToken.address}
+              onChange={(e) => {
+                const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
+                if (token) setFromToken(token);
+              }}
+            >
+              {POPULAR_TOKENS.map(token => (
+                <option key={token.address} value={token.address}>
+                  From: {token.symbol}
+                </option>
+              ))}
+            </select>
             <Button
               variant="ghost"
               size="sm"
@@ -217,34 +264,20 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
             >
               <ArrowDownUp className="h-4 w-4" />
             </Button>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white">To</label>
-            <div className="flex gap-2">
-              <select
-                className="flex h-10 rounded-md border border-purple-500/30 bg-slate-800/80 text-white px-3 py-2 text-sm"
-                value={toToken.address}
-                onChange={(e) => {
-                  const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
-                  if (token) setToToken(token);
-                }}
-              >
-                {POPULAR_TOKENS.map(token => (
-                  <option key={token.address} value={token.address}>
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={toAmount}
-                readOnly
-                className="flex-1 bg-slate-800/50 border-purple-500/30 text-white"
-                data-testid="input-swap-to-amount"
-              />
-            </div>
+            <select
+              className="flex-1 h-10 rounded-md border border-purple-500/30 bg-purple-900/40 text-white px-3 py-2 text-sm"
+              value={toToken.address}
+              onChange={(e) => {
+                const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
+                if (token) setToToken(token);
+              }}
+            >
+              {POPULAR_TOKENS.map(token => (
+                <option key={token.address} value={token.address}>
+                  To: {token.symbol}
+                </option>
+              ))}
+            </select>
           </div>
 
           {isLoadingQuote && (
@@ -257,7 +290,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <Button
             onClick={handleSwap}
             disabled={!publicKey || !quote || isSwapping || isLoadingQuote}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12 text-lg rounded-lg"
             data-testid="button-execute-swap"
           >
             {isSwapping ? (
@@ -266,7 +299,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
                 Swapping...
               </>
             ) : (
-              'Swap'
+              `Buy ${toToken.symbol}`
             )}
           </Button>
 
