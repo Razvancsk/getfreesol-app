@@ -30,6 +30,7 @@ import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
+import { useJupiterTerminal } from '@/components/JupiterTerminalProvider';
 import logoImage from '@assets/image_1757882056840.png';
 import marinadeAdImage from '@assets/marinade-ad.png';
 
@@ -89,7 +90,9 @@ export default function SolRefund() {
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
-  const [jupiterModalOpen, setJupiterModalOpen] = useState(false);
+  
+  // Jupiter Terminal integration
+  const { openTerminal: openJupiterTerminal } = useJupiterTerminal();
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -2259,7 +2262,7 @@ export default function SolRefund() {
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
                   <button
-                    onClick={() => setJupiterModalOpen(true)}
+                    onClick={openJupiterTerminal}
                     data-testid="button-jupiter-swap-mobile"
                     className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#00D98E] via-[#3DCAFF] to-[#C549FF] hover:opacity-80 backdrop-blur-sm rounded-md transition-all border border-purple-500/30"
                     title="Swap tokens on Jupiter"
@@ -2359,7 +2362,7 @@ export default function SolRefund() {
               {/* Social Media Buttons */}
               <div className="flex items-center space-x-1">
                 <button
-                  onClick={() => setJupiterModalOpen(true)}
+                  onClick={openJupiterTerminal}
                   data-testid="button-jupiter-swap"
                   className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#00D98E] via-[#3DCAFF] to-[#C549FF] hover:opacity-80 backdrop-blur-sm rounded-md transition-all border border-purple-500/30"
                   title="Swap tokens on Jupiter"
@@ -3375,24 +3378,6 @@ export default function SolRefund() {
       </div>
 
       {/* Wallet Selection Modal */}
-
-      {/* Jupiter Swap Modal */}
-      <Dialog open={jupiterModalOpen} onOpenChange={setJupiterModalOpen}>
-        <DialogContent className="max-w-[520px] h-[700px] bg-slate-900 border-purple-500/30 p-0">
-          <DialogHeader className="p-4 border-b border-purple-500/20">
-            <DialogTitle className="text-white">Jupiter Swap</DialogTitle>
-            <DialogDescription className="text-purple-300">
-              Swap tokens with best rates on Solana
-            </DialogDescription>
-          </DialogHeader>
-          <iframe
-            src="https://jup.ag/swap/SOL-USDC"
-            className="w-full h-full border-0"
-            title="Jupiter Swap"
-            allow="clipboard-read; clipboard-write"
-          />
-        </DialogContent>
-      </Dialog>
 
     </div>
   );
