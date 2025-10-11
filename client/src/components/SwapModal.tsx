@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogClose } from '@/components/ui/dialog';
@@ -8,6 +8,7 @@ import { ArrowDownUp, Loader2, X, RefreshCw, Search, ChevronDown } from 'lucide-
 import { useToast } from '@/hooks/use-toast';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { cn } from '@/lib/utils';
+import { getAccount, getAssociatedTokenAddress } from '@solana/spl-token';
 
 interface SwapModalProps {
   open: boolean;
@@ -85,11 +86,13 @@ const POPULAR_TOKENS: TokenInfo[] = [
 function TokenSelector({ 
   token, 
   onSelect, 
-  label 
+  label,
+  balances
 }: { 
   token: TokenInfo; 
   onSelect: (token: TokenInfo) => void; 
   label: string;
+  balances: Record<string, number>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,26 +141,33 @@ function TokenSelector({
 
             {/* Token List */}
             <div className="flex-1 overflow-y-auto p-2">
-              {filteredTokens.map((t) => (
-                <button
-                  key={t.address}
-                  onClick={() => {
-                    onSelect(t);
-                    setIsOpen(false);
-                    setSearchQuery('');
-                  }}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/30 rounded-lg transition-colors text-left"
-                >
-                  <img src={t.logoURI} alt={t.symbol} className="w-10 h-10 rounded-full" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-medium">{t.symbol}</span>
+              {filteredTokens.map((t) => {
+                const balance = balances[t.address] || 0;
+                return (
+                  <button
+                    key={t.address}
+                    onClick={() => {
+                      onSelect(t);
+                      setIsOpen(false);
+                      setSearchQuery('');
+                    }}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/30 rounded-lg transition-colors text-left"
+                  >
+                    <img src={t.logoURI} alt={t.symbol} className="w-10 h-10 rounded-full" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">{t.symbol}</span>
+                      </div>
+                      <div className="text-sm text-purple-400">{t.name}</div>
+                      <div className="text-xs text-purple-500/70">{t.address.slice(0, 8)}...{t.address.slice(-6)}</div>
                     </div>
-                    <div className="text-sm text-purple-400">{t.name}</div>
-                    <div className="text-xs text-purple-500/70">{t.address.slice(0, 8)}...{t.address.slice(-6)}</div>
-                  </div>
-                </button>
-              ))}
+                    <div className="text-right">
+                      <div className="text-white font-medium">{balance.toFixed(4)} {t.symbol}</div>
+                      <div className="text-xs text-purple-400">Balance</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -178,6 +188,43 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
   const [quote, setQuote] = useState<any>(null);
+  const [balances, setBalances] = useState<Record<string, number>>({});
+
+  // Fetch token balances
+  useEffect(() => {
+    if (!publicKey || !connection) return;
+
+    const fetchBalances = async () => {
+      const newBalances: Record<string, number> = {};
+      
+      for (const token of POPULAR_TOKENS) {
+        try {
+          if (token.address === 'So11111111111111111111111111111111111111112') {
+            // SOL balance
+            const balance = await connection.getBalance(publicKey);
+            newBalances[token.address] = balance / Math.pow(10, 9);
+          } else {
+            // SPL Token balance
+            const tokenMint = new PublicKey(token.address);
+            const ata = await getAssociatedTokenAddress(tokenMint, publicKey);
+            try {
+              const accountInfo = await getAccount(connection, ata);
+              newBalances[token.address] = Number(accountInfo.amount) / Math.pow(10, token.decimals);
+            } catch {
+              newBalances[token.address] = 0;
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching balance for ${token.symbol}:`, error);
+          newBalances[token.address] = 0;
+        }
+      }
+      
+      setBalances(newBalances);
+    };
+
+    fetchBalances();
+  }, [publicKey, connection, open]);
 
   const getQuote = async (amount: string) => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -302,9 +349,26 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         <div className="space-y-5">
           {/* Pay Section */}
           <div className="space-y-2">
-            <label className="text-sm text-purple-300">Pay:</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-purple-300">Pay:</label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-purple-400">
+                  Amount ({(balances[fromToken.address] || 0).toFixed(4)} {fromToken.symbol})
+                </span>
+                <button 
+                  onClick={() => {
+                    const balance = balances[fromToken.address] || 0;
+                    setFromAmount(balance.toString());
+                    getQuote(balance.toString());
+                  }}
+                  className="text-xs text-purple-300 hover:text-white font-medium"
+                >
+                  MAX
+                </button>
+              </div>
+            </div>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <TokenSelector token={fromToken} onSelect={setFromToken} label="From" />
+              <TokenSelector token={fromToken} onSelect={setFromToken} label="From" balances={balances} />
               <Input
                 type="number"
                 placeholder="0.00"
@@ -336,7 +400,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <div className="space-y-2">
             <label className="text-sm text-purple-300">Receive:</label>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <TokenSelector token={toToken} onSelect={setToToken} label="To" />
+              <TokenSelector token={toToken} onSelect={setToToken} label="To" balances={balances} />
               <Input
                 type="number"
                 placeholder="0.00"
