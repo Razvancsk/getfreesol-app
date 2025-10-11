@@ -31,14 +31,23 @@ export function JupiterTerminalProvider({ children }: JupiterTerminalProviderPro
   const { connection } = useConnection();
   const wallet = useWallet();
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [terminal, setTerminal] = useState<any>(null);
+  const [jupiterInstance, setJupiterInstance] = useState<any>(null);
 
-  // Load Jupiter script
+  // Load Jupiter Terminal script
   useEffect(() => {
+    if (document.querySelector('script[src="https://terminal.jup.ag/main-v2.js"]')) {
+      setScriptLoaded(true);
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://terminal.jup.ag/main-v2.js';
     script.async = true;
-    script.onload = () => setScriptLoaded(true);
+    script.onload = () => {
+      setScriptLoaded(true);
+      console.log('Jupiter Terminal script loaded');
+    };
+    script.onerror = () => console.error('Failed to load Jupiter Terminal');
     document.head.appendChild(script);
 
     return () => {
@@ -49,46 +58,49 @@ export function JupiterTerminalProvider({ children }: JupiterTerminalProviderPro
 
   const openTerminal = useCallback(() => {
     if (!scriptLoaded || !window.Jupiter) {
-      console.log('Jupiter not ready');
+      console.log('Jupiter Terminal not ready');
       return;
     }
 
-    // If already initialized, just resume
-    if (window.Jupiter._instance) {
-      window.Jupiter._instance.resume();
+    // Resume if already initialized
+    if (jupiterInstance) {
+      jupiterInstance.resume();
+      
+      // Sync wallet state
+      if (wallet.publicKey && jupiterInstance.syncProps) {
+        jupiterInstance.syncProps({ passthroughWalletContextState: wallet });
+      }
       return;
     }
 
-    // Initialize Jupiter Terminal with proper configuration
+    // Initialize Jupiter Terminal
     try {
+      console.log('Initializing Jupiter Terminal...');
       const instance = window.Jupiter.init({
         displayMode: 'modal',
-        endpoint: connection?.rpcEndpoint || 'https://mainnet.helius-rpc.com/?api-key=1e82824a-538f-41e5-bb2f-d50e43a8333d',
-        platformFeeAndAccounts: undefined,
-        strictTokenList: false,
-        defaultExplorer: 'Solscan',
+        endpoint: 'https://mainnet.helius-rpc.com/?api-key=1e82824a-538f-41e5-bb2f-d50e43a8333d',
         formProps: {
-          initialInputMint: 'So11111111111111111111111111111111111111112',
-          initialOutputMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+          initialInputMint: 'So11111111111111111111111111111111111111112', // SOL
+          initialOutputMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
         },
-        passthroughWalletContextState: wallet.connected ? wallet : undefined,
+        passthroughWalletContextState: wallet,
       });
 
-      window.Jupiter._instance = instance;
-      setTerminal(instance);
-    } catch (err) {
-      console.error('Jupiter init error:', err);
+      setJupiterInstance(instance);
+      console.log('Jupiter Terminal initialized');
+    } catch (error) {
+      console.error('Jupiter Terminal initialization error:', error);
     }
-  }, [scriptLoaded, wallet, connection]);
+  }, [scriptLoaded, wallet, jupiterInstance]);
 
-  // Sync wallet when it changes
+  // Sync wallet when connection state changes
   useEffect(() => {
-    if (terminal && wallet.publicKey && wallet.connected && terminal.syncProps) {
-      terminal.syncProps({
+    if (jupiterInstance && wallet.publicKey && jupiterInstance.syncProps) {
+      jupiterInstance.syncProps({
         passthroughWalletContextState: wallet,
       });
     }
-  }, [terminal, wallet.publicKey, wallet.connected]);
+  }, [jupiterInstance, wallet.publicKey, wallet.connected]);
 
   return (
     <JupiterTerminalContext.Provider value={{ openTerminal, isReady: scriptLoaded }}>
