@@ -30,7 +30,7 @@ import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
-import { useJupiterTerminal } from '@/components/JupiterTerminalProvider';
+import { SwapModal } from '@/components/SwapModal';
 import logoImage from '@assets/image_1757882056840.png';
 import marinadeAdImage from '@assets/marinade-ad.png';
 
@@ -91,8 +91,8 @@ export default function SolRefund() {
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
   
-  // Jupiter Terminal integration
-  const { openTerminal: openJupiterTerminal } = useJupiterTerminal();
+  // Swap modal state
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -2262,7 +2262,7 @@ export default function SolRefund() {
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
                   <button
-                    onClick={openJupiterTerminal}
+                    onClick={() => setIsSwapModalOpen(true)}
                     data-testid="button-jupiter-swap-mobile"
                     className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#00D98E] via-[#3DCAFF] to-[#C549FF] hover:opacity-80 backdrop-blur-sm rounded-md transition-all border border-purple-500/30"
                     title="Swap tokens on Jupiter"
@@ -2362,7 +2362,7 @@ export default function SolRefund() {
               {/* Social Media Buttons */}
               <div className="flex items-center space-x-1">
                 <button
-                  onClick={openJupiterTerminal}
+                  onClick={() => setIsSwapModalOpen(true)}
                   data-testid="button-jupiter-swap"
                   className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#00D98E] via-[#3DCAFF] to-[#C549FF] hover:opacity-80 backdrop-blur-sm rounded-md transition-all border border-purple-500/30"
                   title="Swap tokens on Jupiter"
@@ -3379,6 +3379,8 @@ export default function SolRefund() {
 
       {/* Wallet Selection Modal */}
 
+      {/* Swap Modal */}
+      <SwapModal open={isSwapModalOpen} onOpenChange={setIsSwapModalOpen} />
     </div>
   );
 }
