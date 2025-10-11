@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useConnection } from '@solana/wallet-adapter-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface JupiterTerminalContextType {
   openTerminal: () => void;
@@ -158,15 +157,24 @@ export function JupiterTerminalProvider({ children }: JupiterTerminalProviderPro
     <JupiterTerminalContext.Provider value={{ openTerminal, isReady }}>
       {children}
       
-      {/* Jupiter Terminal Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-[420px] h-[600px] bg-slate-900 border-purple-500/30 p-0 overflow-hidden">
-          <div 
-            id="jupiter-terminal-container" 
-            className="w-full h-full"
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Jupiter Terminal Compact Widget */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto relative w-[380px] h-[560px] bg-slate-900 rounded-lg shadow-2xl border border-purple-500/30 overflow-hidden">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 rounded-md text-white transition-colors"
+              aria-label="Close Jupiter"
+            >
+              ✕
+            </button>
+            <div 
+              id="jupiter-terminal-container" 
+              className="w-full h-full"
+            />
+          </div>
+        </div>
+      )}
     </JupiterTerminalContext.Provider>
   );
 }
