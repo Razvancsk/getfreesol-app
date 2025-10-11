@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowDownUp, Loader2 } from 'lucide-react';
+import { ArrowDownUp, Loader2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
+import { cn } from '@/lib/utils';
 
 interface SwapModalProps {
   open: boolean;
@@ -156,17 +158,29 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Swap Tokens</DialogTitle>
-        </DialogHeader>
+      <DialogPortal>
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-purple-500/30 bg-slate-900/95 backdrop-blur-xl p-6 shadow-2xl duration-200",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg"
+          )}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-white">Swap Tokens</DialogTitle>
+          </DialogHeader>
+          
+          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none text-white">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
         
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">From</label>
+            <label className="text-sm font-medium text-white">From</label>
             <div className="flex gap-2">
               <select
-                className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="flex h-10 rounded-md border border-purple-500/30 bg-slate-800/80 text-white px-3 py-2 text-sm"
                 value={fromToken.address}
                 onChange={(e) => {
                   const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
@@ -187,7 +201,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
                   setFromAmount(e.target.value);
                   getQuote(e.target.value);
                 }}
-                className="flex-1"
+                className="flex-1 bg-slate-800/80 border-purple-500/30 text-white"
                 data-testid="input-swap-from-amount"
               />
             </div>
@@ -198,6 +212,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               variant="ghost"
               size="sm"
               onClick={swapTokens}
+              className="text-purple-300 hover:text-white hover:bg-purple-800/30"
               data-testid="button-swap-direction"
             >
               <ArrowDownUp className="h-4 w-4" />
@@ -205,10 +220,10 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">To</label>
+            <label className="text-sm font-medium text-white">To</label>
             <div className="flex gap-2">
               <select
-                className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="flex h-10 rounded-md border border-purple-500/30 bg-slate-800/80 text-white px-3 py-2 text-sm"
                 value={toToken.address}
                 onChange={(e) => {
                   const token = POPULAR_TOKENS.find(t => t.address === e.target.value);
@@ -226,14 +241,14 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
                 placeholder="0.00"
                 value={toAmount}
                 readOnly
-                className="flex-1 bg-muted"
+                className="flex-1 bg-slate-800/50 border-purple-500/30 text-white"
                 data-testid="input-swap-to-amount"
               />
             </div>
           </div>
 
           {isLoadingQuote && (
-            <div className="text-center text-sm text-muted-foreground">
+            <div className="text-center text-sm text-purple-300">
               <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
               Getting quote...
             </div>
@@ -242,7 +257,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <Button
             onClick={handleSwap}
             disabled={!publicKey || !quote || isSwapping || isLoadingQuote}
-            className="w-full"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
             data-testid="button-execute-swap"
           >
             {isSwapping ? (
@@ -256,12 +271,13 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           </Button>
 
           {!publicKey && (
-            <p className="text-sm text-center text-muted-foreground">
+            <p className="text-sm text-center text-purple-300">
               Connect your wallet to swap
             </p>
           )}
         </div>
-      </DialogContent>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 }
