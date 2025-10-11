@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useConnection } from '@solana/wallet-adapter-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface JupiterTerminalContextType {
   openTerminal: () => void;
@@ -32,6 +33,7 @@ export function JupiterTerminalProvider({ children }: JupiterTerminalProviderPro
   const [terminal, setTerminal] = useState<any>(null);
   const [isReady, setIsReady] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Load Jupiter Terminal script (but don't initialize yet)
   useEffect(() => {
@@ -100,57 +102,71 @@ export function JupiterTerminalProvider({ children }: JupiterTerminalProviderPro
       return;
     }
 
-    // Initialize if not already initialized
-    if (!terminal) {
-      console.log('Initializing Jupiter Terminal on first use...');
-      try {
-        const controller = window.Jupiter.init({
-          displayMode: 'modal',
-          endpoint: connection?.rpcEndpoint || 'https://mainnet.helius-rpc.com/?api-key=1e82824a-538f-41e5-bb2f-d50e43a8333d',
-          strictTokenList: false,
-          defaultExplorer: 'Solscan',
-          formProps: {
-            initialInputMint: 'So11111111111111111111111111111111111111112', // SOL
-            initialOutputMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-          },
-          platformFeeAndAccounts: undefined,
-          onSuccess: ({ txid }: { txid: string }) => {
-            console.log('Jupiter swap successful:', txid);
-          },
-          onSwapError: (error: any) => {
-            console.error('Jupiter swap error:', error);
-          },
-        });
-
-        setTerminal(controller);
-        setIsReady(true);
-        
-        // Sync wallet immediately after init
-        if (wallet.publicKey && wallet.connected && controller.syncProps) {
-          controller.syncProps({
-            passthroughWalletContextState: {
-              publicKey: wallet.publicKey,
-              connected: wallet.connected,
-              signTransaction: wallet.signTransaction,
-              signAllTransactions: wallet.signAllTransactions,
-              sendTransaction: wallet.sendTransaction,
+    // Open the modal
+    setIsModalOpen(true);
+    
+    // Initialize Jupiter after modal opens (needed for integrated mode to find the container)
+    setTimeout(() => {
+      if (!terminal) {
+        console.log('Initializing Jupiter Terminal...');
+        try {
+          const controller = window.Jupiter.init({
+            displayMode: 'integrated',
+            integratedTargetId: 'jupiter-terminal-container',
+            endpoint: connection?.rpcEndpoint || 'https://mainnet.helius-rpc.com/?api-key=1e82824a-538f-41e5-bb2f-d50e43a8333d',
+            strictTokenList: false,
+            defaultExplorer: 'Solscan',
+            formProps: {
+              initialInputMint: 'So11111111111111111111111111111111111111112', // SOL
+              initialOutputMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+            },
+            platformFeeAndAccounts: undefined,
+            onSuccess: ({ txid }: { txid: string }) => {
+              console.log('Jupiter swap successful:', txid);
+              setIsModalOpen(false);
+            },
+            onSwapError: (error: any) => {
+              console.error('Jupiter swap error:', error);
             },
           });
+
+          setTerminal(controller);
+          setIsReady(true);
+          
+          // Sync wallet immediately after init
+          if (wallet.publicKey && wallet.connected && controller.syncProps) {
+            controller.syncProps({
+              passthroughWalletContextState: {
+                publicKey: wallet.publicKey,
+                connected: wallet.connected,
+                signTransaction: wallet.signTransaction,
+                signAllTransactions: wallet.signAllTransactions,
+                sendTransaction: wallet.sendTransaction,
+              },
+            });
+          }
+          
+          console.log('Jupiter Terminal initialized');
+        } catch (error) {
+          console.error('Error initializing Jupiter Terminal:', error);
         }
-        
-        console.log('Jupiter Terminal initialized and opened');
-      } catch (error) {
-        console.error('Error initializing Jupiter Terminal:', error);
       }
-    } else if (terminal?.resume) {
-      console.log('Opening Jupiter Terminal modal');
-      terminal.resume();
-    }
+    }, 100);
   }, [scriptLoaded, terminal, connection, wallet]);
 
   return (
     <JupiterTerminalContext.Provider value={{ openTerminal, isReady }}>
       {children}
+      
+      {/* Jupiter Terminal Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-[420px] h-[600px] bg-slate-900 border-purple-500/30 p-0 overflow-hidden">
+          <div 
+            id="jupiter-terminal-container" 
+            className="w-full h-full"
+          />
+        </DialogContent>
+      </Dialog>
     </JupiterTerminalContext.Provider>
   );
 }
