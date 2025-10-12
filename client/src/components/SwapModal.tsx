@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowDownUp, Loader2, X, RefreshCw, Search, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 
@@ -327,6 +328,13 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
     setIsSwapping(true);
     try {
+      // Get the fee token account for the input mint
+      const referralWallet = new PublicKey("GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S");
+      const inputMint = new PublicKey(fromToken.address);
+      const feeAccount = await getAssociatedTokenAddress(inputMint, referralWallet);
+      
+      console.log('Fee account for', fromToken.symbol, ':', feeAccount.toString());
+      
       const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -334,8 +342,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           quoteResponse: quote,
           userPublicKey: publicKey.toString(),
           wrapAndUnwrapSol: true,
-          platformFeeBps: 20,
-          feeAccount: "GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S"
+          feeAccount: feeAccount.toString()
         }),
       });
 
