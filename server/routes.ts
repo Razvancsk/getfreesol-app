@@ -482,40 +482,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (permanentAssociation) {
         // Use permanent association
-        const permRefData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
-        // Check for self-referral in permanent association
-        if (permRefData && permRefData.walletAddress.toLowerCase() === walletAddress.toLowerCase()) {
-          console.log('❌ Self-referral blocked: Permanent association is to user\'s own wallet');
-          referralCodeData = null;
-        } else {
-          referralCodeData = permRefData;
-          console.log('Using permanent referral association:', permanentAssociation.referralCode);
-        }
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+        console.log('Using permanent referral association:', permanentAssociation.referralCode);
       } else if (referralCode) {
         // No permanent association exists, check if referral code is valid
         const tempReferralData = await storage.getReferralCodeByCode(referralCode);
         if (tempReferralData) {
-          // Check for self-referral (cannot refer yourself)
-          if (tempReferralData.walletAddress.toLowerCase() === walletAddress.toLowerCase()) {
-            console.log('❌ Self-referral blocked: User cannot use their own referral code');
-            referralCodeData = null;
-          } else {
-            // Create permanent association (first referral wins)
-            try {
-              permanentAssociation = await storage.createWalletReferralAssociation({
-                walletAddress,
-                referralCodeId: tempReferralData.id,
-                referralCode: referralCode
-              });
-              referralCodeData = tempReferralData;
-              console.log('Created new permanent referral association:', referralCode, 'for wallet:', walletAddress);
-            } catch (error) {
-              console.log('Failed to create association (might already exist):', error);
-              // Try to get existing association
-              permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
-              if (permanentAssociation) {
-                referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
-              }
+          // Create permanent association (first referral wins)
+          try {
+            permanentAssociation = await storage.createWalletReferralAssociation({
+              walletAddress,
+              referralCodeId: tempReferralData.id,
+              referralCode: referralCode
+            });
+            referralCodeData = tempReferralData;
+            console.log('Created new permanent referral association:', referralCode, 'for wallet:', walletAddress);
+          } catch (error) {
+            console.log('Failed to create association (might already exist):', error);
+            // Try to get existing association
+            permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+            if (permanentAssociation) {
+              referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
             }
           }
         }
