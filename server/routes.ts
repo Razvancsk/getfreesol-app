@@ -104,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Swap with referral fee account:', feeAccount.toString());
 
-      const response = await fetch('https://quote-api.jup.ag/v6/swap', {
+      const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
