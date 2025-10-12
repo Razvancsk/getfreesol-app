@@ -3386,14 +3386,15 @@ export default function SolRefund() {
       {/* Floating Swap Toggle Button */}
       <button
         onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
-        className="fixed bottom-0 left-8 z-40 hover:scale-105 transition-transform"
+        className="fixed bottom-4 left-8 z-40 hover:scale-105 transition-transform bg-transparent border-0 p-0"
         data-testid="button-floating-swap"
         title="Toggle Token Swap"
       >
         <img 
           src={swapButtonImage} 
           alt="Swap" 
-          className="h-20 w-auto rounded-2xl shadow-2xl"
+          className="h-20 w-auto drop-shadow-2xl"
+          style={{ mixBlendMode: 'screen' }}
         />
       </button>
 
