@@ -137,6 +137,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const connection = new Connection(rpcUrl, 'confirmed');
       const walletPubkey = new PublicKey(address);
 
+      // Get native SOL balance
+      const solBalance = await connection.getBalance(walletPubkey);
+      const solBalanceInSol = solBalance / 1e9;
+
       // Get all token accounts
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
         walletPubkey,
@@ -154,6 +158,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
         .filter(t => t.balance > 0);
+
+      // Add SOL as first token if balance > 0
+      if (solBalanceInSol > 0) {
+        tokensWithBalance.unshift({
+          mint: 'So11111111111111111111111111111111111111112',
+          balance: solBalanceInSol,
+          balanceRaw: solBalance.toString(),
+          decimals: 9
+        });
+      }
 
       // Fetch metadata for each token using Jupiter's search API
       const tokensWithMetadata = await Promise.all(
