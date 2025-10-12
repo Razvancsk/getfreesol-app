@@ -3382,37 +3382,16 @@ export default function SolRefund() {
       {/* Swap Modal */}
       <SwapModal open={isSwapModalOpen} onOpenChange={setIsSwapModalOpen} />
 
-      {/* Floating Swap Button */}
+      {/* Floating Swap Toggle Button */}
       <button
-        onClick={() => setIsSwapModalOpen(true)}
-        className="fixed bottom-8 left-8 z-40 group"
+        onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
+        className="fixed bottom-0 left-8 z-40 bg-gradient-to-br from-purple-600 to-purple-800 rounded-t-xl px-6 py-3 shadow-lg border-t-2 border-l-2 border-r-2 border-purple-400 hover:from-purple-500 hover:to-purple-700 transition-all group"
         data-testid="button-floating-swap"
-        title="Open Token Swap"
+        title="Toggle Token Swap"
       >
-        <div className="relative">
-          {/* Outer rotating circle with text */}
-          <svg className="w-24 h-24 animate-spin-slow" viewBox="0 0 100 100">
-            <defs>
-              <path
-                id="circlePath"
-                d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0"
-              />
-            </defs>
-            <text className="text-[10px] fill-purple-300 font-semibold">
-              <textPath href="#circlePath" startOffset="0%">
-                SWAP • SWAP • SWAP • SWAP • 
-              </textPath>
-            </text>
-          </svg>
-          
-          {/* Center circle with logo */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center shadow-lg border-2 border-purple-400 group-hover:scale-110 transition-transform">
-            <img 
-              src={logoImage} 
-              alt="Swap" 
-              className="h-10 w-10"
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className={`h-5 w-5 text-white transition-transform ${isSwapModalOpen ? 'rotate-180' : ''}`} />
+          <span className="text-white font-semibold">SWAP</span>
         </div>
       </button>
 

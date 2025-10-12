@@ -353,9 +353,9 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       <DialogPortal>
         <DialogPrimitive.Content
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-purple-500/50 bg-gradient-to-br from-purple-900/95 to-purple-800/95 backdrop-blur-xl p-6 shadow-2xl duration-200",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg"
+            "fixed left-0 bottom-0 z-50 grid w-full max-w-md gap-4 border-t border-l border-r border-purple-500/50 bg-gradient-to-br from-purple-900/95 to-purple-800/95 backdrop-blur-xl p-6 shadow-2xl duration-300 rounded-t-2xl",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom"
           )}
         >
           <DialogHeader className="flex flex-row items-center justify-between">
