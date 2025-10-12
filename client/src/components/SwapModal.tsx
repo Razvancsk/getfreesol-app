@@ -368,11 +368,22 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       const sendData = await sendResponse.json();
       const signature = sendData.signature;
       
-      await connection.confirmTransaction(signature, 'confirmed');
-
+      // Don't wait for confirmation - show success immediately
       toast({
-        title: 'Success!',
-        description: `Swapped ${fromAmount} ${fromToken.symbol} for ${toAmount} ${toToken.symbol}`,
+        title: 'Swap Submitted!',
+        description: (
+          <div className="space-y-1">
+            <p>Swapping {fromAmount} {fromToken.symbol} for {toAmount} {toToken.symbol}</p>
+            <a 
+              href={`https://solscan.io/tx/${signature}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 underline text-sm"
+            >
+              View on Solscan →
+            </a>
+          </div>
+        ),
       });
 
       setFromAmount('');
