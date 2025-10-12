@@ -3394,6 +3394,7 @@ export default function SolRefund() {
           src={swapButtonImage} 
           alt="Swap" 
           className="h-16 w-auto drop-shadow-2xl"
+          style={{ mixBlendMode: 'multiply' }}
         />
       </button>
 
