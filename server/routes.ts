@@ -24,12 +24,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { q, limit = '50' } = req.query;
       
+      console.log('Token search request:', q);
+      
       if (!q || typeof q !== 'string') {
         return res.json({ tokens: [] });
       }
 
-      const response = await fetch('https://tokens.jup.ag/tokens?tags=verified');
+      // Use cdn.jsdelivr.net as a mirror for Jupiter token list
+      const response = await fetch('https://cdn.jsdelivr.net/gh/jup-ag/token-list@main/src/validated-tokens.json');
       if (!response.ok) {
+        console.error('Failed to fetch token list:', response.status);
         return res.json({ tokens: [] });
       }
 
@@ -39,9 +43,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const filtered = allTokens
         .filter((t: any) => 
-          t.symbol.toLowerCase().includes(query) ||
-          t.name.toLowerCase().includes(query) ||
-          t.address.toLowerCase().includes(query)
+          t.symbol?.toLowerCase().includes(query) ||
+          t.name?.toLowerCase().includes(query) ||
+          t.address?.toLowerCase().includes(query)
         )
         .slice(0, limitNum)
         .map((t: any) => ({
@@ -52,6 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           logoURI: t.logoURI
         }));
 
+      console.log(`Found ${filtered.length} tokens for query "${q}"`);
       res.json({ tokens: filtered });
     } catch (error) {
       console.error('Token search error:', error);
