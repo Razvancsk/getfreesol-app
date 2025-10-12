@@ -391,11 +391,6 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     
     setBalances(newBalances);
     setIsLoadingBalances(false);
-    
-    // Also refresh the quote if there's an amount
-    if (fromAmount) {
-      getQuote(fromAmount);
-    }
   };
 
   return (
