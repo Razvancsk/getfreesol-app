@@ -98,15 +98,41 @@ function TokenSelector({
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState('');
 
+  // Fetch all verified tokens from Jupiter
+  const { data: allTokensData } = useQuery({
+    queryKey: ['jupiter-tokens'],
+    queryFn: async () => {
+      const response = await fetch('https://token.jup.ag/strict');
+      const tokens = await response.json();
+      return tokens;
+    },
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
+
   const { data: modalSearchData, isLoading: isModalSearching } = useQuery({
     queryKey: ['jupiter-search', modalSearchQuery.trim()],
     queryFn: async () => {
-      const query = modalSearchQuery.trim();
-      const url = `/api/tokens/search?q=${encodeURIComponent(query)}&limit=50`;
-      const response = await fetch(url);
-      return await response.json();
+      const query = modalSearchQuery.trim().toLowerCase();
+      const allTokens = allTokensData || [];
+      
+      const filtered = allTokens
+        .filter((t: any) => 
+          t.symbol.toLowerCase().includes(query) ||
+          t.name.toLowerCase().includes(query) ||
+          t.address.toLowerCase().includes(query)
+        )
+        .slice(0, 50)
+        .map((t: any) => ({
+          address: t.address,
+          symbol: t.symbol,
+          name: t.name,
+          decimals: t.decimals,
+          logoURI: t.logoURI
+        }));
+      
+      return { tokens: filtered };
     },
-    enabled: showSearchModal && modalSearchQuery.trim().length > 0,
+    enabled: showSearchModal && modalSearchQuery.trim().length > 0 && !!allTokensData,
   });
 
   const handleSearchInputClick = () => {
