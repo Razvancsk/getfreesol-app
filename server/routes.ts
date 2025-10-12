@@ -641,10 +641,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (referralWalletExists) {
-          // 35% of total fee goes to referral, 65% stays with platform
-          referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
+          // 50% of total fee goes to referral, 50% stays with platform
+          referralFeeLamports = Math.floor(totalFeeLamports * 0.5);
           platformFeeLamports = totalFeeLamports - referralFeeLamports;
-          console.log(`✅ Referral wallet exists - platform=${platformFeeLamports} (65% of 15%), referral=${referralFeeLamports} (35% of 15%)`);
+          console.log(`✅ Referral wallet exists - platform=${platformFeeLamports} (50% of 15%), referral=${referralFeeLamports} (50% of 15%)`);
         } else {
           // Referral wallet doesn't exist, all fees go to platform
           platformFeeLamports = totalFeeLamports;
@@ -1762,9 +1762,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (referralWalletExists) {
-          // 35% of fee goes to referral
-          referralFeeLamports = Math.floor(totalFeeLamports * 0.35);
-          // 65% of fee stays with platform
+          // 50% of fee goes to referral
+          referralFeeLamports = Math.floor(totalFeeLamports * 0.5);
+          // 50% of fee stays with platform
           platformFeeLamports = totalFeeLamports - referralFeeLamports;
           console.log(`TOKEN BURN ✅ Referral wallet exists - splitting fees: platform=${platformFeeLamports}, referral=${referralFeeLamports}`);
         } else {
@@ -2790,7 +2790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Standard NFTs estimate 0.002 SOL per NFT (others provide no recovery yet)
       const estimatedSolRecovery = nftType === 'standard' ? nftMints.length * 0.002 : 0;
       const platformFeeAmount = estimatedSolRecovery * 0.15; // 15% platform fee
-      const referralFeeAmount = referralCodeData ? platformFeeAmount * 0.35 : 0; // 35% of platform fee goes to referral
+      const referralFeeAmount = referralCodeData ? platformFeeAmount * 0.5 : 0; // 50% of platform fee goes to referral
       const finalPlatformFeeAmount = platformFeeAmount - referralFeeAmount;
       
       // Add platform fee transfer
@@ -3187,7 +3187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
 
         // Split fees per batch
-        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.35) : 0;
+        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.5) : 0;
         const platformFeeLamports = batchFeeLamports - referralFeeLamports;
 
         console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
@@ -3454,7 +3454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
 
         // Split fees per batch
-        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.35) : 0;
+        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.5) : 0;
         const platformFeeLamports = batchFeeLamports - referralFeeLamports;
 
         console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
@@ -3785,7 +3785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
 
         // Split fees per batch
-        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.35) : 0;
+        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * 0.5) : 0;
         const platformFeeLamports = batchFeeLamports - referralFeeLamports;
 
         console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
