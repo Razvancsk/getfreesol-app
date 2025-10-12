@@ -141,25 +141,25 @@ function TokenSelector({
       {showSearchModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowSearchModal(false)} />
-          <div className="relative bg-slate-900 rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+          <div className="relative bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-purple-500/30">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-white font-semibold">Select Token</h3>
-                <button onClick={() => setShowSearchModal(false)} className="text-purple-300 hover:text-white">
+                <h3 className="text-white font-semibold text-lg">Search Tokens</h3>
+                <button onClick={() => setShowSearchModal(false)} className="text-purple-200 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
                 <Input
                   type="text"
-                  placeholder='Search any token. Include " " for exact match.'
+                  placeholder="wen"
                   value={modalSearchQuery}
                   onChange={(e) => setModalSearchQuery(e.target.value)}
                   onClick={handleSearchInputClick}
-                  className="pl-10 bg-slate-800 border-purple-500/30 text-white placeholder:text-purple-400/50"
+                  className="pl-11 bg-purple-950/50 border-purple-500/30 text-white placeholder:text-purple-300/50 h-12 rounded-lg"
                 />
               </div>
             </div>
@@ -168,11 +168,11 @@ function TokenSelector({
             <div className="flex-1 overflow-y-auto p-2">
               {isModalSearching ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
-                  <span className="ml-2 text-purple-300">Searching tokens...</span>
+                  <Loader2 className="h-6 w-6 animate-spin text-purple-300" />
+                  <span className="ml-2 text-purple-200">Searching tokens...</span>
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="text-center py-8 text-purple-400">
+                <div className="text-center py-8 text-purple-300">
                   No tokens found
                 </div>
               ) : (
@@ -186,19 +186,15 @@ function TokenSelector({
                         setShowSearchModal(false);
                         setModalSearchQuery('');
                       }}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-purple-900/30 rounded-lg transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-purple-700/30 rounded-lg transition-colors text-left"
                     >
-                      <img src={t.logoURI} alt={t.symbol} className="w-10 h-10 rounded-full" />
+                      <img src={t.logoURI} alt={t.symbol} className="w-12 h-12 rounded-full" />
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{t.symbol}</span>
-                        </div>
-                        <div className="text-sm text-purple-400">{t.name}</div>
-                        <div className="text-xs text-purple-500/70">{t.address.slice(0, 8)}...{t.address.slice(-6)}</div>
+                        <div className="text-white font-semibold text-base">{t.symbol}</div>
+                        <div className="text-sm text-purple-200/70">{t.name}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-white font-medium">{balance.toFixed(4)} {t.symbol}</div>
-                        <div className="text-xs text-purple-400">Balance</div>
+                        <div className="text-xs text-purple-300/60 font-mono">{t.address.slice(0, 8)}...{t.address.slice(-8)}</div>
                       </div>
                     </button>
                   );
