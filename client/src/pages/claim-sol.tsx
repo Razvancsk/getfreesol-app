@@ -3386,7 +3386,7 @@ export default function SolRefund() {
       {/* Floating Swap Toggle Button */}
       <button
         onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
-        className="fixed bottom-0 left-0 md:bottom-4 md:left-8 z-40 hover:scale-105 transition-transform bg-transparent border-0 p-0"
+        className="fixed -bottom-4 left-0 md:bottom-4 md:left-8 z-40 hover:scale-105 transition-transform bg-transparent border-0 p-0"
         data-testid="button-floating-swap"
         title="Toggle Token Swap"
       >
