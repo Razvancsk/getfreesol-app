@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter quote proxy endpoint with referral fee
+  // Jupiter quote proxy endpoint
   app.get("/api/jupiter/quote", async (req, res) => {
     try {
       const { inputMint, outputMint, amount, slippageBps = '50' } = req.query;
@@ -68,11 +68,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Add referral fee on server side: 0.20% (20 basis points)
-      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&platformFeeBps=20`;
-      console.log('Fetching Jupiter quote with referral fee:', quoteUrl);
+      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
       
-      const response = await fetch(quoteUrl);
+      const response = await fetch(quoteUrl, {
+        headers: { 'Accept': 'application/json' }
+      });
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter swap proxy endpoint with referral fee
+  // Jupiter swap proxy endpoint
   app.post("/api/jupiter/swap", async (req, res) => {
     try {
       const { quoteResponse, userPublicKey, wrapAndUnwrapSol } = req.body;
