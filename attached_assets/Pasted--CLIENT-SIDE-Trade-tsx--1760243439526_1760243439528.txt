@@ -1,0 +1,286 @@
+// ==========================================
+// CLIENT SIDE - Trade.tsx
+// ==========================================
+
+import { useWallet } from '@solana/wallet-adapter-react';
+import { VersionedTransaction } from '@solana/web3.js';
+
+const executeSwap = async () => {
+  const { publicKey } = useWallet();
+  
+  // 1. GET QUOTE FROM JUPITER
+  const inputMint = 'So11111111111111111111111111111111111111112'; // SOL
+  const outputMint = '6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN'; // Token
+  const amountInLamports = 10000000; // 0.01 SOL
+  const slippageBps = 100; // 1% slippage
+  
+  const quoteResponse = await fetch(
+    `/api/jupiter/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountInLamports}&slippageBps=${slippageBps}`
+  );
+  
+  const quote = await quoteResponse.json();
+  console.log('Quote received:', quote);
+  
+  // 2. REQUEST SWAP TRANSACTION
+  const swapPayload = {
+    quoteResponse: quote,
+    userPublicKey: publicKey.toString(),
+    wrapAndUnwrapSol: true,
+    useSharedAccounts: false,
+    skipUserAccountsRpcCalls: true,
+    dynamicComputeUnitLimit: false,
+    asLegacyTransaction: false
+  };
+  
+  const swapResponse = await fetch('/api/jupiter/swap', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(swapPayload)
+  });
+  
+  const { swapTransaction } = await swapResponse.json();
+  console.log('Swap transaction received');
+  
+  // 3. DESERIALIZE AND SIGN WITH PHANTOM
+  const transactionBytes = Uint8Array.from(
+    atob(swapTransaction), 
+    c => c.charCodeAt(0)
+  );
+  
+  const transaction = VersionedTransaction.deserialize(transactionBytes);
+  
+  const signedTransaction = await window.solana.signTransaction(transaction);
+  console.log('Transaction signed');
+  
+  // 4. SEND SIGNED TRANSACTION TO BLOCKCHAIN
+  const serializedTransaction = Buffer.from(
+    signedTransaction.serialize()
+  ).toString('base64');
+  
+  const sendResponse = await fetch('/api/jupiter/send-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      signedTransaction: serializedTransaction 
+    })
+  });
+  
+  const { signature } = await sendResponse.json();
+  
+  console.log('✅ Swap successful!');
+  console.log('Transaction signature:', signature);
+  console.log('View on Solscan:', `https://solscan.io/tx/${signature}`);
+  
+  return signature;
+};
+
+// ==========================================
+// SERVER SIDE - Jupiter API Class
+// ==========================================
+
+export class JupiterApiFixed {
+  private readonly baseUrl = "https://lite-api.jup.ag/swap/v1";
+
+  // GET QUOTE
+  async getQuote(
+    inputMint: string,
+    outputMint: string,
+    amount: number,
+    slippageBps: number = 100
+  ) {
+    const params = new URLSearchParams({
+      inputMint,
+      outputMint,
+      amount: amount.toString(),
+      slippageBps: slippageBps.toString()
+    });
+
+    const response = await fetch(`${this.baseUrl}/quote?${params}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get quote: ${await response.text()}`);
+    }
+
+    const quote = await response.json();
+    console.log('Jupiter quote:', quote.outAmount, 'tokens');
+    
+    return quote;
+  }
+
+  // CREATE SWAP TRANSACTION
+  async createSwap(
+    quoteResponse: any,
+    userPublicKey: string
+  ) {
+    const payload = {
+      quoteResponse: quoteResponse,
+      userPublicKey: userPublicKey,
+      wrapAndUnwrapSol: true,
+      dynamicComputeUnitLimit: true,
+      prioritizationFeeLamports: 'auto'
+    };
+
+    const response = await fetch(`${this.baseUrl}/swap`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create swap: ${await response.text()}`);
+    }
+
+    const swap = await response.json();
+    console.log('Swap transaction created');
+    
+    return swap;
+  }
+}
+
+const jupiterApi = new JupiterApiFixed();
+
+// ==========================================
+// SERVER SIDE - Express Routes
+// ==========================================
+
+import express from 'express';
+import { Connection } from '@solana/web3.js';
+
+const app = express();
+const connection = new Connection('https://api.mainnet-beta.solana.com');
+
+// QUOTE ENDPOINT
+app.get('/api/jupiter/quote', async (req, res) => {
+  try {
+    const { inputMint, outputMint, amount, slippageBps } = req.query;
+    
+    if (!inputMint || !outputMint || !amount) {
+      return res.status(400).json({ 
+        error: 'Missing parameters: inputMint, outputMint, amount' 
+      });
+    }
+    
+    const quoteData = await jupiterApi.getQuote(
+      inputMint as string,
+      outputMint as string,
+      parseInt(amount as string),
+      parseInt(slippageBps as string) || 100
+    );
+    
+    res.json(quoteData);
+    
+  } catch (error) {
+    console.error('Quote error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch quote',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// SWAP ENDPOINT
+app.post('/api/jupiter/swap', async (req, res) => {
+  try {
+    const { quoteResponse, userPublicKey } = req.body;
+    
+    if (!quoteResponse || !userPublicKey) {
+      return res.status(400).json({ 
+        error: 'Missing parameters: quoteResponse, userPublicKey' 
+      });
+    }
+    
+    const swapData = await jupiterApi.createSwap(
+      quoteResponse, 
+      userPublicKey
+    );
+    
+    res.json(swapData);
+    
+  } catch (error) {
+    console.error('Swap error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create swap',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// SEND TRANSACTION ENDPOINT
+app.post('/api/jupiter/send-transaction', async (req, res) => {
+  try {
+    const { signedTransaction } = req.body;
+    
+    if (!signedTransaction) {
+      return res.status(400).json({ 
+        error: 'Missing parameter: signedTransaction' 
+      });
+    }
+    
+    const signature = await connection.sendRawTransaction(
+      Buffer.from(signedTransaction, 'base64'),
+      {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed'
+      }
+    );
+    
+    console.log('Transaction sent:', signature);
+    res.json({ signature });
+    
+  } catch (error) {
+    console.error('Send error:', error);
+    res.status(500).json({ 
+      error: 'Failed to send transaction',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// ==========================================
+// COMPLETE FLOW SUMMARY
+// ==========================================
+
+/**
+ * SWAP FLOW:
+ * 
+ * 1. CLIENT: Request quote from /api/jupiter/quote
+ *    → Server calls Jupiter v1 API: GET /quote
+ *    → Returns: quote with inAmount, outAmount, routePlan
+ * 
+ * 2. CLIENT: Request swap transaction from /api/jupiter/swap
+ *    → Server calls Jupiter v1 API: POST /swap
+ *    → Returns: base64 encoded VersionedTransaction
+ * 
+ * 3. CLIENT: Deserialize transaction
+ *    → Convert base64 to Uint8Array
+ *    → VersionedTransaction.deserialize(bytes)
+ * 
+ * 4. CLIENT: Sign with Phantom wallet
+ *    → window.solana.signTransaction(transaction)
+ *    → Returns: signed VersionedTransaction
+ * 
+ * 5. CLIENT: Send to blockchain via /api/jupiter/send-transaction
+ *    → Serialize signed transaction to base64
+ *    → Server calls: connection.sendRawTransaction()
+ *    → Returns: transaction signature
+ * 
+ * ✅ SWAP COMPLETE!
+ */
+
+// ==========================================
+// KEY POINTS
+// ==========================================
+
+/**
+ * ✅ Uses Jupiter v1 API (https://lite-api.jup.ag/swap/v1)
+ * ✅ NO referral fees (removed platformFeeBps/feeAccount)
+ * ✅ Versioned transactions (modern Solana format)
+ * ✅ User signs in Phantom wallet
+ * ✅ Server proxies all requests (handles CORS)
+ * ✅ Production-ready error handling
+ */

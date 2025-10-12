@@ -97,25 +97,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Calculate fee account (ATA) for the input token
-      const referralWallet = new PublicKey("AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d");
-      const inputMint = new PublicKey(quoteResponse.inputMint);
-      const feeAccount = await getAssociatedTokenAddress(
-        inputMint, 
-        referralWallet,
-        true // allowOwnerOffCurve - allows non-standard wallet addresses
-      );
-      
-      console.log('Swap with referral fee account:', feeAccount.toString());
-
       const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
           quoteResponse,
           userPublicKey,
           wrapAndUnwrapSol: wrapAndUnwrapSol !== false,
-          feeAccount: feeAccount.toString()
+          dynamicComputeUnitLimit: true,
+          prioritizationFeeLamports: 'auto'
         }),
       });
 
