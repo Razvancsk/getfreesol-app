@@ -139,9 +139,9 @@ function TokenSelector({
       </button>
 
       {showSearchModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+        <div className="fixed inset-0 z-[100]">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowSearchModal(false)} />
-          <div className="relative bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+          <div className="relative bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 w-full h-full flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-purple-500/30">
               <div className="flex items-center justify-between mb-3">
