@@ -33,6 +33,7 @@ import { VersionedTransaction } from '@solana/web3.js';
 import { SwapModal } from '@/components/SwapModal';
 import logoImage from '@assets/image_1757882056840.png';
 import marinadeAdImage from '@assets/marinade-ad.png';
+import swapButtonImage from '@assets/image_1760233102791.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -3385,14 +3386,15 @@ export default function SolRefund() {
       {/* Floating Swap Toggle Button */}
       <button
         onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
-        className="fixed bottom-0 left-8 z-40 bg-gradient-to-br from-purple-600 to-purple-800 rounded-t-xl px-6 py-3 shadow-lg border-t-2 border-l-2 border-r-2 border-purple-400 hover:from-purple-500 hover:to-purple-700 transition-all group"
+        className="fixed bottom-0 left-8 z-40 hover:scale-105 transition-transform"
         data-testid="button-floating-swap"
         title="Toggle Token Swap"
       >
-        <div className="flex items-center gap-2">
-          <ArrowUpDown className={`h-5 w-5 text-white transition-transform ${isSwapModalOpen ? 'rotate-180' : ''}`} />
-          <span className="text-white font-semibold">SWAP</span>
-        </div>
+        <img 
+          src={swapButtonImage} 
+          alt="Swap" 
+          className="h-20 w-auto rounded-2xl shadow-2xl"
+        />
       </button>
 
       <style>{`
