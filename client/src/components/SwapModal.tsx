@@ -334,6 +334,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           quoteResponse: quote,
           userPublicKey: publicKey.toString(),
           wrapAndUnwrapSol: true,
+          platformFeeBps: 20,
           feeAccount: "GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S"
         }),
       });
