@@ -472,7 +472,24 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               </div>
             </div>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <TokenSelector token={fromToken} onSelect={setFromToken} label="From" balances={balances} ownedTokens={ownedTokens} />
+              <TokenSelector 
+                token={fromToken} 
+                onSelect={(token) => {
+                  // If selecting the same token that's already in "Receive", swap them
+                  if (token.address === toToken.address) {
+                    setToToken(fromToken);
+                    setFromToken(token);
+                    setFromAmount(toAmount);
+                    setToAmount(fromAmount);
+                    setQuote(null);
+                  } else {
+                    setFromToken(token);
+                  }
+                }} 
+                label="From" 
+                balances={balances} 
+                ownedTokens={ownedTokens} 
+              />
               <Input
                 type="number"
                 placeholder="0.00"
@@ -504,7 +521,24 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <div className="space-y-2">
             <label className="text-sm text-purple-300">Receive:</label>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <TokenSelector token={toToken} onSelect={setToToken} label="To" balances={balances} ownedTokens={ownedTokens} />
+              <TokenSelector 
+                token={toToken} 
+                onSelect={(token) => {
+                  // If selecting the same token that's already in "Pay", swap them
+                  if (token.address === fromToken.address) {
+                    setFromToken(toToken);
+                    setToToken(token);
+                    setFromAmount(toAmount);
+                    setToAmount(fromAmount);
+                    setQuote(null);
+                  } else {
+                    setToToken(token);
+                  }
+                }} 
+                label="To" 
+                balances={balances} 
+                ownedTokens={ownedTokens} 
+              />
               <Input
                 type="number"
                 placeholder="0.00"
