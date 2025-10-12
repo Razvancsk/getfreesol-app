@@ -120,6 +120,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get wallet token balance
+  app.get("/api/wallet/token-balance", async (req, res) => {
+    try {
+      const { address, mint } = req.query;
+      
+      if (!address || !mint || typeof address !== 'string' || typeof mint !== 'string') {
+        return res.status(400).json({ error: 'Missing address or mint parameter' });
+      }
+
+      const heliusKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : 'https://api.mainnet-beta.solana.com';
+
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const walletPubkey = new PublicKey(address);
+
+      // Check if it's SOL
+      if (mint === 'So11111111111111111111111111111111111111112') {
+        const balance = await connection.getBalance(walletPubkey);
+        return res.json({ 
+          success: true, 
+          balance: balance / 1e9,
+          balanceRaw: balance.toString()
+        });
+      }
+
+      // SPL Token balance using getParsedTokenAccountsByOwner
+      const mintPubkey = new PublicKey(mint);
+      
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+        walletPubkey,
+        { mint: mintPubkey }
+      );
+
+      if (tokenAccounts.value.length > 0) {
+        const accountData = tokenAccounts.value[0].account.data.parsed.info;
+        const balance = parseFloat(accountData.tokenAmount.uiAmount || '0');
+        
+        return res.json({ 
+          success: true, 
+          balance,
+          balanceRaw: accountData.tokenAmount.amount,
+          decimals: accountData.tokenAmount.decimals
+        });
+      } else {
+        return res.json({ 
+          success: true, 
+          balance: 0,
+          balanceRaw: '0',
+          decimals: 0
+        });
+      }
+    } catch (error: any) {
+      console.error('Balance fetch error:', error);
+      return res.status(500).json({ error: error.message || 'Failed to fetch balance' });
+    }
+  });
+
   // Get Helius configuration
   app.get("/api/helius-config", async (req, res) => {
     const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY || "";

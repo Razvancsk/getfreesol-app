@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowDownUp, Loader2, X, RefreshCw, Search, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { PublicKey, VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction } from '@solana/web3.js';
 import { cn } from '@/lib/utils';
-import { getAccount, getAssociatedTokenAddress } from '@solana/spl-token';
 import { useQuery } from '@tanstack/react-query';
 
 interface SwapModalProps {
@@ -225,7 +224,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
   // Fetch token balances
   useEffect(() => {
-    if (!publicKey || !connection || !open) return;
+    if (!publicKey || !open) return;
 
     const fetchBalances = async () => {
       setIsLoadingBalances(true);
@@ -234,20 +233,13 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       
       for (const token of POPULAR_TOKENS) {
         try {
-          if (token.address === 'So11111111111111111111111111111111111111112') {
-            // SOL balance
-            const balance = await connection.getBalance(publicKey);
-            newBalances[token.address] = balance / Math.pow(10, 9);
+          const response = await fetch(`/api/wallet/token-balance?address=${publicKey.toString()}&mint=${token.address}`);
+          const data = await response.json();
+          
+          if (data.success) {
+            newBalances[token.address] = data.balance;
           } else {
-            // SPL Token balance
-            const tokenMint = new PublicKey(token.address);
-            const ata = await getAssociatedTokenAddress(tokenMint, publicKey);
-            try {
-              const accountInfo = await getAccount(connection, ata);
-              newBalances[token.address] = Number(accountInfo.amount) / Math.pow(10, token.decimals);
-            } catch {
-              newBalances[token.address] = 0;
-            }
+            newBalances[token.address] = 0;
           }
         } catch (error: any) {
           console.error(`Error fetching balance for ${token.symbol}:`, error?.message || error);
@@ -261,7 +253,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     };
 
     fetchBalances();
-  }, [publicKey, connection, open]);
+  }, [publicKey, open]);
 
   const getQuote = async (amount: string) => {
     if (!amount || parseFloat(amount) <= 0) {
