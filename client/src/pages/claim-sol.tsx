@@ -3393,7 +3393,7 @@ export default function SolRefund() {
         <img 
           src={swapButtonImage} 
           alt="Swap" 
-          className="h-48 w-auto drop-shadow-2xl"
+          className="h-36 w-auto drop-shadow-2xl"
         />
       </button>
 
