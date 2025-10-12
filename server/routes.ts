@@ -68,8 +68,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Add restrictIntermediateTokens for more stable routes and platformFeeBps for referral fee (0.2%)
-      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&restrictIntermediateTokens=true&platformFeeBps=20`;
+      // Enable referral fees - 0.50% (50 bps)
+      const platformFeeBps = 50;
+      const feeAccount = "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
+
+      // Add restrictIntermediateTokens for more stable routes, platformFeeBps and feeAccount for referral fee (0.5%)
+      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&restrictIntermediateTokens=true&platformFeeBps=${platformFeeBps}&feeAccount=${feeAccount}`;
+      
+      console.log('📊 Quote URL:', quoteUrl);
       
       const response = await fetch(quoteUrl, {
         headers: { 'Accept': 'application/json' }
@@ -92,15 +98,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Jupiter swap proxy endpoint
   app.post("/api/jupiter/swap", async (req, res) => {
     try {
-      const { quoteResponse, userPublicKey, wrapAndUnwrapSol } = req.body;
+      const { quoteResponse, userPublicKey, wrapAndUnwrapSol, feeAccount } = req.body;
       
       if (!quoteResponse || !userPublicKey) {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // As of January 2025, Jupiter allows any valid token account as feeAccount
-      // No need for Referral Program PDA calculation - Jupiter handles it automatically
-      const feeAccount = "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
+      // Use the feeAccount from request or default to platform account
+      const referralFeeAccount = feeAccount || "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
 
       const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
         method: 'POST',
@@ -119,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               priorityLevel: "veryHigh"
             }
           },
-          feeAccount // Platform fee account (0.2% from platformFeeBps=20 in quote)
+          feeAccount: referralFeeAccount // Platform fee account (0.5% from platformFeeBps=50 in quote)
         }),
       });
 
