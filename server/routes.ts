@@ -109,7 +109,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userPublicKey,
           wrapAndUnwrapSol: wrapAndUnwrapSol !== false,
           dynamicComputeUnitLimit: true,
-          prioritizationFeeLamports: 'auto'
+          prioritizationFeeLamports: {
+            priorityLevelWithMaxLamports: {
+              maxLamports: 10000000, // 0.01 SOL max for priority
+              priorityLevel: "veryHigh"
+            }
+          }
         }),
       });
 
