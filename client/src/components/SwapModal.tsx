@@ -102,11 +102,19 @@ function TokenSelector({
     queryKey: ['jupiter-search', modalSearchQuery.trim()],
     queryFn: async () => {
       const query = modalSearchQuery.trim();
-      console.log('Searching Jupiter for:', query);
       const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(query)}`);
       const data = await response.json();
-      console.log('Jupiter API response:', data);
-      return { tokens: data.tokens || [] };
+      
+      // Jupiter returns an array directly
+      const tokens = Array.isArray(data) ? data.map((t: any) => ({
+        address: t.id,
+        symbol: t.symbol,
+        name: t.name,
+        decimals: t.decimals,
+        logoURI: t.icon
+      })) : [];
+      
+      return { tokens };
     },
     enabled: showSearchModal && modalSearchQuery.trim().length > 0,
   });
