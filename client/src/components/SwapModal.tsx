@@ -203,6 +203,7 @@ function TokenSelector({
                         <div className="text-sm text-purple-200/70">{t.name}</div>
                       </div>
                       <div className="text-right">
+                        <div className="text-white font-medium">{balance.toFixed(4)}</div>
                         <div className="text-xs text-purple-300/60 font-mono">{t.address.slice(0, 8)}...{t.address.slice(-8)}</div>
                       </div>
                     </button>
