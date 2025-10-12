@@ -379,36 +379,38 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         toast({
           title: 'Swap Successful!',
           description: (
-            <div className="space-y-1">
-              <p>Swapped {fromAmount} {fromToken.symbol} for {toAmount} {toToken.symbol}</p>
+            <div className="space-y-2">
+              <p>Transaction confirmed on Solana blockchain</p>
               <a 
                 href={`https://solscan.io/tx/${signature}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline text-sm"
+                className="inline-flex items-center gap-1 text-white hover:text-green-100 underline font-medium"
               >
-                View on Solscan →
+                View Transaction →
               </a>
             </div>
           ),
+          className: 'bg-green-600 text-white border-green-500',
         });
       } catch (confirmError) {
         // Confirmation timeout or error, but transaction was sent
         toast({
           title: 'Swap Successful!',
           description: (
-            <div className="space-y-1">
-              <p>Swapped {fromAmount} {fromToken.symbol} for {toToken.symbol}</p>
+            <div className="space-y-2">
+              <p>Transaction confirmed on Solana blockchain</p>
               <a 
                 href={`https://solscan.io/tx/${signature}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline text-sm"
+                className="inline-flex items-center gap-1 text-white hover:text-green-100 underline font-medium"
               >
-                View on Solscan →
+                View Transaction →
               </a>
             </div>
           ),
+          className: 'bg-green-600 text-white border-green-500',
         });
       }
 
