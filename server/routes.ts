@@ -68,7 +68,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
+      // Add restrictIntermediateTokens for more stable routes (recommended by Jupiter docs)
+      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&restrictIntermediateTokens=true`;
       
       const response = await fetch(quoteUrl, {
         headers: { 'Accept': 'application/json' }
@@ -140,24 +141,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
         : 'https://api.mainnet-beta.solana.com';
       
+      console.log('Sending transaction to:', rpcUrl.includes('helius') ? 'Helius RPC' : 'Public RPC');
+      
       const connection = new Connection(rpcUrl, 'confirmed');
       
       const signature = await connection.sendRawTransaction(
         Buffer.from(signedTransaction, 'base64'),
         {
           skipPreflight: false,
-          preflightCommitment: 'confirmed'
+          preflightCommitment: 'confirmed',
+          maxRetries: 3
         }
       );
       
-      console.log('Transaction sent:', signature);
+      console.log('✅ Transaction sent successfully:', signature);
       res.json({ signature });
       
     } catch (error: any) {
-      console.error('Send transaction error:', error);
+      console.error('❌ Send transaction error:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        code: error?.code,
+        logs: error?.logs
+      });
+      
       res.status(500).json({ 
         error: 'Failed to send transaction',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error?.message || 'Unknown error',
+        code: error?.code
       });
     }
   });

@@ -355,11 +355,18 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       });
 
       if (!sendResponse.ok) {
-        const errorText = await sendResponse.text();
-        throw new Error(errorText || 'Failed to send transaction');
+        let errorMessage = 'Failed to send transaction';
+        try {
+          const errorData = await sendResponse.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch {
+          errorMessage = await sendResponse.text();
+        }
+        throw new Error(errorMessage);
       }
 
-      const { signature } = await sendResponse.json();
+      const sendData = await sendResponse.json();
+      const signature = sendData.signature;
       
       await connection.confirmTransaction(signature, 'confirmed');
 
