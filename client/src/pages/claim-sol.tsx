@@ -2262,6 +2262,26 @@ export default function SolRefund() {
               <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => setIsSwapModalOpen(true)}
+                    data-testid="button-jupiter-swap-mobile"
+                    className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#00D98E] via-[#3DCAFF] to-[#C549FF] hover:opacity-80 backdrop-blur-sm rounded-md transition-all border border-purple-500/30"
+                    title="Swap tokens on Jupiter"
+                  >
+                    <svg viewBox="0 0 200 200" className="h-5 w-5" fill="none">
+                      <circle cx="100" cy="100" r="90" fill="url(#jup-gradient-mobile)" />
+                      <path d="M100 40 L160 80 L160 120 L100 160 L40 120 L40 80 Z" fill="white" opacity="0.2" />
+                      <path d="M100 60 L140 85 L140 115 L100 140 L60 115 L60 85 Z" fill="white" opacity="0.4" />
+                      <circle cx="100" cy="100" r="25" fill="white" />
+                      <defs>
+                        <linearGradient id="jup-gradient-mobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#C7F284" />
+                          <stop offset="50%" stopColor="#00D4AA" />
+                          <stop offset="100%" stopColor="#00BCD4" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </button>
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
@@ -2342,6 +2362,26 @@ export default function SolRefund() {
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
               <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setIsSwapModalOpen(true)}
+                  data-testid="button-jupiter-swap"
+                  className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-[#00D98E] via-[#3DCAFF] to-[#C549FF] hover:opacity-80 backdrop-blur-sm rounded-md transition-all border border-purple-500/30"
+                  title="Swap tokens on Jupiter"
+                >
+                  <svg viewBox="0 0 200 200" className="h-5 w-5" fill="none">
+                    <circle cx="100" cy="100" r="90" fill="url(#jup-gradient)" />
+                    <path d="M100 40 L160 80 L160 120 L100 160 L40 120 L40 80 Z" fill="white" opacity="0.2" />
+                    <path d="M100 60 L140 85 L140 115 L100 140 L60 115 L60 85 Z" fill="white" opacity="0.4" />
+                    <circle cx="100" cy="100" r="25" fill="white" />
+                    <defs>
+                      <linearGradient id="jup-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#C7F284" />
+                        <stop offset="50%" stopColor="#00D4AA" />
+                        <stop offset="100%" stopColor="#00BCD4" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </button>
                 <a
                   href="https://x.com/getfreesol_xyz"
                   target="_blank"
@@ -3343,6 +3383,19 @@ export default function SolRefund() {
       {/* Swap Modal */}
       <SwapModal open={isSwapModalOpen} onOpenChange={setIsSwapModalOpen} />
 
+      {/* Floating Swap Toggle Button */}
+      <button
+        onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
+        className="fixed -bottom-4 left-0 md:bottom-4 md:left-8 z-40 hover:scale-105 transition-transform bg-transparent border-0 p-0"
+        data-testid="button-floating-swap"
+        title="Toggle Token Swap"
+      >
+        <img 
+          src={swapButtonImage} 
+          alt="Swap" 
+          className="h-36 w-auto drop-shadow-2xl"
+        />
+      </button>
 
       <style>{`
         @keyframes spin-slow {
