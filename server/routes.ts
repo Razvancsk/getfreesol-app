@@ -62,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Jupiter quote proxy endpoint
   app.get("/api/jupiter/quote", async (req, res) => {
     try {
-      const { inputMint, outputMint, amount, slippageBps = '50' } = req.query;
+      const { inputMint, outputMint, amount, slippageBps = '100' } = req.query;
       
       if (!inputMint || !outputMint || !amount) {
         return res.status(400).json({ error: 'Missing required parameters' });

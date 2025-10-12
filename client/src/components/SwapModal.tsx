@@ -281,7 +281,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       const inputAmount = Math.floor(parseFloat(amount) * Math.pow(10, fromToken.decimals));
       
       // Use backend proxy with referral fee
-      const quoteUrl = `/api/jupiter/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50`;
+      const quoteUrl = `/api/jupiter/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=100`;
       console.log('Fetching quote via backend:', quoteUrl);
       
       const response = await fetch(quoteUrl);
