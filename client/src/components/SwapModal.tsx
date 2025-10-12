@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowDownUp, Loader2, X, RefreshCw, Search, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { VersionedTransaction, PublicKey } from '@solana/web3.js';
-import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { VersionedTransaction } from '@solana/web3.js';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 
@@ -281,15 +280,11 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     try {
       const inputAmount = Math.floor(parseFloat(amount) * Math.pow(10, fromToken.decimals));
       
-      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50&platformFeeBps=20&feeAccount=GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S`;
-      console.log('Fetching quote from:', quoteUrl);
+      // Use backend proxy with referral fee
+      const quoteUrl = `/api/jupiter/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50`;
+      console.log('Fetching quote via backend:', quoteUrl);
       
-      const response = await fetch(quoteUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+      const response = await fetch(quoteUrl);
       console.log('Quote response status:', response.status);
       
       if (!response.ok) {
@@ -328,21 +323,14 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
     setIsSwapping(true);
     try {
-      // Get the fee token account for the input mint
-      const referralWallet = new PublicKey("GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S");
-      const inputMint = new PublicKey(fromToken.address);
-      const feeAccount = await getAssociatedTokenAddress(inputMint, referralWallet);
-      
-      console.log('Fee account for', fromToken.symbol, ':', feeAccount.toString());
-      
-      const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
+      // Use backend proxy with referral fee
+      const response = await fetch('/api/jupiter/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quoteResponse: quote,
           userPublicKey: publicKey.toString(),
-          wrapAndUnwrapSol: true,
-          feeAccount: feeAccount.toString()
+          wrapAndUnwrapSol: true
         }),
       });
 

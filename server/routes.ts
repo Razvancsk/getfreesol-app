@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter quote proxy endpoint
+  // Jupiter quote proxy endpoint with referral fee
   app.get("/api/jupiter/quote", async (req, res) => {
     try {
       const { inputMint, outputMint, amount, slippageBps = '50' } = req.query;
@@ -68,8 +68,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
-      console.log('Fetching Jupiter quote:', quoteUrl);
+      // Add referral fee on server side: 0.20% (20 basis points)
+      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&platformFeeBps=20`;
+      console.log('Fetching Jupiter quote with referral fee:', quoteUrl);
       
       const response = await fetch(quoteUrl);
       
@@ -87,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter swap proxy endpoint
+  // Jupiter swap proxy endpoint with referral fee
   app.post("/api/jupiter/swap", async (req, res) => {
     try {
       const { quoteResponse, userPublicKey, wrapAndUnwrapSol } = req.body;
@@ -96,6 +97,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
+      // Calculate fee account (ATA) for the input token
+      const referralWallet = new PublicKey("GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S");
+      const inputMint = new PublicKey(quoteResponse.inputMint);
+      const feeAccount = await getAssociatedTokenAddress(inputMint, referralWallet);
+      
+      console.log('Swap with referral fee account:', feeAccount.toString());
+
       const response = await fetch('https://quote-api.jup.ag/v6/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,6 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quoteResponse,
           userPublicKey,
           wrapAndUnwrapSol: wrapAndUnwrapSol !== false,
+          feeAccount: feeAccount.toString()
         }),
       });
 
