@@ -33,7 +33,7 @@ import { VersionedTransaction } from '@solana/web3.js';
 import { SwapModal } from '@/components/SwapModal';
 import logoImage from '@assets/image_1757882056840.png';
 import marinadeAdImage from '@assets/marinade-ad.png';
-import swapButtonImage from '@assets/image_1760234148880.png';
+import swapButtonImage from '@assets/image_1760234365868.png';
 
 interface EmptyTokenAccount {
   id: number;
