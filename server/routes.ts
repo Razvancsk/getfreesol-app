@@ -155,46 +155,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .filter(t => t.balance > 0);
 
-      // Fetch all token metadata from Jupiter in one call
-      let jupiterTokenMap: Record<string, any> = {};
-      try {
-        const jupiterResponse = await fetch('https://token.jup.ag/all');
-        if (jupiterResponse.ok) {
-          const allTokens = await jupiterResponse.json();
-          jupiterTokenMap = Object.fromEntries(
-            allTokens.map((t: any) => [t.address, t])
-          );
-        }
-      } catch (err) {
-        console.error('Error fetching Jupiter token list:', err);
-      }
-
-      // Map tokens with metadata
-      const tokensWithMetadata = tokensWithBalance.map((token) => {
-        const metadata = jupiterTokenMap[token.mint];
-        if (metadata) {
+      // Fetch metadata for each token using Jupiter's search API
+      const tokensWithMetadata = await Promise.all(
+        tokensWithBalance.map(async (token) => {
+          try {
+            // Use Jupiter's search API with the mint address
+            const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${token.mint}`);
+            if (response.ok) {
+              const searchResults = await response.json();
+              // Find exact match by address
+              const metadata = Array.isArray(searchResults) 
+                ? searchResults.find((t: any) => t.id === token.mint)
+                : null;
+              
+              if (metadata) {
+                return {
+                  address: token.mint,
+                  symbol: metadata.symbol || 'UNKNOWN',
+                  name: metadata.name || 'Unknown Token',
+                  decimals: token.decimals,
+                  logoURI: metadata.icon || '',
+                  balance: token.balance,
+                  balanceRaw: token.balanceRaw
+                };
+              }
+            }
+          } catch (err) {
+            console.error(`Error fetching metadata for ${token.mint}:`, err);
+          }
+          
+          // Fallback if metadata not found
           return {
             address: token.mint,
-            symbol: metadata.symbol || 'UNKNOWN',
-            name: metadata.name || 'Unknown Token',
+            symbol: 'UNKNOWN',
+            name: 'Unknown Token',
             decimals: token.decimals,
-            logoURI: metadata.logoURI || '',
+            logoURI: '',
             balance: token.balance,
             balanceRaw: token.balanceRaw
           };
-        }
-        
-        // Fallback if metadata not found
-        return {
-          address: token.mint,
-          symbol: 'UNKNOWN',
-          name: 'Unknown Token',
-          decimals: token.decimals,
-          logoURI: '',
-          balance: token.balance,
-          balanceRaw: token.balanceRaw
-        };
-      });
+        })
+      );
 
       return res.json({ 
         success: true, 
