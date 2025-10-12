@@ -269,16 +269,21 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     try {
       const inputAmount = Math.floor(parseFloat(amount) * Math.pow(10, fromToken.decimals));
       
-      const quoteUrl = `/api/jupiter/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50`;
+      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50`;
       console.log('Fetching quote from:', quoteUrl);
       
-      const response = await fetch(quoteUrl);
+      const response = await fetch(quoteUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
       console.log('Quote response status:', response.status);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error('Quote API error:', response.status, errorData);
-        throw new Error(errorData.error || 'Failed to get quote');
+        const errorText = await response.text();
+        console.error('Quote API error:', response.status, errorText);
+        throw new Error(`Failed to get quote: ${errorText || response.statusText}`);
       }
       
       const quoteData = await response.json();
@@ -311,7 +316,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
     setIsSwapping(true);
     try {
-      const response = await fetch('/api/jupiter/swap', {
+      const response = await fetch('https://quote-api.jup.ag/v6/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -322,8 +327,8 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to get swap transaction' }));
-        throw new Error(errorData.error || 'Failed to get swap transaction');
+        const errorText = await response.text();
+        throw new Error(`Failed to get swap transaction: ${errorText || response.statusText}`);
       }
 
       const { swapTransaction } = await response.json();
