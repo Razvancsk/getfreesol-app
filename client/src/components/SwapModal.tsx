@@ -482,23 +482,22 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               <ArrowDownUp className="h-5 w-5 text-white" />
               <DialogTitle className="text-white text-xl">Trade SOL</DialogTitle>
             </div>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={refreshBalances}
-                disabled={isLoadingBalances}
-                className="text-purple-300 hover:text-white hover:bg-purple-800/30"
-                data-testid="button-refresh-balances"
-              >
-                <RefreshCw className={cn("h-4 w-4", isLoadingBalances && "animate-spin")} />
-              </Button>
-              <DialogPrimitive.Close className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none text-white">
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </DialogPrimitive.Close>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={refreshBalances}
+              disabled={isLoadingBalances}
+              className="text-purple-300 hover:text-white hover:bg-purple-800/30"
+              data-testid="button-refresh-balances"
+            >
+              <RefreshCw className={cn("h-4 w-4", isLoadingBalances && "animate-spin")} />
+            </Button>
           </DialogHeader>
+          
+          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none text-white">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
         
         <div className="space-y-5">
           {/* Pay Section */}
