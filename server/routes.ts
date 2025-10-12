@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate fee account (ATA) for the input token
-      const referralWallet = new PublicKey("GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S");
+      const referralWallet = new PublicKey("AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d");
       const inputMint = new PublicKey(quoteResponse.inputMint);
       const feeAccount = await getAssociatedTokenAddress(inputMint, referralWallet);
       
