@@ -3343,6 +3343,19 @@ export default function SolRefund() {
       {/* Swap Modal */}
       <SwapModal open={isSwapModalOpen} onOpenChange={setIsSwapModalOpen} />
 
+      {/* Floating Swap Toggle Button */}
+      <button
+        onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
+        className="fixed -bottom-4 left-0 md:bottom-4 md:left-8 z-40 hover:scale-105 transition-transform bg-transparent border-0 p-0"
+        data-testid="button-floating-swap"
+        title="Toggle Token Swap"
+      >
+        <img 
+          src={swapButtonImage} 
+          alt="Swap" 
+          className="h-36 w-auto drop-shadow-2xl"
+        />
+      </button>
 
       <style>{`
         @keyframes spin-slow {
