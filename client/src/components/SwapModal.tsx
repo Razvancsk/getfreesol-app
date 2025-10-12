@@ -221,12 +221,15 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const [isSwapping, setIsSwapping] = useState(false);
   const [quote, setQuote] = useState<any>(null);
   const [balances, setBalances] = useState<Record<string, number>>({});
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false);
 
   // Fetch token balances
   useEffect(() => {
-    if (!publicKey || !connection) return;
+    if (!publicKey || !connection || !open) return;
 
     const fetchBalances = async () => {
+      setIsLoadingBalances(true);
+      console.log('Fetching balances for wallet:', publicKey.toString());
       const newBalances: Record<string, number> = {};
       
       for (const token of POPULAR_TOKENS) {
@@ -253,6 +256,8 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       }
       
       setBalances(newBalances);
+      setIsLoadingBalances(false);
+      console.log('Balances fetched:', newBalances);
     };
 
     fetchBalances();
