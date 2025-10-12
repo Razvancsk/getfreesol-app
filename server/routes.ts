@@ -126,6 +126,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send transaction endpoint
+  app.post("/api/jupiter/send-transaction", async (req, res) => {
+    try {
+      const { signedTransaction } = req.body;
+      
+      if (!signedTransaction) {
+        return res.status(400).json({ error: 'Missing parameter: signedTransaction' });
+      }
+      
+      const heliusKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      const signature = await connection.sendRawTransaction(
+        Buffer.from(signedTransaction, 'base64'),
+        {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed'
+        }
+      );
+      
+      console.log('Transaction sent:', signature);
+      res.json({ signature });
+      
+    } catch (error: any) {
+      console.error('Send transaction error:', error);
+      res.status(500).json({ 
+        error: 'Failed to send transaction',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get all wallet token accounts with metadata
   app.get("/api/wallet/all-tokens", async (req, res) => {
     try {

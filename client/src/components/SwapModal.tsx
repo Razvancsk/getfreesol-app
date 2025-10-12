@@ -344,7 +344,22 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
 
       const signedTransaction = await signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+      
+      // Send via backend to avoid RPC restrictions
+      const sendResponse = await fetch('/api/jupiter/send-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signedTransaction: Buffer.from(signedTransaction.serialize()).toString('base64')
+        })
+      });
+
+      if (!sendResponse.ok) {
+        const errorText = await sendResponse.text();
+        throw new Error(errorText || 'Failed to send transaction');
+      }
+
+      const { signature } = await sendResponse.json();
       
       await connection.confirmTransaction(signature, 'confirmed');
 
