@@ -223,8 +223,8 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const { connection } = useConnection();
   const { toast } = useToast();
   
-  const [fromToken, setFromToken] = useState<TokenInfo>(POPULAR_TOKENS[0]);
-  const [toToken, setToToken] = useState<TokenInfo>(POPULAR_TOKENS[1]);
+  const [fromToken, setFromToken] = useState<TokenInfo>(POPULAR_TOKENS[0]); // SOL
+  const [toToken, setToToken] = useState<TokenInfo>(POPULAR_TOKENS[2]); // USDC
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
