@@ -120,6 +120,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all wallet token accounts
+  app.get("/api/wallet/all-tokens", async (req, res) => {
+    try {
+      const { address } = req.query;
+      
+      if (!address || typeof address !== 'string') {
+        return res.status(400).json({ error: 'Missing address parameter' });
+      }
+
+      const heliusKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : 'https://api.mainnet-beta.solana.com';
+
+      const connection = new Connection(rpcUrl, 'confirmed');
+      const walletPubkey = new PublicKey(address);
+
+      // Get all token accounts
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+        walletPubkey,
+        { programId: TOKEN_PROGRAM_ID }
+      );
+
+      const tokens = tokenAccounts.value.map((account) => {
+        const accountData = account.account.data.parsed.info;
+        return {
+          mint: accountData.mint,
+          balance: parseFloat(accountData.tokenAmount.uiAmount || '0'),
+          balanceRaw: accountData.tokenAmount.amount,
+          decimals: accountData.tokenAmount.decimals
+        };
+      }).filter(t => t.balance > 0); // Only return tokens with non-zero balance
+
+      return res.json({ 
+        success: true, 
+        tokens
+      });
+    } catch (error: any) {
+      console.error('All tokens fetch error:', error);
+      return res.status(500).json({ error: error.message || 'Failed to fetch tokens' });
+    }
+  });
+
   // Get wallet token balance
   app.get("/api/wallet/token-balance", async (req, res) => {
     try {

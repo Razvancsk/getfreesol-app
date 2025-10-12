@@ -231,6 +231,22 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       console.log('Fetching balances for wallet:', publicKey.toString());
       const newBalances: Record<string, number> = {};
       
+      // First, get all tokens the user actually owns
+      try {
+        const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
+        const allTokensData = await allTokensResponse.json();
+        
+        if (allTokensData.success && allTokensData.tokens) {
+          // Add balances for tokens the user owns
+          for (const token of allTokensData.tokens) {
+            newBalances[token.mint] = token.balance;
+          }
+        }
+      } catch (error: any) {
+        console.error('Error fetching all tokens:', error?.message || error);
+      }
+      
+      // Then fetch popular tokens
       for (const token of POPULAR_TOKENS) {
         try {
           const response = await fetch(`/api/wallet/token-balance?address=${publicKey.toString()}&mint=${token.address}`);
@@ -373,6 +389,22 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     setIsLoadingBalances(true);
     const newBalances: Record<string, number> = {};
     
+    // First, get all tokens the user actually owns
+    try {
+      const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
+      const allTokensData = await allTokensResponse.json();
+      
+      if (allTokensData.success && allTokensData.tokens) {
+        // Add balances for tokens the user owns
+        for (const token of allTokensData.tokens) {
+          newBalances[token.mint] = token.balance;
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching all tokens:', error?.message || error);
+    }
+    
+    // Then fetch popular tokens
     for (const token of POPULAR_TOKENS) {
       try {
         const response = await fetch(`/api/wallet/token-balance?address=${publicKey.toString()}&mint=${token.address}`);
