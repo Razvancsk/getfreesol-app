@@ -269,24 +269,38 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     try {
       const inputAmount = Math.floor(parseFloat(amount) * Math.pow(10, fromToken.decimals));
       
-      const response = await fetch(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50`
-      );
+      const quoteUrl = `/api/jupiter/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50`;
+      console.log('Fetching quote from:', quoteUrl);
       
-      if (!response.ok) throw new Error('Failed to fetch quote');
+      const response = await fetch(quoteUrl);
+      console.log('Quote response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        console.error('Quote API error:', response.status, errorData);
+        throw new Error(errorData.error || 'Failed to get quote');
+      }
       
       const quoteData = await response.json();
+      console.log('Quote data received:', quoteData);
+      
+      if (!quoteData || !quoteData.outAmount) {
+        throw new Error('No routes found for this swap');
+      }
+      
       setQuote(quoteData);
       
       const outAmount = parseFloat(quoteData.outAmount) / Math.pow(10, toToken.decimals);
       setToAmount(outAmount.toFixed(6));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Quote error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to get swap quote',
+        description: error?.message || 'Failed to get swap quote',
         variant: 'destructive',
       });
+      setToAmount('');
+      setQuote(null);
     } finally {
       setIsLoadingQuote(false);
     }
@@ -297,7 +311,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
     setIsSwapping(true);
     try {
-      const response = await fetch('https://quote-api.jup.ag/v6/swap', {
+      const response = await fetch('/api/jupiter/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -307,7 +321,10 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to get swap transaction');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to get swap transaction' }));
+        throw new Error(errorData.error || 'Failed to get swap transaction');
+      }
 
       const { swapTransaction } = await response.json();
       const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');

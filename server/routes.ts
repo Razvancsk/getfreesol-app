@@ -59,6 +59,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter quote proxy endpoint
+  app.get("/api/jupiter/quote", async (req, res) => {
+    try {
+      const { inputMint, outputMint, amount, slippageBps = '50' } = req.query;
+      
+      if (!inputMint || !outputMint || !amount) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
+      console.log('Fetching Jupiter quote:', quoteUrl);
+      
+      const response = await fetch(quoteUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Jupiter quote error:', response.status, errorText);
+        return res.status(response.status).json({ error: errorText || 'Failed to get quote' });
+      }
+
+      const quoteData = await response.json();
+      res.json(quoteData);
+    } catch (error) {
+      console.error('Jupiter quote proxy error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Jupiter swap proxy endpoint
+  app.post("/api/jupiter/swap", async (req, res) => {
+    try {
+      const { quoteResponse, userPublicKey, wrapAndUnwrapSol } = req.body;
+      
+      if (!quoteResponse || !userPublicKey) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      const response = await fetch('https://quote-api.jup.ag/v6/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteResponse,
+          userPublicKey,
+          wrapAndUnwrapSol: wrapAndUnwrapSol !== false,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Jupiter swap error:', response.status, errorText);
+        return res.status(response.status).json({ error: errorText || 'Failed to get swap transaction' });
+      }
+
+      const swapData = await response.json();
+      res.json(swapData);
+    } catch (error) {
+      console.error('Jupiter swap proxy error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Get Helius configuration
   app.get("/api/helius-config", async (req, res) => {
     const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY || "";
