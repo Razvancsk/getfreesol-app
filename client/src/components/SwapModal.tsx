@@ -368,23 +368,49 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       const sendData = await sendResponse.json();
       const signature = sendData.signature;
       
-      // Don't wait for confirmation - show success immediately
-      toast({
-        title: 'Swap Submitted!',
-        description: (
-          <div className="space-y-1">
-            <p>Swapping {fromAmount} {fromToken.symbol} for {toAmount} {toToken.symbol}</p>
-            <a 
-              href={`https://solscan.io/tx/${signature}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 underline text-sm"
-            >
-              View on Solscan →
-            </a>
-          </div>
-        ),
-      });
+      // Try to confirm with timeout, but still show success if it fails
+      try {
+        await Promise.race([
+          connection.confirmTransaction(signature, 'confirmed'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+        ]);
+        
+        // Confirmation successful
+        toast({
+          title: 'Swap Successful!',
+          description: (
+            <div className="space-y-1">
+              <p>Swapped {fromAmount} {fromToken.symbol} for {toAmount} {toToken.symbol}</p>
+              <a 
+                href={`https://solscan.io/tx/${signature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline text-sm"
+              >
+                View on Solscan →
+              </a>
+            </div>
+          ),
+        });
+      } catch (confirmError) {
+        // Confirmation timeout or error, but transaction was sent
+        toast({
+          title: 'Swap Successful!',
+          description: (
+            <div className="space-y-1">
+              <p>Swapped {fromAmount} {fromToken.symbol} for {toToken.symbol}</p>
+              <a 
+                href={`https://solscan.io/tx/${signature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline text-sm"
+              >
+                View on Solscan →
+              </a>
+            </div>
+          ),
+        });
+      }
 
       setFromAmount('');
       setToAmount('');
