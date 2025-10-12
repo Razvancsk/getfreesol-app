@@ -246,8 +246,8 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               newBalances[token.address] = 0;
             }
           }
-        } catch (error) {
-          console.error(`Error fetching balance for ${token.symbol}:`, error);
+        } catch (error: any) {
+          console.error(`Error fetching balance for ${token.symbol}:`, error?.message || error);
           newBalances[token.address] = 0;
         }
       }
