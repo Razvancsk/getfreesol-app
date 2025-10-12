@@ -68,8 +68,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Add restrictIntermediateTokens for more stable routes (recommended by Jupiter docs)
-      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&restrictIntermediateTokens=true`;
+      // Add restrictIntermediateTokens for more stable routes and platformFeeBps for referral fee (0.2%)
+      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&restrictIntermediateTokens=true&platformFeeBps=20`;
       
       const response = await fetch(quoteUrl, {
         headers: { 'Accept': 'application/json' }
@@ -114,7 +114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               maxLamports: 10000, // 0.00001 SOL max for priority
               priorityLevel: "veryHigh"
             }
-          }
+          },
+          feeAccount: "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d" // Referral fee account
         }),
       });
 
