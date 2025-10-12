@@ -30,23 +30,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ tokens: [] });
       }
 
-      // Fetch from Jupiter's token list API
-      const response = await fetch('https://token.jup.ag/strict');
+      // Use Jupiter's search API
+      const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(q)}`);
       if (!response.ok) {
         console.error('Failed to fetch token list:', response.status);
         return res.json({ tokens: [] });
       }
 
-      const allTokens = await response.json();
-      const query = q.toLowerCase();
+      const data = await response.json();
       const limitNum = parseInt(limit as string, 10);
       
-      const filtered = allTokens
-        .filter((t: any) => 
-          t.symbol?.toLowerCase().includes(query) ||
-          t.name?.toLowerCase().includes(query) ||
-          t.address?.toLowerCase().includes(query)
-        )
+      // Map Jupiter's response to our format
+      const tokens = (data.tokens || [])
         .slice(0, limitNum)
         .map((t: any) => ({
           address: t.address,
@@ -56,8 +51,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           logoURI: t.logoURI
         }));
 
-      console.log(`Found ${filtered.length} tokens for query "${q}"`);
-      res.json({ tokens: filtered });
+      console.log(`Found ${tokens.length} tokens for query "${q}"`);
+      res.json({ tokens });
     } catch (error) {
       console.error('Token search error:', error);
       res.json({ tokens: [] });

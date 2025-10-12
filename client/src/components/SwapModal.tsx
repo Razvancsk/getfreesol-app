@@ -102,9 +102,9 @@ function TokenSelector({
     queryKey: ['jupiter-search', modalSearchQuery.trim()],
     queryFn: async () => {
       const query = modalSearchQuery.trim();
-      const url = `/api/tokens/search?q=${encodeURIComponent(query)}&limit=50`;
-      const response = await fetch(url);
-      return await response.json();
+      const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      return { tokens: data.tokens || [] };
     },
     enabled: showSearchModal && modalSearchQuery.trim().length > 0,
   });
