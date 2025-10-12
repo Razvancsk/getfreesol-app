@@ -280,7 +280,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     try {
       const inputAmount = Math.floor(parseFloat(amount) * Math.pow(10, fromToken.decimals));
       
-      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50`;
+      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=50&platformFeeBps=20`;
       console.log('Fetching quote from:', quoteUrl);
       
       const response = await fetch(quoteUrl, {
@@ -334,6 +334,8 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           quoteResponse: quote,
           userPublicKey: publicKey.toString(),
           wrapAndUnwrapSol: true,
+          platformFeeBps: 20,
+          feeAccount: "GtVDmyGnipeGAjWJ9vsfGvqmAahwiLg5LXEy3GPq6c5S"
         }),
       });
 
