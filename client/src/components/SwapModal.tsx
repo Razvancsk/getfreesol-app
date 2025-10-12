@@ -482,7 +482,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               <ArrowDownUp className="h-5 w-5 text-white" />
               <DialogTitle className="text-white text-xl">Trade SOL</DialogTitle>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
