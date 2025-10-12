@@ -30,8 +30,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ tokens: [] });
       }
 
-      // Use cdn.jsdelivr.net as a mirror for Jupiter token list
-      const response = await fetch('https://cdn.jsdelivr.net/gh/jup-ag/token-list@main/src/validated-tokens.json');
+      // Fetch from Jupiter's token list API
+      const response = await fetch('https://token.jup.ag/strict');
       if (!response.ok) {
         console.error('Failed to fetch token list:', response.status);
         return res.json({ tokens: [] });
