@@ -98,21 +98,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Calculate feeAccount for the output mint using Jupiter Referral Program
-      const referralAccountPubkey = new PublicKey('AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d');
-      const outputMintPubkey = new PublicKey(quoteResponse.outputMint);
-      const referralProgramId = new PublicKey('REFER4ZgmyYx9c6He5XfaTMiGfdLwRnkV4RPp9t9iF3');
-      
-      const [feeAccount] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("referral_ata"),
-          referralAccountPubkey.toBuffer(),
-          outputMintPubkey.toBuffer(),
-        ],
-        referralProgramId
-      );
-
-      console.log('Calculated feeAccount:', feeAccount.toBase58(), 'for mint:', quoteResponse.outputMint);
+      // As of January 2025, Jupiter allows any valid token account as feeAccount
+      // No need for Referral Program PDA calculation - Jupiter handles it automatically
+      const feeAccount = "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
 
       const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
         method: 'POST',
@@ -131,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               priorityLevel: "veryHigh"
             }
           },
-          feeAccount: feeAccount.toBase58() // Dynamically calculated referral fee account
+          feeAccount // Platform fee account (0.2% from platformFeeBps=20 in quote)
         }),
       });
 

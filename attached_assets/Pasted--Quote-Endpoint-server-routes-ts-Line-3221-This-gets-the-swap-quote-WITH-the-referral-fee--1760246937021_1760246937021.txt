@@ -1,0 +1,84 @@
+. Quote Endpoint (server/routes.ts - Line 3221)
+This gets the swap quote WITH the referral fee:
+
+app.get('/api/jupiter/quote', async (req, res) => {
+  const { inputMint, outputMint, amount, slippageBps } = req.query;
+  
+  // Enable referral fees - 0.50% (50 bps)
+  const platformFeeBps = 50;
+  const feeAccount = "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
+  
+  const quoteData = await jupiterApiFixed.getQuote(
+    inputMint,
+    outputMint,
+    parseInt(amount),
+    parseInt(slippageBps) || 50,
+    {
+      platformFeeBps,    // 50 = 0.50%
+      feeAccount         // Your token account
+    }
+  );
+  
+  res.json(quoteData);
+});
+2. Swap Endpoint (server/routes.ts - Line 3269)
+This creates the swap transaction with the fee account:
+
+app.post('/api/jupiter/swap', async (req, res) => {
+  const { quoteResponse, userPublicKey, feeAccount } = req.body;
+  
+  // Use the feeAccount from request or default
+  const referralFeeAccount = feeAccount || "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
+  
+  const swapData = await jupiterApiFixed.createSwap(
+    quoteResponse, 
+    userPublicKey, 
+    {
+      feeAccount: referralFeeAccount  // Fee goes here
+    }
+  );
+  
+  res.json(swapData);
+});
+3. Jupiter API Integration (server/jupiterApiFixed.ts)
+This is the actual Jupiter API call:
+
+async getQuote(inputMint, outputMint, amount, slippageBps, platformFeeOptions) {
+  const params = new URLSearchParams({
+    inputMint,
+    outputMint,
+    amount: amount.toString(),
+    slippageBps: slippageBps.toString()
+  });
+  // Add referral fee parameters
+  if (platformFeeOptions) {
+    params.append('platformFeeBps', platformFeeOptions.platformFeeBps.toString());
+    params.append('feeAccount', platformFeeOptions.feeAccount);
+  }
+  const response = await fetch(`https://lite-api.jup.ag/swap/v1/quote?${params}`);
+  return response.json();
+}
+async createSwap(quoteResponse, userPublicKey, options) {
+  const payload = {
+    quoteResponse: quoteResponse,
+    userPublicKey: userPublicKey,
+    wrapAndUnwrapSol: true,
+    dynamicComputeUnitLimit: true,
+    prioritizationFeeLamports: 'auto'
+  };
+  // Add fee account to swap transaction
+  if (options.feeAccount) {
+    payload.feeAccount = options.feeAccount;
+  }
+  const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  
+  return response.json();
+}
+Summary:
+Quote request includes platformFeeBps=50 and feeAccount=AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d
+Swap request includes feeAccount in the payload
+Jupiter automatically collects 0.50% of each swap and sends it to your token account
+This works for ANY token pair - Jupiter handles the token account creation automatically
