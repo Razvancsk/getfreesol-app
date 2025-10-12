@@ -231,7 +231,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       console.log('Fetching balances for wallet:', publicKey.toString());
       const newBalances: Record<string, number> = {};
       
-      // First, get all tokens the user actually owns
+      // Fetch all tokens the user actually owns
       try {
         const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
         const allTokensData = await allTokensResponse.json();
@@ -244,23 +244,6 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         }
       } catch (error: any) {
         console.error('Error fetching all tokens:', error?.message || error);
-      }
-      
-      // Then fetch popular tokens
-      for (const token of POPULAR_TOKENS) {
-        try {
-          const response = await fetch(`/api/wallet/token-balance?address=${publicKey.toString()}&mint=${token.address}`);
-          const data = await response.json();
-          
-          if (data.success) {
-            newBalances[token.address] = data.balance;
-          } else {
-            newBalances[token.address] = 0;
-          }
-        } catch (error: any) {
-          console.error(`Error fetching balance for ${token.symbol}:`, error?.message || error);
-          newBalances[token.address] = 0;
-        }
       }
       
       setBalances(newBalances);
@@ -389,7 +372,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     setIsLoadingBalances(true);
     const newBalances: Record<string, number> = {};
     
-    // First, get all tokens the user actually owns
+    // Fetch all tokens the user actually owns
     try {
       const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
       const allTokensData = await allTokensResponse.json();
@@ -402,23 +385,6 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       }
     } catch (error: any) {
       console.error('Error fetching all tokens:', error?.message || error);
-    }
-    
-    // Then fetch popular tokens
-    for (const token of POPULAR_TOKENS) {
-      try {
-        const response = await fetch(`/api/wallet/token-balance?address=${publicKey.toString()}&mint=${token.address}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          newBalances[token.address] = data.balance;
-        } else {
-          newBalances[token.address] = 0;
-        }
-      } catch (error: any) {
-        console.error(`Error fetching balance for ${token.symbol}:`, error?.message || error);
-        newBalances[token.address] = 0;
-      }
     }
     
     setBalances(newBalances);
