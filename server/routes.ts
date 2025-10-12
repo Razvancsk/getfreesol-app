@@ -120,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dynamicComputeUnitLimit: true,
           prioritizationFeeLamports: {
             priorityLevelWithMaxLamports: {
-              maxLamports: 10000, // 0.00001 SOL max for priority
+              maxLamports: 30250, // 0.00003025 SOL max for priority (faster confirmation)
               priorityLevel: "veryHigh"
             }
           },
