@@ -120,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all wallet token accounts
+  // Get all wallet token accounts with metadata
   app.get("/api/wallet/all-tokens", async (req, res) => {
     try {
       const { address } = req.query;
@@ -143,19 +143,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { programId: TOKEN_PROGRAM_ID }
       );
 
-      const tokens = tokenAccounts.value.map((account) => {
-        const accountData = account.account.data.parsed.info;
+      const tokensWithBalance = tokenAccounts.value
+        .map((account) => {
+          const accountData = account.account.data.parsed.info;
+          return {
+            mint: accountData.mint,
+            balance: parseFloat(accountData.tokenAmount.uiAmount || '0'),
+            balanceRaw: accountData.tokenAmount.amount,
+            decimals: accountData.tokenAmount.decimals
+          };
+        })
+        .filter(t => t.balance > 0);
+
+      // Fetch all token metadata from Jupiter in one call
+      let jupiterTokenMap: Record<string, any> = {};
+      try {
+        const jupiterResponse = await fetch('https://token.jup.ag/all');
+        if (jupiterResponse.ok) {
+          const allTokens = await jupiterResponse.json();
+          jupiterTokenMap = Object.fromEntries(
+            allTokens.map((t: any) => [t.address, t])
+          );
+        }
+      } catch (err) {
+        console.error('Error fetching Jupiter token list:', err);
+      }
+
+      // Map tokens with metadata
+      const tokensWithMetadata = tokensWithBalance.map((token) => {
+        const metadata = jupiterTokenMap[token.mint];
+        if (metadata) {
+          return {
+            address: token.mint,
+            symbol: metadata.symbol || 'UNKNOWN',
+            name: metadata.name || 'Unknown Token',
+            decimals: token.decimals,
+            logoURI: metadata.logoURI || '',
+            balance: token.balance,
+            balanceRaw: token.balanceRaw
+          };
+        }
+        
+        // Fallback if metadata not found
         return {
-          mint: accountData.mint,
-          balance: parseFloat(accountData.tokenAmount.uiAmount || '0'),
-          balanceRaw: accountData.tokenAmount.amount,
-          decimals: accountData.tokenAmount.decimals
+          address: token.mint,
+          symbol: 'UNKNOWN',
+          name: 'Unknown Token',
+          decimals: token.decimals,
+          logoURI: '',
+          balance: token.balance,
+          balanceRaw: token.balanceRaw
         };
-      }).filter(t => t.balance > 0); // Only return tokens with non-zero balance
+      });
 
       return res.json({ 
         success: true, 
-        tokens
+        tokens: tokensWithMetadata
       });
     } catch (error: any) {
       console.error('All tokens fetch error:', error);

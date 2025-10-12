@@ -87,12 +87,14 @@ function TokenSelector({
   token, 
   onSelect, 
   label,
-  balances
+  balances,
+  ownedTokens
 }: { 
   token: TokenInfo; 
   onSelect: (token: TokenInfo) => void; 
   label: string;
   balances: Record<string, number>;
+  ownedTokens: TokenInfo[];
 }) {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState('');
@@ -122,9 +124,17 @@ function TokenSelector({
     setShowSearchModal(true);
   };
 
-  const searchResults = modalSearchQuery.trim().length > 0 && modalSearchData?.tokens 
-    ? modalSearchData.tokens 
-    : POPULAR_TOKENS;
+  // Show only owned tokens (no popular tokens)
+  const getTokenList = () => {
+    if (modalSearchQuery.trim().length > 0 && modalSearchData?.tokens) {
+      return modalSearchData.tokens;
+    }
+    
+    // Show ONLY tokens the user owns
+    return ownedTokens || [];
+  };
+
+  const searchResults = getTokenList();
 
   return (
     <>
@@ -154,7 +164,7 @@ function TokenSelector({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
                 <Input
                   type="text"
-                  placeholder="wen"
+                  placeholder="Search tokens"
                   value={modalSearchQuery}
                   onChange={(e) => setModalSearchQuery(e.target.value)}
                   onClick={handleSearchInputClick}
@@ -221,8 +231,9 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const [quote, setQuote] = useState<any>(null);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+  const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
 
-  // Fetch token balances
+  // Fetch token balances and metadata
   useEffect(() => {
     if (!publicKey || !open) return;
 
@@ -231,15 +242,18 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       console.log('Fetching balances for wallet:', publicKey.toString());
       const newBalances: Record<string, number> = {};
       
-      // Fetch all tokens the user actually owns
+      // Fetch all tokens the user actually owns with metadata
       try {
         const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
         const allTokensData = await allTokensResponse.json();
         
         if (allTokensData.success && allTokensData.tokens) {
+          // Store owned tokens with metadata
+          setOwnedTokens(allTokensData.tokens);
+          
           // Add balances for tokens the user owns
           for (const token of allTokensData.tokens) {
-            newBalances[token.mint] = token.balance;
+            newBalances[token.address] = token.balance;
           }
         }
       } catch (error: any) {
@@ -372,15 +386,18 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     setIsLoadingBalances(true);
     const newBalances: Record<string, number> = {};
     
-    // Fetch all tokens the user actually owns
+    // Fetch all tokens the user actually owns with metadata
     try {
       const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
       const allTokensData = await allTokensResponse.json();
       
       if (allTokensData.success && allTokensData.tokens) {
+        // Store owned tokens with metadata
+        setOwnedTokens(allTokensData.tokens);
+        
         // Add balances for tokens the user owns
         for (const token of allTokensData.tokens) {
-          newBalances[token.mint] = token.balance;
+          newBalances[token.address] = token.balance;
         }
       }
     } catch (error: any) {
@@ -455,7 +472,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               </div>
             </div>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <TokenSelector token={fromToken} onSelect={setFromToken} label="From" balances={balances} />
+              <TokenSelector token={fromToken} onSelect={setFromToken} label="From" balances={balances} ownedTokens={ownedTokens} />
               <Input
                 type="number"
                 placeholder="0.00"
@@ -487,7 +504,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <div className="space-y-2">
             <label className="text-sm text-purple-300">Receive:</label>
             <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-              <TokenSelector token={toToken} onSelect={setToToken} label="To" balances={balances} />
+              <TokenSelector token={toToken} onSelect={setToToken} label="To" balances={balances} ownedTokens={ownedTokens} />
               <Input
                 type="number"
                 placeholder="0.00"
