@@ -33,7 +33,7 @@ import { VersionedTransaction } from '@solana/web3.js';
 import { SwapModal } from '@/components/SwapModal';
 import logoImage from '@assets/image_1757882056840.png';
 import marinadeAdImage from '@assets/marinade-ad.png';
-import swapButtonImage from '@assets/image_1760234365868.png';
+import swapButtonImage from '@assets/image_1760235318056.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -3394,7 +3394,6 @@ export default function SolRefund() {
           src={swapButtonImage} 
           alt="Swap" 
           className="h-16 w-auto drop-shadow-2xl"
-          style={{ mixBlendMode: 'multiply' }}
         />
       </button>
 
