@@ -101,7 +101,8 @@ function TokenSelector({
   const { data: modalSearchData, isLoading: isModalSearching } = useQuery({
     queryKey: ['jupiter-search', modalSearchQuery.trim()],
     queryFn: async () => {
-      const url = `/api/tokens/search?q=${encodeURIComponent(modalSearchQuery.trim())}&limit=50`;
+      const query = modalSearchQuery.trim();
+      const url = `/api/tokens/search?q=${encodeURIComponent(query)}&limit=50`;
       const response = await fetch(url);
       return await response.json();
     },
