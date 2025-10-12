@@ -367,6 +367,37 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     setQuote(null);
   };
 
+  const refreshBalances = async () => {
+    if (!publicKey) return;
+
+    setIsLoadingBalances(true);
+    const newBalances: Record<string, number> = {};
+    
+    for (const token of POPULAR_TOKENS) {
+      try {
+        const response = await fetch(`/api/wallet/token-balance?address=${publicKey.toString()}&mint=${token.address}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          newBalances[token.address] = data.balance;
+        } else {
+          newBalances[token.address] = 0;
+        }
+      } catch (error: any) {
+        console.error(`Error fetching balance for ${token.symbol}:`, error?.message || error);
+        newBalances[token.address] = 0;
+      }
+    }
+    
+    setBalances(newBalances);
+    setIsLoadingBalances(false);
+    
+    // Also refresh the quote if there's an amount
+    if (fromAmount) {
+      getQuote(fromAmount);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -385,10 +416,12 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => getQuote(fromAmount)}
+              onClick={refreshBalances}
+              disabled={isLoadingBalances}
               className="text-purple-300 hover:text-white hover:bg-purple-800/30"
+              data-testid="button-refresh-balances"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className={cn("h-4 w-4", isLoadingBalances && "animate-spin")} />
             </Button>
           </DialogHeader>
           
