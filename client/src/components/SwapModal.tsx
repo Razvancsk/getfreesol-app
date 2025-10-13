@@ -480,7 +480,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           <DialogHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <ArrowDownUp className="h-5 w-5 text-white" />
-              <DialogTitle className="text-white text-xl">Trade SOL</DialogTitle>
+              <DialogTitle className="text-white text-xl"></DialogTitle>
             </div>
           </DialogHeader>
           
