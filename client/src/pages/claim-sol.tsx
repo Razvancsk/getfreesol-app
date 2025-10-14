@@ -32,7 +32,6 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
 import { SwapModal } from '@/components/SwapModal';
 import logoImage from '@assets/image_1757882056840.png';
-import marinadeAdImage from '@assets/marinade-ad.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 
 interface EmptyTokenAccount {
@@ -2322,22 +2321,6 @@ export default function SolRefund() {
               </div>
             </div>
 
-            {/* Marinade Ad Banner - Desktop: in header, Mobile: below */}
-            <div className="hidden lg:flex justify-center lg:absolute lg:left-1/2 lg:transform lg:-translate-x-1/2">
-              <a
-                href="https://marinade.finance"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block hover:opacity-90 transition-opacity rounded-lg overflow-hidden bg-white"
-              >
-                <img 
-                  src={marinadeAdImage}
-                  alt="Marinade Finance"
-                  className="h-12 w-auto object-contain"
-                />
-              </a>
-            </div>
-
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
@@ -2402,22 +2385,6 @@ export default function SolRefund() {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Marinade Ad Banner - Mobile only */}
-          <div className="flex lg:hidden justify-center py-2">
-            <a
-              href="https://marinade.finance"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block hover:opacity-90 transition-opacity rounded-lg overflow-hidden bg-white"
-            >
-              <img 
-                src={marinadeAdImage}
-                alt="Marinade Finance"
-                className="h-10 w-auto object-contain"
-              />
-            </a>
           </div>
 
           {/* Center Navigation Buttons */}
