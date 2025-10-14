@@ -488,13 +488,13 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
             size="sm"
             onClick={refreshBalances}
             disabled={isLoadingBalances}
-            className="absolute right-14 top-4 p-2.5 text-purple-300 hover:text-white hover:bg-purple-800/30"
+            className="absolute right-14 top-2 p-2.5 text-purple-300 hover:text-white hover:bg-purple-800/30"
             data-testid="button-refresh-balances"
           >
             <RefreshCw className={cn("h-5 w-5", isLoadingBalances && "animate-spin")} />
           </Button>
           
-          <DialogPrimitive.Close className="absolute right-4 top-4 p-2.5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none text-white">
+          <DialogPrimitive.Close className="absolute right-4 top-2 p-2.5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none text-white">
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
