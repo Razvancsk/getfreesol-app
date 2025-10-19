@@ -391,15 +391,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const walletPublicKey = new PublicKey(address);
       
-      // Get all token accounts for the wallet
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
-        programId: TOKEN_PROGRAM_ID,
-      });
+      // Get all token accounts for the wallet - BOTH standard Token Program AND Token-2022
+      const [tokenAccounts, token2022Accounts] = await Promise.all([
+        connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        connection.getParsedTokenAccountsByOwner(walletPublicKey, {
+          programId: TOKEN_2022_PROGRAM_ID,
+        })
+      ]);
+
+      // Combine both standard and Token-2022 accounts
+      const allTokenAccounts = [
+        ...tokenAccounts.value,
+        ...token2022Accounts.value
+      ];
+
+      console.log(`📊 Found ${tokenAccounts.value.length} standard token accounts + ${token2022Accounts.value.length} Token-2022 accounts`);
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
 
-      for (const accountInfo of tokenAccounts.value) {
+      for (const accountInfo of allTokenAccounts) {
         const account = accountInfo.account;
         const parsedInfo = account.data.parsed.info;
         
@@ -425,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store scan result
       const scanResult = await storage.createScanResult({
         walletAddress: address,
-        totalAccounts: tokenAccounts.value.length,
+        totalAccounts: allTokenAccounts.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toString()
       });
@@ -438,7 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = {
         success: true,
         walletAddress: address,
-        totalAccounts: tokenAccounts.value.length,
+        totalAccounts: allTokenAccounts.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toFixed(9),
         accounts: emptyAccounts,
