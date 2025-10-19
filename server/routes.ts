@@ -190,13 +190,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const solBalance = await connection.getBalance(walletPubkey);
       const solBalanceInSol = solBalance / 1e9;
 
-      // Get all token accounts
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        walletPubkey,
-        { programId: TOKEN_PROGRAM_ID }
-      );
+      // Get all token accounts - BOTH standard Token Program AND Token-2022
+      const [tokenAccounts, token2022Accounts] = await Promise.all([
+        connection.getParsedTokenAccountsByOwner(
+          walletPubkey,
+          { programId: TOKEN_PROGRAM_ID }
+        ),
+        connection.getParsedTokenAccountsByOwner(
+          walletPubkey,
+          { programId: TOKEN_2022_PROGRAM_ID }
+        )
+      ]);
 
-      const tokensWithBalance = tokenAccounts.value
+      // Combine both standard and Token-2022 accounts
+      const allTokenAccounts = [
+        ...tokenAccounts.value,
+        ...token2022Accounts.value
+      ];
+
+      const tokensWithBalance = allTokenAccounts
         .map((account) => {
           const accountData = account.account.data.parsed.info;
           return {
