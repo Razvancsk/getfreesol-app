@@ -22,7 +22,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
     ? `${baseUrl}?ref=${referralCode}&claimed=${Math.floor(solClaimed * 1e9)}`
     : `${baseUrl}?claimed=${Math.floor(solClaimed * 1e9)}`;
   
-  const commissionRate = "7.5%"; // 50% of 15% platform fee
+  const commissionRate = "50%"; // 50% commission split
   
   const tweetText = `🎯 Surprised to find ${solClaimed.toFixed(6)} $SOL hiding in my wallet — claimed it instantly with Get Your SOL Back! Try your luck! ${shareUrl}`;
   
@@ -114,7 +114,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
                 </div>
               </div>
               <p className="text-xs text-green-200 mt-2">
-                Earn {commissionRate} of every SOL your referrals claim!
+                Earn {commissionRate} commission of every SOL your referrals claim!
               </p>
             </div>
           )}
