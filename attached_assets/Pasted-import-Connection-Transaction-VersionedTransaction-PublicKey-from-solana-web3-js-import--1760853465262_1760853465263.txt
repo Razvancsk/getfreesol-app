@@ -1,0 +1,168 @@
+import { Connection, Transaction, VersionedTransaction, PublicKey } from '@solana/web3.js';
+import { connection } from './solana';
+
+// Jupiter Ultra API endpoints
+const JUPITER_ULTRA_ORDER_API = 'https://lite-api.jup.ag/ultra/v1/order';
+const JUPITER_ULTRA_EXECUTE_API = 'https://lite-api.jup.ag/ultra/v1/execute';
+
+// Referral configuration
+// Referral Account: 5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB (parent)
+// Token Account (WSOL): 2iDyu7fVbXPKuGnbas3PfZDZtY2MJuxr1mYh8Qahx1NF (child)
+const REFERRAL_ACCOUNT = '5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB';
+const REFERRAL_FEE_BPS = 50; // 0.50% = 50 basis points
+
+export interface SwapResult {
+  txid: string;
+  inputAmount: number;
+  outputAmount: number;
+  priceImpact?: number;
+  feeBps?: number;
+  routeSteps?: number;
+  platformFeePercent?: number;
+  networkFeeSol?: number;
+}
+
+// Token decimals mapping
+const TOKEN_DECIMALS: Record<string, number> = {
+  'So11111111111111111111111111111111111111112': 9, // SOL
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 6, // USDC
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 6, // USDT
+  '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': 6, // RAY
+};
+
+export async function executeSwap(
+  wallet: any,
+  inputMint: string,
+  outputMint: string,
+  amount: number,
+  slippageBps: number = 50,
+  inputDecimals?: number,
+  outputDecimals?: number
+): Promise<SwapResult> {
+  try {
+    // Get correct decimals for the input token (use provided decimals or fallback to mapping)
+    const decimals = inputDecimals ?? TOKEN_DECIMALS[inputMint] ?? 9;
+    const amountInSmallestUnit = Math.floor(amount * Math.pow(10, decimals)).toString();
+
+    // Validate mints
+    if (!inputMint || inputMint === 'undefined') {
+      throw new Error('Invalid input token');
+    }
+    if (!outputMint || outputMint === 'undefined') {
+      throw new Error('Invalid output token');
+    }
+
+    // Step 1: GET order from Jupiter Ultra API with live routes and fees
+    console.log('Fetching order from Jupiter Ultra API...');
+    
+    // Build URL with referral parameters for Jupiter Ultra API
+    const orderUrl = JUPITER_ULTRA_ORDER_API +
+      `?inputMint=${inputMint}` +
+      `&outputMint=${outputMint}` +
+      `&amount=${amountInSmallestUnit}` +
+      `&taker=${wallet.publicKey.toString()}` +
+      `&referralAccount=${REFERRAL_ACCOUNT}` +
+      `&referralFee=${REFERRAL_FEE_BPS}`;
+    
+    console.log('Order URL with referral:', orderUrl);
+    
+    const orderFetchResponse = await fetch(orderUrl);
+    const orderResponseText = await orderFetchResponse.text();
+    console.log('Order response status:', orderFetchResponse.status);
+    console.log('Order response text:', orderResponseText);
+    
+    let orderResponse;
+    try {
+      orderResponse = JSON.parse(orderResponseText);
+    } catch (e) {
+      console.error('Failed to parse order response as JSON:', orderResponseText);
+      throw new Error('Invalid response from Jupiter Ultra API');
+    }
+    
+    console.log('Order response:', orderResponse);
+
+    if (!orderResponse.transaction) {
+      const errorMsg = orderResponse.error || orderResponse.message || orderResponse.errorMessage || 'No transaction in order response';
+      console.error('Full error response:', orderResponse);
+      throw new Error(errorMsg);
+    }
+
+    console.log('Order received:', {
+      requestId: orderResponse.requestId,
+      inAmount: orderResponse.inAmount,
+      outAmount: orderResponse.outAmount,
+      priceImpact: orderResponse.priceImpactPct,
+      slippageBps: orderResponse.slippageBps
+    });
+
+    // Step 2: Deserialize and sign the transaction
+    const transaction = VersionedTransaction.deserialize(
+      Buffer.from(orderResponse.transaction, 'base64')
+    );
+
+    console.log('Signing transaction...');
+    const signedTx = await wallet.signTransaction(transaction);
+    
+    const signedTransaction = Buffer.from(signedTx.serialize()).toString('base64');
+
+    // Step 3: POST to execute endpoint with requestId and signed transaction
+    console.log('Executing order with requestId:', orderResponse.requestId);
+    
+    const executeResponse = await fetch(JUPITER_ULTRA_EXECUTE_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        signedTransaction,
+        requestId: orderResponse.requestId,
+      }),
+    }).then(r => r.json());
+    
+    console.log('Execute response:', executeResponse);
+
+    if (executeResponse.status === 'Success') {
+      console.log('Swap successful! Signature:', executeResponse.signature);
+      
+      // Get correct decimals (use provided decimals or fallback to mapping)
+      const inDecimals = inputDecimals ?? TOKEN_DECIMALS[inputMint] ?? 9;
+      const outDecimals = outputDecimals ?? TOKEN_DECIMALS[outputMint] ?? 9;
+      
+      // Extract route and fee information
+      const routeSteps = orderResponse.routePlan?.length || 0;
+      const platformFeeBps = orderResponse.platformFee?.feeBps || orderResponse.feeBps || 0;
+      const platformFeePercent = platformFeeBps / 100; // Convert basis points to percentage
+      
+      // Calculate total network fee (signature + prioritization fees)
+      const signatureFeeLamports = orderResponse.signatureFeeLamports || 0;
+      const prioritizationFeeLamports = orderResponse.prioritizationFeeLamports || 0;
+      const totalNetworkFeeLamports = signatureFeeLamports + prioritizationFeeLamports;
+      const networkFeeSol = totalNetworkFeeLamports / 1e9; // Convert lamports to SOL
+      
+      return {
+        txid: executeResponse.signature,
+        inputAmount: parseFloat(orderResponse.inAmount) / Math.pow(10, inDecimals),
+        outputAmount: parseFloat(orderResponse.outAmount) / Math.pow(10, outDecimals),
+        priceImpact: orderResponse.priceImpactPct,
+        feeBps: orderResponse.feeBps,
+        routeSteps,
+        platformFeePercent,
+        networkFeeSol,
+      };
+    } else {
+      console.error('Swap failed:', executeResponse);
+      // Provide more helpful error message for slippage issues
+      if (executeResponse.error === 'Slippage tolerance exceeded') {
+        throw new Error('Slippage tolerance exceeded. Try increasing your slippage tolerance in settings.');
+      }
+      throw new Error(`Swap failed: ${executeResponse.error || executeResponse.status}`);
+    }
+  } catch (error: any) {
+    console.error('Swap error details:', {
+      message: error.message,
+      error: error,
+      stack: error.stack
+    });
+    throw error;
+  }
+}
