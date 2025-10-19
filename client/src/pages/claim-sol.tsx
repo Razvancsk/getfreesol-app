@@ -31,6 +31,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
 import { SwapModal } from '@/components/SwapModal';
+import { ShareModal } from '@/components/ShareModal';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 
@@ -93,6 +94,10 @@ export default function SolRefund() {
   
   // Swap modal state
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+  
+  // Share modal state
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -2154,6 +2159,10 @@ export default function SolRefund() {
         className: "bg-green-600 text-white border-green-600",
       });
 
+      // Show share modal with the claimed amount
+      setShareData({ solClaimed: result.totalReceived });
+      setIsShareModalOpen(true);
+
       // Reset form and immediately refresh statistics and transaction history
       setScanResult(null);
 
@@ -3309,6 +3318,16 @@ export default function SolRefund() {
 
       {/* Swap Modal */}
       <SwapModal open={isSwapModalOpen} onOpenChange={setIsSwapModalOpen} />
+      
+      {/* Share Modal */}
+      {shareData && (
+        <ShareModal 
+          isOpen={isShareModalOpen} 
+          onClose={() => setIsShareModalOpen(false)} 
+          solClaimed={shareData.solClaimed}
+          referralCode={userReferralCode}
+        />
+      )}
 
       {/* Floating Swap Toggle Button */}
       <button
