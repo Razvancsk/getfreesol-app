@@ -61,71 +61,57 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30">
+      <DialogContent className="sm:max-w-sm bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 p-6">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-white text-center">
+          <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
             Share
           </DialogTitle>
+          <p className="text-sm text-gray-600 dark:text-gray-400 pt-1">
+            Invite friends to earn more $SOL
+          </p>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
-          {/* Success Message */}
-          <div className="text-center">
-            <p className="text-purple-200 mb-2">
-              Invite friends to earn more $SOL
-            </p>
-            <p className="text-3xl font-bold text-green-400">
-              {solClaimed.toFixed(6)} SOL Claimed! 🎉
-            </p>
-          </div>
-          
+        <div className="space-y-4 pt-2">
           {/* Social Share Buttons */}
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-start gap-3">
             <Button
               onClick={handleShareOnX}
-              className="rounded-full w-14 h-14 bg-black hover:bg-black/80 text-white"
+              className="rounded-full w-12 h-12 bg-black hover:bg-black/80 text-white p-0"
               data-testid="button-share-twitter"
             >
-              <SiX className="w-6 h-6" />
+              <SiX className="w-5 h-5" />
             </Button>
           </div>
           
           {/* Shareable Link */}
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                value={shareUrl}
-                readOnly
-                className="bg-slate-800/50 border-purple-500/30 text-white text-sm"
-                data-testid="input-share-link"
-              />
-              <Button
-                onClick={handleCopy}
-                className="bg-green-600 hover:bg-green-700 text-white px-6"
-                data-testid="button-copy-link"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </Button>
-            </div>
+          <div className="flex gap-2">
+            <Input
+              value={shareUrl}
+              readOnly
+              className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white text-sm flex-1"
+              data-testid="input-share-link"
+            />
+            <Button
+              onClick={handleCopy}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 shrink-0"
+              data-testid="button-copy-link"
+            >
+              {copied ? "Copied" : "Copy"}
+            </Button>
           </div>
           
           {/* Commission Rate Display */}
           {referralCode && (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-300 mb-1">Your Commission Rate</p>
-                  <p className="text-2xl font-bold text-green-400">{commissionRate}</p>
-                </div>
-                <div className="bg-green-500/20 px-3 py-1 rounded-full">
-                  <p className="text-xs text-green-300 font-semibold">
+            <div className="bg-green-50 dark:bg-green-950/30 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm text-gray-700 dark:text-gray-300">Your Commission Rate</p>
+                <div className="bg-green-100 dark:bg-green-900/50 px-2.5 py-0.5 rounded-full">
+                  <p className="text-xs text-green-700 dark:text-green-300 font-semibold">
                     Highest in Market
                   </p>
                 </div>
               </div>
-              <p className="text-xs text-green-200 mt-2">
-                Earn {commissionRate} commission of every SOL your referrals claim!
-              </p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{commissionRate}</p>
             </div>
           )}
         </div>
