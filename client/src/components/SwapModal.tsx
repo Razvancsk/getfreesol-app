@@ -230,6 +230,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
   const [quote, setQuote] = useState<any>(null);
+  const [quoteTimestamp, setQuoteTimestamp] = useState<number>(0);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
@@ -273,6 +274,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     if (!amount || parseFloat(amount) <= 0) {
       setToAmount('');
       setQuote(null);
+      setQuoteTimestamp(0);
       return;
     }
 
@@ -317,6 +319,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       }
       
       setQuote(orderData);
+      setQuoteTimestamp(Date.now()); // Track when quote was received
       
       const outAmount = parseFloat(orderData.outAmount) / Math.pow(10, toToken.decimals);
       setToAmount(outAmount.toFixed(6));
@@ -329,6 +332,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       });
       setToAmount('');
       setQuote(null);
+      setQuoteTimestamp(0);
     } finally {
       setIsLoadingQuote(false);
     }
@@ -336,6 +340,19 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
   const handleSwap = async () => {
     if (!publicKey || !signTransaction || !quote) return;
+
+    // Check if quote is too old (older than 90 seconds = 1.5 minutes)
+    const quoteAge = (Date.now() - quoteTimestamp) / 1000; // in seconds
+    if (quoteAge > 90) {
+      toast({
+        title: 'Quote Expired',
+        description: 'Your quote is too old and has likely expired. Please get a fresh quote by adjusting the amount.',
+        variant: 'destructive',
+      });
+      setQuote(null);
+      setQuoteTimestamp(0);
+      return;
+    }
 
     setIsSwapping(true);
     try {
@@ -368,7 +385,14 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         let errorMessage = 'Failed to execute swap';
         try {
           const errorData = await executeResponse.json();
-          errorMessage = errorData.error || errorData.details || errorMessage;
+          const errorStr = typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error);
+          
+          // Check for specific Jupiter errors
+          if (errorStr.includes('Order not found') || errorStr.includes('expired')) {
+            errorMessage = 'Quote expired. Please close this modal and get a fresh quote.';
+          } else {
+            errorMessage = errorData.details || errorStr || errorMessage;
+          }
         } catch {
           errorMessage = await executeResponse.text();
         }
@@ -402,6 +426,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         setFromAmount('');
         setToAmount('');
         setQuote(null);
+        setQuoteTimestamp(0);
         onOpenChange(false);
       } else {
         // Jupiter returned Failed status - log full response and show link if signature exists
@@ -438,6 +463,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     setFromAmount(toAmount);
     setToAmount(fromAmount);
     setQuote(null);
+    setQuoteTimestamp(0);
   };
 
   const refreshBalances = async () => {
