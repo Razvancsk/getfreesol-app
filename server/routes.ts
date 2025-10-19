@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderUrl.searchParams.append('taker', taker as string);
       }
       orderUrl.searchParams.append('referralAccount', referralAccount);
-      orderUrl.searchParams.append('referralFee', referralFee.toString());
+      orderUrl.searchParams.append('referralFeeBps', referralFee.toString());
       
       console.log('🚀 Ultra Swap Order URL:', orderUrl.toString());
       
