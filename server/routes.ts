@@ -97,10 +97,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const orderData = await response.json();
+      
+      // Log complete fee information
       console.log('✅ Ultra Order received:', {
         requestId: orderData.requestId,
         feeMint: orderData.feeMint,
         feeBps: orderData.feeBps,
+        platformFee: orderData.platformFee,
+        router: orderData.router,
         hasTransaction: !!orderData.transaction
       });
       
