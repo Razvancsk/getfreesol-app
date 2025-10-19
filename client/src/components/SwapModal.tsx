@@ -280,29 +280,29 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     try {
       const inputAmount = Math.floor(parseFloat(amount) * Math.pow(10, fromToken.decimals));
       
-      // Use backend proxy with referral fee
-      const quoteUrl = `/api/jupiter/quote?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&slippageBps=100`;
-      console.log('Fetching quote via backend:', quoteUrl);
+      // Use Ultra Swap API with referral fees
+      const orderUrl = `/api/jupiter/ultra/order?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&taker=${publicKey?.toString() || ''}`;
+      console.log('🚀 Fetching Ultra Order:', orderUrl);
       
-      const response = await fetch(quoteUrl);
-      console.log('Quote response status:', response.status);
+      const response = await fetch(orderUrl);
+      console.log('Ultra Order response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Quote API error:', response.status, errorText);
-        throw new Error(`Failed to get quote: ${errorText || response.statusText}`);
+        console.error('Ultra Order API error:', response.status, errorText);
+        throw new Error(`Failed to get order: ${errorText || response.statusText}`);
       }
       
-      const quoteData = await response.json();
-      console.log('Quote data received:', quoteData);
+      const orderData = await response.json();
+      console.log('✅ Ultra Order data received:', orderData);
       
-      if (!quoteData || !quoteData.outAmount) {
+      if (!orderData || !orderData.outAmount) {
         throw new Error('No routes found for this swap');
       }
       
-      setQuote(quoteData);
+      setQuote(orderData);
       
-      const outAmount = parseFloat(quoteData.outAmount) / Math.pow(10, toToken.decimals);
+      const outAmount = parseFloat(orderData.outAmount) / Math.pow(10, toToken.decimals);
       setToAmount(outAmount.toFixed(6));
     } catch (error: any) {
       console.error('Quote error:', error);
@@ -323,59 +323,48 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
     setIsSwapping(true);
     try {
-      // Use backend proxy with referral fee
-      const response = await fetch('/api/jupiter/swap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quoteResponse: quote,
-          userPublicKey: publicKey.toString(),
-          wrapAndUnwrapSol: true
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to get swap transaction: ${errorText || response.statusText}`);
+      // Ultra Swap: order already contains the transaction from getQuote
+      if (!quote.transaction || !quote.requestId) {
+        throw new Error('Invalid order: missing transaction or requestId');
       }
 
-      const { swapTransaction } = await response.json();
-      const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-
-      const signedTransaction = await signTransaction(transaction);
+      console.log('🚀 Signing Ultra Swap transaction...');
       
-      // Send via backend to avoid RPC restrictions
-      const sendResponse = await fetch('/api/jupiter/send-transaction', {
+      // Deserialize and sign the transaction
+      const transactionBuf = Buffer.from(quote.transaction, 'base64');
+      const transaction = VersionedTransaction.deserialize(transactionBuf);
+      const signedTransaction = await signTransaction(transaction);
+      const signedBase64 = Buffer.from(signedTransaction.serialize()).toString('base64');
+
+      console.log('✅ Transaction signed, executing with requestId:', quote.requestId);
+      
+      // Execute via Ultra Swap API (Jupiter handles transaction sending)
+      const executeResponse = await fetch('/api/jupiter/ultra/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signedTransaction: Buffer.from(signedTransaction.serialize()).toString('base64')
+          signedTransaction: signedBase64,
+          requestId: quote.requestId
         })
       });
 
-      if (!sendResponse.ok) {
-        let errorMessage = 'Failed to send transaction';
+      if (!executeResponse.ok) {
+        let errorMessage = 'Failed to execute swap';
         try {
-          const errorData = await sendResponse.json();
+          const errorData = await executeResponse.json();
           errorMessage = errorData.error || errorData.details || errorMessage;
         } catch {
-          errorMessage = await sendResponse.text();
+          errorMessage = await executeResponse.text();
         }
         throw new Error(errorMessage);
       }
 
-      const sendData = await sendResponse.json();
-      const signature = sendData.signature;
+      const executeData = await executeResponse.json();
       
-      // Try to confirm with timeout, but still show success if it fails
-      try {
-        await Promise.race([
-          connection.confirmTransaction(signature, 'confirmed'),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-        ]);
+      if (executeData.status === "Success") {
+        const signature = executeData.signature;
+        console.log('✅ Ultra Swap successful:', signature);
         
-        // Confirmation successful
         toast({
           title: 'Swap Successful!',
           description: (
@@ -393,33 +382,16 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           ),
           className: 'bg-green-600 text-white border-green-500',
         });
-      } catch (confirmError) {
-        // Confirmation timeout or error, but transaction was sent
-        toast({
-          title: 'Swap Successful!',
-          description: (
-            <div className="space-y-2">
-              <p>Transaction confirmed on Solana blockchain</p>
-              <a 
-                href={`https://solscan.io/tx/${signature}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-white hover:text-green-100 underline font-medium"
-              >
-                View Transaction →
-              </a>
-            </div>
-          ),
-          className: 'bg-green-600 text-white border-green-500',
-        });
-      }
 
-      setFromAmount('');
-      setToAmount('');
-      setQuote(null);
-      onOpenChange(false);
+        setFromAmount('');
+        setToAmount('');
+        setQuote(null);
+        onOpenChange(false);
+      } else {
+        throw new Error(executeData.error || 'Swap execution failed');
+      }
     } catch (error: any) {
-      console.error('Swap error:', error);
+      console.error('❌ Ultra Swap error:', error);
       toast({
         title: 'Swap Failed',
         description: error.message || 'Failed to complete swap',

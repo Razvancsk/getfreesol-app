@@ -59,131 +59,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter quote proxy endpoint
-  app.get("/api/jupiter/quote", async (req, res) => {
+  // Jupiter Ultra Swap - Get Order endpoint (replaces quote + swap)
+  app.get("/api/jupiter/ultra/order", async (req, res) => {
     try {
-      const { inputMint, outputMint, amount, slippageBps = '100' } = req.query;
+      const { inputMint, outputMint, amount, taker } = req.query;
       
       if (!inputMint || !outputMint || !amount) {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Enable referral fees - 0.50% (50 bps)
-      const platformFeeBps = 50;
-      const feeAccount = "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
+      // Ultra Swap Referral Configuration
+      const referralAccount = "5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB";
+      const referralFee = 100; // 1% (100 bps) - can be 50-255 bps
 
-      // Add restrictIntermediateTokens for more stable routes, platformFeeBps and feeAccount for referral fee (0.5%)
-      const quoteUrl = `https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}&restrictIntermediateTokens=true&platformFeeBps=${platformFeeBps}&feeAccount=${feeAccount}`;
+      // Build order URL with referral params
+      const orderUrl = new URL('https://lite-api.jup.ag/ultra/v1/order');
+      orderUrl.searchParams.append('inputMint', inputMint as string);
+      orderUrl.searchParams.append('outputMint', outputMint as string);
+      orderUrl.searchParams.append('amount', amount as string);
+      if (taker) {
+        orderUrl.searchParams.append('taker', taker as string);
+      }
+      orderUrl.searchParams.append('referralAccount', referralAccount);
+      orderUrl.searchParams.append('referralFee', referralFee.toString());
       
-      console.log('📊 Quote URL:', quoteUrl);
+      console.log('🚀 Ultra Swap Order URL:', orderUrl.toString());
       
-      const response = await fetch(quoteUrl, {
+      const response = await fetch(orderUrl.toString(), {
         headers: { 'Accept': 'application/json' }
       });
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Jupiter quote error:', response.status, errorText);
-        return res.status(response.status).json({ error: errorText || 'Failed to get quote' });
+        console.error('Jupiter Ultra order error:', response.status, errorText);
+        return res.status(response.status).json({ error: errorText || 'Failed to get order' });
       }
 
-      const quoteData = await response.json();
-      res.json(quoteData);
+      const orderData = await response.json();
+      console.log('✅ Ultra Order received:', {
+        requestId: orderData.requestId,
+        feeMint: orderData.feeMint,
+        feeBps: orderData.feeBps,
+        hasTransaction: !!orderData.transaction
+      });
+      
+      res.json(orderData);
     } catch (error) {
-      console.error('Jupiter quote proxy error:', error);
+      console.error('Jupiter Ultra order proxy error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
 
-  // Jupiter swap proxy endpoint
-  app.post("/api/jupiter/swap", async (req, res) => {
+  // Jupiter Ultra Swap - Execute Order endpoint (replaces send-transaction)
+  app.post("/api/jupiter/ultra/execute", async (req, res) => {
     try {
-      const { quoteResponse, userPublicKey, wrapAndUnwrapSol, feeAccount } = req.body;
+      const { signedTransaction, requestId } = req.body;
       
-      if (!quoteResponse || !userPublicKey) {
-        return res.status(400).json({ error: 'Missing required parameters' });
+      if (!signedTransaction || !requestId) {
+        return res.status(400).json({ error: 'Missing required parameters: signedTransaction, requestId' });
       }
 
-      // Use the feeAccount from request or default to platform account
-      const referralFeeAccount = feeAccount || "AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d";
+      console.log('🚀 Executing Ultra Swap with requestId:', requestId);
 
-      const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
+      const response = await fetch('https://lite-api.jup.ag/ultra/v1/execute', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          quoteResponse,
-          userPublicKey,
-          wrapAndUnwrapSol: wrapAndUnwrapSol !== false,
-          dynamicComputeUnitLimit: true,
-          prioritizationFeeLamports: {
-            priorityLevelWithMaxLamports: {
-              maxLamports: 30250, // 0.00003025 SOL max for priority (faster confirmation)
-              priorityLevel: "veryHigh"
-            }
-          },
-          feeAccount: referralFeeAccount // Platform fee account (0.5% from platformFeeBps=50 in quote)
+          signedTransaction,
+          requestId
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Jupiter swap error:', response.status, errorText);
-        return res.status(response.status).json({ error: errorText || 'Failed to get swap transaction' });
+        console.error('Jupiter Ultra execute error:', response.status, errorText);
+        return res.status(response.status).json({ error: errorText || 'Failed to execute order' });
       }
 
-      const swapData = await response.json();
-      res.json(swapData);
-    } catch (error) {
-      console.error('Jupiter swap proxy error:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  // Send transaction endpoint
-  app.post("/api/jupiter/send-transaction", async (req, res) => {
-    try {
-      const { signedTransaction } = req.body;
+      const executeData = await response.json();
       
-      if (!signedTransaction) {
-        return res.status(400).json({ error: 'Missing parameter: signedTransaction' });
+      if (executeData.status === "Success") {
+        console.log('✅ Ultra Swap successful:', executeData.signature);
+        console.log('   View on Solscan:', `https://solscan.io/tx/${executeData.signature}`);
+      } else {
+        console.log('❌ Ultra Swap failed:', executeData.status);
       }
       
-      const heliusKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : 'https://api.mainnet-beta.solana.com';
-      
-      console.log('Sending transaction to:', rpcUrl.includes('helius') ? 'Helius RPC' : 'Public RPC');
-      
-      const connection = new Connection(rpcUrl, 'confirmed');
-      
-      const signature = await connection.sendRawTransaction(
-        Buffer.from(signedTransaction, 'base64'),
-        {
-          skipPreflight: false,
-          preflightCommitment: 'confirmed',
-          maxRetries: 3
-        }
-      );
-      
-      console.log('✅ Transaction sent successfully:', signature);
-      res.json({ signature });
+      res.json(executeData);
       
     } catch (error: any) {
-      console.error('❌ Send transaction error:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        logs: error?.logs
-      });
-      
+      console.error('❌ Ultra execute error:', error);
       res.status(500).json({ 
-        error: 'Failed to send transaction',
-        details: error?.message || 'Unknown error',
-        code: error?.code
+        error: 'Failed to execute swap',
+        details: error?.message || 'Unknown error'
       });
     }
   });
