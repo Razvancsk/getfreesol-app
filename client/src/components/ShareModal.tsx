@@ -61,7 +61,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30 p-5">
+      <DialogContent className="sm:max-w-sm bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30 p-5 rounded-3xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white">
             Share
@@ -93,12 +93,12 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
             <Input
               value={shareUrl}
               readOnly
-              className="bg-slate-800/50 border-purple-500/30 text-white text-sm flex-1"
+              className="bg-slate-800/50 border-purple-500/30 text-white text-sm flex-1 rounded-xl"
               data-testid="input-share-link"
             />
             <Button
               onClick={handleCopy}
-              className="bg-green-600 hover:bg-green-700 text-white px-5 shrink-0"
+              className="bg-green-600 hover:bg-green-700 text-white px-5 shrink-0 rounded-xl"
               data-testid="button-copy-link"
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -107,7 +107,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
           
           {/* Commission Rate Display */}
           {referralCode && (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3.5">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-3.5">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm text-green-300">Your Commission Rate</p>
                 <div className="bg-green-500/20 px-2.5 py-0.5 rounded-full">
