@@ -61,19 +61,24 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 p-6">
+      <DialogContent className="sm:max-w-sm bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30 p-5">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          <DialogTitle className="text-xl font-bold text-white">
             Share
           </DialogTitle>
-          <p className="text-sm text-gray-600 dark:text-gray-400 pt-1">
+          <p className="text-sm text-purple-200 pt-1">
             Invite friends to earn more $SOL
           </p>
         </DialogHeader>
         
-        <div className="space-y-4 pt-2">
-          {/* Social Share Buttons */}
-          <div className="flex justify-start gap-3">
+        <div className="space-y-3.5 pt-2">
+          {/* Success Message */}
+          <p className="text-2xl font-bold text-green-400 text-center">
+            {solClaimed.toFixed(6)} SOL Claimed! 🎉
+          </p>
+          
+          {/* Social Share Button */}
+          <div className="flex justify-center">
             <Button
               onClick={handleShareOnX}
               className="rounded-full w-12 h-12 bg-black hover:bg-black/80 text-white p-0"
@@ -88,30 +93,33 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
             <Input
               value={shareUrl}
               readOnly
-              className="bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white text-sm flex-1"
+              className="bg-slate-800/50 border-purple-500/30 text-white text-sm flex-1"
               data-testid="input-share-link"
             />
             <Button
               onClick={handleCopy}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 shrink-0"
+              className="bg-green-600 hover:bg-green-700 text-white px-5 shrink-0"
               data-testid="button-copy-link"
             >
-              {copied ? "Copied" : "Copy"}
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
           
           {/* Commission Rate Display */}
           {referralCode && (
-            <div className="bg-green-50 dark:bg-green-950/30 rounded-xl p-4">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3.5">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-sm text-gray-700 dark:text-gray-300">Your Commission Rate</p>
-                <div className="bg-green-100 dark:bg-green-900/50 px-2.5 py-0.5 rounded-full">
-                  <p className="text-xs text-green-700 dark:text-green-300 font-semibold">
+                <p className="text-sm text-green-300">Your Commission Rate</p>
+                <div className="bg-green-500/20 px-2.5 py-0.5 rounded-full">
+                  <p className="text-xs text-green-300 font-semibold">
                     Highest in Market
                   </p>
                 </div>
               </div>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{commissionRate}</p>
+              <p className="text-2xl font-bold text-green-400">{commissionRate}</p>
+              <p className="text-xs text-green-200 mt-1.5">
+                Earn {commissionRate} commission of every SOL your referrals claim!
+              </p>
             </div>
           )}
         </div>
