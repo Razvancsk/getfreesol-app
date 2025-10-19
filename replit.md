@@ -4,9 +4,13 @@
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
 ## Recent Updates (January 2025)
-- **Jupiter Swap Referral Fees**: Integrated 0.5% platform fee (platformFeeBps=50) on all swaps using simplified January 2025 API (no Referral Program setup required)
-- **Referral Fee Account**: AT2ZEMu93yJdJfhATLMWYnGigFkJyZchcJWt1TCjPq5d receives 0.5% of swap output tokens automatically
-- **Jupiter Swap Integration**: Added Jupiter Terminal widget for in-app token swapping with wallet passthrough
+- **Jupiter Ultra Swap Integration** (October 2025): Migrated from Legacy Swap API to Ultra Swap API for enhanced performance and reliability
+  - Ultra Swap endpoints: `/api/jupiter/ultra/order` (quote + transaction) and `/api/jupiter/ultra/execute` (broadcast)
+  - Referral account: `5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBPbFyZdB` receives 1% (100 bps) referral fee
+  - Token account: `2iDyu7fVbXPKuGnbas3PfZDZtY2MJuxr1mYh8Qahx1NF` collects fees in output tokens
+  - Jupiter takes 20% of referral fees (platform receives 80% of 1% = 0.8%)
+  - Benefits: Sub-2-second execution, MEV protection, gasless swaps via Jupiter Z, real-time slippage optimization
+  - No RPC management required - Jupiter handles transaction broadcasting and confirmation
 - **Deployment Fixes Applied**: Complete server configuration overhaul for production deployment stability
 - **Enhanced Error Handling**: Comprehensive startup error handling with detailed logging and graceful failure modes
 - **Port Configuration**: Corrected server listening configuration using environment variables without object parameters
@@ -49,7 +53,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
-- **Jupiter Swap Integration**: In-app token swapping via Jupiter Terminal widget with wallet passthrough.
+- **Jupiter Ultra Swap Integration**: Advanced token swapping using Jupiter Ultra API with referral fee collection (1% integrator fee, 20% Jupiter fee split).
 - **Solana Integration**: Handles RPC interactions for account discovery and transaction submission.
 - **Data Persistence**: Stores scan results, transaction records, and user statistics.
 
@@ -65,6 +69,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.
 - **Helius API**: Enhanced RPC provider.
+- **Jupiter Ultra Swap API**: Advanced DEX aggregator with Juno Liquidity Engine, MEV protection, and proprietary transaction sending.
 - **Multi-Wallet Support**: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
 - **Ledger Hardware Wallet**: Secure cold storage wallet integration with WebHID support.
 - **PostgreSQL**: Primary database.
