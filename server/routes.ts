@@ -69,6 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ultra Swap Referral Configuration
+      // Referral account: You get 80% of 1% = 0.8%, Jupiter gets 20% of 1% = 0.2%
       const referralAccount = "5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB";
       const referralFee = 100; // 1% (100 bps) - can be 50-255 bps
 
@@ -80,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (taker) {
         orderUrl.searchParams.append('taker', taker as string);
       }
-      // TODO: Uncomment after setting up referral account at https://referral.jup.ag/
+      // Referral disabled - account needs initialization first
       // orderUrl.searchParams.append('referralAccount', referralAccount);
       // orderUrl.searchParams.append('referralFee', referralFee.toString());
       
