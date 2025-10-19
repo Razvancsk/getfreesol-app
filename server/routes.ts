@@ -68,7 +68,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Build order URL
+      // Ultra Swap Referral Configuration
+      // Referral account: 5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB
+      // Token account for fees: 6F75HBoQ64GRXnUXAxeWMcJVax5dUgeBnY96sWSNzXdD
+      const referralAccount = "5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB";
+      const referralFee = 50; // 0.50% (50 bps)
+
+      // Build order URL with referral params
       const orderUrl = new URL('https://lite-api.jup.ag/ultra/v1/order');
       orderUrl.searchParams.append('inputMint', inputMint as string);
       orderUrl.searchParams.append('outputMint', outputMint as string);
@@ -76,6 +82,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (taker) {
         orderUrl.searchParams.append('taker', taker as string);
       }
+      orderUrl.searchParams.append('referralAccount', referralAccount);
+      orderUrl.searchParams.append('referralFee', referralFee.toString());
       
       console.log('🚀 Ultra Swap Order URL:', orderUrl.toString());
       
