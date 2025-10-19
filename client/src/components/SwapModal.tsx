@@ -290,14 +290,30 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Ultra Order API error:', response.status, errorText);
-        throw new Error(`Failed to get order: ${errorText || response.statusText}`);
+        
+        // Parse Jupiter's error message
+        let errorMsg = 'Unable to get swap quote';
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error?.includes?.('Failed to get quotes')) {
+            errorMsg = 'No swap route available. Try a larger amount or different token pair.';
+          } else if (errorData.error?.includes?.('Unsupported')) {
+            errorMsg = 'This token is not supported for swapping. Please choose a different token.';
+          } else {
+            errorMsg = errorData.error || errorMsg;
+          }
+        } catch {
+          errorMsg = errorText || response.statusText;
+        }
+        
+        throw new Error(errorMsg);
       }
       
       const orderData = await response.json();
       console.log('✅ Ultra Order data received:', orderData);
       
       if (!orderData || !orderData.outAmount) {
-        throw new Error('No routes found for this swap');
+        throw new Error('No swap route available. Try a larger amount or different token pair.');
       }
       
       setQuote(orderData);
