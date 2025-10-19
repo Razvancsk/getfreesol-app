@@ -69,9 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ultra Swap Referral Configuration
-      // 0.50% referral fee (50 bps): You get 80% = 0.40%, Jupiter gets 20% = 0.10%
+      // 0.20% referral fee (20 bps): You get 80% = 0.16%, Jupiter gets 20% = 0.04%
       const referralAccount = "5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB";
-      const referralFee = 50; // 0.50% (50 bps)
+      const referralFee = 20; // 0.20% (20 bps)
 
       // Build order URL with referral params
       const orderUrl = new URL('https://lite-api.jup.ag/ultra/v1/order');
