@@ -5,6 +5,7 @@ import { SiX } from "react-icons/si";
 import { Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { getRandomShareMessage } from "@shared/shareMessages";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -12,22 +13,6 @@ interface ShareModalProps {
   solClaimed: number;
   referralCode: string | null;
 }
-
-// Array of random tweet templates (outside component so it doesn't recreate)
-const tweetTemplates = [
-  `Found a sneaky {amount} $SOL chilling in my wallet 👀\nSnagged it instantly with Get Free Sol 💜 {link}`,
-  `Didn't expect to see {amount} $SOL appear out of nowhere 👀\nClaimed it right away with Get Free Sol 💜 {link}`,
-  `Tiny surprise in my wallet today — {amount} $SOL 💜\nQuick claim through Get Free Sol {link}`,
-  `Found some free $SOL I didn't even know I had 😎\nGet Free Sol made the claim instant 💜 {link}`,
-  `🎯 Just spotted {amount} $SOL waiting for me — claimed it instantly with Get Free Sol 💜\nTry your luck ⚡ {link}`,
-  `Found {amount} $SOL sitting unclaimed — grabbed it in seconds with Get Free Sol ⚡\nYou might have some too 💜 {link}`,
-  `Surprised to see {amount} $SOL ready to claim — used Get Free Sol and it was instant ⚡ {link}`,
-  `🎯 Just claimed {amount} $SOL through Get Free Sol 💜\nQuick, clean, and smooth ⚡ {link}`,
-  `🚀 Surprised to see {amount} $SOL waiting — claimed it easily with Get Free Sol {link}`,
-  `🔥 Just noticed {amount} $SOL hiding — claimed it with Get Free Sol. Worth a look 💜 {link}`,
-  `Found {amount} $SOL unclaimed — used Get Free Sol to collect it. See what you've got! {link}`,
-  `🎯 {amount} $SOL popped up — claimed it through Get Free Sol. Try your chance! {link}`
-];
 
 export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
@@ -44,11 +29,10 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
   // Pick a NEW random message every time the modal opens
   useEffect(() => {
     if (isOpen) {
-      const randomTemplate = tweetTemplates[Math.floor(Math.random() * tweetTemplates.length)];
-      const filledText = randomTemplate
-        .replace('{amount}', solClaimed.toFixed(6))
-        .replace('{link}', shareUrl);
-      setTweetText(filledText);
+      const lamports = Math.floor(solClaimed * 1e9);
+      const message = getRandomShareMessage(lamports);
+      const tweetText = `${message} ${shareUrl}`;
+      setTweetText(tweetText);
     }
   }, [isOpen, solClaimed, shareUrl]);
   
