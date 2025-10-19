@@ -24,7 +24,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
   
   const commissionRate = "50%"; // 50% commission split
   
-  const tweetText = `🎯 Surprised to find ${solClaimed.toFixed(6)} $SOL hiding in my wallet — claimed it instantly with Get Your SOL Back! Try your luck! ${shareUrl}`;
+  const tweetText = `🎯 Surprised to find ${solClaimed.toFixed(6)} $SOL hiding in my wallet — claimed it instantly with Get Free Sol. Try your luck! ${shareUrl}`;
   
   const handleCopy = async () => {
     try {
