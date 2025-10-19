@@ -5,10 +5,21 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
+import { getShareMessage, getShareTitle, lamportsToSol } from "../shared/shareMessages";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Helper function to escape HTML special characters
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // Lightweight health check endpoint - always returns 200
 app.get('/health', async (req, res) => {
@@ -202,6 +213,74 @@ function getStaticAssetsPath() {
     app.set('env', process.env.NODE_ENV);
     
     log(`Starting server in ${process.env.NODE_ENV} mode...`);
+
+    // Dynamic Open Graph middleware for social sharing
+    // This must be registered BEFORE static file serving or Vite setup
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      // Only handle HTML requests to root path
+      const isHtmlRequest = req.accepts('html') && (req.path === '/' || req.path === '/index.html');
+      const claimedParam = req.query.claimed as string;
+      
+      if (!isHtmlRequest || !claimedParam) {
+        return next();
+      }
+
+      try {
+        const lamports = parseInt(claimedParam, 10);
+        if (isNaN(lamports) || lamports <= 0) {
+          return next();
+        }
+
+        // Generate dynamic OG content
+        const solAmount = lamportsToSol(lamports);
+        const ogTitle = getShareTitle(lamports);
+        const ogDescription = getShareMessage(lamports);
+        const ogUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+
+        // Read the index.html template
+        const staticPath = process.env.NODE_ENV === 'development' 
+          ? path.resolve(import.meta.dirname, "..", "client")
+          : getStaticAssetsPath();
+        const indexPath = path.resolve(staticPath, 'index.html');
+        
+        if (!fs.existsSync(indexPath)) {
+          log(`Index.html not found at ${indexPath}, skipping OG injection`);
+          return next();
+        }
+
+        let html = fs.readFileSync(indexPath, 'utf-8');
+
+        // Inject dynamic OG tags
+        html = html
+          .replace(
+            /<meta property="og:title" content="[^"]*" id="og-title" \/>/,
+            `<meta property="og:title" content="${escapeHtml(ogTitle)}" id="og-title" />`
+          )
+          .replace(
+            /<meta property="og:description" content="[^"]*" id="og-description" \/>/,
+            `<meta property="og:description" content="${escapeHtml(ogDescription)}" id="og-description" />`
+          )
+          .replace(
+            /<meta property="og:url" content="[^"]*" id="og-url" \/>/,
+            `<meta property="og:url" content="${escapeHtml(ogUrl)}" id="og-url" />`
+          )
+          .replace(
+            /<meta name="twitter:title" content="[^"]*" id="twitter-title" \/>/,
+            `<meta name="twitter:title" content="${escapeHtml(ogTitle)}" id="twitter-title" />`
+          )
+          .replace(
+            /<meta name="twitter:description" content="[^"]*" id="twitter-description" \/>/,
+            `<meta name="twitter:description" content="${escapeHtml(ogDescription)}" id="twitter-description" />`
+          );
+
+        res.setHeader('Content-Type', 'text/html');
+        res.send(html);
+        log(`Injected dynamic OG tags for ${solAmount} SOL claim`);
+      } catch (error) {
+        log(`Error injecting OG tags: ${error instanceof Error ? error.message : String(error)}`);
+        next();
+      }
+    });
 
     // Setup vite in development, static file serving in production
     if (process.env.NODE_ENV === "development") {
