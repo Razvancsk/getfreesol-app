@@ -404,13 +404,20 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         setQuote(null);
         onOpenChange(false);
       } else {
-        // Jupiter returned Failed status - could be expired transaction, slippage, or other blockchain error
-        console.error('Jupiter execute failed:', executeData);
-        throw new Error(
-          executeData.error || 
-          executeData.message || 
-          'Transaction failed. Please get a fresh quote and try again.'
-        );
+        // Jupiter returned Failed status - log full response and show link if signature exists
+        console.error('Jupiter execute failed:', JSON.stringify(executeData, null, 2));
+        if (executeData.signature) {
+          console.log(`View failed transaction: https://solscan.io/tx/${executeData.signature}`);
+        }
+        
+        let errorMsg = 'Transaction failed on-chain.';
+        if (executeData.signature) {
+          errorMsg += ` View on Solscan: https://solscan.io/tx/${executeData.signature}`;
+        } else {
+          errorMsg += ' Likely due to slippage, insufficient balance for fees, or network congestion.';
+        }
+        
+        throw new Error(executeData.error || executeData.message || errorMsg);
       }
     } catch (error: any) {
       console.error('❌ Ultra Swap error:', error);
