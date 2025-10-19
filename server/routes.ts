@@ -151,7 +151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ Ultra Swap successful:', executeData.signature);
         console.log('   View on Solscan:', `https://solscan.io/tx/${executeData.signature}`);
       } else {
-        console.log('❌ Ultra Swap failed:', executeData.status);
+        console.error('❌ Ultra Swap failed - Full response:', JSON.stringify(executeData, null, 2));
+        console.log('   Possible causes: expired blockhash, slippage exceeded, insufficient balance, or network congestion');
       }
       
       res.json(executeData);

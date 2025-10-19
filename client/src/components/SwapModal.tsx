@@ -404,7 +404,13 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         setQuote(null);
         onOpenChange(false);
       } else {
-        throw new Error(executeData.error || 'Swap execution failed');
+        // Jupiter returned Failed status - could be expired transaction, slippage, or other blockchain error
+        console.error('Jupiter execute failed:', executeData);
+        throw new Error(
+          executeData.error || 
+          executeData.message || 
+          'Transaction failed. Please get a fresh quote and try again.'
+        );
       }
     } catch (error: any) {
       console.error('❌ Ultra Swap error:', error);
