@@ -68,12 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Ultra Swap Referral Configuration
-      // 0.50% referral fee (50 bps): You get 80% = 0.40%, Jupiter gets 20% = 0.10%
-      const referralAccount = "5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB";
-      const referralFee = 50; // 0.50% (50 bps)
-
-      // Build order URL with referral params
+      // Build order URL
       const orderUrl = new URL('https://lite-api.jup.ag/ultra/v1/order');
       orderUrl.searchParams.append('inputMint', inputMint as string);
       orderUrl.searchParams.append('outputMint', outputMint as string);
@@ -81,8 +76,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (taker) {
         orderUrl.searchParams.append('taker', taker as string);
       }
-      orderUrl.searchParams.append('referralAccount', referralAccount);
-      orderUrl.searchParams.append('referralFee', referralFee.toString());
       
       console.log('🚀 Ultra Swap Order URL:', orderUrl.toString());
       
