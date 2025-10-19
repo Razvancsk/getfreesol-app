@@ -169,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all wallet token accounts with metadata
+  // Get all wallet token accounts with metadata using Jupiter Holdings API
   app.get("/api/wallet/all-tokens", async (req, res) => {
     try {
       const { address } = req.query;
@@ -178,99 +178,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing address parameter' });
       }
 
-      const heliusKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      // Use Jupiter Ultra Holdings API - returns ALL tokens (standard + Token-2022)
+      const holdingsResponse = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${address}`);
+      
+      if (!holdingsResponse.ok) {
+        const errorText = await holdingsResponse.text();
+        console.error('Jupiter Holdings API error:', holdingsResponse.status, errorText);
+        return res.status(holdingsResponse.status).json({ error: 'Failed to fetch token holdings' });
+      }
 
-      const connection = new Connection(rpcUrl, 'confirmed');
-      const walletPubkey = new PublicKey(address);
+      const holdings = await holdingsResponse.json();
+      
+      if (holdings.error) {
+        return res.status(400).json({ error: holdings.error });
+      }
 
-      // Get native SOL balance
-      const solBalance = await connection.getBalance(walletPubkey);
-      const solBalanceInSol = solBalance / 1e9;
+      const tokensWithMetadata = [];
 
-      // Get all token accounts - BOTH standard Token Program AND Token-2022
-      const [tokenAccounts, token2022Accounts] = await Promise.all([
-        connection.getParsedTokenAccountsByOwner(
-          walletPubkey,
-          { programId: TOKEN_PROGRAM_ID }
-        ),
-        connection.getParsedTokenAccountsByOwner(
-          walletPubkey,
-          { programId: TOKEN_2022_PROGRAM_ID }
-        )
-      ]);
-
-      // Combine both standard and Token-2022 accounts
-      const allTokenAccounts = [
-        ...tokenAccounts.value,
-        ...token2022Accounts.value
-      ];
-
-      const tokensWithBalance = allTokenAccounts
-        .map((account) => {
-          const accountData = account.account.data.parsed.info;
-          return {
-            mint: accountData.mint,
-            balance: parseFloat(accountData.tokenAmount.uiAmount || '0'),
-            balanceRaw: accountData.tokenAmount.amount,
-            decimals: accountData.tokenAmount.decimals
-          };
-        })
-        .filter(t => t.balance > 0);
-
-      // Add SOL as first token if balance > 0
-      if (solBalanceInSol > 0) {
-        tokensWithBalance.unshift({
-          mint: 'So11111111111111111111111111111111111111112',
-          balance: solBalanceInSol,
-          balanceRaw: solBalance.toString(),
-          decimals: 9
+      // Add native SOL if balance > 0
+      const solBalance = parseFloat(holdings.uiAmount || '0');
+      if (solBalance > 0) {
+        tokensWithMetadata.push({
+          address: 'So11111111111111111111111111111111111111112',
+          symbol: 'SOL',
+          name: 'Solana',
+          decimals: 9,
+          logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+          balance: solBalance,
+          balanceRaw: holdings.amount
         });
       }
 
-      // Fetch metadata for each token using Jupiter's search API
-      const tokensWithMetadata = await Promise.all(
-        tokensWithBalance.map(async (token) => {
-          try {
-            // Use Jupiter's search API with the mint address
-            const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${token.mint}`);
-            if (response.ok) {
-              const searchResults = await response.json();
-              // Find exact match by address
-              const metadata = Array.isArray(searchResults) 
-                ? searchResults.find((t: any) => t.id === token.mint)
-                : null;
-              
-              if (metadata) {
-                return {
-                  address: token.mint,
-                  symbol: metadata.symbol || 'UNKNOWN',
-                  name: metadata.name || 'Unknown Token',
-                  decimals: token.decimals,
-                  logoURI: metadata.icon || '',
-                  balance: token.balance,
-                  balanceRaw: token.balanceRaw
-                };
-              }
-            }
-          } catch (err) {
-            console.error(`Error fetching metadata for ${token.mint}:`, err);
-          }
+      // Process all token holdings (includes both standard and Token-2022)
+      if (holdings.tokens) {
+        for (const [mintAddress, tokenAccounts] of Object.entries(holdings.tokens)) {
+          // Sum all token accounts for this mint (some tokens may have multiple accounts)
+          const totalBalance = (tokenAccounts as any[]).reduce((sum, acc) => 
+            sum + parseFloat(acc.uiAmount || '0'), 0
+          );
           
-          // Fallback if metadata not found
-          return {
-            address: token.mint,
-            symbol: 'UNKNOWN',
-            name: 'Unknown Token',
-            decimals: token.decimals,
-            logoURI: '',
-            balance: token.balance,
-            balanceRaw: token.balanceRaw
-          };
-        })
-      );
+          if (totalBalance > 0) {
+            const firstAccount = (tokenAccounts as any[])[0];
+            
+            // Fetch metadata from Jupiter
+            try {
+              const metadataResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`);
+              if (metadataResponse.ok) {
+                const searchResults = await metadataResponse.json();
+                const metadata = Array.isArray(searchResults) 
+                  ? searchResults.find((t: any) => t.id === mintAddress)
+                  : null;
+                
+                if (metadata) {
+                  tokensWithMetadata.push({
+                    address: mintAddress,
+                    symbol: metadata.symbol || 'UNKNOWN',
+                    name: metadata.name || 'Unknown Token',
+                    decimals: firstAccount.decimals,
+                    logoURI: metadata.icon || '',
+                    balance: totalBalance,
+                    balanceRaw: (tokenAccounts as any[]).reduce((sum, acc) => 
+                      sum + BigInt(acc.amount || '0'), BigInt(0)
+                    ).toString()
+                  });
+                  continue;
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching metadata for ${mintAddress}:`, err);
+            }
+
+            // Fallback if metadata not found
+            tokensWithMetadata.push({
+              address: mintAddress,
+              symbol: 'UNKNOWN',
+              name: 'Unknown Token',
+              decimals: firstAccount.decimals,
+              logoURI: '',
+              balance: totalBalance,
+              balanceRaw: (tokenAccounts as any[]).reduce((sum, acc) => 
+                sum + BigInt(acc.amount || '0'), BigInt(0)
+              ).toString()
+            });
+          }
+        }
+      }
 
       return res.json({ 
         success: true, 
