@@ -548,8 +548,12 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
                 <button 
                   onClick={() => {
                     const balance = balances[fromToken.address] || 0;
-                    setFromAmount(balance.toString());
-                    getQuote(balance.toString());
+                    // Reserve 0.01 SOL for transaction fees when swapping FROM SOL
+                    const isSol = fromToken.address === 'So11111111111111111111111111111111111111112';
+                    const feeReserve = 0.01;
+                    const maxAmount = isSol ? Math.max(0, balance - feeReserve) : balance;
+                    setFromAmount(maxAmount.toString());
+                    getQuote(maxAmount.toString());
                   }}
                   className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
                 >
