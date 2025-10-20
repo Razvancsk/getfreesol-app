@@ -657,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add fee transfer instructions AFTER close instructions
       // Fees are paid from SOL recovered by closing accounts
       if (platformFeeLamports > 0) {
-        const feeCollectorPublicKey = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
+        const feeCollectorPublicKey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
@@ -1780,7 +1780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add fee transfer instructions AFTER burn instructions
       if (platformFeeLamports > 0) {
-        const feeCollectorPublicKey = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
+        const feeCollectorPublicKey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
@@ -2792,7 +2792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalPlatformFeeAmount = platformFeeAmount - referralFeeAmount;
       
       // Add platform fee transfer
-      const platformWallet = new PublicKey('9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf');
+      const platformWallet = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
       if (finalPlatformFeeAmount > 0.001) { // Only add if significant
         const platformFeeInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
@@ -3170,7 +3170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBurnTransactions = [];
-      const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
+      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
@@ -3437,7 +3437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBatchTransactions = [];
-      const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
+      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
@@ -3768,7 +3768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBatchTransactions = [];
-      const platformWalletAddress = '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
+      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {

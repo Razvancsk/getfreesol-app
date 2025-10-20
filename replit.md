@@ -15,6 +15,7 @@
   - Ultra Swap endpoints: `/api/jupiter/ultra/order` (quote + transaction) and `/api/jupiter/ultra/execute` (broadcast)
   - Referral account: `5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBPbFyZdB` receives 1% (100 bps) referral fee
   - Token account: `2iDyu7fVbXPKuGnbas3PfZDZtY2MJuxr1mYh8Qahx1NF` collects fees in output tokens
+  - Platform fee wallet: `GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6` receives SOL reclaim fees
   - Jupiter takes 20% of referral fees (platform receives 80% of 1% = 0.8%)
   - Benefits: Sub-2-second execution, MEV protection, gasless swaps via Jupiter Z, real-time slippage optimization
   - No RPC management required - Jupiter handles transaction broadcasting and confirmation
