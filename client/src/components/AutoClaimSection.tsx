@@ -365,32 +365,13 @@ export function AutoClaimSection() {
                 ) : (
                   <>
                     <Zap className="h-5 w-5 mr-2" />
-                    Enable Auto-Claim (Sign Permit Only)
+                    Enable & Delegate Accounts (1-Click!)
                   </>
                 )}
               </Button>
             </div>
           ) : (
             <div className="flex justify-center gap-4">
-              <Button
-                onClick={() => delegateAuthorityMutation.mutate()}
-                disabled={isProcessing || delegateAuthorityMutation.isPending}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
-                data-testid="button-delegate-now"
-              >
-                {isProcessing || delegateAuthorityMutation.isPending ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2 animate-spin" />
-                    Delegating...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-5 w-5 mr-2" />
-                    Delegate Now (FREE!)
-                  </>
-                )}
-              </Button>
-              
               <Button
                 onClick={() => revokeAutoClaimMutation.mutate()}
                 disabled={isProcessing || revokeAutoClaimMutation.isPending}
