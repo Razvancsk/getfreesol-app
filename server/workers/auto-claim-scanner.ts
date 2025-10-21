@@ -14,6 +14,7 @@ interface EmptyAccountScanResult {
     mint: string;
     rentLamports: number;
     isToken2022: boolean;
+    programId: string;
   }[];
   totalRentRecoverable: number;
 }
