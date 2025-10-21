@@ -25,14 +25,13 @@ export class AutoClaimExecutor {
   private connection: Connection;
   private isRunning: boolean = false;
   private isProcessing: boolean = false; // Prevent overlapping runs
-  private executionInterval: NodeJS.Timeout | null = null;
   private relayerKeypair: Keypair | null = null;
 
   constructor() {
     this.connection = new Connection(HELIUS_RPC, "confirmed");
   }
 
-  async start(intervalMs: number = 30000) {
+  async start() {
     if (this.isRunning) {
       console.log("⚠️  Auto-Claim executor already running");
       return;
@@ -54,21 +53,20 @@ export class AutoClaimExecutor {
     }
 
     this.isRunning = true;
-    console.log("🤖 Auto-Claim executor starting...");
-    console.log(`📊 Execution interval: ${intervalMs / 1000}s`);
+    console.log("🤖 Auto-Claim executor ready (on-demand mode)");
+    console.log("⚡ Executor will run ONLY when scanner finds accounts to close");
+  }
 
+  // Execute jobs on-demand (called by scanner when it creates jobs)
+  async executeNow() {
+    if (!this.isRunning) {
+      console.log("⚠️  Executor not started yet");
+      return;
+    }
     await this.processJobs();
-
-    this.executionInterval = setInterval(async () => {
-      await this.processJobs();
-    }, intervalMs);
   }
 
   stop() {
-    if (this.executionInterval) {
-      clearInterval(this.executionInterval);
-      this.executionInterval = null;
-    }
     this.isRunning = false;
     console.log("🛑 Auto-Claim executor stopped");
   }

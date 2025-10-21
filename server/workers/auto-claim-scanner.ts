@@ -2,6 +2,7 @@ import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { storage } from "../storage";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
 import bs58 from "bs58";
+import { autoClaimExecutor } from "./auto-claim-executor";
 
 const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
   ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
@@ -212,6 +213,12 @@ export class AutoClaimScanner {
         });
 
         console.log(`      ✅ Created job for ${batch.length} account(s)`);
+      }
+
+      // Trigger executor immediately after creating jobs
+      if (batches.length > 0) {
+        console.log(`      ⚡ Triggering executor to process jobs NOW...`);
+        setTimeout(() => autoClaimExecutor.executeNow(), 1000); // Small delay to ensure DB commit
       }
 
     } catch (error) {
