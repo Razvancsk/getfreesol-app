@@ -24,8 +24,6 @@ interface AutoClaimPermit {
   revokedAt: string | null;
   lastUsedAt: string | null;
   scopes: string;
-  pendingDelegationCount: number | null;
-  pendingDelegationSol: string | null;
 }
 
 interface RelayerJob {
@@ -50,24 +48,16 @@ export function AutoClaimSection() {
 
   const walletAddress = publicKey?.toBase58();
 
-  // Query permit status - POLL FAST like ledger!
+  // Query permit status
   const { data: permitStatus } = useQuery<{ permit: AutoClaimPermit | null }>({
     queryKey: ['/api/auto-claim/permit/status', walletAddress],
     enabled: !!walletAddress,
-    refetchInterval: 3000, // Poll every 3 seconds
-    refetchIntervalInBackground: true,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
   });
 
-  // Query job history - POLL FAST like ledger!
+  // Query job history
   const { data: jobHistory } = useQuery<{ jobs: RelayerJob[] }>({
     queryKey: ['/api/auto-claim/jobs', walletAddress],
     enabled: !!walletAddress,
-    refetchInterval: 3000, // Poll every 3 seconds
-    refetchIntervalInBackground: true,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
   });
 
   const hasActivePermit = permitStatus?.permit?.status === 'active';
@@ -281,24 +271,11 @@ export function AutoClaimSection() {
         setIsProcessing(false);
       }
     },
-    onSuccess: async (data: any) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Authority Delegated!",
         description: `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically.`,
       });
-      
-      // Clear pending delegation count on backend
-      if (walletAddress) {
-        try {
-          await apiRequest('POST', '/api/auto-claim/permit/clear-pending', {
-            walletAddress
-          });
-        } catch (error) {
-          console.error('Failed to clear pending delegation count:', error);
-        }
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
     },
     onError: (error: any) => {
@@ -369,24 +346,6 @@ export function AutoClaimSection() {
             You get 85%, platform gets 15%. Works for BOTH SPL tokens AND Token-2022.
           </AlertDescription>
         </Alert>
-
-        {/* NEW: Pending Delegation Notification */}
-        {hasActivePermit && permitStatus?.permit?.pendingDelegationCount && permitStatus.permit.pendingDelegationCount > 0 && (
-          <Alert className="bg-gradient-to-r from-green-900/60 to-green-800/60 border-green-500/50 mb-6 animate-pulse">
-            <Coins className="h-5 w-5 text-green-400" />
-            <AlertDescription className="text-green-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <strong className="text-green-200">New Empty Accounts Found!</strong>
-                  <p className="mt-1 text-sm">
-                    Scanner detected {permitStatus.permit.pendingDelegationCount} new empty account(s) worth {permitStatus.permit.pendingDelegationSol} SOL. 
-                    Click below to delegate them in 1 click (FREE - relayer pays fees!)
-                  </p>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-4">

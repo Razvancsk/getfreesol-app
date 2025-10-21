@@ -24,14 +24,14 @@ interface ExecutionResult {
 export class AutoClaimExecutor {
   private connection: Connection;
   private isRunning: boolean = false;
-  private isProcessing: boolean = false; // Prevent overlapping runs
+  private executionInterval: NodeJS.Timeout | null = null;
   private relayerKeypair: Keypair | null = null;
 
   constructor() {
     this.connection = new Connection(HELIUS_RPC, "confirmed");
   }
 
-  async start() {
+  async start(intervalMs: number = 30000) {
     if (this.isRunning) {
       console.log("⚠️  Auto-Claim executor already running");
       return;
@@ -53,33 +53,26 @@ export class AutoClaimExecutor {
     }
 
     this.isRunning = true;
-    console.log("🤖 Auto-Claim executor ready (on-demand mode)");
-    console.log("⚡ Executor will run ONLY when scanner finds accounts to close");
-  }
+    console.log("🤖 Auto-Claim executor starting...");
+    console.log(`📊 Execution interval: ${intervalMs / 1000}s`);
 
-  // Execute jobs on-demand (called by scanner when it creates jobs)
-  async executeNow() {
-    if (!this.isRunning) {
-      console.log("⚠️  Executor not started yet");
-      return;
-    }
     await this.processJobs();
+
+    this.executionInterval = setInterval(async () => {
+      await this.processJobs();
+    }, intervalMs);
   }
 
   stop() {
+    if (this.executionInterval) {
+      clearInterval(this.executionInterval);
+      this.executionInterval = null;
+    }
     this.isRunning = false;
     console.log("🛑 Auto-Claim executor stopped");
   }
 
   private async processJobs() {
-    // Prevent overlapping execution runs
-    if (this.isProcessing) {
-      console.log("⏭️  Previous job still processing, skipping this cycle");
-      return;
-    }
-
-    this.isProcessing = true;
-    
     try {
       console.log("\n⚙️  Processing pending jobs...");
       
@@ -135,16 +128,11 @@ export class AutoClaimExecutor {
           await storage.updateRelayerJobStatus(job.id, 'failed', result.error);
         }
 
-        // Step-by-step: Wait 3-5 seconds between transactions to avoid rate limits
-        const delayMs = 3000 + Math.random() * 2000; // 3-5 seconds with jitter
-        console.log(`   ⏳ Waiting ${(delayMs / 1000).toFixed(1)}s before next transaction...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
     } catch (error) {
       console.error("❌ Executor error:", error);
-    } finally {
-      this.isProcessing = false;
     }
   }
 

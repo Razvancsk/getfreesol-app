@@ -2,7 +2,6 @@ import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { storage } from "../storage";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
 import bs58 from "bs58";
-import { autoClaimExecutor } from "./auto-claim-executor";
 
 const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
   ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
@@ -24,8 +23,6 @@ export class AutoClaimScanner {
   private isRunning: boolean = false;
   private scanInterval: NodeJS.Timeout | null = null;
   private relayerPublicKey: string | null = null;
-  private recentlyDelegatedWallets: Map<string, number> = new Map(); // wallet -> timestamp
-  private DELEGATION_COOLDOWN = 90000; // 90 seconds (6 scan cycles) to wait for blockchain confirmation
 
   constructor() {
     this.connection = new Connection(HELIUS_RPC, "confirmed");
@@ -41,30 +38,6 @@ export class AutoClaimScanner {
         console.error("❌ Failed to derive relayer public key");
       }
     }
-  }
-  
-  // Mark wallet as recently delegated (to skip scanning for cooldown period)
-  markWalletDelegated(walletAddress: string) {
-    this.recentlyDelegatedWallets.set(walletAddress, Date.now());
-    console.log(`      ⏸️  Pausing scanner for ${walletAddress.slice(0, 8)}... (waiting for blockchain confirmation)`);
-  }
-  
-  // Check if wallet should be skipped (recently delegated)
-  private shouldSkipWallet(walletAddress: string): boolean {
-    const delegatedTime = this.recentlyDelegatedWallets.get(walletAddress);
-    if (!delegatedTime) return false;
-    
-    const elapsed = Date.now() - delegatedTime;
-    if (elapsed > this.DELEGATION_COOLDOWN) {
-      // Cooldown expired, remove from map
-      this.recentlyDelegatedWallets.delete(walletAddress);
-      console.log(`      ▶️  Resuming scanner for ${walletAddress.slice(0, 8)}... (cooldown expired)`);
-      return false;
-    }
-    
-    const remaining = Math.ceil((this.DELEGATION_COOLDOWN - elapsed) / 1000);
-    console.log(`      ⏸️  Skipping ${walletAddress.slice(0, 8)}... (waiting ${remaining}s for blockchain confirmation)`);
-    return true;
   }
 
   async start(intervalMs: number = 60000) {
@@ -107,11 +80,6 @@ export class AutoClaimScanner {
       console.log(`   Found ${activePermits.length} active permit(s)`);
 
       for (const permit of activePermits) {
-        // Skip wallets that were recently delegated (waiting for blockchain confirmation)
-        if (this.shouldSkipWallet(permit.walletAddress)) {
-          continue;
-        }
-        
         await this.scanWalletForEmptyAccounts(permit.walletAddress);
         // Add 2 second delay between scanning different wallets to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -129,7 +97,6 @@ export class AutoClaimScanner {
       const walletPubkey = new PublicKey(walletAddress);
       
       const emptyAccounts = [];
-      const nonDelegatedAccounts = [];
       let totalRentRecoverable = 0;
       let skippedNotDelegated = 0;
       let totalAccounts = 0;
@@ -159,11 +126,11 @@ export class AutoClaimScanner {
             // Normalize close authority (can be string or object with pubkey property)
             const closeAuthority = parsedInfo.closeAuthority;
             const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
-            const rentLamports = account.lamports;
             
-            // Check if delegated to relayer
+            // Only include accounts where close authority has been delegated to relayer
             if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
-              // Already delegated - ready to claim!
+              const rentLamports = account.lamports;
+              
               emptyAccounts.push({
                 address: pubkey.toBase58(),
                 mint: parsedInfo.mint,
@@ -173,15 +140,7 @@ export class AutoClaimScanner {
               });
 
               totalRentRecoverable += rentLamports;
-            } else if (!closeAuthorityPubkey || closeAuthorityPubkey === walletAddress) {
-              // NOT delegated yet - needs delegation!
-              nonDelegatedAccounts.push({
-                address: pubkey.toBase58(),
-                mint: parsedInfo.mint,
-                rentLamports,
-                isToken2022: program.id.equals(TOKEN_2022_PROGRAM_ID),
-                programId: program.id.toBase58()
-              });
+            } else {
               skippedNotDelegated++;
             }
           }
@@ -191,21 +150,15 @@ export class AutoClaimScanner {
       console.log(`      Found ${totalAccounts} token account(s) (SPL + Token-2022)`)
 
       if (skippedNotDelegated > 0) {
-        console.log(`      ⏭️  Found ${skippedNotDelegated} account(s) without delegated close authority`);
-      }
-
-      // Auto-trigger delegation for non-delegated empty accounts
-      if (nonDelegatedAccounts.length > 0) {
-        console.log(`      🔑 AUTO-DELEGATING ${nonDelegatedAccounts.length} new empty account(s)...`);
-        await this.createDelegationRequest(walletAddress, nonDelegatedAccounts);
+        console.log(`      ⏭️  Skipped ${skippedNotDelegated} account(s) without delegated close authority`);
       }
 
       if (emptyAccounts.length > 0) {
-        console.log(`      🎯 Found ${emptyAccounts.length} delegated empty account(s)`);
+        console.log(`      🎯 Found ${emptyAccounts.length} empty account(s)`);
         console.log(`      💰 Total recoverable: ${(totalRentRecoverable / 1e9).toFixed(6)} SOL`);
 
         await this.createRelayerJobs(walletAddress, emptyAccounts, totalRentRecoverable);
-      } else if (nonDelegatedAccounts.length === 0) {
+      } else {
         console.log("      ✅ No empty accounts");
       }
 
@@ -254,43 +207,15 @@ export class AutoClaimScanner {
           estimatedNet: (batchRent / 1e9).toString(),
           tokenAccounts: JSON.stringify(batch.map(acc => ({
             address: acc.address,
-            programId: acc.isToken2022 ? TOKEN_2022_PROGRAM_ID.toBase58() : TOKEN_PROGRAM_ID.toBase58()
+            programId: acc.programId
           })))
         });
 
         console.log(`      ✅ Created job for ${batch.length} account(s)`);
       }
 
-      // Trigger executor immediately after creating jobs
-      if (batches.length > 0) {
-        console.log(`      ⚡ Triggering executor to process jobs NOW...`);
-        setTimeout(() => autoClaimExecutor.executeNow(), 1000); // Small delay to ensure DB commit
-      }
-
     } catch (error) {
       console.error(`      ❌ Error creating relayer jobs:`, error);
-    }
-  }
-
-  private async createDelegationRequest(
-    walletAddress: string,
-    nonDelegatedAccounts: Array<{address: string; mint: string; rentLamports: number; isToken2022: boolean; programId: string}>
-  ) {
-    try {
-      // Store count of non-delegated accounts in permit for frontend notification
-      const totalSol = nonDelegatedAccounts.reduce((sum, acc) => sum + acc.rentLamports, 0) / 1e9;
-      
-      console.log(`      💰 Pending delegation: ${nonDelegatedAccounts.length} accounts (${totalSol.toFixed(6)} SOL)`);
-      console.log(`      📢 Frontend will show notification to delegate these accounts`);
-      
-      // Update permit with pending delegation info (frontend polls this)
-      await storage.updateAutoClaimPermitMetadata(walletAddress, {
-        pendingDelegationCount: nonDelegatedAccounts.length,
-        pendingDelegationSol: totalSol.toFixed(6)
-      });
-
-    } catch (error) {
-      console.error(`      ❌ Error creating delegation request:`, error);
     }
   }
 
