@@ -2582,8 +2582,14 @@ export default function SolRefund() {
           {/* Burn Tokens Results */}
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length > 0 && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">{selectedTokens.size} selected</h3>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
+                  {scanTokensMutation.isPending && (
+                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                  )}
+                </div>
                 <button 
                   onClick={() => {
                     if (publicKey) {
@@ -2591,117 +2597,118 @@ export default function SolRefund() {
                     }
                   }}
                   disabled={scanTokensMutation.isPending || !publicKey}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
                   data-testid="button-refresh-tokens"
                 >
-                  Click to Refresh
-                  <RefreshCw className={`h-3.5 w-3.5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                  Refresh
                 </button>
-                <div className="px-3 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-full text-sm text-purple-400">
-                  {tokenList.length} Tokens Found
-                </div>
               </div>
 
-              {/* Selection Controls */}
-              <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
-                <div className="flex items-center space-x-3">
+              {/* Token List */}
+              <div className="max-h-96 overflow-y-auto space-y-3 mb-6">
+                {tokenList.map((token, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all ${
+                      selectedTokens.has(token.mint)
+                        ? 'bg-purple-600/20 border border-purple-400/50' 
+                        : 'bg-purple-800/20 border border-purple-500/30 hover:bg-purple-700/20'
+                    }`}
+                    onClick={() => toggleTokenSelection(token.mint)}
+                    data-testid={`card-token-${index}`}
+                  >
+                    {/* Token Icon */}
+                    <div className="flex-shrink-0">
+                      {token.logo ? (
+                        <img 
+                          src={token.logo} 
+                          alt={token.symbol || 'Token'} 
+                          className="w-12 h-12 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-purple-600/30 flex items-center justify-center">
+                          <Coins className="h-6 w-6 text-purple-300" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Token Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-lg font-semibold text-white truncate">
+                        {token.symbol || token.name || 'Unknown Token'}
+                      </div>
+                      <div className="text-sm text-purple-200">
+                        Balance: {token.balance.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-purple-300 font-mono truncate">
+                        {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
+                      </div>
+                    </div>
+
+                    {/* Checkbox */}
+                    <div className="flex-shrink-0">
+                      <div 
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors pointer-events-none ${
+                          selectedTokens.has(token.mint)
+                            ? 'bg-purple-600 border-purple-600' 
+                            : 'bg-transparent border-purple-400'
+                        }`}
+                      >
+                        {selectedTokens.has(token.mint) && <Check className="h-4 w-4 text-white" />}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="space-y-4">
+                {/* Select All / Clear Selection Buttons */}
+                <div className="flex gap-3">
                   <Button
                     onClick={selectAllTokens}
-                    size="sm"
-                    className="bg-purple-600/20 text-white border border-purple-500/50 hover:bg-purple-600/40 hover:border-purple-400"
+                    className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                    data-testid="button-select-all-tokens"
                   >
                     Select All
                   </Button>
                   <Button
                     onClick={clearTokenSelection}
-                    size="sm"
-                    className="bg-slate-600/40 text-white border border-slate-500/50 hover:bg-slate-600/60 hover:border-slate-400"
+                    className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                    data-testid="button-clear-selection-tokens"
                   >
-                    Clear
+                    Clear Selection
                   </Button>
                 </div>
-                <div className="text-2xl text-green-400 font-bold">
-                  {calculateTotalSOL(selectedTokens.size)}
-                </div>
-              </div>
 
-              <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30 mb-6">
-                {tokenList.map((token, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition-colors relative ${
-                      selectedTokens.has(token.mint)
-                        ? 'bg-red-900/30 border-2 border-red-500 hover:bg-red-900/40' 
-                        : 'bg-slate-700/50 border border-slate-700/50 hover:bg-slate-700/70'
-                    }`}
-                    onClick={() => toggleTokenSelection(token.mint)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedTokens.has(token.mint)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        toggleTokenSelection(token.mint);
-                      }}
-                      className="w-4 h-4 text-purple-600 bg-slate-700 border-purple-500 rounded focus:ring-purple-500 focus:ring-2 checked:bg-purple-600 checked:border-purple-600"
-                    />
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      {token.logo && (
-                        <img 
-                          src={token.logo} 
-                          alt={token.symbol || 'Token'} 
-                          className="w-8 h-8 rounded-full flex-shrink-0"
-                          onError={(e) => {
-                            // Hide broken images completely
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <div className="flex items-center space-x-2">
-                          <div className="text-sm font-medium text-white truncate">
-                            {token.symbol || 'TOKEN'}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-300 truncate">
-                          {token.balance > 0 
-                            ? `Balance: ${token.balance} ${token.symbol || 'TOKENS'}` 
-                            : 'Empty account - can close for ~0.002 SOL'
-                          }
-                        </div>
-                        <div className="text-xs text-gray-400 truncate font-mono">
-                          {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* MARKED FOR BURN indicator */}
-                    {selectedTokens.has(token.mint) && (
-                      <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-                        MARKED FOR BURN
-                      </div>
-                    )}
+                {/* Total Selected */}
+                <div className="text-center">
+                  <div className="text-sm text-purple-300 mb-2">
+                    Total Selected: {selectedTokens.size} token{selectedTokens.size !== 1 ? 's' : ''} (~{calculateTotalSOL(selectedTokens.size)} SOL net)
                   </div>
-                ))}
-              </div>
-
-              {/* Burn Button at Bottom */}
-              {selectedTokens.size > 0 && (
-                <div className="mt-6">
-                  <Button
-                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
-                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
-                    className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
-                  >
-                    {bulkBurnTokensMutation.isPending ? (
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                    ) : (
-                      <Flame className="h-5 w-5 mr-2" />
-                    )}
-                    BURN
-                  </Button>
                 </div>
-              )}
+
+                {/* Burn Button */}
+                <Button
+                  onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                  disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                  className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 hover:from-pink-600 hover:via-purple-600 hover:to-orange-600 text-white py-4 text-lg font-bold rounded-2xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="button-burn-selected-tokens"
+                >
+                  {bulkBurnTokensMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin mr-2 inline" />
+                      Burning...
+                    </>
+                  ) : (
+                    <>Burn Selected Tokens</>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -2737,7 +2744,18 @@ export default function SolRefund() {
           {/* NFT Burning Interface */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              {/* Header */}
               <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-white">
+                    {nftData && nftData.nfts && nftData.nfts.length > 0 
+                      ? `${nftData.nfts.length} NFTs Found` 
+                      : 'NFT Scanner'}
+                  </h3>
+                  {scanNftsMutation.isPending && (
+                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                  )}
+                </div>
                 <button 
                   onClick={() => {
                     if (publicKey) {
@@ -2745,11 +2763,11 @@ export default function SolRefund() {
                     }
                   }}
                   disabled={scanNftsMutation.isPending || !publicKey}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
                   data-testid="button-refresh-nft"
                 >
-                  Click to Refresh
-                  <RefreshCw className={`h-3.5 w-3.5 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                  Refresh
                 </button>
               </div>
 
@@ -2762,39 +2780,8 @@ export default function SolRefund() {
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Select All Controls */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <button
-                        onClick={() => {
-                          const allNfts = nftData.nfts;
-                          // Only select non-frozen NFTs
-                          const selectableNfts = allNfts
-                            .filter((nft: any) => !nft.isFrozen)
-                            .map((nft: any) => nft.mint || nft.id || nft.assetId)
-                            .filter(Boolean);
-                          setSelectedNfts(new Set(selectableNfts));
-                        }}
-                        className="text-sm text-purple-300 hover:text-white transition-colors"
-                        data-testid="button-select-all-nfts"
-                      >
-                        Select All
-                      </button>
-                      <button
-                        onClick={() => setSelectedNfts(new Set())}
-                        className="text-sm text-purple-300 hover:text-white transition-colors"
-                        data-testid="button-deselect-all-nfts"
-                      >
-                        Deselect All
-                      </button>
-                    </div>
-                    <p className="text-sm text-purple-200">
-                      {selectedNfts.size} selected • {nftData.nfts.length} total NFTs
-                    </p>
-                  </div>
-
                   {/* NFT Grid */}
-                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50">
+                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50 mb-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {nftData.nfts.map((nft: any) => {
                       // Use a stable identifier that works for all NFT types
@@ -2900,46 +2887,82 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Burn Selected Button */}
-                  {selectedNfts.size > 0 && (
-                    <div className="flex justify-center pt-4">
-                      <button
+                  {/* Bottom Actions */}
+                  <div className="space-y-4">
+                    {/* Select All / Clear Selection Buttons */}
+                    <div className="flex gap-3">
+                      <Button
                         onClick={() => {
-                          if (!publicKey) {
-                            toast({
-                              title: "Error",
-                              description: "Please connect your wallet first",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-
-                          const selectedIds = Array.from(selectedNfts);
-                          const selectedNftData = nftData.nfts.filter((nft: any) => 
-                            selectedIds.includes(nft.mint || nft.id || nft.assetId)
-                          );
-                          
-                          // Group by type and burn
-                          const nftsByType: { [key: string]: any[] } = {};
-                          selectedNftData.forEach((nft: any) => {
-                            if (!nftsByType[nft.type]) {
-                              nftsByType[nft.type] = [];
-                            }
-                            nftsByType[nft.type].push(nft);
-                          });
-
-                          // Call burn mutation with selected NFT IDs
-                          burnNftsMutation.mutate(selectedIds);
+                          const allNfts = nftData.nfts;
+                          // Only select non-frozen NFTs
+                          const selectableNfts = allNfts
+                            .filter((nft: any) => !nft.isFrozen)
+                            .map((nft: any) => nft.mint || nft.id || nft.assetId)
+                            .filter(Boolean);
+                          setSelectedNfts(new Set(selectableNfts));
                         }}
-                        disabled={burnNftsMutation.isPending || !publicKey}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                        data-testid="button-burn-selected-nfts"
+                        className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                        data-testid="button-select-all-nfts"
                       >
-                        <Flame className={`h-5 w-5 ${burnNftsMutation.isPending ? 'animate-spin' : ''}`} />
-                        {burnNftsMutation.isPending ? 'Burning...' : `Burn ${selectedNfts.size} Selected NFT${selectedNfts.size > 1 ? 's' : ''}`}
-                      </button>
+                        Select All
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedNfts(new Set())}
+                        className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                        data-testid="button-clear-selection-nfts"
+                      >
+                        Clear Selection
+                      </Button>
                     </div>
-                  )}
+
+                    {/* Total Selected */}
+                    <div className="text-center">
+                      <div className="text-sm text-purple-300 mb-2">Total Selected: {selectedNfts.size} NFT{selectedNfts.size !== 1 ? 's' : ''}</div>
+                    </div>
+
+                    {/* Burn Button */}
+                    <Button
+                      onClick={() => {
+                        if (!publicKey) {
+                          toast({
+                            title: "Error",
+                            description: "Please connect your wallet first",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        const selectedIds = Array.from(selectedNfts);
+                        const selectedNftData = nftData.nfts.filter((nft: any) => 
+                          selectedIds.includes(nft.mint || nft.id || nft.assetId)
+                        );
+                        
+                        // Group by type and burn
+                        const nftsByType: { [key: string]: any[] } = {};
+                        selectedNftData.forEach((nft: any) => {
+                          if (!nftsByType[nft.type]) {
+                            nftsByType[nft.type] = [];
+                          }
+                          nftsByType[nft.type].push(nft);
+                        });
+
+                        // Call burn mutation with selected NFT IDs
+                        burnNftsMutation.mutate(selectedIds);
+                      }}
+                      disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
+                      className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 hover:from-pink-600 hover:via-purple-600 hover:to-orange-600 text-white py-4 text-lg font-bold rounded-2xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      data-testid="button-burn-selected-nfts"
+                    >
+                      {burnNftsMutation.isPending ? (
+                        <>
+                          <RefreshCw className="h-5 w-5 animate-spin mr-2 inline" />
+                          Burning...
+                        </>
+                      ) : (
+                        <>Burn Selected NFTs</>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               ) : !scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
