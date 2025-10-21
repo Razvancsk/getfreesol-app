@@ -4414,20 +4414,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const { pubkey, account } of tokenAccounts.value) {
         const parsedInfo = account.data.parsed.info;
         const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+        
+        console.log(`   Account ${pubkey.toBase58().slice(0, 8)}... balance: ${balance}, mint: ${parsedInfo.mint.slice(0, 8)}...`);
 
-        // Only delegate empty accounts
+        // Only delegate empty accounts (balance exactly 0)
         if (balance === 0) {
           // Normalize close authority (can be string or object with pubkey property)
           const closeAuthority = parsedInfo.closeAuthority;
           const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
           
+          console.log(`   Close authority: ${closeAuthorityPubkey || 'not set'}`);
+          
           // Only delegate if close authority is still the user (or not set)
           if (!closeAuthorityPubkey || closeAuthorityPubkey === walletAddress) {
+            console.log(`   ✅ Account needs delegation`);
             accountsNeedingDelegation.push({
               address: pubkey.toBase58(),
               mint: parsedInfo.mint
             });
+          } else {
+            console.log(`   ⏭️  Already delegated to: ${closeAuthorityPubkey.slice(0, 8)}...`);
           }
+        } else {
+          console.log(`   ⏭️  Not empty (has ${balance} tokens)`);
         }
       }
 
