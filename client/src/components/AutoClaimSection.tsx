@@ -215,11 +215,15 @@ export function AutoClaimSection() {
 
       try {
         console.log('🔵 Requesting delegation transactions...');
-        // Get delegation transactions from backend
-        const response: any = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
-          walletAddress: publicKey.toBase58()
+        // Get delegation transactions from backend - DIRECT fetch to debug
+        const rawResponse = await fetch('/api/auto-claim/delegate-authority', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: publicKey.toBase58() })
         });
-
+        
+        const response = await rawResponse.json();
+        console.log('🔵 Raw response:', rawResponse.status, rawResponse.statusText);
         console.log('🔵 Backend response:', response);
 
         if (!response.transactions || response.transactions.length === 0) {
