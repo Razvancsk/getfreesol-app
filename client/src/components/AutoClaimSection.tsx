@@ -48,16 +48,24 @@ export function AutoClaimSection() {
 
   const walletAddress = publicKey?.toBase58();
 
-  // Query permit status
+  // Query permit status - POLL FAST like ledger!
   const { data: permitStatus } = useQuery<{ permit: AutoClaimPermit | null }>({
     queryKey: ['/api/auto-claim/permit/status', walletAddress],
     enabled: !!walletAddress,
+    refetchInterval: 3000, // Poll every 3 seconds
+    refetchIntervalInBackground: true,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
-  // Query job history
+  // Query job history - POLL FAST like ledger!
   const { data: jobHistory } = useQuery<{ jobs: RelayerJob[] }>({
     queryKey: ['/api/auto-claim/jobs', walletAddress],
     enabled: !!walletAddress,
+    refetchInterval: 3000, // Poll every 3 seconds
+    refetchIntervalInBackground: true,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const hasActivePermit = permitStatus?.permit?.status === 'active';
