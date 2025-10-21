@@ -4149,24 +4149,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if permit already exists
       const existing = await storage.getAutoClaimPermitByWallet(walletAddress);
-      if (existing && existing.status === 'active') {
-        return res.json({
-          success: true,
-          permit: existing,
-          message: "Active permit already exists"
+      
+      let permit;
+      if (existing) {
+        if (existing.status === 'active') {
+          // Already active, return existing
+          return res.json({
+            success: true,
+            permit: existing,
+            message: "Active permit already exists"
+          });
+        } else {
+          // Reactivate revoked permit with new signature
+          permit = await storage.reactivateAutoClaimPermit(walletAddress, {
+            permitSignature,
+            permitMessage,
+            permitNonce,
+            scopes: scopes || 'claim_empty_accounts'
+          });
+          console.log(`🔄 Auto-Claim permit reactivated for wallet: ${walletAddress}`);
+        }
+      } else {
+        // Create new permit
+        permit = await storage.createAutoClaimPermit({
+          walletAddress,
+          permitSignature,
+          permitMessage,
+          permitNonce,
+          scopes: scopes || 'claim_empty_accounts'
         });
+        console.log(`✅ Auto-Claim permit created for wallet: ${walletAddress}`);
       }
-
-      // Create new permit
-      const permit = await storage.createAutoClaimPermit({
-        walletAddress,
-        permitSignature,
-        permitMessage,
-        permitNonce,
-        scopes: scopes || 'claim_empty_accounts'
-      });
-
-      console.log(`✅ Auto-Claim permit created for wallet: ${walletAddress}`);
 
       res.json({
         success: true,

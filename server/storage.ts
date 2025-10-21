@@ -519,6 +519,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(autoClaimPermits.walletAddress, walletAddress));
   }
 
+  async reactivateAutoClaimPermit(walletAddress: string, permitData: { permitSignature: string; permitMessage: string; permitNonce: string; scopes: string }): Promise<AutoClaimPermit> {
+    const [reactivatedPermit] = await db
+      .update(autoClaimPermits)
+      .set({
+        status: 'active',
+        permitSignature: permitData.permitSignature,
+        permitMessage: permitData.permitMessage,
+        permitNonce: permitData.permitNonce,
+        scopes: permitData.scopes,
+        revokedAt: null,
+        version: sql`${autoClaimPermits.version} + 1`
+      })
+      .where(eq(autoClaimPermits.walletAddress, walletAddress))
+      .returning();
+    return reactivatedPermit;
+  }
+
   async getActiveAutoClaimPermits(limit: number = 100): Promise<AutoClaimPermit[]> {
     return await db
       .select()
