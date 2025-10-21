@@ -183,6 +183,19 @@ export const relayerCosts = pgTable("relayer_costs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Pending Delegations - tracks empty accounts awaiting user delegation
+export const pendingDelegations = pgTable("pending_delegations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  accountAddress: text("account_address").notNull(),
+  mintAddress: text("mint_address").notNull(),
+  rentLamports: decimal("rent_lamports", { precision: 18, scale: 9 }).notNull(),
+  programId: text("program_id").notNull(), // TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID
+  status: text("status").notNull().default("pending"), // pending, delegated, dismissed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  delegatedAt: timestamp("delegated_at"),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -262,6 +275,13 @@ export const insertRelayerCostSchema = createInsertSchema(relayerCosts).omit({
   createdAt: true,
 });
 
+export const insertPendingDelegationSchema = createInsertSchema(pendingDelegations).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  delegatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -288,6 +308,8 @@ export type RelayerJob = typeof relayerJobs.$inferSelect;
 export type InsertRelayerJob = z.infer<typeof insertRelayerJobSchema>;
 export type RelayerCost = typeof relayerCosts.$inferSelect;
 export type InsertRelayerCost = z.infer<typeof insertRelayerCostSchema>;
+export type PendingDelegation = typeof pendingDelegations.$inferSelect;
+export type InsertPendingDelegation = z.infer<typeof insertPendingDelegationSchema>;
 
 // Auto-Claim Permit API schemas with validation
 export const autoClaimPermitMessageSchema = z.object({
