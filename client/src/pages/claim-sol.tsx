@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -2425,6 +2425,15 @@ export default function SolRefund() {
                 >
                   🔥 Burn
                 </Button>
+                <Link href="/auto-claim">
+                  <Button
+                    className="px-4 py-2 text-sm font-medium rounded transition-all bg-purple-800/40 text-purple-300 hover:bg-purple-600/60"
+                    data-testid="button-auto-claim-nav"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Auto Claim
+                  </Button>
+                </Link>
                 <Button
                   onClick={() => setActiveTab('referrals')}
                   className={`px-4 py-2 text-sm font-medium rounded transition-all ${
