@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Zap, CheckCircle, AlertTriangle, Info, Shield, ExternalLink, Clock, Coins } from "lucide-react";
 import { useWallet } from '@solana/wallet-adapter-react';
+import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
 import bs58 from 'bs58';
 
@@ -42,7 +43,7 @@ interface RelayerJob {
 export function AutoClaimSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { publicKey, signMessage, connected } = useWallet();
+  const { publicKey, signMessage, sendTransaction, connected } = useWallet();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const walletAddress = publicKey?.toBase58();
@@ -61,7 +62,7 @@ export function AutoClaimSection() {
 
   const hasActivePermit = permitStatus?.permit?.status === 'active';
 
-  // Enable Auto-Claim mutation
+  // Enable Auto-Claim mutation (integrated with delegation)
   const enableAutoClaimMutation = useMutation({
     mutationFn: async () => {
       if (!publicKey || !signMessage) {
@@ -71,7 +72,9 @@ export function AutoClaimSection() {
       setIsProcessing(true);
 
       try {
-        // Create permit message
+        console.log("🔵 Step 1/2: Signing permit message...");
+        
+        // Step 1: Create and sign permit message
         const nonce = uuidv4();
         const message = {
           type: "AUTO_CLAIM_PERMIT",
@@ -87,12 +90,13 @@ export function AutoClaimSection() {
         const messageString = JSON.stringify(message);
         const messageBytes = new TextEncoder().encode(messageString);
         
-        // Sign the message
         const signature = await signMessage(messageBytes);
         const signatureBase58 = bs58.encode(signature);
 
-        // Send to backend
-        const response = await apiRequest('POST', '/api/auto-claim/permit/create', {
+        console.log("✅ Permit signed!");
+
+        // Save permit to backend
+        await apiRequest('POST', '/api/auto-claim/permit/create', {
           walletAddress: publicKey.toBase58(),
           permitSignature: signatureBase58,
           permitMessage: messageString,
@@ -100,7 +104,44 @@ export function AutoClaimSection() {
           scopes: "claim_empty_accounts"
         });
 
-        return response;
+        console.log("✅ Permit saved!");
+        console.log("🔵 Step 2/2: Preparing delegation transactions...");
+
+        // Step 2: Get delegation transactions for existing empty accounts
+        const delegateResponse: any = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
+          walletAddress: publicKey.toBase58()
+        });
+
+        // If there are accounts to delegate, send the transactions
+        if (delegateResponse.transactions && delegateResponse.transactions.length > 0) {
+          console.log(`🔵 Found ${delegateResponse.accountsCount} account(s) to delegate`);
+          
+          const connection = new Connection(
+            import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
+          );
+          
+          for (let i = 0; i < delegateResponse.transactions.length; i++) {
+            const txBase64 = delegateResponse.transactions[i];
+            console.log(`🔵 Sending delegation transaction ${i + 1}/${delegateResponse.transactions.length}...`);
+            
+            // Deserialize transaction
+            const txBuffer = Buffer.from(txBase64, 'base64');
+            const transaction = Transaction.from(txBuffer);
+            
+            // Send using wallet adapter
+            const signature = await sendTransaction(transaction, connection);
+            console.log(`✅ Delegation transaction ${i + 1} sent: ${signature}`);
+            
+            // Wait for confirmation
+            await connection.confirmTransaction(signature, 'confirmed');
+          }
+          
+          console.log("✅ All delegation transactions completed!");
+        } else {
+          console.log("⚠️ No accounts need delegation (already delegated or no empty accounts)");
+        }
+
+        return { success: true };
       } finally {
         setIsProcessing(false);
       }
@@ -108,7 +149,7 @@ export function AutoClaimSection() {
     onSuccess: () => {
       toast({
         title: "Auto-Claim Enabled!",
-        description: "Your wallet will now be monitored for empty Token-2022 accounts.",
+        description: "Your wallet will now be monitored for empty Token-2022 accounts. Delegation transactions sent successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
     },
