@@ -88,6 +88,7 @@ export default function SolRefund() {
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
+  const [autoClaimEnabled, setAutoClaimEnabled] = useState<boolean>(false);
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -2487,19 +2488,34 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
-                <button 
-                  onClick={() => {
-                    if (publicKey) {
-                      scanMutation.mutate(publicKey.toString());
-                    }
-                  }}
-                  disabled={scanMutation.isPending || !publicKey}
-                  className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
-                  data-testid="button-refresh-scan"
-                  title="Refresh"
-                >
-                  <RefreshCw className={`h-5 w-5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* Auto-Claim Button */}
+                  <button
+                    onClick={() => setAutoClaimEnabled(!autoClaimEnabled)}
+                    className="flex items-center gap-3 px-4 py-2 bg-purple-900/60 hover:bg-purple-800/70 border border-purple-600/40 rounded-xl transition-all"
+                    data-testid="button-auto-claim"
+                  >
+                    <span className="text-sm text-white font-medium">Auto-Claim</span>
+                    <div className={`relative w-11 h-6 rounded-full transition-colors ${autoClaimEnabled ? 'bg-purple-600' : 'bg-purple-700/50'}`}>
+                      <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${autoClaimEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </div>
+                  </button>
+                  
+                  {/* Refresh Button */}
+                  <button 
+                    onClick={() => {
+                      if (publicKey) {
+                        scanMutation.mutate(publicKey.toString());
+                      }
+                    }}
+                    disabled={scanMutation.isPending || !publicKey}
+                    className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                    data-testid="button-refresh-scan"
+                    title="Refresh"
+                  >
+                    <RefreshCw className={`h-5 w-5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
               </div>
               {!scanResult ? (
                 <div className="text-center text-purple-300 py-8">
