@@ -2489,16 +2489,14 @@ export default function SolRefund() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
                 <div className="flex items-center gap-3">
-                  {/* Auto-Claim Button */}
+                  {/* Auto-Claim Toggle */}
                   <button
                     onClick={() => setAutoClaimEnabled(!autoClaimEnabled)}
-                    className="flex items-center gap-3 px-4 py-2 bg-purple-900/60 hover:bg-purple-800/70 border border-purple-600/40 rounded-xl transition-all"
+                    className={`relative w-12 h-6 rounded-full transition-all ${autoClaimEnabled ? 'bg-purple-600' : 'bg-purple-800/80'}`}
                     data-testid="button-auto-claim"
+                    title="Auto-Claim"
                   >
-                    <span className="text-sm text-white font-medium">Auto-Claim</span>
-                    <div className={`relative w-11 h-6 rounded-full transition-colors ${autoClaimEnabled ? 'bg-purple-600' : 'bg-purple-700/50'}`}>
-                      <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${autoClaimEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </div>
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${autoClaimEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
                   </button>
                   
                   {/* Refresh Button */}
