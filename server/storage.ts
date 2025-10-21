@@ -46,9 +46,9 @@ export interface IStorage {
   
   // Comprehensive Transaction Ledger
   createTransactionLedgerEntry(entry: InsertTransactionLedger): Promise<TransactionLedger>;
-  getTransactionLedger(limit?: number, offset?: number): Promise<TransactionLedger[]>;
+  getTransactionLedger(limit?: number, offset?: number, source?: string): Promise<TransactionLedger[]>;
   getTransactionLedgerBySignature(signature: string): Promise<TransactionLedger | undefined>;
-  getTransactionLedgerByWallet(walletAddress: string, limit?: number, offset?: number): Promise<TransactionLedger[]>;
+  getTransactionLedgerByWallet(walletAddress: string, limit?: number, offset?: number, source?: string): Promise<TransactionLedger[]>;
   
   // Token Burn Records
   createTokenBurnRecord(record: InsertTokenBurnRecord): Promise<TokenBurnRecord>;
@@ -145,10 +145,16 @@ export class DatabaseStorage implements IStorage {
     return ledgerEntry;
   }
 
-  async getTransactionLedger(limit: number = 100, offset: number = 0): Promise<TransactionLedger[]> {
-    return await db
+  async getTransactionLedger(limit: number = 100, offset: number = 0, source?: string): Promise<TransactionLedger[]> {
+    let query = db
       .select()
-      .from(transactionLedger)
+      .from(transactionLedger);
+    
+    if (source) {
+      query = query.where(eq(transactionLedger.source, source)) as any;
+    }
+    
+    return await query
       .orderBy(desc(transactionLedger.processedAt))
       .limit(limit)
       .offset(offset);
@@ -162,11 +168,17 @@ export class DatabaseStorage implements IStorage {
     return entry || undefined;
   }
 
-  async getTransactionLedgerByWallet(walletAddress: string, limit: number = 50, offset: number = 0): Promise<TransactionLedger[]> {
-    return await db
+  async getTransactionLedgerByWallet(walletAddress: string, limit: number = 50, offset: number = 0, source?: string): Promise<TransactionLedger[]> {
+    let query = db
       .select()
       .from(transactionLedger)
-      .where(eq(transactionLedger.walletAddress, walletAddress))
+      .where(eq(transactionLedger.walletAddress, walletAddress));
+    
+    if (source) {
+      query = query.where(eq(transactionLedger.source, source)) as any;
+    }
+    
+    return await query
       .orderBy(desc(transactionLedger.processedAt))
       .limit(limit)
       .offset(offset);

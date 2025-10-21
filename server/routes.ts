@@ -3903,19 +3903,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get comprehensive transaction history
   app.get("/api/transactions/history", async (req, res) => {
     try {
-      const { wallet, limit = 10, offset = 0 } = req.query;
+      const { wallet, limit = 10, offset = 0, source } = req.query;
       
       let transactionHistory;
       if (wallet) {
         transactionHistory = await storage.getTransactionLedgerByWallet(
           wallet as string, 
           parseInt(limit as string), 
-          parseInt(offset as string)
+          parseInt(offset as string),
+          source as string | undefined
         );
       } else {
         transactionHistory = await storage.getTransactionLedger(
           parseInt(limit as string), 
-          parseInt(offset as string)
+          parseInt(offset as string),
+          source as string | undefined
         );
       }
 
