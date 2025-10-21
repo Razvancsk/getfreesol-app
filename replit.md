@@ -5,16 +5,16 @@
 
 ## Recent Updates (October 2025)
 - **Complete Auto-Claim Feature** (October 2025): Production-ready permit-based automated SOL reclamation system
-  - **Anchor Program**: Full specification in programs/auto-claim/PROGRAM_SPEC.md with PDA architecture, instructions (initialize_config, initialize_permit, claim_empty_accounts, revoke_permit), and 15% atomic fee splitting
+  - **Multi-Token Support**: Supports BOTH standard SPL tokens (TOKEN_PROGRAM_ID) AND Token Extensions (TOKEN_2022_PROGRAM_ID)
   - **Backend Workers**: 
-    - Scanner (60s interval): Monitors active permits, scans wallets for empty Token-2022 accounts, creates batched jobs (20 accounts max per tx)
-    - Executor (30s interval): Processes pending jobs, enforces permit validation, records costs/ledger entries, supports dry-run mode
+    - Scanner (60s interval): Monitors active permits, scans wallets for empty accounts from both token programs, creates batched jobs (15 accounts max per tx)
+    - Executor (30s interval): Processes pending jobs with correct program IDs, enforces permit validation, records costs/ledger entries, supports dry-run mode
     - Conditional startup via ENABLE_AUTO_CLAIM_WORKERS env var (disabled by default)
   - **Frontend UI**: AutoClaimSection component with permit signing (Ed25519), real-time status, job history, revocation flow, non-custodial security messaging
   - **Database schema**: `auto_claim_permits`, `relayer_jobs`, `relayer_costs` tables with itemsCount/estimatedNet fields
   - **Security**: Ed25519 signature verification, UUID nonce replay protection, timestamp validation, domain binding
-  - **Architecture**: Token-2022 only (close authority delegation enables offline claims), 85% user payout, relayer pays network fees upfront
-  - **Ready for**: Anchor program Rust implementation, devnet testing with RELAYER_PRIVATE_KEY, mainnet deployment
+  - **Architecture**: Off-chain bot using SetAuthority + CloseAccount (no Anchor program needed), close authority delegation enables offline claims, 85% user payout, relayer pays network fees upfront
+  - **Program ID Handling**: Each account stores its owning program ID (SPL or Token-2022) throughout scan→delegate→execute pipeline for correct instruction generation
 
 - **Server-Side Open Graph Implementation** (October 2025): Dynamic social media link previews for Twitter/X sharing
   - Express middleware intercepts HTML requests with `?claimed=X` parameter
