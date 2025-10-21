@@ -4238,6 +4238,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pending delegations for a wallet
+  app.get("/api/auto-claim/pending-delegations/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+
+      const pendingDelegations = await storage.getPendingDelegationsByWallet(walletAddress);
+
+      const totalSol = pendingDelegations.reduce((sum, delegation) => {
+        return sum + parseFloat(delegation.rentLamports);
+      }, 0);
+
+      res.json({
+        success: true,
+        pendingDelegations,
+        count: pendingDelegations.length,
+        totalSol: totalSol.toFixed(6)
+      });
+
+    } catch (error) {
+      console.error("Get pending delegations error:", error);
+      res.status(500).json({ error: "Failed to get pending delegations" });
+    }
+  });
+
   // In-memory store for used revoke nonces (prevent replay attacks)
   const usedRevokeNonces = new Set<string>();
 
