@@ -2610,14 +2610,27 @@ export default function SolRefund() {
                 {tokenList.map((token, index) => (
                   <div 
                     key={index} 
-                    className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all ${
+                    className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${
                       selectedTokens.has(token.mint)
-                        ? 'bg-purple-600/20 border border-purple-400/50' 
-                        : 'bg-purple-800/20 border border-purple-500/30 hover:bg-purple-700/20'
+                        ? 'bg-gradient-to-r from-red-900/40 to-pink-900/40 border-2 border-red-500' 
+                        : 'bg-purple-900/40 border-2 border-purple-700/50 hover:border-purple-600/60'
                     }`}
                     onClick={() => toggleTokenSelection(token.mint)}
                     data-testid={`card-token-${index}`}
                   >
+                    {/* Checkbox - LEFT SIDE */}
+                    <div className="flex-shrink-0">
+                      <div 
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors pointer-events-none ${
+                          selectedTokens.has(token.mint)
+                            ? 'bg-purple-600 border-purple-600' 
+                            : 'bg-transparent border-purple-400'
+                        }`}
+                      >
+                        {selectedTokens.has(token.mint) && <Check className="h-4 w-4 text-white" />}
+                      </div>
+                    </div>
+
                     {/* Token Icon */}
                     <div className="flex-shrink-0">
                       {token.logo ? (
@@ -2642,25 +2655,21 @@ export default function SolRefund() {
                         {token.symbol || token.name || 'Unknown Token'}
                       </div>
                       <div className="text-sm text-purple-200">
-                        Balance: {token.balance.toLocaleString()}
+                        Balance: {token.balance.toLocaleString()} {token.symbol || ''}
                       </div>
                       <div className="text-xs text-purple-300 font-mono truncate">
                         {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
                       </div>
                     </div>
 
-                    {/* Checkbox */}
-                    <div className="flex-shrink-0">
-                      <div 
-                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors pointer-events-none ${
-                          selectedTokens.has(token.mint)
-                            ? 'bg-purple-600 border-purple-600' 
-                            : 'bg-transparent border-purple-400'
-                        }`}
-                      >
-                        {selectedTokens.has(token.mint) && <Check className="h-4 w-4 text-white" />}
+                    {/* "MARKED FOR BURN" Badge */}
+                    {selectedTokens.has(token.mint) && (
+                      <div className="flex-shrink-0">
+                        <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-md pointer-events-none">
+                          MARKED FOR BURN
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2671,17 +2680,17 @@ export default function SolRefund() {
                 <div className="flex gap-3">
                   <Button
                     onClick={selectAllTokens}
-                    className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                    className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                     data-testid="button-select-all-tokens"
                   >
                     Select All
                   </Button>
                   <Button
                     onClick={clearTokenSelection}
-                    className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                    className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                     data-testid="button-clear-selection-tokens"
                   >
-                    Clear Selection
+                    Clear
                   </Button>
                 </div>
 
@@ -2696,16 +2705,19 @@ export default function SolRefund() {
                 <Button
                   onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
                   disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
-                  className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 hover:from-pink-600 hover:via-purple-600 hover:to-orange-600 text-white py-4 text-lg font-bold rounded-2xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   data-testid="button-burn-selected-tokens"
                 >
                   {bulkBurnTokensMutation.isPending ? (
                     <>
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2 inline" />
+                      <RefreshCw className="h-5 w-5 animate-spin" />
                       Burning...
                     </>
                   ) : (
-                    <>Burn Selected Tokens</>
+                    <>
+                      <Flame className="h-5 w-5" />
+                      BURN
+                    </>
                   )}
                 </Button>
               </div>
