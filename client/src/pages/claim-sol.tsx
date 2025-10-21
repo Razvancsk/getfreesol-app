@@ -3121,6 +3121,95 @@ export default function SolRefund() {
                   </div>
                 </div>
               </div>
+
+              {/* Transaction History */}
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className="flex items-center mb-6">
+                  <h3 className="text-xl font-bold text-white text-center w-full">TRANSACTION HISTORY</h3>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <div className="min-w-full">
+                    {/* Header */}
+                    <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
+                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                        WALLET/TX
+                      </div>
+                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                        ACCTS
+                      </div>
+                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                        CLAIMED SOL
+                      </div>
+                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                        DATE
+                      </div>
+                    </div>
+
+                    {/* Transaction Rows */}
+                    <div>
+                      {isLoadingTransactions && allTransactions.length === 0 ? (
+                        <div className="text-center text-purple-300 py-8">
+                          Loading transactions...
+                        </div>
+                      ) : allTransactions.length === 0 ? (
+                        <div className="text-center text-purple-300 py-8">
+                          No transactions yet
+                        </div>
+                      ) : (
+                        allTransactions.map((tx, index) => (
+                          <div key={tx.signature}>
+                            <div 
+                              className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                              onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
+                              title="Click to view transaction on Solscan"
+                            >
+                              <div className="text-white font-mono text-sm">
+                                <div className="truncate" title={tx.signature}>
+                                  {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                                </div>
+                              </div>
+                              <div className="text-white text-center text-lg font-semibold">
+                                {tx.itemsProcessed}
+                              </div>
+                              <div className="text-white text-center text-sm font-medium">
+                                {(tx.netAmount || tx.solRecovered * 0.85).toFixed(6)}
+                              </div>
+                              <div className="text-white text-center text-sm">
+                                {new Date(tx.processedAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true
+                                })}
+                              </div>
+                            </div>
+                            {/* Separator line between rows - don't show after last row */}
+                            {index < allTransactions.length - 1 && (
+                              <div className="border-b border-purple-500/20 my-2"></div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Load More Button */}
+                    {hasMoreTransactions && (
+                      <div className="flex justify-center mt-6">
+                        <button
+                          onClick={loadMoreTransactions}
+                          disabled={isLoadingTransactions}
+                          className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          data-testid="button-load-more-transactions"
+                        >
+                          {isLoadingTransactions ? 'Loading...' : 'Load More'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
