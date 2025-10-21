@@ -101,7 +101,7 @@ export function AutoClaimSection() {
         });
 
         // Step 2: Delegate authority (relayer pays fees!)
-        const delegateResponse = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
+        const delegateResponse: any = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
           walletAddress: publicKey.toBase58()
         });
 
@@ -204,7 +204,7 @@ export function AutoClaimSection() {
     },
   });
 
-  // Delegate Authority mutation
+  // Delegate Authority mutation (backup - not used in main flow)
   const delegateAuthorityMutation = useMutation({
     mutationFn: async () => {
       if (!publicKey || !sendTransaction) {
@@ -215,7 +215,7 @@ export function AutoClaimSection() {
 
       try {
         // Get delegation transactions from backend
-        const response = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
+        const response: any = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
           walletAddress: publicKey.toBase58()
         });
 
@@ -249,7 +249,7 @@ export function AutoClaimSection() {
         setIsProcessing(false);
       }
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Authority Delegated!",
         description: `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically.`,
