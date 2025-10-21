@@ -4415,18 +4415,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userPubkey = new PublicKey(walletAddress);
       const accountsNeedingDelegation: Array<{address: string; mint: string; programId: PublicKey}> = [];
       
-      // Scan both programs with delay to avoid rate limits
+      // Scan both programs
       const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
       let totalAccounts = 0;
       
-      for (let i = 0; i < programIds.length; i++) {
-        const programId = programIds[i];
-        
-        // Add small delay between calls to avoid rate limits
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        
+      for (const programId of programIds) {
         const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
           userPubkey,
           { programId }

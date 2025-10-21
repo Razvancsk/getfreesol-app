@@ -7,45 +7,6 @@ const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY
   ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
   : "https://api.mainnet-beta.solana.com";
 
-// Helper: Retry with exponential backoff and jitter for transient errors
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelayMs: number = 500
-): Promise<T> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error: any) {
-      const isLastAttempt = attempt === maxRetries - 1;
-      
-      // Check if error is retryable (transient network/RPC errors)
-      const errorMsg = error?.message?.toLowerCase() || '';
-      const isRetryable = 
-        error?.code === 429 ||
-        errorMsg.includes('429') ||
-        errorMsg.includes('timeout') ||
-        errorMsg.includes('econnreset') ||
-        errorMsg.includes('blockhash not found') ||
-        errorMsg.includes('simulation failed') ||
-        errorMsg.includes('leader change') ||
-        error?.code === 'ETIMEDOUT' ||
-        error?.code === 'ECONNRESET' ||
-        error?.code === 'ENOTFOUND' ||
-        (error?.code >= 500 && error?.code < 600); // 5xx server errors
-      
-      if (!isRetryable || isLastAttempt) {
-        throw error;
-      }
-      
-      // Exponential backoff with jitter: baseDelay * (2^attempt) + random(0-100ms)
-      const delayMs = (baseDelayMs * Math.pow(2, attempt)) + Math.random() * 100;
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-    }
-  }
-  throw new Error("Max retries exceeded");
-}
-
 interface EmptyAccountScanResult {
   walletAddress: string;
   emptyAccounts: {
@@ -118,15 +79,9 @@ export class AutoClaimScanner {
 
       console.log(`   Found ${activePermits.length} active permit(s)`);
 
-      for (let i = 0; i < activePermits.length; i++) {
-        const permit = activePermits[i];
-        
-        // Add delay with jitter between wallets
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 200));
-        }
-        
+      for (const permit of activePermits) {
         await this.scanWalletForEmptyAccounts(permit.walletAddress);
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
     } catch (error) {
@@ -151,20 +106,10 @@ export class AutoClaimScanner {
         { id: TOKEN_2022_PROGRAM_ID, name: 'Token-2022' }
       ];
 
-      for (let i = 0; i < programIds.length; i++) {
-        const program = programIds[i];
-        
-        // Add delay between programs to avoid rate limits
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 100));
-        }
-        
-        // Retry with backoff on 429 errors
-        const tokenAccounts = await retryWithBackoff(() =>
-          this.connection.getParsedTokenAccountsByOwner(
-            walletPubkey,
-            { programId: program.id }
-          )
+      for (const program of programIds) {
+        const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+          walletPubkey,
+          { programId: program.id }
         );
 
         totalAccounts += tokenAccounts.value.length;
