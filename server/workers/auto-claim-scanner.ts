@@ -96,6 +96,10 @@ export class AutoClaimScanner {
       
       const walletPubkey = new PublicKey(walletAddress);
       
+      // Get permit to check for multisig
+      const permit = await storage.getAutoClaimPermitByWallet(walletAddress);
+      const multisigAddress = permit?.multisigAddress;
+      
       const emptyAccounts = [];
       const undelegatedAccounts = [];
       let totalRentRecoverable = 0;
@@ -125,8 +129,12 @@ export class AutoClaimScanner {
             const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
             const rentLamports = account.lamports;
             
-            // Check if close authority has been delegated to relayer
-            if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
+            // Check if close authority has been delegated to relayer OR multisig (fully automatic!)
+            const isDelegated = 
+              (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) ||
+              (multisigAddress && closeAuthorityPubkey === multisigAddress);
+            
+            if (isDelegated) {
               emptyAccounts.push({
                 address: pubkey.toBase58(),
                 mint: parsedInfo.mint,
