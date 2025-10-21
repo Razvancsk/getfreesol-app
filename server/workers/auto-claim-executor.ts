@@ -10,6 +10,45 @@ const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY
 const PLATFORM_WALLET = "GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6";
 const PLATFORM_FEE_BPS = 1500; // 15%
 
+// Helper: Retry with exponential backoff and jitter for transient errors
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 500
+): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const isLastAttempt = attempt === maxRetries - 1;
+      
+      // Check if error is retryable (transient network/RPC errors)
+      const errorMsg = error?.message?.toLowerCase() || '';
+      const isRetryable = 
+        error?.code === 429 ||
+        errorMsg.includes('429') ||
+        errorMsg.includes('timeout') ||
+        errorMsg.includes('econnreset') ||
+        errorMsg.includes('blockhash not found') ||
+        errorMsg.includes('simulation failed') ||
+        errorMsg.includes('leader change') ||
+        error?.code === 'ETIMEDOUT' ||
+        error?.code === 'ECONNRESET' ||
+        error?.code === 'ENOTFOUND' ||
+        (error?.code >= 500 && error?.code < 600); // 5xx server errors
+      
+      if (!isRetryable || isLastAttempt) {
+        throw error;
+      }
+      
+      // Exponential backoff with jitter: baseDelay * (2^attempt) + random(0-100ms)
+      const delayMs = (baseDelayMs * Math.pow(2, attempt)) + Math.random() * 100;
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
 interface ExecutionResult {
   success: boolean;
   signature?: string;
@@ -95,6 +134,11 @@ export class AutoClaimExecutor {
         }
 
         await storage.updateRelayerJobStatus(job.id, 'processing');
+        
+        // Add delay between jobs to avoid rate limits
+        if (pendingJobs.indexOf(job) > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
+        }
         
         const result = await this.executeJob(job);
         
@@ -202,11 +246,20 @@ export class AutoClaimExecutor {
         transaction.add(closeIx);
       }
 
-      // Calculate total rent recovered BEFORE closing
+      // Calculate total rent recovered BEFORE closing (with retry)
       let totalRecovered = 0;
-      for (const account of tokenAccounts) {
+      for (let i = 0; i < tokenAccounts.length; i++) {
+        const account = tokenAccounts[i];
+        
+        // Small delay between account info calls
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 50));
+        }
+        
         try {
-          const accountInfo = await this.connection.getAccountInfo(new PublicKey(account.address));
+          const accountInfo = await retryWithBackoff(() => 
+            this.connection.getAccountInfo(new PublicKey(account.address))
+          );
           if (accountInfo) {
             totalRecovered += accountInfo.lamports;
           }
@@ -227,28 +280,34 @@ export class AutoClaimExecutor {
       });
       transaction.add(transferToUserIx);
 
-      // Get blockhash and set fee payer
-      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash("confirmed");
+      // Get blockhash and set fee payer (with retry)
+      const { blockhash, lastValidBlockHeight } = await retryWithBackoff(() => 
+        this.connection.getLatestBlockhash("confirmed")
+      );
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = this.relayerKeypair.publicKey;
 
       // Sign transaction
       transaction.sign(this.relayerKeypair);
 
-      // Send transaction
+      // Send transaction (with retry)
       console.log(`      📤 Sending transaction...`);
-      const signature = await this.connection.sendRawTransaction(transaction.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: "confirmed"
-      });
+      const signature = await retryWithBackoff(() => 
+        this.connection.sendRawTransaction(transaction.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "confirmed"
+        })
+      );
 
-      // Wait for confirmation
+      // Wait for confirmation (with retry)
       console.log(`      ⏳ Waiting for confirmation: ${signature}`);
-      const confirmation = await this.connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight
-      }, "confirmed");
+      const confirmation = await retryWithBackoff(() => 
+        this.connection.confirmTransaction({
+          signature,
+          blockhash,
+          lastValidBlockHeight
+        }, "confirmed")
+      );
 
       if (confirmation.value.err) {
         throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
@@ -257,10 +316,12 @@ export class AutoClaimExecutor {
       console.log(`      ✅ Transaction confirmed!`);
       console.log(`      🔗 https://solscan.io/tx/${signature}`);
 
-      // Get actual network fee from transaction
-      const txDetails = await this.connection.getTransaction(signature, {
-        maxSupportedTransactionVersion: 0
-      });
+      // Get actual network fee from transaction (with retry)
+      const txDetails = await retryWithBackoff(() => 
+        this.connection.getTransaction(signature, {
+          maxSupportedTransactionVersion: 0
+        })
+      );
       const networkFeeLamports = txDetails?.meta?.fee || 5000;
 
       console.log(`      💰 Recovery: ${(totalRecovered / 1e9).toFixed(6)} SOL`);

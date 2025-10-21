@@ -132,8 +132,8 @@ export function AutoClaimSection() {
       toast({
         title: "Auto-Claim Enabled!",
         description: data?.accountsCount 
-          ? `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically!`
-          : "Your wallet will now be monitored for empty Token-2022 accounts.",
+          ? `Delegated ${data.accountsCount} account(s). Bot will now claim automatically 24/7!`
+          : "Your wallet will now be monitored for empty accounts. Bot claims automatically!",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
@@ -311,7 +311,7 @@ export function AutoClaimSection() {
               Auto-Claim Status
             </h3>
             <p className="text-purple-200 mt-2 text-sm">
-              Sign once to authorize automatic SOL reclamation from empty Token-2022 accounts
+              Click once to delegate ALL empty accounts (SPL + Token-2022). Bot claims automatically forever!
             </p>
           </div>
           <Badge 
@@ -341,9 +341,8 @@ export function AutoClaimSection() {
         <Alert className="bg-purple-900/40 border-purple-500/30 mb-6">
           <Shield className="h-4 w-4 text-purple-400" />
           <AlertDescription className="text-purple-100">
-            <strong>100% Non-Custodial:</strong> You sign a permit message (not a transaction). 
-            Your private keys never leave your wallet. We monitor for empty accounts and claim them automatically. 
-            You get 85%, platform gets 15%. Works for Token-2022 accounts only.
+            <strong>100% Non-Custodial & Fully Automatic:</strong> Click once to delegate close authority for ALL empty accounts. 
+            Bot automatically claims SOL while you're offline. You get 85%, platform gets 15%. Works for ALL token types (SPL + Token-2022).
           </AlertDescription>
         </Alert>
 
@@ -365,32 +364,13 @@ export function AutoClaimSection() {
                 ) : (
                   <>
                     <Zap className="h-5 w-5 mr-2" />
-                    Enable Auto-Claim (Sign Permit Only)
+                    Enable Auto-Claim (Delegate All Accounts)
                   </>
                 )}
               </Button>
             </div>
           ) : (
-            <div className="flex justify-center gap-4">
-              <Button
-                onClick={() => delegateAuthorityMutation.mutate()}
-                disabled={isProcessing || delegateAuthorityMutation.isPending}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
-                data-testid="button-delegate-now"
-              >
-                {isProcessing || delegateAuthorityMutation.isPending ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2 animate-spin" />
-                    Delegating...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-5 w-5 mr-2" />
-                    Delegate Now (FREE!)
-                  </>
-                )}
-              </Button>
-              
+            <div className="flex justify-center">
               <Button
                 onClick={() => revokeAutoClaimMutation.mutate()}
                 disabled={isProcessing || revokeAutoClaimMutation.isPending}
@@ -444,18 +424,18 @@ export function AutoClaimSection() {
           <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
             <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="text-white font-medium">Sign Once, Claim Forever</h4>
+              <h4 className="text-white font-medium">One Click, Automatic Forever</h4>
               <p className="text-sm text-purple-200">
-                Sign a permit message (no transaction fees) to authorize automatic claims
+                Delegate all empty accounts once (we pay fees!), then bot claims automatically 24/7
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
             <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="text-white font-medium">24/7 Monitoring</h4>
+              <h4 className="text-white font-medium">24/7 Automatic Claims</h4>
               <p className="text-sm text-purple-200">
-                Our relayer monitors your wallet for empty Token-2022 accounts while you're offline
+                Bot monitors your wallet for empty accounts (ALL token types) and claims automatically
               </p>
             </div>
           </div>
@@ -554,9 +534,9 @@ export function AutoClaimSection() {
         <div className="bg-gradient-to-br from-purple-900/40 to-purple-950/60 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
           <div className="text-center text-purple-300 py-8">
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <div className="mb-2 text-lg">Monitoring Your Wallet</div>
+            <div className="mb-2 text-lg">Bot is Active!</div>
             <p className="text-sm text-purple-400">
-              We'll automatically claim SOL when empty Token-2022 accounts are detected
+              Bot automatically claims ALL empty accounts 24/7. You'll see jobs here when claims happen.
             </p>
           </div>
         </div>
