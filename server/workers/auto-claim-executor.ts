@@ -1,5 +1,5 @@
 import { Connection, PublicKey, Transaction, Keypair, SystemProgram, TransactionInstruction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction } from "@solana/spl-token";
+import { TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction } from "@solana/spl-token";
 import { storage } from "../storage";
 import bs58 from "bs58";
 
@@ -157,27 +157,13 @@ export class AutoClaimExecutor {
       };
     }
 
-    // Get permit to check for multisig
-    const permit = await storage.getAutoClaimPermitByWallet(job.walletAddress);
-    const multisigAddress = permit?.multisigAddress;
-
     try {
       // Parse token accounts from job
       if (!job.tokenAccounts) {
         throw new Error("No token accounts in job");
       }
 
-      const parsedAccounts = JSON.parse(job.tokenAccounts);
-      
-      // Support both old format (string[]) and new format ({address, programId}[])
-      const tokenAccounts: Array<{address: string, programId: string}> = Array.isArray(parsedAccounts)
-        ? parsedAccounts.map((item: any) => 
-            typeof item === 'string' 
-              ? { address: item, programId: TOKEN_2022_PROGRAM_ID.toBase58() }  // Legacy format
-              : item  // New format
-          )
-        : [];
-      
+      const tokenAccounts: string[] = JSON.parse(job.tokenAccounts);
       if (tokenAccounts.length === 0) {
         throw new Error("Empty token accounts list");
       }
@@ -190,48 +176,31 @@ export class AutoClaimExecutor {
 
       // Add CloseAccount instruction for each token account
       // Rent goes to relayer first, then we'll send 85% to user
-      for (const account of tokenAccounts) {
-        const accountPubkey = new PublicKey(account.address);
-        const programId = new PublicKey(account.programId);
+      for (const accountAddress of tokenAccounts) {
+        const accountPubkey = new PublicKey(accountAddress);
         
-        let closeIx;
-        
-        if (multisigAddress) {
-          // Use multisig as close authority (FULLY AUTOMATIC - no user signature needed!)
-          console.log(`      🔐 Using multisig: ${multisigAddress.slice(0, 8)}...`);
-          const multisigPubkey = new PublicKey(multisigAddress);
-          
-          closeIx = createCloseAccountInstruction(
-            accountPubkey,                // Token account to close
-            this.relayerKeypair.publicKey, // Destination for rent (relayer collects first)
-            multisigPubkey,               // Close authority (multisig)
-            [this.relayerKeypair],        // Relayer signs as multisig signer
-            programId                     // Use correct program (SPL Token or Token-2022)
-          );
-        } else {
-          // Legacy mode: relayer must already have close authority
-          closeIx = createCloseAccountInstruction(
-            accountPubkey,                 // Token account to close
-            this.relayerKeypair.publicKey, // Destination for rent (relayer collects first)
-            this.relayerKeypair.publicKey, // Close authority (relayer)
-            [],                            // No multisig
-            programId                      // Use correct program (SPL Token or Token-2022)
-          );
-        }
+        // Close instruction: transfers rent to RELAYER wallet, signed by close authority (relayer)
+        const closeIx = createCloseAccountInstruction(
+          accountPubkey,           // Token account to close
+          this.relayerKeypair.publicKey, // Destination for rent (relayer collects first)
+          this.relayerKeypair.publicKey, // Close authority (relayer)
+          [],                      // No multisig
+          TOKEN_2022_PROGRAM_ID    // Token-2022 program
+        );
         
         transaction.add(closeIx);
       }
 
       // Calculate total rent recovered BEFORE closing
       let totalRecovered = 0;
-      for (const account of tokenAccounts) {
+      for (const accountAddress of tokenAccounts) {
         try {
-          const accountInfo = await this.connection.getAccountInfo(new PublicKey(account.address));
+          const accountInfo = await this.connection.getAccountInfo(new PublicKey(accountAddress));
           if (accountInfo) {
             totalRecovered += accountInfo.lamports;
           }
         } catch (err) {
-          console.log(`      ⚠️  Could not get account info for ${account.address}`);
+          console.log(`      ⚠️  Could not get account info for ${accountAddress}`);
         }
       }
 

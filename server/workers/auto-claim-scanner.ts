@@ -1,6 +1,6 @@
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { storage } from "../storage";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
+import { TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
 import bs58 from "bs58";
 
 const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
@@ -14,7 +14,6 @@ interface EmptyAccountScanResult {
     mint: string;
     rentLamports: number;
     isToken2022: boolean;
-    programId: string;
   }[];
   totalRentRecoverable: number;
 }
@@ -96,88 +95,46 @@ export class AutoClaimScanner {
       
       const walletPubkey = new PublicKey(walletAddress);
       
-      // Get permit to check for multisig
-      const permit = await storage.getAutoClaimPermitByWallet(walletAddress);
-      const multisigAddress = permit?.multisigAddress;
-      
+      const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+        walletPubkey,
+        { programId: TOKEN_2022_PROGRAM_ID }
+      );
+
+      console.log(`      Found ${tokenAccounts.value.length} Token-2022 account(s)`);
+
       const emptyAccounts = [];
-      const undelegatedAccounts = [];
       let totalRentRecoverable = 0;
-      let totalAccounts = 0;
+      let skippedNotDelegated = 0;
 
-      // Scan BOTH standard SPL tokens AND Token-2022
-      const programIds = [
-        { id: TOKEN_PROGRAM_ID, name: 'SPL Token' },
-        { id: TOKEN_2022_PROGRAM_ID, name: 'Token-2022' }
-      ];
+      for (const { pubkey, account } of tokenAccounts.value) {
+        const parsedInfo = account.data.parsed.info;
+        const balance = parsedInfo.tokenAmount?.uiAmount || 0;
 
-      for (const program of programIds) {
-        const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-          walletPubkey,
-          { programId: program.id }
-        );
-
-        totalAccounts += tokenAccounts.value.length;
-
-        for (const { pubkey, account } of tokenAccounts.value) {
-          const parsedInfo = account.data.parsed.info;
-          const balance = parsedInfo.tokenAmount?.uiAmount || 0;
-
-          if (balance === 0) {
-            // Normalize close authority (can be string or object with pubkey property)
-            const closeAuthority = parsedInfo.closeAuthority;
-            const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+        if (balance === 0) {
+          // Normalize close authority (can be string or object with pubkey property)
+          const closeAuthority = parsedInfo.closeAuthority;
+          const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+          
+          // Only include accounts where close authority has been delegated to relayer
+          if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
             const rentLamports = account.lamports;
             
-            // Check if close authority has been delegated to relayer OR multisig (fully automatic!)
-            const isDelegated = 
-              (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) ||
-              (multisigAddress && closeAuthorityPubkey === multisigAddress);
-            
-            if (isDelegated) {
-              emptyAccounts.push({
-                address: pubkey.toBase58(),
-                mint: parsedInfo.mint,
-                rentLamports,
-                isToken2022: program.id.equals(TOKEN_2022_PROGRAM_ID),
-                programId: program.id.toBase58()
-              });
-
-              totalRentRecoverable += rentLamports;
-            } else {
-              // Track undelegated empty accounts for notification
-              undelegatedAccounts.push({
-                accountAddress: pubkey.toBase58(),
-                mintAddress: parsedInfo.mint,
-                rentLamports: (rentLamports / 1e9).toString(),
-                programId: program.id.toBase58()
-              });
-            }
-          }
-        }
-      }
-
-      // Save undelegated empty accounts to pending_delegations table
-      if (undelegatedAccounts.length > 0) {
-        for (const account of undelegatedAccounts) {
-          try {
-            await storage.createPendingDelegation({
-              walletAddress,
-              ...account
+            emptyAccounts.push({
+              address: pubkey.toBase58(),
+              mint: parsedInfo.mint,
+              rentLamports,
+              isToken2022: true
             });
-          } catch (error: any) {
-            // Ignore duplicate key errors (account already in pending_delegations)
-            if (!error?.message?.includes('duplicate') && !error?.message?.includes('unique')) {
-              console.error(`      ⚠️  Failed to save pending delegation:`, error?.message || String(error));
-            }
+
+            totalRentRecoverable += rentLamports;
+          } else {
+            skippedNotDelegated++;
           }
         }
       }
 
-      console.log(`      Found ${totalAccounts} token account(s) (SPL + Token-2022)`)
-
-      if (undelegatedAccounts.length > 0) {
-        console.log(`      📋 Found ${undelegatedAccounts.length} empty account(s) awaiting delegation`);
+      if (skippedNotDelegated > 0) {
+        console.log(`      ⏭️  Skipped ${skippedNotDelegated} account(s) without delegated close authority`);
       }
 
       if (emptyAccounts.length > 0) {
@@ -232,10 +189,7 @@ export class AutoClaimScanner {
           jobType: 'claim_empty_accounts',
           itemsCount: batch.length,
           estimatedNet: (batchRent / 1e9).toString(),
-          tokenAccounts: JSON.stringify(batch.map(acc => ({
-            address: acc.address,
-            programId: acc.programId
-          })))
+          tokenAccounts: JSON.stringify(batch.map(acc => acc.address))
         });
 
         console.log(`      ✅ Created job for ${batch.length} account(s)`);
