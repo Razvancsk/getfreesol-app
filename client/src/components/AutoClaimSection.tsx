@@ -214,14 +214,19 @@ export function AutoClaimSection() {
       setIsProcessing(true);
 
       try {
+        console.log('🔵 Requesting delegation transactions...');
         // Get delegation transactions from backend
         const response: any = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
           walletAddress: publicKey.toBase58()
         });
 
+        console.log('🔵 Backend response:', response);
+
         if (!response.transactions || response.transactions.length === 0) {
-          throw new Error("No accounts need delegation");
+          throw new Error("No accounts need delegation. Already delegated or no empty accounts found.");
         }
+
+        console.log(`🔵 Got ${response.transactions.length} transaction(s) to send`);
 
         // Create connection
         const rpcEndpoint = import.meta.env.VITE_HELIUS_API_KEY 
@@ -229,22 +234,35 @@ export function AutoClaimSection() {
           : 'https://api.mainnet-beta.solana.com';
         const connection = new Connection(rpcEndpoint, 'confirmed');
 
+        console.log('🔵 Sending transactions...');
+
         // Sign and send all transactions
         const signatures = [];
-        for (const txBase64 of response.transactions) {
+        for (let i = 0; i < response.transactions.length; i++) {
+          const txBase64 = response.transactions[i];
+          console.log(`🔵 Processing transaction ${i + 1}/${response.transactions.length}`);
+          
           // Deserialize transaction
           const txBuffer = Buffer.from(txBase64, 'base64');
           const transaction = Transaction.from(txBuffer);
 
+          console.log('🔵 Sending transaction to wallet...');
           // Send transaction
           const signature = await sendTransaction(transaction, connection);
+          console.log(`✅ Transaction sent! Signature: ${signature}`);
           signatures.push(signature);
 
           // Wait for confirmation
+          console.log('⏳ Waiting for confirmation...');
           await connection.confirmTransaction(signature, 'confirmed');
+          console.log('✅ Transaction confirmed!');
         }
 
+        console.log(`🎉 All ${signatures.length} transactions completed!`);
         return { ...response, signatures };
+      } catch (error: any) {
+        console.error('❌ Delegation error:', error);
+        throw error;
       } finally {
         setIsProcessing(false);
       }
