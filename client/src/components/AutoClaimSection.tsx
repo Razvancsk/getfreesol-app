@@ -133,7 +133,7 @@ export function AutoClaimSection() {
         title: "Auto-Claim Enabled!",
         description: data?.accountsCount 
           ? `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically!`
-          : "Your wallet will now be monitored for empty Token-2022 accounts.",
+          : "Your wallet will now be monitored for empty SPL and Token-2022 accounts.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
@@ -311,7 +311,7 @@ export function AutoClaimSection() {
               Auto-Claim Status
             </h3>
             <p className="text-purple-200 mt-2 text-sm">
-              Sign once to authorize automatic SOL reclamation from empty Token-2022 accounts
+              Sign once to authorize automatic SOL reclamation from empty SPL and Token-2022 accounts
             </p>
           </div>
           <Badge 
@@ -372,6 +372,25 @@ export function AutoClaimSection() {
             </div>
           ) : (
             <div className="flex justify-center gap-4">
+              <Button
+                onClick={() => delegateAuthorityMutation.mutate()}
+                disabled={isProcessing || delegateAuthorityMutation.isPending}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
+                data-testid="button-delegate-now"
+              >
+                {isProcessing || delegateAuthorityMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Delegating...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-5 w-5 mr-2" />
+                    Delegate Empty Accounts (FREE!)
+                  </>
+                )}
+              </Button>
+              
               <Button
                 onClick={() => revokeAutoClaimMutation.mutate()}
                 disabled={isProcessing || revokeAutoClaimMutation.isPending}
@@ -436,7 +455,7 @@ export function AutoClaimSection() {
             <div>
               <h4 className="text-white font-medium">24/7 Monitoring</h4>
               <p className="text-sm text-purple-200">
-                Our relayer monitors your wallet for empty Token-2022 accounts while you're offline
+                Our relayer monitors your wallet for empty SPL and Token-2022 accounts while you're offline
               </p>
             </div>
           </div>
@@ -537,7 +556,7 @@ export function AutoClaimSection() {
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <div className="mb-2 text-lg">Monitoring Your Wallet</div>
             <p className="text-sm text-purple-400">
-              We'll automatically claim SOL when empty Token-2022 accounts are detected
+              We'll automatically claim SOL when empty SPL or Token-2022 accounts are detected
             </p>
           </div>
         </div>
