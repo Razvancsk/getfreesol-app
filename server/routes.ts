@@ -4228,7 +4228,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           scopes: permit.scopes,
           createdAt: permit.createdAt,
           lastUsedAt: permit.lastUsedAt,
-          permitPda: permit.permitPda
+          permitPda: permit.permitPda,
+          pendingDelegationCount: permit.pendingDelegationCount || 0,
+          pendingDelegationSol: permit.pendingDelegationSol || "0"
         }
       });
 
@@ -4321,6 +4323,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Revoke permit error:", error);
       res.status(500).json({ error: "Failed to revoke permit" });
+    }
+  });
+
+  // Clear pending delegation count after successful delegation
+  app.post("/api/auto-claim/permit/clear-pending", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address required" });
+      }
+
+      await storage.updateAutoClaimPermitMetadata(walletAddress, {
+        pendingDelegationCount: 0,
+        pendingDelegationSol: "0"
+      });
+
+      console.log(`✅ Cleared pending delegation for wallet: ${walletAddress}`);
+
+      res.json({
+        success: true,
+        message: "Pending delegation cleared"
+      });
+
+    } catch (error) {
+      console.error("Clear pending delegation error:", error);
+      res.status(500).json({ error: "Failed to clear pending delegation" });
     }
   });
 
