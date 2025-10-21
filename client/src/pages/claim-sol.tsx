@@ -2610,15 +2610,46 @@ export default function SolRefund() {
                 {tokenList.map((token, index) => (
                   <div 
                     key={index} 
-                    className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-all ${
+                    className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all ${
                       selectedTokens.has(token.mint)
-                        ? 'bg-black/40 border-2 border-red-500' 
-                        : 'bg-purple-900/30 border-2 border-purple-700/40 hover:border-purple-600/60'
+                        ? 'bg-purple-600/20 border border-purple-400/50' 
+                        : 'bg-purple-800/20 border border-purple-500/30 hover:bg-purple-700/20'
                     }`}
                     onClick={() => toggleTokenSelection(token.mint)}
                     data-testid={`card-token-${index}`}
                   >
-                    {/* Checkbox - LEFT SIDE */}
+                    {/* Token Icon */}
+                    <div className="flex-shrink-0">
+                      {token.logo ? (
+                        <img 
+                          src={token.logo} 
+                          alt={token.symbol || 'Token'} 
+                          className="w-12 h-12 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-purple-600/30 flex items-center justify-center">
+                          <Coins className="h-6 w-6 text-purple-300" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Token Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-lg font-semibold text-white truncate">
+                        {token.symbol || token.name || 'Unknown Token'}
+                      </div>
+                      <div className="text-sm text-purple-200">
+                        Balance: {token.balance.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-purple-300 font-mono truncate">
+                        {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
+                      </div>
+                    </div>
+
+                    {/* Checkbox - RIGHT SIDE */}
                     <div className="flex-shrink-0">
                       <div 
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors pointer-events-none ${
@@ -2630,46 +2661,6 @@ export default function SolRefund() {
                         {selectedTokens.has(token.mint) && <Check className="h-4 w-4 text-white" />}
                       </div>
                     </div>
-
-                    {/* Token Icon */}
-                    <div className="flex-shrink-0">
-                      {token.logo ? (
-                        <img 
-                          src={token.logo} 
-                          alt={token.symbol || 'Token'} 
-                          className="w-11 h-11 rounded-full"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-11 h-11 rounded-full bg-purple-600/30 flex items-center justify-center">
-                          <Coins className="h-6 w-6 text-purple-300" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Token Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-base font-semibold text-white truncate">
-                        {token.symbol || token.name || 'Unknown Token'}
-                      </div>
-                      <div className="text-sm text-purple-200/80">
-                        Balance: {token.balance.toLocaleString()} {token.symbol || ''}
-                      </div>
-                      <div className="text-xs text-purple-300/60 font-mono truncate">
-                        {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
-                      </div>
-                    </div>
-
-                    {/* "MARKED FOR BURN" Badge */}
-                    {selectedTokens.has(token.mint) && (
-                      <div className="flex-shrink-0">
-                        <div className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded pointer-events-none">
-                          MARKED FOR BURN
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
