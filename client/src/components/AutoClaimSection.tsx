@@ -62,17 +62,17 @@ export function AutoClaimSection() {
 
   const hasActivePermit = permitStatus?.permit?.status === 'active';
 
-  // Enable Auto-Claim mutation
+  // Enable Auto-Claim mutation (combines permit + delegation)
   const enableAutoClaimMutation = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage) {
+      if (!publicKey || !signMessage || !sendTransaction) {
         throw new Error("Wallet not connected");
       }
 
       setIsProcessing(true);
 
       try {
-        // Create permit message
+        // Step 1: Create and sign permit message
         const nonce = uuidv4();
         const message = {
           type: "AUTO_CLAIM_PERMIT",
@@ -88,12 +88,11 @@ export function AutoClaimSection() {
         const messageString = JSON.stringify(message);
         const messageBytes = new TextEncoder().encode(messageString);
         
-        // Sign the message
         const signature = await signMessage(messageBytes);
         const signatureBase58 = bs58.encode(signature);
 
-        // Send to backend
-        const response = await apiRequest('POST', '/api/auto-claim/permit/create', {
+        // Send permit to backend
+        await apiRequest('POST', '/api/auto-claim/permit/create', {
           walletAddress: publicKey.toBase58(),
           permitSignature: signatureBase58,
           permitMessage: messageString,
@@ -101,17 +100,43 @@ export function AutoClaimSection() {
           scopes: "claim_empty_accounts"
         });
 
-        return response;
+        // Step 2: Delegate authority (relayer pays fees!)
+        const delegateResponse = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
+          walletAddress: publicKey.toBase58()
+        });
+
+        if (delegateResponse.transactions && delegateResponse.transactions.length > 0) {
+          // Create connection
+          const rpcEndpoint = import.meta.env.VITE_HELIUS_API_KEY 
+            ? `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`
+            : 'https://api.mainnet-beta.solana.com';
+          const connection = new Connection(rpcEndpoint, 'confirmed');
+
+          // Sign and send all delegation transactions
+          for (const txBase64 of delegateResponse.transactions) {
+            const txBuffer = Buffer.from(txBase64, 'base64');
+            const transaction = Transaction.from(txBuffer);
+
+            // Send transaction (relayer already signed as fee payer!)
+            const sig = await sendTransaction(transaction, connection);
+            await connection.confirmTransaction(sig, 'confirmed');
+          }
+        }
+
+        return delegateResponse;
       } finally {
         setIsProcessing(false);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Auto-Claim Enabled!",
-        description: "Your wallet will now be monitored for empty Token-2022 accounts.",
+        description: data?.accountsCount 
+          ? `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically!`
+          : "Your wallet will now be monitored for empty Token-2022 accounts.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
     },
     onError: (error: any) => {
       toast({
@@ -300,80 +325,47 @@ export function AutoClaimSection() {
           </AlertDescription>
         </Alert>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-4">
+        {/* Action Button */}
+        <div className="flex justify-center">
           {!hasActivePermit ? (
-            <div className="flex justify-center">
-              <Button
-                onClick={() => enableAutoClaimMutation.mutate()}
-                disabled={isProcessing || enableAutoClaimMutation.isPending}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
-                data-testid="button-enable-auto-claim"
-              >
-                {isProcessing || enableAutoClaimMutation.isPending ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2 animate-spin" />
-                    Signing Permit...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-5 w-5 mr-2" />
-                    Enable Auto-Claim
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button
+              onClick={() => enableAutoClaimMutation.mutate()}
+              disabled={isProcessing || enableAutoClaimMutation.isPending}
+              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
+              data-testid="button-enable-auto-claim"
+            >
+              {isProcessing || enableAutoClaimMutation.isPending ? (
+                <>
+                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  Setting Up Auto-Claim...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-5 w-5 mr-2" />
+                  Enable Auto-Claim (FREE - Relayer Pays!)
+                </>
+              )}
+            </Button>
           ) : (
-            <>
-              {/* Step 2: Delegate Authority */}
-              <Alert className="bg-blue-900/40 border-blue-500/30">
-                <Info className="h-4 w-4 text-blue-400" />
-                <AlertDescription className="text-blue-100">
-                  <strong>Step 2 Required:</strong> Click "Delegate Authority" to give the relayer permission to close your empty accounts. This is a one-time transaction.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="flex justify-center gap-4">
-                <Button
-                  onClick={() => delegateAuthorityMutation.mutate()}
-                  disabled={isProcessing || delegateAuthorityMutation.isPending}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
-                  data-testid="button-delegate-authority"
-                >
-                  {isProcessing || delegateAuthorityMutation.isPending ? (
-                    <>
-                      <Clock className="h-5 w-5 mr-2 animate-spin" />
-                      Delegating...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="h-5 w-5 mr-2" />
-                      Delegate Authority
-                    </>
-                  )}
-                </Button>
-                
-                <Button
-                  onClick={() => revokeAutoClaimMutation.mutate()}
-                  disabled={isProcessing || revokeAutoClaimMutation.isPending}
-                  variant="outline"
-                  className="px-8 py-6 text-lg border-red-500/30 hover:bg-red-900/20"
-                  data-testid="button-revoke-auto-claim"
-                >
-                  {isProcessing || revokeAutoClaimMutation.isPending ? (
-                    <>
-                      <Clock className="h-5 w-5 mr-2 animate-spin" />
-                      Revoking...
-                    </>
-                  ) : (
-                    <>
-                      <AlertTriangle className="h-5 w-5 mr-2" />
-                      Disable
-                    </>
-                  )}
-                </Button>
-              </div>
-            </>
+            <Button
+              onClick={() => revokeAutoClaimMutation.mutate()}
+              disabled={isProcessing || revokeAutoClaimMutation.isPending}
+              variant="destructive"
+              className="px-8 py-6 text-lg"
+              data-testid="button-revoke-auto-claim"
+            >
+              {isProcessing || revokeAutoClaimMutation.isPending ? (
+                <>
+                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  Revoking...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  Disable Auto-Claim
+                </>
+              )}
+            </Button>
           )}
         </div>
 

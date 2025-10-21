@@ -4476,10 +4476,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transaction.add(setAuthorityIx);
         }
 
-        // Set fee payer and recent blockhash
-        transaction.feePayer = userPubkey;
+        // Set RELAYER as fee payer (sponsored transaction)
+        transaction.feePayer = relayerKeypair.publicKey;
         const { blockhash } = await connection.getLatestBlockhash("confirmed");
         transaction.recentBlockhash = blockhash;
+
+        // Relayer signs first (pays fees)
+        transaction.partialSign(relayerKeypair);
 
         // Serialize transaction to base64
         const serialized = transaction.serialize({
@@ -4487,10 +4490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verifySignatures: false
         });
         
-        transactions.push({
-          transaction: serialized.toString('base64'),
-          accounts: batch.map(a => a.address)
-        });
+        transactions.push(serialized.toString('base64'));
       }
 
       console.log(`📦 Created ${transactions.length} delegation transaction(s)`);
@@ -4498,7 +4498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         transactions,
-        accountsToDelegate: accountsNeedingDelegation.length,
+        accountsCount: accountsNeedingDelegation.length,
         relayerPublicKey
       });
 
