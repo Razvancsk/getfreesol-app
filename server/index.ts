@@ -6,8 +6,6 @@ import { sql } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { getShareMessage, getShareTitle, lamportsToSol } from "../shared/shareMessages";
-import { autoClaimScanner } from "./workers/auto-claim-scanner";
-import { autoClaimExecutor } from "./workers/auto-claim-executor";
 
 const app = express();
 app.use(express.json());
@@ -319,16 +317,6 @@ function getStaticAssetsPath() {
       }
       log(`Server started successfully on port ${port}`);
       log(`Environment: ${process.env.NODE_ENV}`);
-      
-      // Start Auto-Claim workers
-      if (process.env.ENABLE_AUTO_CLAIM_WORKERS === 'true') {
-        log(`Starting Auto-Claim workers...`);
-        autoClaimScanner.start(60000); // Scan every 60 seconds
-        autoClaimExecutor.start(30000); // Execute every 30 seconds
-        log(`Auto-Claim workers started`);
-      } else {
-        log(`Auto-Claim workers disabled (set ENABLE_AUTO_CLAIM_WORKERS=true to enable)`);
-      }
     });
 
   } catch (error) {

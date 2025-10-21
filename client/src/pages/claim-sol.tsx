@@ -34,7 +34,6 @@ import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
-import { AutoClaimSection } from '@/components/AutoClaimSection';
 
 interface EmptyTokenAccount {
   id: number;
@@ -81,7 +80,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'autoClaim'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -89,7 +88,6 @@ export default function SolRefund() {
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
-  const [autoClaimEnabled, setAutoClaimEnabled] = useState<boolean>(false);
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -2428,18 +2426,6 @@ export default function SolRefund() {
                   🔥 Burn
                 </Button>
                 <Button
-                  onClick={() => setActiveTab('autoClaim')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    activeTab === 'autoClaim' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-auto-claim-tab"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  Auto Claim
-                </Button>
-                <Button
                   onClick={() => setActiveTab('referrals')}
                   className={`px-4 py-2 text-sm font-medium rounded transition-all ${
                     activeTab === 'referrals' 
@@ -2457,7 +2443,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'autoClaim' ? 'Automatically claim SOL from empty token accounts' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -3016,11 +3002,6 @@ export default function SolRefund() {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Auto Claim Tab Content */}
-          {activeTab === 'autoClaim' && (
-            <AutoClaimSection />
           )}
 
           {/* Referrals Tab Content */}
