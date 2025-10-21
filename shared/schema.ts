@@ -143,6 +143,7 @@ export const autoClaimPermits = pgTable("auto_claim_permits", {
   permitMessage: text("permit_message").notNull(), // JSON message that was signed
   permitNonce: text("permit_nonce").notNull().unique(), // Prevents replay attacks
   permitPda: text("permit_pda"), // On-chain PDA address (will be set after program initialization)
+  multisigAddress: text("multisig_address"), // SPL Token multisig (M=1) owned by relayer for auto-closing accounts
   scopes: text("scopes").notNull().default("claim_empty_accounts"), // Comma-separated: claim_empty_accounts,burn_tokens,burn_nfts
   status: text("status").notNull().default("active"), // active, revoked, expired
   version: integer("version").notNull().default(1), // Permit version for future upgrades
