@@ -50,6 +50,7 @@ export const transactionLedger = pgTable("transaction_ledger", {
   signature: text("signature").notNull().unique(),
   walletAddress: text("wallet_address").notNull(),
   transactionType: text("transaction_type").notNull(), // 'sol_reclaim', 'token_burn', 'nft_burn', 'nft_resize'
+  source: text("source").notNull().default("manual"), // 'manual' or 'auto' - tracks if transaction was from auto-claim
   solRecovered: decimal("sol_recovered", { precision: 18, scale: 9 }).notNull(),
   netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(),
   feeAmount: decimal("fee_amount", { precision: 18, scale: 9 }).notNull(),
@@ -85,6 +86,21 @@ export const nftBurnRecords = pgTable("nft_burn_records", {
   referralFee: decimal("referral_fee", { precision: 18, scale: 9 }).default("0").notNull(),
   netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(),
   burnedAt: timestamp("burned_at").notNull().defaultNow(),
+});
+
+// NFT resizing records
+export const nftResizeRecords = pgTable("nft_resize_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signature: text("signature").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  nftMint: text("nft_mint").notNull(),
+  oldSize: integer("old_size").notNull(),
+  newSize: integer("new_size").notNull(),
+  rentDelta: decimal("rent_delta", { precision: 18, scale: 9 }).notNull(),
+  platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).default("0").notNull(),
+  referralFee: decimal("referral_fee", { precision: 18, scale: 9 }).default("0").notNull(),
+  netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(),
+  resizedAt: timestamp("resized_at").notNull().defaultNow(),
 });
 
 // Referral system tables
