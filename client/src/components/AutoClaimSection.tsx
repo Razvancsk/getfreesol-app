@@ -10,6 +10,8 @@ import { Zap, CheckCircle, AlertTriangle, Info, Shield, ExternalLink, Clock, Coi
 import { useWallet } from '@solana/wallet-adapter-react';
 import { v4 as uuidv4 } from 'uuid';
 import bs58 from 'bs58';
+import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { TOKEN_2022_PROGRAM_ID, getAccount, AuthorityType, setAuthority, createSetAuthorityInstruction } from '@solana/spl-token';
 
 interface AutoClaimPermit {
   id: string;
@@ -39,10 +41,13 @@ interface RelayerJob {
   completedAt: string | null;
 }
 
+// Relayer wallet that will be delegated close authority
+const RELAYER_WALLET = "9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf";
+
 export function AutoClaimSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { publicKey, signMessage, connected } = useWallet();
+  const { publicKey, signMessage, signTransaction, connected } = useWallet();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const walletAddress = publicKey?.toBase58();
@@ -64,14 +69,57 @@ export function AutoClaimSection() {
   // Enable Auto-Claim mutation
   const enableAutoClaimMutation = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage) {
-        throw new Error("Wallet not connected");
+      if (!publicKey || !signMessage || !signTransaction) {
+        throw new Error("Wallet not connected or doesn't support required operations");
       }
 
       setIsProcessing(true);
 
       try {
-        // Create permit message
+        // Step 1: Fetch Token-2022 accounts that need delegation
+        const scanResponse: any = await apiRequest('GET', `/api/sol-refund/scan/${publicKey.toBase58()}`);
+        const token2022Accounts = scanResponse.emptyAccounts?.filter((acc: any) => acc.isToken2022) || [];
+
+        if (token2022Accounts.length === 0) {
+          throw new Error("No Token-2022 accounts found. Auto-Claim only works with Token-2022 accounts.");
+        }
+
+        // Step 2: Create delegation transaction
+        const heliusConfig: any = await apiRequest('GET', '/api/helius-config');
+        const connection = new Connection(heliusConfig.rpcUrl);
+        const transaction = new Transaction();
+        const relayerPubkey = new PublicKey(RELAYER_WALLET);
+
+        // Add setAuthority instruction for each Token-2022 account
+        for (const account of token2022Accounts) {
+          const accountPubkey = new PublicKey(account.address);
+          
+          // Create instruction to delegate close authority to relayer
+          const setAuthorityIx = createSetAuthorityInstruction(
+            accountPubkey,              // Token account
+            publicKey,                  // Current authority (owner)
+            AuthorityType.CloseAccount, // Authority type
+            relayerPubkey,              // New authority (relayer)
+            [],                         // Multi-signers (none)
+            TOKEN_2022_PROGRAM_ID       // Token-2022 program
+          );
+          
+          transaction.add(setAuthorityIx);
+        }
+
+        // Get recent blockhash
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = publicKey;
+
+        // Step 3: Sign and send delegation transaction
+        const signedTx = await signTransaction(transaction);
+        const delegationSignature = await connection.sendRawTransaction(signedTx.serialize());
+        
+        // Wait for confirmation
+        await connection.confirmTransaction(delegationSignature, 'confirmed');
+
+        // Step 4: Create permit message
         const nonce = uuidv4();
         const message = {
           type: "AUTO_CLAIM_PERMIT",
@@ -81,23 +129,26 @@ export function AutoClaimSection() {
           version: 1,
           created_at: Math.floor(Date.now() / 1000),
           domain: "getyoursolback.app",
-          statement: "I authorize this application to automatically claim SOL from my empty token accounts."
+          statement: "I authorize this application to automatically claim SOL from my empty token accounts.",
+          delegation_tx: delegationSignature
         };
 
         const messageString = JSON.stringify(message);
         const messageBytes = new TextEncoder().encode(messageString);
         
-        // Sign the message
+        // Sign the permit message
         const signature = await signMessage(messageBytes);
         const signatureBase58 = bs58.encode(signature);
 
-        // Send to backend
+        // Step 5: Send permit to backend
         const response = await apiRequest('POST', '/api/auto-claim/permit/create', {
           walletAddress: publicKey.toBase58(),
           permitSignature: signatureBase58,
           permitMessage: messageString,
           permitNonce: nonce,
-          scopes: "claim_empty_accounts"
+          scopes: "claim_empty_accounts",
+          delegationTxSignature: delegationSignature,
+          delegatedAccountsCount: token2022Accounts.length
         });
 
         return response;
@@ -124,14 +175,56 @@ export function AutoClaimSection() {
   // Revoke Auto-Claim mutation
   const revokeAutoClaimMutation = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage) {
+      if (!publicKey || !signMessage || !signTransaction) {
         throw new Error("Wallet not connected");
       }
 
       setIsProcessing(true);
 
       try {
-        // Create revoke message
+        // Step 1: Fetch Token-2022 accounts that have delegated authority
+        const scanResponse: any = await apiRequest('GET', `/api/sol-refund/scan/${publicKey.toBase58()}`);
+        const token2022Accounts = scanResponse.emptyAccounts?.filter((acc: any) => acc.isToken2022) || [];
+
+        let revocationSignature = null;
+
+        // Step 2: Remove delegation if there are Token-2022 accounts
+        if (token2022Accounts.length > 0) {
+          const heliusConfig: any = await apiRequest('GET', '/api/helius-config');
+          const connection = new Connection(heliusConfig.rpcUrl);
+          const transaction = new Transaction();
+
+          // Add setAuthority instruction to revoke delegation (set back to owner)
+          for (const account of token2022Accounts) {
+            const accountPubkey = new PublicKey(account.address);
+            
+            // Create instruction to set close authority back to owner
+            const setAuthorityIx = createSetAuthorityInstruction(
+              accountPubkey,              // Token account
+              publicKey,                  // Current authority (still owner, can revoke)
+              AuthorityType.CloseAccount, // Authority type
+              publicKey,                  // New authority (back to owner)
+              [],                         // Multi-signers (none)
+              TOKEN_2022_PROGRAM_ID       // Token-2022 program
+            );
+            
+            transaction.add(setAuthorityIx);
+          }
+
+          // Get recent blockhash
+          const { blockhash } = await connection.getLatestBlockhash();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = publicKey;
+
+          // Sign and send revocation transaction
+          const signedTx = await signTransaction(transaction);
+          revocationSignature = await connection.sendRawTransaction(signedTx.serialize());
+          
+          // Wait for confirmation
+          await connection.confirmTransaction(revocationSignature, 'confirmed');
+        }
+
+        // Step 3: Create revoke message
         const nonce = uuidv4();
         const message = {
           type: "AUTO_CLAIM_REVOKE",
@@ -140,21 +233,23 @@ export function AutoClaimSection() {
           nonce,
           timestamp: Math.floor(Date.now() / 1000),
           version: 1,
-          domain: "getyoursolback.app"
+          domain: "getyoursolback.app",
+          revocation_tx: revocationSignature
         };
 
         const messageString = JSON.stringify(message);
         const messageBytes = new TextEncoder().encode(messageString);
         
-        // Sign the message
+        // Sign the revoke message
         const signature = await signMessage(messageBytes);
         const signatureBase58 = bs58.encode(signature);
 
-        // Send to backend
+        // Step 4: Send to backend
         const response = await apiRequest('POST', '/api/auto-claim/permit/revoke', {
           walletAddress: publicKey.toBase58(),
           revokeSignature: signatureBase58,
-          revokeMessage: messageString
+          revokeMessage: messageString,
+          revocationTxSignature: revocationSignature
         });
 
         return response;
