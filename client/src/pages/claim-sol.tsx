@@ -2581,30 +2581,29 @@ export default function SolRefund() {
 
           {/* Burn Tokens Results */}
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length > 0 && (
-            <>
-              {/* Refresh Button - Outside Card */}
-              <button 
-                onClick={() => {
-                  if (publicKey) {
-                    scanTokensMutation.mutate(publicKey.toString());
-                  }
-                }}
-                disabled={scanTokensMutation.isPending || !publicKey}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-purple-600/40 to-purple-700/40 hover:from-purple-600/60 hover:to-purple-700/60 border border-purple-500/30 backdrop-blur-sm rounded-2xl text-white font-medium transition-all duration-200 disabled:opacity-50 mb-4"
-                data-testid="button-refresh-tokens"
-              >
-                <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                {/* Header */}
-                <div className="mb-6">
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
                   <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
                   {scanTokensMutation.isPending && (
                     <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
                   )}
                 </div>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanTokensMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                  data-testid="button-refresh-tokens"
+                >
+                  <RefreshCw className={`h-4 w-4 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
 
               {/* Token List */}
               <div className="max-h-96 overflow-y-auto space-y-3 mb-6">
@@ -2710,8 +2709,7 @@ export default function SolRefund() {
                   )}
                 </Button>
               </div>
-              </div>
-            </>
+            </div>
           )}
 
 
@@ -2745,25 +2743,10 @@ export default function SolRefund() {
 
           {/* NFT Burning Interface */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
-            <>
-              {/* Refresh Button - Outside Card */}
-              <button 
-                onClick={() => {
-                  if (publicKey) {
-                    scanNftsMutation.mutate(publicKey.toString());
-                  }
-                }}
-                disabled={scanNftsMutation.isPending || !publicKey}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-purple-600/40 to-purple-700/40 hover:from-purple-600/60 hover:to-purple-700/60 border border-purple-500/30 backdrop-blur-sm rounded-2xl text-white font-medium transition-all duration-200 disabled:opacity-50 mb-4"
-                data-testid="button-refresh-nft"
-              >
-                <RefreshCw className={`h-5 w-5 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                {/* Header */}
-                <div className="mb-6">
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
                   <h3 className="text-xl font-semibold text-white">
                     {nftData && nftData.nfts && nftData.nfts.length > 0 
                       ? `${nftData.nfts.length} NFTs Found` 
@@ -2773,9 +2756,23 @@ export default function SolRefund() {
                     <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
                   )}
                 </div>
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanNftsMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanNftsMutation.isPending || !publicKey}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                  data-testid="button-refresh-nft"
+                >
+                  <RefreshCw className={`h-4 w-4 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
 
 
-                {/* Individual NFT Grid */}
+              {/* Individual NFT Grid */}
               {scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
@@ -2989,8 +2986,7 @@ export default function SolRefund() {
                   </div>
                 </div>
               </div>
-              </div>
-            </>
+            </div>
           )}
 
 
