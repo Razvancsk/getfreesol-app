@@ -23,25 +23,13 @@ import bs58 from 'bs58';
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
   try {
-    console.log('🔐 Verifying signature...');
-    console.log('  Message length:', message.length);
-    console.log('  Signature length:', signature.length);
-    console.log('  PublicKey:', publicKey);
-    
     const messageBytes = new TextEncoder().encode(message);
     const signatureBytes = bs58.decode(signature);
     const publicKeyBytes = bs58.decode(publicKey);
     
-    console.log('  Message bytes length:', messageBytes.length);
-    console.log('  Signature bytes length:', signatureBytes.length);
-    console.log('  PublicKey bytes length:', publicKeyBytes.length);
-    
-    const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
-    console.log('  Verification result:', isValid);
-    
-    return isValid;
+    return nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
   } catch (error) {
-    console.error('❌ Signature verification error:', error);
+    console.error('Signature verification error:', error);
     return false;
   }
 }
@@ -4476,13 +4464,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transaction.add(setAuthorityIx);
         }
 
-        // Set RELAYER as fee payer (sponsored transaction)
-        transaction.feePayer = relayerKeypair.publicKey;
+        // Set fee payer and recent blockhash
+        transaction.feePayer = userPubkey;
         const { blockhash } = await connection.getLatestBlockhash("confirmed");
         transaction.recentBlockhash = blockhash;
-
-        // Relayer signs first (pays fees)
-        transaction.partialSign(relayerKeypair);
 
         // Serialize transaction to base64
         const serialized = transaction.serialize({
@@ -4490,7 +4475,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verifySignatures: false
         });
         
-        transactions.push(serialized.toString('base64'));
+        transactions.push({
+          transaction: serialized.toString('base64'),
+          accounts: batch.map(a => a.address)
+        });
       }
 
       console.log(`📦 Created ${transactions.length} delegation transaction(s)`);
@@ -4498,7 +4486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         transactions,
-        accountsCount: accountsNeedingDelegation.length,
+        accountsToDelegate: accountsNeedingDelegation.length,
         relayerPublicKey
       });
 

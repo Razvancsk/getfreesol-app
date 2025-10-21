@@ -8,7 +8,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Zap, CheckCircle, AlertTriangle, Info, Shield, ExternalLink, Clock, Coins } from "lucide-react";
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
 import bs58 from 'bs58';
 
@@ -43,7 +42,7 @@ interface RelayerJob {
 export function AutoClaimSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { publicKey, signMessage, sendTransaction, connected } = useWallet();
+  const { publicKey, signMessage, connected } = useWallet();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const walletAddress = publicKey?.toBase58();
@@ -62,17 +61,17 @@ export function AutoClaimSection() {
 
   const hasActivePermit = permitStatus?.permit?.status === 'active';
 
-  // Enable Auto-Claim mutation (combines permit + delegation)
+  // Enable Auto-Claim mutation
   const enableAutoClaimMutation = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !sendTransaction) {
+      if (!publicKey || !signMessage) {
         throw new Error("Wallet not connected");
       }
 
       setIsProcessing(true);
 
       try {
-        // Step 1: Create and sign permit message
+        // Create permit message
         const nonce = uuidv4();
         const message = {
           type: "AUTO_CLAIM_PERMIT",
@@ -88,11 +87,12 @@ export function AutoClaimSection() {
         const messageString = JSON.stringify(message);
         const messageBytes = new TextEncoder().encode(messageString);
         
+        // Sign the message
         const signature = await signMessage(messageBytes);
         const signatureBase58 = bs58.encode(signature);
 
-        // Send permit to backend
-        await apiRequest('POST', '/api/auto-claim/permit/create', {
+        // Send to backend
+        const response = await apiRequest('POST', '/api/auto-claim/permit/create', {
           walletAddress: publicKey.toBase58(),
           permitSignature: signatureBase58,
           permitMessage: messageString,
@@ -100,43 +100,17 @@ export function AutoClaimSection() {
           scopes: "claim_empty_accounts"
         });
 
-        // Step 2: Delegate authority (relayer pays fees!)
-        const delegateResponse: any = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
-          walletAddress: publicKey.toBase58()
-        });
-
-        if (delegateResponse.transactions && delegateResponse.transactions.length > 0) {
-          // Create connection
-          const rpcEndpoint = import.meta.env.VITE_HELIUS_API_KEY 
-            ? `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`
-            : 'https://api.mainnet-beta.solana.com';
-          const connection = new Connection(rpcEndpoint, 'confirmed');
-
-          // Sign and send all delegation transactions
-          for (const txBase64 of delegateResponse.transactions) {
-            const txBuffer = Buffer.from(txBase64, 'base64');
-            const transaction = Transaction.from(txBuffer);
-
-            // Send transaction (relayer already signed as fee payer!)
-            const sig = await sendTransaction(transaction, connection);
-            await connection.confirmTransaction(sig, 'confirmed');
-          }
-        }
-
-        return delegateResponse;
+        return response;
       } finally {
         setIsProcessing(false);
       }
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "Auto-Claim Enabled!",
-        description: data?.accountsCount 
-          ? `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically!`
-          : "Your wallet will now be monitored for empty Token-2022 accounts.",
+        description: "Your wallet will now be monitored for empty Token-2022 accounts.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
-      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
     },
     onError: (error: any) => {
       toast({
@@ -204,85 +178,6 @@ export function AutoClaimSection() {
     },
   });
 
-  // Delegate Authority mutation (backup - not used in main flow)
-  const delegateAuthorityMutation = useMutation({
-    mutationFn: async () => {
-      if (!publicKey || !sendTransaction) {
-        throw new Error("Wallet not connected");
-      }
-
-      setIsProcessing(true);
-
-      try {
-        console.log('🔵 Requesting delegation transactions...');
-        // Get delegation transactions from backend
-        const response: any = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
-          walletAddress: publicKey.toBase58()
-        });
-
-        console.log('🔵 Backend response:', response);
-
-        if (!response.transactions || response.transactions.length === 0) {
-          throw new Error("No accounts need delegation. Already delegated or no empty accounts found.");
-        }
-
-        console.log(`🔵 Got ${response.transactions.length} transaction(s) to send`);
-
-        // Create connection
-        const rpcEndpoint = import.meta.env.VITE_HELIUS_API_KEY 
-          ? `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`
-          : 'https://api.mainnet-beta.solana.com';
-        const connection = new Connection(rpcEndpoint, 'confirmed');
-
-        console.log('🔵 Sending transactions...');
-
-        // Sign and send all transactions
-        const signatures = [];
-        for (let i = 0; i < response.transactions.length; i++) {
-          const txBase64 = response.transactions[i];
-          console.log(`🔵 Processing transaction ${i + 1}/${response.transactions.length}`);
-          
-          // Deserialize transaction
-          const txBuffer = Buffer.from(txBase64, 'base64');
-          const transaction = Transaction.from(txBuffer);
-
-          console.log('🔵 Sending transaction to wallet...');
-          // Send transaction
-          const signature = await sendTransaction(transaction, connection);
-          console.log(`✅ Transaction sent! Signature: ${signature}`);
-          signatures.push(signature);
-
-          // Wait for confirmation
-          console.log('⏳ Waiting for confirmation...');
-          await connection.confirmTransaction(signature, 'confirmed');
-          console.log('✅ Transaction confirmed!');
-        }
-
-        console.log(`🎉 All ${signatures.length} transactions completed!`);
-        return { ...response, signatures };
-      } catch (error: any) {
-        console.error('❌ Delegation error:', error);
-        throw error;
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    onSuccess: (data: any) => {
-      toast({
-        title: "Authority Delegated!",
-        description: `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
-    },
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Failed to Delegate Authority",
-        description: error.message || "Please try again",
-      });
-    },
-  });
-
   if (!connected || !walletAddress) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto">
@@ -343,70 +238,47 @@ export function AutoClaimSection() {
           </AlertDescription>
         </Alert>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-4">
+        {/* Action Button */}
+        <div className="flex justify-center">
           {!hasActivePermit ? (
-            <div className="flex justify-center">
-              <Button
-                onClick={() => enableAutoClaimMutation.mutate()}
-                disabled={isProcessing || enableAutoClaimMutation.isPending}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
-                data-testid="button-enable-auto-claim"
-              >
-                {isProcessing || enableAutoClaimMutation.isPending ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2 animate-spin" />
-                    Setting Up Auto-Claim...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-5 w-5 mr-2" />
-                    Enable Auto-Claim (Sign Permit Only)
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button
+              onClick={() => enableAutoClaimMutation.mutate()}
+              disabled={isProcessing || enableAutoClaimMutation.isPending}
+              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
+              data-testid="button-enable-auto-claim"
+            >
+              {isProcessing || enableAutoClaimMutation.isPending ? (
+                <>
+                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  Signing Permit...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-5 w-5 mr-2" />
+                  Enable Auto-Claim
+                </>
+              )}
+            </Button>
           ) : (
-            <div className="flex justify-center gap-4">
-              <Button
-                onClick={() => delegateAuthorityMutation.mutate()}
-                disabled={isProcessing || delegateAuthorityMutation.isPending}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
-                data-testid="button-delegate-now"
-              >
-                {isProcessing || delegateAuthorityMutation.isPending ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2 animate-spin" />
-                    Delegating...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-5 w-5 mr-2" />
-                    Delegate Now (FREE!)
-                  </>
-                )}
-              </Button>
-              
-              <Button
-                onClick={() => revokeAutoClaimMutation.mutate()}
-                disabled={isProcessing || revokeAutoClaimMutation.isPending}
-                variant="destructive"
-                className="px-8 py-6 text-lg"
-                data-testid="button-revoke-auto-claim"
-              >
-                {isProcessing || revokeAutoClaimMutation.isPending ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2 animate-spin" />
-                    Revoking...
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-5 w-5 mr-2" />
-                    Disable
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button
+              onClick={() => revokeAutoClaimMutation.mutate()}
+              disabled={isProcessing || revokeAutoClaimMutation.isPending}
+              variant="destructive"
+              className="px-8 py-6 text-lg"
+              data-testid="button-revoke-auto-claim"
+            >
+              {isProcessing || revokeAutoClaimMutation.isPending ? (
+                <>
+                  <Clock className="h-5 w-5 mr-2 animate-spin" />
+                  Revoking...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  Disable Auto-Claim
+                </>
+              )}
+            </Button>
           )}
         </div>
 
