@@ -157,10 +157,6 @@ export class AutoClaimExecutor {
       };
     }
 
-    // Get permit to check for multisig
-    const permit = await storage.getAutoClaimPermitByWallet(job.walletAddress);
-    const multisigAddress = permit?.multisigAddress;
-
     try {
       // Parse token accounts from job
       if (!job.tokenAccounts) {
@@ -194,30 +190,14 @@ export class AutoClaimExecutor {
         const accountPubkey = new PublicKey(account.address);
         const programId = new PublicKey(account.programId);
         
-        let closeIx;
-        
-        if (multisigAddress) {
-          // Use multisig as close authority (FULLY AUTOMATIC - no user signature needed!)
-          console.log(`      🔐 Using multisig: ${multisigAddress.slice(0, 8)}...`);
-          const multisigPubkey = new PublicKey(multisigAddress);
-          
-          closeIx = createCloseAccountInstruction(
-            accountPubkey,                // Token account to close
-            this.relayerKeypair.publicKey, // Destination for rent (relayer collects first)
-            multisigPubkey,               // Close authority (multisig)
-            [this.relayerKeypair],        // Relayer signs as multisig signer
-            programId                     // Use correct program (SPL Token or Token-2022)
-          );
-        } else {
-          // Legacy mode: relayer must already have close authority
-          closeIx = createCloseAccountInstruction(
-            accountPubkey,                 // Token account to close
-            this.relayerKeypair.publicKey, // Destination for rent (relayer collects first)
-            this.relayerKeypair.publicKey, // Close authority (relayer)
-            [],                            // No multisig
-            programId                      // Use correct program (SPL Token or Token-2022)
-          );
-        }
+        // Close instruction: transfers rent to RELAYER wallet, signed by close authority (relayer)
+        const closeIx = createCloseAccountInstruction(
+          accountPubkey,           // Token account to close
+          this.relayerKeypair.publicKey, // Destination for rent (relayer collects first)
+          this.relayerKeypair.publicKey, // Close authority (relayer)
+          [],                      // No multisig
+          programId                // Use correct program (SPL Token or Token-2022)
+        );
         
         transaction.add(closeIx);
       }
