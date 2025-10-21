@@ -7,11 +7,18 @@
 - **Complete Auto-Claim Feature** (October 2025): Production-ready permit-based automated SOL reclamation system
   - **Multi-Token Support**: Supports BOTH standard SPL tokens (TOKEN_PROGRAM_ID) AND Token Extensions (TOKEN_2022_PROGRAM_ID)
   - **Backend Workers**: 
-    - Scanner (60s interval): Monitors active permits, scans wallets for empty accounts from both token programs, creates batched jobs (15 accounts max per tx)
-    - Executor (30s interval): Processes pending jobs with correct program IDs, enforces permit validation, records costs/ledger entries, supports dry-run mode
+    - Scanner (15s interval, optimized 4x): Monitors active permits, scans wallets for empty accounts from both token programs, creates batched jobs (15 accounts max per tx), tracks pending delegations
+    - Executor (10s interval, optimized 4x): Processes pending jobs with correct program IDs, enforces permit validation, records costs/ledger entries, supports dry-run mode
     - Conditional startup via ENABLE_AUTO_CLAIM_WORKERS env var (disabled by default)
   - **Frontend UI**: AutoClaimSection component with permit signing (Ed25519), real-time status, job history, revocation flow, non-custodial security messaging
-  - **Database schema**: `auto_claim_permits`, `relayer_jobs`, `relayer_costs` tables with itemsCount/estimatedNet fields
+  - **Pending Delegations Notification System** (October 2025):
+    - Scanner automatically detects new empty accounts that appear after permit signing
+    - Saves undelegated empty accounts to `pending_delegations` table with duplicate protection
+    - Frontend polls every 15 seconds for pending delegations when permit is active
+    - UI shows notification badge on "Delegate Now" button with count and total SOL
+    - After successful delegation, backend marks accounts as delegated and frontend cache invalidates
+    - Scanner picks up newly delegated accounts and creates auto-claim jobs automatically
+  - **Database schema**: `auto_claim_permits`, `relayer_jobs`, `relayer_costs`, `pending_delegations` tables with itemsCount/estimatedNet fields
   - **Security**: Ed25519 signature verification, UUID nonce replay protection, timestamp validation, domain binding
   - **Architecture**: Off-chain bot using SetAuthority + CloseAccount (no Anchor program needed), close authority delegation enables offline claims, 85% user payout, relayer pays network fees upfront
   - **Program ID Handling**: Each account stores its owning program ID (SPL or Token-2022) throughout scan→delegate→execute pipeline for correct instruction generation
@@ -88,6 +95,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - `auto_claim_permits`: User authorizations for automatic SOL reclamation (signature, message, nonce, status).
 - `relayer_jobs`: Tracks auto-claim job execution (pending, processing, completed, failed states).
 - `relayer_costs`: Records network fees spent by relayer and SOL recovered per transaction.
+- `pending_delegations`: Tracks empty accounts that need delegation (walletAddress, accountAddress, mint, rent, programId, status).
 
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.
