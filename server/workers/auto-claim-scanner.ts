@@ -180,7 +180,7 @@ export class AutoClaimScanner {
     totalRentRecoverable: number
   ) {
     try {
-      const BATCH_SIZE = 1; // Step-by-step: process one account at a time
+      const BATCH_SIZE = 15;
       const batches = [];
       
       for (let i = 0; i < emptyAccounts.length; i += BATCH_SIZE) {
@@ -207,7 +207,7 @@ export class AutoClaimScanner {
           estimatedNet: (batchRent / 1e9).toString(),
           tokenAccounts: JSON.stringify(batch.map(acc => ({
             address: acc.address,
-            programId: acc.programId
+            programId: acc.isToken2022 ? TOKEN_2022_PROGRAM_ID.toBase58() : TOKEN_PROGRAM_ID.toBase58()
           })))
         });
 

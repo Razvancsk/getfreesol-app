@@ -24,6 +24,7 @@ interface ExecutionResult {
 export class AutoClaimExecutor {
   private connection: Connection;
   private isRunning: boolean = false;
+  private isProcessing: boolean = false; // Prevent overlapping runs
   private executionInterval: NodeJS.Timeout | null = null;
   private relayerKeypair: Keypair | null = null;
 
@@ -73,6 +74,14 @@ export class AutoClaimExecutor {
   }
 
   private async processJobs() {
+    // Prevent overlapping execution runs
+    if (this.isProcessing) {
+      console.log("⏭️  Previous job still processing, skipping this cycle");
+      return;
+    }
+
+    this.isProcessing = true;
+    
     try {
       console.log("\n⚙️  Processing pending jobs...");
       
@@ -128,11 +137,16 @@ export class AutoClaimExecutor {
           await storage.updateRelayerJobStatus(job.id, 'failed', result.error);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Step-by-step: Wait 3-5 seconds between transactions to avoid rate limits
+        const delayMs = 3000 + Math.random() * 2000; // 3-5 seconds with jitter
+        console.log(`   ⏳ Waiting ${(delayMs / 1000).toFixed(1)}s before next transaction...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
 
     } catch (error) {
       console.error("❌ Executor error:", error);
+    } finally {
+      this.isProcessing = false;
     }
   }
 
