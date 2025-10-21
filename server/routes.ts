@@ -4529,6 +4529,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📦 Created ${transactions.length} delegation transaction(s)`);
 
+      // Mark pending delegations as delegated
+      if (accountsNeedingDelegation.length > 0) {
+        const accountAddresses = accountsNeedingDelegation.map(acc => acc.address);
+        await storage.clearDelegatedPendingDelegations(accountAddresses);
+        console.log(`✅ Marked ${accountAddresses.length} pending delegations as delegated`);
+      }
+
       res.json({
         success: true,
         transactions,

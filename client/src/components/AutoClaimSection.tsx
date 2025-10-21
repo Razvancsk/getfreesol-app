@@ -54,13 +54,20 @@ export function AutoClaimSection() {
     enabled: !!walletAddress,
   });
 
+  const hasActivePermit = permitStatus?.permit?.status === 'active';
+
+  // Query pending delegations (poll every 15 seconds)
+  const { data: pendingDelegations } = useQuery<{ pendingDelegations: any[]; count: number; totalSol: string }>({
+    queryKey: ['/api/auto-claim/pending-delegations', walletAddress],
+    enabled: !!walletAddress && hasActivePermit,
+    refetchInterval: 15000, // Poll every 15 seconds
+  });
+
   // Query job history
   const { data: jobHistory } = useQuery<{ jobs: RelayerJob[] }>({
     queryKey: ['/api/auto-claim/jobs', walletAddress],
     enabled: !!walletAddress,
   });
-
-  const hasActivePermit = permitStatus?.permit?.status === 'active';
 
   // Enable Auto-Claim mutation (combines permit + delegation)
   const enableAutoClaimMutation = useMutation({
@@ -277,6 +284,7 @@ export function AutoClaimSection() {
         description: `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/pending-delegations', walletAddress] });
     },
     onError: (error: any) => {
       toast({
@@ -337,13 +345,25 @@ export function AutoClaimSection() {
           </Badge>
         </div>
 
+        {/* Pending Delegation Alert */}
+        {pendingDelegations && pendingDelegations.count > 0 && hasActivePermit && (
+          <Alert className="bg-yellow-900/40 border-yellow-500/50 mb-4 animate-pulse">
+            <Info className="h-4 w-4 text-yellow-400" />
+            <AlertDescription className="text-yellow-100">
+              <strong>New Empty Accounts Found!</strong> You have {pendingDelegations.count} new empty account(s) 
+              worth ~{pendingDelegations.totalSol} SOL waiting for delegation. 
+              Click "Delegate Now" below to enable auto-claim for these accounts.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* How it Works */}
         <Alert className="bg-purple-900/40 border-purple-500/30 mb-6">
           <Shield className="h-4 w-4 text-purple-400" />
           <AlertDescription className="text-purple-100">
             <strong>100% Non-Custodial:</strong> You sign a permit message (not a transaction). 
             Your private keys never leave your wallet. We monitor for empty accounts and claim them automatically. 
-            You get 85%, platform gets 15%. Works for Token-2022 accounts only.
+            You get 85%, platform gets 15%. Works for both SPL tokens and Token-2022.
           </AlertDescription>
         </Alert>
 
@@ -375,7 +395,7 @@ export function AutoClaimSection() {
               <Button
                 onClick={() => delegateAuthorityMutation.mutate()}
                 disabled={isProcessing || delegateAuthorityMutation.isPending}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg relative"
                 data-testid="button-delegate-now"
               >
                 {isProcessing || delegateAuthorityMutation.isPending ? (
@@ -387,6 +407,14 @@ export function AutoClaimSection() {
                   <>
                     <Shield className="h-5 w-5 mr-2" />
                     Delegate Now (FREE!)
+                    {pendingDelegations && pendingDelegations.count > 0 && (
+                      <Badge 
+                        className="ml-2 bg-yellow-500 text-black font-bold px-2 py-1 animate-pulse"
+                        data-testid="badge-pending-count"
+                      >
+                        {pendingDelegations.count}
+                      </Badge>
+                    )}
                   </>
                 )}
               </Button>
