@@ -23,13 +23,25 @@ import bs58 from 'bs58';
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
   try {
+    console.log('🔐 Verifying signature...');
+    console.log('  Message length:', message.length);
+    console.log('  Signature length:', signature.length);
+    console.log('  PublicKey:', publicKey);
+    
     const messageBytes = new TextEncoder().encode(message);
     const signatureBytes = bs58.decode(signature);
     const publicKeyBytes = bs58.decode(publicKey);
     
-    return nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+    console.log('  Message bytes length:', messageBytes.length);
+    console.log('  Signature bytes length:', signatureBytes.length);
+    console.log('  PublicKey bytes length:', publicKeyBytes.length);
+    
+    const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+    console.log('  Verification result:', isValid);
+    
+    return isValid;
   } catch (error) {
-    console.error('Signature verification error:', error);
+    console.error('❌ Signature verification error:', error);
     return false;
   }
 }
