@@ -2590,7 +2590,7 @@ export default function SolRefund() {
                   }
                 }}
                 disabled={scanTokensMutation.isPending || !publicKey}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 hover:border-purple-400/60 backdrop-blur-sm rounded-xl text-white transition-all duration-200 disabled:opacity-50 mb-4"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-purple-600/40 to-purple-700/40 hover:from-purple-600/60 hover:to-purple-700/60 border border-purple-500/30 backdrop-blur-sm rounded-2xl text-white font-medium transition-all duration-200 disabled:opacity-50 mb-4"
                 data-testid="button-refresh-tokens"
               >
                 <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
@@ -2754,7 +2754,7 @@ export default function SolRefund() {
                   }
                 }}
                 disabled={scanNftsMutation.isPending || !publicKey}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 hover:border-purple-400/60 backdrop-blur-sm rounded-xl text-white transition-all duration-200 disabled:opacity-50 mb-4"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-br from-purple-600/40 to-purple-700/40 hover:from-purple-600/60 hover:to-purple-700/60 border border-purple-500/30 backdrop-blur-sm rounded-2xl text-white font-medium transition-all duration-200 disabled:opacity-50 mb-4"
                 data-testid="button-refresh-nft"
               >
                 <RefreshCw className={`h-5 w-5 ${scanNftsMutation.isPending ? 'animate-spin' : ''}`} />
