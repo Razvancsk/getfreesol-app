@@ -2488,17 +2488,17 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   {/* Auto-Claim Toggle */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-white font-medium">Auto Claim</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-base text-white font-medium">Auto Claim</span>
                     <button
                       onClick={() => setAutoClaimEnabled(!autoClaimEnabled)}
-                      className={`relative w-12 h-6 rounded-full transition-all ${autoClaimEnabled ? 'bg-purple-600' : 'bg-purple-800/80'}`}
+                      className={`relative w-14 h-7 rounded-full transition-all ${autoClaimEnabled ? 'bg-purple-600' : 'bg-purple-800/80'}`}
                       data-testid="button-auto-claim"
                       title="Auto-Claim"
                     >
-                      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${autoClaimEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                      <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${autoClaimEnabled ? 'translate-x-7' : 'translate-x-0.5'}`} />
                     </button>
                   </div>
                   
@@ -2510,11 +2510,11 @@ export default function SolRefund() {
                       }
                     }}
                     disabled={scanMutation.isPending || !publicKey}
-                    className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                    className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
                     data-testid="button-refresh-scan"
                     title="Refresh"
                   >
-                    <RefreshCw className={`h-5 w-5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-6 w-6 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
               </div>
