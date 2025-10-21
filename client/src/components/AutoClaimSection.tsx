@@ -76,48 +76,37 @@ export function AutoClaimSection() {
       setIsProcessing(true);
 
       try {
-        // Step 1: Fetch Token-2022 accounts that need delegation
-        const scanResponse: any = await apiRequest('GET', `/api/sol-refund/scan/${publicKey.toBase58()}`);
-        const token2022Accounts = scanResponse.emptyAccounts?.filter((acc: any) => acc.isToken2022) || [];
+        // Step 1: Get delegation transactions from backend
+        const delegationResponse: any = await apiRequest('POST', '/api/auto-claim/prepare-delegation', {
+          walletAddress: publicKey.toBase58()
+        });
 
-        if (token2022Accounts.length === 0) {
+        if (!delegationResponse.transactions || delegationResponse.transactions.length === 0) {
           throw new Error("No Token-2022 accounts found. Auto-Claim only works with Token-2022 accounts.");
         }
 
-        // Step 2: Create delegation transaction
+        // Step 2: Sign and send each delegation transaction
         const heliusConfig: any = await apiRequest('GET', '/api/helius-config');
         const connection = new Connection(heliusConfig.rpcUrl);
-        const transaction = new Transaction();
-        const relayerPubkey = new PublicKey(RELAYER_WALLET);
+        const delegationSignatures = [];
 
-        // Add setAuthority instruction for each Token-2022 account
-        for (const account of token2022Accounts) {
-          const accountPubkey = new PublicKey(account.address);
+        for (const serializedTx of delegationResponse.transactions) {
+          // Deserialize transaction
+          const txBuffer = Buffer.from(serializedTx, 'base64');
+          const transaction = Transaction.from(txBuffer);
+
+          // Sign transaction
+          const signedTx = await signTransaction(transaction);
           
-          // Create instruction to delegate close authority to relayer
-          const setAuthorityIx = createSetAuthorityInstruction(
-            accountPubkey,              // Token account
-            publicKey,                  // Current authority (owner)
-            AuthorityType.CloseAccount, // Authority type
-            relayerPubkey,              // New authority (relayer)
-            [],                         // Multi-signers (none)
-            TOKEN_2022_PROGRAM_ID       // Token-2022 program
-          );
+          // Send transaction
+          const signature = await connection.sendRawTransaction(signedTx.serialize());
+          delegationSignatures.push(signature);
           
-          transaction.add(setAuthorityIx);
+          // Wait for confirmation
+          await connection.confirmTransaction(signature, 'confirmed');
         }
 
-        // Get recent blockhash
-        const { blockhash } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = publicKey;
-
-        // Step 3: Sign and send delegation transaction
-        const signedTx = await signTransaction(transaction);
-        const delegationSignature = await connection.sendRawTransaction(signedTx.serialize());
-        
-        // Wait for confirmation
-        await connection.confirmTransaction(delegationSignature, 'confirmed');
+        const delegationSignature = delegationSignatures[0]; // Use first signature for permit
 
         // Step 4: Create permit message
         const nonce = uuidv4();
@@ -297,7 +286,7 @@ export function AutoClaimSection() {
               Auto-Claim Status
             </h3>
             <p className="text-purple-200 mt-2 text-sm">
-              Sign once to authorize automatic SOL reclamation from empty Token-2022 accounts
+              Delegate close authority to enable automatic SOL reclamation from empty Token-2022 accounts
             </p>
           </div>
           <Badge 
@@ -327,8 +316,8 @@ export function AutoClaimSection() {
         <Alert className="bg-purple-900/40 border-purple-500/30 mb-6">
           <Shield className="h-4 w-4 text-purple-400" />
           <AlertDescription className="text-purple-100">
-            <strong>100% Non-Custodial:</strong> You sign a permit message (not a transaction). 
-            Your private keys never leave your wallet. We monitor for empty accounts and claim them automatically. 
+            <strong>100% Non-Custodial:</strong> You delegate close authority (on-chain) and sign a permit message (off-chain). 
+            Your private keys never leave your wallet. The relayer can ONLY close empty accounts - nothing else.
             You get 85%, platform gets 15%. Works for Token-2022 accounts only.
           </AlertDescription>
         </Alert>
@@ -340,17 +329,17 @@ export function AutoClaimSection() {
               onClick={() => enableAutoClaimMutation.mutate()}
               disabled={isProcessing || enableAutoClaimMutation.isPending}
               className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
-              data-testid="button-enable-auto-claim"
+              data-testid="button-delegate-auto-claim"
             >
               {isProcessing || enableAutoClaimMutation.isPending ? (
                 <>
                   <Clock className="h-5 w-5 mr-2 animate-spin" />
-                  Signing Permit...
+                  Delegating...
                 </>
               ) : (
                 <>
-                  <Zap className="h-5 w-5 mr-2" />
-                  Enable Auto-Claim
+                  <Shield className="h-5 w-5 mr-2" />
+                  DELEGATE & ENABLE AUTO-CLAIM
                 </>
               )}
             </Button>

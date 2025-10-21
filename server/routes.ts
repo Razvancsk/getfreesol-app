@@ -4193,6 +4193,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prepare delegation transactions for Token-2022 accounts
+  app.post("/api/auto-claim/prepare-delegation", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address is required" });
+      }
+
+      const heliusApiKey = process.env.VITE_HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: "Helius API key not configured" });
+      }
+
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+      const userPubkey = new PublicKey(walletAddress);
+      const relayerPubkey = new PublicKey("9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf");
+
+      // Get Token-2022 accounts
+      const accounts = await connection.getParsedTokenAccountsByOwner(
+        userPubkey,
+        { programId: TOKEN_2022_PROGRAM_ID }
+      );
+
+      // Filter for empty accounts
+      const emptyAccounts = accounts.value.filter(account => {
+        const amount = account.account.data.parsed?.info?.tokenAmount?.uiAmount;
+        return amount === 0;
+      });
+
+      if (emptyAccounts.length === 0) {
+        return res.json({
+          success: true,
+          transactions: [],
+          accountsToDelegate: 0,
+          message: "No empty Token-2022 accounts need delegation"
+        });
+      }
+
+      // Build delegation transaction
+      const transaction = new Transaction();
+      
+      for (const account of emptyAccounts) {
+        const accountPubkey = new PublicKey(account.pubkey);
+        
+        // Create setAuthority instruction to delegate close authority
+        const setAuthorityIx = createSetAuthorityInstruction(
+          accountPubkey,              // Token account
+          userPubkey,                 // Current authority (owner)
+          AuthorityType.CloseAccount, // Authority type
+          relayerPubkey,              // New authority (relayer)
+          [],                         // Multi-signers (none)
+          TOKEN_2022_PROGRAM_ID       // Token-2022 program
+        );
+        
+        transaction.add(setAuthorityIx);
+      }
+
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = userPubkey;
+
+      // Serialize transaction
+      const serializedTx = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false
+      }).toString('base64');
+
+      res.json({
+        success: true,
+        transactions: [serializedTx],
+        accountsCount: emptyAccounts.length,
+        relayerPublicKey: "9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf"
+      });
+
+    } catch (error) {
+      console.error("Prepare delegation error:", error);
+      res.status(500).json({ 
+        error: "Failed to create delegation transactions",
+        details: error.message
+      });
+    }
+  });
+
+  // Prepare revoke delegation transactions for Token-2022 accounts
+  app.post("/api/auto-claim/revoke-delegation", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address is required" });
+      }
+
+      const heliusApiKey = process.env.VITE_HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: "Helius API key not configured" });
+      }
+
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+      const userPubkey = new PublicKey(walletAddress);
+
+      // Get Token-2022 accounts
+      const accounts = await connection.getParsedTokenAccountsByOwner(
+        userPubkey,
+        { programId: TOKEN_2022_PROGRAM_ID }
+      );
+
+      // Filter for empty accounts
+      const emptyAccounts = accounts.value.filter(account => {
+        const amount = account.account.data.parsed?.info?.tokenAmount?.uiAmount;
+        return amount === 0;
+      });
+
+      if (emptyAccounts.length === 0) {
+        return res.json({
+          success: true,
+          transactions: [],
+          accountsToRevoke: 0,
+          message: "No empty Token-2022 accounts to revoke delegation"
+        });
+      }
+
+      // Build revocation transaction (set authority back to owner)
+      const transaction = new Transaction();
+      
+      for (const account of emptyAccounts) {
+        const accountPubkey = new PublicKey(account.pubkey);
+        
+        // Create setAuthority instruction to set close authority back to owner
+        const setAuthorityIx = createSetAuthorityInstruction(
+          accountPubkey,              // Token account
+          userPubkey,                 // Current authority (owner can still revoke)
+          AuthorityType.CloseAccount, // Authority type
+          userPubkey,                 // New authority (back to owner)
+          [],                         // Multi-signers (none)
+          TOKEN_2022_PROGRAM_ID       // Token-2022 program
+        );
+        
+        transaction.add(setAuthorityIx);
+      }
+
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = userPubkey;
+
+      // Serialize transaction
+      const serializedTx = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false
+      }).toString('base64');
+
+      res.json({
+        success: true,
+        transactions: [serializedTx],
+        accountsCount: emptyAccounts.length
+      });
+
+    } catch (error) {
+      console.error("Prepare revocation error:", error);
+      res.status(500).json({ 
+        error: "Failed to create revocation transactions",
+        details: error.message
+      });
+    }
+  });
+
   // Get permit status
   app.get("/api/auto-claim/permit/status/:walletAddress", async (req, res) => {
     try {
