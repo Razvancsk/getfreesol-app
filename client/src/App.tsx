@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/SolanaProvider";
 import ClaimSol from "@/pages/claim-sol";
+import AutoClaim from "@/pages/auto-claim";
 import Referrals from "@/pages/referrals";
 import NotFound from "@/pages/not-found";
 
@@ -13,6 +14,7 @@ function Router() {
     <Switch>
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
+      <Route path="/auto-claim" component={AutoClaim} />
       <Route path="/referrals" component={Referrals} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />
