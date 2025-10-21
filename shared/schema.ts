@@ -143,6 +143,7 @@ export const autoClaimPermits = pgTable("auto_claim_permits", {
   permitMessage: text("permit_message").notNull(), // JSON message that was signed
   permitNonce: text("permit_nonce").notNull().unique(), // Prevents replay attacks
   permitPda: text("permit_pda"), // On-chain PDA address (will be set after program initialization)
+  multisigAddress: text("multisig_address"), // SPL Token multisig (M=1) owned by relayer for auto-closing accounts
   scopes: text("scopes").notNull().default("claim_empty_accounts"), // Comma-separated: claim_empty_accounts,burn_tokens,burn_nfts
   status: text("status").notNull().default("active"), // active, revoked, expired
   version: integer("version").notNull().default(1), // Permit version for future upgrades
@@ -159,6 +160,7 @@ export const relayerJobs = pgTable("relayer_jobs", {
   status: text("status").notNull().default("pending"), // pending, processing, completed, failed
   itemsCount: integer("items_count").notNull().default(0), // Number of accounts/tokens/NFTs to process
   estimatedNet: decimal("estimated_net", { precision: 18, scale: 9 }).default("0"), // Expected SOL recovery
+  tokenAccounts: text("token_accounts"), // JSON array of token account addresses to close
   txSignature: text("tx_signature"), // Transaction signature once submitted
   errorMessage: text("error_message"), // Error details if failed
   source: text("source").notNull().default("auto"), // Always 'auto' for relayer jobs
@@ -180,6 +182,19 @@ export const relayerCosts = pgTable("relayer_costs", {
   recoveredSol: decimal("recovered_sol", { precision: 18, scale: 9 }).default("0"), // SOL reclaimed (if successful)
   platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).default("0"), // 15% fee collected
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Pending Delegations - tracks empty accounts awaiting user delegation
+export const pendingDelegations = pgTable("pending_delegations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  accountAddress: text("account_address").notNull(),
+  mintAddress: text("mint_address").notNull(),
+  rentLamports: decimal("rent_lamports", { precision: 18, scale: 9 }).notNull(),
+  programId: text("program_id").notNull(), // TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID
+  status: text("status").notNull().default("pending"), // pending, delegated, dismissed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  delegatedAt: timestamp("delegated_at"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -261,6 +276,13 @@ export const insertRelayerCostSchema = createInsertSchema(relayerCosts).omit({
   createdAt: true,
 });
 
+export const insertPendingDelegationSchema = createInsertSchema(pendingDelegations).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  delegatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -287,6 +309,8 @@ export type RelayerJob = typeof relayerJobs.$inferSelect;
 export type InsertRelayerJob = z.infer<typeof insertRelayerJobSchema>;
 export type RelayerCost = typeof relayerCosts.$inferSelect;
 export type InsertRelayerCost = z.infer<typeof insertRelayerCostSchema>;
+export type PendingDelegation = typeof pendingDelegations.$inferSelect;
+export type InsertPendingDelegation = z.infer<typeof insertPendingDelegationSchema>;
 
 // Auto-Claim Permit API schemas with validation
 export const autoClaimPermitMessageSchema = z.object({

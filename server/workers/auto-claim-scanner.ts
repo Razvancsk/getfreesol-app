@@ -1,6 +1,7 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { storage } from "../storage";
-import { TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
+import bs58 from "bs58";
 
 const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
   ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
@@ -13,6 +14,7 @@ interface EmptyAccountScanResult {
     mint: string;
     rentLamports: number;
     isToken2022: boolean;
+    programId: string;
   }[];
   totalRentRecoverable: number;
 }
@@ -21,9 +23,22 @@ export class AutoClaimScanner {
   private connection: Connection;
   private isRunning: boolean = false;
   private scanInterval: NodeJS.Timeout | null = null;
+  private relayerPublicKey: string | null = null;
 
   constructor() {
     this.connection = new Connection(HELIUS_RPC, "confirmed");
+    
+    // Get relayer public key from private key
+    const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
+    if (relayerPrivateKey) {
+      try {
+        const secretKey = bs58.decode(relayerPrivateKey);
+        const relayerKeypair = Keypair.fromSecretKey(secretKey);
+        this.relayerPublicKey = relayerKeypair.publicKey.toBase58();
+      } catch (error) {
+        console.error("❌ Failed to derive relayer public key");
+      }
+    }
   }
 
   async start(intervalMs: number = 60000) {
@@ -81,32 +96,88 @@ export class AutoClaimScanner {
       
       const walletPubkey = new PublicKey(walletAddress);
       
-      const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-        walletPubkey,
-        { programId: TOKEN_2022_PROGRAM_ID }
-      );
-
-      console.log(`      Found ${tokenAccounts.value.length} Token-2022 account(s)`);
-
+      // Get permit to check for multisig
+      const permit = await storage.getAutoClaimPermitByWallet(walletAddress);
+      const multisigAddress = permit?.multisigAddress;
+      
       const emptyAccounts = [];
+      const undelegatedAccounts = [];
       let totalRentRecoverable = 0;
+      let totalAccounts = 0;
 
-      for (const { pubkey, account } of tokenAccounts.value) {
-        const parsedInfo = account.data.parsed.info;
-        const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+      // Scan BOTH standard SPL tokens AND Token-2022
+      const programIds = [
+        { id: TOKEN_PROGRAM_ID, name: 'SPL Token' },
+        { id: TOKEN_2022_PROGRAM_ID, name: 'Token-2022' }
+      ];
 
-        if (balance === 0) {
-          const rentLamports = account.lamports;
-          
-          emptyAccounts.push({
-            address: pubkey.toBase58(),
-            mint: parsedInfo.mint,
-            rentLamports,
-            isToken2022: true
-          });
+      for (const program of programIds) {
+        const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+          walletPubkey,
+          { programId: program.id }
+        );
 
-          totalRentRecoverable += rentLamports;
+        totalAccounts += tokenAccounts.value.length;
+
+        for (const { pubkey, account } of tokenAccounts.value) {
+          const parsedInfo = account.data.parsed.info;
+          const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+
+          if (balance === 0) {
+            // Normalize close authority (can be string or object with pubkey property)
+            const closeAuthority = parsedInfo.closeAuthority;
+            const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+            const rentLamports = account.lamports;
+            
+            // Check if close authority has been delegated to relayer OR multisig (fully automatic!)
+            const isDelegated = 
+              (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) ||
+              (multisigAddress && closeAuthorityPubkey === multisigAddress);
+            
+            if (isDelegated) {
+              emptyAccounts.push({
+                address: pubkey.toBase58(),
+                mint: parsedInfo.mint,
+                rentLamports,
+                isToken2022: program.id.equals(TOKEN_2022_PROGRAM_ID),
+                programId: program.id.toBase58()
+              });
+
+              totalRentRecoverable += rentLamports;
+            } else {
+              // Track undelegated empty accounts for notification
+              undelegatedAccounts.push({
+                accountAddress: pubkey.toBase58(),
+                mintAddress: parsedInfo.mint,
+                rentLamports: (rentLamports / 1e9).toString(),
+                programId: program.id.toBase58()
+              });
+            }
+          }
         }
+      }
+
+      // Save undelegated empty accounts to pending_delegations table
+      if (undelegatedAccounts.length > 0) {
+        for (const account of undelegatedAccounts) {
+          try {
+            await storage.createPendingDelegation({
+              walletAddress,
+              ...account
+            });
+          } catch (error: any) {
+            // Ignore duplicate key errors (account already in pending_delegations)
+            if (!error?.message?.includes('duplicate') && !error?.message?.includes('unique')) {
+              console.error(`      ⚠️  Failed to save pending delegation:`, error?.message || String(error));
+            }
+          }
+        }
+      }
+
+      console.log(`      Found ${totalAccounts} token account(s) (SPL + Token-2022)`)
+
+      if (undelegatedAccounts.length > 0) {
+        console.log(`      📋 Found ${undelegatedAccounts.length} empty account(s) awaiting delegation`);
       }
 
       if (emptyAccounts.length > 0) {
@@ -136,7 +207,7 @@ export class AutoClaimScanner {
     totalRentRecoverable: number
   ) {
     try {
-      const BATCH_SIZE = 20;
+      const BATCH_SIZE = 15;
       const batches = [];
       
       for (let i = 0; i < emptyAccounts.length; i += BATCH_SIZE) {
@@ -160,7 +231,11 @@ export class AutoClaimScanner {
           walletAddress,
           jobType: 'claim_empty_accounts',
           itemsCount: batch.length,
-          estimatedNet: (batchRent / 1e9).toString()
+          estimatedNet: (batchRent / 1e9).toString(),
+          tokenAccounts: JSON.stringify(batch.map(acc => ({
+            address: acc.address,
+            programId: acc.programId
+          })))
         });
 
         console.log(`      ✅ Created job for ${batch.length} account(s)`);

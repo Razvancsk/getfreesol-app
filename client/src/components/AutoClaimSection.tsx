@@ -8,10 +8,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Zap, CheckCircle, AlertTriangle, Info, Shield, ExternalLink, Clock, Coins } from "lucide-react";
 import { useWallet } from '@solana/wallet-adapter-react';
+import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
 import bs58 from 'bs58';
-import { Connection, PublicKey, Transaction } from '@solana/web3.js';
-import { TOKEN_2022_PROGRAM_ID, getAccount, AuthorityType, setAuthority, createSetAuthorityInstruction } from '@solana/spl-token';
 
 interface AutoClaimPermit {
   id: string;
@@ -41,13 +40,10 @@ interface RelayerJob {
   completedAt: string | null;
 }
 
-// Relayer wallet that will be delegated close authority
-const RELAYER_WALLET = "9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf";
-
 export function AutoClaimSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { publicKey, signMessage, signTransaction, connected } = useWallet();
+  const { publicKey, signMessage, sendTransaction, connected } = useWallet();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const walletAddress = publicKey?.toBase58();
@@ -58,57 +54,32 @@ export function AutoClaimSection() {
     enabled: !!walletAddress,
   });
 
+  const hasActivePermit = permitStatus?.permit?.status === 'active';
+
+  // Query pending delegations (poll every 15 seconds)
+  const { data: pendingDelegations } = useQuery<{ pendingDelegations: any[]; count: number; totalSol: string }>({
+    queryKey: ['/api/auto-claim/pending-delegations', walletAddress],
+    enabled: !!walletAddress && hasActivePermit,
+    refetchInterval: 15000, // Poll every 15 seconds
+  });
+
   // Query job history
   const { data: jobHistory } = useQuery<{ jobs: RelayerJob[] }>({
     queryKey: ['/api/auto-claim/jobs', walletAddress],
     enabled: !!walletAddress,
   });
 
-  const hasActivePermit = permitStatus?.permit?.status === 'active';
-
-  // Enable Auto-Claim mutation
-  const enableAutoClaimMutation = useMutation({
+  // One-Time Multisig Setup (FULLY AUTOMATIC FOREVER!)
+  const setupMultisigAutoClaimMutation = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !signTransaction) {
-        throw new Error("Wallet not connected or doesn't support required operations");
+      if (!publicKey || !signMessage || !sendTransaction) {
+        throw new Error("Wallet not connected");
       }
 
       setIsProcessing(true);
 
       try {
-        // Step 1: Get delegation transactions from backend
-        const delegationResponse: any = await apiRequest('POST', '/api/auto-claim/prepare-delegation', {
-          walletAddress: publicKey.toBase58()
-        });
-
-        if (!delegationResponse.transactions || delegationResponse.transactions.length === 0) {
-          throw new Error("No Token-2022 accounts found. Auto-Claim only works with Token-2022 accounts.");
-        }
-
-        // Step 2: Sign and send each delegation transaction
-        const heliusConfig: any = await apiRequest('GET', '/api/helius-config');
-        const connection = new Connection(heliusConfig.rpcUrl);
-        const delegationSignatures = [];
-
-        for (const serializedTx of delegationResponse.transactions) {
-          // Deserialize transaction
-          const txBuffer = Buffer.from(serializedTx, 'base64');
-          const transaction = Transaction.from(txBuffer);
-
-          // Sign transaction
-          const signedTx = await signTransaction(transaction);
-          
-          // Send transaction
-          const signature = await connection.sendRawTransaction(signedTx.serialize());
-          delegationSignatures.push(signature);
-          
-          // Wait for confirmation
-          await connection.confirmTransaction(signature, 'confirmed');
-        }
-
-        const delegationSignature = delegationSignatures[0]; // Use first signature for permit
-
-        // Step 4: Create permit message
+        // Step 1: Create and sign permit message
         const nonce = uuidv4();
         const message = {
           type: "AUTO_CLAIM_PERMIT",
@@ -118,44 +89,69 @@ export function AutoClaimSection() {
           version: 1,
           created_at: Math.floor(Date.now() / 1000),
           domain: "getyoursolback.app",
-          statement: "I authorize this application to automatically claim SOL from my empty token accounts.",
-          delegation_tx: delegationSignature
+          statement: "I authorize this application to automatically claim SOL from my empty token accounts forever."
         };
 
         const messageString = JSON.stringify(message);
         const messageBytes = new TextEncoder().encode(messageString);
         
-        // Sign the permit message
         const signature = await signMessage(messageBytes);
         const signatureBase58 = bs58.encode(signature);
 
-        // Step 5: Send permit to backend
-        const response = await apiRequest('POST', '/api/auto-claim/permit/create', {
+        // Send permit to backend
+        await apiRequest('POST', '/api/auto-claim/permit/create', {
           walletAddress: publicKey.toBase58(),
           permitSignature: signatureBase58,
           permitMessage: messageString,
           permitNonce: nonce,
-          scopes: "claim_empty_accounts",
-          delegationTxSignature: delegationSignature,
-          delegatedAccountsCount: token2022Accounts.length
+          scopes: "claim_empty_accounts"
         });
 
-        return response;
+        // Step 2: Setup multisig and get delegation transactions
+        const setupResponse: any = await apiRequest('POST', '/api/auto-claim/setup', {
+          walletAddress: publicKey.toBase58()
+        });
+
+        if (setupResponse.transactions && setupResponse.transactions.length > 0) {
+          // Create connection
+          const rpcEndpoint = import.meta.env.VITE_HELIUS_API_KEY 
+            ? `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`
+            : 'https://api.mainnet-beta.solana.com';
+          const connection = new Connection(rpcEndpoint, 'confirmed');
+
+          // Sign and send all delegation transactions (one-time setup!)
+          const signatures = [];
+          for (const txBase64 of setupResponse.transactions) {
+            const txBuffer = Buffer.from(txBase64, 'base64');
+            const transaction = Transaction.from(txBuffer);
+
+            // Send transaction (relayer already signed as fee payer!)
+            const sig = await sendTransaction(transaction, connection);
+            await connection.confirmTransaction(sig, 'confirmed');
+            signatures.push(sig);
+          }
+        }
+
+        return setupResponse;
       } finally {
         setIsProcessing(false);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Auto-Claim Enabled!",
-        description: "Your wallet will now be monitored for empty Token-2022 accounts.",
+        title: "🎉 Multisig Setup Complete!",
+        description: data?.accountsCount 
+          ? `Delegated ${data.accountsCount} account(s) to multisig. Bot will automatically claim these accounts. Delegate new empty accounts as they appear.`
+          : "Multisig setup complete! Delegate empty accounts to enable auto-claim.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/pending-delegations', walletAddress] });
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Failed to Enable Auto-Claim",
+        title: "Setup Failed",
         description: error.message || "Please try again",
       });
     },
@@ -164,56 +160,14 @@ export function AutoClaimSection() {
   // Revoke Auto-Claim mutation
   const revokeAutoClaimMutation = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !signTransaction) {
+      if (!publicKey || !signMessage) {
         throw new Error("Wallet not connected");
       }
 
       setIsProcessing(true);
 
       try {
-        // Step 1: Fetch Token-2022 accounts that have delegated authority
-        const scanResponse: any = await apiRequest('GET', `/api/sol-refund/scan/${publicKey.toBase58()}`);
-        const token2022Accounts = scanResponse.emptyAccounts?.filter((acc: any) => acc.isToken2022) || [];
-
-        let revocationSignature = null;
-
-        // Step 2: Remove delegation if there are Token-2022 accounts
-        if (token2022Accounts.length > 0) {
-          const heliusConfig: any = await apiRequest('GET', '/api/helius-config');
-          const connection = new Connection(heliusConfig.rpcUrl);
-          const transaction = new Transaction();
-
-          // Add setAuthority instruction to revoke delegation (set back to owner)
-          for (const account of token2022Accounts) {
-            const accountPubkey = new PublicKey(account.address);
-            
-            // Create instruction to set close authority back to owner
-            const setAuthorityIx = createSetAuthorityInstruction(
-              accountPubkey,              // Token account
-              publicKey,                  // Current authority (still owner, can revoke)
-              AuthorityType.CloseAccount, // Authority type
-              publicKey,                  // New authority (back to owner)
-              [],                         // Multi-signers (none)
-              TOKEN_2022_PROGRAM_ID       // Token-2022 program
-            );
-            
-            transaction.add(setAuthorityIx);
-          }
-
-          // Get recent blockhash
-          const { blockhash } = await connection.getLatestBlockhash();
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = publicKey;
-
-          // Sign and send revocation transaction
-          const signedTx = await signTransaction(transaction);
-          revocationSignature = await connection.sendRawTransaction(signedTx.serialize());
-          
-          // Wait for confirmation
-          await connection.confirmTransaction(revocationSignature, 'confirmed');
-        }
-
-        // Step 3: Create revoke message
+        // Create revoke message
         const nonce = uuidv4();
         const message = {
           type: "AUTO_CLAIM_REVOKE",
@@ -222,23 +176,21 @@ export function AutoClaimSection() {
           nonce,
           timestamp: Math.floor(Date.now() / 1000),
           version: 1,
-          domain: "getyoursolback.app",
-          revocation_tx: revocationSignature
+          domain: "getyoursolback.app"
         };
 
         const messageString = JSON.stringify(message);
         const messageBytes = new TextEncoder().encode(messageString);
         
-        // Sign the revoke message
+        // Sign the message
         const signature = await signMessage(messageBytes);
         const signatureBase58 = bs58.encode(signature);
 
-        // Step 4: Send to backend
+        // Send to backend
         const response = await apiRequest('POST', '/api/auto-claim/permit/revoke', {
           walletAddress: publicKey.toBase58(),
           revokeSignature: signatureBase58,
-          revokeMessage: messageString,
-          revocationTxSignature: revocationSignature
+          revokeMessage: messageString
         });
 
         return response;
@@ -257,6 +209,90 @@ export function AutoClaimSection() {
       toast({
         variant: "destructive",
         title: "Failed to Revoke Auto-Claim",
+        description: error.message || "Please try again",
+      });
+    },
+  });
+
+  // Delegate Authority mutation (backup - not used in main flow)
+  const delegateAuthorityMutation = useMutation({
+    mutationFn: async () => {
+      if (!publicKey || !sendTransaction) {
+        throw new Error("Wallet not connected");
+      }
+
+      setIsProcessing(true);
+
+      try {
+        console.log('🔵 Requesting delegation transactions...');
+        // Get delegation transactions from backend - DIRECT fetch to debug
+        const rawResponse = await fetch('/api/auto-claim/delegate-authority', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: publicKey.toBase58() })
+        });
+        
+        const response = await rawResponse.json();
+        console.log('🔵 Raw response:', rawResponse.status, rawResponse.statusText);
+        console.log('🔵 Backend response:', response);
+
+        if (!response.transactions || response.transactions.length === 0) {
+          throw new Error("No accounts need delegation. Already delegated or no empty accounts found.");
+        }
+
+        console.log(`🔵 Got ${response.transactions.length} transaction(s) to send`);
+
+        // Create connection
+        const rpcEndpoint = import.meta.env.VITE_HELIUS_API_KEY 
+          ? `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`
+          : 'https://api.mainnet-beta.solana.com';
+        const connection = new Connection(rpcEndpoint, 'confirmed');
+
+        console.log('🔵 Sending transactions...');
+
+        // Sign and send all transactions
+        const signatures = [];
+        for (let i = 0; i < response.transactions.length; i++) {
+          const txBase64 = response.transactions[i];
+          console.log(`🔵 Processing transaction ${i + 1}/${response.transactions.length}`);
+          
+          // Deserialize transaction
+          const txBuffer = Buffer.from(txBase64, 'base64');
+          const transaction = Transaction.from(txBuffer);
+
+          console.log('🔵 Sending transaction to wallet...');
+          // Send transaction (don't wait for confirmation - scanner will detect it)
+          const signature = await sendTransaction(transaction, connection, {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed'
+          });
+          console.log(`✅ Transaction sent! Signature: ${signature}`);
+          signatures.push(signature);
+          
+          // Don't wait for confirmation - scanner detects delegated accounts automatically
+        }
+
+        console.log(`🎉 All ${signatures.length} transactions completed!`);
+        return { ...response, signatures };
+      } catch (error: any) {
+        console.error('❌ Delegation error:', error);
+        throw error;
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Authority Delegated!",
+        description: `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/pending-delegations', walletAddress] });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to Delegate Authority",
         description: error.message || "Please try again",
       });
     },
@@ -286,7 +322,7 @@ export function AutoClaimSection() {
               Auto-Claim Status
             </h3>
             <p className="text-purple-200 mt-2 text-sm">
-              Delegate close authority to enable automatic SOL reclamation from empty Token-2022 accounts
+              Multisig setup enables automatic SOL reclamation from delegated empty token accounts
             </p>
           </div>
           <Badge 
@@ -312,57 +348,100 @@ export function AutoClaimSection() {
           </Badge>
         </div>
 
+        {/* Pending Delegation Alert */}
+        {pendingDelegations && pendingDelegations.count > 0 && hasActivePermit && (
+          <Alert className="bg-yellow-900/40 border-yellow-500/50 mb-4 animate-pulse">
+            <Info className="h-4 w-4 text-yellow-400" />
+            <AlertDescription className="text-yellow-100">
+              <strong>New Empty Accounts Found!</strong> You have {pendingDelegations.count} new empty account(s) 
+              worth ~{pendingDelegations.totalSol} SOL waiting for delegation to multisig. 
+              Click "Delegate to Multisig" below - once delegated, bot claims those accounts automatically!
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* How it Works */}
         <Alert className="bg-purple-900/40 border-purple-500/30 mb-6">
           <Shield className="h-4 w-4 text-purple-400" />
           <AlertDescription className="text-purple-100">
-            <strong>100% Non-Custodial:</strong> You delegate close authority (on-chain) and sign a permit message (off-chain). 
-            Your private keys never leave your wallet. The relayer can ONLY close empty accounts - nothing else.
-            You get 85%, platform gets 15%. Works for Token-2022 accounts only.
+            <strong>100% Non-Custodial Multisig:</strong> Setup creates a multisig account with the relayer as sole signer. 
+            Delegate empty account close authority to the multisig, then bot claims those accounts automatically. 
+            New empty accounts require quick one-click delegation. You get 85%, platform gets 15%. Works for both SPL tokens and Token-2022.
           </AlertDescription>
         </Alert>
 
-        {/* Action Button */}
-        <div className="flex justify-center">
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-4">
           {!hasActivePermit ? (
-            <Button
-              onClick={() => enableAutoClaimMutation.mutate()}
-              disabled={isProcessing || enableAutoClaimMutation.isPending}
-              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
-              data-testid="button-delegate-auto-claim"
-            >
-              {isProcessing || enableAutoClaimMutation.isPending ? (
-                <>
-                  <Clock className="h-5 w-5 mr-2 animate-spin" />
-                  Delegating...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-5 w-5 mr-2" />
-                  DELEGATE & ENABLE AUTO-CLAIM
-                </>
-              )}
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setupMultisigAutoClaimMutation.mutate()}
+                disabled={isProcessing || setupMultisigAutoClaimMutation.isPending}
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
+                data-testid="button-setup-auto-claim"
+              >
+                {isProcessing || setupMultisigAutoClaimMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Setting Up Multisig...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-5 w-5 mr-2" />
+                    Setup Multisig Auto-Claim
+                  </>
+                )}
+              </Button>
+            </div>
           ) : (
-            <Button
-              onClick={() => revokeAutoClaimMutation.mutate()}
-              disabled={isProcessing || revokeAutoClaimMutation.isPending}
-              variant="destructive"
-              className="px-8 py-6 text-lg"
-              data-testid="button-revoke-auto-claim"
-            >
-              {isProcessing || revokeAutoClaimMutation.isPending ? (
-                <>
-                  <Clock className="h-5 w-5 mr-2 animate-spin" />
-                  Revoking...
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-5 w-5 mr-2" />
-                  Disable Auto-Claim
-                </>
-              )}
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                onClick={() => delegateAuthorityMutation.mutate()}
+                disabled={isProcessing || delegateAuthorityMutation.isPending}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg relative"
+                data-testid="button-delegate-multisig"
+              >
+                {isProcessing || delegateAuthorityMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Delegating to Multisig...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-5 w-5 mr-2" />
+                    Delegate to Multisig
+                    {pendingDelegations && pendingDelegations.count > 0 && (
+                      <Badge 
+                        className="ml-2 bg-yellow-500 text-black font-bold px-2 py-1 animate-pulse"
+                        data-testid="badge-pending-count"
+                      >
+                        {pendingDelegations.count}
+                      </Badge>
+                    )}
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => revokeAutoClaimMutation.mutate()}
+                disabled={isProcessing || revokeAutoClaimMutation.isPending}
+                variant="destructive"
+                className="px-8 py-6 text-lg"
+                data-testid="button-revoke-auto-claim"
+              >
+                {isProcessing || revokeAutoClaimMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Revoking...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                    Disable
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -391,14 +470,23 @@ export function AutoClaimSection() {
 
       {/* Features List */}
       <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">How Auto-Claim Works</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">How Multisig Auto-Claim Works</h3>
         <div className="grid gap-3">
           <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
             <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="text-white font-medium">Sign Once, Claim Forever</h4>
+              <h4 className="text-white font-medium">One-Time Multisig Setup</h4>
               <p className="text-sm text-purple-200">
-                Sign a permit message (no transaction fees) to authorize automatic claims
+                Create a multisig account and delegate close authority once. After this, bot claims ALL future empty accounts automatically!
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
+            <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-white font-medium">Fully Automatic Claims</h4>
+              <p className="text-sm text-purple-200">
+                Relayer signs multisig instructions to close accounts - NO MORE USER SIGNATURES NEEDED!
               </p>
             </div>
           </div>
@@ -407,25 +495,16 @@ export function AutoClaimSection() {
             <div>
               <h4 className="text-white font-medium">24/7 Monitoring</h4>
               <p className="text-sm text-purple-200">
-                Our relayer monitors your wallet for empty Token-2022 accounts while you're offline
+                Scanner detects multisig-delegated accounts every 15 seconds. Executor claims them automatically every 10 seconds.
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
             <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="text-white font-medium">Zero Network Fees</h4>
+              <h4 className="text-white font-medium">You Get 85% - Zero Fees for You</h4>
               <p className="text-sm text-purple-200">
-                We pay all network fees upfront and recover from the 15% platform fee
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
-            <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="text-white font-medium">You Get 85%</h4>
-              <p className="text-sm text-purple-200">
-                Keep 85% of all recovered SOL. Platform takes 15% to cover fees and operations
+                Keep 85% of all recovered SOL. Platform pays network fees upfront and takes 15% to cover costs.
               </p>
             </div>
           </div>

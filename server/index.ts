@@ -323,8 +323,8 @@ function getStaticAssetsPath() {
       // Start Auto-Claim workers
       if (process.env.ENABLE_AUTO_CLAIM_WORKERS === 'true') {
         log(`Starting Auto-Claim workers...`);
-        autoClaimScanner.start(60000); // Scan every 60 seconds
-        autoClaimExecutor.start(30000); // Execute every 30 seconds
+        autoClaimScanner.start(15000); // Scan every 15 seconds (4x faster)
+        autoClaimExecutor.start(10000); // Execute every 10 seconds (3x faster)
         log(`Auto-Claim workers started`);
       } else {
         log(`Auto-Claim workers disabled (set ENABLE_AUTO_CLAIM_WORKERS=true to enable)`);

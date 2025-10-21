@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount } from "@solana/spl-token";
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
@@ -23,13 +23,25 @@ import bs58 from 'bs58';
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
   try {
+    console.log('🔐 Verifying signature...');
+    console.log('  Message length:', message.length);
+    console.log('  Signature length:', signature.length);
+    console.log('  PublicKey:', publicKey);
+    
     const messageBytes = new TextEncoder().encode(message);
     const signatureBytes = bs58.decode(signature);
     const publicKeyBytes = bs58.decode(publicKey);
     
-    return nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+    console.log('  Message bytes length:', messageBytes.length);
+    console.log('  Signature bytes length:', signatureBytes.length);
+    console.log('  PublicKey bytes length:', publicKeyBytes.length);
+    
+    const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+    console.log('  Verification result:', isValid);
+    
+    return isValid;
   } catch (error) {
-    console.error('Signature verification error:', error);
+    console.error('❌ Signature verification error:', error);
     return false;
   }
 }
@@ -4193,174 +4205,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Prepare delegation transactions for Token-2022 accounts
-  app.post("/api/auto-claim/prepare-delegation", async (req, res) => {
-    try {
-      const { walletAddress } = req.body;
-
-      if (!walletAddress) {
-        return res.status(400).json({ error: "Wallet address is required" });
-      }
-
-      const heliusApiKey = process.env.VITE_HELIUS_API_KEY;
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: "Helius API key not configured" });
-      }
-
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
-      const userPubkey = new PublicKey(walletAddress);
-      const relayerPubkey = new PublicKey("9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf");
-
-      // Get Token-2022 accounts
-      const accounts = await connection.getParsedTokenAccountsByOwner(
-        userPubkey,
-        { programId: TOKEN_2022_PROGRAM_ID }
-      );
-
-      // Filter for empty accounts
-      const emptyAccounts = accounts.value.filter(account => {
-        const amount = account.account.data.parsed?.info?.tokenAmount?.uiAmount;
-        return amount === 0;
-      });
-
-      if (emptyAccounts.length === 0) {
-        return res.json({
-          success: true,
-          transactions: [],
-          accountsToDelegate: 0,
-          message: "No empty Token-2022 accounts need delegation"
-        });
-      }
-
-      // Build delegation transaction
-      const transaction = new Transaction();
-      
-      for (const account of emptyAccounts) {
-        const accountPubkey = new PublicKey(account.pubkey);
-        
-        // Create setAuthority instruction to delegate close authority
-        const setAuthorityIx = createSetAuthorityInstruction(
-          accountPubkey,              // Token account
-          userPubkey,                 // Current authority (owner)
-          AuthorityType.CloseAccount, // Authority type
-          relayerPubkey,              // New authority (relayer)
-          [],                         // Multi-signers (none)
-          TOKEN_2022_PROGRAM_ID       // Token-2022 program
-        );
-        
-        transaction.add(setAuthorityIx);
-      }
-
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = userPubkey;
-
-      // Serialize transaction
-      const serializedTx = transaction.serialize({
-        requireAllSignatures: false,
-        verifySignatures: false
-      }).toString('base64');
-
-      res.json({
-        success: true,
-        transactions: [serializedTx],
-        accountsCount: emptyAccounts.length,
-        relayerPublicKey: "9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf"
-      });
-
-    } catch (error) {
-      console.error("Prepare delegation error:", error);
-      res.status(500).json({ 
-        error: "Failed to create delegation transactions",
-        details: error.message
-      });
-    }
-  });
-
-  // Prepare revoke delegation transactions for Token-2022 accounts
-  app.post("/api/auto-claim/revoke-delegation", async (req, res) => {
-    try {
-      const { walletAddress } = req.body;
-
-      if (!walletAddress) {
-        return res.status(400).json({ error: "Wallet address is required" });
-      }
-
-      const heliusApiKey = process.env.VITE_HELIUS_API_KEY;
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: "Helius API key not configured" });
-      }
-
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
-      const userPubkey = new PublicKey(walletAddress);
-
-      // Get Token-2022 accounts
-      const accounts = await connection.getParsedTokenAccountsByOwner(
-        userPubkey,
-        { programId: TOKEN_2022_PROGRAM_ID }
-      );
-
-      // Filter for empty accounts
-      const emptyAccounts = accounts.value.filter(account => {
-        const amount = account.account.data.parsed?.info?.tokenAmount?.uiAmount;
-        return amount === 0;
-      });
-
-      if (emptyAccounts.length === 0) {
-        return res.json({
-          success: true,
-          transactions: [],
-          accountsToRevoke: 0,
-          message: "No empty Token-2022 accounts to revoke delegation"
-        });
-      }
-
-      // Build revocation transaction (set authority back to owner)
-      const transaction = new Transaction();
-      
-      for (const account of emptyAccounts) {
-        const accountPubkey = new PublicKey(account.pubkey);
-        
-        // Create setAuthority instruction to set close authority back to owner
-        const setAuthorityIx = createSetAuthorityInstruction(
-          accountPubkey,              // Token account
-          userPubkey,                 // Current authority (owner can still revoke)
-          AuthorityType.CloseAccount, // Authority type
-          userPubkey,                 // New authority (back to owner)
-          [],                         // Multi-signers (none)
-          TOKEN_2022_PROGRAM_ID       // Token-2022 program
-        );
-        
-        transaction.add(setAuthorityIx);
-      }
-
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = userPubkey;
-
-      // Serialize transaction
-      const serializedTx = transaction.serialize({
-        requireAllSignatures: false,
-        verifySignatures: false
-      }).toString('base64');
-
-      res.json({
-        success: true,
-        transactions: [serializedTx],
-        accountsCount: emptyAccounts.length
-      });
-
-    } catch (error) {
-      console.error("Prepare revocation error:", error);
-      res.status(500).json({ 
-        error: "Failed to create revocation transactions",
-        details: error.message
-      });
-    }
-  });
-
   // Get permit status
   app.get("/api/auto-claim/permit/status/:walletAddress", async (req, res) => {
     try {
@@ -4391,6 +4235,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get permit status error:", error);
       res.status(500).json({ error: "Failed to get permit status" });
+    }
+  });
+
+  // Get pending delegations for a wallet
+  app.get("/api/auto-claim/pending-delegations/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+
+      const pendingDelegations = await storage.getPendingDelegationsByWallet(walletAddress);
+
+      const totalSol = pendingDelegations.reduce((sum, delegation) => {
+        return sum + parseFloat(delegation.rentLamports);
+      }, 0);
+
+      res.json({
+        success: true,
+        pendingDelegations,
+        count: pendingDelegations.length,
+        totalSol: totalSol.toFixed(6)
+      });
+
+    } catch (error) {
+      console.error("Get pending delegations error:", error);
+      res.status(500).json({ error: "Failed to get pending delegations" });
     }
   });
 
@@ -4537,6 +4405,332 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get relayer stats error:", error);
       res.status(500).json({ error: "Failed to get relayer stats" });
+    }
+  });
+
+  // Delegate close authority for auto-claim
+  app.post("/api/auto-claim/delegate-authority", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address is required" });
+      }
+
+      // Get relayer public key from environment
+      const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
+      if (!relayerPrivateKey) {
+        return res.status(500).json({ error: "Relayer not configured" });
+      }
+
+      // Derive public key from private key
+      const { Keypair } = await import("@solana/web3.js");
+      const secretKey = bs58.decode(relayerPrivateKey);
+      const relayerKeypair = Keypair.fromSecretKey(secretKey);
+      const relayerPublicKey = relayerKeypair.publicKey.toBase58();
+
+      // Connect to Solana
+      const heliusRpc = process.env.VITE_HELIUS_API_KEY 
+        ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
+        : "https://api.mainnet-beta.solana.com";
+      const connection = new Connection(heliusRpc, "confirmed");
+
+      // Get user's token accounts (BOTH SPL and Token-2022)
+      const userPubkey = new PublicKey(walletAddress);
+      const accountsNeedingDelegation: Array<{address: string; mint: string; programId: PublicKey}> = [];
+      
+      // Scan both programs
+      const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
+      let totalAccounts = 0;
+      
+      for (const programId of programIds) {
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+          userPubkey,
+          { programId }
+        );
+
+        totalAccounts += tokenAccounts.value.length;
+
+        // Filter for empty accounts that need delegation
+        for (const { pubkey, account } of tokenAccounts.value) {
+          const parsedInfo = account.data.parsed.info;
+          const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+
+          // Only delegate empty accounts
+          if (balance === 0) {
+            // Normalize close authority (can be string or object with pubkey property)
+            const closeAuthority = parsedInfo.closeAuthority;
+            const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+            
+            // Only delegate if close authority is still the user (or not set)
+            if (!closeAuthorityPubkey || closeAuthorityPubkey === walletAddress) {
+              accountsNeedingDelegation.push({
+                address: pubkey.toBase58(),
+                mint: parsedInfo.mint,
+                programId  // Store which program owns this account
+              });
+            }
+          }
+        }
+      }
+
+      console.log(`📋 Found ${totalAccounts} token accounts (SPL + Token-2022) for ${walletAddress.slice(0, 8)}...`);
+
+      console.log(`🔑 Found ${accountsNeedingDelegation.length} accounts needing delegation`);
+
+      if (accountsNeedingDelegation.length === 0) {
+        return res.json({
+          success: true,
+          transactions: [],
+          accountsToDelegate: 0,
+          message: "No accounts need delegation"
+        });
+      }
+
+      // Batch into transactions (15-20 accounts per tx)
+      const BATCH_SIZE = 15;
+      const transactions = [];
+      
+      for (let i = 0; i < accountsNeedingDelegation.length; i += BATCH_SIZE) {
+        const batch = accountsNeedingDelegation.slice(i, i + BATCH_SIZE);
+        const transaction = new Transaction();
+
+        // Add SetAuthority instruction for each account in batch
+        for (const account of batch) {
+          const accountPubkey = new PublicKey(account.address);
+          const setAuthorityIx = createSetAuthorityInstruction(
+            accountPubkey,                           // Token account
+            userPubkey,                              // Current authority (user)
+            AuthorityType.CloseAccount,              // Authority type
+            new PublicKey(relayerPublicKey),         // New authority (relayer)
+            [],                                      // No multisig
+            account.programId                        // Use correct program for this account
+          );
+          
+          transaction.add(setAuthorityIx);
+        }
+
+        // Set RELAYER as fee payer (sponsored transaction)
+        transaction.feePayer = relayerKeypair.publicKey;
+        const { blockhash } = await connection.getLatestBlockhash("confirmed");
+        transaction.recentBlockhash = blockhash;
+
+        // Relayer signs first (pays fees)
+        transaction.partialSign(relayerKeypair);
+
+        // Serialize transaction to base64
+        const serialized = transaction.serialize({
+          requireAllSignatures: false,
+          verifySignatures: false
+        });
+        
+        transactions.push(serialized.toString('base64'));
+      }
+
+      console.log(`📦 Created ${transactions.length} delegation transaction(s)`);
+
+      // Mark pending delegations as delegated
+      if (accountsNeedingDelegation.length > 0) {
+        const accountAddresses = accountsNeedingDelegation.map(acc => acc.address);
+        await storage.clearDelegatedPendingDelegations(accountAddresses);
+        console.log(`✅ Marked ${accountAddresses.length} pending delegations as delegated`);
+      }
+
+      res.json({
+        success: true,
+        transactions,
+        accountsCount: accountsNeedingDelegation.length,
+        relayerPublicKey
+      });
+
+    } catch (error: any) {
+      console.error("Delegate authority error:", error);
+      res.status(500).json({ 
+        error: "Failed to create delegation transactions",
+        details: error.message 
+      });
+    }
+  });
+
+  // One-time Auto-Claim Setup - creates multisig and delegates all accounts
+  app.post("/api/auto-claim/setup", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address is required" });
+      }
+
+      // Check if user has active permit
+      const permit = await storage.getAutoClaimPermitByWallet(walletAddress);
+      if (!permit || permit.status !== 'active') {
+        return res.status(400).json({ error: "No active auto-claim permit found" });
+      }
+
+      // Check if multisig already exists
+      if (permit.multisigAddress) {
+        return res.json({
+          success: true,
+          multisigAddress: permit.multisigAddress,
+          setupRequired: false,
+          message: "Multisig already configured"
+        });
+      }
+
+      // Get relayer keypair
+      const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
+      if (!relayerPrivateKey) {
+        return res.status(500).json({ error: "Relayer not configured" });
+      }
+
+      const { Keypair, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } = await import("@solana/web3.js");
+      const { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import("@solana/spl-token");
+      
+      const secretKey = bs58.decode(relayerPrivateKey);
+      const relayerKeypair = Keypair.fromSecretKey(secretKey);
+
+      // Connect to Solana
+      const heliusRpc = process.env.VITE_HELIUS_API_KEY 
+        ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
+        : "https://api.mainnet-beta.solana.com";
+      const connection = new Connection(heliusRpc, "confirmed");
+
+      // Create new multisig account
+      const multisigKeypair = Keypair.generate();
+      const MULTISIG_SIZE = 355; // Size of multisig account data
+      const rentExempt = await connection.getMinimumBalanceForRentExemption(MULTISIG_SIZE);
+
+      // Build multisig creation transaction
+      const setupTransaction = new Transaction();
+
+      // Create multisig account
+      setupTransaction.add(
+        SystemProgram.createAccount({
+          fromPubkey: relayerKeypair.publicKey,
+          newAccountPubkey: multisigKeypair.publicKey,
+          lamports: rentExempt,
+          space: MULTISIG_SIZE,
+          programId: TOKEN_PROGRAM_ID,
+        })
+      );
+
+      // Initialize multisig with M=1, signers=[relayer]
+      const initMultisigData = Buffer.alloc(2);
+      initMultisigData.writeUInt8(2, 0); // InitializeMultisig instruction
+      initMultisigData.writeUInt8(1, 1); // M=1 (only relayer needs to sign)
+
+      const initMultisigInstruction = new TransactionInstruction({
+        keys: [
+          { pubkey: multisigKeypair.publicKey, isSigner: false, isWritable: true },
+          { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+          { pubkey: relayerKeypair.publicKey, isSigner: false, isWritable: false }, // Signer 1
+        ],
+        programId: TOKEN_PROGRAM_ID,
+        data: initMultisigData,
+      });
+
+      setupTransaction.add(initMultisigInstruction);
+
+      // Relayer signs and pays for multisig creation
+      setupTransaction.feePayer = relayerKeypair.publicKey;
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
+      setupTransaction.recentBlockhash = blockhash;
+      setupTransaction.partialSign(relayerKeypair, multisigKeypair);
+
+      // Serialize setup transaction
+      const setupTx = setupTransaction.serialize({
+        requireAllSignatures: true,
+        verifySignatures: true
+      }).toString('base64');
+
+      // Now get all empty accounts to delegate to multisig
+      const userPubkey = new PublicKey(walletAddress);
+      const accountsToDelegate: Array<{address: string; mint: string; programId: PublicKey}> = [];
+      
+      const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
+      
+      for (const programId of programIds) {
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+          userPubkey,
+          { programId }
+        );
+
+        for (const { pubkey, account } of tokenAccounts.value) {
+          const parsedInfo = account.data.parsed.info;
+          const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+
+          if (balance === 0) {
+            const closeAuthority = parsedInfo.closeAuthority;
+            const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+            
+            if (!closeAuthorityPubkey || closeAuthorityPubkey === walletAddress) {
+              accountsToDelegate.push({
+                address: pubkey.toBase58(),
+                mint: parsedInfo.mint,
+                programId
+              });
+            }
+          }
+        }
+      }
+
+      console.log(`🔧 Creating multisig setup for ${walletAddress.slice(0, 8)}...`);
+      console.log(`📦 Found ${accountsToDelegate.length} accounts to delegate to multisig`);
+
+      // Create delegation transactions (15 accounts per tx)
+      const BATCH_SIZE = 15;
+      const delegationTransactions = [];
+      
+      for (let i = 0; i < accountsToDelegate.length; i += BATCH_SIZE) {
+        const batch = accountsToDelegate.slice(i, i + BATCH_SIZE);
+        const transaction = new Transaction();
+
+        for (const account of batch) {
+          const { createSetAuthorityInstruction, AuthorityType } = await import("@solana/spl-token");
+          const accountPubkey = new PublicKey(account.address);
+          
+          const setAuthorityIx = createSetAuthorityInstruction(
+            accountPubkey,
+            userPubkey,
+            AuthorityType.CloseAccount,
+            multisigKeypair.publicKey, // Set to multisig!
+            [],
+            account.programId
+          );
+          
+          transaction.add(setAuthorityIx);
+        }
+
+        transaction.feePayer = userPubkey; // User pays for delegation
+        transaction.recentBlockhash = blockhash;
+        
+        delegationTransactions.push(transaction.serialize({
+          requireAllSignatures: false,
+          verifySignatures: false
+        }).toString('base64'));
+      }
+
+      // Save multisig address to database
+      await storage.updateAutoClaimPermitMultisig(walletAddress, multisigKeypair.publicKey.toBase58());
+
+      console.log(`✅ Multisig created: ${multisigKeypair.publicKey.toBase58()}`);
+      console.log(`📦 Generated ${delegationTransactions.length} delegation transaction(s)`);
+
+      res.json({
+        success: true,
+        multisigAddress: multisigKeypair.publicKey.toBase58(),
+        setupTransaction: setupTx,
+        delegationTransactions,
+        accountsCount: accountsToDelegate.length,
+        setupRequired: true
+      });
+
+    } catch (error: any) {
+      console.error("Auto-claim setup error:", error);
+      res.status(500).json({ 
+        error: "Failed to create auto-claim setup",
+        details: error.message 
+      });
     }
   });
 
