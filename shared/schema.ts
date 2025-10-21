@@ -159,6 +159,7 @@ export const relayerJobs = pgTable("relayer_jobs", {
   status: text("status").notNull().default("pending"), // pending, processing, completed, failed
   itemsCount: integer("items_count").notNull().default(0), // Number of accounts/tokens/NFTs to process
   estimatedNet: decimal("estimated_net", { precision: 18, scale: 9 }).default("0"), // Expected SOL recovery
+  tokenAccounts: text("token_accounts"), // JSON array of token account addresses to close
   txSignature: text("tx_signature"), // Transaction signature once submitted
   errorMessage: text("error_message"), // Error details if failed
   source: text("source").notNull().default("auto"), // Always 'auto' for relayer jobs

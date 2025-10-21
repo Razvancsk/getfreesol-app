@@ -1,4 +1,5 @@
-import { Connection, PublicKey, Transaction, Keypair, SystemProgram } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, Keypair, SystemProgram, TransactionInstruction } from "@solana/web3.js";
+import { TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction } from "@solana/spl-token";
 import { storage } from "../storage";
 import bs58 from "bs58";
 
@@ -157,18 +158,113 @@ export class AutoClaimExecutor {
     }
 
     try {
-      console.log("      ⚠️  PROGRAM NOT DEPLOYED YET");
-      console.log("      📝 Will execute using Anchor program once deployed");
-      console.log("      🔗 Program will handle: close accounts + fee split");
+      // Parse token accounts from job
+      if (!job.tokenAccounts) {
+        throw new Error("No token accounts in job");
+      }
+
+      const tokenAccounts: string[] = JSON.parse(job.tokenAccounts);
+      if (tokenAccounts.length === 0) {
+        throw new Error("Empty token accounts list");
+      }
+
+      console.log(`      💾 Closing ${tokenAccounts.length} token account(s)...`);
+
+      // Build transaction with CloseAccount instructions
+      const transaction = new Transaction();
+      const userWallet = new PublicKey(job.walletAddress);
+
+      // Add CloseAccount instruction for each token account
+      // Rent goes to relayer first, then we'll send 85% to user
+      for (const accountAddress of tokenAccounts) {
+        const accountPubkey = new PublicKey(accountAddress);
+        
+        // Close instruction: transfers rent to RELAYER wallet, signed by close authority (relayer)
+        const closeIx = createCloseAccountInstruction(
+          accountPubkey,           // Token account to close
+          this.relayerKeypair.publicKey, // Destination for rent (relayer collects first)
+          this.relayerKeypair.publicKey, // Close authority (relayer)
+          [],                      // No multisig
+          TOKEN_2022_PROGRAM_ID    // Token-2022 program
+        );
+        
+        transaction.add(closeIx);
+      }
+
+      // Calculate total rent recovered BEFORE closing
+      let totalRecovered = 0;
+      for (const accountAddress of tokenAccounts) {
+        try {
+          const accountInfo = await this.connection.getAccountInfo(new PublicKey(accountAddress));
+          if (accountInfo) {
+            totalRecovered += accountInfo.lamports;
+          }
+        } catch (err) {
+          console.log(`      ⚠️  Could not get account info for ${accountAddress}`);
+        }
+      }
+
+      // Calculate fees (platform keeps 15%, user gets 85%)
+      const platformFeeLamports = Math.floor(totalRecovered * PLATFORM_FEE_BPS / 10000);
+      const userNetLamports = totalRecovered - platformFeeLamports;
+
+      // Add transfer instruction to send 85% to user
+      const transferToUserIx = SystemProgram.transfer({
+        fromPubkey: this.relayerKeypair.publicKey,
+        toPubkey: userWallet,
+        lamports: userNetLamports
+      });
+      transaction.add(transferToUserIx);
+
+      // Get blockhash and set fee payer
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash("confirmed");
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = this.relayerKeypair.publicKey;
+
+      // Sign transaction
+      transaction.sign(this.relayerKeypair);
+
+      // Send transaction
+      console.log(`      📤 Sending transaction...`);
+      const signature = await this.connection.sendRawTransaction(transaction.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: "confirmed"
+      });
+
+      // Wait for confirmation
+      console.log(`      ⏳ Waiting for confirmation: ${signature}`);
+      const confirmation = await this.connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      }, "confirmed");
+
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+      }
+
+      console.log(`      ✅ Transaction confirmed!`);
+      console.log(`      🔗 https://solscan.io/tx/${signature}`);
+
+      // Get actual network fee from transaction
+      const txDetails = await this.connection.getTransaction(signature, {
+        maxSupportedTransactionVersion: 0
+      });
+      const networkFeeLamports = txDetails?.meta?.fee || 5000;
+
+      console.log(`      💰 Recovery: ${(totalRecovered / 1e9).toFixed(6)} SOL`);
+      console.log(`      📊 Platform fee (15%): ${(platformFeeLamports / 1e9).toFixed(6)} SOL`);
+      console.log(`      💵 User receives: ${(userNetLamports / 1e9).toFixed(6)} SOL`);
+      console.log(`      ⛽ Network fee: ${(networkFeeLamports / 1e9).toFixed(6)} SOL`);
 
       return {
-        success: false,
-        error: "Anchor program not deployed yet",
-        accountsClosed: 0,
-        recoveredLamports: 0,
-        platformFeeLamports: 0,
-        userNetLamports: 0,
-        networkFeeLamports: 0
+        success: true,
+        signature,
+        accountsClosed: tokenAccounts.length,
+        recoveredLamports: totalRecovered,
+        platformFeeLamports,
+        userNetLamports,
+        networkFeeLamports
       };
 
     } catch (error: any) {
