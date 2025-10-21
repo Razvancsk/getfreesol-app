@@ -133,7 +133,7 @@ export function AutoClaimSection() {
         title: "Auto-Claim Enabled!",
         description: data?.accountsCount 
           ? `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically!`
-          : "Your wallet will now be monitored for empty SPL and Token-2022 accounts.",
+          : "Your wallet will now be monitored for empty Token-2022 accounts.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
@@ -311,7 +311,7 @@ export function AutoClaimSection() {
               Auto-Claim Status
             </h3>
             <p className="text-purple-200 mt-2 text-sm">
-              Sign once to authorize automatic SOL reclamation from empty SPL and Token-2022 accounts
+              Sign once to authorize automatic SOL reclamation from empty Token-2022 accounts
             </p>
           </div>
           <Badge 
@@ -343,7 +343,7 @@ export function AutoClaimSection() {
           <AlertDescription className="text-purple-100">
             <strong>100% Non-Custodial:</strong> You sign a permit message (not a transaction). 
             Your private keys never leave your wallet. We monitor for empty accounts and claim them automatically. 
-            You get 85%, platform gets 15%. Works for BOTH SPL tokens AND Token-2022.
+            You get 85%, platform gets 15%. Works for Token-2022 accounts only.
           </AlertDescription>
         </Alert>
 
@@ -365,7 +365,7 @@ export function AutoClaimSection() {
                 ) : (
                   <>
                     <Zap className="h-5 w-5 mr-2" />
-                    Enable & Delegate Accounts (1-Click!)
+                    Enable Auto-Claim (Sign Permit Only)
                   </>
                 )}
               </Button>
@@ -386,7 +386,7 @@ export function AutoClaimSection() {
                 ) : (
                   <>
                     <Shield className="h-5 w-5 mr-2" />
-                    Delegate Empty Accounts (FREE!)
+                    Delegate Now (FREE!)
                   </>
                 )}
               </Button>
@@ -455,7 +455,7 @@ export function AutoClaimSection() {
             <div>
               <h4 className="text-white font-medium">24/7 Monitoring</h4>
               <p className="text-sm text-purple-200">
-                Our relayer monitors your wallet for empty SPL and Token-2022 accounts while you're offline
+                Our relayer monitors your wallet for empty Token-2022 accounts while you're offline
               </p>
             </div>
           </div>
@@ -556,7 +556,7 @@ export function AutoClaimSection() {
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <div className="mb-2 text-lg">Monitoring Your Wallet</div>
             <p className="text-sm text-purple-400">
-              We'll automatically claim SOL when empty SPL or Token-2022 accounts are detected
+              We'll automatically claim SOL when empty Token-2022 accounts are detected
             </p>
           </div>
         </div>

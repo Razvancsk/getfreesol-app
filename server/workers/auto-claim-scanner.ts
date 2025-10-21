@@ -81,8 +81,7 @@ export class AutoClaimScanner {
 
       for (const permit of activePermits) {
         await this.scanWalletForEmptyAccounts(permit.walletAddress);
-        // Add 2 second delay between scanning different wallets to avoid rate limits
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
     } catch (error) {
@@ -112,9 +111,6 @@ export class AutoClaimScanner {
           walletPubkey,
           { programId: program.id }
         );
-
-        // Add 1 second delay between scanning different token programs to avoid rate limits
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
         totalAccounts += tokenAccounts.value.length;
 
