@@ -135,6 +135,53 @@ export const walletReferralAssociations = pgTable("wallet_referral_associations"
   associatedAt: timestamp("associated_at").notNull().defaultNow(),
 });
 
+// Auto-Claim Permits - stores user authorization for auto-claiming
+export const autoClaimPermits = pgTable("auto_claim_permits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull().unique(), // One permit per wallet
+  permitSignature: text("permit_signature").notNull(), // User's signature of the permit message
+  permitMessage: text("permit_message").notNull(), // JSON message that was signed
+  permitNonce: text("permit_nonce").notNull().unique(), // Prevents replay attacks
+  permitPda: text("permit_pda"), // On-chain PDA address (will be set after program initialization)
+  scopes: text("scopes").notNull().default("claim_empty_accounts"), // Comma-separated: claim_empty_accounts,burn_tokens,burn_nfts
+  status: text("status").notNull().default("active"), // active, revoked, expired
+  version: integer("version").notNull().default(1), // Permit version for future upgrades
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at"),
+  lastUsedAt: timestamp("last_used_at"), // Track when relayer last used this permit
+});
+
+// Relayer Jobs - tracks auto-claim job execution
+export const relayerJobs = pgTable("relayer_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  jobType: text("job_type").notNull(), // claim_empty_accounts, burn_tokens, burn_nfts
+  status: text("status").notNull().default("pending"), // pending, processing, completed, failed
+  itemsCount: integer("items_count").notNull().default(0), // Number of accounts/tokens/NFTs to process
+  estimatedNet: decimal("estimated_net", { precision: 18, scale: 9 }).default("0"), // Expected SOL recovery
+  txSignature: text("tx_signature"), // Transaction signature once submitted
+  errorMessage: text("error_message"), // Error details if failed
+  source: text("source").notNull().default("auto"), // Always 'auto' for relayer jobs
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Relayer Costs - tracks network fees spent by the relayer
+export const relayerCosts = pgTable("relayer_costs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id"), // Links to relayerJobs if part of a job
+  txSignature: text("tx_signature").notNull().unique(),
+  walletAddress: text("wallet_address").notNull(), // User wallet that benefited
+  lamportsSpent: decimal("lamports_spent", { precision: 18, scale: 9 }).notNull(), // Network fee paid
+  computeUnits: integer("compute_units"), // CU consumed
+  priorityFeeLamports: decimal("priority_fee_lamports", { precision: 18, scale: 9 }).default("0"), // Priority fee if used
+  success: boolean("success").notNull().default(true), // Whether transaction succeeded
+  recoveredSol: decimal("recovered_sol", { precision: 18, scale: 9 }).default("0"), // SOL reclaimed (if successful)
+  platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).default("0"), // 15% fee collected
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -190,6 +237,30 @@ export const insertWalletReferralAssociationSchema = createInsertSchema(walletRe
   associatedAt: true,
 });
 
+export const insertAutoClaimPermitSchema = createInsertSchema(autoClaimPermits).omit({
+  id: true,
+  status: true,
+  version: true,
+  createdAt: true,
+  revokedAt: true,
+  lastUsedAt: true,
+});
+
+export const insertRelayerJobSchema = createInsertSchema(relayerJobs).omit({
+  id: true,
+  status: true,
+  source: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+});
+
+export const insertRelayerCostSchema = createInsertSchema(relayerCosts).omit({
+  id: true,
+  success: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -210,3 +281,9 @@ export type ReferralTransaction = typeof referralTransactions.$inferSelect;
 export type InsertReferralTransaction = z.infer<typeof insertReferralTransactionSchema>;
 export type WalletReferralAssociation = typeof walletReferralAssociations.$inferSelect;
 export type InsertWalletReferralAssociation = z.infer<typeof insertWalletReferralAssociationSchema>;
+export type AutoClaimPermit = typeof autoClaimPermits.$inferSelect;
+export type InsertAutoClaimPermit = z.infer<typeof insertAutoClaimPermitSchema>;
+export type RelayerJob = typeof relayerJobs.$inferSelect;
+export type InsertRelayerJob = z.infer<typeof insertRelayerJobSchema>;
+export type RelayerCost = typeof relayerCosts.$inferSelect;
+export type InsertRelayerCost = z.infer<typeof insertRelayerCostSchema>;

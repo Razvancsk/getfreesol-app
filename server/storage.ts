@@ -19,6 +19,12 @@ import {
   type InsertReferralTransaction,
   type WalletReferralAssociation,
   type InsertWalletReferralAssociation,
+  type AutoClaimPermit,
+  type InsertAutoClaimPermit,
+  type RelayerJob,
+  type InsertRelayerJob,
+  type RelayerCost,
+  type InsertRelayerCost,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -28,7 +34,10 @@ import {
   nftBurnRecords,
   referralCodes,
   referralTransactions,
-  walletReferralAssociations
+  walletReferralAssociations,
+  autoClaimPermits,
+  relayerJobs,
+  relayerCosts
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -90,6 +99,27 @@ export interface IStorage {
   createWalletReferralAssociation(association: InsertWalletReferralAssociation): Promise<WalletReferralAssociation>;
   getWalletReferralAssociation(walletAddress: string): Promise<WalletReferralAssociation | undefined>;
   hasWalletReferralAssociation(walletAddress: string): Promise<boolean>;
+  
+  // Auto-Claim Permits
+  createAutoClaimPermit(permit: InsertAutoClaimPermit): Promise<AutoClaimPermit>;
+  getAutoClaimPermitByWallet(walletAddress: string): Promise<AutoClaimPermit | undefined>;
+  updateAutoClaimPermitPda(walletAddress: string, permitPda: string): Promise<void>;
+  updateAutoClaimPermitStatus(walletAddress: string, status: string): Promise<void>;
+  updateAutoClaimPermitLastUsed(walletAddress: string): Promise<void>;
+  getActiveAutoClaimPermits(limit?: number): Promise<AutoClaimPermit[]>;
+  
+  // Relayer Jobs
+  createRelayerJob(job: InsertRelayerJob): Promise<RelayerJob>;
+  getRelayerJobById(id: string): Promise<RelayerJob | undefined>;
+  getRelayerJobsByWallet(walletAddress: string, limit?: number): Promise<RelayerJob[]>;
+  getPendingRelayerJobs(limit?: number): Promise<RelayerJob[]>;
+  updateRelayerJobStatus(id: string, status: string, txSignature?: string, errorMessage?: string): Promise<void>;
+  completeRelayerJob(id: string, txSignature: string): Promise<void>;
+  
+  // Relayer Costs
+  createRelayerCost(cost: InsertRelayerCost): Promise<RelayerCost>;
+  getRelayerCostsByWallet(walletAddress: string, limit?: number): Promise<RelayerCost[]>;
+  getTotalRelayerCosts(): Promise<{ totalSpent: number; totalRecovered: number; netProfit: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -445,6 +475,157 @@ export class DatabaseStorage implements IStorage {
   async hasWalletReferralAssociation(walletAddress: string): Promise<boolean> {
     const association = await this.getWalletReferralAssociation(walletAddress);
     return !!association;
+  }
+
+  // Auto-Claim Permits
+  async createAutoClaimPermit(permit: InsertAutoClaimPermit): Promise<AutoClaimPermit> {
+    const [autoClaimPermit] = await db
+      .insert(autoClaimPermits)
+      .values(permit)
+      .returning();
+    return autoClaimPermit;
+  }
+
+  async getAutoClaimPermitByWallet(walletAddress: string): Promise<AutoClaimPermit | undefined> {
+    const [permit] = await db
+      .select()
+      .from(autoClaimPermits)
+      .where(eq(autoClaimPermits.walletAddress, walletAddress));
+    return permit || undefined;
+  }
+
+  async updateAutoClaimPermitPda(walletAddress: string, permitPda: string): Promise<void> {
+    await db
+      .update(autoClaimPermits)
+      .set({ permitPda })
+      .where(eq(autoClaimPermits.walletAddress, walletAddress));
+  }
+
+  async updateAutoClaimPermitStatus(walletAddress: string, status: string): Promise<void> {
+    const updateData: any = { status };
+    if (status === 'revoked') {
+      updateData.revokedAt = new Date();
+    }
+    await db
+      .update(autoClaimPermits)
+      .set(updateData)
+      .where(eq(autoClaimPermits.walletAddress, walletAddress));
+  }
+
+  async updateAutoClaimPermitLastUsed(walletAddress: string): Promise<void> {
+    await db
+      .update(autoClaimPermits)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(autoClaimPermits.walletAddress, walletAddress));
+  }
+
+  async getActiveAutoClaimPermits(limit: number = 100): Promise<AutoClaimPermit[]> {
+    return await db
+      .select()
+      .from(autoClaimPermits)
+      .where(eq(autoClaimPermits.status, 'active'))
+      .orderBy(desc(autoClaimPermits.createdAt))
+      .limit(limit);
+  }
+
+  // Relayer Jobs
+  async createRelayerJob(job: InsertRelayerJob): Promise<RelayerJob> {
+    const [relayerJob] = await db
+      .insert(relayerJobs)
+      .values(job)
+      .returning();
+    return relayerJob;
+  }
+
+  async getRelayerJobById(id: string): Promise<RelayerJob | undefined> {
+    const [job] = await db
+      .select()
+      .from(relayerJobs)
+      .where(eq(relayerJobs.id, id));
+    return job || undefined;
+  }
+
+  async getRelayerJobsByWallet(walletAddress: string, limit: number = 50): Promise<RelayerJob[]> {
+    return await db
+      .select()
+      .from(relayerJobs)
+      .where(eq(relayerJobs.walletAddress, walletAddress))
+      .orderBy(desc(relayerJobs.createdAt))
+      .limit(limit);
+  }
+
+  async getPendingRelayerJobs(limit: number = 50): Promise<RelayerJob[]> {
+    return await db
+      .select()
+      .from(relayerJobs)
+      .where(eq(relayerJobs.status, 'pending'))
+      .orderBy(desc(relayerJobs.createdAt))
+      .limit(limit);
+  }
+
+  async updateRelayerJobStatus(id: string, status: string, txSignature?: string, errorMessage?: string): Promise<void> {
+    const updateData: any = { 
+      status, 
+      updatedAt: new Date() 
+    };
+    if (txSignature) updateData.txSignature = txSignature;
+    if (errorMessage) updateData.errorMessage = errorMessage;
+    if (status === 'completed') updateData.completedAt = new Date();
+    
+    await db
+      .update(relayerJobs)
+      .set(updateData)
+      .where(eq(relayerJobs.id, id));
+  }
+
+  async completeRelayerJob(id: string, txSignature: string): Promise<void> {
+    await db
+      .update(relayerJobs)
+      .set({ 
+        status: 'completed',
+        txSignature,
+        completedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(relayerJobs.id, id));
+  }
+
+  // Relayer Costs
+  async createRelayerCost(cost: InsertRelayerCost): Promise<RelayerCost> {
+    const [relayerCost] = await db
+      .insert(relayerCosts)
+      .values(cost)
+      .returning();
+    return relayerCost;
+  }
+
+  async getRelayerCostsByWallet(walletAddress: string, limit: number = 50): Promise<RelayerCost[]> {
+    return await db
+      .select()
+      .from(relayerCosts)
+      .where(eq(relayerCosts.walletAddress, walletAddress))
+      .orderBy(desc(relayerCosts.createdAt))
+      .limit(limit);
+  }
+
+  async getTotalRelayerCosts(): Promise<{ totalSpent: number; totalRecovered: number; netProfit: number }> {
+    const [result] = await db
+      .select({
+        totalSpent: sql<string>`coalesce(sum(${relayerCosts.lamportsSpent}), 0)`,
+        totalRecovered: sql<string>`coalesce(sum(${relayerCosts.recoveredSol}), 0)`,
+        totalFees: sql<string>`coalesce(sum(${relayerCosts.platformFee}), 0)`
+      })
+      .from(relayerCosts);
+    
+    const totalSpent = parseFloat(result?.totalSpent || "0");
+    const totalRecovered = parseFloat(result?.totalRecovered || "0");
+    const totalFees = parseFloat(result?.totalFees || "0");
+    
+    return {
+      totalSpent,
+      totalRecovered,
+      netProfit: totalFees - totalSpent
+    };
   }
 }
 
