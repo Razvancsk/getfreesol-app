@@ -2913,17 +2913,17 @@ export default function SolRefund() {
                             .filter(Boolean);
                           setSelectedNfts(new Set(selectableNfts));
                         }}
-                        className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                         data-testid="button-select-all-nfts"
                       >
                         Select All
                       </Button>
                       <Button
                         onClick={() => setSelectedNfts(new Set())}
-                        className="flex-1 bg-purple-800/40 hover:bg-purple-700/60 text-white border border-purple-500/30 rounded-2xl py-3"
+                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                         data-testid="button-clear-selection-nfts"
                       >
-                        Clear Selection
+                        Clear
                       </Button>
                     </div>
 
@@ -2962,16 +2962,19 @@ export default function SolRefund() {
                         burnNftsMutation.mutate(selectedIds);
                       }}
                       disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
-                      className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 hover:from-pink-600 hover:via-purple-600 hover:to-orange-600 text-white py-4 text-lg font-bold rounded-2xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       data-testid="button-burn-selected-nfts"
                     >
                       {burnNftsMutation.isPending ? (
                         <>
-                          <RefreshCw className="h-5 w-5 animate-spin mr-2 inline" />
+                          <RefreshCw className="h-5 w-5 animate-spin" />
                           Burning...
                         </>
                       ) : (
-                        <>Burn Selected NFTs</>
+                        <>
+                          <Flame className="h-5 w-5" />
+                          BURN
+                        </>
                       )}
                     </Button>
                   </div>
