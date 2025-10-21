@@ -19,6 +19,7 @@ import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { autoClaimScanner } from './workers/auto-claim-scanner';
 
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
@@ -4335,10 +4336,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Wallet address required" });
       }
 
+      // Clear pending delegation metadata
       await storage.updateAutoClaimPermitMetadata(walletAddress, {
         pendingDelegationCount: 0,
         pendingDelegationSol: "0"
       });
+
+      // Mark wallet as recently delegated (scanner will skip for 90s to allow blockchain confirmation)
+      autoClaimScanner.markWalletDelegated(walletAddress);
 
       console.log(`✅ Cleared pending delegation for wallet: ${walletAddress}`);
 

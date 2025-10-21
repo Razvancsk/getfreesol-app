@@ -24,6 +24,8 @@ export class AutoClaimScanner {
   private isRunning: boolean = false;
   private scanInterval: NodeJS.Timeout | null = null;
   private relayerPublicKey: string | null = null;
+  private recentlyDelegatedWallets: Map<string, number> = new Map(); // wallet -> timestamp
+  private DELEGATION_COOLDOWN = 90000; // 90 seconds (6 scan cycles) to wait for blockchain confirmation
 
   constructor() {
     this.connection = new Connection(HELIUS_RPC, "confirmed");
@@ -39,6 +41,30 @@ export class AutoClaimScanner {
         console.error("❌ Failed to derive relayer public key");
       }
     }
+  }
+  
+  // Mark wallet as recently delegated (to skip scanning for cooldown period)
+  markWalletDelegated(walletAddress: string) {
+    this.recentlyDelegatedWallets.set(walletAddress, Date.now());
+    console.log(`      ⏸️  Pausing scanner for ${walletAddress.slice(0, 8)}... (waiting for blockchain confirmation)`);
+  }
+  
+  // Check if wallet should be skipped (recently delegated)
+  private shouldSkipWallet(walletAddress: string): boolean {
+    const delegatedTime = this.recentlyDelegatedWallets.get(walletAddress);
+    if (!delegatedTime) return false;
+    
+    const elapsed = Date.now() - delegatedTime;
+    if (elapsed > this.DELEGATION_COOLDOWN) {
+      // Cooldown expired, remove from map
+      this.recentlyDelegatedWallets.delete(walletAddress);
+      console.log(`      ▶️  Resuming scanner for ${walletAddress.slice(0, 8)}... (cooldown expired)`);
+      return false;
+    }
+    
+    const remaining = Math.ceil((this.DELEGATION_COOLDOWN - elapsed) / 1000);
+    console.log(`      ⏸️  Skipping ${walletAddress.slice(0, 8)}... (waiting ${remaining}s for blockchain confirmation)`);
+    return true;
   }
 
   async start(intervalMs: number = 60000) {
@@ -81,6 +107,11 @@ export class AutoClaimScanner {
       console.log(`   Found ${activePermits.length} active permit(s)`);
 
       for (const permit of activePermits) {
+        // Skip wallets that were recently delegated (waiting for blockchain confirmation)
+        if (this.shouldSkipWallet(permit.walletAddress)) {
+          continue;
+        }
+        
         await this.scanWalletForEmptyAccounts(permit.walletAddress);
         // Add 2 second delay between scanning different wallets to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 2000));
