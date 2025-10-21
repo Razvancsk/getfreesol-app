@@ -1,0 +1,180 @@
+import { Connection, PublicKey } from "@solana/web3.js";
+import { storage } from "../storage";
+import { TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
+
+const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
+  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
+  : "https://api.mainnet-beta.solana.com";
+
+interface EmptyAccountScanResult {
+  walletAddress: string;
+  emptyAccounts: {
+    address: string;
+    mint: string;
+    rentLamports: number;
+    isToken2022: boolean;
+  }[];
+  totalRentRecoverable: number;
+}
+
+export class AutoClaimScanner {
+  private connection: Connection;
+  private isRunning: boolean = false;
+  private scanInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    this.connection = new Connection(HELIUS_RPC, "confirmed");
+  }
+
+  async start(intervalMs: number = 60000) {
+    if (this.isRunning) {
+      console.log("⚠️  Auto-Claim scanner already running");
+      return;
+    }
+
+    this.isRunning = true;
+    console.log("🤖 Auto-Claim scanner starting...");
+    console.log(`📊 Scan interval: ${intervalMs / 1000}s`);
+
+    await this.scanAllActivePermits();
+
+    this.scanInterval = setInterval(async () => {
+      await this.scanAllActivePermits();
+    }, intervalMs);
+  }
+
+  stop() {
+    if (this.scanInterval) {
+      clearInterval(this.scanInterval);
+      this.scanInterval = null;
+    }
+    this.isRunning = false;
+    console.log("🛑 Auto-Claim scanner stopped");
+  }
+
+  private async scanAllActivePermits() {
+    try {
+      console.log("\n🔍 Scanning for active permits...");
+      
+      const activePermits = await storage.getActiveAutoClaimPermits();
+      
+      if (activePermits.length === 0) {
+        console.log("   No active permits found");
+        return;
+      }
+
+      console.log(`   Found ${activePermits.length} active permit(s)`);
+
+      for (const permit of activePermits) {
+        await this.scanWalletForEmptyAccounts(permit.walletAddress);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+    } catch (error) {
+      console.error("❌ Scanner error:", error);
+    }
+  }
+
+  private async scanWalletForEmptyAccounts(walletAddress: string): Promise<EmptyAccountScanResult | null> {
+    try {
+      console.log(`\n   👛 Scanning wallet: ${walletAddress.slice(0, 8)}...`);
+      
+      const walletPubkey = new PublicKey(walletAddress);
+      
+      const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+        walletPubkey,
+        { programId: TOKEN_2022_PROGRAM_ID }
+      );
+
+      console.log(`      Found ${tokenAccounts.value.length} Token-2022 account(s)`);
+
+      const emptyAccounts = [];
+      let totalRentRecoverable = 0;
+
+      for (const { pubkey, account } of tokenAccounts.value) {
+        const parsedInfo = account.data.parsed.info;
+        const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+
+        if (balance === 0) {
+          const rentLamports = account.lamports;
+          
+          emptyAccounts.push({
+            address: pubkey.toBase58(),
+            mint: parsedInfo.mint,
+            rentLamports,
+            isToken2022: true
+          });
+
+          totalRentRecoverable += rentLamports;
+        }
+      }
+
+      if (emptyAccounts.length > 0) {
+        console.log(`      🎯 Found ${emptyAccounts.length} empty account(s)`);
+        console.log(`      💰 Total recoverable: ${(totalRentRecoverable / 1e9).toFixed(6)} SOL`);
+
+        await this.createRelayerJobs(walletAddress, emptyAccounts, totalRentRecoverable);
+      } else {
+        console.log("      ✅ No empty accounts");
+      }
+
+      return {
+        walletAddress,
+        emptyAccounts,
+        totalRentRecoverable
+      };
+
+    } catch (error) {
+      console.error(`      ❌ Error scanning wallet ${walletAddress}:`, error);
+      return null;
+    }
+  }
+
+  private async createRelayerJobs(
+    walletAddress: string,
+    emptyAccounts: EmptyAccountScanResult['emptyAccounts'],
+    totalRentRecoverable: number
+  ) {
+    try {
+      const BATCH_SIZE = 20;
+      const batches = [];
+      
+      for (let i = 0; i < emptyAccounts.length; i += BATCH_SIZE) {
+        batches.push(emptyAccounts.slice(i, i + BATCH_SIZE));
+      }
+
+      console.log(`      📦 Creating ${batches.length} relayer job(s)`);
+
+      for (const batch of batches) {
+        const batchRent = batch.reduce((sum, acc) => sum + acc.rentLamports, 0);
+
+        const existingJobs = await storage.getPendingRelayerJobs();
+        const hasPendingJob = existingJobs.some(job => job.walletAddress === walletAddress);
+        
+        if (hasPendingJob) {
+          console.log(`      ⏭️  Job already pending for wallet`);
+          continue;
+        }
+
+        await storage.createRelayerJob({
+          walletAddress,
+          jobType: 'claim_empty_accounts',
+          itemsCount: batch.length,
+          estimatedNet: (batchRent / 1e9).toString()
+        });
+
+        console.log(`      ✅ Created job for ${batch.length} account(s)`);
+      }
+
+    } catch (error) {
+      console.error(`      ❌ Error creating relayer jobs:`, error);
+    }
+  }
+
+  async manualScan(walletAddress: string): Promise<EmptyAccountScanResult | null> {
+    console.log(`\n🔍 Manual scan requested for: ${walletAddress}`);
+    return await this.scanWalletForEmptyAccounts(walletAddress);
+  }
+}
+
+export const autoClaimScanner = new AutoClaimScanner();

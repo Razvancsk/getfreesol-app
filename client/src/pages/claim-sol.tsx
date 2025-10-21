@@ -34,6 +34,7 @@ import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
+import { AutoClaimSection } from '@/components/AutoClaimSection';
 
 interface EmptyTokenAccount {
   id: number;
@@ -3019,123 +3020,7 @@ export default function SolRefund() {
 
           {/* Auto Claim Tab Content */}
           {activeTab === 'autoClaim' && (
-            <div className="space-y-6 max-w-4xl mx-auto">
-              {/* Info Card */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                      <Zap className="h-6 w-6 text-purple-400" />
-                      Auto Claim Settings
-                    </h3>
-                    <p className="text-purple-200 mt-2">
-                      Automatically claim SOL from empty token accounts
-                    </p>
-                  </div>
-                  <Badge 
-                    variant={autoClaimEnabled ? "default" : "secondary"}
-                    className={`text-sm px-4 py-2 ${
-                      autoClaimEnabled 
-                        ? 'bg-green-600/80 text-white' 
-                        : 'bg-purple-700/50 text-purple-200'
-                    }`}
-                  >
-                    {autoClaimEnabled ? (
-                      <span className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4" />
-                        Enabled
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        Disabled
-                      </span>
-                    )}
-                  </Badge>
-                </div>
-
-                {/* Info Alert */}
-                <Alert className="bg-purple-900/40 border-purple-500/30 mb-6">
-                  <Info className="h-4 w-4 text-purple-400" />
-                  <AlertDescription className="text-purple-100">
-                    Auto Claim automatically scans your wallet and claims SOL from empty token accounts without manual intervention.
-                  </AlertDescription>
-                </Alert>
-
-                {/* Toggle Section */}
-                <div className="bg-purple-800/20 rounded-xl border border-purple-500/20 p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h4 className="text-lg font-semibold text-white">Enable Auto Claim</h4>
-                      <p className="text-sm text-purple-200">
-                        Automatically process empty token accounts when detected
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setAutoClaimEnabled(!autoClaimEnabled)}
-                      className={`relative w-14 h-7 rounded-full transition-all ${
-                        autoClaimEnabled ? 'bg-purple-600' : 'bg-purple-800/80'
-                      }`}
-                      data-testid="button-auto-claim-toggle"
-                    >
-                      <div 
-                        className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                          autoClaimEnabled ? 'translate-x-7' : 'translate-x-0.5'
-                        }`} 
-                      />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Features List */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Features</h3>
-                <div className="grid gap-3">
-                  <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
-                    <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-white font-medium">Automatic Scanning</h4>
-                      <p className="text-sm text-purple-200">
-                        Periodically scans your wallet for empty token accounts
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
-                    <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-white font-medium">Instant Processing</h4>
-                      <p className="text-sm text-purple-200">
-                        Claims SOL immediately when empty accounts are found
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 bg-purple-800/20 rounded-lg border border-purple-500/20 p-4">
-                    <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-white font-medium">Background Operation</h4>
-                      <p className="text-sm text-purple-200">
-                        Works silently in the background without interrupting your activities
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Auto-Claims */}
-              <div className="bg-gradient-to-br from-purple-900/40 to-purple-950/60 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                <div className="flex items-center mb-6">
-                  <h3 className="text-xl font-bold text-white">RECENT AUTO-CLAIMS</h3>
-                </div>
-
-                <div className="text-center text-purple-300 py-12">
-                  <div className="mb-4 text-lg">No auto-claim activity yet</div>
-                  <p className="text-sm text-purple-400">
-                    Enable Auto-Claim above to automatically reclaim SOL from empty token accounts
-                  </p>
-                </div>
-              </div>
-            </div>
+            <AutoClaimSection />
           )}
 
           {/* Referrals Tab Content */}
