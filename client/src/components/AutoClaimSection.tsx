@@ -343,7 +343,7 @@ export function AutoClaimSection() {
           <AlertDescription className="text-purple-100">
             <strong>100% Non-Custodial:</strong> You sign a permit message (not a transaction). 
             Your private keys never leave your wallet. We monitor for empty accounts and claim them automatically. 
-            You get 85%, platform gets 15%. Works for Token-2022 accounts only.
+            You get 85%, platform gets 15%. Works for BOTH SPL tokens AND Token-2022.
           </AlertDescription>
         </Alert>
 
