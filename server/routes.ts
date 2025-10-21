@@ -3925,8 +3925,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: tx.id,
         signature: tx.signature,
         walletAddress: tx.walletAddress,
-        netAmount: parseFloat(tx.netAmount),
-        feeAmount: parseFloat(tx.feeAmount),
         type: tx.transactionType,
         solRecovered: parseFloat(tx.solRecovered),
         netAmount: parseFloat(tx.netAmount),

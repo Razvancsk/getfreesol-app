@@ -31,7 +31,7 @@ import {
   walletReferralAssociations
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, or } from "drizzle-orm";
+import { eq, desc, sql, or, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -146,12 +146,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTransactionLedger(limit: number = 100, offset: number = 0, source?: string): Promise<TransactionLedger[]> {
+    const conditions = [];
+    
+    if (source) {
+      conditions.push(eq(transactionLedger.source, source));
+    }
+    
     let query = db
       .select()
       .from(transactionLedger);
     
-    if (source) {
-      query = query.where(eq(transactionLedger.source, source)) as any;
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
     
     return await query
@@ -169,16 +175,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTransactionLedgerByWallet(walletAddress: string, limit: number = 50, offset: number = 0, source?: string): Promise<TransactionLedger[]> {
-    let query = db
-      .select()
-      .from(transactionLedger)
-      .where(eq(transactionLedger.walletAddress, walletAddress));
+    const conditions = [eq(transactionLedger.walletAddress, walletAddress)];
     
     if (source) {
-      query = query.where(eq(transactionLedger.source, source)) as any;
+      conditions.push(eq(transactionLedger.source, source));
     }
     
-    return await query
+    return await db
+      .select()
+      .from(transactionLedger)
+      .where(and(...conditions))
       .orderBy(desc(transactionLedger.processedAt))
       .limit(limit)
       .offset(offset);
