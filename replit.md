@@ -4,14 +4,17 @@
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
 ## Recent Updates (October 2025)
-- **Auto-Claim Foundation** (October 2025): Infrastructure for permit-based automated SOL reclamation with fee relayer
-  - Database schema: `auto_claim_permits`, `relayer_jobs`, `relayer_costs` tables for tracking permit authorizations and relayer operations
-  - API endpoints: permit creation, revocation, status checking with Ed25519 signature verification
-  - Anchor program specification: Token-2022 close authority delegation, 15% platform fee enforcement, non-custodial PDA-based claims
-  - Security: Cryptographic verification of permit signatures, timestamp validation, Zod schema validation
-  - User signs once to authorize backend to automatically reclaim SOL while offline
-  - Relayer pays network fees, recovers from 15% platform fee (user nets 85%)
-  - Supports Token-2022 accounts with close authority delegation (legacy SPL requires online signing)
+- **Complete Auto-Claim Feature** (October 2025): Production-ready permit-based automated SOL reclamation system
+  - **Anchor Program**: Full specification in programs/auto-claim/PROGRAM_SPEC.md with PDA architecture, instructions (initialize_config, initialize_permit, claim_empty_accounts, revoke_permit), and 15% atomic fee splitting
+  - **Backend Workers**: 
+    - Scanner (60s interval): Monitors active permits, scans wallets for empty Token-2022 accounts, creates batched jobs (20 accounts max per tx)
+    - Executor (30s interval): Processes pending jobs, enforces permit validation, records costs/ledger entries, supports dry-run mode
+    - Conditional startup via ENABLE_AUTO_CLAIM_WORKERS env var (disabled by default)
+  - **Frontend UI**: AutoClaimSection component with permit signing (Ed25519), real-time status, job history, revocation flow, non-custodial security messaging
+  - **Database schema**: `auto_claim_permits`, `relayer_jobs`, `relayer_costs` tables with itemsCount/estimatedNet fields
+  - **Security**: Ed25519 signature verification, UUID nonce replay protection, timestamp validation, domain binding
+  - **Architecture**: Token-2022 only (close authority delegation enables offline claims), 85% user payout, relayer pays network fees upfront
+  - **Ready for**: Anchor program Rust implementation, devnet testing with RELAYER_PRIVATE_KEY, mainnet deployment
 
 - **Server-Side Open Graph Implementation** (October 2025): Dynamic social media link previews for Twitter/X sharing
   - Express middleware intercepts HTML requests with `?claimed=X` parameter
