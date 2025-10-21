@@ -98,6 +98,7 @@ export class AutoClaimScanner {
       const walletPubkey = new PublicKey(walletAddress);
       
       const emptyAccounts = [];
+      const nonDelegatedAccounts = [];
       let totalRentRecoverable = 0;
       let skippedNotDelegated = 0;
       let totalAccounts = 0;
@@ -127,11 +128,11 @@ export class AutoClaimScanner {
             // Normalize close authority (can be string or object with pubkey property)
             const closeAuthority = parsedInfo.closeAuthority;
             const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+            const rentLamports = account.lamports;
             
-            // Only include accounts where close authority has been delegated to relayer
+            // Check if delegated to relayer
             if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
-              const rentLamports = account.lamports;
-              
+              // Already delegated - ready to claim!
               emptyAccounts.push({
                 address: pubkey.toBase58(),
                 mint: parsedInfo.mint,
@@ -141,7 +142,15 @@ export class AutoClaimScanner {
               });
 
               totalRentRecoverable += rentLamports;
-            } else {
+            } else if (!closeAuthorityPubkey || closeAuthorityPubkey === walletAddress) {
+              // NOT delegated yet - needs delegation!
+              nonDelegatedAccounts.push({
+                address: pubkey.toBase58(),
+                mint: parsedInfo.mint,
+                rentLamports,
+                isToken2022: program.id.equals(TOKEN_2022_PROGRAM_ID),
+                programId: program.id.toBase58()
+              });
               skippedNotDelegated++;
             }
           }
@@ -151,15 +160,21 @@ export class AutoClaimScanner {
       console.log(`      Found ${totalAccounts} token account(s) (SPL + Token-2022)`)
 
       if (skippedNotDelegated > 0) {
-        console.log(`      ⏭️  Skipped ${skippedNotDelegated} account(s) without delegated close authority`);
+        console.log(`      ⏭️  Found ${skippedNotDelegated} account(s) without delegated close authority`);
+      }
+
+      // Auto-trigger delegation for non-delegated empty accounts
+      if (nonDelegatedAccounts.length > 0) {
+        console.log(`      🔑 AUTO-DELEGATING ${nonDelegatedAccounts.length} new empty account(s)...`);
+        await this.createDelegationRequest(walletAddress, nonDelegatedAccounts);
       }
 
       if (emptyAccounts.length > 0) {
-        console.log(`      🎯 Found ${emptyAccounts.length} empty account(s)`);
+        console.log(`      🎯 Found ${emptyAccounts.length} delegated empty account(s)`);
         console.log(`      💰 Total recoverable: ${(totalRentRecoverable / 1e9).toFixed(6)} SOL`);
 
         await this.createRelayerJobs(walletAddress, emptyAccounts, totalRentRecoverable);
-      } else {
+      } else if (nonDelegatedAccounts.length === 0) {
         console.log("      ✅ No empty accounts");
       }
 
@@ -223,6 +238,28 @@ export class AutoClaimScanner {
 
     } catch (error) {
       console.error(`      ❌ Error creating relayer jobs:`, error);
+    }
+  }
+
+  private async createDelegationRequest(
+    walletAddress: string,
+    nonDelegatedAccounts: Array<{address: string; mint: string; rentLamports: number; isToken2022: boolean; programId: string}>
+  ) {
+    try {
+      // Store count of non-delegated accounts in permit for frontend notification
+      const totalSol = nonDelegatedAccounts.reduce((sum, acc) => sum + acc.rentLamports, 0) / 1e9;
+      
+      console.log(`      💰 Pending delegation: ${nonDelegatedAccounts.length} accounts (${totalSol.toFixed(6)} SOL)`);
+      console.log(`      📢 Frontend will show notification to delegate these accounts`);
+      
+      // Update permit with pending delegation info (frontend polls this)
+      await storage.updateAutoClaimPermitMetadata(walletAddress, {
+        pendingDelegationCount: nonDelegatedAccounts.length,
+        pendingDelegationSol: totalSol.toFixed(6)
+      });
+
+    } catch (error) {
+      console.error(`      ❌ Error creating delegation request:`, error);
     }
   }
 

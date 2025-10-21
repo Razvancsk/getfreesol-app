@@ -149,6 +149,8 @@ export const autoClaimPermits = pgTable("auto_claim_permits", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   revokedAt: timestamp("revoked_at"),
   lastUsedAt: timestamp("last_used_at"), // Track when relayer last used this permit
+  pendingDelegationCount: integer("pending_delegation_count").default(0), // Scanner sets this when it finds non-delegated accounts
+  pendingDelegationSol: text("pending_delegation_sol").default("0"), // SOL recoverable from pending accounts
 });
 
 // Relayer Jobs - tracks auto-claim job execution
