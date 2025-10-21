@@ -287,3 +287,45 @@ export type RelayerJob = typeof relayerJobs.$inferSelect;
 export type InsertRelayerJob = z.infer<typeof insertRelayerJobSchema>;
 export type RelayerCost = typeof relayerCosts.$inferSelect;
 export type InsertRelayerCost = z.infer<typeof insertRelayerCostSchema>;
+
+// Auto-Claim Permit API schemas with validation
+export const autoClaimPermitMessageSchema = z.object({
+  type: z.literal("AUTO_CLAIM_PERMIT"),
+  wallet: z.string().min(32).max(44), // Base58 public key
+  action: z.enum(["claim_empty_accounts"]),
+  nonce: z.string().uuid(),
+  version: z.literal(1),
+  created_at: z.number().int().positive(),
+  domain: z.string().default("getyoursolback.app"),
+  statement: z.string().default("I authorize this application to automatically claim SOL from my empty token accounts.")
+});
+
+export const createAutoClaimPermitRequestSchema = z.object({
+  walletAddress: z.string().min(32).max(44),
+  permitSignature: z.string(), // Base58 encoded signature
+  permitMessage: z.string(), // JSON string matching autoClaimPermitMessageSchema
+  permitNonce: z.string().uuid(),
+  scopes: z.string().default("claim_empty_accounts").optional()
+});
+
+// Revoke message must be signed (includes timestamp inside)
+export const autoClaimRevokeMessageSchema = z.object({
+  type: z.literal("AUTO_CLAIM_REVOKE"),
+  wallet: z.string().min(32).max(44),
+  action: z.literal("REVOKE_AUTO_CLAIM"),
+  nonce: z.string().uuid(), // Unique revoke nonce to prevent replay
+  timestamp: z.number().int().positive(), // THIS must be inside signed message
+  version: z.literal(1),
+  domain: z.string().default("getyoursolback.app")
+});
+
+export const revokeAutoClaimPermitRequestSchema = z.object({
+  walletAddress: z.string().min(32).max(44),
+  revokeSignature: z.string(), // Base58 encoded signature
+  revokeMessage: z.string() // JSON string matching autoClaimRevokeMessageSchema
+});
+
+export type AutoClaimPermitMessage = z.infer<typeof autoClaimPermitMessageSchema>;
+export type AutoClaimRevokeMessage = z.infer<typeof autoClaimRevokeMessageSchema>;
+export type CreateAutoClaimPermitRequest = z.infer<typeof createAutoClaimPermitRequestSchema>;
+export type RevokeAutoClaimPermitRequest = z.infer<typeof revokeAutoClaimPermitRequestSchema>;

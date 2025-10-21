@@ -3,7 +3,16 @@
 ## Overview
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
-## Recent Updates (January 2025)
+## Recent Updates (October 2025)
+- **Auto-Claim Foundation** (October 2025): Infrastructure for permit-based automated SOL reclamation with fee relayer
+  - Database schema: `auto_claim_permits`, `relayer_jobs`, `relayer_costs` tables for tracking permit authorizations and relayer operations
+  - API endpoints: permit creation, revocation, status checking with Ed25519 signature verification
+  - Anchor program specification: Token-2022 close authority delegation, 15% platform fee enforcement, non-custodial PDA-based claims
+  - Security: Cryptographic verification of permit signatures, timestamp validation, Zod schema validation
+  - User signs once to authorize backend to automatically reclaim SOL while offline
+  - Relayer pays network fees, recovers from 15% platform fee (user nets 85%)
+  - Supports Token-2022 accounts with close authority delegation (legacy SPL requires online signing)
+
 - **Server-Side Open Graph Implementation** (October 2025): Dynamic social media link previews for Twitter/X sharing
   - Express middleware intercepts HTML requests with `?claimed=X` parameter
   - Injects dynamic OG tags with claimed SOL amount and random share messages
@@ -68,11 +77,14 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 ### Database Schema
 - `users`: User authentication.
 - `transaction_records`: Legacy SOL recovery transaction records.
-- `transaction_ledger`: Comprehensive ledger for all transaction types (SOL reclaim, token/NFT burns).
+- `transaction_ledger`: Comprehensive ledger for all transaction types (SOL reclaim, token/NFT burns) with source field (manual/auto).
 - `token_burn_records`: Detailed token burning records.
 - `nft_burn_records`: Detailed NFT burning records.
 - `empty_token_accounts`: Discovered empty accounts.
 - `scan_results`: Historical wallet scan data.
+- `auto_claim_permits`: User authorizations for automatic SOL reclamation (signature, message, nonce, status).
+- `relayer_jobs`: Tracks auto-claim job execution (pending, processing, completed, failed states).
+- `relayer_costs`: Records network fees spent by relayer and SOL recovered per transaction.
 
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.

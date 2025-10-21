@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
@@ -17,6 +17,22 @@ import { toWeb3JsTransaction } from '@metaplex-foundation/umi-web3js-adapters';
 import { burnV1, fetchDigitalAssetWithAssociatedToken, findMetadataPda, findMasterEditionPda, TokenStandard, mplTokenMetadata, fetchDigitalAsset, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
+
+// Helper: Verify Ed25519 signature
+function verifySignature(message: string, signature: string, publicKey: string): boolean {
+  try {
+    const messageBytes = new TextEncoder().encode(message);
+    const signatureBytes = bs58.decode(signature);
+    const publicKeyBytes = bs58.decode(publicKey);
+    
+    return nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+  } catch (error) {
+    console.error('Signature verification error:', error);
+    return false;
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Token search endpoint
@@ -4079,6 +4095,267 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Failed to relay transaction",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  });
+
+  // ============================================================================
+  // AUTO-CLAIM PERMIT ENDPOINTS
+  // ============================================================================
+
+  // Create Auto-Claim Permit (user signs once to authorize)
+  app.post("/api/auto-claim/permit/create", async (req, res) => {
+    try {
+      // Validate request body with Zod
+      const validationResult = createAutoClaimPermitRequestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request body",
+          details: validationResult.error.errors
+        });
+      }
+
+      const { walletAddress, permitSignature, permitMessage, permitNonce, scopes } = validationResult.data;
+
+      // Parse and validate permit message
+      let parsedMessage;
+      try {
+        parsedMessage = JSON.parse(permitMessage);
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid permit message format" });
+      }
+
+      // Validate message structure
+      const messageValidation = autoClaimPermitMessageSchema.safeParse(parsedMessage);
+      if (!messageValidation.success) {
+        return res.status(400).json({ 
+          error: "Invalid permit message structure",
+          details: messageValidation.error.errors
+        });
+      }
+
+      // Verify message matches wallet and nonce
+      if (parsedMessage.wallet !== walletAddress) {
+        return res.status(400).json({ error: "Wallet address mismatch in permit message" });
+      }
+      if (parsedMessage.nonce !== permitNonce) {
+        return res.status(400).json({ error: "Nonce mismatch in permit message" });
+      }
+
+      // Verify signature
+      const isValid = verifySignature(permitMessage, permitSignature, walletAddress);
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      // Check if permit already exists
+      const existing = await storage.getAutoClaimPermitByWallet(walletAddress);
+      if (existing && existing.status === 'active') {
+        return res.json({
+          success: true,
+          permit: existing,
+          message: "Active permit already exists"
+        });
+      }
+
+      // Create new permit
+      const permit = await storage.createAutoClaimPermit({
+        walletAddress,
+        permitSignature,
+        permitMessage,
+        permitNonce,
+        scopes: scopes || 'claim_empty_accounts'
+      });
+
+      console.log(`✅ Auto-Claim permit created for wallet: ${walletAddress}`);
+
+      res.json({
+        success: true,
+        permit,
+        message: "Auto-Claim permit created successfully"
+      });
+
+    } catch (error) {
+      console.error("Create permit error:", error);
+      res.status(500).json({ error: "Failed to create permit" });
+    }
+  });
+
+  // Get permit status
+  app.get("/api/auto-claim/permit/status/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+
+      const permit = await storage.getAutoClaimPermitByWallet(walletAddress);
+
+      if (!permit) {
+        return res.json({
+          success: true,
+          hasPermit: false,
+          status: 'none'
+        });
+      }
+
+      res.json({
+        success: true,
+        hasPermit: true,
+        permit: {
+          status: permit.status,
+          scopes: permit.scopes,
+          createdAt: permit.createdAt,
+          lastUsedAt: permit.lastUsedAt,
+          permitPda: permit.permitPda
+        }
+      });
+
+    } catch (error) {
+      console.error("Get permit status error:", error);
+      res.status(500).json({ error: "Failed to get permit status" });
+    }
+  });
+
+  // In-memory store for used revoke nonces (prevent replay attacks)
+  const usedRevokeNonces = new Set<string>();
+
+  // Revoke Auto-Claim Permit
+  app.post("/api/auto-claim/permit/revoke", async (req, res) => {
+    try {
+      // Validate request body with Zod
+      const validationResult = revokeAutoClaimPermitRequestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request body",
+          details: validationResult.error.errors
+        });
+      }
+
+      const { walletAddress, revokeSignature, revokeMessage } = validationResult.data;
+
+      // Parse and validate revoke message
+      let parsedRevoke;
+      try {
+        parsedRevoke = JSON.parse(revokeMessage);
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid revoke message format" });
+      }
+
+      // Validate message structure with schema
+      const messageValidation = autoClaimRevokeMessageSchema.safeParse(parsedRevoke);
+      if (!messageValidation.success) {
+        return res.status(400).json({ 
+          error: "Invalid revoke message structure",
+          details: messageValidation.error.errors
+        });
+      }
+
+      // Verify message matches wallet
+      if (parsedRevoke.wallet !== walletAddress) {
+        return res.status(400).json({ error: "Wallet address mismatch in revoke message" });
+      }
+
+      // Check timestamp is recent (within 5 minutes) - INSIDE signed message
+      const now = Math.floor(Date.now() / 1000);
+      if (Math.abs(now - parsedRevoke.timestamp) > 300) {
+        return res.status(400).json({ error: "Revoke request expired (timestamp too old/new)" });
+      }
+
+      // Prevent replay: check if nonce was already used
+      if (usedRevokeNonces.has(parsedRevoke.nonce)) {
+        return res.status(400).json({ error: "Revoke nonce already used (replay attack prevented)" });
+      }
+
+      // Verify signature over the EXACT signed message
+      const isValid = verifySignature(revokeMessage, revokeSignature, walletAddress);
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid revoke signature" });
+      }
+
+      const permit = await storage.getAutoClaimPermitByWallet(walletAddress);
+      if (!permit) {
+        return res.status(404).json({ error: "No permit found" });
+      }
+
+      if (permit.status === 'revoked') {
+        return res.json({
+          success: true,
+          message: "Permit already revoked"
+        });
+      }
+
+      // Mark nonce as used BEFORE revoking (prevent race conditions)
+      usedRevokeNonces.add(parsedRevoke.nonce);
+
+      await storage.updateAutoClaimPermitStatus(walletAddress, 'revoked');
+
+      console.log(`🔴 Auto-Claim permit revoked for wallet: ${walletAddress}`);
+
+      res.json({
+        success: true,
+        message: "Auto-Claim permit revoked successfully"
+      });
+
+    } catch (error) {
+      console.error("Revoke permit error:", error);
+      res.status(500).json({ error: "Failed to revoke permit" });
+    }
+  });
+
+  // Get relayer job history for a wallet
+  app.get("/api/auto-claim/jobs/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const { limit = 20 } = req.query;
+
+      const jobs = await storage.getRelayerJobsByWallet(
+        walletAddress,
+        parseInt(limit as string)
+      );
+
+      res.json({
+        success: true,
+        jobs
+      });
+
+    } catch (error) {
+      console.error("Get relayer jobs error:", error);
+      res.status(500).json({ error: "Failed to get relayer jobs" });
+    }
+  });
+
+  // Get relayer costs for a wallet
+  app.get("/api/auto-claim/costs/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const { limit = 20 } = req.query;
+
+      const costs = await storage.getRelayerCostsByWallet(
+        walletAddress,
+        parseInt(limit as string)
+      );
+
+      res.json({
+        success: true,
+        costs
+      });
+
+    } catch (error) {
+      console.error("Get relayer costs error:", error);
+      res.status(500).json({ error: "Failed to get relayer costs" });
+    }
+  });
+
+  // Get total relayer statistics
+  app.get("/api/auto-claim/stats", async (req, res) => {
+    try {
+      const stats = await storage.getTotalRelayerCosts();
+
+      res.json({
+        success: true,
+        stats
+      });
+
+    } catch (error) {
+      console.error("Get relayer stats error:", error);
+      res.status(500).json({ error: "Failed to get relayer stats" });
     }
   });
 
