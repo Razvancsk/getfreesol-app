@@ -109,6 +109,7 @@ export interface IStorage {
   updateAutoClaimPermitPda(walletAddress: string, permitPda: string): Promise<void>;
   updateAutoClaimPermitStatus(walletAddress: string, status: string): Promise<void>;
   updateAutoClaimPermitLastUsed(walletAddress: string): Promise<void>;
+  updateAutoClaimPermitMultisig(walletAddress: string, multisigAddress: string): Promise<void>;
   getActiveAutoClaimPermits(limit?: number): Promise<AutoClaimPermit[]>;
   
   // Relayer Jobs
@@ -525,6 +526,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(autoClaimPermits)
       .set({ lastUsedAt: new Date() })
+      .where(eq(autoClaimPermits.walletAddress, walletAddress));
+  }
+
+  async updateAutoClaimPermitMultisig(walletAddress: string, multisigAddress: string): Promise<void> {
+    await db
+      .update(autoClaimPermits)
+      .set({ multisigAddress })
       .where(eq(autoClaimPermits.walletAddress, walletAddress));
   }
 
