@@ -3122,10 +3122,10 @@ export default function SolRefund() {
                 </div>
               </div>
 
-              {/* Transaction History */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              {/* Recent Auto-Claims */}
+              <div className="bg-gradient-to-br from-purple-900/40 to-purple-950/60 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                 <div className="flex items-center mb-6">
-                  <h3 className="text-xl font-bold text-white text-center w-full">TRANSACTION HISTORY</h3>
+                  <h3 className="text-xl font-bold text-white">RECENT AUTO-CLAIMS</h3>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -3133,16 +3133,16 @@ export default function SolRefund() {
                     {/* Header */}
                     <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
                       <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
-                        WALLET/TX
+                        Time
                       </div>
-                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
-                        ACCTS
+                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                        Accounts Claimed
                       </div>
-                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
-                        CLAIMED SOL
+                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                        SOL Recovered
                       </div>
-                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
-                        DATE
+                      <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                        Status
                       </div>
                     </div>
 
@@ -3154,43 +3154,53 @@ export default function SolRefund() {
                         </div>
                       ) : allTransactions.length === 0 ? (
                         <div className="text-center text-purple-300 py-8">
-                          No transactions yet
+                          No auto-claims yet
                         </div>
                       ) : (
-                        allTransactions.map((tx, index) => (
-                          <div key={tx.signature}>
-                            <div 
-                              className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
-                              onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
-                              title="Click to view transaction on Solscan"
-                            >
-                              <div className="text-white font-mono text-sm">
-                                <div className="truncate" title={tx.signature}>
-                                  {tx.signature.slice(0, 8)}...{tx.signature.slice(-8)}
+                        allTransactions.map((tx, index) => {
+                          const getRelativeTime = (timestamp: string) => {
+                            const now = new Date();
+                            const past = new Date(timestamp);
+                            const diffMs = now.getTime() - past.getTime();
+                            const diffMins = Math.floor(diffMs / 60000);
+                            const diffHours = Math.floor(diffMs / 3600000);
+                            const diffDays = Math.floor(diffMs / 86400000);
+
+                            if (diffMins < 1) return 'Just now';
+                            if (diffMins < 60) return `${diffMins} min ago`;
+                            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                            return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                          };
+
+                          return (
+                            <div key={tx.signature}>
+                              <div 
+                                className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                                onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
+                                title="Click to view transaction on Solscan"
+                                data-testid={`row-autoclaim-${index}`}
+                              >
+                                <div className="text-white text-sm">
+                                  {getRelativeTime(tx.processedAt)}
+                                </div>
+                                <div className="text-white text-lg font-semibold">
+                                  {tx.itemsProcessed}
+                                </div>
+                                <div className="text-white text-sm font-medium">
+                                  {(tx.netAmount || tx.solRecovered * 0.85).toFixed(5)} SOL
+                                </div>
+                                <div className="flex items-center gap-2 text-green-400">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span className="text-sm font-medium">Success</span>
                                 </div>
                               </div>
-                              <div className="text-white text-center text-lg font-semibold">
-                                {tx.itemsProcessed}
-                              </div>
-                              <div className="text-white text-center text-sm font-medium">
-                                {(tx.netAmount || tx.solRecovered * 0.85).toFixed(6)}
-                              </div>
-                              <div className="text-white text-center text-sm">
-                                {new Date(tx.processedAt).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: true
-                                })}
-                              </div>
+                              {/* Separator line between rows - don't show after last row */}
+                              {index < allTransactions.length - 1 && (
+                                <div className="border-b border-purple-500/20 my-2"></div>
+                              )}
                             </div>
-                            {/* Separator line between rows - don't show after last row */}
-                            {index < allTransactions.length - 1 && (
-                              <div className="border-b border-purple-500/20 my-2"></div>
-                            )}
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
 
@@ -3201,7 +3211,7 @@ export default function SolRefund() {
                           onClick={loadMoreTransactions}
                           disabled={isLoadingTransactions}
                           className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          data-testid="button-load-more-transactions"
+                          data-testid="button-load-more-autoclaims"
                         >
                           {isLoadingTransactions ? 'Loading...' : 'Load More'}
                         </button>
