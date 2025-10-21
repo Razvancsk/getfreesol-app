@@ -2494,11 +2494,11 @@ export default function SolRefund() {
                     }
                   }}
                   disabled={scanMutation.isPending || !publicKey}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
                   data-testid="button-refresh-scan"
+                  title="Refresh"
                 >
-                  Click to Refresh
-                  <RefreshCw className={`h-3.5 w-3.5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-5 w-5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
                 </button>
               </div>
               {!scanResult ? (
