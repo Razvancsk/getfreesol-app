@@ -1,0 +1,108 @@
+“Persistent Meta-Transaction Permit”
+🔹 Goal
+
+User signs once to authorize your backend (relayer) + program to act on their behalf.
+
+Permit never expires automatically.
+
+User can disable it anytime (revocation).
+
+Relayer can keep working while user is offline.
+
+🧠 How to Implement It (Step by Step)
+🧩 1. Permit Message (One-Time User Signature)
+
+When the user enables Auto-Claim, they sign a JSON message like this:
+
+{
+  "type": "AUTO_CLAIM_PERMIT",
+  "wallet": "USER_PUBLIC_KEY",
+  "action": "claim_empty_accounts",
+  "program_id": "YOUR_PROGRAM_ID",
+  "can_revoke": true,
+  "version": 1,
+  "nonce": "random-uuid",
+  "created_at": 1730000000
+}
+
+
+You convert it to bytes and let the user sign with:
+
+const message = new TextEncoder().encode(JSON.stringify(permit));
+const signed = await window.solana.signMessage(message, "utf8");
+
+
+✅ This creates a permanent authorization unless the user revokes it.
+🛡️ The nonce prevents replay across apps or chains.
+
+🧩 2. Store the Permit
+
+Save { permit, signature, user_pubkey } in your database.
+
+Mark it as active = true.
+
+No expiry date.
+
+Add a “revoked” boolean column.
+
+Example DB schema:
+
+user_pubkey	permit_id	signature	active	created_at	revoked
+…	abc123	base58sig	✅ true	2025-10-21	false
+🧩 3. Backend Auto-Claim Logic
+
+Your watcher service listens for new empty token accounts.
+
+When found, check DB for active permit for that wallet.
+
+Build transaction → attach:
+
+The user’s signed permit
+
+An ed25519 verification instruction
+
+Call your on-chain program.
+
+🧩 4. On-Chain Verification (Anchor / Rust)
+
+In your Solana program:
+
+use anchor_lang::prelude::*;
+use anchor_lang::solana_program::ed25519_program;
+
+pub fn process_claim(ctx: Context<Claim>, permit_message: Vec<u8>, signature: [u8;64], pubkey: [u8;32]) -> Result<()> {
+    // Verify user signed the permit
+    ed25519_program::verify_signature(&permit_message, &signature, &pubkey)?;
+    
+    // Decode permit JSON
+    let permit: Permit = serde_json::from_slice(&permit_message)?;
+    
+    // Check permit type & scope
+    require_eq!(permit.action, "claim_empty_accounts", CustomError::InvalidPermit);
+    
+    // Perform claim logic...
+    Ok(())
+}
+
+
+✅ Validates the original message was signed by that wallet.
+✅ No need for user to be online.
+✅ Still fully non-custodial.
+
+🧩 5. Revocation (User Turns Off Auto-Claim)
+
+When the user clicks “Turn Off Auto-Claim” on your website:
+
+You simply mark the permit as revoked = true in your database.
+
+Your backend stops processing claims for that wallet.
+
+Optionally, broadcast an event to your relayer pool to immediately halt any queued transactions.
+
+🛡️ Security & Safety Notes
+Feature	Why It Matters
+No expiration	Long-term authorization; user must manually disable.
+Revocation toggle	Essential — prevents abuse or old data use.
+Nonce / unique ID	Stops replay of permit on other programs.
+Backend check	Always verify revoked = false before processing.
+Audit log	Keep a history of each claim & timestamp.
