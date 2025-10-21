@@ -390,26 +390,7 @@ export function AutoClaimSection() {
               </Button>
             </div>
           ) : (
-            <div className="flex justify-center gap-4">
-              <Button
-                onClick={() => delegateAuthorityMutation.mutate()}
-                disabled={isProcessing || delegateAuthorityMutation.isPending}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
-                data-testid="button-delegate-now"
-              >
-                {isProcessing || delegateAuthorityMutation.isPending ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-2 animate-spin" />
-                    Delegating...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-5 w-5 mr-2" />
-                    Delegate Empty Accounts (FREE!)
-                  </>
-                )}
-              </Button>
-              
+            <div className="flex justify-center">
               <Button
                 onClick={() => revokeAutoClaimMutation.mutate()}
                 disabled={isProcessing || revokeAutoClaimMutation.isPending}
@@ -425,7 +406,7 @@ export function AutoClaimSection() {
                 ) : (
                   <>
                     <AlertTriangle className="h-5 w-5 mr-2" />
-                    Disable
+                    Disable Auto-Claim
                   </>
                 )}
               </Button>
