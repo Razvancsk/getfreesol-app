@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all wallet token accounts with metadata using Jupiter Holdings API
+  // Get all wallet token accounts with metadata using Jupiter Balances API
   app.get("/api/wallet/all-tokens", async (req, res) => {
     try {
       const { address } = req.query;
@@ -194,25 +194,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing address parameter' });
       }
 
-      // Use Jupiter Ultra Holdings API - returns ALL tokens (standard + Token-2022)
-      const holdingsResponse = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${address}`);
+      // Use Jupiter Ultra Balances API - returns ALL tokens (standard + Token-2022)
+      const balancesResponse = await fetch(`https://lite-api.jup.ag/ultra/v1/balances/${address}`);
       
-      if (!holdingsResponse.ok) {
-        const errorText = await holdingsResponse.text();
-        console.error('Jupiter Holdings API error:', holdingsResponse.status, errorText);
-        return res.status(holdingsResponse.status).json({ error: 'Failed to fetch token holdings' });
+      if (!balancesResponse.ok) {
+        const errorText = await balancesResponse.text();
+        console.error('Jupiter Balances API error:', balancesResponse.status, errorText);
+        return res.status(balancesResponse.status).json({ error: 'Failed to fetch token balances' });
       }
 
-      const holdings = await holdingsResponse.json();
+      const balancesData = await balancesResponse.json();
       
-      if (holdings.error) {
-        return res.status(400).json({ error: holdings.error });
+      if (balancesData.error) {
+        return res.status(400).json({ error: balancesData.error });
       }
 
       const tokensWithMetadata = [];
 
       // Add native SOL if balance > 0
-      const solBalance = parseFloat(holdings.uiAmount || '0');
+      const solBalance = parseFloat(balancesData.native?.uiAmount || '0');
       if (solBalance > 0) {
         tokensWithMetadata.push({
           address: 'So11111111111111111111111111111111111111112',
@@ -221,21 +221,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           decimals: 9,
           logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
           balance: solBalance,
-          balanceRaw: holdings.amount
+          balanceRaw: balancesData.native?.amount || '0'
         });
       }
 
-      // Process all token holdings (includes both standard and Token-2022)
-      if (holdings.tokens) {
-        for (const [mintAddress, tokenAccounts] of Object.entries(holdings.tokens)) {
-          // Sum all token accounts for this mint (some tokens may have multiple accounts)
-          const totalBalance = (tokenAccounts as any[]).reduce((sum, acc) => 
-            sum + parseFloat(acc.uiAmount || '0'), 0
-          );
+      // Process all token balances (includes both standard and Token-2022)
+      if (balancesData.tokens && Array.isArray(balancesData.tokens)) {
+        for (const tokenData of balancesData.tokens) {
+          const mintAddress = tokenData.mint;
+          const totalBalance = parseFloat(tokenData.uiAmount || '0');
           
-          if (totalBalance > 0) {
-            const firstAccount = (tokenAccounts as any[])[0];
-            
+          if (totalBalance > 0 && mintAddress) {
             // Fetch metadata from Jupiter
             try {
               const metadataResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`);
@@ -248,14 +244,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (metadata) {
                   tokensWithMetadata.push({
                     address: mintAddress,
-                    symbol: metadata.symbol || 'UNKNOWN',
-                    name: metadata.name || 'Unknown Token',
-                    decimals: firstAccount.decimals,
+                    symbol: metadata.symbol || tokenData.symbol || 'UNKNOWN',
+                    name: metadata.name || tokenData.name || 'Unknown Token',
+                    decimals: tokenData.decimals || 9,
                     logoURI: metadata.icon || '',
                     balance: totalBalance,
-                    balanceRaw: (tokenAccounts as any[]).reduce((sum, acc) => 
-                      sum + BigInt(acc.amount || '0'), BigInt(0)
-                    ).toString()
+                    balanceRaw: tokenData.amount || '0'
                   });
                   continue;
                 }
@@ -264,17 +258,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.error(`Error fetching metadata for ${mintAddress}:`, err);
             }
 
-            // Fallback if metadata not found
+            // Fallback if metadata not found - use data from balances API
             tokensWithMetadata.push({
               address: mintAddress,
-              symbol: 'UNKNOWN',
-              name: 'Unknown Token',
-              decimals: firstAccount.decimals,
+              symbol: tokenData.symbol || 'UNKNOWN',
+              name: tokenData.name || 'Unknown Token',
+              decimals: tokenData.decimals || 9,
               logoURI: '',
               balance: totalBalance,
-              balanceRaw: (tokenAccounts as any[]).reduce((sum, acc) => 
-                sum + BigInt(acc.amount || '0'), BigInt(0)
-              ).toString()
+              balanceRaw: tokenData.amount || '0'
             });
           }
         }
