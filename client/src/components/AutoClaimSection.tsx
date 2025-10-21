@@ -325,47 +325,70 @@ export function AutoClaimSection() {
           </AlertDescription>
         </Alert>
 
-        {/* Action Button */}
-        <div className="flex justify-center">
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-4">
           {!hasActivePermit ? (
-            <Button
-              onClick={() => enableAutoClaimMutation.mutate()}
-              disabled={isProcessing || enableAutoClaimMutation.isPending}
-              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
-              data-testid="button-enable-auto-claim"
-            >
-              {isProcessing || enableAutoClaimMutation.isPending ? (
-                <>
-                  <Clock className="h-5 w-5 mr-2 animate-spin" />
-                  Setting Up Auto-Claim...
-                </>
-              ) : (
-                <>
-                  <Zap className="h-5 w-5 mr-2" />
-                  Enable Auto-Claim (FREE - Relayer Pays!)
-                </>
-              )}
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={() => enableAutoClaimMutation.mutate()}
+                disabled={isProcessing || enableAutoClaimMutation.isPending}
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
+                data-testid="button-enable-auto-claim"
+              >
+                {isProcessing || enableAutoClaimMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Setting Up Auto-Claim...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-5 w-5 mr-2" />
+                    Enable Auto-Claim (Sign Permit Only)
+                  </>
+                )}
+              </Button>
+            </div>
           ) : (
-            <Button
-              onClick={() => revokeAutoClaimMutation.mutate()}
-              disabled={isProcessing || revokeAutoClaimMutation.isPending}
-              variant="destructive"
-              className="px-8 py-6 text-lg"
-              data-testid="button-revoke-auto-claim"
-            >
-              {isProcessing || revokeAutoClaimMutation.isPending ? (
-                <>
-                  <Clock className="h-5 w-5 mr-2 animate-spin" />
-                  Revoking...
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-5 w-5 mr-2" />
-                  Disable Auto-Claim
-                </>
-              )}
-            </Button>
+            <div className="flex justify-center gap-4">
+              <Button
+                onClick={() => delegateAuthorityMutation.mutate()}
+                disabled={isProcessing || delegateAuthorityMutation.isPending}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
+                data-testid="button-delegate-now"
+              >
+                {isProcessing || delegateAuthorityMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Delegating...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-5 w-5 mr-2" />
+                    Delegate Now (FREE!)
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => revokeAutoClaimMutation.mutate()}
+                disabled={isProcessing || revokeAutoClaimMutation.isPending}
+                variant="destructive"
+                className="px-8 py-6 text-lg"
+                data-testid="button-revoke-auto-claim"
+              >
+                {isProcessing || revokeAutoClaimMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Revoking...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                    Disable
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
 
