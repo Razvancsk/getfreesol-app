@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["imagemagick", "pkg-config", "openssl", "libudev-zero", "rustc", "cargo"]
+packages = ["imagemagick", "rustc", "cargo", "pkg-config", "openssl", "libudev-zero"]
 
 [deployment]
 deploymentTarget = "autoscale"

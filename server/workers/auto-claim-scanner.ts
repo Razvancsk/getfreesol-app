@@ -1,7 +1,6 @@
-import { Connection, PublicKey, Keypair } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { storage } from "../storage";
 import { TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
-import bs58 from "bs58";
 
 const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
   ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
@@ -22,22 +21,9 @@ export class AutoClaimScanner {
   private connection: Connection;
   private isRunning: boolean = false;
   private scanInterval: NodeJS.Timeout | null = null;
-  private relayerPublicKey: string | null = null;
 
   constructor() {
     this.connection = new Connection(HELIUS_RPC, "confirmed");
-    
-    // Get relayer public key from private key
-    const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
-    if (relayerPrivateKey) {
-      try {
-        const secretKey = bs58.decode(relayerPrivateKey);
-        const relayerKeypair = Keypair.fromSecretKey(secretKey);
-        this.relayerPublicKey = relayerKeypair.publicKey.toBase58();
-      } catch (error) {
-        console.error("❌ Failed to derive relayer public key");
-      }
-    }
   }
 
   async start(intervalMs: number = 60000) {
@@ -104,37 +90,23 @@ export class AutoClaimScanner {
 
       const emptyAccounts = [];
       let totalRentRecoverable = 0;
-      let skippedNotDelegated = 0;
 
       for (const { pubkey, account } of tokenAccounts.value) {
         const parsedInfo = account.data.parsed.info;
         const balance = parsedInfo.tokenAmount?.uiAmount || 0;
 
         if (balance === 0) {
-          // Normalize close authority (can be string or object with pubkey property)
-          const closeAuthority = parsedInfo.closeAuthority;
-          const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+          const rentLamports = account.lamports;
           
-          // Only include accounts where close authority has been delegated to relayer
-          if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
-            const rentLamports = account.lamports;
-            
-            emptyAccounts.push({
-              address: pubkey.toBase58(),
-              mint: parsedInfo.mint,
-              rentLamports,
-              isToken2022: true
-            });
+          emptyAccounts.push({
+            address: pubkey.toBase58(),
+            mint: parsedInfo.mint,
+            rentLamports,
+            isToken2022: true
+          });
 
-            totalRentRecoverable += rentLamports;
-          } else {
-            skippedNotDelegated++;
-          }
+          totalRentRecoverable += rentLamports;
         }
-      }
-
-      if (skippedNotDelegated > 0) {
-        console.log(`      ⏭️  Skipped ${skippedNotDelegated} account(s) without delegated close authority`);
       }
 
       if (emptyAccounts.length > 0) {
@@ -164,7 +136,7 @@ export class AutoClaimScanner {
     totalRentRecoverable: number
   ) {
     try {
-      const BATCH_SIZE = 15;
+      const BATCH_SIZE = 20;
       const batches = [];
       
       for (let i = 0; i < emptyAccounts.length; i += BATCH_SIZE) {
@@ -188,8 +160,7 @@ export class AutoClaimScanner {
           walletAddress,
           jobType: 'claim_empty_accounts',
           itemsCount: batch.length,
-          estimatedNet: (batchRent / 1e9).toString(),
-          tokenAccounts: JSON.stringify(batch.map(acc => acc.address))
+          estimatedNet: (batchRent / 1e9).toString()
         });
 
         console.log(`      ✅ Created job for ${batch.length} account(s)`);
