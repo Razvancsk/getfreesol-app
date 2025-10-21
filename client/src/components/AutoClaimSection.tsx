@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Zap, CheckCircle, AlertTriangle, Info, Shield, ExternalLink, Clock, Coins } from "lucide-react";
 import { useWallet } from '@solana/wallet-adapter-react';
+import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
 import bs58 from 'bs58';
 
@@ -42,7 +43,7 @@ interface RelayerJob {
 export function AutoClaimSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { publicKey, signMessage, connected } = useWallet();
+  const { publicKey, signMessage, sendTransaction, connected } = useWallet();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const walletAddress = publicKey?.toBase58();
@@ -178,6 +179,67 @@ export function AutoClaimSection() {
     },
   });
 
+  // Delegate Authority mutation
+  const delegateAuthorityMutation = useMutation({
+    mutationFn: async () => {
+      if (!publicKey || !sendTransaction) {
+        throw new Error("Wallet not connected");
+      }
+
+      setIsProcessing(true);
+
+      try {
+        // Get delegation transactions from backend
+        const response = await apiRequest('POST', '/api/auto-claim/delegate-authority', {
+          walletAddress: publicKey.toBase58()
+        });
+
+        if (!response.transactions || response.transactions.length === 0) {
+          throw new Error("No accounts need delegation");
+        }
+
+        // Create connection
+        const rpcEndpoint = import.meta.env.VITE_HELIUS_API_KEY 
+          ? `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`
+          : 'https://api.mainnet-beta.solana.com';
+        const connection = new Connection(rpcEndpoint, 'confirmed');
+
+        // Sign and send all transactions
+        const signatures = [];
+        for (const txBase64 of response.transactions) {
+          // Deserialize transaction
+          const txBuffer = Buffer.from(txBase64, 'base64');
+          const transaction = Transaction.from(txBuffer);
+
+          // Send transaction
+          const signature = await sendTransaction(transaction, connection);
+          signatures.push(signature);
+
+          // Wait for confirmation
+          await connection.confirmTransaction(signature, 'confirmed');
+        }
+
+        return { ...response, signatures };
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Authority Delegated!",
+        description: `Delegated ${data.accountsCount} account(s). Auto-claim will start automatically.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to Delegate Authority",
+        description: error.message || "Please try again",
+      });
+    },
+  });
+
   if (!connected || !walletAddress) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto">
@@ -238,47 +300,80 @@ export function AutoClaimSection() {
           </AlertDescription>
         </Alert>
 
-        {/* Action Button */}
-        <div className="flex justify-center">
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-4">
           {!hasActivePermit ? (
-            <Button
-              onClick={() => enableAutoClaimMutation.mutate()}
-              disabled={isProcessing || enableAutoClaimMutation.isPending}
-              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
-              data-testid="button-enable-auto-claim"
-            >
-              {isProcessing || enableAutoClaimMutation.isPending ? (
-                <>
-                  <Clock className="h-5 w-5 mr-2 animate-spin" />
-                  Signing Permit...
-                </>
-              ) : (
-                <>
-                  <Zap className="h-5 w-5 mr-2" />
-                  Enable Auto-Claim
-                </>
-              )}
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                onClick={() => enableAutoClaimMutation.mutate()}
+                disabled={isProcessing || enableAutoClaimMutation.isPending}
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg"
+                data-testid="button-enable-auto-claim"
+              >
+                {isProcessing || enableAutoClaimMutation.isPending ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 animate-spin" />
+                    Signing Permit...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-5 w-5 mr-2" />
+                    Enable Auto-Claim
+                  </>
+                )}
+              </Button>
+            </div>
           ) : (
-            <Button
-              onClick={() => revokeAutoClaimMutation.mutate()}
-              disabled={isProcessing || revokeAutoClaimMutation.isPending}
-              variant="destructive"
-              className="px-8 py-6 text-lg"
-              data-testid="button-revoke-auto-claim"
-            >
-              {isProcessing || revokeAutoClaimMutation.isPending ? (
-                <>
-                  <Clock className="h-5 w-5 mr-2 animate-spin" />
-                  Revoking...
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-5 w-5 mr-2" />
-                  Disable Auto-Claim
-                </>
-              )}
-            </Button>
+            <>
+              {/* Step 2: Delegate Authority */}
+              <Alert className="bg-blue-900/40 border-blue-500/30">
+                <Info className="h-4 w-4 text-blue-400" />
+                <AlertDescription className="text-blue-100">
+                  <strong>Step 2 Required:</strong> Click "Delegate Authority" to give the relayer permission to close your empty accounts. This is a one-time transaction.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="flex justify-center gap-4">
+                <Button
+                  onClick={() => delegateAuthorityMutation.mutate()}
+                  disabled={isProcessing || delegateAuthorityMutation.isPending}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg"
+                  data-testid="button-delegate-authority"
+                >
+                  {isProcessing || delegateAuthorityMutation.isPending ? (
+                    <>
+                      <Clock className="h-5 w-5 mr-2 animate-spin" />
+                      Delegating...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-5 w-5 mr-2" />
+                      Delegate Authority
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  onClick={() => revokeAutoClaimMutation.mutate()}
+                  disabled={isProcessing || revokeAutoClaimMutation.isPending}
+                  variant="outline"
+                  className="px-8 py-6 text-lg border-red-500/30 hover:bg-red-900/20"
+                  data-testid="button-revoke-auto-claim"
+                >
+                  {isProcessing || revokeAutoClaimMutation.isPending ? (
+                    <>
+                      <Clock className="h-5 w-5 mr-2 animate-spin" />
+                      Revoking...
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-5 w-5 mr-2" />
+                      Disable
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
           )}
         </div>
 
