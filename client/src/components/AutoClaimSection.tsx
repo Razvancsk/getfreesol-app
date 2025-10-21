@@ -144,6 +144,7 @@ export function AutoClaimSection() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/permit/status', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/jobs', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-claim/pending-delegations', walletAddress] });
     },
     onError: (error: any) => {
       toast({
