@@ -251,7 +251,7 @@ export function AutoClaimSection() {
           const transaction = Transaction.from(txBuffer);
 
           console.log('🔵 Sending transaction to wallet...');
-          // Send transaction (don't wait for confirmation - scanner will detect it)
+          // Send transaction and WAIT for confirmation
           const signature = await sendTransaction(transaction, connection, {
             skipPreflight: false,
             preflightCommitment: 'confirmed'
@@ -259,10 +259,13 @@ export function AutoClaimSection() {
           console.log(`✅ Transaction sent! Signature: ${signature}`);
           signatures.push(signature);
           
-          // Don't wait for confirmation - scanner detects delegated accounts automatically
+          // CRITICAL: Wait for on-chain confirmation so authority is actually delegated
+          console.log('⏳ Waiting for confirmation...');
+          await connection.confirmTransaction(signature, 'confirmed');
+          console.log(`✅ Transaction confirmed! Authority delegated on-chain.`);
         }
 
-        console.log(`🎉 All ${signatures.length} transactions completed!`);
+        console.log(`🎉 All ${signatures.length} transactions confirmed!`);
         return { ...response, signatures };
       } catch (error: any) {
         console.error('❌ Delegation error:', error);
