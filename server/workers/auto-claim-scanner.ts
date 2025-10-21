@@ -97,8 +97,8 @@ export class AutoClaimScanner {
       const walletPubkey = new PublicKey(walletAddress);
       
       const emptyAccounts = [];
+      const undelegatedAccounts = [];
       let totalRentRecoverable = 0;
-      let skippedNotDelegated = 0;
       let totalAccounts = 0;
 
       // Scan BOTH standard SPL tokens AND Token-2022
@@ -123,11 +123,10 @@ export class AutoClaimScanner {
             // Normalize close authority (can be string or object with pubkey property)
             const closeAuthority = parsedInfo.closeAuthority;
             const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+            const rentLamports = account.lamports;
             
-            // Only include accounts where close authority has been delegated to relayer
+            // Check if close authority has been delegated to relayer
             if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
-              const rentLamports = account.lamports;
-              
               emptyAccounts.push({
                 address: pubkey.toBase58(),
                 mint: parsedInfo.mint,
@@ -138,7 +137,30 @@ export class AutoClaimScanner {
 
               totalRentRecoverable += rentLamports;
             } else {
-              skippedNotDelegated++;
+              // Track undelegated empty accounts for notification
+              undelegatedAccounts.push({
+                accountAddress: pubkey.toBase58(),
+                mintAddress: parsedInfo.mint,
+                rentLamports: (rentLamports / 1e9).toString(),
+                programId: program.id.toBase58()
+              });
+            }
+          }
+        }
+      }
+
+      // Save undelegated empty accounts to pending_delegations table
+      if (undelegatedAccounts.length > 0) {
+        for (const account of undelegatedAccounts) {
+          try {
+            await storage.createPendingDelegation({
+              walletAddress,
+              ...account
+            });
+          } catch (error: any) {
+            // Ignore duplicate key errors (account already in pending_delegations)
+            if (!error?.message?.includes('duplicate') && !error?.message?.includes('unique')) {
+              console.error(`      ⚠️  Failed to save pending delegation:`, error?.message || String(error));
             }
           }
         }
@@ -146,8 +168,8 @@ export class AutoClaimScanner {
 
       console.log(`      Found ${totalAccounts} token account(s) (SPL + Token-2022)`)
 
-      if (skippedNotDelegated > 0) {
-        console.log(`      ⏭️  Skipped ${skippedNotDelegated} account(s) without delegated close authority`);
+      if (undelegatedAccounts.length > 0) {
+        console.log(`      📋 Found ${undelegatedAccounts.length} empty account(s) awaiting delegation`);
       }
 
       if (emptyAccounts.length > 0) {

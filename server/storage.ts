@@ -25,6 +25,8 @@ import {
   type InsertRelayerJob,
   type RelayerCost,
   type InsertRelayerCost,
+  type PendingDelegation,
+  type InsertPendingDelegation,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -37,7 +39,8 @@ import {
   walletReferralAssociations,
   autoClaimPermits,
   relayerJobs,
-  relayerCosts
+  relayerCosts,
+  pendingDelegations
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -120,6 +123,12 @@ export interface IStorage {
   createRelayerCost(cost: InsertRelayerCost): Promise<RelayerCost>;
   getRelayerCostsByWallet(walletAddress: string, limit?: number): Promise<RelayerCost[]>;
   getTotalRelayerCosts(): Promise<{ totalSpent: number; totalRecovered: number; netProfit: number }>;
+  
+  // Pending Delegations
+  createPendingDelegation(delegation: InsertPendingDelegation): Promise<PendingDelegation>;
+  getPendingDelegationsByWallet(walletAddress: string): Promise<PendingDelegation[]>;
+  updatePendingDelegationStatus(accountAddress: string, status: string): Promise<void>;
+  clearDelegatedPendingDelegations(accountAddresses: string[]): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -643,6 +652,55 @@ export class DatabaseStorage implements IStorage {
       totalRecovered,
       netProfit: totalFees - totalSpent
     };
+  }
+
+  // Pending Delegations
+  async createPendingDelegation(delegation: InsertPendingDelegation): Promise<PendingDelegation> {
+    const [pendingDelegation] = await db
+      .insert(pendingDelegations)
+      .values(delegation)
+      .returning();
+    return pendingDelegation;
+  }
+
+  async getPendingDelegationsByWallet(walletAddress: string): Promise<PendingDelegation[]> {
+    return await db
+      .select()
+      .from(pendingDelegations)
+      .where(
+        and(
+          eq(pendingDelegations.walletAddress, walletAddress),
+          eq(pendingDelegations.status, 'pending')
+        )
+      )
+      .orderBy(desc(pendingDelegations.createdAt));
+  }
+
+  async updatePendingDelegationStatus(accountAddress: string, status: string): Promise<void> {
+    const updateData: any = { status };
+    if (status === 'delegated') updateData.delegatedAt = new Date();
+    
+    await db
+      .update(pendingDelegations)
+      .set(updateData)
+      .where(eq(pendingDelegations.accountAddress, accountAddress));
+  }
+
+  async clearDelegatedPendingDelegations(accountAddresses: string[]): Promise<void> {
+    if (accountAddresses.length === 0) return;
+    
+    await db
+      .update(pendingDelegations)
+      .set({ 
+        status: 'delegated',
+        delegatedAt: new Date()
+      })
+      .where(
+        and(
+          sql`${pendingDelegations.accountAddress} = ANY(${accountAddresses})`,
+          eq(pendingDelegations.status, 'pending')
+        )
+      );
   }
 }
 
