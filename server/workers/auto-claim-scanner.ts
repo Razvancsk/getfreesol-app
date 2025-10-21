@@ -180,7 +180,7 @@ export class AutoClaimScanner {
     totalRentRecoverable: number
   ) {
     try {
-      const BATCH_SIZE = 15;
+      const BATCH_SIZE = 1; // Step-by-step: process one account at a time
       const batches = [];
       
       for (let i = 0; i < emptyAccounts.length; i += BATCH_SIZE) {
