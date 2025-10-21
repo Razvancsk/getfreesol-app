@@ -4411,36 +4411,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : "https://api.mainnet-beta.solana.com";
       const connection = new Connection(heliusRpc, "confirmed");
 
-      // Get user's Token-2022 accounts
+      // Get user's token accounts (BOTH SPL and Token-2022)
       const userPubkey = new PublicKey(walletAddress);
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        userPubkey,
-        { programId: TOKEN_2022_PROGRAM_ID }
-      );
+      const accountsNeedingDelegation: Array<{address: string; mint: string; programId: PublicKey}> = [];
+      
+      // Scan both programs
+      const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
+      let totalAccounts = 0;
+      
+      for (const programId of programIds) {
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+          userPubkey,
+          { programId }
+        );
 
-      console.log(`📋 Found ${tokenAccounts.value.length} Token-2022 accounts for ${walletAddress.slice(0, 8)}...`);
+        totalAccounts += tokenAccounts.value.length;
 
-      // Filter for empty accounts that need delegation
-      const accountsNeedingDelegation = [];
-      for (const { pubkey, account } of tokenAccounts.value) {
-        const parsedInfo = account.data.parsed.info;
-        const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+        // Filter for empty accounts that need delegation
+        for (const { pubkey, account } of tokenAccounts.value) {
+          const parsedInfo = account.data.parsed.info;
+          const balance = parsedInfo.tokenAmount?.uiAmount || 0;
 
-        // Only delegate empty accounts
-        if (balance === 0) {
-          // Normalize close authority (can be string or object with pubkey property)
-          const closeAuthority = parsedInfo.closeAuthority;
-          const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
-          
-          // Only delegate if close authority is still the user (or not set)
-          if (!closeAuthorityPubkey || closeAuthorityPubkey === walletAddress) {
-            accountsNeedingDelegation.push({
-              address: pubkey.toBase58(),
-              mint: parsedInfo.mint
-            });
+          // Only delegate empty accounts
+          if (balance === 0) {
+            // Normalize close authority (can be string or object with pubkey property)
+            const closeAuthority = parsedInfo.closeAuthority;
+            const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
+            
+            // Only delegate if close authority is still the user (or not set)
+            if (!closeAuthorityPubkey || closeAuthorityPubkey === walletAddress) {
+              accountsNeedingDelegation.push({
+                address: pubkey.toBase58(),
+                mint: parsedInfo.mint,
+                programId  // Store which program owns this account
+              });
+            }
           }
         }
       }
+
+      console.log(`📋 Found ${totalAccounts} token accounts (SPL + Token-2022) for ${walletAddress.slice(0, 8)}...`);
 
       console.log(`🔑 Found ${accountsNeedingDelegation.length} accounts needing delegation`);
 
@@ -4470,7 +4480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             AuthorityType.CloseAccount,              // Authority type
             new PublicKey(relayerPublicKey),         // New authority (relayer)
             [],                                      // No multisig
-            TOKEN_2022_PROGRAM_ID                    // Token-2022 program
+            account.programId                        // Use correct program for this account
           );
           
           transaction.add(setAuthorityIx);

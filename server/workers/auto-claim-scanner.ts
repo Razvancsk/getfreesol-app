@@ -1,6 +1,6 @@
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { storage } from "../storage";
-import { TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAccount as getTokenAccount } from "@solana/spl-token";
 import bs58 from "bs58";
 
 const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
@@ -95,43 +95,55 @@ export class AutoClaimScanner {
       
       const walletPubkey = new PublicKey(walletAddress);
       
-      const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-        walletPubkey,
-        { programId: TOKEN_2022_PROGRAM_ID }
-      );
-
-      console.log(`      Found ${tokenAccounts.value.length} Token-2022 account(s)`);
-
       const emptyAccounts = [];
       let totalRentRecoverable = 0;
       let skippedNotDelegated = 0;
+      let totalAccounts = 0;
 
-      for (const { pubkey, account } of tokenAccounts.value) {
-        const parsedInfo = account.data.parsed.info;
-        const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+      // Scan BOTH standard SPL tokens AND Token-2022
+      const programIds = [
+        { id: TOKEN_PROGRAM_ID, name: 'SPL Token' },
+        { id: TOKEN_2022_PROGRAM_ID, name: 'Token-2022' }
+      ];
 
-        if (balance === 0) {
-          // Normalize close authority (can be string or object with pubkey property)
-          const closeAuthority = parsedInfo.closeAuthority;
-          const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
-          
-          // Only include accounts where close authority has been delegated to relayer
-          if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
-            const rentLamports = account.lamports;
+      for (const program of programIds) {
+        const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+          walletPubkey,
+          { programId: program.id }
+        );
+
+        totalAccounts += tokenAccounts.value.length;
+
+        for (const { pubkey, account } of tokenAccounts.value) {
+          const parsedInfo = account.data.parsed.info;
+          const balance = parsedInfo.tokenAmount?.uiAmount || 0;
+
+          if (balance === 0) {
+            // Normalize close authority (can be string or object with pubkey property)
+            const closeAuthority = parsedInfo.closeAuthority;
+            const closeAuthorityPubkey = closeAuthority?.pubkey ?? closeAuthority;
             
-            emptyAccounts.push({
-              address: pubkey.toBase58(),
-              mint: parsedInfo.mint,
-              rentLamports,
-              isToken2022: true
-            });
+            // Only include accounts where close authority has been delegated to relayer
+            if (this.relayerPublicKey && closeAuthorityPubkey === this.relayerPublicKey) {
+              const rentLamports = account.lamports;
+              
+              emptyAccounts.push({
+                address: pubkey.toBase58(),
+                mint: parsedInfo.mint,
+                rentLamports,
+                isToken2022: program.id.equals(TOKEN_2022_PROGRAM_ID),
+                programId: program.id.toBase58()
+              });
 
-            totalRentRecoverable += rentLamports;
-          } else {
-            skippedNotDelegated++;
+              totalRentRecoverable += rentLamports;
+            } else {
+              skippedNotDelegated++;
+            }
           }
         }
       }
+
+      console.log(`      Found ${totalAccounts} token account(s) (SPL + Token-2022)`)
 
       if (skippedNotDelegated > 0) {
         console.log(`      ⏭️  Skipped ${skippedNotDelegated} account(s) without delegated close authority`);
@@ -189,7 +201,10 @@ export class AutoClaimScanner {
           jobType: 'claim_empty_accounts',
           itemsCount: batch.length,
           estimatedNet: (batchRent / 1e9).toString(),
-          tokenAccounts: JSON.stringify(batch.map(acc => acc.address))
+          tokenAccounts: JSON.stringify(batch.map(acc => ({
+            address: acc.address,
+            programId: acc.programId
+          })))
         });
 
         console.log(`      ✅ Created job for ${batch.length} account(s)`);
