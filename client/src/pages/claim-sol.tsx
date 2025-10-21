@@ -2610,7 +2610,7 @@ export default function SolRefund() {
                 {tokenList.map((token, index) => (
                   <div 
                     key={index} 
-                    className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${
+                    className={`relative flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${
                       selectedTokens.has(token.mint)
                         ? 'bg-gradient-to-r from-red-900/40 to-pink-900/40 border-2 border-red-500' 
                         : 'bg-purple-900/40 border-2 border-purple-700/50 hover:border-purple-600/60'
@@ -2662,10 +2662,10 @@ export default function SolRefund() {
                       </div>
                     </div>
 
-                    {/* "MARKED FOR BURN" Badge */}
+                    {/* "MARKED FOR BURN" Badge - TOP RIGHT */}
                     {selectedTokens.has(token.mint) && (
-                      <div className="flex-shrink-0">
-                        <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-md pointer-events-none">
+                      <div className="absolute top-2 right-2">
+                        <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-md pointer-events-none whitespace-nowrap">
                           MARKED FOR BURN
                         </div>
                       </div>
