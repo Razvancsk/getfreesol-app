@@ -2104,6 +2104,7 @@ export default function SolRefund() {
             body: JSON.stringify({
               signature,
               walletAddress: data.walletAddress,
+              selectedAccounts: data.selectedAccounts, // Account addresses that were closed
               accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
               solRecovered: totalSolReclaimed,
               netAmount: netAmount,

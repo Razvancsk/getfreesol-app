@@ -307,7 +307,10 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(emptyTokenAccounts)
-      .where(eq(emptyTokenAccounts.walletAddress, walletAddress));
+      .where(and(
+        eq(emptyTokenAccounts.walletAddress, walletAddress),
+        eq(emptyTokenAccounts.claimed, false)
+      ));
   }
 
   async markAccountsAsClaimed(accountAddresses: string[]): Promise<void> {

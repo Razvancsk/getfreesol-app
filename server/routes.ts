@@ -751,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Record successful transaction
   app.post("/api/sol-refund/record-success", async (req, res) => {
     try {
-      const { signature, walletAddress, accountsClosed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount } = req.body;
+      const { signature, walletAddress, selectedAccounts, accountsClosed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount } = req.body;
 
       // Validate required fields
       if (!signature || !walletAddress || !accountsClosed || !solRecovered) {
@@ -765,6 +765,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true, 
           message: `Successfully processed ${accountsClosed} accounts and recovered ${netAmount.toFixed(6)} SOL!`
         });
+      }
+      
+      // Mark accounts as claimed in the database
+      if (selectedAccounts && Array.isArray(selectedAccounts) && selectedAccounts.length > 0) {
+        await storage.markAccountsAsClaimed(selectedAccounts);
       }
 
       // Record transaction (legacy)
