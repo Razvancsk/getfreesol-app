@@ -543,6 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const connection = new Connection(rpcUrl, 'confirmed');
 
       // Verify selected accounts exist on blockchain and get fresh data
+      console.log(`🔍 Verifying ${selectedAccounts.length} selected accounts on blockchain...`);
       const accountsToClose = [];
       let totalRecoveredLamports = 0;
       const accountInfos = [];
@@ -553,20 +554,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const accountInfo = await connection.getAccountInfo(accountPublicKey);
           
           if (accountInfo) {
+            console.log(`✅ Account ${accountAddress.substring(0, 8)}... exists with ${accountInfo.lamports} lamports`);
             totalRecoveredLamports += accountInfo.lamports;
             accountInfos.push({ 
               accountAddress,
               lamports: accountInfo.lamports 
             });
             accountsToClose.push({ accountAddress });
+          } else {
+            console.log(`❌ Account ${accountAddress.substring(0, 8)}... does NOT exist on blockchain (already closed or invalid)`);
           }
         } catch (error) {
-          console.log(`Error getting account info for ${accountAddress}:`, error);
+          console.log(`⚠️ Error getting account info for ${accountAddress.substring(0, 8)}...:`, error);
         }
       }
       
+      console.log(`📊 Found ${accountsToClose.length} valid accounts to close out of ${selectedAccounts.length} selected`);
+      
       if (accountsToClose.length === 0) {
-        return res.status(400).json({ error: "No valid accounts to close" });
+        return res.status(400).json({ error: "No valid accounts to close - all selected accounts are already closed or don't exist" });
       }
 
       // Create transaction to close token accounts
