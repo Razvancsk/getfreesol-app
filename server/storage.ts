@@ -296,7 +296,9 @@ export class DatabaseStorage implements IStorage {
           tokenName: account.tokenName,
           rentAmount: account.rentAmount,
           balance: account.balance,
-          decimals: account.decimals
+          decimals: account.decimals,
+          scannedAt: sql`NOW()`,
+          claimed: sql`CASE WHEN ${emptyTokenAccounts.claimed} = true THEN true ELSE false END`
         }
       })
       .returning();
@@ -314,10 +316,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markAccountsAsClaimed(accountAddresses: string[]): Promise<void> {
+    if (accountAddresses.length === 0) return;
+    
     await db
       .update(emptyTokenAccounts)
       .set({ claimed: true })
-      .where(sql`${emptyTokenAccounts.accountAddress} = ANY(${accountAddresses})`);
+      .where(sql`${emptyTokenAccounts.accountAddress} = ANY(ARRAY[${sql.join(accountAddresses.map(addr => sql`${addr}`), sql`, `)}])`);
   }
 
   // Scan Results
