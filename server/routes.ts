@@ -534,17 +534,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Get empty accounts from storage
-      const emptyAccounts = await storage.getEmptyTokenAccountsByWallet(walletAddress);
-      const selectedAccountsSet = new Set(selectedAccounts);
-      const accountsToClose = emptyAccounts.filter(account => 
-        selectedAccountsSet.has(account.accountAddress)
-      );
-
-      if (accountsToClose.length === 0) {
-        return res.status(400).json({ error: "No valid accounts to close" });
-      }
-
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusApiKey ? 
@@ -553,25 +542,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const connection = new Connection(rpcUrl, 'confirmed');
 
-      // Read actual account lamports for precise calculations
+      // Verify selected accounts exist on blockchain and get fresh data
+      const accountsToClose = [];
       let totalRecoveredLamports = 0;
       const accountInfos = [];
       
-      for (const account of accountsToClose) {
+      for (const accountAddress of selectedAccounts) {
         try {
-          const accountPublicKey = new PublicKey(account.accountAddress);
+          const accountPublicKey = new PublicKey(accountAddress);
           const accountInfo = await connection.getAccountInfo(accountPublicKey);
+          
           if (accountInfo) {
             totalRecoveredLamports += accountInfo.lamports;
-            accountInfos.push({ ...account, lamports: accountInfo.lamports });
+            accountInfos.push({ 
+              accountAddress,
+              lamports: accountInfo.lamports 
+            });
+            accountsToClose.push({ accountAddress });
           }
         } catch (error) {
-          console.log(`Error getting account info for ${account.accountAddress}:`, error);
-          // Fallback to stored rent amount
-          const fallbackLamports = Math.round(parseFloat(account.rentAmount) * 1e9);
-          totalRecoveredLamports += fallbackLamports;
-          accountInfos.push({ ...account, lamports: fallbackLamports });
+          console.log(`Error getting account info for ${accountAddress}:`, error);
         }
+      }
+      
+      if (accountsToClose.length === 0) {
+        return res.status(400).json({ error: "No valid accounts to close" });
       }
 
       // Create transaction to close token accounts

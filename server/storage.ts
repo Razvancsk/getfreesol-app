@@ -298,7 +298,7 @@ export class DatabaseStorage implements IStorage {
           balance: account.balance,
           decimals: account.decimals,
           scannedAt: sql`NOW()`,
-          claimed: sql`CASE WHEN ${emptyTokenAccounts.claimed} = true THEN true ELSE false END`
+          claimed: false
         }
       })
       .returning();
