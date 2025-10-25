@@ -393,63 +393,31 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           calculatedNetworkFee = 0.00003;
         }
       } else {
-        // Jupiter didn't provide transaction data - use Legacy API to simulate and get real fee
-        try {
-          console.log('🔄 Fetching real network fee via Jupiter Legacy simulation...');
-          const feeResponse = await fetch(
-            `/api/jupiter/legacy/get-fee?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&taker=${publicKey?.toBase58()}&slippageBps=50`
-          );
-          
-          if (feeResponse.ok) {
-            const feeData = await feeResponse.json();
-            
-            if (feeData.transaction && feeData.transaction.length > 0) {
-              // Parse the simulated transaction
-              const { VersionedTransaction } = await import('@solana/web3.js');
-              const txBuffer = Buffer.from(feeData.transaction, 'base64');
-              const tx = VersionedTransaction.deserialize(txBuffer);
-              
-              const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
-              let computeUnitPrice = 0;
-              let computeUnitLimit = 200000;
-              
-              for (let i = 0; i < tx.message.compiledInstructions.length; i++) {
-                const instruction = tx.message.compiledInstructions[i];
-                const programId = tx.message.staticAccountKeys[instruction.programIdIndex];
-                
-                if (programId.toBase58() === COMPUTE_BUDGET_PROGRAM) {
-                  const data = instruction.data;
-                  
-                  if (data.length >= 9 && data[0] === 3) {
-                    const view = new DataView(data.buffer, data.byteOffset + 1, 8);
-                    computeUnitPrice = Number(view.getBigUint64(0, true));
-                  } else if (data.length >= 5 && data[0] === 2) {
-                    const view = new DataView(data.buffer, data.byteOffset + 1, 4);
-                    computeUnitLimit = view.getUint32(0, true);
-                  }
-                }
-              }
-              
-              const priorityFeeLamports = Math.ceil((computeUnitPrice * computeUnitLimit) / 1_000_000);
-              const baseFee = 5000;
-              calculatedNetworkFee = (baseFee + priorityFeeLamports) / 1e9;
-              
-              console.log('✅ Real network fee from Legacy simulation:', {
-                computeUnitPrice,
-                computeUnitLimit,
-                priorityFeeLamports,
-                networkFeeSOL: calculatedNetworkFee.toFixed(6)
-              });
-            } else {
-              calculatedNetworkFee = 0.000035;
-            }
-          } else {
-            calculatedNetworkFee = 0.000035;
-          }
-        } catch (error) {
-          console.error('Failed to get real network fee:', error);
-          calculatedNetworkFee = 0.000035;
+        // Jupiter Ultra doesn't provide transaction data
+        // Estimate network fee based on swap complexity
+        const routeSteps = orderData.routePlan?.length || 1;
+        
+        // Base fee: 5000 lamports (0.000005 SOL)
+        // Priority fee varies by route complexity:
+        // - Simple swap (1-2 steps): ~50,000 lamports total
+        // - Complex swap (3+ steps): ~100,000-150,000 lamports total
+        let estimatedFeeLamports;
+        
+        if (routeSteps === 1) {
+          estimatedFeeLamports = 50000; // 0.00005 SOL for direct swaps
+        } else if (routeSteps === 2) {
+          estimatedFeeLamports = 75000; // 0.000075 SOL for 2-hop swaps
+        } else {
+          estimatedFeeLamports = 100000; // 0.0001 SOL for complex multi-hop swaps
         }
+        
+        calculatedNetworkFee = estimatedFeeLamports / 1e9;
+        
+        console.log('📊 Estimated network fee:', {
+          routeSteps,
+          estimatedFeeLamports,
+          networkFeeSOL: calculatedNetworkFee.toFixed(6)
+        });
       }
       
       setQuote(orderData);
