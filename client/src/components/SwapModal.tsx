@@ -234,6 +234,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
+  const [networkFee, setNetworkFee] = useState<number>(0);
 
   // Fetch token balances and metadata
   useEffect(() => {
@@ -318,8 +319,57 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         throw new Error('No swap route available. Try a larger amount or different token pair.');
       }
       
+      // Extract network fee from transaction
+      let calculatedNetworkFee = 0.000154; // Default fallback
+      if (orderData.transaction) {
+        try {
+          const { VersionedTransaction } = await import('@solana/web3.js');
+          const transactionBuf = Buffer.from(orderData.transaction, 'base64');
+          const tx = VersionedTransaction.deserialize(transactionBuf);
+          
+          // Get compute budget instructions to calculate fee
+          const computeBudgetProgram = 'ComputeBudget111111111111111111111111111111';
+          let computeUnitPrice = 0;
+          let computeUnitLimit = 200000; // Default
+          
+          for (const instruction of tx.message.compiledInstructions) {
+            const programId = tx.message.staticAccountKeys[instruction.programIdIndex];
+            if (programId.toString() === computeBudgetProgram) {
+              // Parse compute budget instruction
+              const data = instruction.data;
+              if (data[0] === 3) { // SetComputeUnitPrice
+                computeUnitPrice = Number(
+                  BigInt('0x' + Buffer.from(data.slice(1, 9)).reverse().toString('hex'))
+                );
+              } else if (data[0] === 2) { // SetComputeUnitLimit
+                computeUnitLimit = Number(
+                  BigInt('0x' + Buffer.from(data.slice(1, 5)).reverse().toString('hex'))
+                );
+              }
+            }
+          }
+          
+          // Calculate fee: (computeUnitPrice * computeUnitLimit) / 1e6 / 1e9
+          if (computeUnitPrice > 0) {
+            calculatedNetworkFee = (computeUnitPrice * computeUnitLimit) / 1e6 / 1e9;
+          }
+          
+          // Add base transaction fee (5000 lamports = 0.000005 SOL)
+          calculatedNetworkFee += 0.000005;
+          
+          console.log('📊 Network fee calculated:', {
+            computeUnitPrice,
+            computeUnitLimit,
+            networkFee: calculatedNetworkFee
+          });
+        } catch (error) {
+          console.error('Error parsing transaction for fee:', error);
+        }
+      }
+      
       setQuote(orderData);
       setQuoteTimestamp(Date.now()); // Track when quote was received
+      setNetworkFee(calculatedNetworkFee);
       
       const outAmount = parseFloat(orderData.outAmount) / Math.pow(10, toToken.decimals);
       setToAmount(outAmount.toFixed(6));
@@ -653,9 +703,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-purple-300">Network Fee</span>
                 <span className="text-white font-medium" data-testid="text-network-fee">
-                  {quote.computeUnitPrice 
-                    ? ((quote.computeUnitPrice * (quote.computeUnitLimit || 200000)) / 1e9).toFixed(6)
-                    : '0.000154'} SOL
+                  {networkFee.toFixed(6)} SOL
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
