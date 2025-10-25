@@ -675,13 +675,6 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
               Getting quote...
             </div>
           )}
-          
-          {isLoadingQuote && quote && (
-            <div className="text-center text-xs text-purple-400 py-1">
-              <RefreshCw className="h-3 w-3 animate-spin inline mr-1" />
-              Updating price...
-            </div>
-          )}
 
           {/* Fee Display Section */}
           {quote && (
