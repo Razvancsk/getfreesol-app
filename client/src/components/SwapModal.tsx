@@ -397,7 +397,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         try {
           console.log('🔄 Fetching real network fee via Jupiter Legacy simulation...');
           const feeResponse = await fetch(
-            `/api/jupiter/legacy/get-fee?inputMint=${selectedToken?.address}&outputMint=${receiveToken?.address}&amount=${inputAmount}&taker=${publicKey?.toBase58()}&slippageBps=50`
+            `/api/jupiter/legacy/get-fee?inputMint=${fromToken.address}&outputMint=${toToken.address}&amount=${inputAmount}&taker=${publicKey?.toBase58()}&slippageBps=50`
           );
           
           if (feeResponse.ok) {
