@@ -236,17 +236,17 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
   const [networkFee, setNetworkFee] = useState<number>(0);
 
-  // Auto-refresh quote every 30 seconds
+  // Auto-refresh quote every 10 seconds for live price updates
   useEffect(() => {
-    if (!quote || !fromAmount || parseFloat(fromAmount) <= 0) return;
+    if (!quote || !fromAmount || parseFloat(fromAmount) <= 0 || !open) return;
 
     const refreshInterval = setInterval(() => {
-      console.log('🔄 Auto-refreshing quote...');
+      console.log('🔄 Auto-refreshing quote for live prices...');
       getQuote(fromAmount);
-    }, 30000); // Refresh every 30 seconds
+    }, 10000); // Refresh every 10 seconds for live prices
 
     return () => clearInterval(refreshInterval);
-  }, [quote, fromAmount]);
+  }, [quote, fromAmount, open, fromToken, toToken]);
 
   // Fetch token balances and metadata
   useEffect(() => {
@@ -681,10 +681,17 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
             </div>
           </div>
 
-          {isLoadingQuote && (
+          {isLoadingQuote && !quote && (
             <div className="text-center text-sm text-purple-300 py-2">
               <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
               Getting quote...
+            </div>
+          )}
+          
+          {isLoadingQuote && quote && (
+            <div className="text-center text-xs text-purple-400 py-1">
+              <RefreshCw className="h-3 w-3 animate-spin inline mr-1" />
+              Updating price...
             </div>
           )}
 
