@@ -331,32 +331,70 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         throw new Error('No swap route available. Try a larger amount or different token pair.');
       }
       
-      // Extract network fee directly from Jupiter's response
-      const signatureFeeLamports = orderData.signatureFeeLamports || 0;
-      const prioritizationFeeLamports = orderData.prioritizationFeeLamports || 0;
-      const rentFeeLamports = orderData.rentFeeLamports || 0;
+      // Extract network fee from the actual transaction
+      let calculatedNetworkFee = 0;
       
-      // Total network fee in SOL
-      const totalFeeLamports = signatureFeeLamports + prioritizationFeeLamports + rentFeeLamports;
-      let calculatedNetworkFee = totalFeeLamports / 1e9;
-      
-      // If Jupiter doesn't provide fee data, estimate based on current network conditions
-      // Typical Solana transaction: 5000 lamports base + priority fee
-      // Jupiter swaps usually have ~100k-300k compute units with current priority fees around 1000-10000 micro-lamports
-      if (calculatedNetworkFee === 0) {
-        // Estimate: Base fee (5000) + Priority fee (200000 CU * 5000 micro-lamports / 1M = 1000 lamports)
-        // Total: ~6000-15000 lamports = 0.000006-0.000015 SOL
-        // Use conservative estimate of 0.00001 SOL for swaps
+      if (orderData.transaction) {
+        try {
+          // Parse the transaction to extract real compute budget instructions
+          const { VersionedTransaction, PublicKey } = await import('@solana/web3.js');
+          const txBuffer = Buffer.from(orderData.transaction, 'base64');
+          const tx = VersionedTransaction.deserialize(txBuffer);
+          
+          const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
+          let computeUnitPrice = 0; // micro-lamports per compute unit
+          let computeUnitLimit = 200000; // default
+          
+          // Parse each instruction looking for compute budget instructions
+          for (let i = 0; i < tx.message.compiledInstructions.length; i++) {
+            const instruction = tx.message.compiledInstructions[i];
+            const programIdIndex = instruction.programIdIndex;
+            const programId = tx.message.staticAccountKeys[programIdIndex];
+            
+            if (programId.toBase58() === COMPUTE_BUDGET_PROGRAM) {
+              const data = instruction.data;
+              
+              // Instruction type 3 = SetComputeUnitPrice
+              if (data.length >= 9 && data[0] === 3) {
+                // Read 8 bytes as little-endian uint64
+                const view = new DataView(data.buffer, data.byteOffset + 1, 8);
+                computeUnitPrice = Number(view.getBigUint64(0, true)); // micro-lamports
+              }
+              // Instruction type 2 = SetComputeUnitLimit  
+              else if (data.length >= 5 && data[0] === 2) {
+                // Read 4 bytes as little-endian uint32
+                const view = new DataView(data.buffer, data.byteOffset + 1, 4);
+                computeUnitLimit = view.getUint32(0, true);
+              }
+            }
+          }
+          
+          // Calculate priority fee: (computeUnitPrice in micro-lamports * computeUnitLimit) / 1,000,000
+          const priorityFeeLamports = Math.ceil((computeUnitPrice * computeUnitLimit) / 1_000_000);
+          
+          // Add base transaction fee (5000 lamports)
+          const baseFee = 5000;
+          const totalFeeLamports = baseFee + priorityFeeLamports;
+          
+          calculatedNetworkFee = totalFeeLamports / 1e9; // Convert to SOL
+          
+          console.log('📊 Live network fee extracted from transaction:', {
+            computeUnitPrice,
+            computeUnitLimit,
+            priorityFeeLamports,
+            baseFee,
+            totalFeeLamports,
+            networkFeeSOL: calculatedNetworkFee.toFixed(6)
+          });
+        } catch (error) {
+          console.error('Error parsing transaction for fee:', error);
+          // Fallback to conservative estimate
+          calculatedNetworkFee = 0.00001;
+        }
+      } else {
+        // No transaction available, use estimate
         calculatedNetworkFee = 0.00001;
       }
-      
-      console.log('📊 Network fee from Jupiter:', {
-        signatureFeeLamports,
-        prioritizationFeeLamports,
-        rentFeeLamports,
-        totalFeeLamports,
-        networkFeeSOL: calculatedNetworkFee
-      });
       
       setQuote(orderData);
       setQuoteTimestamp(Date.now()); // Track when quote was received
