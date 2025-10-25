@@ -647,6 +647,24 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
             </div>
           )}
 
+          {/* Fee Display Section */}
+          {quote && (
+            <div className="space-y-2 bg-purple-950/30 border border-purple-500/20 rounded-lg p-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-purple-300">Network Fee</span>
+                <span className="text-white font-medium" data-testid="text-network-fee">
+                  {quote.computeUnitPrice 
+                    ? ((quote.computeUnitPrice * (quote.computeUnitLimit || 200000)) / 1e9).toFixed(6)
+                    : '0.000154'} SOL
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-purple-300">Platform Fee</span>
+                <span className="text-white font-medium" data-testid="text-platform-fee">0.50%</span>
+              </div>
+            </div>
+          )}
+
           <Button
             onClick={handleSwap}
             disabled={!publicKey || !quote || isSwapping || isLoadingQuote}
