@@ -334,7 +334,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       // Extract network fee from the actual transaction
       let calculatedNetworkFee = 0;
       
-      if (orderData.transaction) {
+      if (orderData.transaction && orderData.transaction.length > 0) {
         try {
           // Parse the transaction to extract real compute budget instructions
           const { VersionedTransaction, PublicKey } = await import('@solana/web3.js');
@@ -388,12 +388,68 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
           });
         } catch (error) {
           console.error('Error parsing transaction for fee:', error);
-          // Fallback to conservative estimate
-          calculatedNetworkFee = 0.00001;
+          // Fallback to estimate based on typical Jupiter swap complexity
+          // Most swaps: 5000 (base) + ~10000-50000 (priority) = 0.000015-0.000055 SOL
+          calculatedNetworkFee = 0.00003;
         }
       } else {
-        // No transaction available, use estimate
-        calculatedNetworkFee = 0.00001;
+        // Jupiter didn't provide transaction data - use Legacy API to simulate and get real fee
+        try {
+          console.log('🔄 Fetching real network fee via Jupiter Legacy simulation...');
+          const feeResponse = await fetch(
+            `/api/jupiter/legacy/get-fee?inputMint=${selectedToken?.address}&outputMint=${receiveToken?.address}&amount=${inputAmount}&taker=${publicKey?.toBase58()}&slippageBps=50`
+          );
+          
+          if (feeResponse.ok) {
+            const feeData = await feeResponse.json();
+            
+            if (feeData.transaction && feeData.transaction.length > 0) {
+              // Parse the simulated transaction
+              const { VersionedTransaction } = await import('@solana/web3.js');
+              const txBuffer = Buffer.from(feeData.transaction, 'base64');
+              const tx = VersionedTransaction.deserialize(txBuffer);
+              
+              const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
+              let computeUnitPrice = 0;
+              let computeUnitLimit = 200000;
+              
+              for (let i = 0; i < tx.message.compiledInstructions.length; i++) {
+                const instruction = tx.message.compiledInstructions[i];
+                const programId = tx.message.staticAccountKeys[instruction.programIdIndex];
+                
+                if (programId.toBase58() === COMPUTE_BUDGET_PROGRAM) {
+                  const data = instruction.data;
+                  
+                  if (data.length >= 9 && data[0] === 3) {
+                    const view = new DataView(data.buffer, data.byteOffset + 1, 8);
+                    computeUnitPrice = Number(view.getBigUint64(0, true));
+                  } else if (data.length >= 5 && data[0] === 2) {
+                    const view = new DataView(data.buffer, data.byteOffset + 1, 4);
+                    computeUnitLimit = view.getUint32(0, true);
+                  }
+                }
+              }
+              
+              const priorityFeeLamports = Math.ceil((computeUnitPrice * computeUnitLimit) / 1_000_000);
+              const baseFee = 5000;
+              calculatedNetworkFee = (baseFee + priorityFeeLamports) / 1e9;
+              
+              console.log('✅ Real network fee from Legacy simulation:', {
+                computeUnitPrice,
+                computeUnitLimit,
+                priorityFeeLamports,
+                networkFeeSOL: calculatedNetworkFee.toFixed(6)
+              });
+            } else {
+              calculatedNetworkFee = 0.000035;
+            }
+          } else {
+            calculatedNetworkFee = 0.000035;
+          }
+        } catch (error) {
+          console.error('Failed to get real network fee:', error);
+          calculatedNetworkFee = 0.000035;
+        }
       }
       
       setQuote(orderData);

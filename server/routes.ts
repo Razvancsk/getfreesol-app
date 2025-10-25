@@ -144,6 +144,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter Legacy API - Get real network fee by simulating transaction
+  app.get('/api/jupiter/legacy/get-fee', async (req, res) => {
+    try {
+      const { inputMint, outputMint, amount, taker, slippageBps } = req.query;
+
+      // Call Jupiter v6 quote API
+      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps || 50}`;
+      const quoteResponse = await fetch(quoteUrl);
+      
+      if (!quoteResponse.ok) {
+        return res.status(500).json({ error: 'Failed to get quote from Jupiter' });
+      }
+
+      const quoteData = await quoteResponse.json();
+
+      // Call Jupiter v6 swap API to get transaction with compute budget
+      const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteResponse: quoteData,
+          userPublicKey: taker,
+          wrapAndUnwrapSol: true,
+          computeUnitPriceMicroLamports: 'auto',
+        })
+      });
+
+      if (!swapResponse.ok) {
+        return res.status(500).json({ error: 'Failed to simulate swap' });
+      }
+
+      const swapData = await swapResponse.json();
+      
+      // Return the transaction for frontend parsing
+      res.json({
+        success: true,
+        transaction: swapData.swapTransaction,
+        prioritizationFeeLamports: swapData.prioritizationFeeLamports || 0,
+      });
+    } catch (error: any) {
+      console.error('Jupiter Legacy fee simulation error:', error);
+      res.status(500).json({ error: 'Failed to get network fee' });
+    }
+  });
+
   // Jupiter Ultra Swap - Execute Order endpoint (replaces send-transaction)
   app.post("/api/jupiter/ultra/execute", async (req, res) => {
     try {
