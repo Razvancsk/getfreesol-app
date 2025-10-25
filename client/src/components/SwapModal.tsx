@@ -331,94 +331,20 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         throw new Error('No swap route available. Try a larger amount or different token pair.');
       }
       
-      // Extract network fee from the actual transaction
-      let calculatedNetworkFee = 0;
+      // Jupiter Ultra API returns real network fee values directly
+      const signatureFeeLamports = orderData.signatureFeeLamports || 5000;
+      const prioritizationFeeLamports = orderData.prioritizationFeeLamports || 0;
       
-      if (orderData.transaction && orderData.transaction.length > 0) {
-        try {
-          // Parse the transaction to extract real compute budget instructions
-          const { VersionedTransaction, PublicKey } = await import('@solana/web3.js');
-          const txBuffer = Buffer.from(orderData.transaction, 'base64');
-          const tx = VersionedTransaction.deserialize(txBuffer);
-          
-          const COMPUTE_BUDGET_PROGRAM = 'ComputeBudget111111111111111111111111111111';
-          let computeUnitPrice = 0; // micro-lamports per compute unit
-          let computeUnitLimit = 200000; // default
-          
-          // Parse each instruction looking for compute budget instructions
-          for (let i = 0; i < tx.message.compiledInstructions.length; i++) {
-            const instruction = tx.message.compiledInstructions[i];
-            const programIdIndex = instruction.programIdIndex;
-            const programId = tx.message.staticAccountKeys[programIdIndex];
-            
-            if (programId.toBase58() === COMPUTE_BUDGET_PROGRAM) {
-              const data = instruction.data;
-              
-              // Instruction type 3 = SetComputeUnitPrice
-              if (data.length >= 9 && data[0] === 3) {
-                // Read 8 bytes as little-endian uint64
-                const view = new DataView(data.buffer, data.byteOffset + 1, 8);
-                computeUnitPrice = Number(view.getBigUint64(0, true)); // micro-lamports
-              }
-              // Instruction type 2 = SetComputeUnitLimit  
-              else if (data.length >= 5 && data[0] === 2) {
-                // Read 4 bytes as little-endian uint32
-                const view = new DataView(data.buffer, data.byteOffset + 1, 4);
-                computeUnitLimit = view.getUint32(0, true);
-              }
-            }
-          }
-          
-          // Calculate priority fee: (computeUnitPrice in micro-lamports * computeUnitLimit) / 1,000,000
-          const priorityFeeLamports = Math.ceil((computeUnitPrice * computeUnitLimit) / 1_000_000);
-          
-          // Add base transaction fee (5000 lamports)
-          const baseFee = 5000;
-          const totalFeeLamports = baseFee + priorityFeeLamports;
-          
-          calculatedNetworkFee = totalFeeLamports / 1e9; // Convert to SOL
-          
-          console.log('📊 Live network fee extracted from transaction:', {
-            computeUnitPrice,
-            computeUnitLimit,
-            priorityFeeLamports,
-            baseFee,
-            totalFeeLamports,
-            networkFeeSOL: calculatedNetworkFee.toFixed(6)
-          });
-        } catch (error) {
-          console.error('Error parsing transaction for fee:', error);
-          // Fallback to estimate based on typical Jupiter swap complexity
-          // Most swaps: 5000 (base) + ~10000-50000 (priority) = 0.000015-0.000055 SOL
-          calculatedNetworkFee = 0.00003;
-        }
-      } else {
-        // Jupiter Ultra doesn't provide transaction data
-        // Estimate network fee based on swap complexity
-        const routeSteps = orderData.routePlan?.length || 1;
-        
-        // Base fee: 5000 lamports (0.000005 SOL)
-        // Priority fee varies by route complexity:
-        // - Simple swap (1-2 steps): ~50,000 lamports total
-        // - Complex swap (3+ steps): ~100,000-150,000 lamports total
-        let estimatedFeeLamports;
-        
-        if (routeSteps === 1) {
-          estimatedFeeLamports = 50000; // 0.00005 SOL for direct swaps
-        } else if (routeSteps === 2) {
-          estimatedFeeLamports = 75000; // 0.000075 SOL for 2-hop swaps
-        } else {
-          estimatedFeeLamports = 100000; // 0.0001 SOL for complex multi-hop swaps
-        }
-        
-        calculatedNetworkFee = estimatedFeeLamports / 1e9;
-        
-        console.log('📊 Estimated network fee:', {
-          routeSteps,
-          estimatedFeeLamports,
-          networkFeeSOL: calculatedNetworkFee.toFixed(6)
-        });
-      }
+      // Total network fee
+      const transactionFeeLamports = signatureFeeLamports + prioritizationFeeLamports;
+      const calculatedNetworkFee = transactionFeeLamports / 1e9; // Convert to SOL
+      
+      console.log('✅ Real network fee from Jupiter:', {
+        signatureFeeLamports,
+        prioritizationFeeLamports,
+        transactionFeeLamports,
+        networkFeeSOL: calculatedNetworkFee.toFixed(6)
+      });
       
       setQuote(orderData);
       setQuoteTimestamp(Date.now()); // Track when quote was received
