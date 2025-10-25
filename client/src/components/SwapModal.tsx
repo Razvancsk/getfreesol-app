@@ -236,6 +236,18 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
   const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
   const [networkFee, setNetworkFee] = useState<number>(0);
 
+  // Auto-refresh quote every 30 seconds
+  useEffect(() => {
+    if (!quote || !fromAmount || parseFloat(fromAmount) <= 0) return;
+
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing quote...');
+      getQuote(fromAmount);
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [quote, fromAmount]);
+
   // Fetch token balances and metadata
   useEffect(() => {
     if (!publicKey || !open) return;
@@ -326,22 +338,29 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       
       // Total network fee in SOL
       const totalFeeLamports = signatureFeeLamports + prioritizationFeeLamports + rentFeeLamports;
-      const calculatedNetworkFee = totalFeeLamports / 1e9;
+      let calculatedNetworkFee = totalFeeLamports / 1e9;
       
-      // If Jupiter doesn't provide fee data, use default estimate
-      const finalNetworkFee = calculatedNetworkFee > 0 ? calculatedNetworkFee : 0.000005;
+      // If Jupiter doesn't provide fee data, estimate based on current network conditions
+      // Typical Solana transaction: 5000 lamports base + priority fee
+      // Jupiter swaps usually have ~100k-300k compute units with current priority fees around 1000-10000 micro-lamports
+      if (calculatedNetworkFee === 0) {
+        // Estimate: Base fee (5000) + Priority fee (200000 CU * 5000 micro-lamports / 1M = 1000 lamports)
+        // Total: ~6000-15000 lamports = 0.000006-0.000015 SOL
+        // Use conservative estimate of 0.00001 SOL for swaps
+        calculatedNetworkFee = 0.00001;
+      }
       
       console.log('📊 Network fee from Jupiter:', {
         signatureFeeLamports,
         prioritizationFeeLamports,
         rentFeeLamports,
         totalFeeLamports,
-        networkFeeSOL: finalNetworkFee
+        networkFeeSOL: calculatedNetworkFee
       });
       
       setQuote(orderData);
       setQuoteTimestamp(Date.now()); // Track when quote was received
-      setNetworkFee(finalNetworkFee);
+      setNetworkFee(calculatedNetworkFee);
       
       const outAmount = parseFloat(orderData.outAmount) / Math.pow(10, toToken.decimals);
       setToAmount(outAmount.toFixed(6));
