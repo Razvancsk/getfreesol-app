@@ -3341,11 +3341,11 @@ export default function SolRefund() {
           <div className="flex items-center justify-center space-x-3">
             <img 
               src={logoImage}
-              alt="Get Free Sol"
+              alt="@getfreesol_xyz"
               className="h-8 w-8"
             />
             <div className="text-center">
-              <div className="text-white font-semibold text-lg">Get Free Sol</div>
+              <div className="text-white font-semibold text-lg">@getfreesol_xyz</div>
               <div className="text-purple-300 text-sm">2025 All rights reserved</div>
             </div>
           </div>
