@@ -299,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (metadataResponse.ok) {
                 const searchResults = await metadataResponse.json();
                 const metadata = Array.isArray(searchResults) 
-                  ? searchResults.find((t: any) => t.id === mintAddress)
+                  ? searchResults.find((t: any) => t.address === mintAddress)
                   : null;
                 
                 if (metadata) {
@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     symbol: metadata.symbol || 'UNKNOWN',
                     name: metadata.name || 'Unknown Token',
                     decimals: firstAccount.decimals,
-                    logoURI: metadata.icon || '',
+                    logoURI: metadata.logoURI || '',
                     balance: totalBalance,
                     balanceRaw: (tokenAccounts as any[]).reduce((sum, acc) => 
                       sum + BigInt(acc.amount || '0'), BigInt(0)
@@ -1653,6 +1653,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             token.usdPrice = 0;
             token.usdValue = 0;
           });
+        }
+      }
+
+      // Fetch logos from Jupiter Tokens API V2 for tokens without logos
+      if (tokens.length > 0) {
+        const tokensWithoutLogos = tokens.filter(t => !t.logo);
+        if (tokensWithoutLogos.length > 0) {
+          console.log(`🔍 Fetching logos for ${tokensWithoutLogos.length} tokens without logos from Jupiter Tokens API V2`);
+          
+          for (const token of tokensWithoutLogos) {
+            try {
+              const searchResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${token.mint}`);
+              if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                if (searchData && searchData.length > 0) {
+                  const tokenData = searchData.find((t: any) => t.address === token.mint);
+                  if (tokenData && tokenData.logoURI) {
+                    token.logo = tokenData.logoURI;
+                    console.log(`🖼️  Found logo for ${token.symbol}: ${tokenData.logoURI}`);
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching logo for ${token.symbol}:`, err);
+            }
+          }
         }
       }
 
