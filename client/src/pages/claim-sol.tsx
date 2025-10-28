@@ -32,6 +32,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction } from '@solana/web3.js';
 import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
+import { BurnConfirmationDialog } from '@/components/BurnConfirmationDialog';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 
@@ -98,6 +99,11 @@ export default function SolRefund() {
   // Share modal state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
+  
+  // Burn confirmation dialog state
+  const [isBurnConfirmOpen, setIsBurnConfirmOpen] = useState(false);
+  const [pendingBurnTokens, setPendingBurnTokens] = useState<string[]>([]);
+  const [pendingBurnType, setPendingBurnType] = useState<'tokens' | 'nfts'>('tokens');
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -2249,6 +2255,47 @@ export default function SolRefund() {
 
   const refundCalc = calculateRefund();
 
+  // Handle burn confirmation
+  const handleConfirmBurn = () => {
+    if (pendingBurnType === 'tokens') {
+      bulkBurnTokensMutation.mutate(pendingBurnTokens);
+    } else {
+      burnNftsMutation.mutate(pendingBurnTokens);
+    }
+  };
+
+  // Get token details for burn confirmation dialog
+  const getBurnDetails = () => {
+    if (pendingBurnType === 'tokens') {
+      const tokenDetails = tokenList
+        .filter(token => pendingBurnTokens.includes(token.mint))
+        .map(token => ({ 
+          symbol: token.symbol, 
+          name: token.name,
+          uiAmount: token.balance
+        }));
+      return {
+        count: pendingBurnTokens.length,
+        estimatedSOL: calculateTotalSOL(pendingBurnTokens.length),
+        details: tokenDetails
+      };
+    } else {
+      const nftDetails = nftData?.nfts
+        ?.filter((nft: any) => pendingBurnTokens.includes(nft.mint || nft.id || nft.assetId))
+        .map((nft: any) => ({ 
+          symbol: nft.content?.metadata?.symbol || 'NFT', 
+          name: nft.content?.metadata?.name || 'Unknown NFT',
+          uiAmount: 1 // NFTs are quantity of 1
+        })) || [];
+      return {
+        count: pendingBurnTokens.length,
+        estimatedSOL: (pendingBurnTokens.length * 0.008).toFixed(3), // Rough estimate for NFTs
+        details: nftDetails
+      };
+    }
+  };
+
+  const burnDetails = getBurnDetails();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -2704,7 +2751,11 @@ export default function SolRefund() {
 
                 {/* Burn Button */}
                 <Button
-                  onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                  onClick={() => {
+                    setPendingBurnTokens(Array.from(selectedTokens));
+                    setPendingBurnType('tokens');
+                    setIsBurnConfirmOpen(true);
+                  }}
                   disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   data-testid="button-burn-selected-tokens"
@@ -2945,22 +2996,9 @@ export default function SolRefund() {
                           return;
                         }
 
-                        const selectedIds = Array.from(selectedNfts);
-                        const selectedNftData = nftData.nfts.filter((nft: any) => 
-                          selectedIds.includes(nft.mint || nft.id || nft.assetId)
-                        );
-                        
-                        // Group by type and burn
-                        const nftsByType: { [key: string]: any[] } = {};
-                        selectedNftData.forEach((nft: any) => {
-                          if (!nftsByType[nft.type]) {
-                            nftsByType[nft.type] = [];
-                          }
-                          nftsByType[nft.type].push(nft);
-                        });
-
-                        // Call burn mutation with selected NFT IDs
-                        burnNftsMutation.mutate(selectedIds);
+                        setPendingBurnTokens(Array.from(selectedNfts));
+                        setPendingBurnType('nfts');
+                        setIsBurnConfirmOpen(true);
                       }}
                       disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
                       className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -3366,6 +3404,16 @@ export default function SolRefund() {
           referralCode={userReferralCode}
         />
       )}
+
+      {/* Burn Confirmation Dialog */}
+      <BurnConfirmationDialog
+        open={isBurnConfirmOpen}
+        onOpenChange={setIsBurnConfirmOpen}
+        onConfirm={handleConfirmBurn}
+        tokenCount={burnDetails.count}
+        estimatedSOL={burnDetails.estimatedSOL}
+        tokenDetails={burnDetails.details}
+      />
 
       {/* Floating Swap Toggle Button */}
       <button
