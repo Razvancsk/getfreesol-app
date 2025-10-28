@@ -2658,13 +2658,15 @@ export default function SolRefund() {
                       <div className="text-sm text-purple-200">
                         Balance: {token.balance.toLocaleString()} {token.symbol || ''}
                       </div>
-                      {token.usdPrice && token.usdPrice > 0 && (
-                        <div className="text-sm text-green-400 font-medium">
-                          ${token.usdValue.toFixed(2)}
-                        </div>
-                      )}
-                      <div className="text-xs text-purple-300 font-mono truncate">
-                        {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
+                      <div className="flex items-center gap-2">
+                        {token.usdPrice && token.usdPrice > 0 && (
+                          <span className="text-sm text-green-400 font-medium">
+                            ${token.usdValue.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="text-xs text-purple-300 font-mono truncate">
+                          {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
+                        </span>
                       </div>
                     </div>
 
