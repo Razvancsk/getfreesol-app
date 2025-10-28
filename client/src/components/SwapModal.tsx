@@ -21,6 +21,8 @@ interface TokenInfo {
   name: string;
   decimals: number;
   logoURI?: string;
+  usdPrice?: number;
+  usdValue?: number;
 }
 
 const POPULAR_TOKENS: TokenInfo[] = [
@@ -204,7 +206,11 @@ function TokenSelector({
                       </div>
                       <div className="text-right">
                         <div className="text-white font-medium">{balance.toFixed(4)}</div>
-                        <div className="text-xs text-purple-300/60 font-mono">{t.address.slice(0, 8)}...{t.address.slice(-8)}</div>
+                        {t.usdPrice && t.usdPrice > 0 && (
+                          <div className="text-sm text-green-400 font-medium">
+                            ${(balance * t.usdPrice).toFixed(2)}
+                          </div>
+                        )}
                       </div>
                     </button>
                   );

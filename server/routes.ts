@@ -266,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: holdings.error });
       }
 
-      const tokensWithMetadata = [];
+      const tokensWithMetadata: any[] = [];
 
       // Add native SOL if balance > 0
       const solBalance = parseFloat(holdings.uiAmount || '0');
@@ -334,6 +334,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ).toString()
             });
           }
+        }
+      }
+
+      // Fetch USD prices for all tokens
+      if (tokensWithMetadata.length > 0) {
+        try {
+          const mintAddresses = tokensWithMetadata.map(t => t.address).join(',');
+          const priceResponse = await fetch(`https://api.jup.ag/price/v2?ids=${mintAddresses}`);
+          
+          if (priceResponse.ok) {
+            const priceData = await priceResponse.json();
+            
+            // Add USD price to each token
+            tokensWithMetadata.forEach(token => {
+              const priceInfo = priceData.data?.[token.address];
+              if (priceInfo) {
+                token.usdPrice = priceInfo.price;
+                token.usdValue = token.balance * priceInfo.price;
+              } else {
+                token.usdPrice = 0;
+                token.usdValue = 0;
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching USD prices:', err);
+          // If price fetch fails, set default values
+          tokensWithMetadata.forEach(token => {
+            token.usdPrice = 0;
+            token.usdValue = 0;
+          });
         }
       }
 
