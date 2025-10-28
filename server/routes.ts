@@ -1623,6 +1623,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Failed to fetch tokens from Helius API" });
       }
 
+      // Fetch USD prices for all tokens
+      if (tokens.length > 0) {
+        try {
+          const mintAddresses = tokens.map(t => t.mint).join(',');
+          const priceResponse = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mintAddresses}`);
+          
+          if (priceResponse.ok) {
+            const priceData = await priceResponse.json();
+            
+            // Add USD price to each token
+            tokens.forEach(token => {
+              const priceInfo = priceData.data?.[token.mint];
+              if (priceInfo) {
+                token.usdPrice = priceInfo.price;
+                token.usdValue = token.balance * priceInfo.price;
+              } else {
+                token.usdPrice = 0;
+                token.usdValue = 0;
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching USD prices:', err);
+          // If price fetch fails, set default values
+          tokens.forEach(token => {
+            token.usdPrice = 0;
+            token.usdValue = 0;
+          });
+        }
+      }
+
       // No fallback - only use Helius DAS API results
       console.log(`Final token count: ${tokens.length}`);
 
