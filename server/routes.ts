@@ -348,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Add USD price to each token
             tokensWithMetadata.forEach(token => {
-              const priceInfo = priceData.data?.[token.address];
+              const priceInfo = priceData[token.address];
               if (priceInfo && priceInfo.usdPrice) {
                 token.usdPrice = priceInfo.usdPrice;
                 token.usdValue = token.balance * priceInfo.usdPrice;
@@ -1635,7 +1635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Add USD price to each token
             tokens.forEach(token => {
-              const priceInfo = priceData.data?.[token.mint];
+              const priceInfo = priceData[token.mint];
               if (priceInfo && priceInfo.usdPrice) {
                 token.usdPrice = priceInfo.usdPrice;
                 token.usdValue = token.balance * priceInfo.usdPrice;
