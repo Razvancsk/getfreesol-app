@@ -337,11 +337,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fetch USD prices for all tokens
+      // Fetch USD prices for all tokens using Jupiter v3 API
       if (tokensWithMetadata.length > 0) {
         try {
           const mintAddresses = tokensWithMetadata.map(t => t.address).join(',');
-          const priceResponse = await fetch(`https://api.jup.ag/price/v2?ids=${mintAddresses}`);
+          const priceResponse = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mintAddresses}`);
           
           if (priceResponse.ok) {
             const priceData = await priceResponse.json();
@@ -349,9 +349,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Add USD price to each token
             tokensWithMetadata.forEach(token => {
               const priceInfo = priceData.data?.[token.address];
-              if (priceInfo) {
-                token.usdPrice = priceInfo.price;
-                token.usdValue = token.balance * priceInfo.price;
+              if (priceInfo && priceInfo.usdPrice) {
+                token.usdPrice = priceInfo.usdPrice;
+                token.usdValue = token.balance * priceInfo.usdPrice;
               } else {
                 token.usdPrice = 0;
                 token.usdValue = 0;
@@ -1631,13 +1631,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (priceResponse.ok) {
             const priceData = await priceResponse.json();
+            console.log('💰 Jupiter price response:', JSON.stringify(priceData, null, 2));
             
             // Add USD price to each token
             tokens.forEach(token => {
               const priceInfo = priceData.data?.[token.mint];
-              if (priceInfo) {
-                token.usdPrice = priceInfo.price;
-                token.usdValue = token.balance * priceInfo.price;
+              if (priceInfo && priceInfo.usdPrice) {
+                token.usdPrice = priceInfo.usdPrice;
+                token.usdValue = token.balance * priceInfo.usdPrice;
+                console.log(`💵 ${token.symbol}: $${priceInfo.usdPrice} × ${token.balance} = $${token.usdValue.toFixed(2)}`);
               } else {
                 token.usdPrice = 0;
                 token.usdValue = 0;
