@@ -1587,96 +1587,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return null;
             }
 
-            // Helper function to convert IPFS URLs to Cloudflare gateway for better reliability
-            function convertIpfsUrl(url: string | null): string | null {
-              if (!url) return null;
-              
-              // Convert ipfs:// protocol to https://
-              if (url.startsWith('ipfs://')) {
-                const hash = url.replace('ipfs://', '');
-                return `https://cloudflare-ipfs.com/ipfs/${hash}`;
-              }
-              
-              // Convert ipfs.io gateway to Cloudflare gateway (more reliable)
-              if (url.includes('ipfs.io/ipfs/')) {
-                return url.replace('ipfs.io/ipfs/', 'cloudflare-ipfs.com/ipfs/');
-              }
-              
-              // Convert gateway.pinata.cloud to Cloudflare gateway
-              if (url.includes('gateway.pinata.cloud/ipfs/')) {
-                return url.replace('gateway.pinata.cloud/ipfs/', 'cloudflare-ipfs.com/ipfs/');
-              }
-              
-              return url;
-            }
-
-            // Process tokens and fetch logos (always try Jupiter as fallback for IPFS)
+            // Process tokens and fetch logos from Jupiter API ONLY
             const tokenPromises = burnableTokens.map(async (asset: any) => {
               const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
               const isEmpty = balance === 0;
               
-              // First, always try to fetch Jupiter logo as it's more reliable
-              let jupiterLogo = await fetchJupiterLogo(asset.id);
-              // Convert IPFS URLs to Cloudflare gateway
-              jupiterLogo = convertIpfsUrl(jupiterLogo);
+              // Fetch logo from Jupiter API V2 ONLY
+              const logo = await fetchJupiterLogo(asset.id);
               
-              let logo = null;
-              let selectedPriority = 'None';
-              
-              // Check if we have Helius URLs
-              let heliusCdnUri = asset.content?.files?.[0]?.cdn_uri;
-              let heliusOriginalUri = asset.content?.files?.[0]?.uri;
-              let heliusMetadataImage = asset.content?.metadata?.image;
-              
-              // Convert all IPFS URLs to Cloudflare gateway
-              heliusCdnUri = convertIpfsUrl(heliusCdnUri);
-              heliusOriginalUri = convertIpfsUrl(heliusOriginalUri);
-              heliusMetadataImage = convertIpfsUrl(heliusMetadataImage);
-              
-              // Priority logic: Prefer Jupiter over IPFS links (which are often slow/broken)
-              // Priority 1: Jupiter API (most reliable)
-              if (jupiterLogo) {
-                logo = jupiterLogo;
-                selectedPriority = 'Jupiter API V2';
-                console.log(`✅ Using Jupiter logo for ${asset.content?.metadata?.symbol}: ${logo}`);
-              }
-              // Priority 2: Helius CDN URL (only if not IPFS)
-              else if (heliusCdnUri && !heliusCdnUri.includes('ipfs')) {
-                logo = heliusCdnUri;
-                selectedPriority = 'CDN (non-IPFS)';
-              }
-              // Priority 3: Original URI (only if not IPFS)
-              else if (heliusOriginalUri && !heliusOriginalUri.includes('ipfs')) {
-                logo = heliusOriginalUri;
-                selectedPriority = 'Original (non-IPFS)';
-              }
-              // Priority 4: Metadata image (only if not IPFS)
-              else if (heliusMetadataImage && !heliusMetadataImage.includes('ipfs')) {
-                logo = heliusMetadataImage;
-                selectedPriority = 'Metadata (non-IPFS)';
-              }
-              // Priority 5: Fallback to IPFS URLs if nothing else available (now using Cloudflare gateway)
-              else if (heliusCdnUri) {
-                logo = heliusCdnUri;
-                selectedPriority = 'CDN (IPFS via Cloudflare)';
-              }
-              else if (heliusOriginalUri) {
-                logo = heliusOriginalUri;
-                selectedPriority = 'Original (IPFS via Cloudflare)';
-              }
-              else if (heliusMetadataImage) {
-                logo = heliusMetadataImage;
-                selectedPriority = 'Metadata (IPFS via Cloudflare)';
-              }
-              
-              console.log(`🖼️  Token ${asset.content?.metadata?.symbol || 'Unknown'} logo data:`, {
+              console.log(`🖼️ Token ${asset.content?.metadata?.symbol || 'Unknown'}:`, {
                 mint: asset.id,
-                jupiterLogo: jupiterLogo,
-                heliusCdnUri: heliusCdnUri,
-                heliusOriginalUri: heliusOriginalUri,
-                heliusMetadataImage: heliusMetadataImage,
-                finalLogo: logo,
-                selectedPriority: selectedPriority
+                logo: logo,
+                source: logo ? 'Jupiter API V2' : 'No logo found'
               });
               
               return {
