@@ -96,6 +96,7 @@ export default function SolRefund() {
   // Mass transfer states
   const [massTransferTokens, setMassTransferTokens] = useState<any[]>([]);
   const [selectedTransferTokens, setSelectedTransferTokens] = useState<Set<string>>(new Set());
+  const [tokenAmounts, setTokenAmounts] = useState<Map<string, number>>(new Map());
   const [destinationWallet, setDestinationWallet] = useState<string>('');
   const [loadingTransferTokens, setLoadingTransferTokens] = useState(false);
   
@@ -3495,46 +3496,118 @@ export default function SolRefund() {
                     {/* Token Selection List */}
                     <div className="border border-purple-500/30 rounded-lg p-4 bg-purple-900/20 max-h-96 overflow-y-auto">
                       {massTransferTokens.length > 0 ? (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {massTransferTokens.map((token, index) => {
                             const isSelected = selectedTransferTokens.has(token.mint);
+                            const currentAmount = tokenAmounts.get(token.mint) || token.balance;
                             return (
                               <div
                                 key={token.mint}
-                                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                                className={`p-3 rounded-lg transition-all ${
                                   isSelected
                                     ? 'bg-purple-600/40 border-2 border-purple-500'
-                                    : 'bg-purple-900/20 border border-purple-700/50 hover:border-purple-600/60'
+                                    : 'bg-purple-900/20 border border-purple-700/50'
                                 }`}
-                                onClick={() => {
-                                  const newSelection = new Set(selectedTransferTokens);
-                                  if (isSelected) {
-                                    newSelection.delete(token.mint);
-                                  } else {
-                                    newSelection.add(token.mint);
-                                  }
-                                  setSelectedTransferTokens(newSelection);
-                                }}
                                 data-testid={`token-transfer-${index}`}
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  readOnly
-                                  className="w-4 h-4"
-                                />
-                                {token.logo && (
-                                  <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                                <div className="flex items-center gap-3 mb-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      const newSelection = new Set(selectedTransferTokens);
+                                      if (isSelected) {
+                                        newSelection.delete(token.mint);
+                                      } else {
+                                        newSelection.add(token.mint);
+                                        // Initialize with max amount
+                                        setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance));
+                                      }
+                                      setSelectedTransferTokens(newSelection);
+                                    }}
+                                    className="w-4 h-4 cursor-pointer"
+                                  />
+                                  {token.logo && (
+                                    <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="text-white font-medium">{token.symbol || 'Unknown'}</div>
+                                    <div className="text-purple-300 text-sm">{token.name || token.mint.slice(0, 8) + '...'}</div>
+                                    <div className="text-purple-400 text-xs font-mono mt-1">{token.mint}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-white font-medium">Balance: {token.balance.toFixed(token.decimals > 4 ? 4 : token.decimals)}</div>
+                                    <div className="text-purple-300 text-sm">{token.decimals} decimals</div>
+                                  </div>
+                                </div>
+                                
+                                {isSelected && (
+                                  <div className="ml-7 space-y-2">
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        value={currentAmount}
+                                        onChange={(e) => {
+                                          const value = parseFloat(e.target.value) || 0;
+                                          const clamped = Math.min(Math.max(0, value), token.balance);
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, clamped));
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        step={1 / Math.pow(10, token.decimals)}
+                                        max={token.balance}
+                                        className="flex-1 bg-purple-900/30 border-purple-500/30 text-white"
+                                        data-testid={`input-amount-${index}`}
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance * 0.25));
+                                        }}
+                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
+                                      >
+                                        25%
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance * 0.5));
+                                        }}
+                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
+                                      >
+                                        50%
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance * 0.75));
+                                        }}
+                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
+                                      >
+                                        75%
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance));
+                                        }}
+                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
+                                      >
+                                        Max
+                                      </Button>
+                                    </div>
+                                  </div>
                                 )}
-                                <div className="flex-1">
-                                  <div className="text-white font-medium">{token.symbol || 'Unknown'}</div>
-                                  <div className="text-purple-300 text-sm">{token.name || token.mint.slice(0, 8) + '...'}</div>
-                                  <div className="text-purple-400 text-xs font-mono mt-1">{token.mint}</div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-white font-medium">{token.balance.toFixed(token.decimals > 4 ? 4 : token.decimals)}</div>
-                                  <div className="text-purple-300 text-sm">{token.decimals} decimals</div>
-                                </div>
                               </div>
                             );
                           })}
@@ -3595,6 +3668,10 @@ export default function SolRefund() {
                             const token = massTransferTokens.find(t => t.mint === mintAddress);
                             if (!token) continue;
                             
+                            // Get the custom amount or use full balance
+                            const transferAmount = tokenAmounts.get(mintAddress) || token.balance;
+                            if (transferAmount <= 0) continue;
+                            
                             const mintPubkey = new PublicKey(mintAddress);
                             const programId = token.accounts[0].programId === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' 
                               ? TOKEN_2022_PROGRAM_ID 
@@ -3603,6 +3680,9 @@ export default function SolRefund() {
                             // Get source token account (prefer ATA)
                             const sourceAccount = token.accounts.find((acc: any) => acc.isAssociatedTokenAccount) || token.accounts[0];
                             const sourceAccountPubkey = new PublicKey(sourceAccount.address);
+                            
+                            // Convert UI amount to raw amount (multiply by 10^decimals)
+                            const rawAmount = BigInt(Math.floor(transferAmount * Math.pow(10, token.decimals)));
                             
                             // Get or create destination ATA
                             const destTokenAccount = await getAssociatedTokenAddress(
@@ -3627,12 +3707,12 @@ export default function SolRefund() {
                               transaction.add(createIx);
                             }
                             
-                            // Add transfer instruction
+                            // Add transfer instruction with custom amount
                             const transferIx = createTransferInstruction(
                               sourceAccountPubkey,
                               destTokenAccount,
                               wallet.publicKey!,
-                              BigInt(sourceAccount.amount),
+                              rawAmount,
                               [],
                               programId
                             );
