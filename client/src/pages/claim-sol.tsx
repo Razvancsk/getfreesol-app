@@ -3499,7 +3499,7 @@ export default function SolRefund() {
                         <div className="space-y-3">
                           {massTransferTokens.map((token, index) => {
                             const isSelected = selectedTransferTokens.has(token.mint);
-                            const currentAmount = tokenAmounts.get(token.mint) || token.balance;
+                            const currentAmount = tokenAmounts.has(token.mint) ? tokenAmounts.get(token.mint)! : token.balance;
                             return (
                               <div
                                 key={token.mint}
@@ -3669,7 +3669,7 @@ export default function SolRefund() {
                             if (!token) continue;
                             
                             // Get the custom amount or use full balance
-                            const transferAmount = tokenAmounts.get(mintAddress) || token.balance;
+                            const transferAmount = tokenAmounts.has(mintAddress) ? tokenAmounts.get(mintAddress)! : token.balance;
                             if (transferAmount <= 0) continue;
                             
                             const mintPubkey = new PublicKey(mintAddress);
