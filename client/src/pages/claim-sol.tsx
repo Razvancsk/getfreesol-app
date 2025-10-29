@@ -2562,7 +2562,7 @@ export default function SolRefund() {
                 >
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   Transfer
-                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse">
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse">
                     NEW
                   </span>
                 </Button>
