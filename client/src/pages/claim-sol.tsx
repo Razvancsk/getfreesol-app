@@ -96,7 +96,7 @@ export default function SolRefund() {
   // Mass transfer states
   const [massTransferTokens, setMassTransferTokens] = useState<any[]>([]);
   const [selectedTransferTokens, setSelectedTransferTokens] = useState<Set<string>>(new Set());
-  const [tokenAmounts, setTokenAmounts] = useState<Map<string, number>>(new Map());
+  const [tokenAmounts, setTokenAmounts] = useState<Map<string, string>>(new Map());
   const [destinationWallet, setDestinationWallet] = useState<string>('');
   const [loadingTransferTokens, setLoadingTransferTokens] = useState(false);
   
@@ -3499,7 +3499,7 @@ export default function SolRefund() {
                         <div className="space-y-3">
                           {massTransferTokens.map((token, index) => {
                             const isSelected = selectedTransferTokens.has(token.mint);
-                            const currentAmount = tokenAmounts.has(token.mint) ? tokenAmounts.get(token.mint)! : token.balance;
+                            const currentAmount = tokenAmounts.has(token.mint) ? tokenAmounts.get(token.mint)! : token.balance.toString();
                             return (
                               <div
                                 key={token.mint}
@@ -3522,7 +3522,7 @@ export default function SolRefund() {
                                       } else {
                                         newSelection.add(token.mint);
                                         // Initialize with max amount
-                                        setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance));
+                                        setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance.toString()));
                                       }
                                       setSelectedTransferTokens(newSelection);
                                     }}
@@ -3549,13 +3549,19 @@ export default function SolRefund() {
                                         type="number"
                                         value={currentAmount}
                                         onChange={(e) => {
-                                          const value = parseFloat(e.target.value) || 0;
-                                          const clamped = Math.min(Math.max(0, value), token.balance);
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, clamped));
+                                          const value = e.target.value;
+                                          if (value === '') {
+                                            setTokenAmounts(prev => new Map(prev).set(token.mint, ''));
+                                          } else {
+                                            const numValue = parseFloat(value);
+                                            const clamped = Math.min(Math.max(0, numValue), token.balance);
+                                            setTokenAmounts(prev => new Map(prev).set(token.mint, clamped.toString()));
+                                          }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
                                         step={1 / Math.pow(10, token.decimals)}
                                         max={token.balance}
+                                        placeholder="Enter amount"
                                         className="flex-1 bg-purple-900/30 border-purple-500/30 text-white"
                                         data-testid={`input-amount-${index}`}
                                       />
@@ -3566,7 +3572,7 @@ export default function SolRefund() {
                                         variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance * 0.25));
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, (token.balance * 0.25).toString()));
                                         }}
                                         className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
                                       >
@@ -3577,7 +3583,7 @@ export default function SolRefund() {
                                         variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance * 0.5));
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, (token.balance * 0.5).toString()));
                                         }}
                                         className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
                                       >
@@ -3588,7 +3594,7 @@ export default function SolRefund() {
                                         variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance * 0.75));
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, (token.balance * 0.75).toString()));
                                         }}
                                         className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
                                       >
@@ -3599,7 +3605,7 @@ export default function SolRefund() {
                                         variant="outline"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance));
+                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance.toString()));
                                         }}
                                         className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
                                       >
@@ -3669,7 +3675,8 @@ export default function SolRefund() {
                             if (!token) continue;
                             
                             // Get the custom amount or use full balance
-                            const transferAmount = tokenAmounts.has(mintAddress) ? tokenAmounts.get(mintAddress)! : token.balance;
+                            const amountStr = tokenAmounts.has(mintAddress) ? tokenAmounts.get(mintAddress)! : token.balance.toString();
+                            const transferAmount = amountStr === '' ? 0 : parseFloat(amountStr);
                             if (transferAmount <= 0) continue;
                             
                             const mintPubkey = new PublicKey(mintAddress);
