@@ -84,6 +84,8 @@ export interface IStorage {
   getTotalAccountsClaimed(): Promise<number>;
   getTotalTokensBurned(): Promise<number>;
   getTotalNftsBurned(): Promise<number>;
+  getStatisticsOverview(sinceTimestamp: Date): Promise<{ totalUsers: number; totalSolRecovered: string }>;
+  getLeaderboard(sinceTimestamp: Date, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>>;
   
   // Referral System
   createReferralCode(referral: InsertReferralCode): Promise<ReferralCode>;
@@ -375,6 +377,39 @@ export class DatabaseStorage implements IStorage {
       .select({ total: sql<string>`count(*)` })
       .from(nftBurnRecords);
     return parseInt(result[0]?.total || "0");
+  }
+
+  async getStatisticsOverview(sinceTimestamp: Date): Promise<{ totalUsers: number; totalSolRecovered: string }> {
+    const result = await db
+      .select({
+        totalUsers: sql<string>`count(distinct ${transactionLedger.walletAddress})`,
+        totalSolRecovered: sql<string>`coalesce(sum(${transactionLedger.solRecovered}), 0)`
+      })
+      .from(transactionLedger)
+      .where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`);
+    
+    return {
+      totalUsers: parseInt(result[0]?.totalUsers || "0"),
+      totalSolRecovered: result[0]?.totalSolRecovered || "0"
+    };
+  }
+
+  async getLeaderboard(sinceTimestamp: Date, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>> {
+    const result = await db
+      .select({
+        walletAddress: transactionLedger.walletAddress,
+        totalSolRecovered: sql<string>`sum(${transactionLedger.solRecovered})`
+      })
+      .from(transactionLedger)
+      .where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`)
+      .groupBy(transactionLedger.walletAddress)
+      .orderBy(sql`sum(${transactionLedger.solRecovered}) desc`)
+      .limit(limit);
+    
+    return result.map(row => ({
+      walletAddress: row.walletAddress,
+      totalSolRecovered: row.totalSolRecovered || "0"
+    }));
   }
 
 

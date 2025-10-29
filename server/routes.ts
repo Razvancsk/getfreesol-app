@@ -4637,6 +4637,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get platform statistics (overview)
+  app.get("/api/statistics/overview", async (req, res) => {
+    try {
+      const { period = '24h' } = req.query;
+      
+      // Calculate timestamp based on period
+      let sinceTimestamp: Date;
+      const now = new Date();
+      
+      switch (period) {
+        case '24h':
+          sinceTimestamp = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case 'weekly':
+          sinceTimestamp = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'monthly':
+          sinceTimestamp = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          sinceTimestamp = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      }
+
+      const stats = await storage.getStatisticsOverview(sinceTimestamp);
+
+      res.json({
+        success: true,
+        period,
+        stats
+      });
+
+    } catch (error) {
+      console.error("Get statistics overview error:", error);
+      res.status(500).json({ error: "Failed to get statistics overview" });
+    }
+  });
+
+  // Get leaderboard of top addresses by rent recovery
+  app.get("/api/statistics/leaderboard", async (req, res) => {
+    try {
+      const { period = '24h', limit = '10' } = req.query;
+      
+      // Calculate timestamp based on period
+      let sinceTimestamp: Date;
+      const now = new Date();
+      
+      switch (period) {
+        case '24h':
+          sinceTimestamp = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case 'weekly':
+          sinceTimestamp = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'monthly':
+          sinceTimestamp = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          sinceTimestamp = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      }
+
+      const limitNum = parseInt(limit as string, 10) || 10;
+      const leaderboard = await storage.getLeaderboard(sinceTimestamp, limitNum);
+
+      res.json({
+        success: true,
+        period,
+        leaderboard
+      });
+
+    } catch (error) {
+      console.error("Get leaderboard error:", error);
+      res.status(500).json({ error: "Failed to get leaderboard" });
+    }
+  });
+
 
 
   const httpServer = createServer(app);
