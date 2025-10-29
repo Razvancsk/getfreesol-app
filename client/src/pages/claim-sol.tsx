@@ -2437,6 +2437,15 @@ export default function SolRefund() {
                   <Users className="h-4 w-4 mr-2" />
                   Referrals
                 </Button>
+                <Link href="/statistics">
+                  <Button
+                    className="hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all bg-purple-800/40 text-purple-300 hover:bg-purple-600/60"
+                    data-testid="button-statistics"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Statistics
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
