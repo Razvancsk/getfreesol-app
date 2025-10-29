@@ -2570,14 +2570,14 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => setActiveTab('massTransfer')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all relative ${
+                  className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all relative ${
                     activeTab === 'massTransfer' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-mass-transfer"
                 >
-                  <ArrowUpDown className="h-4 w-4 sm:mr-2" />
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
                   Transfer
                   <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-lg animate-pulse whitespace-nowrap">
                     NEW
