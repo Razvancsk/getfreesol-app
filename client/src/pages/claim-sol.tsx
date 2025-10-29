@@ -292,10 +292,11 @@ export default function SolRefund() {
     retry: false,
   });
 
-  // Query to get mass transfer stats (only for platform wallet)
+  // Query to get mass transfer stats (only fetch when platform wallet is connected)
+  const isPlatformWallet = publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
   const { data: massTransferStats } = useQuery<{ success: boolean; stats: { totalUniqueUsers: number; totalTransfers: number } }>({
-    queryKey: ['/api/mass-transfer/stats', publicKey?.toString()],
-    enabled: activeTab === 'massTransfer' && publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6',
+    queryKey: ['/api/mass-transfer/stats'],
+    enabled: activeTab === 'massTransfer' && isPlatformWallet,
     retry: false,
   });
 
@@ -3490,8 +3491,8 @@ export default function SolRefund() {
           {/* Mass Transfer Tab Content */}
           {activeTab === 'massTransfer' && (
             <div className="space-y-6">
-              {/* Transfer Stats */}
-              {massTransferStats && (
+              {/* Transfer Stats - Only visible to platform wallet */}
+              {isPlatformWallet && massTransferStats && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                     <div className="text-3xl font-bold text-white mb-2">
