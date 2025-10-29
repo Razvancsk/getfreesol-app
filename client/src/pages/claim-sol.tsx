@@ -3639,10 +3639,19 @@ export default function SolRefund() {
 
                   {/* Transfer Summary */}
                   {selectedTransferTokens.size > 0 && (
-                    <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
+                    <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-4 space-y-2">
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-purple-300">Selected Tokens:</span>
                         <span className="text-white font-medium">{selectedTransferTokens.size}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-purple-300">Estimated Network Fee:</span>
+                        <span className="text-white font-medium">{(selectedTransferTokens.size * 0.0002).toFixed(4)} SOL</span>
+                      </div>
+                      <div className="border-t border-purple-500/20 pt-2 mt-2">
+                        <p className="text-xs text-purple-400 text-center">
+                          Network fees are paid to Solana validators (≈0.0002 SOL per token)
+                        </p>
                       </div>
                     </div>
                   )}
