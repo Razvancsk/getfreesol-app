@@ -4640,10 +4640,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get platform statistics (overview)
   app.get("/api/statistics/overview", async (req, res) => {
     try {
-      const { period = '24h' } = req.query;
+      const { period = 'all' } = req.query;
       
       // Calculate timestamp based on period
-      let sinceTimestamp: Date;
+      let sinceTimestamp: Date | null = null;
       const now = new Date();
       
       switch (period) {
@@ -4656,8 +4656,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         case 'monthly':
           sinceTimestamp = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
+        case 'all':
+          sinceTimestamp = null; // No time filter - get all data
+          break;
         default:
-          sinceTimestamp = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          sinceTimestamp = null;
       }
 
       const stats = await storage.getStatisticsOverview(sinceTimestamp);
@@ -4677,10 +4680,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get leaderboard of top addresses by rent recovery
   app.get("/api/statistics/leaderboard", async (req, res) => {
     try {
-      const { period = '24h', limit = '10' } = req.query;
+      const { period = 'all', limit = '10' } = req.query;
       
       // Calculate timestamp based on period
-      let sinceTimestamp: Date;
+      let sinceTimestamp: Date | null = null;
       const now = new Date();
       
       switch (period) {
@@ -4693,8 +4696,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         case 'monthly':
           sinceTimestamp = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
+        case 'all':
+          sinceTimestamp = null; // No time filter - get all data
+          break;
         default:
-          sinceTimestamp = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          sinceTimestamp = null;
       }
 
       const limitNum = parseInt(limit as string, 10) || 10;

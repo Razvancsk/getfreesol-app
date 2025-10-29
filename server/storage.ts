@@ -379,14 +379,19 @@ export class DatabaseStorage implements IStorage {
     return parseInt(result[0]?.total || "0");
   }
 
-  async getStatisticsOverview(sinceTimestamp: Date): Promise<{ totalUsers: number; totalSolRecovered: string }> {
-    const result = await db
+  async getStatisticsOverview(sinceTimestamp: Date | null): Promise<{ totalUsers: number; totalSolRecovered: string }> {
+    let query = db
       .select({
         totalUsers: sql<string>`count(distinct ${transactionLedger.walletAddress})`,
         totalSolRecovered: sql<string>`coalesce(sum(${transactionLedger.solRecovered}), 0)`
       })
-      .from(transactionLedger)
-      .where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`);
+      .from(transactionLedger);
+    
+    if (sinceTimestamp) {
+      query = query.where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`) as typeof query;
+    }
+    
+    const result = await query;
     
     return {
       totalUsers: parseInt(result[0]?.totalUsers || "0"),
@@ -394,14 +399,19 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getLeaderboard(sinceTimestamp: Date, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>> {
-    const result = await db
+  async getLeaderboard(sinceTimestamp: Date | null, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>> {
+    let query = db
       .select({
         walletAddress: transactionLedger.walletAddress,
         totalSolRecovered: sql<string>`sum(${transactionLedger.solRecovered})`
       })
-      .from(transactionLedger)
-      .where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`)
+      .from(transactionLedger);
+    
+    if (sinceTimestamp) {
+      query = query.where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`) as typeof query;
+    }
+    
+    const result = await query
       .groupBy(transactionLedger.walletAddress)
       .orderBy(sql`sum(${transactionLedger.solRecovered}) desc`)
       .limit(limit);
