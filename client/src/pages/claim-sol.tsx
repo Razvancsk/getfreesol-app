@@ -2549,8 +2549,8 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                 >
-                  <Users className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Referrals</span>
+                  <Users className="h-4 w-4 mr-2" />
+                  Referrals
                 </Button>
                 <Button
                   onClick={() => setActiveTab('massTransfer')}
