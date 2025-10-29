@@ -3251,11 +3251,23 @@ export default function SolRefund() {
                         Rent reclaimed across all users
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div data-testid="stat-total-sol-24h" className="text-4xl font-bold text-green-400">
-                        {formatSol(stats24h?.stats.totalSolRecovered || '0')} SOL
+                    <CardContent className="space-y-4">
+                      <div>
+                        <div data-testid="stat-total-sol-24h" className="text-4xl font-bold text-green-400">
+                          {formatSol(stats24h?.stats.totalSolRecovered || '0')} SOL
+                        </div>
+                        <p className="text-sm text-purple-300 mt-2">Last 24 Hours</p>
                       </div>
-                      <p className="text-sm text-purple-300 mt-2">Last 24 Hours</p>
+                      <Separator className="bg-purple-500/30" />
+                      <div>
+                        <div className="flex items-center gap-2 text-purple-200 mb-2">
+                          <Users className="w-4 h-4" />
+                          <span className="text-sm">Total Wallets</span>
+                        </div>
+                        <div data-testid="stat-total-users-24h" className="text-2xl font-bold text-white">
+                          {stats24h?.stats.totalUsers.toLocaleString() || '0'}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -3270,11 +3282,23 @@ export default function SolRefund() {
                         Rent reclaimed across all users
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div data-testid="stat-total-sol-weekly" className="text-4xl font-bold text-green-400">
-                        {formatSol(statsWeekly?.stats.totalSolRecovered || '0')} SOL
+                    <CardContent className="space-y-4">
+                      <div>
+                        <div data-testid="stat-total-sol-weekly" className="text-4xl font-bold text-green-400">
+                          {formatSol(statsWeekly?.stats.totalSolRecovered || '0')} SOL
+                        </div>
+                        <p className="text-sm text-purple-300 mt-2">Last 7 Days</p>
                       </div>
-                      <p className="text-sm text-purple-300 mt-2">Last 7 Days</p>
+                      <Separator className="bg-purple-500/30" />
+                      <div>
+                        <div className="flex items-center gap-2 text-purple-200 mb-2">
+                          <Users className="w-4 h-4" />
+                          <span className="text-sm">Total Wallets</span>
+                        </div>
+                        <div data-testid="stat-total-users-weekly" className="text-2xl font-bold text-white">
+                          {statsWeekly?.stats.totalUsers.toLocaleString() || '0'}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -3289,11 +3313,23 @@ export default function SolRefund() {
                         Rent reclaimed across all users
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div data-testid="stat-total-sol-monthly" className="text-4xl font-bold text-green-400">
-                        {formatSol(statsMonthly?.stats.totalSolRecovered || '0')} SOL
+                    <CardContent className="space-y-4">
+                      <div>
+                        <div data-testid="stat-total-sol-monthly" className="text-4xl font-bold text-green-400">
+                          {formatSol(statsMonthly?.stats.totalSolRecovered || '0')} SOL
+                        </div>
+                        <p className="text-sm text-purple-300 mt-2">Last 30 Days</p>
                       </div>
-                      <p className="text-sm text-purple-300 mt-2">Last 30 Days</p>
+                      <Separator className="bg-purple-500/30" />
+                      <div>
+                        <div className="flex items-center gap-2 text-purple-200 mb-2">
+                          <Users className="w-4 h-4" />
+                          <span className="text-sm">Total Wallets</span>
+                        </div>
+                        <div data-testid="stat-total-users-monthly" className="text-2xl font-bold text-white">
+                          {statsMonthly?.stats.totalUsers.toLocaleString() || '0'}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
