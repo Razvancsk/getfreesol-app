@@ -126,59 +126,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const firstAccount = accounts[0];
         
         if (totalBalance > 0) {
+          // Try to fetch token metadata from Jupiter Token List (strict list)
+          let metadata = null;
           try {
-            // Fetch token metadata from Jupiter V2 API
-            const metadataResponse = await fetch(`https://tokens.jup.ag/token/${mintAddress}`);
+            const metadataResponse = await fetch(`https://token.jup.ag/strict/${mintAddress}`, {
+              headers: { 'Accept': 'application/json' }
+            });
             if (metadataResponse.ok) {
-              const metadata = await metadataResponse.json();
-              tokenList.push({
-                mint: mintAddress,
-                balance: totalBalance,
-                decimals: firstAccount.decimals || 0,
-                amount: accounts.reduce((sum: string, acc: any) => {
-                  const accAmount = BigInt(acc.amount || '0');
-                  const sumBig = BigInt(sum);
-                  return (sumBig + accAmount).toString();
-                }, '0'),
-                symbol: metadata.symbol || 'Unknown',
-                name: metadata.name || mintAddress.slice(0, 8) + '...',
-                logo: metadata.logoURI || null,
-                accounts: accounts.map((acc: any) => ({
-                  address: acc.account,
-                  amount: acc.amount,
-                  uiAmount: acc.uiAmount,
-                  isAssociatedTokenAccount: acc.isAssociatedTokenAccount,
-                  isFrozen: acc.isFrozen,
-                  programId: acc.programId
-                }))
-              });
-            } else {
-              // Fallback without metadata
-              tokenList.push({
-                mint: mintAddress,
-                balance: totalBalance,
-                decimals: firstAccount.decimals || 0,
-                amount: accounts.reduce((sum: string, acc: any) => {
-                  const accAmount = BigInt(acc.amount || '0');
-                  const sumBig = BigInt(sum);
-                  return (sumBig + accAmount).toString();
-                }, '0'),
-                symbol: 'Unknown',
-                name: mintAddress.slice(0, 8) + '...',
-                logo: null,
-                accounts: accounts.map((acc: any) => ({
-                  address: acc.account,
-                  amount: acc.amount,
-                  uiAmount: acc.uiAmount,
-                  isAssociatedTokenAccount: acc.isAssociatedTokenAccount,
-                  isFrozen: acc.isFrozen,
-                  programId: acc.programId
-                }))
-              });
+              metadata = await metadataResponse.json();
             }
           } catch (e) {
-            console.error(`Failed to fetch metadata for ${mintAddress}:`, e);
+            console.log(`Metadata fetch failed for ${mintAddress}, using fallback`);
           }
+          
+          tokenList.push({
+            mint: mintAddress,
+            balance: totalBalance,
+            decimals: firstAccount.decimals || 0,
+            amount: accounts.reduce((sum: string, acc: any) => {
+              const accAmount = BigInt(acc.amount || '0');
+              const sumBig = BigInt(sum);
+              return (sumBig + accAmount).toString();
+            }, '0'),
+            symbol: metadata?.symbol || 'Unknown',
+            name: metadata?.name || mintAddress.slice(0, 8) + '...',
+            logo: metadata?.logoURI || null,
+            accounts: accounts.map((acc: any) => ({
+              address: acc.account,
+              amount: acc.amount,
+              uiAmount: acc.uiAmount,
+              isAssociatedTokenAccount: acc.isAssociatedTokenAccount,
+              isFrozen: acc.isFrozen,
+              programId: acc.programId
+            }))
+          });
         }
       }
 
