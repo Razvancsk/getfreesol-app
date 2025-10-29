@@ -4,6 +4,15 @@
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
 ## Recent Updates (October 2025)
+- **Mass Transfer Feature** (October 2025): New functionality to send multiple tokens to a single destination wallet
+  - **Jupiter Ultra Holdings API Integration**: Backend endpoint `/api/tokens/holdings/:walletAddress` uses Jupiter Ultra v1 Holdings API
+  - **Token Loading**: Fetches all token holdings with metadata (symbol, name, logo) from Jupiter Token List V2 API
+  - **Multi-Program Support**: Handles both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID tokens
+  - **Token Selection UI**: Interactive checkboxes for selecting multiple tokens to transfer
+  - **Automatic ATA Creation**: Creates Associated Token Accounts for destination wallet if they don't exist
+  - **Single Transaction**: Combines all selected token transfers into one transaction for efficiency
+  - **Destination Validation**: Validates Solana wallet address format before transfer
+  - **UI/UX**: Transfer tab with token list, balance display, destination input, and transfer summary
 - **Complete Auto-Claim Feature** (October 2025): Production-ready permit-based automated SOL reclamation system
   - **Multi-Token Support**: Supports BOTH standard SPL tokens (TOKEN_PROGRAM_ID) AND Token Extensions (TOKEN_2022_PROGRAM_ID)
   - **Backend Workers**: 
@@ -70,6 +79,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 ### Key Components
 - **Wallet Scanner**: Scans Solana wallets for empty token accounts.
 - **Claim Interface**: Facilitates SOL reclamation from empty accounts.
+- **Mass Transfer**: Send multiple tokens to a single destination wallet in one transaction using Jupiter Holdings API.
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
@@ -93,6 +103,8 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Solana RPC**: Primary connection to Solana mainnet.
 - **Helius API**: Enhanced RPC provider.
 - **Jupiter Ultra Swap API**: Advanced DEX aggregator with Juno Liquidity Engine, MEV protection, and proprietary transaction sending.
+- **Jupiter Ultra Holdings API**: Token balance aggregation endpoint for wallet holdings with metadata.
+- **Jupiter Token List V2 API**: Token metadata provider (symbol, name, logo) for all SPL tokens.
 - **Multi-Wallet Support**: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
 - **Ledger Hardware Wallet**: Secure cold storage wallet integration with WebHID support.
 - **PostgreSQL**: Primary database.

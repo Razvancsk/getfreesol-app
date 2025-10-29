@@ -29,7 +29,8 @@ import {
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction, createTransferInstruction } from '@solana/spl-token';
 import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import logoImage from '@assets/image_1757882056840.png';
@@ -3584,7 +3585,9 @@ export default function SolRefund() {
 
                         setProcessing(true);
                         try {
-                          const connection = new Connection(HELIUS_RPC_URL);
+                          // Use Helius RPC or fallback to public endpoint
+                          const rpcUrl = import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+                          const connection = new Connection(rpcUrl);
                           const transaction = new Transaction();
                           const destinationPubkey = new PublicKey(destinationWallet);
                           
@@ -3615,28 +3618,24 @@ export default function SolRefund() {
                             
                             // Create account if it doesn't exist
                             if (!destAccountInfo) {
-                              const createIx = await import('@solana/spl-token').then(m => 
-                                m.createAssociatedTokenAccountInstruction(
-                                  wallet.publicKey!,
-                                  destTokenAccount,
-                                  destinationPubkey,
-                                  mintPubkey,
-                                  programId
-                                )
+                              const createIx = createAssociatedTokenAccountInstruction(
+                                wallet.publicKey!,
+                                destTokenAccount,
+                                destinationPubkey,
+                                mintPubkey,
+                                programId
                               );
                               transaction.add(createIx);
                             }
                             
                             // Add transfer instruction
-                            const transferIx = await import('@solana/spl-token').then(m =>
-                              m.createTransferInstruction(
-                                sourceAccountPubkey,
-                                destTokenAccount,
-                                wallet.publicKey!,
-                                BigInt(sourceAccount.amount),
-                                [],
-                                programId
-                              )
+                            const transferIx = createTransferInstruction(
+                              sourceAccountPubkey,
+                              destTokenAccount,
+                              wallet.publicKey!,
+                              BigInt(sourceAccount.amount),
+                              [],
+                              programId
                             );
                             transaction.add(transferIx);
                           }
