@@ -208,6 +208,35 @@ export default function SolRefund() {
   } = useWalletAdapter();
 
 
+  // Function to load mass transfer tokens
+  const loadMassTransferTokens = async () => {
+    if (!publicKey) return;
+    
+    setLoadingTransferTokens(true);
+    try {
+      const response = await fetch(`/api/tokens/holdings/${publicKey.toBase58()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch token holdings');
+      }
+      const data = await response.json();
+      const tokensWithBalance = data.filter((t: any) => t.balance > 0);
+      setMassTransferTokens(tokensWithBalance);
+      setSelectedTransferTokens(new Set());
+      toast({
+        title: "Tokens Loaded",
+        description: `Found ${tokensWithBalance.length} tokens with balance`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error loading tokens",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingTransferTokens(false);
+    }
+  };
+
   // Auto-scan wallet when user connects or switches tabs
   useEffect(() => {
     if (isConnected && publicKey && activeTab !== 'referrals') {
@@ -3453,7 +3482,7 @@ export default function SolRefund() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={async () => {
+                        onClick={() => {
                           if (!wallet.publicKey) {
                             toast({
                               title: "Wallet not connected",
@@ -3462,30 +3491,7 @@ export default function SolRefund() {
                             });
                             return;
                           }
-                          
-                          setLoadingTransferTokens(true);
-                          try {
-                            const response = await fetch(`/api/tokens/holdings/${wallet.publicKey.toBase58()}`);
-                            if (!response.ok) {
-                              throw new Error('Failed to fetch token holdings');
-                            }
-                            const data = await response.json();
-                            const tokensWithBalance = data.filter((t: any) => t.balance > 0);
-                            setMassTransferTokens(tokensWithBalance);
-                            setSelectedTransferTokens(new Set());
-                            toast({
-                              title: "Tokens Loaded",
-                              description: `Found ${tokensWithBalance.length} tokens with balance`,
-                            });
-                          } catch (error: any) {
-                            toast({
-                              title: "Error loading tokens",
-                              description: error.message,
-                              variant: "destructive",
-                            });
-                          } finally {
-                            setLoadingTransferTokens(false);
-                          }
+                          loadMassTransferTokens();
                         }}
                         disabled={loadingTransferTokens}
                         className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
