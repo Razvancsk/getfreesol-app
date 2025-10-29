@@ -2583,18 +2583,21 @@ export default function SolRefund() {
                     NEW
                   </span>
                 </Button>
-                <Button
-                  onClick={() => setActiveTab('statistics')}
-                  className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
-                    activeTab === 'statistics' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-statistics"
-                >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Statistics
-                </Button>
+                {/* Statistics button - only visible to platform wallet */}
+                {isPlatformWallet && (
+                  <Button
+                    onClick={() => setActiveTab('statistics')}
+                    className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'statistics' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                    data-testid="button-statistics"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Statistics
+                  </Button>
+                )}
               </div>
             </div>
           )}
