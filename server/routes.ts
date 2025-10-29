@@ -1548,58 +1548,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
 
-            // Add Jupiter Token List fallback for logos
-            let jupiterTokenMap: any = {};
-            try {
-              const jupiterResponse = await fetch('https://token.jup.ag/strict');
-              if (jupiterResponse.ok) {
-                const jupiterTokens = await jupiterResponse.json();
-                jupiterTokenMap = jupiterTokens.reduce((map: any, token: any) => {
-                  map[token.address] = token.logoURI;
-                  return map;
-                }, {});
-                console.log(`📋 Loaded ${Object.keys(jupiterTokenMap).length} tokens from Jupiter registry`);
+            // Helper function to fetch logo from Jupiter API V2 search endpoint
+            async function fetchJupiterLogo(mintAddress: string): Promise<string | null> {
+              try {
+                const searchUrl = `https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`;
+                console.log(`🔍 Fetching Jupiter metadata for ${mintAddress}...`);
+                const response = await fetch(searchUrl);
+                
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log(`📊 Jupiter API response for ${mintAddress}:`, {
+                    tokensCount: data.tokens?.length || 0,
+                    tokens: data.tokens?.map((t: any) => ({ address: t.address, symbol: t.symbol, hasIcon: !!t.icon }))
+                  });
+                  
+                  // The API returns an array of matching tokens
+                  if (data.tokens && data.tokens.length > 0) {
+                    // Find exact match by address
+                    const exactMatch = data.tokens.find((t: any) => t.address === mintAddress);
+                    if (exactMatch?.icon) {
+                      console.log(`✅ Jupiter API V2 found logo for ${mintAddress}: ${exactMatch.icon}`);
+                      return exactMatch.icon;
+                    } else {
+                      console.log(`⚠️  Jupiter found token ${mintAddress} but no icon available`);
+                    }
+                  } else {
+                    console.log(`ℹ️  Token ${mintAddress} not found in Jupiter registry`);
+                  }
+                } else {
+                  console.log(`❌ Jupiter API error for ${mintAddress}: ${response.status} ${response.statusText}`);
+                }
+              } catch (error) {
+                console.log(`⚠️ Failed to fetch Jupiter logo for ${mintAddress}:`, error);
               }
-            } catch (error) {
-              console.log(`⚠️  Failed to load Jupiter token list:`, error);
+              return null;
             }
 
-            tokens = burnableTokens.map((asset: any) => {
+            // Process tokens and fetch logos (always try Jupiter as fallback for IPFS)
+            const tokenPromises = burnableTokens.map(async (asset: any) => {
               const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
               const isEmpty = balance === 0;
               
-              // Use Helius CDN URLs first (optimized), then fallbacks
-              let logo = null;
+              // First, always try to fetch Jupiter logo as it's more reliable
+              const jupiterLogo = await fetchJupiterLogo(asset.id);
               
-              // Priority 1: Helius CDN URL (optimized)
-              if (asset.content?.files?.[0]?.cdn_uri) {
-                logo = asset.content.files[0].cdn_uri;
+              let logo = null;
+              let selectedPriority = 'None';
+              
+              // Check if we have Helius URLs
+              const heliusCdnUri = asset.content?.files?.[0]?.cdn_uri;
+              const heliusOriginalUri = asset.content?.files?.[0]?.uri;
+              const heliusMetadataImage = asset.content?.metadata?.image;
+              
+              // Priority logic: Prefer Jupiter over IPFS links (which are often slow/broken)
+              // Priority 1: Jupiter API (most reliable)
+              if (jupiterLogo) {
+                logo = jupiterLogo;
+                selectedPriority = 'Jupiter API V2';
+                console.log(`✅ Using Jupiter logo for ${asset.content?.metadata?.symbol}: ${logo}`);
               }
-              // Priority 2: Original URI from files
-              else if (asset.content?.files?.[0]?.uri) {
-                logo = asset.content.files[0].uri;
+              // Priority 2: Helius CDN URL (only if not IPFS)
+              else if (heliusCdnUri && !heliusCdnUri.includes('ipfs')) {
+                logo = heliusCdnUri;
+                selectedPriority = 'CDN (non-IPFS)';
               }
-              // Priority 3: Metadata image
-              else if (asset.content?.metadata?.image) {
-                logo = asset.content.metadata.image;
+              // Priority 3: Original URI (only if not IPFS)
+              else if (heliusOriginalUri && !heliusOriginalUri.includes('ipfs')) {
+                logo = heliusOriginalUri;
+                selectedPriority = 'Original (non-IPFS)';
               }
-              // Priority 4: Jupiter Token List fallback
-              else if (jupiterTokenMap[asset.id]) {
-                logo = jupiterTokenMap[asset.id];
-                console.log(`🔄 Using Jupiter logo for ${asset.content?.metadata?.symbol}: ${logo}`);
+              // Priority 4: Metadata image (only if not IPFS)
+              else if (heliusMetadataImage && !heliusMetadataImage.includes('ipfs')) {
+                logo = heliusMetadataImage;
+                selectedPriority = 'Metadata (non-IPFS)';
+              }
+              // Priority 5: Fallback to IPFS URLs if nothing else available
+              else if (heliusCdnUri) {
+                logo = heliusCdnUri;
+                selectedPriority = 'CDN (IPFS fallback)';
+              }
+              else if (heliusOriginalUri) {
+                logo = heliusOriginalUri;
+                selectedPriority = 'Original (IPFS fallback)';
+              }
+              else if (heliusMetadataImage) {
+                logo = heliusMetadataImage;
+                selectedPriority = 'Metadata (IPFS fallback)';
               }
               
               console.log(`🖼️  Token ${asset.content?.metadata?.symbol || 'Unknown'} logo data:`, {
-                hasCdnUri: !!asset.content?.files?.[0]?.cdn_uri,
-                cdnUri: asset.content?.files?.[0]?.cdn_uri,
-                originalUri: asset.content?.files?.[0]?.uri,
-                metadataImage: asset.content?.metadata?.image,
-                jupiterLogo: jupiterTokenMap[asset.id],
+                mint: asset.id,
+                jupiterLogo: jupiterLogo,
+                heliusCdnUri: heliusCdnUri,
+                heliusOriginalUri: heliusOriginalUri,
+                heliusMetadataImage: heliusMetadataImage,
                 finalLogo: logo,
-                selectedPriority: asset.content?.files?.[0]?.cdn_uri ? 'CDN' : 
-                                asset.content?.files?.[0]?.uri ? 'Original' :
-                                asset.content?.metadata?.image ? 'Metadata' :
-                                jupiterTokenMap[asset.id] ? 'Jupiter' : 'None'
+                selectedPriority: selectedPriority
               });
               
               return {
@@ -1614,6 +1658,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 status: isEmpty ? 'Empty' : 'Active'
               };
             });
+
+            tokens = await Promise.all(tokenPromises);
             
             console.log(`Processed ${tokens.length} truly burnable tokens (excluded ${fungibleTokens.length - tokens.length} frozen/inaccessible tokens)`);
           }
