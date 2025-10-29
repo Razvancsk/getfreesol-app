@@ -4915,45 +4915,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Get market reserves and APYs
   app.get("/api/kamino/market", async (req, res) => {
     try {
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: 'Helius API key not configured' });
+      // Fetch market data directly from Kamino API
+      const response = await fetch('https://api.hubbleprotocol.io/v2/kamino-market?env=mainnet-beta');
+      
+      if (!response.ok) {
+        console.error('Failed to fetch from Kamino API:', response.status);
+        return res.status(500).json({ error: 'Failed to fetch market data from Kamino' });
       }
 
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
-      const mainMarketAddress = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
-
-      // Load Kamino market data
-      const market = await KaminoMarket.load(
-        connection,
-        mainMarketAddress,
-        DEFAULT_RECENT_SLOT_DURATION_MS
-      );
-
-      // Get reserve data
-      const reserves = market.reserves.map((reserve) => {
-        const config = reserve.state.config;
-        const stats = reserve.stats;
-        
-        return {
-          symbol: reserve.symbol,
-          name: reserve.tokenName,
-          mint: reserve.state.liquidity.mintPubkey.toString(),
-          totalDeposits: stats.totalDepositsWads.toNumber() / Math.pow(10, reserve.state.liquidity.mintDecimals),
-          totalBorrows: stats.totalBorrowsWads.toNumber() / Math.pow(10, reserve.state.liquidity.mintDecimals),
-          depositApy: stats.depositApy,
-          borrowApy: stats.borrowApy,
-          utilizationRate: stats.utilizationRate,
-          loanToValue: config.loanToValuePct,
-          liquidationThreshold: config.liquidationThresholdPct,
-          decimals: reserve.state.liquidity.mintDecimals,
-          logo: reserve.tokenLogoUrl
-        };
-      });
+      const data = await response.json();
+      
+      // Extract and format reserve data
+      const reserves = (data.reserves || [])
+        .filter((reserve: any) => reserve.stats?.totalDepositsWads && parseFloat(reserve.stats.totalDepositsWads) > 0)
+        .map((reserve: any) => {
+          const decimals = reserve.decimals || 9;
+          const totalDeposits = parseFloat(reserve.stats.totalDepositsWads || '0') / Math.pow(10, decimals);
+          const totalBorrows = parseFloat(reserve.stats.totalBorrowsWads || '0') / Math.pow(10, decimals);
+          
+          return {
+            symbol: reserve.symbol || 'Unknown',
+            name: reserve.name || reserve.symbol || 'Unknown Token',
+            mint: reserve.address || '',
+            totalDeposits,
+            totalBorrows,
+            depositApy: parseFloat(reserve.stats?.depositApy || '0'),
+            borrowApy: parseFloat(reserve.stats?.borrowApy || '0'),
+            utilizationRate: parseFloat(reserve.stats?.utilizationRate || '0'),
+            loanToValue: reserve.config?.loanToValuePct || 0,
+            liquidationThreshold: reserve.config?.liquidationThresholdPct || 0,
+            decimals,
+            logo: reserve.logo || null
+          };
+        })
+        .sort((a: any, b: any) => b.totalDeposits - a.totalDeposits)
+        .slice(0, 10);
 
       res.json({
         success: true,
-        reserves: reserves.slice(0, 10) // Return top 10 reserves
+        reserves
       });
     } catch (error: any) {
       console.error("Kamino market error:", error);
