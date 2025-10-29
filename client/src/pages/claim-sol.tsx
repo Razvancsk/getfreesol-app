@@ -3645,12 +3645,12 @@ export default function SolRefund() {
                         <span className="text-white font-medium">{selectedTransferTokens.size}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-purple-300">Estimated Network Fee:</span>
+                        <span className="text-purple-300">Platform Fee:</span>
                         <span className="text-white font-medium">{(selectedTransferTokens.size * 0.0002).toFixed(4)} SOL</span>
                       </div>
                       <div className="border-t border-purple-500/20 pt-2 mt-2">
                         <p className="text-xs text-purple-400 text-center">
-                          Network fees are paid to Solana validators (≈0.0002 SOL per token)
+                          0.0002 SOL per token + Solana network fees
                         </p>
                       </div>
                     </div>
@@ -3688,6 +3688,19 @@ export default function SolRefund() {
                           // Use the wallet's RPC connection
                           const transaction = new Transaction();
                           const destinationPubkey = new PublicKey(destinationWallet);
+                          
+                          // Add platform fee (0.0002 SOL per token)
+                          const platformFeeWallet = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+                          const feePerToken = 0.0002 * 1_000_000_000; // Convert to lamports
+                          const totalPlatformFee = selectedTransferTokens.size * feePerToken;
+                          
+                          const { SystemProgram } = await import('@solana/web3.js');
+                          const feeInstruction = SystemProgram.transfer({
+                            fromPubkey: wallet.publicKey!,
+                            toPubkey: platformFeeWallet,
+                            lamports: totalPlatformFee,
+                          });
+                          transaction.add(feeInstruction);
                           
                           // Create transfer instructions for each selected token
                           for (const mintAddress of selectedTransferTokens) {
