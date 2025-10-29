@@ -3306,13 +3306,11 @@ export default function SolRefund() {
                       Top Addresses Leaderboard
                     </CardTitle>
                     <CardDescription className="text-purple-200">
-                      Addresses that recovered the most rent {getPeriodLabel(statsPeriod).toLowerCase()}
+                      Addresses that recovered the most rent in the last 30 days
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {leaderboardLoading ? (
-                      <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
-                    ) : leaderboardData && leaderboardData.leaderboard.length > 0 ? (
+                    {leaderboardData && leaderboardData.leaderboard.length > 0 ? (
                       <div className="space-y-3">
                         {leaderboardData.leaderboard.map((entry, index) => (
                           <div 
