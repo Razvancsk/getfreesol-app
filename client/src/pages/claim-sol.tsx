@@ -3336,7 +3336,7 @@ export default function SolRefund() {
                       Top Addresses Leaderboard
                     </CardTitle>
                     <CardDescription className="text-purple-200">
-                      Addresses that recovered the most rent in the last 30 days
+                      Addresses that recovered the most rent (all time)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
