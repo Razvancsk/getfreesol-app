@@ -3321,7 +3321,7 @@ export default function SolRefund() {
                     </CardHeader>
                     <CardContent>
                       <div data-testid="stat-total-users" className="text-4xl font-bold text-white">
-                        {statsAllTime?.stats.totalUsers.toLocaleString() || '0'}
+                        {statsAllTime?.stats.totalUsers.toLocaleString('en-US') || '0'}
                       </div>
                       <p className="text-sm text-purple-300 mt-3">All Time</p>
                     </CardContent>
