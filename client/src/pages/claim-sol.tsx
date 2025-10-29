@@ -210,21 +210,31 @@ export default function SolRefund() {
 
   // Function to load mass transfer tokens
   const loadMassTransferTokens = async () => {
-    if (!publicKey) return;
+    if (!publicKey) {
+      console.log('No publicKey available for loading tokens');
+      return;
+    }
     
+    console.log('Loading tokens for wallet:', publicKey.toBase58());
     setLoadingTransferTokens(true);
     try {
       // Fetch SPL tokens
       const response = await fetch(`/api/tokens/holdings/${publicKey.toBase58()}`);
+      console.log('Holdings API response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch token holdings');
+        const errorText = await response.text();
+        console.error('Holdings API error:', errorText);
+        throw new Error(`Failed to fetch token holdings: ${response.status}`);
       }
       const data = await response.json();
+      console.log('Received token data:', data);
       const tokensWithBalance = data.filter((t: any) => t.balance > 0);
       
       // Get SOL balance
       const solBalance = await rpcConnection.getBalance(publicKey);
       const solInSol = solBalance / 1_000_000_000;
+      console.log('SOL balance:', solInSol);
       
       // Add SOL as the first token if balance > 0
       const allTokens = [];
@@ -242,12 +252,14 @@ export default function SolRefund() {
       }
       allTokens.push(...tokensWithBalance);
       
+      console.log('Total tokens loaded:', allTokens.length);
       setMassTransferTokens(allTokens);
       setSelectedTransferTokens(new Set());
     } catch (error: any) {
+      console.error('Token loading error:', error);
       toast({
         title: "Error loading tokens",
-        description: error.message,
+        description: error.message || 'Unknown error',
         variant: "destructive",
       });
     } finally {
