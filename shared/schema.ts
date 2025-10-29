@@ -183,6 +183,18 @@ export const relayerCosts = pgTable("relayer_costs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Mass Transfer Records - tracks usage of the mass transfer feature
+export const massTransferRecords = pgTable("mass_transfer_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signature: text("signature").notNull().unique(),
+  walletAddress: text("wallet_address").notNull(),
+  destinationWallet: text("destination_wallet").notNull(),
+  tokensCount: integer("tokens_count").notNull(), // Number of different tokens transferred
+  tokenDetails: text("token_details"), // JSON string with token mints and amounts
+  totalPlatformFees: decimal("total_platform_fees", { precision: 18, scale: 9 }).notNull(), // 0.0002 SOL per token
+  transferredAt: timestamp("transferred_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -262,6 +274,11 @@ export const insertRelayerCostSchema = createInsertSchema(relayerCosts).omit({
   createdAt: true,
 });
 
+export const insertMassTransferRecordSchema = createInsertSchema(massTransferRecords).omit({
+  id: true,
+  transferredAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -288,6 +305,8 @@ export type RelayerJob = typeof relayerJobs.$inferSelect;
 export type InsertRelayerJob = z.infer<typeof insertRelayerJobSchema>;
 export type RelayerCost = typeof relayerCosts.$inferSelect;
 export type InsertRelayerCost = z.infer<typeof insertRelayerCostSchema>;
+export type MassTransferRecord = typeof massTransferRecords.$inferSelect;
+export type InsertMassTransferRecord = z.infer<typeof insertMassTransferRecordSchema>;
 
 // Auto-Claim Permit API schemas with validation
 export const autoClaimPermitMessageSchema = z.object({

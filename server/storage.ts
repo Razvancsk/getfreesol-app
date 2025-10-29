@@ -25,6 +25,8 @@ import {
   type InsertRelayerJob,
   type RelayerCost,
   type InsertRelayerCost,
+  type MassTransferRecord,
+  type InsertMassTransferRecord,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -37,7 +39,8 @@ import {
   walletReferralAssociations,
   autoClaimPermits,
   relayerJobs,
-  relayerCosts
+  relayerCosts,
+  massTransferRecords
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -122,6 +125,10 @@ export interface IStorage {
   createRelayerCost(cost: InsertRelayerCost): Promise<RelayerCost>;
   getRelayerCostsByWallet(walletAddress: string, limit?: number): Promise<RelayerCost[]>;
   getTotalRelayerCosts(): Promise<{ totalSpent: number; totalRecovered: number; netProfit: number }>;
+  
+  // Mass Transfer Records
+  createMassTransferRecord(record: InsertMassTransferRecord): Promise<MassTransferRecord>;
+  getMassTransferStats(): Promise<{ totalUniqueUsers: number; totalTransfers: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -719,6 +726,29 @@ export class DatabaseStorage implements IStorage {
       totalSpent,
       totalRecovered,
       netProfit: totalFees - totalSpent
+    };
+  }
+
+  // Mass Transfer Records
+  async createMassTransferRecord(record: InsertMassTransferRecord): Promise<MassTransferRecord> {
+    const [massTransferRecord] = await db
+      .insert(massTransferRecords)
+      .values(record)
+      .returning();
+    return massTransferRecord;
+  }
+
+  async getMassTransferStats(): Promise<{ totalUniqueUsers: number; totalTransfers: number }> {
+    const [result] = await db
+      .select({
+        totalUniqueUsers: sql<string>`count(distinct ${massTransferRecords.walletAddress})`,
+        totalTransfers: sql<string>`count(*)`
+      })
+      .from(massTransferRecords);
+    
+    return {
+      totalUniqueUsers: parseInt(result?.totalUniqueUsers || "0"),
+      totalTransfers: parseInt(result?.totalTransfers || "0")
     };
   }
 }

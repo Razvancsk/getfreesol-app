@@ -292,6 +292,13 @@ export default function SolRefund() {
     retry: false,
   });
 
+  // Query to get mass transfer stats
+  const { data: massTransferStats } = useQuery<{ success: boolean; stats: { totalUniqueUsers: number; totalTransfers: number } }>({
+    queryKey: ['/api/mass-transfer/stats'],
+    enabled: activeTab === 'massTransfer',
+    retry: false,
+  });
+
   // Query to get referral transactions
   const { data: referralTransactions } = useQuery({
     queryKey: ['/api/referrals', (userReferrals as any)?.referralCode?.id, 'transactions'],
@@ -3483,6 +3490,28 @@ export default function SolRefund() {
           {/* Mass Transfer Tab Content */}
           {activeTab === 'massTransfer' && (
             <div className="space-y-6">
+              {/* Transfer Stats */}
+              {massTransferStats && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                    <div className="text-3xl font-bold text-white mb-2">
+                      {massTransferStats.stats.totalUniqueUsers}
+                    </div>
+                    <div className="text-sm text-purple-200 uppercase tracking-wider">
+                      USERS USING TRANSFER
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                    <div className="text-3xl font-bold text-white mb-2">
+                      {massTransferStats.stats.totalTransfers}
+                    </div>
+                    <div className="text-sm text-purple-200 uppercase tracking-wider">
+                      TOTAL TRANSFERS
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
@@ -3816,6 +3845,34 @@ export default function SolRefund() {
                           
                           // Confirm
                           await rpcConnection.confirmTransaction(signature, 'confirmed');
+                          
+                          // Record the transfer for analytics
+                          try {
+                            const tokenDetails = Array.from(selectedTransferTokens).map(mintAddress => {
+                              const token = massTransferTokens.find(t => t.mint === mintAddress);
+                              const amountStr = tokenAmounts.has(mintAddress) ? tokenAmounts.get(mintAddress)! : token?.balance.toString() || '0';
+                              return {
+                                mint: mintAddress,
+                                symbol: token?.symbol || 'Unknown',
+                                amount: amountStr
+                              };
+                            });
+                            
+                            await fetch('/api/mass-transfer/record', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                signature,
+                                walletAddress: wallet.publicKey!.toBase58(),
+                                destinationWallet,
+                                tokensCount: selectedTransferTokens.size,
+                                tokenDetails: JSON.stringify(tokenDetails),
+                                totalPlatformFees: (selectedTransferTokens.size * 0.0002).toString()
+                              })
+                            });
+                          } catch (recordError) {
+                            console.error('Failed to record transfer analytics:', recordError);
+                          }
                           
                           toast({
                             title: "Transfer Successful!",

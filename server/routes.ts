@@ -4815,6 +4815,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mass Transfer - Record a transfer transaction
+  app.post("/api/mass-transfer/record", async (req, res) => {
+    try {
+      const { signature, walletAddress, destinationWallet, tokensCount, tokenDetails, totalPlatformFees } = req.body;
+      
+      if (!signature || !walletAddress || !destinationWallet || !tokensCount || totalPlatformFees === undefined) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const record = await storage.createMassTransferRecord({
+        signature,
+        walletAddress,
+        destinationWallet,
+        tokensCount,
+        tokenDetails: typeof tokenDetails === 'string' ? tokenDetails : JSON.stringify(tokenDetails),
+        totalPlatformFees
+      });
+
+      res.json({
+        success: true,
+        record
+      });
+    } catch (error: any) {
+      console.error("Record mass transfer error:", error);
+      res.status(500).json({ error: "Failed to record mass transfer" });
+    }
+  });
+
+  // Mass Transfer - Get usage statistics
+  app.get("/api/mass-transfer/stats", async (req, res) => {
+    try {
+      const stats = await storage.getMassTransferStats();
+
+      res.json({
+        success: true,
+        stats
+      });
+    } catch (error: any) {
+      console.error("Get mass transfer stats error:", error);
+      res.status(500).json({ error: "Failed to get mass transfer statistics" });
+    }
+  });
 
 
   const httpServer = createServer(app);

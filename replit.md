@@ -16,7 +16,9 @@
   - **Single Transaction**: Combines all selected token transfers into one transaction for efficiency
   - **Destination Validation**: Validates Solana wallet address format before transfer
   - **UI/UX**: Transfer tab with token list, balance display, custom amount controls, destination input, and transfer summary
-  - **Zero Fees**: Application collects no fees - only Solana network fees paid to validators
+  - **Platform Fees**: 0.0002 SOL per token goes to platform wallet GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6
+  - **Analytics Tracking**: Records each transfer with transaction signature, wallet addresses, token count, and fee amount
+  - **Usage Statistics**: Displays total unique users and total transfers completed on the Transfer tab
 - **Complete Auto-Claim Feature** (October 2025): Production-ready permit-based automated SOL reclamation system
   - **Multi-Token Support**: Supports BOTH standard SPL tokens (TOKEN_PROGRAM_ID) AND Token Extensions (TOKEN_2022_PROGRAM_ID)
   - **Backend Workers**: 
