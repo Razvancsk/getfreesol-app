@@ -87,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter Holding API - Get wallet token balances
+  // Helius API - Get wallet token balances
   app.get("/api/tokens/holdings/:walletAddress", async (req, res) => {
     try {
       const { walletAddress } = req.params;
@@ -98,82 +98,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Wallet address is required' });
       }
 
-      // Use Jupiter's Ultra API to get holdings
-      const response = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${walletAddress}`);
-      if (!response.ok) {
-        console.error('Failed to fetch holdings:', response.status);
-        const errorData = await response.json().catch(() => ({}));
-        return res.status(response.status).json({ error: errorData.error || 'Failed to fetch token holdings' });
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
       }
 
-      const data = await response.json();
+      // Fetch token accounts using Helius RPC
+      const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
       
-      // Check for API error response
-      if (data.error) {
-        return res.status(400).json({ error: data.error });
+      // Get both standard SPL and Token-2022 token accounts
+      const [splResponse, token2022Response] = await Promise.all([
+        // Standard SPL tokens
+        fetch(heliusUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getTokenAccountsByOwner',
+            params: [
+              walletAddress,
+              { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' },
+              { encoding: 'jsonParsed' }
+            ]
+          })
+        }),
+        // Token-2022 tokens
+        fetch(heliusUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'getTokenAccountsByOwner',
+            params: [
+              walletAddress,
+              { programId: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' },
+              { encoding: 'jsonParsed' }
+            ]
+          })
+        })
+      ]);
+
+      if (!splResponse.ok || !token2022Response.ok) {
+        console.error('Failed to fetch token accounts from Helius');
+        return res.status(500).json({ error: 'Failed to fetch token holdings' });
       }
+
+      const [splData, token2022Data] = await Promise.all([
+        splResponse.json(),
+        token2022Response.json()
+      ]);
+
+      // Combine token accounts from both programs
+      const allAccounts = [
+        ...(splData.result?.value || []).map((acc: any) => ({ ...acc, programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' })),
+        ...(token2022Data.result?.value || []).map((acc: any) => ({ ...acc, programId: 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' }))
+      ];
+
+      // Group by mint and aggregate balances
+      const tokenMap = new Map<string, any>();
       
-      // Extract tokens from the response (format: { tokens: { mintAddress: [accountInfo, ...] } })
-      const tokens = data.tokens || {};
-      const tokenList: any[] = [];
-      
-      // Process each token mint
-      for (const [mintAddress, accounts] of Object.entries(tokens)) {
-        if (!Array.isArray(accounts) || accounts.length === 0) continue;
-        
-        // Sum up balances from all token accounts for this mint
-        const totalBalance = accounts.reduce((sum: number, acc: any) => sum + (acc.uiAmount || 0), 0);
-        const firstAccount = accounts[0];
-        
-        if (totalBalance > 0) {
-          // Fetch token metadata from Jupiter V2 Search API (same as burn tokens)
-          let symbol = 'Unknown';
-          let name = mintAddress.slice(0, 8) + '...';
-          let logo = null;
-          
-          try {
-            const searchUrl = `https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`;
-            const response = await fetch(searchUrl);
-            
-            if (response.ok) {
-              const data = await response.json();
-              const tokens = Array.isArray(data) ? data : [];
-              
-              if (tokens.length > 0) {
-                const exactMatch = tokens.find((t: any) => t.id === mintAddress);
-                if (exactMatch) {
-                  symbol = exactMatch.symbol || 'Unknown';
-                  name = exactMatch.name || mintAddress.slice(0, 8) + '...';
-                  logo = exactMatch.icon || null;
-                }
-              }
-            }
-          } catch (e) {
-            console.log(`Metadata fetch failed for ${mintAddress}, using fallback`);
+      for (const account of allAccounts) {
+        const parsed = account.account.data.parsed;
+        const info = parsed.info;
+        const mint = info.mint;
+        const balance = parseFloat(info.tokenAmount.uiAmountString || '0');
+        const amount = info.tokenAmount.amount;
+        const decimals = info.tokenAmount.decimals;
+
+        if (balance > 0) {
+          if (!tokenMap.has(mint)) {
+            tokenMap.set(mint, {
+              mint,
+              balance: 0,
+              decimals,
+              amount: '0',
+              accounts: [],
+              programId: account.programId
+            });
           }
-          
-          tokenList.push({
-            mint: mintAddress,
-            balance: totalBalance,
-            decimals: firstAccount.decimals || 0,
-            amount: accounts.reduce((sum: string, acc: any) => {
-              const accAmount = BigInt(acc.amount || '0');
-              const sumBig = BigInt(sum);
-              return (sumBig + accAmount).toString();
-            }, '0'),
-            symbol,
-            name,
-            logo,
-            accounts: accounts.map((acc: any) => ({
-              address: acc.account,
-              amount: acc.amount,
-              uiAmount: acc.uiAmount,
-              isAssociatedTokenAccount: acc.isAssociatedTokenAccount,
-              isFrozen: acc.isFrozen,
-              programId: acc.programId
-            }))
+
+          const token = tokenMap.get(mint);
+          token.balance += balance;
+          token.amount = (BigInt(token.amount) + BigInt(amount)).toString();
+          token.accounts.push({
+            address: account.pubkey,
+            amount,
+            uiAmount: balance,
+            isAssociatedTokenAccount: true,
+            isFrozen: info.state === 'frozen',
+            programId: account.programId
           });
         }
+      }
+
+      // Fetch metadata for all tokens
+      const tokenList: any[] = [];
+      for (const token of tokenMap.values()) {
+        let symbol = 'Unknown';
+        let name = token.mint.slice(0, 8) + '...';
+        let logo = null;
+
+        try {
+          const searchUrl = `https://lite-api.jup.ag/tokens/v2/search?query=${token.mint}`;
+          const response = await fetch(searchUrl);
+          
+          if (response.ok) {
+            const data = await response.json();
+            const tokens = Array.isArray(data) ? data : [];
+            
+            if (tokens.length > 0) {
+              const exactMatch = tokens.find((t: any) => t.id === token.mint);
+              if (exactMatch) {
+                symbol = exactMatch.symbol || 'Unknown';
+                name = exactMatch.name || token.mint.slice(0, 8) + '...';
+                logo = exactMatch.icon || null;
+              }
+            }
+          }
+        } catch (e) {
+          console.log(`Metadata fetch failed for ${token.mint}, using fallback`);
+        }
+
+        tokenList.push({
+          ...token,
+          symbol,
+          name,
+          logo
+        });
       }
 
       console.log(`Found ${tokenList.length} tokens with balance for wallet ${walletAddress}`);
