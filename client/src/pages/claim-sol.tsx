@@ -80,7 +80,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'massTransfer'>('reclaim');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -91,6 +91,12 @@ export default function SolRefund() {
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+  
+  // Mass transfer states
+  const [massTransferTokens, setMassTransferTokens] = useState<any[]>([]);
+  const [selectedTransferTokens, setSelectedTransferTokens] = useState<Set<string>>(new Set());
+  const [destinationWallet, setDestinationWallet] = useState<string>('');
+  const [loadingTransferTokens, setLoadingTransferTokens] = useState(false);
   
   // Swap modal state
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -2490,6 +2496,18 @@ export default function SolRefund() {
                   Referrals
                 </Button>
                 <Button
+                  onClick={() => setActiveTab('massTransfer')}
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'massTransfer' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-mass-transfer"
+                >
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  Transfer
+                </Button>
+                <Button
                   onClick={() => setActiveTab('statistics')}
                   className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
                     activeTab === 'statistics' 
@@ -2508,7 +2526,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'massTransfer' ? 'Select and send multiple tokens from one wallet to another' : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -3394,7 +3412,79 @@ export default function SolRefund() {
             );
           })()}
 
+          {/* Mass Transfer Tab Content */}
+          {activeTab === 'massTransfer' && (
+            <div className="space-y-6">
+              <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <ArrowUpDown className="w-6 h-6 text-green-400" />
+                    Mass Transfer
+                  </CardTitle>
+                  <CardDescription className="text-purple-200">
+                    Select multiple tokens from your wallet and send them all to one destination address
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Destination Wallet Input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="destination-wallet" className="text-white">
+                      Destination Wallet Address
+                    </Label>
+                    <Input
+                      id="destination-wallet"
+                      placeholder="Enter Solana wallet address..."
+                      className="bg-purple-900/30 border-purple-500/30 text-white placeholder-purple-400"
+                      data-testid="input-destination-wallet"
+                    />
+                  </div>
 
+                  {/* Token List */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-white text-lg">Your Tokens</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Placeholder for refresh token list
+                          toast({
+                            title: "Loading tokens...",
+                            description: "Fetching your token list",
+                          });
+                        }}
+                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
+                        data-testid="button-refresh-tokens"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh
+                      </Button>
+                    </div>
+
+                    {/* Token Selection List */}
+                    <div className="border border-purple-500/30 rounded-lg p-4 bg-purple-900/20 max-h-96 overflow-y-auto">
+                      <p className="text-purple-300 text-center py-8">
+                        Connect your wallet and click Refresh to load your tokens
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Transfer Button */}
+                  <div className="flex justify-center pt-4">
+                    <Button
+                      size="lg"
+                      disabled={true}
+                      className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+                      data-testid="button-execute-transfer"
+                    >
+                      <ArrowUpDown className="w-5 h-5 mr-2" />
+                      Transfer Selected Tokens
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
           {activeTab === 'reclaim' && (
