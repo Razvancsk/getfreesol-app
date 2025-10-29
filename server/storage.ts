@@ -380,22 +380,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStatisticsOverview(sinceTimestamp: Date | null): Promise<{ totalUsers: number; totalSolRecovered: string }> {
-    let query = db
+    // Count total SOL recovered
+    let solQuery = db
       .select({
-        totalUsers: sql<string>`count(distinct ${transactionLedger.walletAddress})`,
         totalSolRecovered: sql<string>`coalesce(sum(${transactionLedger.solRecovered}), 0)`
       })
       .from(transactionLedger);
     
     if (sinceTimestamp) {
-      query = query.where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`) as typeof query;
+      solQuery = solQuery.where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`) as typeof solQuery;
     }
     
-    const result = await query;
+    const solResult = await solQuery;
+    
+    // Count unique users from BOTH scan_results and transaction_ledger
+    let userCountQuery;
+    if (sinceTimestamp) {
+      userCountQuery = sql<string>`
+        SELECT COUNT(DISTINCT wallet_address) as total_users
+        FROM (
+          SELECT wallet_address FROM ${transactionLedger} WHERE processed_at >= ${sinceTimestamp}
+          UNION
+          SELECT wallet_address FROM ${scanResults} WHERE scanned_at >= ${sinceTimestamp}
+        ) as all_wallets
+      `;
+    } else {
+      userCountQuery = sql<string>`
+        SELECT COUNT(DISTINCT wallet_address) as total_users
+        FROM (
+          SELECT wallet_address FROM ${transactionLedger}
+          UNION
+          SELECT wallet_address FROM ${scanResults}
+        ) as all_wallets
+      `;
+    }
+    
+    const userResult = await db.execute(userCountQuery);
+    const totalUsers = parseInt((userResult.rows[0] as any)?.total_users || "0");
     
     return {
-      totalUsers: parseInt(result[0]?.totalUsers || "0"),
-      totalSolRecovered: result[0]?.totalSolRecovered || "0"
+      totalUsers,
+      totalSolRecovered: solResult[0]?.totalSolRecovered || "0"
     };
   }
 
