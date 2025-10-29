@@ -3566,16 +3566,16 @@ export default function SolRefund() {
                                     className="w-4 h-4 cursor-pointer pointer-events-none"
                                   />
                                   {token.logo && (
-                                    <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                                    <img src={token.logo} alt={token.symbol} className="w-10 h-10 rounded-full flex-shrink-0" />
                                   )}
-                                  <div className="flex-1">
-                                    <div className="text-white font-medium">{token.symbol || 'Unknown'}</div>
-                                    <div className="text-purple-300 text-sm">{token.name || token.mint.slice(0, 8) + '...'}</div>
-                                    <div className="text-purple-400 text-xs font-mono mt-1">{token.mint}</div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-white font-medium">Balance: {token.balance.toFixed(token.decimals > 4 ? 4 : token.decimals)}</div>
-                                    <div className="text-purple-300 text-sm">{token.decimals} decimals</div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-white font-semibold">{token.symbol || 'Unknown'}</div>
+                                    <div className="text-purple-300 text-xs">
+                                      Balance: {token.balance.toLocaleString(undefined, {maximumFractionDigits: 4})} {token.symbol}
+                                    </div>
+                                    <div className="text-purple-400 text-xs font-mono truncate">
+                                      {token.mint.slice(0, 8)}...{token.mint.slice(-6)}
+                                    </div>
                                   </div>
                                 </div>
                                 
