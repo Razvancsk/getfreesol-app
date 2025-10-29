@@ -19,7 +19,6 @@ import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
-import { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } from '@kamino-finance/klend-sdk';
 
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
@@ -4909,55 +4908,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Get mass transfer stats error:", error);
       res.status(500).json({ error: "Failed to get mass transfer statistics" });
-    }
-  });
-
-  // Kamino Lending - Get market reserves and APYs from DefiLlama
-  app.get("/api/kamino/market", async (req, res) => {
-    try {
-      // Fetch lending pool data from DefiLlama API
-      const response = await fetch('https://yields.llama.fi/pools');
-      
-      if (!response.ok) {
-        console.error('Failed to fetch from DefiLlama API:', response.status);
-        return res.status(500).json({ error: 'Failed to fetch market data' });
-      }
-
-      const data = await response.json();
-      
-      // Filter for Kamino lending pools on Solana
-      const kaminoPools = (data?.data || [])
-        .filter((pool: any) => 
-          pool.project === 'kamino-lend' && 
-          pool.chain === 'Solana' &&
-          pool.tvlUsd > 0
-        )
-        .map((pool: any) => {
-          return {
-            symbol: pool.symbol || 'Unknown',
-            name: pool.symbol || 'Unknown Token',
-            mint: pool.pool || '',
-            totalDeposits: pool.tvlUsd || 0,
-            totalBorrows: 0, // Not available from DefiLlama
-            depositApy: pool.apyBase || 0,
-            borrowApy: pool.apyBaseBorrow || 0,
-            utilizationRate: 0, // Not available from DefiLlama
-            loanToValue: 0, // Not available
-            liquidationThreshold: 0, // Not available
-            decimals: 6,
-            logo: null
-          };
-        })
-        .sort((a: any, b: any) => b.totalDeposits - a.totalDeposits)
-        .slice(0, 15);
-
-      res.json({
-        success: true,
-        reserves: kaminoPools
-      });
-    } catch (error: any) {
-      console.error("Kamino market error:", error);
-      res.status(500).json({ error: "Failed to fetch Kamino market data" });
     }
   });
 

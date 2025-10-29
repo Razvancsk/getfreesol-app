@@ -300,13 +300,6 @@ export default function SolRefund() {
     retry: false,
   });
 
-  // Query to get Kamino market reserves
-  const { data: kaminoMarket, isLoading: isLoadingKamino } = useQuery<{ success: boolean; reserves: any[] }>({
-    queryKey: ['/api/kamino/market'],
-    enabled: activeTab === 'lend',
-    retry: false,
-  });
-
   // Query to get referral transactions
   const { data: referralTransactions } = useQuery({
     queryKey: ['/api/referrals', (userReferrals as any)?.referralCode?.id, 'transactions'],
@@ -3931,128 +3924,59 @@ export default function SolRefund() {
 
           {/* Lend Tab Content */}
           {activeTab === 'lend' && (
-              <div className="space-y-6">
-                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      💰 Kamino Lending Markets
-                    </CardTitle>
-                    <CardDescription className="text-purple-200">
-                      Earn passive income by lending your SOL and tokens through Kamino Finance
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isLoadingKamino ? (
-                      <div className="text-center py-12">
-                        <div className="text-2xl mb-2">⏳</div>
-                        <p className="text-purple-200">Loading lending markets...</p>
-                      </div>
-                    ) : kaminoMarket?.reserves && kaminoMarket.reserves.length > 0 ? (
-                      <div className="space-y-3">
-                        {kaminoMarket.reserves.map((reserve: any) => (
-                          <div
-                            key={reserve.mint}
-                            className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4 hover:border-purple-400/40 transition-all"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                {reserve.logo && (
-                                  <img src={reserve.logo} alt={reserve.symbol} className="w-10 h-10 rounded-full" />
-                                )}
-                                <div>
-                                  <div className="text-white font-semibold text-lg">{reserve.symbol}</div>
-                                  <div className="text-purple-300 text-sm">{reserve.name}</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-green-400 font-bold text-xl">
-                                  {(reserve.depositApy * 100).toFixed(2)}% APY
-                                </div>
-                                <div className="text-purple-300 text-xs">
-                                  Deposit Rate
-                                </div>
-                              </div>
-                            </div>
-                            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <div className="text-purple-300 text-xs mb-1">Total Deposits</div>
-                                <div className="text-white font-medium">
-                                  {reserve.totalDeposits.toLocaleString(undefined, { maximumFractionDigits: 2 })} {reserve.symbol}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-purple-300 text-xs mb-1">Total Borrows</div>
-                                <div className="text-white font-medium">
-                                  {reserve.totalBorrows.toLocaleString(undefined, { maximumFractionDigits: 2 })} {reserve.symbol}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-purple-300 text-xs mb-1">Utilization</div>
-                                <div className="text-white font-medium">
-                                  {(reserve.utilizationRate * 100).toFixed(2)}%
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-purple-300 text-xs mb-1">Borrow APY</div>
-                                <div className="text-orange-400 font-medium">
-                                  {(reserve.borrowApy * 100).toFixed(2)}%
-                                </div>
-                              </div>
-                            </div>
-                            <div className="mt-4">
-                              <Button
-                                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
-                                onClick={() => {
-                                  window.open('https://app.kamino.finance/lending', '_blank');
-                                }}
-                              >
-                                Lend on Kamino →
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="text-2xl mb-2">📊</div>
-                        <p className="text-purple-200">No lending markets available</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                    <div className="text-3xl mb-2">📈</div>
-                    <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
-                      Competitive APY
-                    </div>
-                    <div className="text-xs text-purple-300">
-                      Earn up to 15% annual returns
-                    </div>
+            <div className="space-y-6">
+              <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    💰 Lend Your Assets
+                  </CardTitle>
+                  <CardDescription className="text-purple-200">
+                    Earn passive income by lending your SOL and tokens to borrowers on the Solana network
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🚧</div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Coming Soon!</h3>
+                    <p className="text-purple-200 max-w-md mx-auto">
+                      We're building a secure lending platform where you can earn interest on your crypto assets. Stay tuned!
+                    </p>
                   </div>
 
-                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                    <div className="text-3xl mb-2">🔒</div>
-                    <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
-                      Secure & Safe
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                      <div className="text-3xl mb-2">📈</div>
+                      <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
+                        Competitive APY
+                      </div>
+                      <div className="text-xs text-purple-300">
+                        Earn up to 15% annual returns
+                      </div>
                     </div>
-                    <div className="text-xs text-purple-300">
-                      Smart contract audited protocols
-                    </div>
-                  </div>
 
-                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                    <div className="text-3xl mb-2">⚡</div>
-                    <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
-                      Instant Withdrawals
+                    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                      <div className="text-3xl mb-2">🔒</div>
+                      <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
+                        Secure & Safe
+                      </div>
+                      <div className="text-xs text-purple-300">
+                        Smart contract audited protocols
+                      </div>
                     </div>
-                    <div className="text-xs text-purple-300">
-                      Access your funds anytime
+
+                    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                      <div className="text-3xl mb-2">⚡</div>
+                      <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
+                        Instant Withdrawals
+                      </div>
+                      <div className="text-xs text-purple-300">
+                        Access your funds anytime
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
