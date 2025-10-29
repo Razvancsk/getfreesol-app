@@ -99,24 +99,41 @@ export default function SolRefund() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
 
-  // Statistics state
-  const [statsPeriod, setStatsPeriod] = useState<'24h' | 'weekly' | 'monthly'>('24h');
-
-  // Statistics queries
-  const { data: overviewData, isLoading: overviewLoading } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
-    queryKey: ['/api/statistics/overview', statsPeriod],
+  // Statistics queries for all three periods
+  const { data: stats24h } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
+    queryKey: ['/api/statistics/overview', '24h'],
     queryFn: async () => {
-      const response = await fetch(`/api/statistics/overview?period=${statsPeriod}`);
+      const response = await fetch('/api/statistics/overview?period=24h');
       if (!response.ok) throw new Error('Failed to fetch statistics');
       return response.json();
     },
     enabled: activeTab === 'statistics',
   });
 
-  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery<{ success: boolean; period: string; leaderboard: Array<{ walletAddress: string; totalSolRecovered: string }> }>({
-    queryKey: ['/api/statistics/leaderboard', statsPeriod],
+  const { data: statsWeekly } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
+    queryKey: ['/api/statistics/overview', 'weekly'],
     queryFn: async () => {
-      const response = await fetch(`/api/statistics/leaderboard?period=${statsPeriod}&limit=10`);
+      const response = await fetch('/api/statistics/overview?period=weekly');
+      if (!response.ok) throw new Error('Failed to fetch statistics');
+      return response.json();
+    },
+    enabled: activeTab === 'statistics',
+  });
+
+  const { data: statsMonthly } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
+    queryKey: ['/api/statistics/overview', 'monthly'],
+    queryFn: async () => {
+      const response = await fetch('/api/statistics/overview?period=monthly');
+      if (!response.ok) throw new Error('Failed to fetch statistics');
+      return response.json();
+    },
+    enabled: activeTab === 'statistics',
+  });
+
+  const { data: leaderboardData } = useQuery<{ success: boolean; period: string; leaderboard: Array<{ walletAddress: string; totalSolRecovered: string }> }>({
+    queryKey: ['/api/statistics/leaderboard', 'monthly'],
+    queryFn: async () => {
+      const response = await fetch('/api/statistics/leaderboard?period=monthly&limit=10');
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -3219,72 +3236,12 @@ export default function SolRefund() {
               return `${address.slice(0, 4)}...${address.slice(-4)}`;
             };
 
-            const getPeriodLabel = (period: '24h' | 'weekly' | 'monthly') => {
-              switch (period) {
-                case '24h': return 'Last 24 Hours';
-                case 'weekly': return 'Last 7 Days';
-                case 'monthly': return 'Last 30 Days';
-                default: return 'Last 24 Hours';
-              }
-            };
-
             return (
               <div className="space-y-8">
-                {/* Time Period Filter */}
-                <div className="flex justify-center gap-2">
-                  <Button
-                    data-testid="filter-24h"
-                    variant={statsPeriod === '24h' ? 'default' : 'outline'}
-                    onClick={() => setStatsPeriod('24h')}
-                    className={statsPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
-                  >
-                    24 Hours
-                  </Button>
-                  <Button
-                    data-testid="filter-weekly"
-                    variant={statsPeriod === 'weekly' ? 'default' : 'outline'}
-                    onClick={() => setStatsPeriod('weekly')}
-                    className={statsPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
-                  >
-                    Weekly
-                  </Button>
-                  <Button
-                    data-testid="filter-monthly"
-                    variant={statsPeriod === 'monthly' ? 'default' : 'outline'}
-                    onClick={() => setStatsPeriod('monthly')}
-                    className={statsPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
-                  >
-                    Monthly
-                  </Button>
-                </div>
-
-                {/* Overview Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Total Users */}
-                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <Users className="w-5 h-5 text-purple-300" />
-                        Total Users
-                      </CardTitle>
-                      <CardDescription className="text-purple-200">
-                        Unique wallets that reclaimed rent
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {overviewLoading ? (
-                        <div className="text-3xl font-bold text-purple-300">Loading...</div>
-                      ) : (
-                        <div data-testid="stat-total-users" className="text-4xl font-bold text-white">
-                          {overviewData?.stats.totalUsers.toLocaleString() || '0'}
-                        </div>
-                      )}
-                      <p className="text-sm text-purple-300 mt-2">{getPeriodLabel(statsPeriod)}</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Total SOL Recovered */}
-                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                {/* Three Period Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* 24 Hours Card */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-24h">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-white">
                         <DollarSign className="w-5 h-5 text-green-400" />
@@ -3295,14 +3252,48 @@ export default function SolRefund() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {overviewLoading ? (
-                        <div className="text-3xl font-bold text-green-400">Loading...</div>
-                      ) : (
-                        <div data-testid="stat-total-sol" className="text-4xl font-bold text-green-400">
-                          {formatSol(overviewData?.stats.totalSolRecovered || '0')} SOL
-                        </div>
-                      )}
-                      <p className="text-sm text-purple-300 mt-2">{getPeriodLabel(statsPeriod)}</p>
+                      <div data-testid="stat-total-sol-24h" className="text-4xl font-bold text-green-400">
+                        {formatSol(stats24h?.stats.totalSolRecovered || '0')} SOL
+                      </div>
+                      <p className="text-sm text-purple-300 mt-2">Last 24 Hours</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Weekly Card */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-weekly">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <DollarSign className="w-5 h-5 text-green-400" />
+                        Total SOL Recovered
+                      </CardTitle>
+                      <CardDescription className="text-purple-200">
+                        Rent reclaimed across all users
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div data-testid="stat-total-sol-weekly" className="text-4xl font-bold text-green-400">
+                        {formatSol(statsWeekly?.stats.totalSolRecovered || '0')} SOL
+                      </div>
+                      <p className="text-sm text-purple-300 mt-2">Last 7 Days</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Monthly Card */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-monthly">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <DollarSign className="w-5 h-5 text-green-400" />
+                        Total SOL Recovered
+                      </CardTitle>
+                      <CardDescription className="text-purple-200">
+                        Rent reclaimed across all users
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div data-testid="stat-total-sol-monthly" className="text-4xl font-bold text-green-400">
+                        {formatSol(statsMonthly?.stats.totalSolRecovered || '0')} SOL
+                      </div>
+                      <p className="text-sm text-purple-300 mt-2">Last 30 Days</p>
                     </CardContent>
                   </Card>
                 </div>
