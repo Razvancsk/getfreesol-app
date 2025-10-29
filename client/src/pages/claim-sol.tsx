@@ -3529,6 +3529,7 @@ export default function SolRefund() {
                                 <div className="flex-1">
                                   <div className="text-white font-medium">{token.symbol || 'Unknown'}</div>
                                   <div className="text-purple-300 text-sm">{token.name || token.mint.slice(0, 8) + '...'}</div>
+                                  <div className="text-purple-400 text-xs font-mono mt-1">{token.mint}</div>
                                 </div>
                                 <div className="text-right">
                                   <div className="text-white font-medium">{token.balance.toFixed(token.decimals > 4 ? 4 : token.decimals)}</div>
