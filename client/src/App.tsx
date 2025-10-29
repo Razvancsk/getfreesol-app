@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/SolanaProvider";
 import ClaimSol from "@/pages/claim-sol";
 import Referrals from "@/pages/referrals";
-import Statistics from "@/pages/statistics";
 import AdminSettings from "@/pages/admin-settings";
 import NotFound from "@/pages/not-found";
 
@@ -16,7 +15,6 @@ function Router() {
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
       <Route path="/referrals" component={Referrals} />
-      <Route path="/statistics" component={Statistics} />
       <Route path="/admin/settings" component={AdminSettings} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />

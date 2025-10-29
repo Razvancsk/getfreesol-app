@@ -80,7 +80,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics'>('reclaim');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -98,6 +98,30 @@ export default function SolRefund() {
   // Share modal state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
+
+  // Statistics state
+  const [statsPeriod, setStatsPeriod] = useState<'24h' | 'weekly' | 'monthly'>('24h');
+
+  // Statistics queries
+  const { data: overviewData, isLoading: overviewLoading } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
+    queryKey: ['/api/statistics/overview', statsPeriod],
+    queryFn: async () => {
+      const response = await fetch(`/api/statistics/overview?period=${statsPeriod}`);
+      if (!response.ok) throw new Error('Failed to fetch statistics');
+      return response.json();
+    },
+    enabled: activeTab === 'statistics',
+  });
+
+  const { data: leaderboardData, isLoading: leaderboardLoading } = useQuery<{ success: boolean; period: string; leaderboard: Array<{ walletAddress: string; totalSolRecovered: string }> }>({
+    queryKey: ['/api/statistics/leaderboard', statsPeriod],
+    queryFn: async () => {
+      const response = await fetch(`/api/statistics/leaderboard?period=${statsPeriod}&limit=10`);
+      if (!response.ok) throw new Error('Failed to fetch leaderboard');
+      return response.json();
+    },
+    enabled: activeTab === 'statistics',
+  });
 
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
@@ -2437,15 +2461,18 @@ export default function SolRefund() {
                   <Users className="h-4 w-4 mr-2" />
                   Referrals
                 </Button>
-                <Link href="/statistics">
-                  <Button
-                    className="hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all bg-purple-800/40 text-purple-300 hover:bg-purple-600/60"
-                    data-testid="button-statistics"
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Statistics
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => setActiveTab('statistics')}
+                  className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
+                    activeTab === 'statistics' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-statistics"
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Statistics
+                </Button>
               </div>
             </div>
           )}
@@ -2453,7 +2480,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -3180,6 +3207,173 @@ export default function SolRefund() {
               </div>
             </div>
           )}
+
+          {/* Statistics Tab Content */}
+          {activeTab === 'statistics' && (() => {
+            const formatSol = (amount: string | number) => {
+              const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+              return num.toFixed(4);
+            };
+
+            const truncateAddress = (address: string) => {
+              return `${address.slice(0, 4)}...${address.slice(-4)}`;
+            };
+
+            const getPeriodLabel = (period: '24h' | 'weekly' | 'monthly') => {
+              switch (period) {
+                case '24h': return 'Last 24 Hours';
+                case 'weekly': return 'Last 7 Days';
+                case 'monthly': return 'Last 30 Days';
+                default: return 'Last 24 Hours';
+              }
+            };
+
+            return (
+              <div className="space-y-8">
+                {/* Time Period Filter */}
+                <div className="flex justify-center gap-2">
+                  <Button
+                    data-testid="filter-24h"
+                    variant={statsPeriod === '24h' ? 'default' : 'outline'}
+                    onClick={() => setStatsPeriod('24h')}
+                    className={statsPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  >
+                    24 Hours
+                  </Button>
+                  <Button
+                    data-testid="filter-weekly"
+                    variant={statsPeriod === 'weekly' ? 'default' : 'outline'}
+                    onClick={() => setStatsPeriod('weekly')}
+                    className={statsPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  >
+                    Weekly
+                  </Button>
+                  <Button
+                    data-testid="filter-monthly"
+                    variant={statsPeriod === 'monthly' ? 'default' : 'outline'}
+                    onClick={() => setStatsPeriod('monthly')}
+                    className={statsPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  >
+                    Monthly
+                  </Button>
+                </div>
+
+                {/* Overview Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Total Users */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <Users className="w-5 h-5 text-purple-300" />
+                        Total Users
+                      </CardTitle>
+                      <CardDescription className="text-purple-200">
+                        Unique wallets that reclaimed rent
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {overviewLoading ? (
+                        <div className="text-3xl font-bold text-purple-300">Loading...</div>
+                      ) : (
+                        <div data-testid="stat-total-users" className="text-4xl font-bold text-white">
+                          {overviewData?.stats.totalUsers.toLocaleString() || '0'}
+                        </div>
+                      )}
+                      <p className="text-sm text-purple-300 mt-2">{getPeriodLabel(statsPeriod)}</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total SOL Recovered */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <DollarSign className="w-5 h-5 text-green-400" />
+                        Total SOL Recovered
+                      </CardTitle>
+                      <CardDescription className="text-purple-200">
+                        Rent reclaimed across all users
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {overviewLoading ? (
+                        <div className="text-3xl font-bold text-green-400">Loading...</div>
+                      ) : (
+                        <div data-testid="stat-total-sol" className="text-4xl font-bold text-green-400">
+                          {formatSol(overviewData?.stats.totalSolRecovered || '0')} SOL
+                        </div>
+                      )}
+                      <p className="text-sm text-purple-300 mt-2">{getPeriodLabel(statsPeriod)}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Leaderboard */}
+                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <TrendingUp className="w-6 h-6 text-yellow-400" />
+                      Top Addresses Leaderboard
+                    </CardTitle>
+                    <CardDescription className="text-purple-200">
+                      Addresses that recovered the most rent {getPeriodLabel(statsPeriod).toLowerCase()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {leaderboardLoading ? (
+                      <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
+                    ) : leaderboardData && leaderboardData.leaderboard.length > 0 ? (
+                      <div className="space-y-3">
+                        {leaderboardData.leaderboard.map((entry, index) => (
+                          <div 
+                            key={entry.walletAddress} 
+                            className="flex items-center justify-between p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg hover:bg-purple-700/30 transition-colors"
+                            data-testid={`leaderboard-row-${index}`}
+                          >
+                            <div className="flex items-center gap-4">
+                              {index === 0 && (
+                                <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">
+                                  🥇 1st
+                                </Badge>
+                              )}
+                              {index === 1 && (
+                                <Badge className="bg-gray-400 text-black hover:bg-gray-500">
+                                  🥈 2nd
+                                </Badge>
+                              )}
+                              {index === 2 && (
+                                <Badge className="bg-orange-600 text-white hover:bg-orange-700">
+                                  🥉 3rd
+                                </Badge>
+                              )}
+                              {index > 2 && (
+                                <span className="text-purple-200 font-medium ml-2">#{index + 1}</span>
+                              )}
+                              <a
+                                href={`https://solscan.io/account/${entry.walletAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-purple-300 hover:text-purple-100 underline font-mono text-sm"
+                                data-testid={`address-${index}`}
+                              >
+                                {truncateAddress(entry.walletAddress)}
+                              </a>
+                            </div>
+                            <div className="text-right font-bold text-green-400" data-testid={`amount-${index}`}>
+                              {formatSol(entry.totalSolRecovered)} SOL
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-purple-300">
+                        No data available for this time period
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
 
 
 
