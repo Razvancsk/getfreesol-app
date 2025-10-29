@@ -307,6 +307,26 @@ export default function SolRefund() {
     retry: false,
   });
 
+  // Query for Kamino market data
+  const { data: kaminoMarketData, isLoading: loadingMarket } = useQuery<{ success: boolean; marketAddress: string; reserves: any[] }>({
+    queryKey: ['/api/kamino/market-data'],
+    enabled: activeTab === 'lend',
+    retry: false,
+  });
+
+  // Query for user positions
+  const { data: userPositions, isLoading: loadingPositions } = useQuery<{ success: boolean; hasPositions: boolean; deposits: any[]; borrows: any[]; totalDepositValue: string; totalBorrowValue: string }>({
+    queryKey: ['/api/kamino/user-positions', publicKey?.toString()],
+    queryFn: async () => {
+      if (!publicKey) return null;
+      const response = await fetch(`/api/kamino/user-positions/${publicKey.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch user positions');
+      return response.json();
+    },
+    enabled: activeTab === 'lend' && !!publicKey,
+    retry: false,
+  });
+
 
   // Mutation to create referral code automatically
   const createReferralMutation = useMutation({
@@ -3924,59 +3944,95 @@ export default function SolRefund() {
 
           {/* Lend Tab Content */}
           {activeTab === 'lend' && (
-            <div className="space-y-6">
-              <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    💰 Lend Your Assets
-                  </CardTitle>
-                  <CardDescription className="text-purple-200">
-                    Earn passive income by lending your SOL and tokens to borrowers on the Solana network
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🚧</div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Coming Soon!</h3>
-                    <p className="text-purple-200 max-w-md mx-auto">
-                      We're building a secure lending platform where you can earn interest on your crypto assets. Stay tuned!
-                    </p>
-                  </div>
+              <div className="space-y-6">
+                {/* User Positions */}
+                {publicKey && userPositions?.hasPositions && (
+                  <Card className="bg-gradient-to-br from-green-800/50 to-green-900/50 border-green-600 backdrop-blur">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <TrendingUp className="w-6 h-6 text-green-400" />
+                        Your Lending Positions
+                      </CardTitle>
+                      <CardDescription className="text-green-200">
+                        Total Value: ${(parseFloat(userPositions.totalDepositValue) / 1e8).toFixed(2)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {userPositions.deposits.map((deposit: any, idx: number) => (
+                          <div key={idx} className="bg-purple-900/30 rounded-lg p-4 flex justify-between items-center">
+                            <div>
+                              <div className="text-white font-semibold">{deposit.symbol}</div>
+                              <div className="text-sm text-purple-300">APY: {deposit.apy.toFixed(2)}%</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-white font-bold">${(parseFloat(deposit.amountUSD) / 1e8).toFixed(2)}</div>
+                              <div className="text-sm text-purple-300">{(parseFloat(deposit.amount) / 1e9).toFixed(4)}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                      <div className="text-3xl mb-2">📈</div>
-                      <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
-                        Competitive APY
+                {/* Available Lending Pools */}
+                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      💰 Available Lending Pools
+                    </CardTitle>
+                    <CardDescription className="text-purple-200">
+                      Earn passive income by lending your assets - Powered by Kamino Finance
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {loadingMarket ? (
+                      <div className="text-center py-12">
+                        <div className="text-4xl mb-4">⏳</div>
+                        <p className="text-purple-200">Loading lending pools...</p>
                       </div>
-                      <div className="text-xs text-purple-300">
-                        Earn up to 15% annual returns
+                    ) : kaminoMarketData?.reserves && kaminoMarketData.reserves.length > 0 ? (
+                      <div className="space-y-3">
+                        {kaminoMarketData.reserves.map((reserve: any) => (
+                          <div key={reserve.address} className="bg-purple-900/30 rounded-lg p-4 border border-purple-500/20 hover:border-purple-400/40 transition-all">
+                            <div className="flex justify-between items-center">
+                              <div className="flex-1">
+                                <div className="text-white font-semibold text-lg">{reserve.symbol}</div>
+                                <div className="text-sm text-purple-300">{reserve.name}</div>
+                                <div className="text-xs text-purple-400 mt-1">
+                                  Utilization: {(reserve.utilizationRate * 100).toFixed(1)}%
+                                </div>
+                              </div>
+                              <div className="text-right mr-4">
+                                <div className="text-2xl font-bold text-green-400">{reserve.depositAPY.toFixed(2)}%</div>
+                                <div className="text-sm text-purple-300">APY</div>
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  toast({
+                                    title: "Deposit Coming Soon",
+                                    description: `You'll be able to deposit ${reserve.symbol} to earn ${reserve.depositAPY.toFixed(2)}% APY soon!`,
+                                  });
+                                }}
+                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6"
+                                data-testid={`button-lend-${reserve.symbol}`}
+                              >
+                                Deposit
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                      <div className="text-3xl mb-2">🔒</div>
-                      <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
-                        Secure & Safe
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-4xl mb-4">❌</div>
+                        <p className="text-purple-200">Failed to load lending pools. Please try again later.</p>
                       </div>
-                      <div className="text-xs text-purple-300">
-                        Smart contract audited protocols
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                      <div className="text-3xl mb-2">⚡</div>
-                      <div className="text-sm text-purple-200 uppercase tracking-wider mb-2">
-                        Instant Withdrawals
-                      </div>
-                      <div className="text-xs text-purple-300">
-                        Access your funds anytime
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
           )}
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}

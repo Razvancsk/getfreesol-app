@@ -4911,6 +4911,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Kamino Lending - Get market data with reserves and APY rates
+  app.get("/api/kamino/market-data", async (req, res) => {
+    try {
+      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
+      
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+      const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF"); // Kamino Main Market
+
+      console.log('📊 Loading Kamino market data...');
+      const market = await KaminoMarket.load(connection, marketAddress);
+      
+      await market.loadReserves();
+      console.log(`✅ Loaded ${market.reserves.length} reserves`);
+
+      // Extract reserve data with APY rates
+      const reserves = market.reserves.map(reserve => ({
+        address: reserve.address.toString(),
+        symbol: reserve.symbol || 'Unknown',
+        name: reserve.config.tokenInfo.name || 'Unknown Token',
+        mint: reserve.getLiquidityMint().toString(),
+        totalDeposits: reserve.stats.totalDepositsWads.toString(),
+        totalBorrows: reserve.stats.totalBorrowsWads.toString(),
+        depositAPY: reserve.stats.depositApy,
+        borrowAPY: reserve.stats.borrowApy,
+        utilizationRate: reserve.stats.utilizationRate,
+        available: reserve.stats.availableLiquidity.toString(),
+        decimals: reserve.stats.decimals
+      }));
+
+      // Sort by deposit APY (highest first)
+      reserves.sort((a, b) => b.depositAPY - a.depositAPY);
+
+      res.json({
+        success: true,
+        marketAddress: marketAddress.toString(),
+        reserves: reserves.slice(0, 10) // Return top 10 reserves
+      });
+    } catch (error: any) {
+      console.error("Kamino market data error:", error);
+      res.status(500).json({ error: "Failed to load Kamino market data" });
+    }
+  });
+
+  // Kamino Lending - Get user positions
+  app.get("/api/kamino/user-positions/:walletAddress", async (req, res) => {
+    try {
+      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
+      const { walletAddress } = req.params;
+
+      if (!walletAddress) {
+        return res.status(400).json({ error: 'Wallet address is required' });
+      }
+
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+      const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
+      const userWallet = new PublicKey(walletAddress);
+
+      console.log(`📊 Loading positions for wallet: ${walletAddress}`);
+      const market = await KaminoMarket.load(connection, marketAddress);
+      await market.loadReserves();
+
+      const obligation = await market.getUserVanillaObligation(userWallet);
+
+      if (!obligation) {
+        return res.json({
+          success: true,
+          hasPositions: false,
+          deposits: [],
+          borrows: []
+        });
+      }
+
+      // Extract deposit positions
+      const deposits = Array.from(obligation.deposits.entries()).map(([reserve, deposit]) => {
+        const reserveData = market.reserves.find(r => r.address.equals(reserve));
+        return {
+          reserve: reserve.toString(),
+          symbol: reserveData?.symbol || 'Unknown',
+          amount: deposit.depositedAmount.toString(),
+          amountUSD: deposit.marketValueRefreshed.toString(),
+          apy: reserveData?.stats.depositApy || 0
+        };
+      });
+
+      // Extract borrow positions
+      const borrows = Array.from(obligation.borrows.entries()).map(([reserve, borrow]) => {
+        const reserveData = market.reserves.find(r => r.address.equals(reserve));
+        return {
+          reserve: reserve.toString(),
+          symbol: reserveData?.symbol || 'Unknown',
+          amount: borrow.borrowedAmount.toString(),
+          amountUSD: borrow.marketValueRefreshed.toString(),
+          apy: reserveData?.stats.borrowApy || 0
+        };
+      });
+
+      res.json({
+        success: true,
+        hasPositions: true,
+        deposits,
+        borrows,
+        totalDepositValue: obligation.depositsMarketValue.toString(),
+        totalBorrowValue: obligation.borrowsMarketValue.toString(),
+        borrowLimit: obligation.stats.borrowLimit.toString()
+      });
+    } catch (error: any) {
+      console.error("Kamino user positions error:", error);
+      res.status(500).json({ error: "Failed to load user positions" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
