@@ -1557,15 +1557,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (response.ok) {
                   const data = await response.json();
+                  // Jupiter API V2 returns an array directly, not wrapped in {tokens: [...]}
+                  const tokens = Array.isArray(data) ? data : [];
+                  
                   console.log(`📊 Jupiter API response for ${mintAddress}:`, {
-                    tokensCount: data.tokens?.length || 0,
-                    tokens: data.tokens?.map((t: any) => ({ address: t.address, symbol: t.symbol, hasIcon: !!t.icon }))
+                    tokensCount: tokens.length,
+                    tokens: tokens.map((t: any) => ({ id: t.id, symbol: t.symbol, hasIcon: !!t.icon }))
                   });
                   
                   // The API returns an array of matching tokens
-                  if (data.tokens && data.tokens.length > 0) {
-                    // Find exact match by address
-                    const exactMatch = data.tokens.find((t: any) => t.address === mintAddress);
+                  if (tokens.length > 0) {
+                    // Find exact match by id (not address)
+                    const exactMatch = tokens.find((t: any) => t.id === mintAddress);
                     if (exactMatch?.icon) {
                       console.log(`✅ Jupiter API V2 found logo for ${mintAddress}: ${exactMatch.icon}`);
                       return exactMatch.icon;
@@ -1584,21 +1587,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return null;
             }
 
+            // Helper function to convert IPFS URLs to Cloudflare gateway for better reliability
+            function convertIpfsUrl(url: string | null): string | null {
+              if (!url) return null;
+              
+              // Convert ipfs:// protocol to https://
+              if (url.startsWith('ipfs://')) {
+                const hash = url.replace('ipfs://', '');
+                return `https://cloudflare-ipfs.com/ipfs/${hash}`;
+              }
+              
+              // Convert ipfs.io gateway to Cloudflare gateway (more reliable)
+              if (url.includes('ipfs.io/ipfs/')) {
+                return url.replace('ipfs.io/ipfs/', 'cloudflare-ipfs.com/ipfs/');
+              }
+              
+              // Convert gateway.pinata.cloud to Cloudflare gateway
+              if (url.includes('gateway.pinata.cloud/ipfs/')) {
+                return url.replace('gateway.pinata.cloud/ipfs/', 'cloudflare-ipfs.com/ipfs/');
+              }
+              
+              return url;
+            }
+
             // Process tokens and fetch logos (always try Jupiter as fallback for IPFS)
             const tokenPromises = burnableTokens.map(async (asset: any) => {
               const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
               const isEmpty = balance === 0;
               
               // First, always try to fetch Jupiter logo as it's more reliable
-              const jupiterLogo = await fetchJupiterLogo(asset.id);
+              let jupiterLogo = await fetchJupiterLogo(asset.id);
+              // Convert IPFS URLs to Cloudflare gateway
+              jupiterLogo = convertIpfsUrl(jupiterLogo);
               
               let logo = null;
               let selectedPriority = 'None';
               
               // Check if we have Helius URLs
-              const heliusCdnUri = asset.content?.files?.[0]?.cdn_uri;
-              const heliusOriginalUri = asset.content?.files?.[0]?.uri;
-              const heliusMetadataImage = asset.content?.metadata?.image;
+              let heliusCdnUri = asset.content?.files?.[0]?.cdn_uri;
+              let heliusOriginalUri = asset.content?.files?.[0]?.uri;
+              let heliusMetadataImage = asset.content?.metadata?.image;
+              
+              // Convert all IPFS URLs to Cloudflare gateway
+              heliusCdnUri = convertIpfsUrl(heliusCdnUri);
+              heliusOriginalUri = convertIpfsUrl(heliusOriginalUri);
+              heliusMetadataImage = convertIpfsUrl(heliusMetadataImage);
               
               // Priority logic: Prefer Jupiter over IPFS links (which are often slow/broken)
               // Priority 1: Jupiter API (most reliable)
@@ -1622,18 +1655,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 logo = heliusMetadataImage;
                 selectedPriority = 'Metadata (non-IPFS)';
               }
-              // Priority 5: Fallback to IPFS URLs if nothing else available
+              // Priority 5: Fallback to IPFS URLs if nothing else available (now using Cloudflare gateway)
               else if (heliusCdnUri) {
                 logo = heliusCdnUri;
-                selectedPriority = 'CDN (IPFS fallback)';
+                selectedPriority = 'CDN (IPFS via Cloudflare)';
               }
               else if (heliusOriginalUri) {
                 logo = heliusOriginalUri;
-                selectedPriority = 'Original (IPFS fallback)';
+                selectedPriority = 'Original (IPFS via Cloudflare)';
               }
               else if (heliusMetadataImage) {
                 logo = heliusMetadataImage;
-                selectedPriority = 'Metadata (IPFS fallback)';
+                selectedPriority = 'Metadata (IPFS via Cloudflare)';
               }
               
               console.log(`🖼️  Token ${asset.content?.metadata?.symbol || 'Unknown'} logo data:`, {
