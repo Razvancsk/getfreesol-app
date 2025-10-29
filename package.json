@@ -14,6 +14,7 @@
     "@google-cloud/storage": "^7.17.1",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
+    "@kamino-finance/klend-sdk": "^7.2.3",
     "@metaplex-foundation/js": "^0.20.1",
     "@metaplex-foundation/mpl-bubblegum": "^5.0.2",
     "@metaplex-foundation/mpl-core": "^1.7.0",
