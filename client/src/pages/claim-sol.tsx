@@ -214,17 +214,39 @@ export default function SolRefund() {
     
     setLoadingTransferTokens(true);
     try {
+      // Fetch SPL tokens
       const response = await fetch(`/api/tokens/holdings/${publicKey.toBase58()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch token holdings');
       }
       const data = await response.json();
       const tokensWithBalance = data.filter((t: any) => t.balance > 0);
-      setMassTransferTokens(tokensWithBalance);
+      
+      // Get SOL balance
+      const solBalance = await rpcConnection.getBalance(publicKey);
+      const solInSol = solBalance / 1_000_000_000;
+      
+      // Add SOL as the first token if balance > 0
+      const allTokens = [];
+      if (solInSol > 0) {
+        allTokens.push({
+          mint: 'So11111111111111111111111111111111111111112', // SOL mint address
+          symbol: 'SOL',
+          name: 'Solana',
+          logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+          balance: solInSol,
+          decimals: 9,
+          isNativeSOL: true,
+          accounts: [] // No token accounts for native SOL
+        });
+      }
+      allTokens.push(...tokensWithBalance);
+      
+      setMassTransferTokens(allTokens);
       setSelectedTransferTokens(new Set());
       toast({
         title: "Tokens Loaded",
-        description: `Found ${tokensWithBalance.length} tokens with balance`,
+        description: `Found ${allTokens.length} tokens with balance`,
       });
     } catch (error: any) {
       toast({
@@ -3712,51 +3734,63 @@ export default function SolRefund() {
                             const transferAmount = amountStr === '' ? 0 : parseFloat(amountStr);
                             if (transferAmount <= 0) continue;
                             
-                            const mintPubkey = new PublicKey(mintAddress);
-                            const programId = token.accounts[0].programId === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' 
-                              ? TOKEN_2022_PROGRAM_ID 
-                              : TOKEN_PROGRAM_ID;
-                            
-                            // Get source token account (prefer ATA)
-                            const sourceAccount = token.accounts.find((acc: any) => acc.isAssociatedTokenAccount) || token.accounts[0];
-                            const sourceAccountPubkey = new PublicKey(sourceAccount.address);
-                            
-                            // Convert UI amount to raw amount (multiply by 10^decimals)
-                            const rawAmount = BigInt(Math.floor(transferAmount * Math.pow(10, token.decimals)));
-                            
-                            // Get or create destination ATA
-                            const destTokenAccount = await getAssociatedTokenAddress(
-                              mintPubkey,
-                              destinationPubkey,
-                              false,
-                              programId
-                            );
-                            
-                            // Check if destination account exists
-                            const destAccountInfo = await rpcConnection.getAccountInfo(destTokenAccount);
-                            
-                            // Create account if it doesn't exist
-                            if (!destAccountInfo) {
-                              const createIx = createAssociatedTokenAccountInstruction(
-                                wallet.publicKey!,
-                                destTokenAccount,
-                                destinationPubkey,
+                            // Handle native SOL transfer
+                            if (token.isNativeSOL) {
+                              const lamports = Math.floor(transferAmount * 1_000_000_000);
+                              const solTransferIx = SystemProgram.transfer({
+                                fromPubkey: wallet.publicKey!,
+                                toPubkey: destinationPubkey,
+                                lamports: lamports,
+                              });
+                              transaction.add(solTransferIx);
+                            } else {
+                              // Handle SPL token transfer
+                              const mintPubkey = new PublicKey(mintAddress);
+                              const programId = token.accounts[0].programId === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' 
+                                ? TOKEN_2022_PROGRAM_ID 
+                                : TOKEN_PROGRAM_ID;
+                              
+                              // Get source token account (prefer ATA)
+                              const sourceAccount = token.accounts.find((acc: any) => acc.isAssociatedTokenAccount) || token.accounts[0];
+                              const sourceAccountPubkey = new PublicKey(sourceAccount.address);
+                              
+                              // Convert UI amount to raw amount (multiply by 10^decimals)
+                              const rawAmount = BigInt(Math.floor(transferAmount * Math.pow(10, token.decimals)));
+                              
+                              // Get or create destination ATA
+                              const destTokenAccount = await getAssociatedTokenAddress(
                                 mintPubkey,
+                                destinationPubkey,
+                                false,
                                 programId
                               );
-                              transaction.add(createIx);
+                              
+                              // Check if destination account exists
+                              const destAccountInfo = await rpcConnection.getAccountInfo(destTokenAccount);
+                              
+                              // Create account if it doesn't exist
+                              if (!destAccountInfo) {
+                                const createIx = createAssociatedTokenAccountInstruction(
+                                  wallet.publicKey!,
+                                  destTokenAccount,
+                                  destinationPubkey,
+                                  mintPubkey,
+                                  programId
+                                );
+                                transaction.add(createIx);
+                              }
+                              
+                              // Add transfer instruction with custom amount
+                              const transferIx = createTransferInstruction(
+                                sourceAccountPubkey,
+                                destTokenAccount,
+                                wallet.publicKey!,
+                                rawAmount,
+                                [],
+                                programId
+                              );
+                              transaction.add(transferIx);
                             }
-                            
-                            // Add transfer instruction with custom amount
-                            const transferIx = createTransferInstruction(
-                              sourceAccountPubkey,
-                              destTokenAccount,
-                              wallet.publicKey!,
-                              rawAmount,
-                              [],
-                              programId
-                            );
-                            transaction.add(transferIx);
                           }
                           
                           // Get recent blockhash
