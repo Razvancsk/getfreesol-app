@@ -2553,7 +2553,7 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => setActiveTab('massTransfer')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
+                  className={`px-4 py-2 text-sm font-medium rounded transition-all relative ${
                     activeTab === 'massTransfer' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
@@ -2562,6 +2562,9 @@ export default function SolRefund() {
                 >
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   Transfer
+                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse">
+                    NEW
+                  </span>
                 </Button>
                 <Button
                   onClick={() => setActiveTab('statistics')}
