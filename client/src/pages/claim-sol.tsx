@@ -219,6 +219,9 @@ export default function SolRefund() {
         } else if (burnSubTab === 'nft') {
           scanNftsMutation.mutate(publicKey.toString());
         }
+      } else if (activeTab === 'massTransfer') {
+        // Auto-load tokens for mass transfer tab
+        loadMassTransferTokens();
       }
     }
   }, [isConnected, publicKey, activeTab, burnSubTab]);
