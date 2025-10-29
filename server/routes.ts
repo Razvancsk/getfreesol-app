@@ -87,6 +87,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter Holding API - Get wallet token balances
+  app.get("/api/tokens/holdings/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      console.log('Fetching holdings for wallet:', walletAddress);
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: 'Wallet address is required' });
+      }
+
+      // Use Jupiter's Ultra API to get holdings
+      const response = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${walletAddress}`);
+      if (!response.ok) {
+        console.error('Failed to fetch holdings:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        return res.status(response.status).json({ error: errorData.error || 'Failed to fetch token holdings' });
+      }
+
+      const data = await response.json();
+      
+      // Check for API error response
+      if (data.error) {
+        return res.status(400).json({ error: data.error });
+      }
+      
+      // Extract tokens from the response (format: { tokens: { mintAddress: [accountInfo, ...] } })
+      const tokens = data.tokens || {};
+      const tokenList: any[] = [];
+      
+      // Process each token mint
+      for (const [mintAddress, accounts] of Object.entries(tokens)) {
+        if (!Array.isArray(accounts) || accounts.length === 0) continue;
+        
+        // Sum up balances from all token accounts for this mint
+        const totalBalance = accounts.reduce((sum: number, acc: any) => sum + (acc.uiAmount || 0), 0);
+        const firstAccount = accounts[0];
+        
+        if (totalBalance > 0) {
+          try {
+            // Fetch token metadata from Jupiter V2 API
+            const metadataResponse = await fetch(`https://tokens.jup.ag/token/${mintAddress}`);
+            if (metadataResponse.ok) {
+              const metadata = await metadataResponse.json();
+              tokenList.push({
+                mint: mintAddress,
+                balance: totalBalance,
+                decimals: firstAccount.decimals || 0,
+                amount: accounts.reduce((sum: string, acc: any) => {
+                  const accAmount = BigInt(acc.amount || '0');
+                  const sumBig = BigInt(sum);
+                  return (sumBig + accAmount).toString();
+                }, '0'),
+                symbol: metadata.symbol || 'Unknown',
+                name: metadata.name || mintAddress.slice(0, 8) + '...',
+                logo: metadata.logoURI || null,
+                accounts: accounts.map((acc: any) => ({
+                  address: acc.account,
+                  amount: acc.amount,
+                  uiAmount: acc.uiAmount,
+                  isAssociatedTokenAccount: acc.isAssociatedTokenAccount,
+                  isFrozen: acc.isFrozen,
+                  programId: acc.programId
+                }))
+              });
+            } else {
+              // Fallback without metadata
+              tokenList.push({
+                mint: mintAddress,
+                balance: totalBalance,
+                decimals: firstAccount.decimals || 0,
+                amount: accounts.reduce((sum: string, acc: any) => {
+                  const accAmount = BigInt(acc.amount || '0');
+                  const sumBig = BigInt(sum);
+                  return (sumBig + accAmount).toString();
+                }, '0'),
+                symbol: 'Unknown',
+                name: mintAddress.slice(0, 8) + '...',
+                logo: null,
+                accounts: accounts.map((acc: any) => ({
+                  address: acc.account,
+                  amount: acc.amount,
+                  uiAmount: acc.uiAmount,
+                  isAssociatedTokenAccount: acc.isAssociatedTokenAccount,
+                  isFrozen: acc.isFrozen,
+                  programId: acc.programId
+                }))
+              });
+            }
+          } catch (e) {
+            console.error(`Failed to fetch metadata for ${mintAddress}:`, e);
+          }
+        }
+      }
+
+      console.log(`Found ${tokenList.length} tokens with balance for wallet ${walletAddress}`);
+      res.json(tokenList);
+    } catch (error) {
+      console.error('Token holdings error:', error);
+      res.status(500).json({ error: 'Failed to fetch token holdings' });
+    }
+  });
+
   // Jupiter Ultra Swap - Get Order endpoint (replaces quote + swap)
   app.get("/api/jupiter/ultra/order", async (req, res) => {
     try {

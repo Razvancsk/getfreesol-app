@@ -3433,6 +3433,8 @@ export default function SolRefund() {
                     </Label>
                     <Input
                       id="destination-wallet"
+                      value={destinationWallet}
+                      onChange={(e) => setDestinationWallet(e.target.value)}
                       placeholder="Enter Solana wallet address..."
                       className="bg-purple-900/30 border-purple-500/30 text-white placeholder-purple-400"
                       data-testid="input-destination-wallet"
@@ -3446,39 +3448,237 @@ export default function SolRefund() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          // Placeholder for refresh token list
-                          toast({
-                            title: "Loading tokens...",
-                            description: "Fetching your token list",
-                          });
+                        onClick={async () => {
+                          if (!wallet.publicKey) {
+                            toast({
+                              title: "Wallet not connected",
+                              description: "Please connect your wallet first",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
+                          setLoadingTransferTokens(true);
+                          try {
+                            const response = await fetch(`/api/tokens/holdings/${wallet.publicKey.toBase58()}`);
+                            if (!response.ok) {
+                              throw new Error('Failed to fetch token holdings');
+                            }
+                            const data = await response.json();
+                            const tokensWithBalance = data.filter((t: any) => t.balance > 0);
+                            setMassTransferTokens(tokensWithBalance);
+                            setSelectedTransferTokens(new Set());
+                            toast({
+                              title: "Tokens Loaded",
+                              description: `Found ${tokensWithBalance.length} tokens with balance`,
+                            });
+                          } catch (error: any) {
+                            toast({
+                              title: "Error loading tokens",
+                              description: error.message,
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setLoadingTransferTokens(false);
+                          }
                         }}
+                        disabled={loadingTransferTokens}
                         className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
                         data-testid="button-refresh-tokens"
                       >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Refresh
+                        <RefreshCw className={`w-4 h-4 mr-2 ${loadingTransferTokens ? 'animate-spin' : ''}`} />
+                        {loadingTransferTokens ? 'Loading...' : 'Refresh'}
                       </Button>
                     </div>
 
                     {/* Token Selection List */}
                     <div className="border border-purple-500/30 rounded-lg p-4 bg-purple-900/20 max-h-96 overflow-y-auto">
-                      <p className="text-purple-300 text-center py-8">
-                        Connect your wallet and click Refresh to load your tokens
-                      </p>
+                      {massTransferTokens.length > 0 ? (
+                        <div className="space-y-2">
+                          {massTransferTokens.map((token, index) => {
+                            const isSelected = selectedTransferTokens.has(token.mint);
+                            return (
+                              <div
+                                key={token.mint}
+                                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'bg-purple-600/40 border-2 border-purple-500'
+                                    : 'bg-purple-900/20 border border-purple-700/50 hover:border-purple-600/60'
+                                }`}
+                                onClick={() => {
+                                  const newSelection = new Set(selectedTransferTokens);
+                                  if (isSelected) {
+                                    newSelection.delete(token.mint);
+                                  } else {
+                                    newSelection.add(token.mint);
+                                  }
+                                  setSelectedTransferTokens(newSelection);
+                                }}
+                                data-testid={`token-transfer-${index}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  readOnly
+                                  className="w-4 h-4"
+                                />
+                                {token.logo && (
+                                  <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                                )}
+                                <div className="flex-1">
+                                  <div className="text-white font-medium">{token.symbol || 'Unknown'}</div>
+                                  <div className="text-purple-300 text-sm">{token.name || token.mint.slice(0, 8) + '...'}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-white font-medium">{token.balance.toFixed(token.decimals > 4 ? 4 : token.decimals)}</div>
+                                  <div className="text-purple-300 text-sm">{token.decimals} decimals</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-purple-300 text-center py-8">
+                          {loadingTransferTokens ? 'Loading tokens...' : 'Connect your wallet and click Refresh to load your tokens'}
+                        </p>
+                      )}
                     </div>
                   </div>
+
+                  {/* Transfer Summary */}
+                  {selectedTransferTokens.size > 0 && (
+                    <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-purple-300">Selected Tokens:</span>
+                        <span className="text-white font-medium">{selectedTransferTokens.size}</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Transfer Button */}
                   <div className="flex justify-center pt-4">
                     <Button
                       size="lg"
-                      disabled={true}
+                      disabled={selectedTransferTokens.size === 0 || !destinationWallet || processing}
+                      onClick={async () => {
+                        if (!wallet.publicKey || !wallet.signTransaction) {
+                          toast({
+                            title: "Wallet not connected",
+                            description: "Please connect your wallet first",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        // Validate destination address
+                        try {
+                          new PublicKey(destinationWallet);
+                        } catch (error) {
+                          toast({
+                            title: "Invalid destination address",
+                            description: "Please enter a valid Solana wallet address",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        setProcessing(true);
+                        try {
+                          const connection = new Connection(HELIUS_RPC_URL);
+                          const transaction = new Transaction();
+                          const destinationPubkey = new PublicKey(destinationWallet);
+                          
+                          // Create transfer instructions for each selected token
+                          for (const mintAddress of selectedTransferTokens) {
+                            const token = massTransferTokens.find(t => t.mint === mintAddress);
+                            if (!token) continue;
+                            
+                            const mintPubkey = new PublicKey(mintAddress);
+                            const programId = token.accounts[0].programId === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' 
+                              ? TOKEN_2022_PROGRAM_ID 
+                              : TOKEN_PROGRAM_ID;
+                            
+                            // Get source token account (prefer ATA)
+                            const sourceAccount = token.accounts.find((acc: any) => acc.isAssociatedTokenAccount) || token.accounts[0];
+                            const sourceAccountPubkey = new PublicKey(sourceAccount.address);
+                            
+                            // Get or create destination ATA
+                            const destTokenAccount = await getAssociatedTokenAddress(
+                              mintPubkey,
+                              destinationPubkey,
+                              false,
+                              programId
+                            );
+                            
+                            // Check if destination account exists
+                            const destAccountInfo = await connection.getAccountInfo(destTokenAccount);
+                            
+                            // Create account if it doesn't exist
+                            if (!destAccountInfo) {
+                              const createIx = await import('@solana/spl-token').then(m => 
+                                m.createAssociatedTokenAccountInstruction(
+                                  wallet.publicKey!,
+                                  destTokenAccount,
+                                  destinationPubkey,
+                                  mintPubkey,
+                                  programId
+                                )
+                              );
+                              transaction.add(createIx);
+                            }
+                            
+                            // Add transfer instruction
+                            const transferIx = await import('@solana/spl-token').then(m =>
+                              m.createTransferInstruction(
+                                sourceAccountPubkey,
+                                destTokenAccount,
+                                wallet.publicKey!,
+                                BigInt(sourceAccount.amount),
+                                [],
+                                programId
+                              )
+                            );
+                            transaction.add(transferIx);
+                          }
+                          
+                          // Get recent blockhash
+                          const { blockhash } = await connection.getLatestBlockhash();
+                          transaction.recentBlockhash = blockhash;
+                          transaction.feePayer = wallet.publicKey;
+                          
+                          // Sign and send
+                          const signed = await wallet.signTransaction(transaction);
+                          const signature = await connection.sendRawTransaction(signed.serialize());
+                          
+                          // Confirm
+                          await connection.confirmTransaction(signature, 'confirmed');
+                          
+                          toast({
+                            title: "Transfer Successful!",
+                            description: `Transferred ${selectedTransferTokens.size} tokens to ${destinationWallet.slice(0, 8)}...`,
+                          });
+                          
+                          // Clear selection and reload tokens
+                          setSelectedTransferTokens(new Set());
+                          setDestinationWallet('');
+                          setMassTransferTokens([]);
+                          
+                        } catch (error: any) {
+                          console.error('Transfer error:', error);
+                          toast({
+                            title: "Transfer Failed",
+                            description: error.message || "Failed to transfer tokens",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setProcessing(false);
+                        }
+                      }}
                       className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold px-8 disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="button-execute-transfer"
                     >
                       <ArrowUpDown className="w-5 h-5 mr-2" />
-                      Transfer Selected Tokens
+                      {processing ? 'Transferring...' : `Transfer ${selectedTransferTokens.size} Token${selectedTransferTokens.size !== 1 ? 's' : ''}`}
                     </Button>
                   </div>
                 </CardContent>
