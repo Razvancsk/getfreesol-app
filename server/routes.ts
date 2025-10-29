@@ -4912,48 +4912,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Kamino Lending - Get market reserves and APYs
+  // Kamino Lending - Get market reserves and APYs from DefiLlama
   app.get("/api/kamino/market", async (req, res) => {
     try {
-      // Fetch market data directly from Kamino API
-      const response = await fetch('https://api.hubbleprotocol.io/v2/kamino-market?env=mainnet-beta');
+      // Fetch lending pool data from DefiLlama API
+      const response = await fetch('https://yields.llama.fi/pools');
       
       if (!response.ok) {
-        console.error('Failed to fetch from Kamino API:', response.status);
-        return res.status(500).json({ error: 'Failed to fetch market data from Kamino' });
+        console.error('Failed to fetch from DefiLlama API:', response.status);
+        return res.status(500).json({ error: 'Failed to fetch market data' });
       }
 
       const data = await response.json();
       
-      // Extract and format reserve data
-      const reserves = (data.reserves || [])
-        .filter((reserve: any) => reserve.stats?.totalDepositsWads && parseFloat(reserve.stats.totalDepositsWads) > 0)
-        .map((reserve: any) => {
-          const decimals = reserve.decimals || 9;
-          const totalDeposits = parseFloat(reserve.stats.totalDepositsWads || '0') / Math.pow(10, decimals);
-          const totalBorrows = parseFloat(reserve.stats.totalBorrowsWads || '0') / Math.pow(10, decimals);
-          
+      // Filter for Kamino lending pools on Solana
+      const kaminoPools = (data?.data || [])
+        .filter((pool: any) => 
+          pool.project === 'kamino-lend' && 
+          pool.chain === 'Solana' &&
+          pool.tvlUsd > 0
+        )
+        .map((pool: any) => {
           return {
-            symbol: reserve.symbol || 'Unknown',
-            name: reserve.name || reserve.symbol || 'Unknown Token',
-            mint: reserve.address || '',
-            totalDeposits,
-            totalBorrows,
-            depositApy: parseFloat(reserve.stats?.depositApy || '0'),
-            borrowApy: parseFloat(reserve.stats?.borrowApy || '0'),
-            utilizationRate: parseFloat(reserve.stats?.utilizationRate || '0'),
-            loanToValue: reserve.config?.loanToValuePct || 0,
-            liquidationThreshold: reserve.config?.liquidationThresholdPct || 0,
-            decimals,
-            logo: reserve.logo || null
+            symbol: pool.symbol || 'Unknown',
+            name: pool.symbol || 'Unknown Token',
+            mint: pool.pool || '',
+            totalDeposits: pool.tvlUsd || 0,
+            totalBorrows: 0, // Not available from DefiLlama
+            depositApy: pool.apyBase || 0,
+            borrowApy: pool.apyBaseBorrow || 0,
+            utilizationRate: 0, // Not available from DefiLlama
+            loanToValue: 0, // Not available
+            liquidationThreshold: 0, // Not available
+            decimals: 6,
+            logo: null
           };
         })
         .sort((a: any, b: any) => b.totalDeposits - a.totalDeposits)
-        .slice(0, 10);
+        .slice(0, 15);
 
       res.json({
         success: true,
-        reserves
+        reserves: kaminoPools
       });
     } catch (error: any) {
       console.error("Kamino market error:", error);
