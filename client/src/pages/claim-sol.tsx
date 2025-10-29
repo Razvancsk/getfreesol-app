@@ -3586,9 +3586,7 @@ export default function SolRefund() {
 
                         setProcessing(true);
                         try {
-                          // Use Helius RPC or fallback to public endpoint
-                          const rpcUrl = import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
-                          const connection = new Connection(rpcUrl);
+                          // Use the wallet's RPC connection
                           const transaction = new Transaction();
                           const destinationPubkey = new PublicKey(destinationWallet);
                           
@@ -3615,7 +3613,7 @@ export default function SolRefund() {
                             );
                             
                             // Check if destination account exists
-                            const destAccountInfo = await connection.getAccountInfo(destTokenAccount);
+                            const destAccountInfo = await rpcConnection.getAccountInfo(destTokenAccount);
                             
                             // Create account if it doesn't exist
                             if (!destAccountInfo) {
@@ -3642,16 +3640,16 @@ export default function SolRefund() {
                           }
                           
                           // Get recent blockhash
-                          const { blockhash } = await connection.getLatestBlockhash();
+                          const { blockhash } = await rpcConnection.getLatestBlockhash();
                           transaction.recentBlockhash = blockhash;
                           transaction.feePayer = wallet.publicKey;
                           
                           // Sign and send
                           const signed = await wallet.signTransaction(transaction);
-                          const signature = await connection.sendRawTransaction(signed.serialize());
+                          const signature = await rpcConnection.sendRawTransaction(signed.serialize());
                           
                           // Confirm
-                          await connection.confirmTransaction(signature, 'confirmed');
+                          await rpcConnection.confirmTransaction(signature, 'confirmed');
                           
                           toast({
                             title: "Transfer Successful!",
