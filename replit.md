@@ -9,10 +9,14 @@
   - **Token Loading**: Fetches all token holdings with metadata (symbol, name, logo) from Jupiter Token List V2 API
   - **Multi-Program Support**: Handles both TOKEN_PROGRAM_ID and TOKEN_2022_PROGRAM_ID tokens
   - **Token Selection UI**: Interactive checkboxes for selecting multiple tokens to transfer
+  - **Custom Amount Controls**: Manual input field and quick-select percentage buttons (25%, 50%, 75%, Max) for each token
+  - **Amount Validation**: Automatically clamps amounts between 0 and maximum balance
+  - **Decimal Precision**: Respects token decimal settings for accurate amount calculations
   - **Automatic ATA Creation**: Creates Associated Token Accounts for destination wallet if they don't exist
   - **Single Transaction**: Combines all selected token transfers into one transaction for efficiency
   - **Destination Validation**: Validates Solana wallet address format before transfer
-  - **UI/UX**: Transfer tab with token list, balance display, destination input, and transfer summary
+  - **UI/UX**: Transfer tab with token list, balance display, custom amount controls, destination input, and transfer summary
+  - **Zero Fees**: Application collects no fees - only Solana network fees paid to validators
 - **Complete Auto-Claim Feature** (October 2025): Production-ready permit-based automated SOL reclamation system
   - **Multi-Token Support**: Supports BOTH standard SPL tokens (TOKEN_PROGRAM_ID) AND Token Extensions (TOKEN_2022_PROGRAM_ID)
   - **Backend Workers**: 
