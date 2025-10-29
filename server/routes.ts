@@ -126,14 +126,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const firstAccount = accounts[0];
         
         if (totalBalance > 0) {
-          // Fetch token metadata from Jupiter V2 Search API
-          let metadata = null;
+          // Fetch token metadata from Jupiter V2 Search API (same as burn tokens)
+          let symbol = 'Unknown';
+          let name = mintAddress.slice(0, 8) + '...';
+          let logo = null;
+          
           try {
-            const searchResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`);
-            if (searchResponse.ok) {
-              const searchData = await searchResponse.json();
-              // The search returns an array of tokens, find exact match
-              metadata = searchData.tokens?.find((t: any) => t.address === mintAddress);
+            const searchUrl = `https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`;
+            const response = await fetch(searchUrl);
+            
+            if (response.ok) {
+              const data = await response.json();
+              const tokens = Array.isArray(data) ? data : [];
+              
+              if (tokens.length > 0) {
+                const exactMatch = tokens.find((t: any) => t.id === mintAddress);
+                if (exactMatch) {
+                  symbol = exactMatch.symbol || 'Unknown';
+                  name = exactMatch.name || mintAddress.slice(0, 8) + '...';
+                  logo = exactMatch.icon || null;
+                }
+              }
             }
           } catch (e) {
             console.log(`Metadata fetch failed for ${mintAddress}, using fallback`);
@@ -148,9 +161,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const sumBig = BigInt(sum);
               return (sumBig + accAmount).toString();
             }, '0'),
-            symbol: metadata?.symbol || 'Unknown',
-            name: metadata?.name || mintAddress.slice(0, 8) + '...',
-            logo: metadata?.logoURI || null,
+            symbol,
+            name,
+            logo,
             accounts: accounts.map((acc: any) => ({
               address: acc.account,
               amount: acc.amount,
