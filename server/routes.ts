@@ -126,14 +126,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const firstAccount = accounts[0];
         
         if (totalBalance > 0) {
-          // Try to fetch token metadata from Jupiter Token List (strict list)
+          // Fetch token metadata from Jupiter V2 Search API
           let metadata = null;
           try {
-            const metadataResponse = await fetch(`https://token.jup.ag/strict/${mintAddress}`, {
-              headers: { 'Accept': 'application/json' }
-            });
-            if (metadataResponse.ok) {
-              metadata = await metadataResponse.json();
+            const searchResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`);
+            if (searchResponse.ok) {
+              const searchData = await searchResponse.json();
+              // The search returns an array of tokens, find exact match
+              metadata = searchData.tokens?.find((t: any) => t.address === mintAddress);
             }
           } catch (e) {
             console.log(`Metadata fetch failed for ${mintAddress}, using fallback`);
