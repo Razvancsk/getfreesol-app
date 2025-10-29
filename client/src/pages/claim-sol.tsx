@@ -3512,11 +3512,22 @@ export default function SolRefund() {
                             return (
                               <div
                                 key={token.mint}
-                                className={`p-3 rounded-lg transition-all ${
+                                className={`p-3 rounded-lg transition-all cursor-pointer ${
                                   isSelected
                                     ? 'bg-purple-600/40 border-2 border-purple-500'
-                                    : 'bg-purple-900/20 border border-purple-700/50'
+                                    : 'bg-purple-900/20 border border-purple-700/50 hover:border-purple-600/60'
                                 }`}
+                                onClick={() => {
+                                  const newSelection = new Set(selectedTransferTokens);
+                                  if (isSelected) {
+                                    newSelection.delete(token.mint);
+                                  } else {
+                                    newSelection.add(token.mint);
+                                    // Initialize with max amount
+                                    setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance.toString()));
+                                  }
+                                  setSelectedTransferTokens(newSelection);
+                                }}
                                 data-testid={`token-transfer-${index}`}
                               >
                                 <div className="flex items-center gap-3 mb-2">
@@ -3525,17 +3536,8 @@ export default function SolRefund() {
                                     checked={isSelected}
                                     onChange={(e) => {
                                       e.stopPropagation();
-                                      const newSelection = new Set(selectedTransferTokens);
-                                      if (isSelected) {
-                                        newSelection.delete(token.mint);
-                                      } else {
-                                        newSelection.add(token.mint);
-                                        // Initialize with max amount
-                                        setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance.toString()));
-                                      }
-                                      setSelectedTransferTokens(newSelection);
                                     }}
-                                    className="w-4 h-4 cursor-pointer"
+                                    className="w-4 h-4 cursor-pointer pointer-events-none"
                                   />
                                   {token.logo && (
                                     <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
