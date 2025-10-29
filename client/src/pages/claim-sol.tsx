@@ -292,10 +292,10 @@ export default function SolRefund() {
     retry: false,
   });
 
-  // Query to get mass transfer stats
+  // Query to get mass transfer stats (only for platform wallet)
   const { data: massTransferStats } = useQuery<{ success: boolean; stats: { totalUniqueUsers: number; totalTransfers: number } }>({
-    queryKey: ['/api/mass-transfer/stats'],
-    enabled: activeTab === 'massTransfer',
+    queryKey: ['/api/mass-transfer/stats', publicKey?.toString()],
+    enabled: activeTab === 'massTransfer' && publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6',
     retry: false,
   });
 
