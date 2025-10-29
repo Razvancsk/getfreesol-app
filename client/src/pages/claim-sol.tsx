@@ -99,7 +99,38 @@ export default function SolRefund() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
 
-  // Statistics queries for all-time data
+  // Statistics queries for time-filtered data (SOL recovered)
+  const { data: stats24h } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
+    queryKey: ['/api/statistics/overview', '24h'],
+    queryFn: async () => {
+      const response = await fetch('/api/statistics/overview?period=24h');
+      if (!response.ok) throw new Error('Failed to fetch statistics');
+      return response.json();
+    },
+    enabled: activeTab === 'statistics',
+  });
+
+  const { data: statsWeekly } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
+    queryKey: ['/api/statistics/overview', 'weekly'],
+    queryFn: async () => {
+      const response = await fetch('/api/statistics/overview?period=weekly');
+      if (!response.ok) throw new Error('Failed to fetch statistics');
+      return response.json();
+    },
+    enabled: activeTab === 'statistics',
+  });
+
+  const { data: statsMonthly } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
+    queryKey: ['/api/statistics/overview', 'monthly'],
+    queryFn: async () => {
+      const response = await fetch('/api/statistics/overview?period=monthly');
+      if (!response.ok) throw new Error('Failed to fetch statistics');
+      return response.json();
+    },
+    enabled: activeTab === 'statistics',
+  });
+
+  // All-time data for Total Wallets
   const { data: statsAllTime } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
     queryKey: ['/api/statistics/overview', 'all'],
     queryFn: async () => {
@@ -3218,28 +3249,66 @@ export default function SolRefund() {
 
             return (
               <div className="space-y-8">
-                {/* All-Time Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Total SOL Recovered Card */}
-                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-total-sol">
+                {/* Time-Filtered Statistics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* SOL Recovered (24H) */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-sol-24h">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-white">
                         <DollarSign className="w-5 h-5 text-green-400" />
-                        Total SOL Recovered
+                        SOL Recovered
                       </CardTitle>
                       <CardDescription className="text-purple-200">
-                        Rent reclaimed across all users
+                        Last 24 hours
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div data-testid="stat-total-sol" className="text-5xl font-bold text-green-400">
-                        {formatSol(statsAllTime?.stats.totalSolRecovered || '0')} SOL
+                      <div data-testid="stat-sol-24h" className="text-4xl font-bold text-green-400">
+                        {formatSol(stats24h?.stats.totalSolRecovered || '0')}
                       </div>
-                      <p className="text-sm text-purple-300 mt-3">All Time</p>
+                      <p className="text-sm text-purple-300 mt-3">24H</p>
                     </CardContent>
                   </Card>
 
-                  {/* Total Wallets Card */}
+                  {/* SOL Recovered (Weekly) */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-sol-weekly">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <DollarSign className="w-5 h-5 text-green-400" />
+                        SOL Recovered
+                      </CardTitle>
+                      <CardDescription className="text-purple-200">
+                        Last 7 days
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div data-testid="stat-sol-weekly" className="text-4xl font-bold text-green-400">
+                        {formatSol(statsWeekly?.stats.totalSolRecovered || '0')}
+                      </div>
+                      <p className="text-sm text-purple-300 mt-3">Weekly</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* SOL Recovered (Monthly) */}
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-sol-monthly">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <DollarSign className="w-5 h-5 text-green-400" />
+                        SOL Recovered
+                      </CardTitle>
+                      <CardDescription className="text-purple-200">
+                        Last 30 days
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div data-testid="stat-sol-monthly" className="text-4xl font-bold text-green-400">
+                        {formatSol(statsMonthly?.stats.totalSolRecovered || '0')}
+                      </div>
+                      <p className="text-sm text-purple-300 mt-3">Monthly</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total Wallets (All Time) */}
                   <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-total-wallets">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-white">
@@ -3247,11 +3316,11 @@ export default function SolRefund() {
                         Total Wallets
                       </CardTitle>
                       <CardDescription className="text-purple-200">
-                        Unique wallets that made transactions
+                        Unique wallets
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div data-testid="stat-total-users" className="text-5xl font-bold text-white">
+                      <div data-testid="stat-total-users" className="text-4xl font-bold text-white">
                         {statsAllTime?.stats.totalUsers.toLocaleString() || '0'}
                       </div>
                       <p className="text-sm text-purple-300 mt-3">All Time</p>
