@@ -19,6 +19,7 @@ import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } from '@kamino-finance/klend-sdk';
 
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
@@ -4908,6 +4909,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Get mass transfer stats error:", error);
       res.status(500).json({ error: "Failed to get mass transfer statistics" });
+    }
+  });
+
+  // Kamino Lending - Get market reserves and APYs
+  app.get("/api/kamino/market", async (req, res) => {
+    try {
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+      const mainMarketAddress = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
+
+      // Load Kamino market data
+      const market = await KaminoMarket.load(
+        connection,
+        mainMarketAddress,
+        DEFAULT_RECENT_SLOT_DURATION_MS
+      );
+
+      // Get reserve data
+      const reserves = market.reserves.map((reserve) => {
+        const config = reserve.state.config;
+        const stats = reserve.stats;
+        
+        return {
+          symbol: reserve.symbol,
+          name: reserve.tokenName,
+          mint: reserve.state.liquidity.mintPubkey.toString(),
+          totalDeposits: stats.totalDepositsWads.toNumber() / Math.pow(10, reserve.state.liquidity.mintDecimals),
+          totalBorrows: stats.totalBorrowsWads.toNumber() / Math.pow(10, reserve.state.liquidity.mintDecimals),
+          depositApy: stats.depositApy,
+          borrowApy: stats.borrowApy,
+          utilizationRate: stats.utilizationRate,
+          loanToValue: config.loanToValuePct,
+          liquidationThreshold: config.liquidationThresholdPct,
+          decimals: reserve.state.liquidity.mintDecimals,
+          logo: reserve.tokenLogoUrl
+        };
+      });
+
+      res.json({
+        success: true,
+        reserves: reserves.slice(0, 10) // Return top 10 reserves
+      });
+    } catch (error: any) {
+      console.error("Kamino market error:", error);
+      res.status(500).json({ error: "Failed to fetch Kamino market data" });
     }
   });
 
