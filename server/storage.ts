@@ -84,8 +84,8 @@ export interface IStorage {
   getTotalAccountsClaimed(): Promise<number>;
   getTotalTokensBurned(): Promise<number>;
   getTotalNftsBurned(): Promise<number>;
-  getStatisticsOverview(sinceTimestamp: Date): Promise<{ totalUsers: number; totalSolRecovered: string }>;
-  getLeaderboard(sinceTimestamp: Date, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>>;
+  getStatisticsOverview(sinceTimestamp: Date | null): Promise<{ totalUsers: number; totalSolRecovered: string }>;
+  getLeaderboard(sinceTimestamp: Date | null, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>>;
   
   // Referral System
   createReferralCode(referral: InsertReferralCode): Promise<ReferralCode>;
