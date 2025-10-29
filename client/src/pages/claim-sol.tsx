@@ -244,10 +244,6 @@ export default function SolRefund() {
       
       setMassTransferTokens(allTokens);
       setSelectedTransferTokens(new Set());
-      toast({
-        title: "Tokens Loaded",
-        description: `Found ${allTokens.length} tokens with balance`,
-      });
     } catch (error: any) {
       toast({
         title: "Error loading tokens",
