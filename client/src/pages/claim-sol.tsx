@@ -4020,45 +4020,28 @@ export default function SolRefund() {
               <div className="space-y-6">
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
                 {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
-                  <div 
-                    className="mx-auto max-w-[420px] rounded-2xl p-6 backdrop-blur-md border border-purple-500/20"
-                    style={{
-                      background: 'linear-gradient(180deg, rgba(88, 28, 135, 0.6) 0%, rgba(59, 7, 100, 0.7) 100%)'
-                    }}
-                  >
+                  <div className="mx-auto max-w-[420px]">
                     <h2 className="text-[22px] font-semibold text-white tracking-tight text-center mb-6">
                       Lend your assets and earn passive income on Solana
                     </h2>
                     
                     <div className="flex flex-col gap-4">
                       {/* Total Deposits Card */}
-                      <div 
-                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border border-purple-400/20"
-                        style={{
-                          backgroundColor: 'rgba(107, 33, 168, 0.4)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
-                        }}
-                      >
-                        <div className="text-sm font-medium text-purple-200">
+                      <div className="bg-purple-800/50 border-purple-600 backdrop-blur p-6 rounded-xl border">
+                        <div className="text-sm font-medium text-purple-200 mb-2">
                           Total Deposits
                         </div>
-                        <div className="text-[28px] font-bold text-white">
+                        <div className="text-[32px] font-bold text-white">
                           {lendStats ? `$${parseFloat(lendStats.totalDepositsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
                         </div>
                       </div>
                       
                       {/* Total Earned Card */}
-                      <div 
-                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border border-purple-400/20"
-                        style={{
-                          backgroundColor: 'rgba(107, 33, 168, 0.4)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
-                        }}
-                      >
-                        <div className="text-sm font-medium text-purple-200">
+                      <div className="bg-purple-800/50 border-purple-600 backdrop-blur p-6 rounded-xl border">
+                        <div className="text-sm font-medium text-purple-200 mb-2">
                           Total Earned
                         </div>
-                        <div className="text-[28px] font-bold text-white">
+                        <div className="text-[32px] font-bold text-white">
                           {lendStats ? `$${parseFloat(lendStats.totalEarningsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
                         </div>
                       </div>
