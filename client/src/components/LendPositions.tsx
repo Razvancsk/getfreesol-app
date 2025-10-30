@@ -58,12 +58,10 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
   };
 
   const getAPYColor = (apy: number, symbol: string) => {
-    // Return color based on APY ranges
-    if (symbol === 'USDC') return 'text-blue-400';
-    if (symbol === 'SOL') return 'text-green-400';
+    // Return green color based on APY ranges
     if (apy >= 8) return 'text-emerald-400';
     if (apy >= 5) return 'text-green-400';
-    return 'text-blue-400';
+    return 'text-green-400';
   };
 
   if (loadingMarket) {
