@@ -42,6 +42,7 @@ import { VersionedTransaction, Connection, PublicKey, Transaction } from '@solan
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction, createTransferInstruction } from '@solana/spl-token';
 import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
+import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 
@@ -381,12 +382,7 @@ export default function SolRefund() {
     retry: false,
   });
 
-  // Query for Jupiter Lend earn pools
-  const { data: jupiterLendData, isLoading: loadingMarket } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
-    queryKey: ['/api/jupiter-lend/earn-pools'],
-    enabled: activeTab === 'lend',
-    retry: false,
-  });
+  // Jupiter Lend query is now handled inside LendPositions component
 
   // Query for user positions
   const { data: userPositions, isLoading: loadingPositions } = useQuery<{ success: boolean; hasPositions: boolean; deposits: any[]; totalDepositValue: string }>({
@@ -4049,171 +4045,26 @@ export default function SolRefund() {
                 )}
 
                 {/* Available Lending Pools */}
-                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      💰 Lending Vaults
-                    </CardTitle>
-                    <CardDescription className="text-purple-200">
-                      Earn passive income by lending your assets - Powered by Jupiter Lend
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {loadingMarket ? (
-                      <div className="text-center py-12">
-                        <div className="text-4xl mb-4">⏳</div>
-                        <p className="text-purple-200">Loading lending pools...</p>
-                      </div>
-                    ) : jupiterLendData?.reserves && jupiterLendData.reserves.length > 0 ? (
-                      <div className="space-y-0">
-                        {/* Vault Rows */}
-                        {jupiterLendData.reserves.map((reserve: any) => {
-                          // Find user position for this reserve
-                          const userPosition = userPositions?.deposits?.find(
-                            (dep: any) => dep.asset === reserve.mint
-                          );
-                          
-                          // Display "SOL" instead of "WSOL" for better UX
-                          const displaySymbol = reserve.symbol === 'WSOL' ? 'SOL' : reserve.symbol;
-                          
-                          return (
-                          <div
-                            key={reserve.address}
-                            className="px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
-                            onClick={async () => {
-                              if (!publicKey) {
-                                toast({
-                                  title: "Wallet Not Connected",
-                                  description: "Please connect your wallet to deposit.",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-                              setSelectedReserve(reserve);
-                              setDepositAmount('');
-                              setLendMode('deposit');
-                              setDepositDialogOpen(true);
-                              // Fetch wallet balance for this token
-                              await fetchTokenBalance(reserve.mint);
-                            }}
-                            data-testid={`vault-${reserve.symbol}`}
-                          >
-                            {/* Top Row: Token, APY, TVL */}
-                            <div className="grid grid-cols-3 gap-4 mb-3">
-                              {/* Token Column */}
-                              <div className="flex items-center gap-3">
-                                {reserve.logoUrl ? (
-                                  <img 
-                                    src={reserve.logoUrl} 
-                                    alt={reserve.symbol}
-                                    className="w-10 h-10 rounded-full flex-shrink-0"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                      if (fallback) fallback.classList.remove('hidden');
-                                    }}
-                                  />
-                                ) : null}
-                                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 ${reserve.logoUrl ? 'hidden' : ''}`}>
-                                  {reserve.symbol.substring(0, 1)}
-                                </div>
-                                <div className="text-white font-medium text-base">{reserve.symbol}</div>
-                              </div>
-                              
-                              {/* APY Column */}
-                              <div className="flex items-center justify-center">
-                                <span className="text-green-400 font-semibold text-base">{reserve.depositAPY.toFixed(2)}% APY</span>
-                              </div>
-                              
-                              {/* TVL Column */}
-                              <div className="flex items-center justify-end">
-                                {(() => {
-                                  const tvl = parseFloat(reserve.tvl);
-                                  const formatTVL = (value: number) => {
-                                    if (value >= 1_000_000) {
-                                      return `${(value / 1_000_000).toFixed(1)}M`;
-                                    } else if (value >= 1_000) {
-                                      return `${(value / 1_000).toFixed(1)}K`;
-                                    } else {
-                                      return value.toFixed(2);
-                                    }
-                                  };
-                                  return (
-                                    <div className="text-white font-medium text-base">{formatTVL(tvl)} {displaySymbol}</div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                            
-                            {/* Bottom Row: Deposited, Earnings */}
-                            <div className="grid grid-cols-2 gap-4 pl-14">
-                              {/* Deposited */}
-                              <div>
-                                <div className="text-xs text-purple-300 mb-1">Deposited</div>
-                                <div className="text-white text-base font-semibold">
-                                  {(() => {
-                                    if (!userPosition) return `0.000000000 ${displaySymbol}`;
-                                    // Deposited = underlyingAssets (original deposit)
-                                    const deposited = parseFloat(userPosition.amount || '0') / Math.pow(10, reserve.decimals || 6);
-                                    return `${deposited.toFixed(9)} ${displaySymbol}`;
-                                  })()}
-                                </div>
-                                <div className="text-purple-300/60 text-sm mt-0.5">
-                                  {(() => {
-                                    if (!userPosition) return '$0.00';
-                                    const deposited = parseFloat(userPosition.amount || '0') / Math.pow(10, reserve.decimals || 6);
-                                    const tokenPrice = parseFloat(reserve.price || '0');
-                                    const usdValue = deposited * tokenPrice;
-                                    return `$${usdValue.toFixed(2)}`;
-                                  })()}
-                                </div>
-                              </div>
-                              
-                              {/* Earnings */}
-                              <div>
-                                <div className="text-xs text-purple-300 mb-1">Your Earnings</div>
-                                <div className="text-white text-base font-semibold">
-                                  {(() => {
-                                    if (!userPosition) return `0.000000000 ${displaySymbol}`;
-                                    
-                                    // Use earnings from Jupiter Earnings API (raw units)
-                                    const earningsRaw = parseFloat(userPosition.earnings || '0');
-                                    const earnings = earningsRaw / Math.pow(10, reserve.decimals || 6);
-                                    
-                                    return `${earnings.toFixed(9)} ${displaySymbol}`;
-                                  })()}
-                                </div>
-                                <div className="text-purple-300/60 text-sm mt-0.5">
-                                  {(() => {
-                                    if (!userPosition) return '$0.00';
-                                    
-                                    // Use earnings from Jupiter Earnings API (raw units)
-                                    const earningsRaw = parseFloat(userPosition.earnings || '0');
-                                    const earnings = earningsRaw / Math.pow(10, reserve.decimals || 6);
-                                    
-                                    const tokenPrice = parseFloat(reserve.price || '0');
-                                    const earningsUSD = earnings * tokenPrice;
-                                    
-                                    if (earningsUSD < 0.01 && earningsUSD > 0) {
-                                      return `$${earningsUSD.toFixed(10)}`;
-                                    }
-                                    return `$${earningsUSD.toFixed(2)}`;
-                                  })()}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="text-4xl mb-4">❌</div>
-                        <p className="text-purple-200">Failed to load lending pools. Please try again later.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <LendPositions
+                  publicKey={publicKey}
+                  userPositions={userPositions}
+                  onVaultClick={async (reserve: any) => {
+                    if (!publicKey) {
+                      toast({
+                        title: "Wallet Not Connected",
+                        description: "Please connect your wallet to deposit.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setSelectedReserve(reserve);
+                    setDepositAmount('');
+                    setLendMode('deposit');
+                    setDepositDialogOpen(true);
+                    // Fetch wallet balance for this token
+                    await fetchTokenBalance(reserve.mint);
+                  }}
+                />
 
                 {/* Deposit Dialog - Responsive: Drawer for Mobile, Dialog for Desktop */}
                 {isMobile ? (

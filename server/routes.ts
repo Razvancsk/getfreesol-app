@@ -4953,7 +4953,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           earnings: '0.00',
           decimals: assetDecimals,
           utilization: 0,
-          available: pool.totalAssets || '0'
+          available: pool.totalAssets || '0',
+          price: pool.asset?.price || '0' // Token price in USD
         };
       });
 
