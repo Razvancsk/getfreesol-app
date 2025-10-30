@@ -4488,9 +4488,10 @@ export default function SolRefund() {
                                 }
                               } catch (error: any) {
                                 console.error('Withdraw error:', error);
+                                console.error('Withdraw error details:', JSON.stringify(error, null, 2));
                                 toast({
                                   title: "Withdrawal Failed",
-                                  description: error.message || 'Failed to withdraw assets',
+                                  description: error?.message || error?.error?.message || 'Failed to withdraw assets',
                                   variant: "destructive",
                                 });
                               } finally {
@@ -4867,9 +4868,10 @@ export default function SolRefund() {
                           }
                         } catch (error: any) {
                           console.error('Withdraw error:', error);
+                          console.error('Withdraw error details:', JSON.stringify(error, null, 2));
                           toast({
                             title: "Withdrawal Failed",
-                            description: error.message || 'Failed to withdraw assets',
+                            description: error?.message || error?.error?.message || 'Failed to withdraw assets',
                             variant: "destructive",
                           });
                         } finally {
