@@ -4456,7 +4456,7 @@ export default function SolRefund() {
                       <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
                         <div className="text-xs text-purple-300 mb-1">Deposited</div>
                         {(() => {
-                          const userPos = (userLendPositions as any)?.deposits?.find(
+                          const userPos = (userPositions as any)?.deposits?.find(
                             (d: any) => d.asset === selectedReserve?.mint
                           );
                           if (!userPos) {
@@ -4484,7 +4484,7 @@ export default function SolRefund() {
                       <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
                         <div className="text-xs text-purple-300 mb-1">Your Earnings</div>
                         {(() => {
-                          const userPos = (userLendPositions as any)?.deposits?.find(
+                          const userPos = (userPositions as any)?.deposits?.find(
                             (d: any) => d.asset === selectedReserve?.mint
                           );
                           if (!userPos || !userPos.earnings) {
