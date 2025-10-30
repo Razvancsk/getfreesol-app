@@ -4570,7 +4570,10 @@ export default function SolRefund() {
                             throw new Error('Invalid amount');
                           }
 
-                          const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+                          // For withdrawals, use raw amount if available to avoid precision loss
+                          const amountInLamports = (lendMode === 'withdraw' && depositRawAmount) 
+                            ? depositRawAmount 
+                            : Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
 
                           const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
                           const response = await fetch(endpoint, {
