@@ -4990,8 +4990,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const positionsData = await response.json();
+      console.log('📊 Raw Jupiter Lend positions data:', JSON.stringify(positionsData, null, 2));
 
       if (!positionsData || positionsData.length === 0) {
+        console.log('⚠️ No positions found for wallet');
         return res.json({
           success: true,
           hasPositions: false,
@@ -5000,14 +5002,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Transform positions data
-      const deposits = positionsData.map((position: any) => ({
-        asset: position.asset || position.mint,
-        symbol: position.symbol,
-        amount: position.balance || position.shares,
-        amountUSD: position.balanceUsd || '0',
-        apy: position.apy || 0
-      }));
+      // Transform positions data and filter out zero balances
+      const deposits = positionsData
+        .map((position: any) => ({
+          asset: position.token?.assetAddress || position.asset || position.mint,
+          symbol: position.token?.asset?.symbol || position.symbol,
+          amount: position.underlyingAssets || position.balance || position.shares,
+          amountUSD: position.balanceUsd || '0',
+          apy: position.apy || 0
+        }))
+        .filter((dep: any) => parseFloat(dep.amount) > 0);
+
+      console.log('✅ Transformed deposits (non-zero only):', JSON.stringify(deposits, null, 2));
 
       res.json({
         success: true,
