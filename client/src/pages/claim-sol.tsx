@@ -3952,37 +3952,6 @@ export default function SolRefund() {
           {/* Lend Tab Content */}
           {activeTab === 'lend' && (
               <div className="space-y-6">
-                {/* User Positions */}
-                {publicKey && userPositions?.hasPositions && (
-                  <Card className="bg-gradient-to-br from-green-800/50 to-green-900/50 border-green-600 backdrop-blur">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <TrendingUp className="w-6 h-6 text-green-400" />
-                        Your Lending Positions
-                      </CardTitle>
-                      <CardDescription className="text-green-200">
-                        Total Value: ${(parseFloat(userPositions.totalDepositValue) / 1e8).toFixed(2)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {userPositions.deposits.map((deposit: any, idx: number) => (
-                          <div key={idx} className="bg-purple-900/30 rounded-lg p-4 flex justify-between items-center">
-                            <div>
-                              <div className="text-white font-semibold">{deposit.symbol}</div>
-                              <div className="text-sm text-purple-300">APY: {deposit.apy.toFixed(2)}%</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-white font-bold">${(parseFloat(deposit.amountUSD) / 1e8).toFixed(2)}</div>
-                              <div className="text-sm text-purple-300">{(parseFloat(deposit.amount) / 1e9).toFixed(4)}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
                 {/* Available Lending Pools */}
                 <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                   <CardHeader>
