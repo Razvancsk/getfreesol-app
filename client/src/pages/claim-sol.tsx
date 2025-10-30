@@ -4067,20 +4067,11 @@ export default function SolRefund() {
                       </div>
                     ) : jupiterLendData?.reserves && jupiterLendData.reserves.length > 0 ? (
                       <div className="space-y-0">
-                        {/* Header Row */}
-                        <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 px-6 py-3 border-b border-purple-500/20 text-sm text-purple-300 font-medium">
-                          <div>Vault</div>
-                          <div>APY</div>
-                          <div>Deposited</div>
-                          <div>Earnings</div>
-                          <div>TVL</div>
-                        </div>
-                        
                         {/* Vault Rows */}
                         {jupiterLendData.reserves.map((reserve: any) => (
                           <div
                             key={reserve.address}
-                            className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer items-center"
+                            className="px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
                             onClick={async () => {
                               if (!publicKey) {
                                 toast({
@@ -4098,63 +4089,71 @@ export default function SolRefund() {
                             }}
                             data-testid={`vault-${reserve.symbol}`}
                           >
-                            {/* Vault Column */}
-                            <div className="flex items-center gap-3">
-                              {reserve.logoUrl ? (
-                                <img 
-                                  src={reserve.logoUrl} 
-                                  alt={reserve.symbol}
-                                  className="w-10 h-10 rounded-full flex-shrink-0"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                    if (fallback) fallback.classList.remove('hidden');
-                                  }}
-                                />
-                              ) : null}
-                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 ${reserve.logoUrl ? 'hidden' : ''}`}>
-                                {reserve.symbol.substring(0, 1)}
+                            {/* Top Row: Token, APY, TVL */}
+                            <div className="grid grid-cols-3 gap-4 mb-3">
+                              {/* Token Column */}
+                              <div className="flex items-center gap-3">
+                                {reserve.logoUrl ? (
+                                  <img 
+                                    src={reserve.logoUrl} 
+                                    alt={reserve.symbol}
+                                    className="w-10 h-10 rounded-full flex-shrink-0"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                      if (fallback) fallback.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null}
+                                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 ${reserve.logoUrl ? 'hidden' : ''}`}>
+                                  {reserve.symbol.substring(0, 1)}
+                                </div>
+                                <div className="text-white font-medium text-base">{reserve.symbol}</div>
                               </div>
-                              <div className="text-white font-medium text-base">{reserve.symbol}</div>
+                              
+                              {/* APY Column */}
+                              <div className="flex items-center justify-center">
+                                <span className="text-green-400 font-semibold text-base">{reserve.depositAPY.toFixed(2)}% APY</span>
+                              </div>
+                              
+                              {/* TVL Column */}
+                              <div className="flex items-center justify-end">
+                                {(() => {
+                                  const tvl = parseFloat(reserve.tvl);
+                                  const formatTVL = (value: number) => {
+                                    if (value >= 1_000_000) {
+                                      return `${(value / 1_000_000).toFixed(1)}M`;
+                                    } else if (value >= 1_000) {
+                                      return `${(value / 1_000).toFixed(1)}K`;
+                                    } else {
+                                      return value.toFixed(2);
+                                    }
+                                  };
+                                  return (
+                                    <div className="text-right">
+                                      <div className="text-white font-medium text-base">${formatTVL(tvl)}</div>
+                                      <div className="text-sm text-gray-400">{formatTVL(tvl)} {reserve.symbol}</div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
                             </div>
                             
-                            {/* APY Column */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-blue-400 font-semibold text-base">{reserve.depositAPY.toFixed(2)}%</span>
-                            </div>
-                            
-                            {/* Deposited Column */}
-                            <div>
-                              <div className="text-white text-base">{reserve.deposited} {reserve.symbol}</div>
-                              <div className="text-sm text-gray-400">$0.00</div>
-                            </div>
-                            
-                            {/* Earnings Column */}
-                            <div>
-                              <div className="text-white text-base">{reserve.earnings} {reserve.symbol}</div>
-                              <div className="text-sm text-gray-400">$0.00</div>
-                            </div>
-                            
-                            {/* TVL Column */}
-                            <div>
-                              {(() => {
-                                const tvl = parseFloat(reserve.tvl);
-                                const formatTVL = (value: number) => {
-                                  if (value >= 1_000_000) {
-                                    return `${(value / 1_000_000).toFixed(1)}M`;
-                                  } else if (value >= 1_000) {
-                                    return `${(value / 1_000).toFixed(1)}K`;
-                                  } else {
-                                    return value.toFixed(2);
-                                  }
-                                };
-                                return (
-                                  <>
-                                    <div className="text-white font-medium text-base">{formatTVL(tvl)} {reserve.symbol}</div>
-                                    <div className="text-sm text-gray-400">${formatTVL(tvl)}</div>
-                                  </>
-                                );
-                              })()}
+                            {/* Bottom Row: Deposited, Earnings */}
+                            <div className="grid grid-cols-2 gap-4 pl-14">
+                              {/* Deposited */}
+                              <div>
+                                <div className="text-xs text-purple-300 mb-1">Deposited</div>
+                                <div className="text-white text-sm">{reserve.deposited} {reserve.symbol}</div>
+                                <div className="text-xs text-gray-400">$0.00</div>
+                              </div>
+                              
+                              {/* Earnings */}
+                              <div>
+                                <div className="text-xs text-purple-300 mb-1">Earnings</div>
+                                <div className="text-white text-sm">{reserve.earnings} {reserve.symbol}</div>
+                                <div className="text-xs text-gray-400">$0.00</div>
+                              </div>
                             </div>
                           </div>
                         ))}
