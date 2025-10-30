@@ -38,14 +38,19 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
   };
 
   const formatAmount = (amount: string | number, decimals: number, symbol: string, showUSD?: boolean, price?: number) => {
-    if (!amount || amount === '0') {
-      return showUSD ? { token: '0.00 ' + symbol, usd: '$0.00' } : '-';
+    if (!amount || amount === '0' || amount === 0) {
+      return showUSD ? { token: `0.00 ${symbol}`, usd: '$0.00' } : '-';
     }
     const value = parseFloat(amount.toString()) / Math.pow(10, decimals);
     if (showUSD && price) {
       const usdValue = value * price;
+      // Format with more decimals for very small amounts
+      const tokenDisplay = value < 0.01 
+        ? `${value.toFixed(8)} ${symbol}` 
+        : `${value.toFixed(2)} ${symbol}`;
+      
       return {
-        token: `${value.toFixed(2)} ${symbol}`,
+        token: tokenDisplay,
         usd: formatUSDValue(usdValue)
       };
     }
@@ -118,6 +123,11 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
                 const displaySymbol = reserve.symbol === 'WSOL' ? 'SOL' : reserve.symbol;
                 const tvl = parseFloat(reserve.tvl);
                 const tvlUSD = tvl * parseFloat(reserve.price || '0');
+                
+                // Debug logging
+                if (userPosition && userPosition.earnings) {
+                  console.log(`💰 ${displaySymbol} - Earnings: ${userPosition.earnings}, Amount: ${userPosition.amount}, Decimals: ${reserve.decimals}`);
+                }
 
                 return (
                   <TableRow

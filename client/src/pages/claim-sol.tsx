@@ -4455,19 +4455,57 @@ export default function SolRefund() {
                       {/* Deposited Card */}
                       <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
                         <div className="text-xs text-purple-300 mb-1">Deposited</div>
-                        <div className="text-lg font-bold text-white">
-                          {selectedReserve?.deposited || '0.00'} {selectedReserve?.symbol}
-                        </div>
-                        <div className="text-xs text-purple-400">$0.00</div>
+                        {(() => {
+                          const userPos = (userLendPositions as any)?.deposits?.find(
+                            (d: any) => d.asset === selectedReserve?.mint
+                          );
+                          if (!userPos) {
+                            return (
+                              <>
+                                <div className="text-lg font-bold text-white">0.00 {selectedReserve?.symbol}</div>
+                                <div className="text-xs text-purple-400">$0.00</div>
+                              </>
+                            );
+                          }
+                          const amount = parseFloat(userPos.amount) / Math.pow(10, selectedReserve?.decimals || 6);
+                          const usdValue = amount * parseFloat(selectedReserve?.price || '0');
+                          return (
+                            <>
+                              <div className="text-lg font-bold text-white">
+                                {amount.toFixed(amount < 0.01 ? 8 : 2)} {selectedReserve?.symbol}
+                              </div>
+                              <div className="text-xs text-purple-400">${usdValue.toFixed(2)}</div>
+                            </>
+                          );
+                        })()}
                       </div>
 
                       {/* Earnings Card */}
                       <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
                         <div className="text-xs text-purple-300 mb-1">Your Earnings</div>
-                        <div className="text-lg font-bold text-green-400">
-                          {selectedReserve?.earnings || '0.00'} {selectedReserve?.symbol}
-                        </div>
-                        <div className="text-xs text-purple-400">$0.00</div>
+                        {(() => {
+                          const userPos = (userLendPositions as any)?.deposits?.find(
+                            (d: any) => d.asset === selectedReserve?.mint
+                          );
+                          if (!userPos || !userPos.earnings) {
+                            return (
+                              <>
+                                <div className="text-lg font-bold text-green-400">0.00 {selectedReserve?.symbol}</div>
+                                <div className="text-xs text-purple-400">$0.00</div>
+                              </>
+                            );
+                          }
+                          const earnings = parseFloat(userPos.earnings) / Math.pow(10, selectedReserve?.decimals || 6);
+                          const usdValue = earnings * parseFloat(selectedReserve?.price || '0');
+                          return (
+                            <>
+                              <div className="text-lg font-bold text-green-400">
+                                {earnings.toFixed(earnings < 0.01 ? 8 : 2)} {selectedReserve?.symbol}
+                              </div>
+                              <div className="text-xs text-purple-400">${usdValue.toFixed(usdValue < 0.01 ? 10 : 2)}</div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
 
