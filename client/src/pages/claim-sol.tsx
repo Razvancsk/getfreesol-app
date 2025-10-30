@@ -4184,37 +4184,40 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return `0.000000000 ${displaySymbol}`;
                                     
-                                    // Current value from underlyingAssets
-                                    const currentValueRaw = parseFloat(userPosition.amount || '0');
-                                    const decimals = reserve.decimals || 6;
-                                    const currentValue = currentValueRaw / Math.pow(10, decimals);
-                                    
-                                    // Original deposit from shares
+                                    // Use the raw API values directly to avoid precision issues
+                                    const underlyingAssets = parseFloat(userPosition.amount || '0');
                                     const shares = parseFloat(userPosition.shares || '0');
                                     const convertToAssets = parseFloat(userPosition.convertToAssets || '1000000');
-                                    const originalDeposit = (shares * convertToAssets) / Math.pow(10, decimals * 2);
+                                    const decimals = reserve.decimals || 6;
                                     
-                                    // Earnings = current - original
-                                    const earnings = Math.max(0, currentValue - originalDeposit);
+                                    // Earnings in raw units: underlyingAssets - (shares * convertToAssets / 10^decimals)
+                                    const originalDepositRaw = (shares * convertToAssets) / Math.pow(10, decimals);
+                                    const earningsRaw = underlyingAssets - originalDepositRaw;
+                                    const earnings = earningsRaw / Math.pow(10, decimals);
                                     
-                                    return `${earnings.toFixed(9)} ${displaySymbol}`;
+                                    // Show 0 for very tiny negative amounts (precision artifacts)
+                                    if (earnings < 0 && earnings > -0.000001) {
+                                      return `0.000000000 ${displaySymbol}`;
+                                    }
+                                    
+                                    return `${Math.max(0, earnings).toFixed(9)} ${displaySymbol}`;
                                   })()}
                                 </div>
                                 <div className="text-purple-300/60 text-sm mt-0.5">
                                   {(() => {
                                     if (!userPosition) return '$0.00';
                                     
-                                    const currentValueRaw = parseFloat(userPosition.amount || '0');
-                                    const decimals = reserve.decimals || 6;
-                                    const currentValue = currentValueRaw / Math.pow(10, decimals);
-                                    
+                                    const underlyingAssets = parseFloat(userPosition.amount || '0');
                                     const shares = parseFloat(userPosition.shares || '0');
                                     const convertToAssets = parseFloat(userPosition.convertToAssets || '1000000');
-                                    const originalDeposit = (shares * convertToAssets) / Math.pow(10, decimals * 2);
+                                    const decimals = reserve.decimals || 6;
                                     
-                                    const earnings = Math.max(0, currentValue - originalDeposit);
+                                    const originalDepositRaw = (shares * convertToAssets) / Math.pow(10, decimals);
+                                    const earningsRaw = underlyingAssets - originalDepositRaw;
+                                    const earnings = earningsRaw / Math.pow(10, decimals);
+                                    
                                     const tokenPrice = parseFloat(reserve.price || '0');
-                                    const earningsUSD = earnings * tokenPrice;
+                                    const earningsUSD = Math.max(0, earnings) * tokenPrice;
                                     
                                     // Show more decimals for very small amounts
                                     if (earningsUSD < 0.01 && earningsUSD > 0) {
