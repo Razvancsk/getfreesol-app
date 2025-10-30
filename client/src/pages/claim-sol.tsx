@@ -4023,10 +4023,6 @@ export default function SolRefund() {
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
                 {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                   <div className="px-2 md:px-0">
-                    <h2 className="text-lg md:text-[22px] font-semibold text-white tracking-tight text-center mb-4 md:mb-6 px-2">
-                      Lend your assets and earn passive income on Solana
-                    </h2>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       {/* Total Deposits Card */}
                       <div className="bg-purple-800/50 border-purple-600 backdrop-blur p-4 md:p-6 rounded-xl border text-center">
