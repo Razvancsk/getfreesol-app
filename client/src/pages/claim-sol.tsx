@@ -3976,30 +3976,14 @@ export default function SolRefund() {
                   </Card>
                 )}
 
-                {/* Notice Banner */}
-                <Alert className="bg-blue-900/50 border-blue-500 backdrop-blur">
-                  <Info className="w-4 h-4 text-blue-400" />
-                  <AlertDescription className="text-blue-200">
-                    APY rates shown are indicative. To deposit and earn interest, please visit{' '}
-                    <a 
-                      href="https://app.kamino.finance" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="underline hover:text-blue-100 font-semibold inline-flex items-center gap-1"
-                    >
-                      Kamino Finance <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </AlertDescription>
-                </Alert>
-
                 {/* Available Lending Pools */}
                 <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
-                      💰 Popular Lending Pools
+                      💰 Lending Pools
                     </CardTitle>
                     <CardDescription className="text-purple-200">
-                      View popular lending pools - Powered by Kamino Finance
+                      Earn passive income by lending your assets - Powered by Kamino Finance
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -4017,21 +4001,23 @@ export default function SolRefund() {
                                 <div className="text-white font-semibold text-lg">{reserve.symbol}</div>
                                 <div className="text-sm text-purple-300">{reserve.name}</div>
                                 <div className="text-xs text-purple-400 mt-1">
-                                  Utilization: ~{(reserve.utilizationRate * 100).toFixed(1)}%
+                                  Utilization: {(reserve.utilizationRate * 100).toFixed(1)}%
                                 </div>
                               </div>
                               <div className="text-right mr-4">
-                                <div className="text-2xl font-bold text-green-400">~{reserve.depositAPY.toFixed(2)}%</div>
+                                <div className="text-2xl font-bold text-green-400">{reserve.depositAPY.toFixed(2)}%</div>
                                 <div className="text-sm text-purple-300">APY</div>
                               </div>
                               <Button
                                 onClick={() => {
-                                  window.open('https://app.kamino.finance', '_blank');
+                                  toast({
+                                    title: "Coming Soon",
+                                    description: "Deposit functionality is being integrated. Visit app.kamino.finance for now.",
+                                  });
                                 }}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                                data-testid={`button-deposit-${reserve.symbol}`}
+                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6"
+                                data-testid={`button-lend-${reserve.symbol}`}
                               >
-                                <ExternalLink className="w-4 h-4 mr-2" />
                                 Deposit
                               </Button>
                             </div>

@@ -4914,81 +4914,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Get market data with reserves and APY rates
   app.get("/api/kamino/market-data", async (req, res) => {
     try {
-      // Static popular pools data (SDK compatibility issues prevent live data)
-      // Users should visit https://app.kamino.finance for live APY rates
-      const reserves = [
-        {
-          address: 'SOL',
-          symbol: 'SOL',
-          name: 'Solana',
-          mint: 'So11111111111111111111111111111111111111112',
-          totalDeposits: '0',
-          totalBorrows: '0',
-          depositAPY: 5.2,
-          borrowAPY: 8.5,
-          utilizationRate: 0.65,
-          available: '0',
-          decimals: 9
-        },
-        {
-          address: 'USDC',
-          symbol: 'USDC',
-          name: 'USD Coin',
-          mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-          totalDeposits: '0',
-          totalBorrows: '0',
-          depositAPY: 8.5,
-          borrowAPY: 12.3,
-          utilizationRate: 0.75,
-          available: '0',
-          decimals: 6
-        },
-        {
-          address: 'USDT',
-          symbol: 'USDT',
-          name: 'Tether USD',
-          mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-          totalDeposits: '0',
-          totalBorrows: '0',
-          depositAPY: 7.8,
-          borrowAPY: 11.5,
-          utilizationRate: 0.72,
-          available: '0',
-          decimals: 6
-        },
-        {
-          address: 'JUP',
-          symbol: 'JUP',
-          name: 'Jupiter',
-          mint: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
-          totalDeposits: '0',
-          totalBorrows: '0',
-          depositAPY: 12.5,
-          borrowAPY: 18.2,
-          utilizationRate: 0.55,
-          available: '0',
-          decimals: 6
-        },
-        {
-          address: 'JTO',
-          symbol: 'JTO',
-          name: 'Jito',
-          mint: 'jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL',
-          totalDeposits: '0',
-          totalBorrows: '0',
-          depositAPY: 9.8,
-          borrowAPY: 14.5,
-          utilizationRate: 0.62,
-          available: '0',
-          decimals: 9
-        }
-      ];
+      const { KaminoMarket, getMedianSlotDurationInMsFromLastEpochs } = await import('@kamino-finance/klend-sdk');
+      const { createSolanaRpcApi, createRpc, createDefaultRpcTransport, DEFAULT_RPC_CONFIG } = await import('@solana/kit');
+      
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+      const marketPubkey = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
+
+      console.log('📊 Loading Kamino market data using SDK...');
+      
+      // Create proper RPC connection using @solana/kit
+      const api = createSolanaRpcApi({
+        ...DEFAULT_RPC_CONFIG,
+        defaultCommitment: 'processed',
+      });
+      const rpc = createRpc({ 
+        api, 
+        transport: createDefaultRpcTransport({ url: rpcUrl }) 
+      });
+
+      // Load market with correct RPC interface
+      const slotDuration = await getMedianSlotDurationInMsFromLastEpochs();
+      const market = await KaminoMarket.load(rpc, marketPubkey, slotDuration);
+      
+      if (!market) {
+        throw new Error('Failed to load Kamino market');
+      }
+
+      const reserves = market.getReserves();
+      console.log(`✅ Loaded ${reserves.length} reserves`);
+
+      const currentSlot = await rpc.getSlot().send();
+      
+      // Extract reserve data with APY rates
+      const reserveData = reserves
+        .filter(reserve => reserve.state.config.status === 0) // Only active reserves
+        .map(reserve => {
+          const supplyApy = reserve.totalSupplyAPY(currentSlot);
+          const borrowApy = reserve.totalBorrowAPY(currentSlot);
+          
+          return {
+            address: reserve.address.toString(),
+            symbol: reserve.symbol || 'Unknown',
+            name: reserve.state.config.tokenInfo.name || 'Unknown Token',
+            mint: reserve.getLiquidityMint().toString(),
+            totalDeposits: reserve.state.liquidity.availableAmount.toString(),
+            totalBorrows: reserve.state.liquidity.borrowedAmountSf.toString(),
+            depositAPY: supplyApy * 100,
+            borrowAPY: borrowApy * 100,
+            utilizationRate: parseFloat(reserve.state.liquidity.borrowedAmountSf.toString()) / 
+                            parseFloat(reserve.state.liquidity.availableAmount.toString() || '1'),
+            available: reserve.state.liquidity.availableAmount.toString(),
+            decimals: reserve.state.liquidity.mintDecimals
+          };
+        })
+        .sort((a, b) => b.depositAPY - a.depositAPY);
 
       res.json({
         success: true,
-        marketAddress: '7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF',
-        reserves,
-        notice: 'APY rates are indicative. Visit https://app.kamino.finance for live rates and to deposit.'
+        marketAddress: marketPubkey.toString(),
+        reserves: reserveData.slice(0, 10) // Top 10 by APY
       });
     } catch (error: any) {
       console.error("Kamino market data error:", error);
@@ -4996,17 +4985,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Kamino Lending - Get user positions (Simplified - no SDK)
+  // Kamino Lending - Get user positions
   app.get("/api/kamino/user-positions/:walletAddress", async (req, res) => {
-    // Simplified endpoint - just return no positions for now
-    res.json({
-      success: true,
-      hasPositions: false,
-      deposits: [],
-      borrows: [],
-      totalDepositValue: '0',
-      totalBorrowValue: '0'
-    });
+    try {
+      const { KaminoMarket, getMedianSlotDurationInMsFromLastEpochs } = await import('@kamino-finance/klend-sdk');
+      const { createSolanaRpcApi, createRpc, createDefaultRpcTransport, DEFAULT_RPC_CONFIG } = await import('@solana/kit');
+      const { walletAddress } = req.params;
+
+      if (!walletAddress) {
+        return res.status(400).json({ error: 'Wallet address is required' });
+      }
+
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+      const marketPubkey = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
+      const userWallet = new PublicKey(walletAddress);
+
+      console.log(`📊 Loading positions for wallet: ${walletAddress}`);
+      
+      // Create proper RPC connection
+      const api = createSolanaRpcApi({
+        ...DEFAULT_RPC_CONFIG,
+        defaultCommitment: 'processed',
+      });
+      const rpc = createRpc({ 
+        api, 
+        transport: createDefaultRpcTransport({ url: rpcUrl }) 
+      });
+
+      // Load market
+      const slotDuration = await getMedianSlotDurationInMsFromLastEpochs();
+      const market = await KaminoMarket.load(rpc, marketPubkey, slotDuration);
+      
+      if (!market) {
+        throw new Error('Failed to load Kamino market');
+      }
+
+      // Get user obligation
+      const obligation = await market.getUserVanillaObligation(userWallet);
+
+      if (!obligation) {
+        return res.json({
+          success: true,
+          hasPositions: false,
+          deposits: [],
+          borrows: [],
+          totalDepositValue: '0',
+          totalBorrowValue: '0'
+        });
+      }
+
+      // Extract deposit positions
+      const deposits = Array.from(obligation.deposits.entries()).map(([reserveAddress, deposit]) => {
+        const reserve = market.reserves.find(r => r.address.equals(reserveAddress));
+        return {
+          reserve: reserveAddress.toString(),
+          symbol: reserve?.symbol || 'Unknown',
+          amount: deposit.depositedAmount.toString(),
+          amountUSD: deposit.marketValueRefreshed.toString(),
+          apy: reserve ? reserve.totalSupplyAPY(obligation.state.lastUpdate.slot) * 100 : 0
+        };
+      });
+
+      // Extract borrow positions
+      const borrows = Array.from(obligation.borrows.entries()).map(([reserveAddress, borrow]) => {
+        const reserve = market.reserves.find(r => r.address.equals(reserveAddress));
+        return {
+          reserve: reserveAddress.toString(),
+          symbol: reserve?.symbol || 'Unknown',
+          amount: borrow.borrowedAmount.toString(),
+          amountUSD: borrow.marketValueRefreshed.toString(),
+          apy: reserve ? reserve.totalBorrowAPY(obligation.state.lastUpdate.slot) * 100 : 0
+        };
+      });
+
+      res.json({
+        success: true,
+        hasPositions: true,
+        deposits,
+        borrows,
+        totalDepositValue: obligation.depositsMarketValue.toString(),
+        totalBorrowValue: obligation.borrowsMarketValue.toString()
+      });
+    } catch (error: any) {
+      console.error("Kamino user positions error:", error);
+      res.json({
+        success: true,
+        hasPositions: false,
+        deposits: [],
+        borrows: [],
+        totalDepositValue: '0',
+        totalBorrowValue: '0'
+      });
+    }
   });
 
 
