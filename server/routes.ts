@@ -5202,25 +5202,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Jupiter Lend statistics
+  // Get Jupiter Lend statistics - Real-time data from Jupiter API for ALL users
   app.get("/api/jupiter-lend/statistics", async (req, res) => {
     try {
-      const deposits = await db.select().from(jupiterLendDeposits);
+      // Get all unique wallets that have deposited
+      const deposits = await db.select({ walletAddress: jupiterLendDeposits.walletAddress })
+        .from(jupiterLendDeposits)
+        .groupBy(jupiterLendDeposits.walletAddress);
 
-      const totalDepositsUsd = deposits.reduce((sum, deposit) => {
-        return sum + parseFloat(deposit.usdValueAtDeposit);
-      }, 0);
-
-      // Calculate estimated earnings based on APY and time elapsed
+      let totalDepositsUsd = 0;
       let totalEarningsUsd = 0;
-      const now = new Date();
 
-      for (const deposit of deposits) {
-        const depositDate = new Date(deposit.depositedAt);
-        const daysElapsed = (now.getTime() - depositDate.getTime()) / (1000 * 60 * 60 * 24);
-        const yearlyReturn = parseFloat(deposit.usdValueAtDeposit) * (parseFloat(deposit.apyAtDeposit) / 100);
-        const earnedSoFar = yearlyReturn * (daysElapsed / 365);
-        totalEarningsUsd += earnedSoFar;
+      // Fetch real-time positions for each wallet from Jupiter API
+      for (const { walletAddress } of deposits) {
+        try {
+          const response = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?user=${walletAddress}`);
+          if (!response.ok) continue;
+
+          const positions = await response.json();
+          
+          for (const position of positions) {
+            if (!position.shares || position.shares === "0") continue;
+
+            const underlyingAssets = parseFloat(position.underlyingAssets);
+            const decimals = position.token.decimals || 6;
+            const tokenPrice = parseFloat(position.token.asset.price || '0');
+            
+            // Calculate USD value of deposit
+            const depositAmount = underlyingAssets / Math.pow(10, decimals);
+            const depositUsd = depositAmount * tokenPrice;
+            totalDepositsUsd += depositUsd;
+          }
+        } catch (walletError) {
+          console.error(`Failed to fetch positions for ${walletAddress}:`, walletError);
+        }
+      }
+
+      // Fetch earnings from Jupiter Earnings API for all wallets with deposits
+      for (const { walletAddress } of deposits) {
+        try {
+          // First, get positions to find jlToken addresses
+          const positionsResponse = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?user=${walletAddress}`);
+          if (!positionsResponse.ok) continue;
+
+          const positions = await positionsResponse.json();
+          const jlTokens = positions
+            .filter((p: any) => p.shares && p.shares !== "0")
+            .map((p: any) => p.token.address)
+            .join(',');
+
+          if (!jlTokens) continue;
+
+          // Fetch earnings for this wallet's jlTokens
+          const earningsResponse = await fetch(`https://lite-api.jup.ag/lend/v1/earn/earnings?user=${walletAddress}&positions=${jlTokens}`);
+          if (!earningsResponse.ok) continue;
+
+          const earningsData = await earningsResponse.json();
+
+          for (const earning of earningsData) {
+            const position = positions.find((p: any) => p.token.address === earning.address);
+            if (!position) continue;
+
+            const rawEarnings = parseFloat(earning.earnings || '0');
+            const decimals = position.token.decimals || 6;
+            const tokenPrice = parseFloat(position.token.asset.price || '0');
+
+            const earningsAmount = rawEarnings / Math.pow(10, decimals);
+            const earningsUsd = earningsAmount * tokenPrice;
+            totalEarningsUsd += earningsUsd;
+          }
+        } catch (earningsError) {
+          console.error(`Failed to fetch earnings for ${walletAddress}:`, earningsError);
+        }
       }
 
       res.json({
