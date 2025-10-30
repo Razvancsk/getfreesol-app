@@ -4224,41 +4224,22 @@ export default function SolRefund() {
                       </DrawerHeader>
 
                       <div className="px-4 pb-3 space-y-3 bg-transparent">
-                        {/* Mode Toggle Buttons */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            variant={lendMode === 'deposit' ? 'default' : 'outline'}
-                            onClick={() => { setLendMode('deposit'); setDepositAmount(''); }}
-                            className={lendMode === 'deposit' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
-                            data-testid="button-mode-deposit"
-                          >
-                            Deposit
-                          </Button>
-                          <Button
-                            variant={lendMode === 'withdraw' ? 'default' : 'outline'}
-                            onClick={() => { setLendMode('withdraw'); setDepositAmount(''); }}
-                            className={lendMode === 'withdraw' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
-                            data-testid="button-mode-withdraw"
-                          >
-                            Withdraw
-                          </Button>
-                        </div>
-
-                        {/* APY and Balance Row */}
+                        {/* APY and Balances Row */}
                         <div className="flex items-center justify-between">
                           <div className="bg-green-500/20 border border-green-400/50 rounded-full px-3 py-1">
                             <span className="text-green-300 text-xs font-bold">
                               APY: ≈ {selectedReserve?.depositAPY.toFixed(2)}%
                             </span>
                           </div>
-                          <span className="text-xs text-white/80 font-medium">
-                            💰 {lendMode === 'deposit' ? walletTokenBalance.toFixed(2) : (() => {
+                          <div className="text-xs text-white/80 font-medium space-y-0.5">
+                            <div>💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}</div>
+                            <div>📊 {(() => {
                               const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                               if (!userPosition) return '0.00';
                               const deposited = parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
                               return deposited.toFixed(2);
-                            })()} {selectedReserve?.symbol}
-                          </span>
+                            })()} Deposited</div>
+                          </div>
                         </div>
 
                         {/* Amount Input */}
@@ -4287,14 +4268,7 @@ export default function SolRefund() {
                             variant="ghost"
                             size="sm"
                             className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
-                            onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
-                                const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              setDepositAmount((balance / 2).toFixed(6));
-                            }}
+                            onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
                             data-testid="button-half-amount"
                           >
                             HALF
@@ -4303,14 +4277,7 @@ export default function SolRefund() {
                             variant="ghost"
                             size="sm"
                             className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
-                            onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
-                                const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              setDepositAmount(balance.toFixed(6));
-                            }}
+                            onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
                             data-testid="button-max-amount"
                           >
                             MAX
@@ -4319,50 +4286,51 @@ export default function SolRefund() {
                       </div>
 
                       <DrawerFooter className="pt-3 pb-6 bg-transparent px-4">
-                        <Button
-                          onClick={async () => {
-                            if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
-                            
-                            setDepositingLend(true);
-                            try {
-                              const amountNum = parseFloat(depositAmount);
-                              if (isNaN(amountNum) || amountNum <= 0) {
-                                throw new Error('Invalid amount');
-                              }
-
-                              const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
-
-                              const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
-                              const response = await fetch(endpoint, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  asset: selectedReserve.mint,
-                                  amount: amountInLamports,
-                                  walletAddress: publicKey.toString(),
-                                }),
-                              });
-
-                              if (!response.ok) {
-                                throw new Error(`Failed to build ${lendMode} transaction`);
-                              }
-
-                              const { transaction: base64Transaction } = await response.json();
-                              const txBuffer = Buffer.from(base64Transaction, 'base64');
-                              const transaction = VersionedTransaction.deserialize(txBuffer);
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Deposit Button */}
+                          <Button
+                            onClick={async () => {
+                              if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
                               
-                              if ('signTransaction' in wallet && wallet.signTransaction) {
-                                const signedTx = await wallet.signTransaction(transaction);
-                                
-                                const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-                                  skipPreflight: false,
-                                  maxRetries: 3
+                              setDepositingLend(true);
+                              setLendMode('deposit');
+                              try {
+                                const amountNum = parseFloat(depositAmount);
+                                if (isNaN(amountNum) || amountNum <= 0) {
+                                  throw new Error('Invalid amount');
+                                }
+
+                                const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+
+                                const response = await fetch('/api/jupiter-lend/build-deposit', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    asset: selectedReserve.mint,
+                                    amount: amountInLamports,
+                                    walletAddress: publicKey.toString(),
+                                  }),
                                 });
 
-                                await connection.confirmTransaction(signature, 'confirmed');
+                                if (!response.ok) {
+                                  throw new Error('Failed to build deposit transaction');
+                                }
 
-                                // Record transaction for analytics (only for deposits)
-                                if (lendMode === 'deposit') {
+                                const { transaction: base64Transaction } = await response.json();
+                                const txBuffer = Buffer.from(base64Transaction, 'base64');
+                                const transaction = VersionedTransaction.deserialize(txBuffer);
+                                
+                                if ('signTransaction' in wallet && wallet.signTransaction) {
+                                  const signedTx = await wallet.signTransaction(transaction);
+                                  
+                                  const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                                    skipPreflight: false,
+                                    maxRetries: 3
+                                  });
+
+                                  await connection.confirmTransaction(signature, 'confirmed');
+
+                                  // Record deposit for analytics
                                   try {
                                     const tokenPrice = selectedReserve.price || 0;
                                     const usdValue = amountNum * tokenPrice;
@@ -4383,54 +4351,140 @@ export default function SolRefund() {
                                   } catch (err) {
                                     console.error('Failed to record deposit:', err);
                                   }
-                                }
-                                
-                                // Refresh stats if platform wallet
-                                if (publicKey.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
-                                  const statsResponse = await fetch('/api/jupiter-lend/statistics');
-                                  if (statsResponse.ok) {
-                                    const stats = await statsResponse.json();
-                                    setLendStats(stats);
+                                  
+                                  // Refresh stats if platform wallet
+                                  if (publicKey.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
+                                    const statsResponse = await fetch('/api/jupiter-lend/statistics');
+                                    if (statsResponse.ok) {
+                                      const stats = await statsResponse.json();
+                                      setLendStats(stats);
+                                    }
                                   }
+
+                                  toast({
+                                    title: "Deposit Successful!",
+                                    description: `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`,
+                                  });
+
+                                  setDepositDialogOpen(false);
+                                  setDepositAmount('');
+                                  
+                                  // Refresh user positions
+                                  queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey.toString()] });
+                                }
+                              } catch (error: any) {
+                                console.error('Deposit error:', error);
+                                toast({
+                                  title: "Deposit Failed",
+                                  description: error.message || 'Failed to deposit assets',
+                                  variant: "destructive",
+                                });
+                              } finally {
+                                setDepositingLend(false);
+                              }
+                            }}
+                            disabled={depositingLend || !depositAmount}
+                            className="bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 hover:from-teal-700 hover:via-teal-800 hover:to-teal-900 text-white py-6 text-lg font-bold rounded-xl shadow-lg transition-all duration-200 active:scale-[0.98]"
+                            data-testid="button-confirm-deposit"
+                          >
+                            {depositingLend && lendMode === 'deposit' ? (
+                              <div className="flex items-center justify-center gap-3">
+                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                <span>Depositing...</span>
+                              </div>
+                            ) : (
+                              <span>Deposit</span>
+                            )}
+                          </Button>
+
+                          {/* Withdraw Button */}
+                          <Button
+                            onClick={async () => {
+                              if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
+                              
+                              setDepositingLend(true);
+                              setLendMode('withdraw');
+                              try {
+                                const amountNum = parseFloat(depositAmount);
+                                if (isNaN(amountNum) || amountNum <= 0) {
+                                  throw new Error('Invalid amount');
                                 }
 
-                                toast({
-                                  title: lendMode === 'deposit' ? "Deposit Successful!" : "Withdrawal Successful!",
-                                  description: lendMode === 'deposit' 
-                                    ? `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`
-                                    : `Withdrew ${amountNum} ${selectedReserve.symbol} from lending pool.`,
+                                const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+
+                                const response = await fetch('/api/jupiter-lend/build-withdraw', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    asset: selectedReserve.mint,
+                                    amount: amountInLamports,
+                                    walletAddress: publicKey.toString(),
+                                  }),
                                 });
 
-                                setDepositDialogOpen(false);
-                                setDepositAmount('');
+                                if (!response.ok) {
+                                  throw new Error('Failed to build withdraw transaction');
+                                }
+
+                                const { transaction: base64Transaction } = await response.json();
+                                const txBuffer = Buffer.from(base64Transaction, 'base64');
+                                const transaction = VersionedTransaction.deserialize(txBuffer);
                                 
-                                // Refresh user positions
-                                queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey.toString()] });
+                                if ('signTransaction' in wallet && wallet.signTransaction) {
+                                  const signedTx = await wallet.signTransaction(transaction);
+                                  
+                                  const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                                    skipPreflight: false,
+                                    maxRetries: 3
+                                  });
+
+                                  await connection.confirmTransaction(signature, 'confirmed');
+
+                                  // Refresh stats if platform wallet
+                                  if (publicKey.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
+                                    const statsResponse = await fetch('/api/jupiter-lend/statistics');
+                                    if (statsResponse.ok) {
+                                      const stats = await statsResponse.json();
+                                      setLendStats(stats);
+                                    }
+                                  }
+
+                                  toast({
+                                    title: "Withdrawal Successful!",
+                                    description: `Withdrew ${amountNum} ${selectedReserve.symbol} from lending pool.`,
+                                  });
+
+                                  setDepositDialogOpen(false);
+                                  setDepositAmount('');
+                                  
+                                  // Refresh user positions
+                                  queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey.toString()] });
+                                }
+                              } catch (error: any) {
+                                console.error('Withdraw error:', error);
+                                toast({
+                                  title: "Withdrawal Failed",
+                                  description: error.message || 'Failed to withdraw assets',
+                                  variant: "destructive",
+                                });
+                              } finally {
+                                setDepositingLend(false);
                               }
-                            } catch (error: any) {
-                              console.error(`${lendMode} error:`, error);
-                              toast({
-                                title: lendMode === 'deposit' ? "Deposit Failed" : "Withdrawal Failed",
-                                description: error.message || `Failed to ${lendMode} assets`,
-                                variant: "destructive",
-                              });
-                            } finally {
-                              setDepositingLend(false);
-                            }
-                          }}
-                          disabled={depositingLend || !depositAmount}
-                          className="w-full bg-gradient-to-r from-teal-600 via-teal-700 to-teal-800 hover:from-teal-700 hover:via-teal-800 hover:to-teal-900 text-white py-6 text-lg font-bold rounded-xl shadow-lg transition-all duration-200 active:scale-[0.98]"
-                          data-testid={`button-confirm-${lendMode}`}
-                        >
-                          {depositingLend ? (
-                            <div className="flex items-center justify-center gap-3">
-                              <RefreshCw className="w-5 h-5 animate-spin" />
-                              <span>{lendMode === 'deposit' ? 'Depositing...' : 'Withdrawing...'}</span>
-                            </div>
-                          ) : (
-                            <span>{lendMode === 'deposit' ? 'Deposit' : 'Withdraw'}</span>
-                          )}
-                        </Button>
+                            }}
+                            disabled={depositingLend || !depositAmount}
+                            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-6 text-lg font-bold rounded-xl shadow-lg transition-all duration-200 active:scale-[0.98]"
+                            data-testid="button-confirm-withdraw"
+                          >
+                            {depositingLend && lendMode === 'withdraw' ? (
+                              <div className="flex items-center justify-center gap-3">
+                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                <span>Withdrawing...</span>
+                              </div>
+                            ) : (
+                              <span>Withdraw</span>
+                            )}
+                          </Button>
+                        </div>
                       </DrawerFooter>
                     </DrawerContent>
                   </Drawer>
@@ -4446,52 +4500,26 @@ export default function SolRefund() {
                           <h2 className="text-lg font-bold text-white">{selectedReserve?.symbol}</h2>
                         </div>
 
-                      {/* Mode Toggle Buttons */}
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        <Button
-                          variant={lendMode === 'deposit' ? 'default' : 'outline'}
-                          onClick={() => { setLendMode('deposit'); setDepositAmount(''); }}
-                          className={lendMode === 'deposit' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
-                          data-testid="button-mode-deposit"
-                        >
-                          Deposit
-                        </Button>
-                        <Button
-                          variant={lendMode === 'withdraw' ? 'default' : 'outline'}
-                          onClick={() => { setLendMode('withdraw'); setDepositAmount(''); }}
-                          className={lendMode === 'withdraw' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
-                          data-testid="button-mode-withdraw"
-                        >
-                          Withdraw
-                        </Button>
-                      </div>
-
                       {/* 1. Amount Section (FIRST) */}
                     <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-3 mb-3">
-                      {/* Header with Balance and Quick Actions */}
+                      {/* Header with Balances and Quick Actions */}
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-purple-200 text-sm font-medium">{lendMode === 'deposit' ? 'Deposit Amount' : 'Withdraw Amount'}</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-purple-300">
-                            💰 {lendMode === 'deposit' ? walletTokenBalance.toFixed(2) : (() => {
+                        <span className="text-purple-200 text-sm font-medium">Amount</span>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-purple-300 text-right">
+                            <div>💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}</div>
+                            <div>📊 {(() => {
                               const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                               if (!userPosition) return '0.00';
                               const deposited = parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
                               return deposited.toFixed(2);
-                            })()} {selectedReserve?.symbol}
-                          </span>
+                            })()} Deposited</div>
+                          </div>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
-                            onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
-                                const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              setDepositAmount((balance / 2).toFixed(6));
-                            }}
+                            onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
                             data-testid="button-half-amount"
                           >
                             HALF
@@ -4500,14 +4528,7 @@ export default function SolRefund() {
                             variant="ghost"
                             size="sm"
                             className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
-                            onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
-                                const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              setDepositAmount(balance.toFixed(6));
-                            }}
+                            onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
                             data-testid="button-max-amount"
                           >
                             MAX
@@ -4620,12 +4641,15 @@ export default function SolRefund() {
                       </div>
                     </div>
 
-                    {/* 4. Action Button (LAST) */}
-                    <Button
+                    {/* 4. Action Buttons (LAST) */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Deposit Button */}
+                      <Button
                       onClick={async () => {
                         if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
                         
                         setDepositingLend(true);
+                        setLendMode('deposit');
                         try {
                           const amountNum = parseFloat(depositAmount);
                           if (isNaN(amountNum) || amountNum <= 0) {
@@ -4634,8 +4658,7 @@ export default function SolRefund() {
 
                           const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
 
-                          const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
-                          const response = await fetch(endpoint, {
+                          const response = await fetch('/api/jupiter-lend/build-deposit', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -4646,7 +4669,7 @@ export default function SolRefund() {
                           });
 
                           if (!response.ok) {
-                            throw new Error(`Failed to build ${lendMode} transaction`);
+                            throw new Error('Failed to build deposit transaction');
                           }
 
                           const { transaction: base64Transaction } = await response.json();
@@ -4663,31 +4686,27 @@ export default function SolRefund() {
 
                             await connection.confirmTransaction(signature, 'confirmed');
 
-                            // Record transaction for analytics (only for deposits)
-                            if (lendMode === 'deposit') {
-                              try {
-                                const tokenPrice = selectedReserve.price || 0;
-                                const usdValue = amountNum * tokenPrice;
-                                
-                                await fetch('/api/jupiter-lend/record-deposit', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    signature,
-                                    walletAddress: publicKey.toString(),
-                                    tokenMint: selectedReserve.mint,
-                                    tokenSymbol: selectedReserve.symbol,
-                                    amountDeposited: amountNum.toString(),
-                                    usdValueAtDeposit: usdValue.toString(),
-                                    apyAtDeposit: selectedReserve.depositAPY.toString(),
-                                  }),
-                                });
-                              } catch (err) {
-                                console.error('Failed to record deposit:', err);
-                              }
+                            try {
+                              const tokenPrice = selectedReserve.price || 0;
+                              const usdValue = amountNum * tokenPrice;
+                              
+                              await fetch('/api/jupiter-lend/record-deposit', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  signature,
+                                  walletAddress: publicKey.toString(),
+                                  tokenMint: selectedReserve.mint,
+                                  tokenSymbol: selectedReserve.symbol,
+                                  amountDeposited: amountNum.toString(),
+                                  usdValueAtDeposit: usdValue.toString(),
+                                  apyAtDeposit: selectedReserve.depositAPY.toString(),
+                                }),
+                              });
+                            } catch (err) {
+                              console.error('Failed to record deposit:', err);
                             }
                             
-                            // Refresh stats if platform wallet
                             if (publicKey.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
                               const statsResponse = await fetch('/api/jupiter-lend/statistics');
                               if (statsResponse.ok) {
@@ -4697,23 +4716,20 @@ export default function SolRefund() {
                             }
 
                             toast({
-                              title: lendMode === 'deposit' ? "Deposit Successful!" : "Withdrawal Successful!",
-                              description: lendMode === 'deposit' 
-                                ? `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`
-                                : `Withdrew ${amountNum} ${selectedReserve.symbol} from lending pool.`,
+                              title: "Deposit Successful!",
+                              description: `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`,
                             });
 
                             setDepositDialogOpen(false);
                             setDepositAmount('');
                             
-                            // Refresh user positions
                             queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey.toString()] });
                           }
                         } catch (error: any) {
-                          console.error(`${lendMode} error:`, error);
+                          console.error('Deposit error:', error);
                           toast({
-                            title: lendMode === 'deposit' ? "Deposit Failed" : "Withdrawal Failed",
-                            description: error.message || `Failed to ${lendMode} assets`,
+                            title: "Deposit Failed",
+                            description: error.message || 'Failed to deposit assets',
                             variant: "destructive",
                           });
                         } finally {
@@ -4721,18 +4737,105 @@ export default function SolRefund() {
                         }
                       }}
                       disabled={depositingLend || !depositAmount}
-                      className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-6 text-lg font-semibold rounded-lg shadow-lg shadow-green-500/20 border border-green-500/30"
-                      data-testid={`button-confirm-${lendMode}`}
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-6 text-lg font-semibold rounded-lg shadow-lg shadow-green-500/20 border border-green-500/30"
+                      data-testid="button-confirm-deposit"
                     >
-                      {depositingLend ? (
+                      {depositingLend && lendMode === 'deposit' ? (
                         <div className="flex items-center gap-2">
                           <RefreshCw className="w-5 h-5 animate-spin" />
-                          {lendMode === 'deposit' ? 'Depositing...' : 'Withdrawing...'}
+                          Depositing...
                         </div>
                       ) : (
-                        lendMode === 'deposit' ? 'Deposit' : 'Withdraw'
+                        'Deposit'
                       )}
                     </Button>
+
+                    {/* Withdraw Button */}
+                    <Button
+                      onClick={async () => {
+                        if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
+                        
+                        setDepositingLend(true);
+                        setLendMode('withdraw');
+                        try {
+                          const amountNum = parseFloat(depositAmount);
+                          if (isNaN(amountNum) || amountNum <= 0) {
+                            throw new Error('Invalid amount');
+                          }
+
+                          const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+
+                          const response = await fetch('/api/jupiter-lend/build-withdraw', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              asset: selectedReserve.mint,
+                              amount: amountInLamports,
+                              walletAddress: publicKey.toString()
+                            })
+                          });
+
+                          if (!response.ok) {
+                            throw new Error('Failed to build withdraw transaction');
+                          }
+
+                          const { transaction: base64Transaction } = await response.json();
+                          const txBuffer = Buffer.from(base64Transaction, 'base64');
+                          const transaction = VersionedTransaction.deserialize(txBuffer);
+                          
+                          if ('signTransaction' in wallet && wallet.signTransaction) {
+                            const signedTx = await wallet.signTransaction(transaction);
+                            
+                            const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                              skipPreflight: false,
+                              maxRetries: 3
+                            });
+
+                            await connection.confirmTransaction(signature, 'confirmed');
+
+                            if (publicKey.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
+                              const statsResponse = await fetch('/api/jupiter-lend/statistics');
+                              if (statsResponse.ok) {
+                                const stats = await statsResponse.json();
+                                setLendStats(stats);
+                              }
+                            }
+
+                            toast({
+                              title: "Withdrawal Successful!",
+                              description: `Withdrew ${amountNum} ${selectedReserve.symbol} from lending pool.`,
+                            });
+
+                            setDepositDialogOpen(false);
+                            setDepositAmount('');
+                            
+                            queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey.toString()] });
+                          }
+                        } catch (error: any) {
+                          console.error('Withdraw error:', error);
+                          toast({
+                            title: "Withdrawal Failed",
+                            description: error.message || 'Failed to withdraw assets',
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setDepositingLend(false);
+                        }
+                      }}
+                      disabled={depositingLend || !depositAmount}
+                      className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-6 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200"
+                      data-testid="button-confirm-withdraw"
+                    >
+                      {depositingLend && lendMode === 'withdraw' ? (
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                          Withdrawing...
+                        </div>
+                      ) : (
+                        'Withdraw'
+                      )}
+                    </Button>
+                    </div>
                     </div>
                   </DialogContent>
                 </Dialog>
