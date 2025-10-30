@@ -4131,29 +4131,29 @@ export default function SolRefund() {
                 {/* Deposit Dialog - Responsive: Drawer for Mobile, Dialog for Desktop */}
                 {isMobile ? (
                   <Drawer open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
-                    <DrawerContent className="bg-gradient-to-br from-purple-900/98 to-purple-950/98 backdrop-blur-xl border-t-2 border-purple-500/40 text-white max-h-[85vh]">
-                      <DrawerHeader className="pb-3">
+                    <DrawerContent className="bg-gradient-to-br from-purple-900/98 via-purple-950/98 to-black/98 backdrop-blur-xl border-t-2 border-purple-500/40 text-white max-h-[85vh] [&>*]:text-white">
+                      <DrawerHeader className="pb-3 bg-transparent">
                         <div className="flex items-center justify-center gap-2 mb-1">
                           {selectedReserve?.logoUrl && (
-                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-8 h-8 rounded-full border-2 border-purple-400/40" />
+                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-10 h-10 rounded-full border-2 border-purple-400/40 shadow-lg shadow-purple-500/20" />
                           )}
-                          <DrawerTitle className="text-xl font-bold text-white">{selectedReserve?.symbol}</DrawerTitle>
+                          <DrawerTitle className="text-2xl font-bold text-white drop-shadow-lg">{selectedReserve?.symbol}</DrawerTitle>
                         </div>
                       </DrawerHeader>
 
-                      <div className="px-4 pb-4 space-y-4">
+                      <div className="px-5 pb-4 space-y-5 bg-transparent">
                         {/* Deposit Amount Section */}
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-purple-200 text-sm font-medium">Deposit Amount</span>
+                            <span className="text-purple-200 text-sm font-semibold">Deposit Amount</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-purple-300">
+                              <span className="text-xs text-purple-300 font-medium">
                                 💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}
                               </span>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-xs bg-purple-800/50 text-purple-200 hover:text-white hover:bg-purple-700/60 px-3 py-1 h-auto rounded-full border border-purple-500/30"
+                                className="text-xs bg-purple-700/60 text-white hover:text-white hover:bg-purple-600/80 px-3 py-1.5 h-auto rounded-full border border-purple-400/40 font-bold shadow-md"
                                 onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
                                 data-testid="button-half-amount"
                               >
@@ -4162,7 +4162,7 @@ export default function SolRefund() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-xs bg-purple-800/50 text-purple-200 hover:text-white hover:bg-purple-700/60 px-3 py-1 h-auto rounded-full border border-purple-500/30"
+                                className="text-xs bg-purple-700/60 text-white hover:text-white hover:bg-purple-600/80 px-3 py-1.5 h-auto rounded-full border border-purple-400/40 font-bold shadow-md"
                                 onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
                                 data-testid="button-max-amount"
                               >
@@ -4172,20 +4172,20 @@ export default function SolRefund() {
                           </div>
 
                           {/* Amount Input */}
-                          <div className="bg-purple-900/40 border-2 border-purple-500/30 rounded-xl p-4">
+                          <div className="bg-purple-800/40 border-2 border-purple-500/40 rounded-2xl p-5 shadow-xl backdrop-blur-sm">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 {selectedReserve?.logoUrl && (
-                                  <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-10 h-10 rounded-full border border-purple-400/30" />
+                                  <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-12 h-12 rounded-full border-2 border-purple-400/40 shadow-lg" />
                                 )}
-                                <span className="text-white font-semibold text-lg">{selectedReserve?.symbol}</span>
+                                <span className="text-white font-bold text-xl">{selectedReserve?.symbol}</span>
                               </div>
                               <Input
                                 type="text"
                                 value={depositAmount}
                                 onChange={(e) => setDepositAmount(e.target.value)}
                                 placeholder="0.00"
-                                className="bg-transparent border-none text-right text-2xl font-bold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[150px] placeholder:text-purple-600/50"
+                                className="bg-transparent border-none text-right text-3xl font-bold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[180px] placeholder:text-purple-500/40"
                                 data-testid="input-deposit-amount"
                               />
                             </div>
@@ -4193,8 +4193,8 @@ export default function SolRefund() {
 
                           {/* APY Badge */}
                           <div className="flex items-center justify-center">
-                            <div className="bg-green-500/10 border border-green-500/30 rounded-full px-4 py-2">
-                              <span className="text-green-400 text-sm font-semibold">
+                            <div className="bg-green-500/20 border-2 border-green-400/50 rounded-full px-6 py-2.5 shadow-lg shadow-green-500/20">
+                              <span className="text-green-300 text-base font-bold">
                                 APY: ≈ {selectedReserve?.depositAPY.toFixed(2)}%
                               </span>
                             </div>
@@ -4202,7 +4202,7 @@ export default function SolRefund() {
                         </div>
                       </div>
 
-                      <DrawerFooter className="pt-2 pb-6">
+                      <DrawerFooter className="pt-2 pb-6 bg-transparent px-5">
                         <Button
                           onClick={async () => {
                             if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
@@ -4264,16 +4264,16 @@ export default function SolRefund() {
                             }
                           }}
                           disabled={depositingLend || !depositAmount}
-                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-6 text-lg font-bold rounded-xl shadow-lg shadow-green-500/30 border border-green-500/40"
+                          className="w-full bg-gradient-to-r from-green-600 via-green-700 to-green-800 hover:from-green-700 hover:via-green-800 hover:to-green-900 text-white py-7 text-xl font-extrabold rounded-2xl shadow-2xl shadow-green-500/40 border-2 border-green-400/60 transition-all duration-200 active:scale-[0.98]"
                           data-testid="button-confirm-deposit"
                         >
                           {depositingLend ? (
-                            <div className="flex items-center gap-2">
-                              <RefreshCw className="w-5 h-5 animate-spin" />
-                              Depositing...
+                            <div className="flex items-center justify-center gap-3">
+                              <RefreshCw className="w-6 h-6 animate-spin" />
+                              <span>Depositing...</span>
                             </div>
                           ) : (
-                            'Deposit'
+                            <span>Deposit</span>
                           )}
                         </Button>
                       </DrawerFooter>
