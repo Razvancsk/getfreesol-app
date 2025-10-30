@@ -5210,19 +5210,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(jupiterLendDeposits)
         .groupBy(jupiterLendDeposits.walletAddress);
 
+      console.log(`📊 Fetching statistics for ${deposits.length} wallets:`, deposits.map(d => d.walletAddress));
+
       let totalDepositsUsd = 0;
       let totalEarningsUsd = 0;
 
       // Fetch real-time positions for each wallet from Jupiter API
       for (const { walletAddress } of deposits) {
         try {
-          const response = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?user=${walletAddress}`);
-          if (!response.ok) continue;
+          console.log(`🔍 Fetching positions for wallet: ${walletAddress}`);
+          const response = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?users=${walletAddress}`);
+          if (!response.ok) {
+            console.log(`❌ Failed to fetch positions for ${walletAddress}: ${response.status}`);
+            continue;
+          }
 
           const positions = await response.json();
+          console.log(`📈 Found ${positions.length} positions for ${walletAddress}`);
           
           for (const position of positions) {
-            if (!position.shares || position.shares === "0") continue;
+            if (!position.shares || position.shares === "0") {
+              console.log(`⏭️ Skipping ${position.token.symbol} - no shares`);
+              continue;
+            }
 
             const underlyingAssets = parseFloat(position.underlyingAssets);
             const decimals = position.token.decimals || 6;
@@ -5231,6 +5241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Calculate USD value of deposit
             const depositAmount = underlyingAssets / Math.pow(10, decimals);
             const depositUsd = depositAmount * tokenPrice;
+            console.log(`💰 ${position.token.symbol}: ${depositAmount.toFixed(6)} × $${tokenPrice} = $${depositUsd.toFixed(10)}`);
             totalDepositsUsd += depositUsd;
           }
         } catch (walletError) {
@@ -5242,7 +5253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const { walletAddress } of deposits) {
         try {
           // First, get positions to find jlToken addresses
-          const positionsResponse = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?user=${walletAddress}`);
+          const positionsResponse = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?users=${walletAddress}`);
           if (!positionsResponse.ok) continue;
 
           const positions = await positionsResponse.json();
@@ -5276,10 +5287,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Format USD values with proper decimal precision
+      const formatUsdValue = (value: number): string => {
+        if (value === 0) return '0.00';
+        if (value >= 0.01) return value.toFixed(2);
+        // For very small amounts, show up to 10 decimal places
+        return value.toFixed(10);
+      };
+
       res.json({
         success: true,
-        totalDepositsUsd: totalDepositsUsd.toFixed(2),
-        totalEarningsUsd: totalEarningsUsd.toFixed(2),
+        totalDepositsUsd: formatUsdValue(totalDepositsUsd),
+        totalEarningsUsd: formatUsdValue(totalEarningsUsd),
         totalDeposits: deposits.length,
       });
     } catch (error: any) {
