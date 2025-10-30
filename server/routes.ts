@@ -4931,7 +4931,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reserves = earnPools.map((pool: any) => {
         // Extract the underlying asset address (the mint to deposit)
         const assetMint = pool.assetAddress || pool.asset?.address || '';
-        const assetSymbol = pool.asset?.symbol || pool.symbol || 'Unknown';
+        const rawSymbol = pool.asset?.symbol || pool.symbol || 'Unknown';
+        // Display "SOL" instead of "WSOL" for better UX
+        const assetSymbol = rawSymbol === 'WSOL' ? 'SOL' : rawSymbol;
         const assetDecimals = pool.asset?.decimals || pool.decimals || 9;
         const logoUrl = pool.asset?.logoUrl || '';
         
