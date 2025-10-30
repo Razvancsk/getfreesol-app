@@ -258,23 +258,70 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       setIsLoadingBalances(true);
       console.log('Fetching balances for wallet:', publicKey.toString());
       const newBalances: Record<string, number> = {};
+      const tokensWithMetadata: TokenInfo[] = [];
       
-      // Fetch all tokens the user actually owns with metadata
       try {
-        const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
-        const allTokensData = await allTokensResponse.json();
+        // Fetch from Jupiter Ultra Holdings API
+        const holdingsResponse = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${publicKey.toString()}`);
         
-        if (allTokensData.success && allTokensData.tokens) {
-          // Store owned tokens with metadata
-          setOwnedTokens(allTokensData.tokens);
-          
-          // Add balances for tokens the user owns
-          for (const token of allTokensData.tokens) {
-            newBalances[token.address] = token.balance;
+        if (!holdingsResponse.ok) {
+          throw new Error('Failed to fetch holdings');
+        }
+        
+        const holdingsData = await holdingsResponse.json();
+        
+        // Add native SOL balance
+        if (holdingsData.uiAmount > 0) {
+          newBalances['So11111111111111111111111111111111111111112'] = holdingsData.uiAmount;
+          tokensWithMetadata.push({
+            address: 'So11111111111111111111111111111111111111112',
+            symbol: 'SOL',
+            name: 'Solana',
+            decimals: 9,
+            logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png'
+          });
+        }
+        
+        // Process SPL token holdings
+        if (holdingsData.tokens) {
+          for (const [mint, tokenAccounts] of Object.entries(holdingsData.tokens)) {
+            // Sum all token accounts for this mint
+            const totalBalance = (tokenAccounts as any[]).reduce((sum, account) => {
+              return sum + (account.uiAmount || 0);
+            }, 0);
+            
+            if (totalBalance > 0) {
+              newBalances[mint] = totalBalance;
+              
+              // Fetch token metadata from Jupiter Token List
+              try {
+                const metadataResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mint}`);
+                if (metadataResponse.ok) {
+                  const searchResults = await metadataResponse.json();
+                  const metadata = Array.isArray(searchResults) 
+                    ? searchResults.find((t: any) => t.id === mint)
+                    : null;
+                  
+                  if (metadata) {
+                    tokensWithMetadata.push({
+                      address: mint,
+                      symbol: metadata.symbol || 'UNKNOWN',
+                      name: metadata.name || 'Unknown Token',
+                      decimals: metadata.decimals || 9,
+                      logoURI: metadata.icon || ''
+                    });
+                  }
+                }
+              } catch (err) {
+                console.error(`Error fetching metadata for ${mint}:`, err);
+              }
+            }
           }
         }
+        
+        setOwnedTokens(tokensWithMetadata);
       } catch (error: any) {
-        console.error('Error fetching all tokens:', error?.message || error);
+        console.error('Error fetching holdings:', error?.message || error);
       }
       
       setBalances(newBalances);
@@ -502,23 +549,70 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
     setIsLoadingBalances(true);
     const newBalances: Record<string, number> = {};
+    const tokensWithMetadata: TokenInfo[] = [];
     
-    // Fetch all tokens the user actually owns with metadata
     try {
-      const allTokensResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
-      const allTokensData = await allTokensResponse.json();
+      // Fetch from Jupiter Ultra Holdings API
+      const holdingsResponse = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${publicKey.toString()}`);
       
-      if (allTokensData.success && allTokensData.tokens) {
-        // Store owned tokens with metadata
-        setOwnedTokens(allTokensData.tokens);
-        
-        // Add balances for tokens the user owns
-        for (const token of allTokensData.tokens) {
-          newBalances[token.address] = token.balance;
+      if (!holdingsResponse.ok) {
+        throw new Error('Failed to fetch holdings');
+      }
+      
+      const holdingsData = await holdingsResponse.json();
+      
+      // Add native SOL balance
+      if (holdingsData.uiAmount > 0) {
+        newBalances['So11111111111111111111111111111111111111112'] = holdingsData.uiAmount;
+        tokensWithMetadata.push({
+          address: 'So11111111111111111111111111111111111111112',
+          symbol: 'SOL',
+          name: 'Solana',
+          decimals: 9,
+          logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png'
+        });
+      }
+      
+      // Process SPL token holdings
+      if (holdingsData.tokens) {
+        for (const [mint, tokenAccounts] of Object.entries(holdingsData.tokens)) {
+          // Sum all token accounts for this mint
+          const totalBalance = (tokenAccounts as any[]).reduce((sum, account) => {
+            return sum + (account.uiAmount || 0);
+          }, 0);
+          
+          if (totalBalance > 0) {
+            newBalances[mint] = totalBalance;
+            
+            // Fetch token metadata from Jupiter Token List
+            try {
+              const metadataResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mint}`);
+              if (metadataResponse.ok) {
+                const searchResults = await metadataResponse.json();
+                const metadata = Array.isArray(searchResults) 
+                  ? searchResults.find((t: any) => t.id === mint)
+                  : null;
+                
+                if (metadata) {
+                  tokensWithMetadata.push({
+                    address: mint,
+                    symbol: metadata.symbol || 'UNKNOWN',
+                    name: metadata.name || 'Unknown Token',
+                    decimals: metadata.decimals || 9,
+                    logoURI: metadata.icon || ''
+                  });
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching metadata for ${mint}:`, err);
+            }
+          }
         }
       }
+      
+      setOwnedTokens(tokensWithMetadata);
     } catch (error: any) {
-      console.error('Error fetching all tokens:', error?.message || error);
+      console.error('Error fetching holdings:', error?.message || error);
     }
     
     setBalances(newBalances);
