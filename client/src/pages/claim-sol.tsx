@@ -4020,29 +4020,29 @@ export default function SolRefund() {
               <div className="space-y-6">
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
                 {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
-                  <div className="mx-auto max-w-[420px]">
+                  <div>
                     <h2 className="text-[22px] font-semibold text-white tracking-tight text-center mb-6">
                       Lend your assets and earn passive income on Solana
                     </h2>
                     
-                    <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Total Deposits Card */}
-                      <div className="bg-purple-800/50 border-purple-600 backdrop-blur p-6 rounded-xl border">
-                        <div className="text-sm font-medium text-purple-200 mb-2">
-                          Total Deposits
-                        </div>
-                        <div className="text-[32px] font-bold text-white">
+                      <div className="bg-purple-800/50 border-purple-600 backdrop-blur p-6 rounded-xl border text-center">
+                        <div className="text-[32px] font-bold text-white mb-2">
                           {lendStats ? `$${parseFloat(lendStats.totalDepositsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
+                        </div>
+                        <div className="text-sm font-medium text-purple-200 uppercase tracking-wider">
+                          Total Deposits
                         </div>
                       </div>
                       
                       {/* Total Earned Card */}
-                      <div className="bg-purple-800/50 border-purple-600 backdrop-blur p-6 rounded-xl border">
-                        <div className="text-sm font-medium text-purple-200 mb-2">
-                          Total Earned
-                        </div>
-                        <div className="text-[32px] font-bold text-white">
+                      <div className="bg-purple-800/50 border-purple-600 backdrop-blur p-6 rounded-xl border text-center">
+                        <div className="text-[32px] font-bold text-white mb-2">
                           {lendStats ? `$${parseFloat(lendStats.totalEarningsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
+                        </div>
+                        <div className="text-sm font-medium text-purple-200 uppercase tracking-wider">
+                          Total Earned
                         </div>
                       </div>
                     </div>
