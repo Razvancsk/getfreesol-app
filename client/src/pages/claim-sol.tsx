@@ -4021,9 +4021,9 @@ export default function SolRefund() {
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
                 {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                   <div 
-                    className="mx-auto max-w-[420px] rounded-2xl p-6 backdrop-blur-sm"
+                    className="mx-auto max-w-[420px] rounded-2xl p-6 backdrop-blur-md border border-purple-500/20"
                     style={{
-                      background: 'linear-gradient(180deg, hsl(272, 75%, 22%) 0%, hsl(280, 70%, 18%) 100%)'
+                      background: 'linear-gradient(180deg, rgba(88, 28, 135, 0.6) 0%, rgba(59, 7, 100, 0.7) 100%)'
                     }}
                   >
                     <h2 className="text-[22px] font-semibold text-white tracking-tight text-center mb-6">
@@ -4033,17 +4033,13 @@ export default function SolRefund() {
                     <div className="flex flex-col gap-4">
                       {/* Total Deposits Card */}
                       <div 
-                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border"
+                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border border-purple-400/20"
                         style={{
-                          backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                          borderColor: 'rgba(167, 139, 250, 0.3)',
+                          backgroundColor: 'rgba(107, 33, 168, 0.4)',
                           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
                         }}
                       >
-                        <div 
-                          className="text-sm font-medium"
-                          style={{ color: 'hsl(270, 60%, 75%)' }}
-                        >
+                        <div className="text-sm font-medium text-purple-200">
                           Total Deposits
                         </div>
                         <div className="text-[28px] font-bold text-white">
@@ -4053,17 +4049,13 @@ export default function SolRefund() {
                       
                       {/* Total Earned Card */}
                       <div 
-                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border"
+                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border border-purple-400/20"
                         style={{
-                          backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                          borderColor: 'rgba(167, 139, 250, 0.3)',
+                          backgroundColor: 'rgba(107, 33, 168, 0.4)',
                           boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
                         }}
                       >
-                        <div 
-                          className="text-sm font-medium"
-                          style={{ color: 'hsl(270, 60%, 75%)' }}
-                        >
+                        <div className="text-sm font-medium text-purple-200">
                           Total Earned
                         </div>
                         <div className="text-[28px] font-bold text-white">
