@@ -113,6 +113,7 @@ export default function SolRefund() {
   const [depositDialogOpen, setDepositDialogOpen] = useState(false);
   const [selectedReserve, setSelectedReserve] = useState<any>(null);
   const [depositAmount, setDepositAmount] = useState('');
+  const [depositRawAmount, setDepositRawAmount] = useState<string | null>(null); // Store raw amount for withdrawals to avoid float precision loss
   const [depositingLend, setDepositingLend] = useState(false);
   const [lendMode, setLendMode] = useState<'deposit' | 'withdraw'>('deposit');
   const [destinationWallet, setDestinationWallet] = useState<string>('');
@@ -4136,16 +4137,24 @@ export default function SolRefund() {
                             size="sm"
                             className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
                             onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
+                              if (lendMode === 'deposit') {
+                                const balance = walletTokenBalance;
+                                const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
+                                const maxAmount = isSOL ? Math.max(0, balance - 0.01) : balance;
+                                const decimals = selectedReserve?.decimals || 9;
+                                setDepositAmount((maxAmount / 2).toFixed(decimals));
+                                setDepositRawAmount(null); // Clear raw amount for deposits
+                              } else {
+                                // For withdrawals, use raw amount to avoid precision loss
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.01) : balance;
-                              // Use maximum precision to avoid dust
-                              const decimals = selectedReserve?.decimals || 9;
-                              setDepositAmount((maxAmount / 2).toFixed(decimals));
+                                if (!userPosition) return;
+                                const rawAmount = userPosition.amount;
+                                const halfRaw = Math.floor(parseFloat(rawAmount) / 2).toString();
+                                const decimals = userPosition.decimals;
+                                const displayAmount = parseFloat(halfRaw) / Math.pow(10, decimals);
+                                setDepositAmount(displayAmount.toFixed(decimals));
+                                setDepositRawAmount(halfRaw);
+                              }
                             }}
                             data-testid="button-half-amount"
                           >
@@ -4156,16 +4165,23 @@ export default function SolRefund() {
                             size="sm"
                             className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
                             onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
+                              if (lendMode === 'deposit') {
+                                const balance = walletTokenBalance;
+                                const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
+                                const maxAmount = isSOL ? Math.max(0, balance - 0.01) : balance;
+                                const decimals = selectedReserve?.decimals || 9;
+                                setDepositAmount(maxAmount.toFixed(decimals));
+                                setDepositRawAmount(null); // Clear raw amount for deposits
+                              } else {
+                                // For withdrawals, store raw amount directly to avoid precision loss
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.01) : balance;
-                              // For withdrawals, use maximum precision to avoid dust
-                              const decimals = selectedReserve?.decimals || 9;
-                              setDepositAmount(maxAmount.toFixed(decimals));
+                                if (!userPosition) return;
+                                const rawAmount = userPosition.amount;
+                                const decimals = userPosition.decimals;
+                                const displayAmount = parseFloat(rawAmount) / Math.pow(10, decimals);
+                                setDepositAmount(displayAmount.toFixed(decimals));
+                                setDepositRawAmount(rawAmount); // Store exact raw amount
+                              }
                             }}
                             data-testid="button-max-amount"
                           >
@@ -4186,7 +4202,10 @@ export default function SolRefund() {
                                 throw new Error('Invalid amount');
                               }
 
-                              const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+                              // For withdrawals, use raw amount if available to avoid precision loss
+                              const amountInLamports = (lendMode === 'withdraw' && depositRawAmount) 
+                                ? depositRawAmount 
+                                : Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
 
                               const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
                               const response = await fetch(endpoint, {
@@ -4341,16 +4360,24 @@ export default function SolRefund() {
                             size="sm"
                             className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
                             onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
+                              if (lendMode === 'deposit') {
+                                const balance = walletTokenBalance;
+                                const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
+                                const maxAmount = isSOL ? Math.max(0, balance - 0.01) : balance;
+                                const decimals = selectedReserve?.decimals || 9;
+                                setDepositAmount((maxAmount / 2).toFixed(decimals));
+                                setDepositRawAmount(null);
+                              } else {
+                                // For withdrawals, use raw amount to avoid precision loss
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.01) : balance;
-                              // Use maximum precision to avoid dust
-                              const decimals = selectedReserve?.decimals || 9;
-                              setDepositAmount((maxAmount / 2).toFixed(decimals));
+                                if (!userPosition) return;
+                                const rawAmount = userPosition.amount;
+                                const halfRaw = Math.floor(parseFloat(rawAmount) / 2).toString();
+                                const decimals = userPosition.decimals;
+                                const displayAmount = parseFloat(halfRaw) / Math.pow(10, decimals);
+                                setDepositAmount(displayAmount.toFixed(decimals));
+                                setDepositRawAmount(halfRaw);
+                              }
                             }}
                             data-testid="button-half-amount"
                           >
@@ -4361,16 +4388,23 @@ export default function SolRefund() {
                             size="sm"
                             className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
                             onClick={() => {
-                              const balance = lendMode === 'deposit' ? walletTokenBalance : (() => {
+                              if (lendMode === 'deposit') {
+                                const balance = walletTokenBalance;
+                                const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
+                                const maxAmount = isSOL ? Math.max(0, balance - 0.01) : balance;
+                                const decimals = selectedReserve?.decimals || 9;
+                                setDepositAmount(maxAmount.toFixed(decimals));
+                                setDepositRawAmount(null);
+                              } else {
+                                // For withdrawals, store raw amount directly to avoid precision loss
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                                if (!userPosition) return 0;
-                                return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              })();
-                              const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.01) : balance;
-                              // For withdrawals, use maximum precision to avoid dust
-                              const decimals = selectedReserve?.decimals || 9;
-                              setDepositAmount(maxAmount.toFixed(decimals));
+                                if (!userPosition) return;
+                                const rawAmount = userPosition.amount;
+                                const decimals = userPosition.decimals;
+                                const displayAmount = parseFloat(rawAmount) / Math.pow(10, decimals);
+                                setDepositAmount(displayAmount.toFixed(decimals));
+                                setDepositRawAmount(rawAmount);
+                              }
                             }}
                             data-testid="button-max-amount"
                           >
