@@ -5,7 +5,7 @@ import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertSca
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount } from "@solana/spl-token";
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
@@ -4960,6 +4960,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Kamino Lending - Build deposit transaction
+  app.post("/api/kamino/build-deposit", async (req, res) => {
+    try {
+      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
+      const { Decimal } = await import('decimal.js');
+      const { walletAddress, reserveAddress, amount } = req.body;
+
+      if (!walletAddress || !reserveAddress || !amount) {
+        return res.status(400).json({ error: 'Wallet address, reserve address, and amount are required' });
+      }
+
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+      const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
+      const userWallet = new PublicKey(walletAddress);
+      const reserve = new PublicKey(reserveAddress);
+
+      console.log(`🏦 Building deposit transaction for ${amount} to reserve ${reserveAddress}`);
+      
+      // Load market and refresh data
+      const market = await KaminoMarket.load(connection, marketAddress);
+      await market.refreshAll();
+
+      // Get the reserve to find the liquidity mint
+      const reserveData = market.reserves.find(r => r.address.equals(reserve));
+      if (!reserveData) {
+        return res.status(404).json({ error: 'Reserve not found' });
+      }
+
+      const liquidityMint = reserveData.getLiquidityMint();
+      const depositAmount = new Decimal(amount);
+
+      // Build deposit transaction as per SDK docs
+      const { instructions, lookupTablesAddresses } = await market.depositReserveLiquidityTxns(
+        depositAmount,
+        liquidityMint,
+        userWallet
+      );
+
+      // Get recent blockhash
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+
+      // Build versioned transaction
+      const messageV0 = new TransactionMessage({
+        payerKey: userWallet,
+        recentBlockhash: blockhash,
+        instructions,
+      }).compileToV0Message(lookupTablesAddresses);
+
+      const transaction = new VersionedTransaction(messageV0);
+
+      // Serialize transaction for client to sign
+      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
+
+      res.json({
+        success: true,
+        transaction: serializedTransaction,
+        blockhash,
+        lastValidBlockHeight
+      });
+    } catch (error: any) {
+      console.error("Kamino deposit transaction error:", error);
+      res.status(500).json({ error: "Failed to build deposit transaction", details: error.message });
+    }
+  });
+
+  // Kamino Lending - Build withdraw transaction
+  app.post("/api/kamino/build-withdraw", async (req, res) => {
+    try {
+      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
+      const { Decimal } = await import('decimal.js');
+      const { walletAddress, reserveAddress, amount } = req.body;
+
+      if (!walletAddress || !reserveAddress || !amount) {
+        return res.status(400).json({ error: 'Wallet address, reserve address, and amount are required' });
+      }
+
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+      const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
+      const userWallet = new PublicKey(walletAddress);
+      const reserve = new PublicKey(reserveAddress);
+
+      console.log(`🏦 Building withdraw transaction for ${amount} from reserve ${reserveAddress}`);
+      
+      // Load market and refresh data
+      const market = await KaminoMarket.load(connection, marketAddress);
+      await market.refreshAll();
+
+      // Get the reserve to find the collateral mint
+      const reserveData = market.reserves.find(r => r.address.equals(reserve));
+      if (!reserveData) {
+        return res.status(404).json({ error: 'Reserve not found' });
+      }
+
+      const collateralMint = reserveData.getCTokenMint();
+      const withdrawAmount = new Decimal(amount);
+
+      // Build withdraw transaction as per SDK docs
+      const { instructions, lookupTablesAddresses } = await market.withdrawReserveLiquidityTxns(
+        withdrawAmount,
+        collateralMint,
+        userWallet
+      );
+
+      // Get recent blockhash
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+
+      // Build versioned transaction
+      const messageV0 = new TransactionMessage({
+        payerKey: userWallet,
+        recentBlockhash: blockhash,
+        instructions,
+      }).compileToV0Message(lookupTablesAddresses);
+
+      const transaction = new VersionedTransaction(messageV0);
+
+      // Serialize transaction for client to sign
+      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
+
+      res.json({
+        success: true,
+        transaction: serializedTransaction,
+        blockhash,
+        lastValidBlockHeight
+      });
+    } catch (error: any) {
+      console.error("Kamino withdraw transaction error:", error);
+      res.status(500).json({ error: "Failed to build withdraw transaction", details: error.message });
+    }
+  });
+
   // Kamino Lending - Get user positions
   app.get("/api/kamino/user-positions/:walletAddress", async (req, res) => {
     try {
@@ -4985,8 +5125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Refresh all cached data
       await market.refreshAll();
 
-      // Get user obligation
-      const obligation = market.getObligationByWallet(userWallet);
+      // Get user vanilla obligation (as per SDK docs)
+      const obligation = await market.getUserVanillaObligation(userWallet);
 
       if (!obligation) {
         return res.json({
