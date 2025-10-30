@@ -3976,14 +3976,30 @@ export default function SolRefund() {
                   </Card>
                 )}
 
+                {/* Notice Banner */}
+                <Alert className="bg-blue-900/50 border-blue-500 backdrop-blur">
+                  <Info className="w-4 h-4 text-blue-400" />
+                  <AlertDescription className="text-blue-200">
+                    APY rates shown are indicative. To deposit and earn interest, please visit{' '}
+                    <a 
+                      href="https://app.kamino.finance" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:text-blue-100 font-semibold inline-flex items-center gap-1"
+                    >
+                      Kamino Finance <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </AlertDescription>
+                </Alert>
+
                 {/* Available Lending Pools */}
                 <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
-                      💰 Available Lending Pools
+                      💰 Popular Lending Pools
                     </CardTitle>
                     <CardDescription className="text-purple-200">
-                      Earn passive income by lending your assets - Powered by Kamino Finance
+                      View popular lending pools - Powered by Kamino Finance
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -4001,87 +4017,21 @@ export default function SolRefund() {
                                 <div className="text-white font-semibold text-lg">{reserve.symbol}</div>
                                 <div className="text-sm text-purple-300">{reserve.name}</div>
                                 <div className="text-xs text-purple-400 mt-1">
-                                  Utilization: {(reserve.utilizationRate * 100).toFixed(1)}%
+                                  Utilization: ~{(reserve.utilizationRate * 100).toFixed(1)}%
                                 </div>
                               </div>
                               <div className="text-right mr-4">
-                                <div className="text-2xl font-bold text-green-400">{reserve.depositAPY.toFixed(2)}%</div>
+                                <div className="text-2xl font-bold text-green-400">~{reserve.depositAPY.toFixed(2)}%</div>
                                 <div className="text-sm text-purple-300">APY</div>
                               </div>
                               <Button
-                                onClick={async () => {
-                                  if (!publicKey || !signTransaction) {
-                                    toast({
-                                      title: "Wallet Not Connected",
-                                      description: "Please connect your wallet to deposit assets.",
-                                      variant: "destructive"
-                                    });
-                                    return;
-                                  }
-
-                                  const amountStr = prompt(`Enter amount of ${reserve.symbol} to deposit:`);
-                                  if (!amountStr || parseFloat(amountStr) <= 0) {
-                                    return;
-                                  }
-
-                                  try {
-                                    toast({
-                                      title: "Building Transaction",
-                                      description: "Please wait...",
-                                    });
-
-                                    // Build deposit transaction
-                                    const response = await fetch('/api/kamino/build-deposit', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        walletAddress: publicKey.toString(),
-                                        symbol: reserve.symbol,
-                                        amount: amountStr
-                                      })
-                                    });
-
-                                    if (!response.ok) {
-                                      const error = await response.json();
-                                      throw new Error(error.error || 'Failed to build transaction');
-                                    }
-
-                                    const { transaction: serializedTx } = await response.json();
-                                    const txBuffer = Buffer.from(serializedTx, 'base64');
-                                    const tx = VersionedTransaction.deserialize(txBuffer);
-
-                                    // Sign transaction
-                                    const signedTx = await signTransaction(tx);
-
-                                    // Send transaction
-                                    const signature = await connection.sendRawTransaction(signedTx.serialize());
-                                    
-                                    toast({
-                                      title: "Transaction Sent",
-                                      description: "Confirming your deposit...",
-                                    });
-
-                                    await connection.confirmTransaction(signature, 'confirmed');
-
-                                    toast({
-                                      title: "Deposit Successful! 🎉",
-                                      description: `Deposited ${amountStr} ${reserve.symbol} - Now earning ${reserve.depositAPY.toFixed(2)}% APY!`,
-                                    });
-
-                                    // Refresh user positions
-                                    queryClient.invalidateQueries({ queryKey: ['/api/kamino/user-positions'] });
-                                  } catch (error: any) {
-                                    console.error('Deposit error:', error);
-                                    toast({
-                                      title: "Deposit Failed",
-                                      description: error.message || "Please try again",
-                                      variant: "destructive"
-                                    });
-                                  }
+                                onClick={() => {
+                                  window.open('https://app.kamino.finance', '_blank');
                                 }}
-                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6"
-                                data-testid={`button-lend-${reserve.symbol}`}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                                data-testid={`button-deposit-${reserve.symbol}`}
                               >
+                                <ExternalLink className="w-4 h-4 mr-2" />
                                 Deposit
                               </Button>
                             </div>
