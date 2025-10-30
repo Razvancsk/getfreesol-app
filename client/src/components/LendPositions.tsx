@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, RefreshCw } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { queryClient } from '@/lib/queryClient';
 
 interface LendPositionsProps {
   publicKey: any;
@@ -11,11 +13,23 @@ interface LendPositionsProps {
 }
 
 export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPositionsProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Query for Jupiter Lend earn pools
   const { data: jupiterLendData, isLoading: loadingMarket } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
     queryKey: ['/api/jupiter-lend/earn-pools'],
     retry: false,
   });
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Invalidate both earn pools and user positions to refresh all data
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/earn-pools'] }),
+      queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey?.toBase58()] }),
+    ]);
+    setIsRefreshing(false);
+  };
 
   const formatTVL = (value: number, symbol: string) => {
     if (value >= 1_000_000) {
@@ -92,12 +106,26 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
   return (
     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
       <CardHeader className="hidden lg:block">
-        <CardTitle className="flex items-center gap-2 text-white">
-          💰 Lending Vaults
-        </CardTitle>
-        <CardDescription className="text-purple-200">
-          Earn passive income by lending your assets - Powered by Jupiter Lend
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-white">
+              💰 Lending Vaults
+            </CardTitle>
+            <CardDescription className="text-purple-200">
+              Earn passive income by lending your assets - Powered by Jupiter Lend
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing || loadingMarket}
+            className="text-purple-300 hover:text-white hover:bg-purple-700/50"
+            data-testid="button-refresh-earn"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         {/* Desktop Table View - lg and above */}
