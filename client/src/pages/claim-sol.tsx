@@ -4071,7 +4071,7 @@ export default function SolRefund() {
                         {jupiterLendData.reserves.map((reserve: any) => {
                           // Find user position for this reserve
                           const userPosition = userPositions?.deposits?.find(
-                            (dep: any) => dep.tokenMint === reserve.mint
+                            (dep: any) => dep.asset === reserve.mint
                           );
                           
                           return (
@@ -4148,7 +4148,7 @@ export default function SolRefund() {
                               <div>
                                 <div className="text-xs text-purple-300 mb-1">Deposited</div>
                                 <div className="text-white text-sm">
-                                  {userPosition ? parseFloat(userPosition.underlyingAssets).toFixed(4) : '0.00'} {reserve.symbol}
+                                  {userPosition ? parseFloat(userPosition.amount || '0').toFixed(4) : '0.00'} {reserve.symbol}
                                 </div>
                               </div>
                               
@@ -4156,7 +4156,7 @@ export default function SolRefund() {
                               <div>
                                 <div className="text-xs text-purple-300 mb-1">Earnings</div>
                                 <div className="text-white text-sm">
-                                  {userPosition ? parseFloat(userPosition.earnings || '0').toFixed(4) : '0.00'} {reserve.symbol}
+                                  0.00 {reserve.symbol}
                                 </div>
                               </div>
                             </div>
