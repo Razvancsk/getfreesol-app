@@ -4142,7 +4142,7 @@ export default function SolRefund() {
                                 return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
                               })();
                               const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.2) : balance;
+                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.1) : balance;
                               setDepositAmount((maxAmount / 2).toFixed(6));
                             }}
                             data-testid="button-half-amount"
@@ -4160,7 +4160,7 @@ export default function SolRefund() {
                                 return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
                               })();
                               const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.2) : balance;
+                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.1) : balance;
                               setDepositAmount(maxAmount.toFixed(6));
                             }}
                             data-testid="button-max-amount"
@@ -4343,7 +4343,7 @@ export default function SolRefund() {
                                 return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
                               })();
                               const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.2) : balance;
+                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.1) : balance;
                               setDepositAmount((maxAmount / 2).toFixed(6));
                             }}
                             data-testid="button-half-amount"
@@ -4361,7 +4361,7 @@ export default function SolRefund() {
                                 return parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
                               })();
                               const isSOL = selectedReserve?.symbol === 'SOL' || selectedReserve?.symbol === 'WSOL';
-                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.2) : balance;
+                              const maxAmount = lendMode === 'deposit' && isSOL ? Math.max(0, balance - 0.1) : balance;
                               setDepositAmount(maxAmount.toFixed(6));
                             }}
                             data-testid="button-max-amount"
