@@ -4009,11 +4009,75 @@ export default function SolRefund() {
                                 <div className="text-sm text-purple-300">APY</div>
                               </div>
                               <Button
-                                onClick={() => {
-                                  toast({
-                                    title: "Deposit Coming Soon",
-                                    description: `You'll be able to deposit ${reserve.symbol} to earn ${reserve.depositAPY.toFixed(2)}% APY soon!`,
-                                  });
+                                onClick={async () => {
+                                  if (!publicKey || !signTransaction) {
+                                    toast({
+                                      title: "Wallet Not Connected",
+                                      description: "Please connect your wallet to deposit assets.",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+
+                                  const amountStr = prompt(`Enter amount of ${reserve.symbol} to deposit:`);
+                                  if (!amountStr || parseFloat(amountStr) <= 0) {
+                                    return;
+                                  }
+
+                                  try {
+                                    toast({
+                                      title: "Building Transaction",
+                                      description: "Please wait...",
+                                    });
+
+                                    // Build deposit transaction
+                                    const response = await fetch('/api/kamino/build-deposit', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        walletAddress: publicKey.toString(),
+                                        symbol: reserve.symbol,
+                                        amount: amountStr
+                                      })
+                                    });
+
+                                    if (!response.ok) {
+                                      const error = await response.json();
+                                      throw new Error(error.error || 'Failed to build transaction');
+                                    }
+
+                                    const { transaction: serializedTx } = await response.json();
+                                    const txBuffer = Buffer.from(serializedTx, 'base64');
+                                    const tx = VersionedTransaction.deserialize(txBuffer);
+
+                                    // Sign transaction
+                                    const signedTx = await signTransaction(tx);
+
+                                    // Send transaction
+                                    const signature = await connection.sendRawTransaction(signedTx.serialize());
+                                    
+                                    toast({
+                                      title: "Transaction Sent",
+                                      description: "Confirming your deposit...",
+                                    });
+
+                                    await connection.confirmTransaction(signature, 'confirmed');
+
+                                    toast({
+                                      title: "Deposit Successful! 🎉",
+                                      description: `Deposited ${amountStr} ${reserve.symbol} - Now earning ${reserve.depositAPY.toFixed(2)}% APY!`,
+                                    });
+
+                                    // Refresh user positions
+                                    queryClient.invalidateQueries({ queryKey: ['/api/kamino/user-positions'] });
+                                  } catch (error: any) {
+                                    console.error('Deposit error:', error);
+                                    toast({
+                                      title: "Deposit Failed",
+                                      description: error.message || "Please try again",
+                                      variant: "destructive"
+                                    });
+                                  }
                                 }}
                                 className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6"
                                 data-testid={`button-lend-${reserve.symbol}`}

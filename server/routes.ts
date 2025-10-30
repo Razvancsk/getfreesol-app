@@ -4914,7 +4914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Get market data with reserves and APY rates
   app.get("/api/kamino/market-data", async (req, res) => {
     try {
-      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
+      const { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
       
       const heliusApiKey = process.env.HELIUS_API_KEY;
       if (!heliusApiKey) {
@@ -4923,9 +4923,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF"); // Kamino Main Market
+      const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
 
       console.log('📊 Loading Kamino market data...');
-      const market = await KaminoMarket.load(connection, marketAddress);
+      const market = await KaminoMarket.load(connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       
       // Refresh all cached data (reserves + obligations)
       await market.refreshAll();
@@ -4963,12 +4964,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Build deposit transaction
   app.post("/api/kamino/build-deposit", async (req, res) => {
     try {
-      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
-      const { Decimal } = await import('decimal.js');
-      const { walletAddress, reserveAddress, amount } = req.body;
+      const { KaminoMarket, KaminoAction, VanillaObligation, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
+      const { walletAddress, symbol, amount } = req.body;
 
-      if (!walletAddress || !reserveAddress || !amount) {
-        return res.status(400).json({ error: 'Wallet address, reserve address, and amount are required' });
+      if (!walletAddress || !symbol || !amount) {
+        return res.status(400).json({ error: 'Wallet address, symbol, and amount are required' });
       }
 
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -4978,30 +4978,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
+      const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
       const userWallet = new PublicKey(walletAddress);
-      const reserve = new PublicKey(reserveAddress);
 
-      console.log(`🏦 Building deposit transaction for ${amount} to reserve ${reserveAddress}`);
+      console.log(`🏦 Building deposit transaction for ${amount} ${symbol}`);
       
-      // Load market and refresh data
-      const market = await KaminoMarket.load(connection, marketAddress);
+      // Load market with program ID
+      const market = await KaminoMarket.load(connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       await market.refreshAll();
 
-      // Get the reserve to find the liquidity mint
-      const reserveData = market.reserves.find(r => r.address.equals(reserve));
+      // Get the reserve to find decimals
+      const reserveData = market.getReserve(symbol);
       if (!reserveData) {
-        return res.status(404).json({ error: 'Reserve not found' });
+        return res.status(404).json({ error: `Reserve ${symbol} not found` });
       }
 
-      const liquidityMint = reserveData.getLiquidityMint();
-      const depositAmount = new Decimal(amount);
+      // Convert amount to base units (Decimal with proper decimals)
+      const { Decimal } = await import('decimal.js');
+      const decimals = reserveData.stats.decimals;
+      const amountBase = new Decimal(amount).mul(new Decimal(10).pow(decimals));
 
-      // Build deposit transaction as per SDK docs
-      const { instructions, lookupTablesAddresses } = await market.depositReserveLiquidityTxns(
-        depositAmount,
-        liquidityMint,
-        userWallet
+      console.log(`Converted ${amount} ${symbol} to ${amountBase.toString()} base units (decimals: ${decimals})`);
+
+      // Build deposit transaction using KaminoAction (as per SDK docs)
+      const kaminoAction = await KaminoAction.buildDepositTxns(
+        market,
+        amountBase.toString(),
+        symbol,
+        userWallet,
+        new VanillaObligation(programId)
       );
+
+      // Get transactions from action
+      const {setupIxs, lendingIxs, cleanupIxs} = kaminoAction;
+      
+      // Combine all instructions
+      const allInstructions = [...(setupIxs || []), ...(lendingIxs || []), ...(cleanupIxs || [])];
 
       // Get recent blockhash
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
@@ -5010,8 +5022,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messageV0 = new TransactionMessage({
         payerKey: userWallet,
         recentBlockhash: blockhash,
-        instructions,
-      }).compileToV0Message(lookupTablesAddresses);
+        instructions: allInstructions,
+      }).compileToV0Message(kaminoAction.lookupTableAccountsFromRPC || []);
 
       const transaction = new VersionedTransaction(messageV0);
 
@@ -5033,12 +5045,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Build withdraw transaction
   app.post("/api/kamino/build-withdraw", async (req, res) => {
     try {
-      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
-      const { Decimal } = await import('decimal.js');
-      const { walletAddress, reserveAddress, amount } = req.body;
+      const { KaminoMarket, KaminoAction, VanillaObligation, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
+      const { walletAddress, symbol, amount } = req.body;
 
-      if (!walletAddress || !reserveAddress || !amount) {
-        return res.status(400).json({ error: 'Wallet address, reserve address, and amount are required' });
+      if (!walletAddress || !symbol || !amount) {
+        return res.status(400).json({ error: 'Wallet address, symbol, and amount are required' });
       }
 
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -5048,30 +5059,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
+      const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
       const userWallet = new PublicKey(walletAddress);
-      const reserve = new PublicKey(reserveAddress);
 
-      console.log(`🏦 Building withdraw transaction for ${amount} from reserve ${reserveAddress}`);
+      console.log(`🏦 Building withdraw transaction for ${amount} ${symbol}`);
       
-      // Load market and refresh data
-      const market = await KaminoMarket.load(connection, marketAddress);
+      // Load market with program ID
+      const market = await KaminoMarket.load(connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       await market.refreshAll();
 
-      // Get the reserve to find the collateral mint
-      const reserveData = market.reserves.find(r => r.address.equals(reserve));
+      // Get the reserve to find decimals
+      const reserveData = market.getReserve(symbol);
       if (!reserveData) {
-        return res.status(404).json({ error: 'Reserve not found' });
+        return res.status(404).json({ error: `Reserve ${symbol} not found` });
       }
 
-      const collateralMint = reserveData.getCTokenMint();
-      const withdrawAmount = new Decimal(amount);
+      // Convert amount to base units (Decimal with proper decimals)
+      const { Decimal } = await import('decimal.js');
+      const decimals = reserveData.stats.decimals;
+      const amountBase = new Decimal(amount).mul(new Decimal(10).pow(decimals));
 
-      // Build withdraw transaction as per SDK docs
-      const { instructions, lookupTablesAddresses } = await market.withdrawReserveLiquidityTxns(
-        withdrawAmount,
-        collateralMint,
-        userWallet
+      console.log(`Converted ${amount} ${symbol} to ${amountBase.toString()} base units (decimals: ${decimals})`);
+
+      // Build withdraw transaction using KaminoAction (as per SDK docs)
+      const kaminoAction = await KaminoAction.buildWithdrawTxns(
+        market,
+        amountBase.toString(),
+        symbol,
+        userWallet,
+        new VanillaObligation(programId)
       );
+
+      // Get transactions from action
+      const {setupIxs, lendingIxs, cleanupIxs} = kaminoAction;
+      
+      // Combine all instructions
+      const allInstructions = [...(setupIxs || []), ...(lendingIxs || []), ...(cleanupIxs || [])];
 
       // Get recent blockhash
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
@@ -5080,8 +5103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messageV0 = new TransactionMessage({
         payerKey: userWallet,
         recentBlockhash: blockhash,
-        instructions,
-      }).compileToV0Message(lookupTablesAddresses);
+        instructions: allInstructions,
+      }).compileToV0Message(kaminoAction.lookupTableAccountsFromRPC || []);
 
       const transaction = new VersionedTransaction(messageV0);
 
@@ -5103,7 +5126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Get user positions
   app.get("/api/kamino/user-positions/:walletAddress", async (req, res) => {
     try {
-      const { KaminoMarket } = await import('@kamino-finance/klend-sdk');
+      const { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
       const { walletAddress } = req.params;
 
       if (!walletAddress) {
@@ -5117,10 +5140,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
+      const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
       const userWallet = new PublicKey(walletAddress);
 
       console.log(`📊 Loading positions for wallet: ${walletAddress}`);
-      const market = await KaminoMarket.load(connection, marketAddress);
+      const market = await KaminoMarket.load(connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       
       // Refresh all cached data
       await market.refreshAll();
