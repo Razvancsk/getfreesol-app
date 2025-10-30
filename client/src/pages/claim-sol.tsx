@@ -277,36 +277,51 @@ export default function SolRefund() {
 
   // Function to fetch wallet balance for a specific token (for Lend deposit dialog)
   const fetchTokenBalance = async (tokenMint: string) => {
+    console.log('fetchTokenBalance called for mint:', tokenMint);
     if (!publicKey) {
+      console.log('No publicKey, setting balance to 0');
       setWalletTokenBalance(0);
       return;
     }
     
     try {
       // Fetch from Jupiter Ultra Holdings API
-      const response = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${publicKey.toBase58()}`);
+      const url = `https://lite-api.jup.ag/ultra/v1/holdings/${publicKey.toBase58()}`;
+      console.log('Fetching from Jupiter Ultra Holdings API:', url);
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
+        console.log('Response not OK, setting balance to 0');
         setWalletTokenBalance(0);
         return;
       }
       
       const data = await response.json();
+      console.log('Jupiter Holdings response:', data);
       
       // Special handling for WSOL/SOL - native SOL balance is at top level
       if (tokenMint === 'So11111111111111111111111111111111111111112') {
+        console.log('SOL detected, balance:', data.uiAmount);
         setWalletTokenBalance(data.uiAmount || 0);
         return;
       }
       
       // For other tokens, check the tokens object
+      console.log('Looking for token mint:', tokenMint);
+      console.log('Available tokens:', Object.keys(data.tokens || {}));
+      
       if (data.tokens && data.tokens[tokenMint]) {
         const tokenAccounts = data.tokens[tokenMint];
+        console.log('Token accounts found:', tokenAccounts);
         // Sum all token account balances for this mint
         const totalBalance = tokenAccounts.reduce((sum: number, account: any) => {
           return sum + (account.uiAmount || 0);
         }, 0);
+        console.log('Total balance calculated:', totalBalance);
         setWalletTokenBalance(totalBalance);
       } else {
+        console.log('Token not found in holdings, setting balance to 0');
         setWalletTokenBalance(0);
       }
     } catch (error) {
