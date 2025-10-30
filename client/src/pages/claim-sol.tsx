@@ -3993,93 +3993,93 @@ export default function SolRefund() {
                       Earn passive income by lending your assets - Powered by Jupiter Lend
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     {loadingMarket ? (
                       <div className="text-center py-12">
                         <div className="text-4xl mb-4">⏳</div>
                         <p className="text-purple-200">Loading lending pools...</p>
                       </div>
                     ) : jupiterLendData?.reserves && jupiterLendData.reserves.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-purple-500/20">
-                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">Vault</th>
-                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">APY</th>
-                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">Deposited</th>
-                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">Earnings</th>
-                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">TVL</th>
-                              <th className="py-3 px-2"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {jupiterLendData.reserves.map((reserve: any) => (
-                              <tr 
-                                key={reserve.address} 
-                                className="border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
-                                onClick={() => {
-                                  if (!publicKey) {
-                                    toast({
-                                      title: "Wallet Not Connected",
-                                      description: "Please connect your wallet to deposit.",
-                                      variant: "destructive",
-                                    });
-                                    return;
-                                  }
-                                  setSelectedReserve(reserve);
-                                  setDepositAmount('');
-                                  setDepositDialogOpen(true);
-                                }}
-                              >
-                                <td className="py-4 px-2">
-                                  <div className="flex items-center gap-3">
-                                    {reserve.logoUrl ? (
-                                      <img 
-                                        src={reserve.logoUrl} 
-                                        alt={reserve.symbol}
-                                        className="w-10 h-10 rounded-full"
-                                        onError={(e) => {
-                                          // Fallback to gradient if image fails to load
-                                          e.currentTarget.style.display = 'none';
-                                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                        }}
-                                      />
-                                    ) : null}
-                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ${reserve.logoUrl ? 'hidden' : ''}`}>
-                                      {reserve.symbol.substring(0, 1)}
-                                    </div>
-                                    <div className="text-white font-medium">{reserve.symbol}</div>
-                                  </div>
-                                </td>
-                                <td className="py-4 px-2">
-                                  <div className="text-blue-400 font-semibold">{reserve.depositAPY.toFixed(2)}%</div>
-                                </td>
-                                <td className="py-4 px-2">
-                                  <div className="text-white">{reserve.deposited} {reserve.symbol}</div>
-                                  <div className="text-sm text-purple-400">$0.00</div>
-                                </td>
-                                <td className="py-4 px-2">
-                                  <div className="text-white">{reserve.earnings} {reserve.symbol}</div>
-                                  <div className="text-sm text-purple-400">$0.00</div>
-                                </td>
-                                <td className="py-4 px-2">
-                                  <div className="text-white font-medium">{reserve.tvl} {reserve.symbol}</div>
-                                  <div className="text-sm text-purple-400">${reserve.tvl}</div>
-                                </td>
-                                <td className="py-4 px-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-purple-300 hover:text-white"
-                                    data-testid={`button-view-${reserve.symbol}`}
-                                  >
-                                    →
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div className="space-y-0">
+                        {/* Header Row */}
+                        <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr_60px] gap-4 px-6 py-3 border-b border-purple-500/20 text-sm text-purple-300 font-medium">
+                          <div>Vault</div>
+                          <div>APY</div>
+                          <div>Deposited</div>
+                          <div>Earnings</div>
+                          <div>TVL</div>
+                          <div></div>
+                        </div>
+                        
+                        {/* Vault Rows */}
+                        {jupiterLendData.reserves.map((reserve: any) => (
+                          <div
+                            key={reserve.address}
+                            className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr_60px] gap-4 px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer items-center"
+                            onClick={() => {
+                              if (!publicKey) {
+                                toast({
+                                  title: "Wallet Not Connected",
+                                  description: "Please connect your wallet to deposit.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              setSelectedReserve(reserve);
+                              setDepositAmount('');
+                              setDepositDialogOpen(true);
+                            }}
+                            data-testid={`vault-${reserve.symbol}`}
+                          >
+                            {/* Vault Column */}
+                            <div className="flex items-center gap-3">
+                              {reserve.logoUrl ? (
+                                <img 
+                                  src={reserve.logoUrl} 
+                                  alt={reserve.symbol}
+                                  className="w-10 h-10 rounded-full flex-shrink-0"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 ${reserve.logoUrl ? 'hidden' : ''}`}>
+                                {reserve.symbol.substring(0, 1)}
+                              </div>
+                              <div className="text-white font-medium text-base">{reserve.symbol}</div>
+                            </div>
+                            
+                            {/* APY Column */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-blue-400 font-semibold text-base">{reserve.depositAPY.toFixed(2)}%</span>
+                            </div>
+                            
+                            {/* Deposited Column */}
+                            <div>
+                              <div className="text-white text-base">{reserve.deposited} {reserve.symbol}</div>
+                              <div className="text-sm text-gray-400">$0.00</div>
+                            </div>
+                            
+                            {/* Earnings Column */}
+                            <div>
+                              <div className="text-white text-base">{reserve.earnings} {reserve.symbol}</div>
+                              <div className="text-sm text-gray-400">$0.00</div>
+                            </div>
+                            
+                            {/* TVL Column */}
+                            <div>
+                              <div className="text-white font-medium text-base">{reserve.tvl}M {reserve.symbol}</div>
+                              <div className="text-sm text-gray-400">${reserve.tvl}M</div>
+                            </div>
+                            
+                            {/* Arrow */}
+                            <div className="flex items-center justify-center">
+                              <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90" />
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <div className="text-center py-12">
