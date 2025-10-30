@@ -4083,8 +4083,24 @@ export default function SolRefund() {
                             
                             {/* TVL Column */}
                             <div>
-                              <div className="text-white font-medium text-base">{(parseFloat(reserve.tvl) / 1_000_000).toFixed(2)}M {reserve.symbol}</div>
-                              <div className="text-sm text-gray-400">${(parseFloat(reserve.tvl) / 1_000_000).toFixed(2)}M</div>
+                              {(() => {
+                                const tvl = parseFloat(reserve.tvl);
+                                const formatTVL = (value: number) => {
+                                  if (value >= 1_000_000) {
+                                    return `${(value / 1_000_000).toFixed(1)}M`;
+                                  } else if (value >= 1_000) {
+                                    return `${(value / 1_000).toFixed(1)}K`;
+                                  } else {
+                                    return value.toFixed(2);
+                                  }
+                                };
+                                return (
+                                  <>
+                                    <div className="text-white font-medium text-base">{formatTVL(tvl)} {reserve.symbol}</div>
+                                    <div className="text-sm text-gray-400">${formatTVL(tvl)}</div>
+                                  </>
+                                );
+                              })()}
                             </div>
                             
                             {/* Arrow */}
@@ -4197,12 +4213,20 @@ export default function SolRefund() {
                         <span className="text-purple-300">Vault TVL</span>
                         <div className="text-right">
                           {(() => {
-                            const tvlValue = parseFloat(selectedReserve?.tvl || '0');
-                            const tvlInMillions = tvlValue / 1_000_000;
+                            const tvl = parseFloat(selectedReserve?.tvl || '0');
+                            const formatTVL = (value: number) => {
+                              if (value >= 1_000_000) {
+                                return `${(value / 1_000_000).toFixed(1)}M`;
+                              } else if (value >= 1_000) {
+                                return `${(value / 1_000).toFixed(1)}K`;
+                              } else {
+                                return value.toFixed(2);
+                              }
+                            };
                             return (
                               <>
-                                <div className="text-white font-semibold">${tvlInMillions.toFixed(2)}M</div>
-                                <div className="text-sm text-purple-400">{tvlInMillions.toFixed(2)}M {selectedReserve?.symbol}</div>
+                                <div className="text-white font-semibold">${formatTVL(tvl)}</div>
+                                <div className="text-sm text-purple-400">{formatTVL(tvl)} {selectedReserve?.symbol}</div>
                               </>
                             );
                           })()}
@@ -4216,12 +4240,20 @@ export default function SolRefund() {
                         <span className="text-purple-300">Layer Total</span>
                         <div className="text-right">
                           {(() => {
-                            const tvlValue = parseFloat(selectedReserve?.tvl || '0');
-                            const tvlInMillions = tvlValue / 1_000_000;
+                            const tvl = parseFloat(selectedReserve?.tvl || '0');
+                            const formatTVL = (value: number) => {
+                              if (value >= 1_000_000) {
+                                return `${(value / 1_000_000).toFixed(1)}M`;
+                              } else if (value >= 1_000) {
+                                return `${(value / 1_000).toFixed(1)}K`;
+                              } else {
+                                return value.toFixed(2);
+                              }
+                            };
                             return (
                               <>
-                                <div className="text-white font-semibold">${tvlInMillions.toFixed(2)}M</div>
-                                <div className="text-sm text-purple-400">{tvlInMillions.toFixed(2)}M {selectedReserve?.symbol}</div>
+                                <div className="text-white font-semibold">${formatTVL(tvl)}</div>
+                                <div className="text-sm text-purple-400">{formatTVL(tvl)} {selectedReserve?.symbol}</div>
                               </>
                             );
                           })()}
