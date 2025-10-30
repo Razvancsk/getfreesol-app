@@ -4469,10 +4469,11 @@ export default function SolRefund() {
                           }
                           const amount = parseFloat(userPos.amount) / Math.pow(10, selectedReserve?.decimals || 6);
                           const usdValue = amount * parseFloat(selectedReserve?.price || '0');
+                          const decimals = selectedReserve?.decimals || 6;
                           return (
                             <>
                               <div className="text-lg font-bold text-white">
-                                {amount.toFixed(amount < 0.01 ? 8 : 2)} {selectedReserve?.symbol}
+                                {amount.toFixed(amount < 0.01 ? decimals : 2)} {selectedReserve?.symbol}
                               </div>
                               <div className="text-xs text-purple-400">${usdValue.toFixed(usdValue < 0.01 ? 10 : 2)}</div>
                             </>
@@ -4497,10 +4498,11 @@ export default function SolRefund() {
                           }
                           const earnings = parseFloat(userPos.earnings) / Math.pow(10, selectedReserve?.decimals || 6);
                           const usdValue = earnings * parseFloat(selectedReserve?.price || '0');
+                          const decimals = selectedReserve?.decimals || 6;
                           return (
                             <>
                               <div className="text-lg font-bold text-green-400">
-                                {earnings.toFixed(earnings < 0.01 ? 8 : 2)} {selectedReserve?.symbol}
+                                {earnings.toFixed(earnings < 0.01 ? decimals : 2)} {selectedReserve?.symbol}
                               </div>
                               <div className="text-xs text-purple-400">${usdValue.toFixed(usdValue < 0.01 ? 10 : 2)}</div>
                             </>
