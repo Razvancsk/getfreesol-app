@@ -3980,49 +3980,80 @@ export default function SolRefund() {
                 <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
-                      💰 Lending Pools
+                      💰 Lending Vaults
                     </CardTitle>
                     <CardDescription className="text-purple-200">
                       Earn passive income by lending your assets - Powered by Kamino Finance
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent>
                     {loadingMarket ? (
                       <div className="text-center py-12">
                         <div className="text-4xl mb-4">⏳</div>
                         <p className="text-purple-200">Loading lending pools...</p>
                       </div>
                     ) : kaminoMarketData?.reserves && kaminoMarketData.reserves.length > 0 ? (
-                      <div className="space-y-3">
-                        {kaminoMarketData.reserves.map((reserve: any) => (
-                          <div key={reserve.address} className="bg-purple-900/30 rounded-lg p-4 border border-purple-500/20 hover:border-purple-400/40 transition-all">
-                            <div className="flex justify-between items-center">
-                              <div className="flex-1">
-                                <div className="text-white font-semibold text-lg">{reserve.symbol}</div>
-                                <div className="text-sm text-purple-300">{reserve.name}</div>
-                                <div className="text-xs text-purple-400 mt-1">
-                                  Utilization: {(reserve.utilizationRate * 100).toFixed(1)}%
-                                </div>
-                              </div>
-                              <div className="text-right mr-4">
-                                <div className="text-2xl font-bold text-green-400">{reserve.depositAPY.toFixed(2)}%</div>
-                                <div className="text-sm text-purple-300">APY</div>
-                              </div>
-                              <Button
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-purple-500/20">
+                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">Vault</th>
+                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">APY</th>
+                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">Deposited</th>
+                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">Earnings</th>
+                              <th className="text-left py-3 px-2 text-sm text-purple-300 font-medium">TVL</th>
+                              <th className="py-3 px-2"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {kaminoMarketData.reserves.map((reserve: any) => (
+                              <tr 
+                                key={reserve.address} 
+                                className="border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
                                 onClick={() => {
                                   toast({
                                     title: "Coming Soon",
                                     description: "Deposit functionality is being integrated. Visit app.kamino.finance for now.",
                                   });
                                 }}
-                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6"
-                                data-testid={`button-lend-${reserve.symbol}`}
                               >
-                                Deposit
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                                <td className="py-4 px-2">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                      {reserve.symbol.substring(0, 1)}
+                                    </div>
+                                    <div className="text-white font-medium">{reserve.symbol}</div>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-2">
+                                  <div className="text-blue-400 font-semibold">{reserve.depositAPY.toFixed(2)}%</div>
+                                </td>
+                                <td className="py-4 px-2">
+                                  <div className="text-white">{reserve.deposited} {reserve.symbol}</div>
+                                  <div className="text-sm text-purple-400">$0.00</div>
+                                </td>
+                                <td className="py-4 px-2">
+                                  <div className="text-white">{reserve.earnings} {reserve.symbol}</div>
+                                  <div className="text-sm text-purple-400">$0.00</div>
+                                </td>
+                                <td className="py-4 px-2">
+                                  <div className="text-white font-medium">{reserve.tvl} {reserve.symbol}</div>
+                                  <div className="text-sm text-purple-400">${reserve.tvl}</div>
+                                </td>
+                                <td className="py-4 px-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-purple-300 hover:text-white"
+                                    data-testid={`button-view-${reserve.symbol}`}
+                                  >
+                                    →
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     ) : (
                       <div className="text-center py-12">
