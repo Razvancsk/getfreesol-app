@@ -5248,6 +5248,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const transaction = new VersionedTransaction(messageV0);
       
+      // Simulate transaction to catch errors before sending to wallet
+      try {
+        const simulation = await connection.simulateTransaction(transaction, {
+          commitment: 'confirmed',
+        });
+        
+        if (simulation.value.err) {
+          console.error('❌ Transaction simulation failed:', simulation.value.err);
+          console.error('Logs:', simulation.value.logs);
+          throw new Error(`Transaction would fail: ${JSON.stringify(simulation.value.err)}`);
+        }
+        
+        console.log('✅ Transaction simulation successful');
+        console.log('Logs:', simulation.value.logs?.slice(0, 5));
+      } catch (simError: any) {
+        console.error('❌ Simulation error:', simError.message);
+        throw new Error(`Transaction simulation failed: ${simError.message}`);
+      }
+      
       // Serialize transaction to base64
       const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
 
