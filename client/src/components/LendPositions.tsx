@@ -159,7 +159,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
                     {/* APY Column */}
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${reserve.depositAPY >= 8 ? 'bg-emerald-400' : reserve.depositAPY >= 5 ? 'bg-green-400' : 'bg-blue-400'}`}></div>
+                        <div className={`w-2 h-2 rounded-full ${reserve.depositAPY >= 8 ? 'bg-emerald-400' : reserve.depositAPY >= 5 ? 'bg-green-400' : 'bg-green-400'}`}></div>
                         <span className={`font-semibold ${getAPYColor(reserve.depositAPY, displaySymbol)}`}>
                           {reserve.depositAPY.toFixed(2)}%
                         </span>
