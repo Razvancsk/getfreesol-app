@@ -4182,15 +4182,18 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return `0.000000000 ${displaySymbol}`;
                                     
-                                    // Convert raw amount to display amount
-                                    const rawAmount = parseFloat(userPosition.amount || '0');
+                                    // Current value (underlyingAssets)
+                                    const currentValueRaw = parseFloat(userPosition.amount || '0');
                                     const decimals = reserve.decimals || 6;
-                                    const deposited = rawAmount / Math.pow(10, decimals);
+                                    const currentValue = currentValueRaw / Math.pow(10, decimals);
                                     
-                                    // Calculate earnings using share price
-                                    const sharePrice = reserve.sharePrice || 1;
-                                    const currentValue = deposited * sharePrice;
-                                    const earnings = Math.max(0, currentValue - deposited);
+                                    // Original deposit calculation using shares
+                                    const shares = parseFloat(userPosition.shares || '0');
+                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
+                                    const originalDeposit = (shares * (1000000 / convertToShares)) / Math.pow(10, decimals);
+                                    
+                                    // Earnings = current value - original deposit
+                                    const earnings = Math.max(0, currentValue - originalDeposit);
                                     
                                     return `${earnings.toFixed(9)} ${displaySymbol}`;
                                   })()}
@@ -4199,12 +4202,17 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return '$0.00';
                                     
-                                    const rawAmount = parseFloat(userPosition.amount || '0');
+                                    // Current value
+                                    const currentValueRaw = parseFloat(userPosition.amount || '0');
                                     const decimals = reserve.decimals || 6;
-                                    const deposited = rawAmount / Math.pow(10, decimals);
-                                    const sharePrice = reserve.sharePrice || 1;
-                                    const currentValue = deposited * sharePrice;
-                                    const earnings = Math.max(0, currentValue - deposited);
+                                    const currentValue = currentValueRaw / Math.pow(10, decimals);
+                                    
+                                    // Original deposit
+                                    const shares = parseFloat(userPosition.shares || '0');
+                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
+                                    const originalDeposit = (shares * (1000000 / convertToShares)) / Math.pow(10, decimals);
+                                    
+                                    const earnings = Math.max(0, currentValue - originalDeposit);
                                     const tokenPrice = parseFloat(reserve.price || '0');
                                     const earningsUSD = earnings * tokenPrice;
                                     

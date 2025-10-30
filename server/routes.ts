@@ -5008,6 +5008,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           asset: position.token?.assetAddress || position.asset || position.mint,
           symbol: position.token?.asset?.symbol || position.symbol,
           amount: position.underlyingAssets || position.balance || position.shares,
+          shares: position.shares,
+          convertToShares: position.token?.convertToShares,
+          convertToAssets: position.token?.convertToAssets,
           amountUSD: position.balanceUsd || '0',
           apy: position.apy || 0
         }))
