@@ -44,14 +44,14 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
     const value = parseFloat(amount.toString()) / Math.pow(10, decimals);
     if (showUSD && price) {
       const usdValue = value * price;
-      // Format with more decimals for very small amounts
+      // Format with token-specific decimals for very small amounts
       const tokenDisplay = value < 0.01 
-        ? `${value.toFixed(8)} ${symbol}` 
+        ? `${value.toFixed(decimals)} ${symbol}` 
         : `${value.toFixed(2)} ${symbol}`;
       
       return {
         token: tokenDisplay,
-        usd: formatUSDValue(usdValue)
+        usd: usdValue < 0.01 ? `$${usdValue.toFixed(10)}` : formatUSDValue(usdValue)
       };
     }
     return `${value.toFixed(6)} ${symbol}`;
