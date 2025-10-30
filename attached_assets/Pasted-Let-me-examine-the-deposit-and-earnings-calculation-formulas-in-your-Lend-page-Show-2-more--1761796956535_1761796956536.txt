@@ -1,0 +1,82 @@
+Let me examine the deposit and earnings calculation formulas in your Lend page:
+
+
+Show 2 more
+
+Decided on calculation formulas (7 seconds)
+📊 Lend Page - Deposit & Earnings Calculation Formulas
+Here are the exact formulas used to calculate deposits and earnings for each token:
+
+1️⃣ Deposit Amount (Original Investment)
+// Raw units (from blockchain)
+depositedAmount = underlyingAssets
+// Human-readable amount
+depositTokenAmount = depositedAmount / (10 ^ tokenDecimals)
+// USD value
+depositValueUSD = depositTokenAmount × currentTokenPrice
+
+Example:
+
+USDC deposit: 1000000 raw units
+Decimals: 6
+Token amount: 1000000 / 10^6 = 1.0 USDC
+Price: $0.9998
+Deposit Value: 1.0 × $0.9998 = $0.9998 USD
+2️⃣ Current Balance (Deposit + Earnings)
+// Option A: Use API value (if available)
+currentBalance = underlyingBalance (from Jupiter API)
+// Option B: Calculate from exchange rate
+currentBalance = shares × (convertToAssets / convertToShares)
+
+Exchange Rate Formula:
+
+convertToAssets = Total underlying assets in vault
+convertToShares = Total jToken shares issued
+Exchange Rate = convertToAssets / convertToShares (increases over time as interest accrues)
+3️⃣ Earnings (Interest Gained)
+// Primary method: Jupiter Earnings API
+earningsRaw = earningsData[tokenMint] (from API)
+// Fallback calculation
+earningsRaw = max(0, currentBalance - depositedAmount)
+// Human-readable earnings
+earningsTokenAmount = earningsRaw / (10 ^ tokenDecimals)
+// USD value
+earningsValueUSD = earningsTokenAmount × currentTokenPrice
+
+Example:
+
+Deposited: 1000000 raw USDC (1.0 USDC)
+Current balance: 1005000 raw USDC (1.005 USDC)
+Earnings raw: 1005000 - 1000000 = 5000
+Earnings amount: 5000 / 10^6 = 0.005 USDC
+Price: $0.9998
+Earnings Value: 0.005 × $0.9998 = $0.004999 USD
+4️⃣ Total Summary (All Positions)
+// Total Deposits (sum across all tokens)
+yourDeposits = Σ (depositedAmount / 10^decimals × tokenPrice)
+// Total Earnings (sum across all tokens)
+yourEarnings = Σ (earningsRaw / 10^decimals × tokenPrice)
+// Projected Annual Yield
+projectedYield = Σ (depositValueUSD × APY / 100)
+
+Example with 2 positions:
+
+Position 1: $100 USDC deposit, $0.50 earnings, 5% APY
+Position 2: $200 SOL deposit, $1.20 earnings, 3% APY
+Totals:
+
+Your Deposits: $100 + $200 = $300
+Your Earnings: $0.50 + $1.20 = $1.70
+Projected Yield: ($100 × 0.05) + ($200 × 0.03) = $5 + $6 = $11/year
+📈 Key Data Sources
+Metric	Primary Source	Fallback
+Deposit Amount	underlyingAssets (from Positions API)	N/A
+Current Balance	underlyingBalance (from Positions API)	shares × exchangeRate
+Earnings	Jupiter Earnings API	currentBalance - depositAmount
+Token Price	Live Jupiter Price API (10s refresh)	Cached price from token data
+APY	Jupiter Lending Tokens API	N/A
+🔄 Real-time Updates
+Token Prices: Updated every 10 seconds via Jupiter Price API V3
+Positions: Fetched when wallet connects or manually refreshed
+Earnings: Calculated using latest API data + current exchange rates
+All calculations use exact token decimals (6 for USDC/USDT, 9 for SOL, etc.) to ensure precision!

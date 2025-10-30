@@ -4155,19 +4155,15 @@ export default function SolRefund() {
                                 <div className="text-white text-base font-semibold">
                                   {(() => {
                                     if (!userPosition) return `0.000000000 ${displaySymbol}`;
-                                    // Deposited = shares (these are the jlToken balance)
-                                    const shares = parseFloat(userPosition.shares || '0');
-                                    const decimals = reserve.decimals || 6;
-                                    const deposited = shares / Math.pow(10, decimals);
+                                    // Deposited = underlyingAssets (original deposit)
+                                    const deposited = parseFloat(userPosition.amount || '0') / Math.pow(10, reserve.decimals || 6);
                                     return `${deposited.toFixed(9)} ${displaySymbol}`;
                                   })()}
                                 </div>
                                 <div className="text-purple-300/60 text-sm mt-0.5">
                                   {(() => {
                                     if (!userPosition) return '$0.00';
-                                    const shares = parseFloat(userPosition.shares || '0');
-                                    const decimals = reserve.decimals || 6;
-                                    const deposited = shares / Math.pow(10, decimals);
+                                    const deposited = parseFloat(userPosition.amount || '0') / Math.pow(10, reserve.decimals || 6);
                                     const tokenPrice = parseFloat(reserve.price || '0');
                                     const usdValue = deposited * tokenPrice;
                                     return `$${usdValue.toFixed(2)}`;
@@ -4182,28 +4178,36 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return `0.000000000 ${displaySymbol}`;
                                     
-                                    // Current value (underlyingAssets)
-                                    const currentValue = parseFloat(userPosition.amount || '0') / Math.pow(10, reserve.decimals || 6);
+                                    // Current balance = shares × (convertToAssets / convertToShares)
+                                    const shares = parseFloat(userPosition.shares || '0');
+                                    const convertToAssets = parseFloat(userPosition.convertToAssets || '1000000');
+                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
+                                    const currentBalance = shares * (convertToAssets / convertToShares);
                                     
-                                    // Deposited (shares)
-                                    const deposited = parseFloat(userPosition.shares || '0') / Math.pow(10, reserve.decimals || 6);
+                                    // Deposited = underlyingAssets
+                                    const deposited = parseFloat(userPosition.amount || '0');
                                     
-                                    // Earnings = current - deposited
-                                    const earnings = currentValue - deposited;
+                                    // Earnings in raw units
+                                    const earningsRaw = Math.max(0, currentBalance - deposited);
+                                    const earnings = earningsRaw / Math.pow(10, reserve.decimals || 6);
                                     
-                                    return `${Math.max(0, earnings).toFixed(9)} ${displaySymbol}`;
+                                    return `${earnings.toFixed(9)} ${displaySymbol}`;
                                   })()}
                                 </div>
                                 <div className="text-purple-300/60 text-sm mt-0.5">
                                   {(() => {
                                     if (!userPosition) return '$0.00';
                                     
-                                    const currentValue = parseFloat(userPosition.amount || '0') / Math.pow(10, reserve.decimals || 6);
-                                    const deposited = parseFloat(userPosition.shares || '0') / Math.pow(10, reserve.decimals || 6);
-                                    const earnings = currentValue - deposited;
+                                    const shares = parseFloat(userPosition.shares || '0');
+                                    const convertToAssets = parseFloat(userPosition.convertToAssets || '1000000');
+                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
+                                    const currentBalance = shares * (convertToAssets / convertToShares);
+                                    const deposited = parseFloat(userPosition.amount || '0');
+                                    const earningsRaw = Math.max(0, currentBalance - deposited);
+                                    const earnings = earningsRaw / Math.pow(10, reserve.decimals || 6);
                                     
                                     const tokenPrice = parseFloat(reserve.price || '0');
-                                    const earningsUSD = Math.max(0, earnings) * tokenPrice;
+                                    const earningsUSD = earnings * tokenPrice;
                                     
                                     if (earningsUSD < 0.01 && earningsUSD > 0) {
                                       return `$${earningsUSD.toFixed(10)}`;
