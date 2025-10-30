@@ -4121,7 +4121,7 @@ export default function SolRefund() {
 
                 {/* Deposit Dialog */}
                 <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
-                  <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white max-w-md p-4">
+                  <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white p-4" style={{ width: '512px', height: '606px', maxWidth: '512px' }}>
                     {/* Header with Token Logo and Symbol */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
