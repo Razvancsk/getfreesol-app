@@ -2684,7 +2684,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-lend"
                 >
-                  💰 Lend
+                  💰 Earn
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
@@ -2708,7 +2708,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'massTransfer' ? 'Select and send multiple tokens from one wallet to another' : activeTab === 'lend' ? 'Lend your assets and earn passive income on Solana' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'massTransfer' ? 'Select and send multiple tokens from one wallet to another' : activeTab === 'lend' ? 'Earn passive income on your Solana assets' : 'Get your SOL back!'}
             </p>
           </div>
 
