@@ -4132,12 +4132,12 @@ export default function SolRefund() {
                 {isMobile ? (
                   <Drawer open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
                     <DrawerContent className="bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 backdrop-blur-xl border-t-2 border-purple-500/40 max-h-[85vh]">
-                      <DrawerHeader className="pb-3 bg-transparent">
-                        <div className="flex items-center justify-center gap-2 mb-1">
+                      <DrawerHeader className="pb-4 bg-transparent pt-6">
+                        <div className="flex items-center justify-start gap-3 px-2">
                           {selectedReserve?.logoUrl && (
-                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-10 h-10 rounded-full border-2 border-purple-400/40 shadow-lg shadow-purple-500/20" />
+                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-12 h-12 rounded-full border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/30 bg-white/10 p-1" />
                           )}
-                          <DrawerTitle className="text-2xl font-bold text-white drop-shadow-lg">{selectedReserve?.symbol}</DrawerTitle>
+                          <DrawerTitle className="text-3xl font-bold text-white tracking-wide">{selectedReserve?.symbol}</DrawerTitle>
                         </div>
                       </DrawerHeader>
 
