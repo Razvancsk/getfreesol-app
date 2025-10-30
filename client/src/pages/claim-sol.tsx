@@ -27,6 +27,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -76,6 +84,7 @@ export default function SolRefund() {
   const queryClient = useQueryClient();
   const wallet = useWallet();
   const { connection: rpcConnection } = useConnection();
+  const isMobile = useIsMobile();
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
@@ -4119,18 +4128,170 @@ export default function SolRefund() {
                   </CardContent>
                 </Card>
 
-                {/* Deposit Dialog */}
-                <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
-                  <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white p-4" style={{ width: '512px', height: '606px', maxWidth: '512px' }}>
-                    {/* Header with Token Logo and Symbol */}
-                    <div className="flex items-center gap-2 mb-3">
-                      {selectedReserve?.logoUrl && (
-                        <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-8 h-8 rounded-full border border-purple-400/30" />
-                      )}
-                      <h2 className="text-lg font-bold text-white">{selectedReserve?.symbol}</h2>
-                    </div>
+                {/* Deposit Dialog - Responsive: Drawer for Mobile, Dialog for Desktop */}
+                {isMobile ? (
+                  <Drawer open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
+                    <DrawerContent className="bg-gradient-to-br from-purple-900/98 to-purple-950/98 backdrop-blur-xl border-t-2 border-purple-500/40 text-white max-h-[85vh]">
+                      <DrawerHeader className="pb-3">
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                          {selectedReserve?.logoUrl && (
+                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-8 h-8 rounded-full border-2 border-purple-400/40" />
+                          )}
+                          <DrawerTitle className="text-xl font-bold text-white">{selectedReserve?.symbol}</DrawerTitle>
+                        </div>
+                      </DrawerHeader>
 
-                    {/* 1. Deposit Amount Section (FIRST) */}
+                      <div className="px-4 pb-4 space-y-4">
+                        {/* Deposit Amount Section */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-200 text-sm font-medium">Deposit Amount</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-purple-300">
+                                💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs bg-purple-800/50 text-purple-200 hover:text-white hover:bg-purple-700/60 px-3 py-1 h-auto rounded-full border border-purple-500/30"
+                                onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
+                                data-testid="button-half-amount"
+                              >
+                                HALF
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs bg-purple-800/50 text-purple-200 hover:text-white hover:bg-purple-700/60 px-3 py-1 h-auto rounded-full border border-purple-500/30"
+                                onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
+                                data-testid="button-max-amount"
+                              >
+                                MAX
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Amount Input */}
+                          <div className="bg-purple-900/40 border-2 border-purple-500/30 rounded-xl p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                {selectedReserve?.logoUrl && (
+                                  <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-10 h-10 rounded-full border border-purple-400/30" />
+                                )}
+                                <span className="text-white font-semibold text-lg">{selectedReserve?.symbol}</span>
+                              </div>
+                              <Input
+                                type="text"
+                                value={depositAmount}
+                                onChange={(e) => setDepositAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="bg-transparent border-none text-right text-2xl font-bold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[150px] placeholder:text-purple-600/50"
+                                data-testid="input-deposit-amount"
+                              />
+                            </div>
+                          </div>
+
+                          {/* APY Badge */}
+                          <div className="flex items-center justify-center">
+                            <div className="bg-green-500/10 border border-green-500/30 rounded-full px-4 py-2">
+                              <span className="text-green-400 text-sm font-semibold">
+                                APY: ≈ {selectedReserve?.depositAPY.toFixed(2)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <DrawerFooter className="pt-2 pb-6">
+                        <Button
+                          onClick={async () => {
+                            if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
+                            
+                            setDepositingLend(true);
+                            try {
+                              const amountNum = parseFloat(depositAmount);
+                              if (isNaN(amountNum) || amountNum <= 0) {
+                                throw new Error('Invalid amount');
+                              }
+
+                              const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+
+                              const response = await fetch('/api/jupiter-lend/build-deposit', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  asset: selectedReserve.mint,
+                                  amount: amountInLamports,
+                                  walletAddress: publicKey.toString(),
+                                }),
+                              });
+
+                              if (!response.ok) {
+                                throw new Error('Failed to build deposit transaction');
+                              }
+
+                              const { transaction: base64Transaction } = await response.json();
+                              const txBuffer = Buffer.from(base64Transaction, 'base64');
+                              const transaction = VersionedTransaction.deserialize(txBuffer);
+                              
+                              if ('signTransaction' in wallet && wallet.signTransaction) {
+                                const signedTx = await wallet.signTransaction(transaction);
+                                
+                                const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                                  skipPreflight: false,
+                                  maxRetries: 3
+                                });
+
+                                await connection.confirmTransaction(signature, 'confirmed');
+
+                                toast({
+                                  title: "Deposit Successful!",
+                                  description: `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`,
+                                });
+
+                                setDepositDialogOpen(false);
+                                setDepositAmount('');
+                              }
+                            } catch (error: any) {
+                              console.error('Deposit error:', error);
+                              toast({
+                                title: "Deposit Failed",
+                                description: error.message || "Failed to deposit assets",
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setDepositingLend(false);
+                            }
+                          }}
+                          disabled={depositingLend || !depositAmount}
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-6 text-lg font-bold rounded-xl shadow-lg shadow-green-500/30 border border-green-500/40"
+                          data-testid="button-confirm-deposit"
+                        >
+                          {depositingLend ? (
+                            <div className="flex items-center gap-2">
+                              <RefreshCw className="w-5 h-5 animate-spin" />
+                              Depositing...
+                            </div>
+                          ) : (
+                            'Deposit'
+                          )}
+                        </Button>
+                      </DrawerFooter>
+                    </DrawerContent>
+                  </Drawer>
+                ) : (
+                  <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
+                    <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white p-4" style={{ width: '512px', height: '606px', maxWidth: '512px' }}>
+                      <div>
+                        {/* Header with Token Logo and Symbol */}
+                        <div className="flex items-center gap-2 mb-3">
+                          {selectedReserve?.logoUrl && (
+                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-8 h-8 rounded-full border border-purple-400/30" />
+                          )}
+                          <h2 className="text-lg font-bold text-white">{selectedReserve?.symbol}</h2>
+                        </div>
+
+                      {/* 1. Deposit Amount Section (FIRST) */}
                     <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-3 mb-3">
                       {/* Deposit Header with Balance and Quick Actions */}
                       <div className="flex items-center justify-between mb-2">
@@ -4362,8 +4523,10 @@ export default function SolRefund() {
                         Withdraw
                       </Button>
                     </div>
+                      </div>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
           )}
 
