@@ -4928,20 +4928,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`✅ Found ${earnPools.length} Jupiter Lend earn tokens`);
 
       // Transform the data to match our frontend format
-      const reserves = earnPools.map((pool: any) => ({
-        address: pool.mint || pool.asset,
-        symbol: pool.symbol || pool.asset,
-        name: pool.name || pool.asset,
-        mint: pool.mint || pool.asset,
-        depositAPY: parseFloat(pool.supplyApy || pool.apy || 0),
-        borrowAPY: parseFloat(pool.borrowApy || 0),
-        tvl: pool.totalSupply || pool.supply || '0',
-        deposited: '0.00',
-        earnings: '0.00',
-        decimals: pool.decimals || 6,
-        utilization: pool.utilization || 0,
-        available: pool.availableLiquidity || pool.available || '0'
-      }));
+      const reserves = earnPools.map((pool: any) => {
+        // Extract the underlying asset address (the mint to deposit)
+        const assetMint = pool.assetAddress || pool.asset?.address || '';
+        const assetSymbol = pool.asset?.symbol || pool.symbol || 'Unknown';
+        const assetDecimals = pool.asset?.decimals || pool.decimals || 9;
+        
+        // Convert rates from basis points to percentage (e.g., 430 -> 4.30%)
+        const supplyAPY = parseFloat(pool.totalRate || pool.supplyRate || 0) / 100;
+        
+        return {
+          address: pool.address, // jlToken address
+          symbol: assetSymbol,
+          name: pool.asset?.name || pool.name || assetSymbol,
+          mint: assetMint, // Underlying asset mint address for deposits
+          depositAPY: supplyAPY,
+          borrowAPY: 0,
+          tvl: (parseFloat(pool.totalAssets || 0) / Math.pow(10, assetDecimals)).toFixed(2),
+          deposited: '0.00',
+          earnings: '0.00',
+          decimals: assetDecimals,
+          utilization: 0,
+          available: pool.totalAssets || '0'
+        };
+      });
+
+      console.log(`Sample reserve: ${reserves[0]?.symbol} - Mint: ${reserves[0]?.mint}`);
 
       res.json({
         success: true,

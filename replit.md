@@ -4,14 +4,17 @@
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
 ## Recent Updates (October 2025)
-- **Kamino Lending Integration** (October 2025): New lending feature powered by Kamino Finance SDK
-  - **Backend API Endpoints**: `/api/kamino/market-data` fetches all available lending reserves with APY rates, `/api/kamino/user-positions/:walletAddress` retrieves user's lending positions (deposits/borrows)
-  - **Lending Pools Display**: Shows all available reserves (SOL, USDC, USDT, etc.) with current deposit APY rates
-  - **User Positions**: Displays user's active lending positions including deposits, borrows, total deposit value, and total borrow value
-  - **Real-time Market Data**: Fetches live APY rates and reserve information from Kamino's Main Market on Solana mainnet
+- **Jupiter Lend Earn Integration** (October 2025): Complete lending feature powered by Jupiter Lend API
+  - **Backend API Endpoints**: `/api/jupiter-lend/earn-pools` fetches all available earn tokens with APY rates, `/api/jupiter-lend/user-positions/:walletAddress` retrieves user's lending positions, `/api/jupiter-lend/build-deposit` and `/api/jupiter-lend/build-withdraw` build deposit/withdraw transactions
+  - **Earn Pools Display**: Shows all available Jupiter Lend earn tokens (USDC, SOL, USDT, EURC, USDG, USDS) with current APY rates
+  - **User Positions**: Displays user's active lending positions including shares, underlying assets, and earnings
+  - **Real-time Market Data**: Fetches live APY rates and token information from Jupiter Lend API at `https://lite-api.jup.ag/lend/v1/earn/tokens`
   - **UI Integration**: New "Lend" tab in the main interface alongside Reclaim, Transfer, Burn, Swap, and Auto tabs
-  - **Deposit Functionality**: Placeholder deposit buttons prepared for future implementation to lend assets and earn interest
-  - **SDK Integration**: Uses @kamino-finance/klend-sdk for reliable market data access and transaction building
+  - **Deposit Functionality**: Full deposit functionality with wallet signing - users can click any vault row to open deposit dialog, enter amount, and deposit to earn APY
+  - **Withdrawal Support**: Backend endpoints ready for withdraw transactions (UI to be added)
+  - **API Integration**: Uses Jupiter Lend REST API endpoints for transaction building with base64-encoded unsigned transactions
+  - **Package**: @jup-ag/lend SDK installed for future instruction-based integrations
+  - **Program ID**: jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9 (Earn)
   - **Error Handling**: Graceful fallbacks and loading states for network requests
 - **Mass Transfer Feature** (October 2025): New functionality to send multiple tokens to a single destination wallet
   - **Jupiter Ultra Holdings API Integration**: Backend endpoint `/api/tokens/holdings/:walletAddress` uses Jupiter Ultra v1 Holdings API
