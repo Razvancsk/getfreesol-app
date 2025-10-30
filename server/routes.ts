@@ -7,6 +7,8 @@ import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount } from "@solana/spl-token";
+import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
+import { BN } from "bn.js";
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
@@ -5093,31 +5095,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   Amount: ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
 
-      // Call Jupiter Lend API to get deposit transaction
-      const depositResponse = await fetch('https://lite-api.jup.ag/lend/v1/earn/deposit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          asset,
-          amount,
-          signer: walletAddress,
-        })
+      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcEndpoint);
+
+      // Use Jupiter Lend SDK to get deposit instruction
+      const depositIx = await getDepositIx({
+        amount: new BN(amount),
+        asset: new PublicKey(asset),
+        signer: new PublicKey(walletAddress),
+        connection,
+        cluster: "mainnet",
       });
 
-      if (!depositResponse.ok) {
-        const errorText = await depositResponse.text();
-        throw new Error(`Jupiter Lend API error: ${depositResponse.status} - ${errorText}`);
-      }
+      // Convert the raw instruction to TransactionInstruction
+      const instruction = new TransactionInstruction({
+        programId: new PublicKey(depositIx.programId),
+        keys: depositIx.keys.map((key) => ({
+          pubkey: new PublicKey(key.pubkey),
+          isSigner: key.isSigner,
+          isWritable: key.isWritable,
+        })),
+        data: Buffer.from(depositIx.data),
+      });
 
-      const depositData = await depositResponse.json();
+      // Build versioned transaction
+      const latestBlockhash = await connection.getLatestBlockhash();
+      const messageV0 = new TransactionMessage({
+        payerKey: new PublicKey(walletAddress),
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: [instruction],
+      }).compileToV0Message();
+
+      const transaction = new VersionedTransaction(messageV0);
+      
+      // Serialize transaction to base64
+      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
 
       console.log(`✅ Deposit transaction built successfully`);
 
       res.json({
         success: true,
-        transaction: depositData.transaction || depositData,
+        transaction: serializedTransaction,
         message: 'Transaction ready to sign'
       });
 
@@ -5141,31 +5159,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   Amount: ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
 
-      // Call Jupiter Lend API to get withdraw transaction
-      const withdrawResponse = await fetch('https://lite-api.jup.ag/lend/v1/earn/withdraw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          asset,
-          amount,
-          signer: walletAddress,
-        })
+      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcEndpoint);
+
+      // Use Jupiter Lend SDK to get withdraw instruction
+      const withdrawIx = await getWithdrawIx({
+        amount: new BN(amount),
+        asset: new PublicKey(asset),
+        signer: new PublicKey(walletAddress),
+        connection,
+        cluster: "mainnet",
       });
 
-      if (!withdrawResponse.ok) {
-        const errorText = await withdrawResponse.text();
-        throw new Error(`Jupiter Lend API error: ${withdrawResponse.status} - ${errorText}`);
-      }
+      // Convert the raw instruction to TransactionInstruction
+      const instruction = new TransactionInstruction({
+        programId: new PublicKey(withdrawIx.programId),
+        keys: withdrawIx.keys.map((key) => ({
+          pubkey: new PublicKey(key.pubkey),
+          isSigner: key.isSigner,
+          isWritable: key.isWritable,
+        })),
+        data: Buffer.from(withdrawIx.data),
+      });
 
-      const withdrawData = await withdrawResponse.json();
+      // Build versioned transaction
+      const latestBlockhash = await connection.getLatestBlockhash();
+      const messageV0 = new TransactionMessage({
+        payerKey: new PublicKey(walletAddress),
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: [instruction],
+      }).compileToV0Message();
+
+      const transaction = new VersionedTransaction(messageV0);
+      
+      // Serialize transaction to base64
+      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
 
       console.log(`✅ Withdraw transaction built successfully`);
 
       res.json({
         success: true,
-        transaction: withdrawData.transaction || withdrawData,
+        transaction: serializedTransaction,
         message: 'Transaction ready to sign'
       });
 
