@@ -4130,7 +4130,10 @@ export default function SolRefund() {
                                     }
                                   };
                                   return (
-                                    <div className="text-white font-medium text-base">{formatTVL(tvl)} {reserve.symbol}</div>
+                                    <div className="text-right">
+                                      <div className="text-white font-medium text-base">${formatTVL(tvl)}</div>
+                                      <div className="text-sm text-gray-400">{formatTVL(tvl)} {reserve.symbol}</div>
+                                    </div>
                                   );
                                 })()}
                               </div>
@@ -4142,12 +4145,14 @@ export default function SolRefund() {
                               <div>
                                 <div className="text-xs text-purple-300 mb-1">Deposited</div>
                                 <div className="text-white text-sm">{reserve.deposited} {reserve.symbol}</div>
+                                <div className="text-xs text-gray-400">$0.00</div>
                               </div>
                               
                               {/* Earnings */}
                               <div>
                                 <div className="text-xs text-purple-300 mb-1">Earnings</div>
                                 <div className="text-white text-sm">{reserve.earnings} {reserve.symbol}</div>
+                                <div className="text-xs text-gray-400">$0.00</div>
                               </div>
                             </div>
                           </div>
