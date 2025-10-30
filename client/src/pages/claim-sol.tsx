@@ -4105,7 +4105,7 @@ export default function SolRefund() {
                               const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                               if (!userPosition) return '0.00';
                               const deposited = parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              return deposited.toFixed(2);
+                              return deposited.toFixed(userPosition.decimals);
                             })()} {selectedReserve?.symbol}
                           </span>
                         </div>
@@ -4352,7 +4352,7 @@ export default function SolRefund() {
                               const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                               if (!userPosition) return '0.00';
                               const deposited = parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              return deposited.toFixed(2);
+                              return deposited.toFixed(userPosition.decimals);
                             })()} {selectedReserve?.symbol}
                           </span>
                           <Button
