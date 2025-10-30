@@ -4474,7 +4474,7 @@ export default function SolRefund() {
                               <div className="text-lg font-bold text-white">
                                 {amount.toFixed(amount < 0.01 ? 8 : 2)} {selectedReserve?.symbol}
                               </div>
-                              <div className="text-xs text-purple-400">${usdValue.toFixed(2)}</div>
+                              <div className="text-xs text-purple-400">${usdValue.toFixed(usdValue < 0.01 ? 10 : 2)}</div>
                             </>
                           );
                         })()}
