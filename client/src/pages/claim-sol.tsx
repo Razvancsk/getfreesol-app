@@ -106,6 +106,7 @@ export default function SolRefund() {
   const [depositingLend, setDepositingLend] = useState(false);
   const [destinationWallet, setDestinationWallet] = useState<string>('');
   const [loadingTransferTokens, setLoadingTransferTokens] = useState(false);
+  const [walletTokenBalance, setWalletTokenBalance] = useState<number>(0);
   
   // Swap modal state
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -271,6 +272,46 @@ export default function SolRefund() {
       });
     } finally {
       setLoadingTransferTokens(false);
+    }
+  };
+
+  // Function to fetch wallet balance for a specific token (for Lend deposit dialog)
+  const fetchTokenBalance = async (tokenMint: string) => {
+    if (!publicKey) {
+      setWalletTokenBalance(0);
+      return;
+    }
+    
+    try {
+      // Fetch from Jupiter Ultra Holdings API
+      const response = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${publicKey.toBase58()}`);
+      if (!response.ok) {
+        setWalletTokenBalance(0);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // Special handling for WSOL/SOL - native SOL balance is at top level
+      if (tokenMint === 'So11111111111111111111111111111111111111112') {
+        setWalletTokenBalance(data.uiAmount || 0);
+        return;
+      }
+      
+      // For other tokens, check the tokens object
+      if (data.tokens && data.tokens[tokenMint]) {
+        const tokenAccounts = data.tokens[tokenMint];
+        // Sum all token account balances for this mint
+        const totalBalance = tokenAccounts.reduce((sum: number, account: any) => {
+          return sum + (account.uiAmount || 0);
+        }, 0);
+        setWalletTokenBalance(totalBalance);
+      } else {
+        setWalletTokenBalance(0);
+      }
+    } catch (error) {
+      console.error('Error fetching token balance:', error);
+      setWalletTokenBalance(0);
     }
   };
 
@@ -3985,7 +4026,7 @@ export default function SolRefund() {
                           <div
                             key={reserve.address}
                             className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr_60px] gap-4 px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer items-center"
-                            onClick={() => {
+                            onClick={async () => {
                               if (!publicKey) {
                                 toast({
                                   title: "Wallet Not Connected",
@@ -3997,6 +4038,8 @@ export default function SolRefund() {
                               setSelectedReserve(reserve);
                               setDepositAmount('');
                               setDepositDialogOpen(true);
+                              // Fetch wallet balance for this token
+                              await fetchTokenBalance(reserve.assetAddress);
                             }}
                             data-testid={`vault-${reserve.symbol}`}
                           >
@@ -4090,15 +4133,14 @@ export default function SolRefund() {
                         <span className="text-purple-200 font-medium">Deposit Amount</span>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-purple-300">
-                            💰 0.00 {selectedReserve?.symbol}
+                            💰 {walletTokenBalance.toFixed(4)} {selectedReserve?.symbol}
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-3 py-1 h-auto border border-purple-500/30"
                             onClick={() => {
-                              // TODO: Set to half of wallet balance
-                              setDepositAmount('0');
+                              setDepositAmount((walletTokenBalance / 2).toFixed(6));
                             }}
                             data-testid="button-half-amount"
                           >
@@ -4109,8 +4151,7 @@ export default function SolRefund() {
                             size="sm"
                             className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-3 py-1 h-auto border border-purple-500/30"
                             onClick={() => {
-                              // TODO: Set to max wallet balance
-                              setDepositAmount('0');
+                              setDepositAmount(walletTokenBalance.toFixed(6));
                             }}
                             data-testid="button-max-amount"
                           >
