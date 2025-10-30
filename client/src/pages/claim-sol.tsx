@@ -4178,17 +4178,8 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return `0.000000000 ${displaySymbol}`;
                                     
-                                    // Current balance = shares × (convertToAssets / convertToShares)
-                                    const shares = parseFloat(userPosition.shares || '0');
-                                    const convertToAssets = parseFloat(userPosition.convertToAssets || '1000000');
-                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
-                                    const currentBalance = shares * (convertToAssets / convertToShares);
-                                    
-                                    // Deposited = underlyingAssets
-                                    const deposited = parseFloat(userPosition.amount || '0');
-                                    
-                                    // Earnings in raw units
-                                    const earningsRaw = Math.max(0, currentBalance - deposited);
+                                    // Use earnings from Jupiter Earnings API (raw units)
+                                    const earningsRaw = parseFloat(userPosition.earnings || '0');
                                     const earnings = earningsRaw / Math.pow(10, reserve.decimals || 6);
                                     
                                     return `${earnings.toFixed(9)} ${displaySymbol}`;
@@ -4198,12 +4189,8 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return '$0.00';
                                     
-                                    const shares = parseFloat(userPosition.shares || '0');
-                                    const convertToAssets = parseFloat(userPosition.convertToAssets || '1000000');
-                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
-                                    const currentBalance = shares * (convertToAssets / convertToShares);
-                                    const deposited = parseFloat(userPosition.amount || '0');
-                                    const earningsRaw = Math.max(0, currentBalance - deposited);
+                                    // Use earnings from Jupiter Earnings API (raw units)
+                                    const earningsRaw = parseFloat(userPosition.earnings || '0');
                                     const earnings = earningsRaw / Math.pow(10, reserve.decimals || 6);
                                     
                                     const tokenPrice = parseFloat(reserve.price || '0');

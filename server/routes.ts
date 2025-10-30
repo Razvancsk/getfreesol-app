@@ -5011,6 +5011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           shares: position.shares,
           convertToShares: position.token?.convertToShares,
           convertToAssets: position.token?.convertToAssets,
+          decimals: position.token?.decimals || position.token?.asset?.decimals || 6,
           amountUSD: position.balanceUsd || '0',
           apy: position.apy || 0
         }))
@@ -5018,11 +5019,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('✅ Transformed deposits (non-zero only):', JSON.stringify(deposits, null, 2));
 
+      // Fetch earnings data using calculated fallback (Jupiter Earnings API not yet reliable)
+      let earningsData: any = {};
+      if (deposits.length > 0) {
+        try {
+          // Calculate earnings using the same formula: currentBalance - deposited
+          deposits.forEach((dep: any) => {
+            const shares = parseFloat(dep.shares || '0');
+            const convertToAssets = parseFloat(dep.convertToAssets || '1000000');
+            const convertToShares = parseFloat(dep.convertToShares || '1000000');
+            const currentBalance = shares * (convertToAssets / convertToShares);
+            const deposited = parseFloat(dep.amount || '0');
+            const earningsRaw = Math.max(0, currentBalance - deposited);
+            
+            earningsData[dep.asset] = earningsRaw.toString();
+            console.log(`💰 Calculated earnings for ${dep.symbol}: ${earningsRaw} raw units`);
+          });
+        } catch (error) {
+          console.warn('⚠️ Error calculating earnings:', error);
+        }
+      }
+
+      // Merge earnings into deposits
+      const depositsWithEarnings = deposits.map((dep: any) => ({
+        ...dep,
+        earnings: earningsData[dep.asset] || '0'
+      }));
+
       res.json({
         success: true,
         hasPositions: true,
-        deposits,
-        totalDepositValue: deposits.reduce((sum: number, d: any) => sum + parseFloat(d.amountUSD || 0), 0).toString()
+        deposits: depositsWithEarnings,
+        totalDepositValue: depositsWithEarnings.reduce((sum: number, d: any) => sum + parseFloat(d.amountUSD || 0), 0).toString()
       });
     } catch (error: any) {
       console.error("Jupiter Lend user positions error:", error);
