@@ -4147,16 +4147,48 @@ export default function SolRefund() {
                               {/* Deposited */}
                               <div>
                                 <div className="text-xs text-purple-300 mb-1">Deposited</div>
-                                <div className="text-white text-sm">
-                                  {userPosition ? parseFloat(userPosition.amount || '0').toFixed(4) : '0.00'} {reserve.symbol}
+                                <div className="text-white text-base font-semibold">
+                                  {userPosition ? parseFloat(userPosition.amount || '0').toFixed(9) : '0.000000000'} {reserve.symbol}
+                                </div>
+                                <div className="text-purple-300/60 text-sm mt-0.5">
+                                  ${userPosition ? parseFloat(userPosition.amountUSD || '0').toFixed(2) : '0.00'}
                                 </div>
                               </div>
                               
                               {/* Earnings */}
                               <div>
-                                <div className="text-xs text-purple-300 mb-1">Earnings</div>
-                                <div className="text-white text-sm">
-                                  0.00 {reserve.symbol}
+                                <div className="text-xs text-purple-300 mb-1">Your Earnings</div>
+                                <div className="text-white text-base font-semibold">
+                                  {(() => {
+                                    if (!userPosition) return `0.000000000 ${reserve.symbol}`;
+                                    
+                                    // Calculate earnings from Jupiter Lend
+                                    // Jupiter returns shares, we need to calculate underlying assets at current exchange rate
+                                    const deposited = parseFloat(userPosition.amount || '0');
+                                    const sharePrice = reserve.sharePrice || 1;
+                                    const currentValue = deposited * sharePrice;
+                                    const earnings = Math.max(0, currentValue - deposited);
+                                    
+                                    return `${earnings.toFixed(9)} ${reserve.symbol}`;
+                                  })()}
+                                </div>
+                                <div className="text-purple-300/60 text-sm mt-0.5">
+                                  {(() => {
+                                    if (!userPosition) return '$0.00';
+                                    
+                                    const deposited = parseFloat(userPosition.amount || '0');
+                                    const sharePrice = reserve.sharePrice || 1;
+                                    const currentValue = deposited * sharePrice;
+                                    const earnings = Math.max(0, currentValue - deposited);
+                                    const tokenPrice = parseFloat(reserve.price || '0');
+                                    const earningsUSD = earnings * tokenPrice;
+                                    
+                                    // Show more decimals for very small amounts
+                                    if (earningsUSD < 0.01 && earningsUSD > 0) {
+                                      return `$${earningsUSD.toFixed(10)}`;
+                                    }
+                                    return `$${earningsUSD.toFixed(2)}`;
+                                  })()}
                                 </div>
                               </div>
                             </div>
