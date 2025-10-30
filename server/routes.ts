@@ -5,8 +5,8 @@ import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertSca
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount } from "@solana/spl-token";
+import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
 // Metaplex Core burning - server-side UMI implementation
@@ -5098,17 +5098,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
       const connection = new Connection(rpcEndpoint);
 
+      const walletPubkey = new PublicKey(walletAddress);
+      const assetPubkey = new PublicKey(asset);
+      const isSOL = asset === 'So11111111111111111111111111111111111111112';
+
+      const instructions: TransactionInstruction[] = [];
+
+      // For SOL deposits, add wrapping instructions
+      if (isSOL) {
+        console.log('💫 Adding WSOL wrapping instructions for SOL deposit');
+        
+        // Get user's WSOL ATA
+        const wsolATA = await getAssociatedTokenAddress(
+          NATIVE_MINT,
+          walletPubkey
+        );
+
+        // Check if WSOL ATA exists
+        let wsolAccountExists = false;
+        try {
+          await getAccount(connection, wsolATA);
+          wsolAccountExists = true;
+          console.log('✅ WSOL ATA exists:', wsolATA.toBase58());
+        } catch {
+          console.log('📝 WSOL ATA does not exist, will create');
+        }
+
+        // Create WSOL ATA if it doesn't exist
+        if (!wsolAccountExists) {
+          instructions.push(
+            createAssociatedTokenAccountInstruction(
+              walletPubkey,
+              wsolATA,
+              walletPubkey,
+              NATIVE_MINT
+            )
+          );
+        }
+
+        // Transfer SOL to WSOL account (amount + rent for account)
+        const rentExemption = await connection.getMinimumBalanceForRentExemption(165);
+        instructions.push(
+          SystemProgram.transfer({
+            fromPubkey: walletPubkey,
+            toPubkey: wsolATA,
+            lamports: BigInt(amount) + BigInt(rentExemption),
+          })
+        );
+
+        // Sync native to recognize wrapped SOL
+        instructions.push(
+          createSyncNativeInstruction(wsolATA)
+        );
+      }
+
       // Get deposit instruction exactly as documentation shows
       const depositIx = await getDepositIx({
         amount: new BN(amount),
-        asset: new PublicKey(asset),
-        signer: new PublicKey(walletAddress),
+        asset: assetPubkey,
+        signer: walletPubkey,
         connection,
         cluster: "mainnet",
       });
 
       // Convert the raw instruction to TransactionInstruction
-      const instruction = new TransactionInstruction({
+      const depositInstruction = new TransactionInstruction({
         programId: new PublicKey(depositIx.programId),
         keys: depositIx.keys.map((key) => ({
           pubkey: new PublicKey(key.pubkey),
@@ -5118,12 +5172,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: Buffer.from(depositIx.data),
       });
 
+      instructions.push(depositInstruction);
+
       // Build versioned transaction
       const latestBlockhash = await connection.getLatestBlockhash();
       const messageV0 = new TransactionMessage({
-        payerKey: new PublicKey(walletAddress),
+        payerKey: walletPubkey,
         recentBlockhash: latestBlockhash.blockhash,
-        instructions: [instruction],
+        instructions,
       }).compileToV0Message();
 
       const transaction = new VersionedTransaction(messageV0);
