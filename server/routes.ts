@@ -5104,7 +5104,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         asset: new PublicKey(asset),
         signer: new PublicKey(walletAddress),
         connection,
-        cluster: "mainnet",
       });
 
       // Convert the raw instruction to TransactionInstruction
@@ -5168,7 +5167,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         asset: new PublicKey(asset),
         signer: new PublicKey(walletAddress),
         connection,
-        cluster: "mainnet",
       });
 
       // Convert the raw instruction to TransactionInstruction
