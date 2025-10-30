@@ -4131,68 +4131,68 @@ export default function SolRefund() {
                 {/* Deposit Dialog - Responsive: Drawer for Mobile, Dialog for Desktop */}
                 {isMobile ? (
                   <Drawer open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
-                    <DrawerContent className="bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 backdrop-blur-xl border-t-2 border-purple-500/40 max-h-[85vh]">
-                      <DrawerHeader className="pb-2 bg-transparent pt-3">
+                    <DrawerContent className="bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 backdrop-blur-xl border-t-2 border-purple-500/40 max-h-[70vh]">
+                      <DrawerHeader className="pb-3 bg-transparent pt-2">
                         <DrawerTitle className="sr-only">{selectedReserve?.symbol}</DrawerTitle>
                       </DrawerHeader>
 
-                      <div className="px-5 pb-4 space-y-5 bg-transparent">
-                        {/* Deposit Amount Section */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="bg-green-500/20 border border-green-400/50 rounded-full px-4 py-1.5">
-                              <span className="text-green-300 text-sm font-bold">
-                                ≈ {selectedReserve?.depositAPY.toFixed(2)}%
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-white/80 font-medium">
-                                💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs bg-purple-600/60 text-white hover:bg-purple-500/70 px-3 py-1.5 h-auto rounded-md font-bold shadow-md border border-purple-400/30"
-                                onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
-                                data-testid="button-half-amount"
-                              >
-                                HALF
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs bg-purple-600/60 text-white hover:bg-purple-500/70 px-3 py-1.5 h-auto rounded-md font-bold shadow-md border border-purple-400/30"
-                                onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
-                                data-testid="button-max-amount"
-                              >
-                                MAX
-                              </Button>
-                            </div>
+                      <div className="px-4 pb-3 space-y-3 bg-transparent">
+                        {/* APY and Balance Row */}
+                        <div className="flex items-center justify-between">
+                          <div className="bg-green-500/20 border border-green-400/50 rounded-full px-3 py-1">
+                            <span className="text-green-300 text-xs font-bold">
+                              APY: ≈ {selectedReserve?.depositAPY.toFixed(2)}%
+                            </span>
                           </div>
+                          <span className="text-xs text-white/80 font-medium">
+                            💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}
+                          </span>
+                        </div>
 
-                          {/* Amount Input */}
-                          <div className="bg-purple-900/50 border-2 border-purple-700/50 rounded-2xl p-5 shadow-lg backdrop-blur-sm">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                {selectedReserve?.logoUrl && (
-                                  <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-12 h-12 rounded-full border-2 border-purple-400/40 shadow-lg" />
-                                )}
-                                <span className="text-white font-bold text-xl">{selectedReserve?.symbol}</span>
-                              </div>
-                              <Input
-                                type="text"
-                                value={depositAmount}
-                                onChange={(e) => setDepositAmount(e.target.value)}
-                                placeholder="0.00"
-                                className="bg-transparent border-none text-right text-3xl font-bold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[180px] placeholder:text-purple-500/50"
-                                data-testid="input-deposit-amount"
-                              />
+                        {/* Amount Input */}
+                        <div className="bg-purple-900/50 border-2 border-purple-700/50 rounded-xl p-4 shadow-lg backdrop-blur-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {selectedReserve?.logoUrl && (
+                                <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-10 h-10 flex-shrink-0 rounded-full border-2 border-purple-400/40 shadow-lg" />
+                              )}
+                              <span className="text-white font-bold text-lg">{selectedReserve?.symbol}</span>
                             </div>
+                            <Input
+                              type="text"
+                              value={depositAmount}
+                              onChange={(e) => setDepositAmount(e.target.value)}
+                              placeholder="0.00"
+                              className="bg-transparent border-none text-right text-2xl font-bold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto min-w-[100px] placeholder:text-purple-500/50"
+                              data-testid="input-deposit-amount"
+                            />
                           </div>
+                        </div>
+
+                        {/* HALF and MAX Buttons */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
+                            onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
+                            data-testid="button-half-amount"
+                          >
+                            HALF
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
+                            onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
+                            data-testid="button-max-amount"
+                          >
+                            MAX
+                          </Button>
                         </div>
                       </div>
 
-                      <DrawerFooter className="pt-2 pb-6 bg-transparent px-5">
+                      <DrawerFooter className="pt-3 pb-6 bg-transparent px-4">
                         <Button
                           onClick={async () => {
                             if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
