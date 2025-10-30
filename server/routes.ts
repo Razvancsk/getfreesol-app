@@ -5081,7 +5081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter Lend - Build deposit transaction using REST API
+  // Jupiter Lend - Build deposit transaction using SDK (exact documentation implementation)
   app.post("/api/jupiter-lend/build-deposit", async (req, res) => {
     try {
       const { walletAddress, asset, amount } = req.body;
@@ -5090,37 +5090,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      console.log(`🏦 Building Jupiter Lend deposit transaction via API`);
+      console.log(`🏦 Building Jupiter Lend deposit transaction`);
       console.log(`   Asset: ${asset}`);
       console.log(`   Amount: ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
 
-      // Use Jupiter Lend REST API to build transaction
-      const depositResponse = await fetch('https://lite-api.jup.ag/lend/v1/earn/deposit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          asset: asset,
-          amount: amount,
-          signer: walletAddress,
-        })
+      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcEndpoint);
+
+      // Get deposit instruction exactly as documentation shows
+      const depositIx = await getDepositIx({
+        amount: new BN(amount),
+        asset: new PublicKey(asset),
+        signer: new PublicKey(walletAddress),
+        connection,
+        cluster: "mainnet",
       });
 
-      if (!depositResponse.ok) {
-        const errorText = await depositResponse.text();
-        console.error(`❌ Jupiter API error: ${errorText}`);
-        return res.status(500).json({ error: 'Jupiter API error', details: errorText });
-      }
+      // Convert the raw instruction to TransactionInstruction
+      const instruction = new TransactionInstruction({
+        programId: new PublicKey(depositIx.programId),
+        keys: depositIx.keys.map((key) => ({
+          pubkey: new PublicKey(key.pubkey),
+          isSigner: key.isSigner,
+          isWritable: key.isWritable,
+        })),
+        data: Buffer.from(depositIx.data),
+      });
 
-      const data = await depositResponse.json();
+      // Build versioned transaction
+      const latestBlockhash = await connection.getLatestBlockhash();
+      const messageV0 = new TransactionMessage({
+        payerKey: new PublicKey(walletAddress),
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: [instruction],
+      }).compileToV0Message();
 
-      console.log(`✅ Deposit transaction received from Jupiter API`);
+      const transaction = new VersionedTransaction(messageV0);
+      
+      // Serialize transaction to base64
+      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
+
+      console.log(`✅ Deposit transaction built successfully`);
 
       res.json({
         success: true,
-        transaction: data.transaction,
+        transaction: serializedTransaction,
         message: 'Transaction ready to sign'
       });
 
@@ -5130,7 +5145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter Lend - Build withdraw transaction using REST API
+  // Jupiter Lend - Build withdraw transaction using SDK (exact documentation implementation)
   app.post("/api/jupiter-lend/build-withdraw", async (req, res) => {
     try {
       const { walletAddress, asset, amount } = req.body;
@@ -5139,37 +5154,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      console.log(`💸 Building Jupiter Lend withdraw transaction via API`);
+      console.log(`💸 Building Jupiter Lend withdraw transaction`);
       console.log(`   Asset: ${asset}`);
       console.log(`   Amount: ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
 
-      // Use Jupiter Lend REST API to build transaction
-      const withdrawResponse = await fetch('https://lite-api.jup.ag/lend/v1/earn/withdraw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          asset: asset,
-          amount: amount,
-          signer: walletAddress,
-        })
+      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcEndpoint);
+
+      // Get withdraw instruction exactly as documentation shows
+      const withdrawIx = await getWithdrawIx({
+        amount: new BN(amount),
+        asset: new PublicKey(asset),
+        signer: new PublicKey(walletAddress),
+        connection,
+        cluster: "mainnet",
       });
 
-      if (!withdrawResponse.ok) {
-        const errorText = await withdrawResponse.text();
-        console.error(`❌ Jupiter API error: ${errorText}`);
-        return res.status(500).json({ error: 'Jupiter API error', details: errorText });
-      }
+      // Convert the raw instruction to TransactionInstruction
+      const instruction = new TransactionInstruction({
+        programId: new PublicKey(withdrawIx.programId),
+        keys: withdrawIx.keys.map((key) => ({
+          pubkey: new PublicKey(key.pubkey),
+          isSigner: key.isSigner,
+          isWritable: key.isWritable,
+        })),
+        data: Buffer.from(withdrawIx.data),
+      });
 
-      const data = await withdrawResponse.json();
+      // Build versioned transaction
+      const latestBlockhash = await connection.getLatestBlockhash();
+      const messageV0 = new TransactionMessage({
+        payerKey: new PublicKey(walletAddress),
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: [instruction],
+      }).compileToV0Message();
 
-      console.log(`✅ Withdraw transaction received from Jupiter API`);
+      const transaction = new VersionedTransaction(messageV0);
+      
+      // Serialize transaction to base64
+      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
+
+      console.log(`✅ Withdraw transaction built successfully`);
 
       res.json({
         success: true,
-        transaction: data.transaction,
+        transaction: serializedTransaction,
         message: 'Transaction ready to sign'
       });
 
