@@ -4114,61 +4114,7 @@ export default function SolRefund() {
                       </Button>
                     </div>
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      {/* Deposited Card */}
-                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
-                        <div className="text-sm text-purple-300 mb-2">Deposited</div>
-                        <div className="text-2xl font-bold text-white">
-                          {selectedReserve?.deposited || '0.00'} {selectedReserve?.symbol}
-                        </div>
-                        <div className="text-sm text-purple-400">$0.00</div>
-                      </div>
-
-                      {/* Earnings Card */}
-                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
-                        <div className="text-sm text-purple-300 mb-2">Your Earnings</div>
-                        <div className="text-2xl font-bold text-green-400">
-                          {selectedReserve?.earnings || '0.00'} {selectedReserve?.symbol}
-                        </div>
-                        <div className="text-sm text-purple-400">$0.00</div>
-                      </div>
-                    </div>
-
-                    {/* APY and TVL Info */}
-                    <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4 mb-6 space-y-3">
-                      {/* APY */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-purple-300">APY</span>
-                        <Badge className="bg-blue-500/20 text-blue-300 border-blue-400/30 font-semibold">
-                          ≈ {selectedReserve?.depositAPY.toFixed(2)}%
-                        </Badge>
-                      </div>
-
-                      <Separator className="bg-purple-500/20" />
-
-                      {/* Vault TVL */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-purple-300">Vault TVL</span>
-                        <div className="text-right">
-                          <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
-                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
-                        </div>
-                      </div>
-
-                      <Separator className="bg-purple-500/20" />
-
-                      {/* Layer Total */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-purple-300">Layer Total</span>
-                        <div className="text-right">
-                          <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
-                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Deposit Amount Section */}
+                    {/* 1. Deposit Amount Section (FIRST) */}
                     <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-5 mb-6">
                       {/* Deposit Header with Balance and Quick Actions */}
                       <div className="flex items-center justify-between mb-4">
@@ -4223,7 +4169,61 @@ export default function SolRefund() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* 2. APY and TVL Info / Data Pool (SECOND) */}
+                    <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4 mb-6 space-y-3">
+                      {/* APY */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-purple-300">APY</span>
+                        <Badge className="bg-blue-500/20 text-blue-300 border-blue-400/30 font-semibold">
+                          ≈ {selectedReserve?.depositAPY.toFixed(2)}%
+                        </Badge>
+                      </div>
+
+                      <Separator className="bg-purple-500/20" />
+
+                      {/* Vault TVL */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-purple-300">Vault TVL</span>
+                        <div className="text-right">
+                          <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
+                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
+                        </div>
+                      </div>
+
+                      <Separator className="bg-purple-500/20" />
+
+                      {/* Layer Total */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-purple-300">Layer Total</span>
+                        <div className="text-right">
+                          <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
+                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. User Deposit and Earnings (THIRD) */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      {/* Deposited Card */}
+                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
+                        <div className="text-sm text-purple-300 mb-2">Deposited</div>
+                        <div className="text-2xl font-bold text-white">
+                          {selectedReserve?.deposited || '0.00'} {selectedReserve?.symbol}
+                        </div>
+                        <div className="text-sm text-purple-400">$0.00</div>
+                      </div>
+
+                      {/* Earnings Card */}
+                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
+                        <div className="text-sm text-purple-300 mb-2">Your Earnings</div>
+                        <div className="text-2xl font-bold text-green-400">
+                          {selectedReserve?.earnings || '0.00'} {selectedReserve?.symbol}
+                        </div>
+                        <div className="text-sm text-purple-400">$0.00</div>
+                      </div>
+                    </div>
+
+                    {/* 4. Action Buttons (LAST) */}
                     <div className="grid grid-cols-2 gap-4">
                       <Button
                         onClick={async () => {
