@@ -5013,30 +5013,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           convertToAssets: position.token?.convertToAssets,
           decimals: position.token?.decimals || position.token?.asset?.decimals || 6,
           amountUSD: position.balanceUsd || '0',
-          apy: position.apy || 0
+          apy: position.apy || 0,
+          jlTokenAddress: position.token?.address // jlToken address (e.g., jlUSDC, jlWSOL)
         }))
         .filter((dep: any) => parseFloat(dep.amount) > 0);
 
       console.log('✅ Transformed deposits (non-zero only):', JSON.stringify(deposits, null, 2));
 
-      // Fetch earnings data using calculated fallback (Jupiter Earnings API not yet reliable)
+      // Fetch earnings data from Jupiter Earnings API using jlToken addresses
       let earningsData: any = {};
       if (deposits.length > 0) {
         try {
-          // Calculate earnings using the same formula: currentBalance - deposited
-          deposits.forEach((dep: any) => {
-            const shares = parseFloat(dep.shares || '0');
-            const convertToAssets = parseFloat(dep.convertToAssets || '1000000');
-            const convertToShares = parseFloat(dep.convertToShares || '1000000');
-            const currentBalance = shares * (convertToAssets / convertToShares);
-            const deposited = parseFloat(dep.amount || '0');
-            const earningsRaw = Math.max(0, currentBalance - deposited);
+          // Use jlToken addresses (not asset addresses)
+          const jlTokenAddresses = deposits.map((d: any) => d.jlTokenAddress).join(',');
+          console.log(`📈 Fetching earnings for jlTokens: ${jlTokenAddresses}`);
+          
+          const earningsResponse = await fetch(
+            `https://lite-api.jup.ag/lend/v1/earn/earnings?user=${walletAddress}&positions=${jlTokenAddresses}`
+          );
+          
+          if (earningsResponse.ok) {
+            const earnings = await earningsResponse.json();
+            console.log('💰 Raw earnings data from Jupiter API:', JSON.stringify(earnings, null, 2));
             
-            earningsData[dep.asset] = earningsRaw.toString();
-            console.log(`💰 Calculated earnings for ${dep.symbol}: ${earningsRaw} raw units`);
-          });
+            // Map earnings by jlToken address, then map back to asset address
+            if (Array.isArray(earnings)) {
+              earnings.forEach((e: any) => {
+                const jlTokenAddress = e.address;
+                const deposit = deposits.find((d: any) => d.jlTokenAddress === jlTokenAddress);
+                if (deposit) {
+                  earningsData[deposit.asset] = e.earnings || '0';
+                  console.log(`✅ Earnings for ${deposit.symbol}: ${e.earnings} raw units`);
+                }
+              });
+            }
+          } else {
+            console.warn('⚠️ Failed to fetch earnings:', earningsResponse.status);
+          }
         } catch (error) {
-          console.warn('⚠️ Error calculating earnings:', error);
+          console.warn('⚠️ Error fetching earnings:', error);
         }
       }
 
