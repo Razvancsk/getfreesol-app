@@ -4083,8 +4083,8 @@ export default function SolRefund() {
                             
                             {/* TVL Column */}
                             <div>
-                              <div className="text-white font-medium text-base">{reserve.tvl}M {reserve.symbol}</div>
-                              <div className="text-sm text-gray-400">${reserve.tvl}M</div>
+                              <div className="text-white font-medium text-base">{(parseFloat(reserve.tvl) / 1_000_000).toFixed(2)}M {reserve.symbol}</div>
+                              <div className="text-sm text-gray-400">${(parseFloat(reserve.tvl) / 1_000_000).toFixed(2)}M</div>
                             </div>
                             
                             {/* Arrow */}
@@ -4196,8 +4196,16 @@ export default function SolRefund() {
                       <div className="flex items-center justify-between">
                         <span className="text-purple-300">Vault TVL</span>
                         <div className="text-right">
-                          <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
-                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
+                          {(() => {
+                            const tvlValue = parseFloat(selectedReserve?.tvl || '0');
+                            const tvlInMillions = tvlValue / 1_000_000;
+                            return (
+                              <>
+                                <div className="text-white font-semibold">${tvlInMillions.toFixed(2)}M</div>
+                                <div className="text-sm text-purple-400">{tvlInMillions.toFixed(2)}M {selectedReserve?.symbol}</div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -4207,8 +4215,16 @@ export default function SolRefund() {
                       <div className="flex items-center justify-between">
                         <span className="text-purple-300">Layer Total</span>
                         <div className="text-right">
-                          <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
-                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
+                          {(() => {
+                            const tvlValue = parseFloat(selectedReserve?.tvl || '0');
+                            const tvlInMillions = tvlValue / 1_000_000;
+                            return (
+                              <>
+                                <div className="text-white font-semibold">${tvlInMillions.toFixed(2)}M</div>
+                                <div className="text-sm text-purple-400">{tvlInMillions.toFixed(2)}M {selectedReserve?.symbol}</div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
