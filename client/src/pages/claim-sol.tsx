@@ -4184,7 +4184,7 @@ export default function SolRefund() {
                                 value={depositAmount}
                                 onChange={(e) => setDepositAmount(e.target.value)}
                                 placeholder="0.00"
-                                className="bg-transparent border-none text-right text-3xl font-bold text-purple-300 focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[180px] placeholder:text-purple-500/50"
+                                className="bg-transparent border-none text-right text-3xl font-bold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[180px] placeholder:text-purple-500/50"
                                 data-testid="input-deposit-amount"
                               />
                             </div>
