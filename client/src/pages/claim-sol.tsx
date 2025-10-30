@@ -4068,7 +4068,13 @@ export default function SolRefund() {
                     ) : jupiterLendData?.reserves && jupiterLendData.reserves.length > 0 ? (
                       <div className="space-y-0">
                         {/* Vault Rows */}
-                        {jupiterLendData.reserves.map((reserve: any) => (
+                        {jupiterLendData.reserves.map((reserve: any) => {
+                          // Find user position for this reserve
+                          const userPosition = userPositions?.deposits?.find(
+                            (dep: any) => dep.tokenMint === reserve.mint
+                          );
+                          
+                          return (
                           <div
                             key={reserve.address}
                             className="px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
@@ -4141,17 +4147,22 @@ export default function SolRefund() {
                               {/* Deposited */}
                               <div>
                                 <div className="text-xs text-purple-300 mb-1">Deposited</div>
-                                <div className="text-white text-sm">{reserve.deposited} {reserve.symbol}</div>
+                                <div className="text-white text-sm">
+                                  {userPosition ? parseFloat(userPosition.underlyingAssets).toFixed(4) : '0.00'} {reserve.symbol}
+                                </div>
                               </div>
                               
                               {/* Earnings */}
                               <div>
                                 <div className="text-xs text-purple-300 mb-1">Earnings</div>
-                                <div className="text-white text-sm">{reserve.earnings} {reserve.symbol}</div>
+                                <div className="text-white text-sm">
+                                  {userPosition ? parseFloat(userPosition.earnings || '0').toFixed(4) : '0.00'} {reserve.symbol}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-12">
