@@ -4092,105 +4092,95 @@ export default function SolRefund() {
 
                 {/* Deposit Dialog */}
                 <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
-                  <DialogContent className="bg-[#1a1f2e] border-gray-700 text-white max-w-2xl">
+                  <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white max-w-2xl">
                     {/* Header with Token Logo and Symbol */}
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
                         {selectedReserve?.logoUrl && (
-                          <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-12 h-12 rounded-full" />
+                          <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-12 h-12 rounded-full border-2 border-purple-400/30" />
                         )}
-                        <h2 className="text-2xl font-bold text-white">{selectedReserve?.symbol}</h2>
+                        <div>
+                          <h2 className="text-2xl font-bold text-white">{selectedReserve?.symbol}</h2>
+                          <p className="text-sm text-purple-300">{selectedReserve?.name}</p>
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setDepositDialogOpen(false)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-purple-300 hover:text-white hover:bg-purple-800/30"
                       >
                         <X className="w-5 h-5" />
                       </Button>
                     </div>
 
-                    {/* Overview Section */}
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      {/* Deposited */}
-                      <div>
-                        <div className="text-sm text-gray-400 mb-2">Deposited</div>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      {/* Deposited Card */}
+                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
+                        <div className="text-sm text-purple-300 mb-2">Deposited</div>
                         <div className="text-2xl font-bold text-white">
-                          {selectedReserve?.deposited || '0.000000000'} {selectedReserve?.symbol}
+                          {selectedReserve?.deposited || '0.00'} {selectedReserve?.symbol}
                         </div>
-                        <div className="text-sm text-gray-400">$0.00</div>
+                        <div className="text-sm text-purple-400">$0.00</div>
                       </div>
 
-                      {/* Your Earnings */}
-                      <div>
-                        <div className="text-sm text-gray-400 mb-2">Your Earnings</div>
-                        <div className="text-2xl font-bold text-white">
-                          {selectedReserve?.earnings || '0.000000000'} {selectedReserve?.symbol}
+                      {/* Earnings Card */}
+                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
+                        <div className="text-sm text-purple-300 mb-2">Your Earnings</div>
+                        <div className="text-2xl font-bold text-green-400">
+                          {selectedReserve?.earnings || '0.00'} {selectedReserve?.symbol}
                         </div>
-                        <div className="text-sm text-gray-400">$0.00</div>
+                        <div className="text-sm text-purple-400">$0.00</div>
                       </div>
                     </div>
 
-                    {/* APY, TVL, Layer Total */}
-                    <div className="space-y-4 mb-6 pb-6 border-b border-gray-700">
+                    {/* APY and TVL Info */}
+                    <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4 mb-6 space-y-3">
                       {/* APY */}
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400">APY</span>
-                        <span className="text-blue-400 font-semibold flex items-center gap-2">
+                        <span className="text-purple-300">APY</span>
+                        <Badge className="bg-blue-500/20 text-blue-300 border-blue-400/30 font-semibold">
                           ≈ {selectedReserve?.depositAPY.toFixed(2)}%
-                        </span>
+                        </Badge>
                       </div>
+
+                      <Separator className="bg-purple-500/20" />
 
                       {/* Vault TVL */}
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Vault TVL</span>
+                        <span className="text-purple-300">Vault TVL</span>
                         <div className="text-right">
                           <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
-                          <div className="text-sm text-gray-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
+                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
                         </div>
                       </div>
+
+                      <Separator className="bg-purple-500/20" />
 
                       {/* Layer Total */}
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Layer Total</span>
+                        <span className="text-purple-300">Layer Total</span>
                         <div className="text-right">
                           <div className="text-white font-semibold">${parseFloat(selectedReserve?.tvl || '0').toFixed(2)}M</div>
-                          <div className="text-sm text-gray-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
+                          <div className="text-sm text-purple-400">{selectedReserve?.tvl}M {selectedReserve?.symbol}</div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Deposit and Withdraw Buttons */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <Button
-                        className="bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold rounded-lg"
-                        data-testid="button-deposit-action"
-                      >
-                        Deposit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-gray-600 text-gray-300 hover:text-white hover:bg-gray-800 py-6 text-lg font-semibold rounded-lg"
-                        data-testid="button-withdraw-action"
-                      >
-                        Withdraw
-                      </Button>
-                    </div>
-
                     {/* Deposit Amount Section */}
-                    <div className="bg-[#0f1419] rounded-lg p-4 mb-4">
-                      {/* Deposit Header with Balance */}
+                    <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-5 mb-6">
+                      {/* Deposit Header with Balance and Quick Actions */}
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-gray-400">Deposit</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-gray-400">
+                        <span className="text-purple-200 font-medium">Deposit Amount</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-purple-300">
                             💰 0.00 {selectedReserve?.symbol}
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs text-gray-400 hover:text-white px-2 py-1 h-auto"
+                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-3 py-1 h-auto border border-purple-500/30"
                             onClick={() => {
                               // TODO: Set to half of wallet balance
                               setDepositAmount('0');
@@ -4202,7 +4192,7 @@ export default function SolRefund() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs text-gray-400 hover:text-white px-2 py-1 h-auto"
+                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-3 py-1 h-auto border border-purple-500/30"
                             onClick={() => {
                               // TODO: Set to max wallet balance
                               setDepositAmount('0');
@@ -4215,10 +4205,10 @@ export default function SolRefund() {
                       </div>
 
                       {/* Token and Amount Input */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between bg-purple-950/50 rounded-lg p-4 border border-purple-500/20">
                         <div className="flex items-center gap-3">
                           {selectedReserve?.logoUrl && (
-                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-8 h-8 rounded-full" />
+                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-10 h-10 rounded-full border border-purple-400/30" />
                           )}
                           <span className="text-white font-semibold text-lg">{selectedReserve?.symbol}</span>
                         </div>
@@ -4227,92 +4217,105 @@ export default function SolRefund() {
                           value={depositAmount}
                           onChange={(e) => setDepositAmount(e.target.value)}
                           placeholder="0.00"
-                          className="bg-transparent border-none text-right text-4xl font-light text-white focus:outline-none focus:ring-0 w-auto max-w-[200px]"
+                          className="bg-transparent border-none text-right text-3xl font-semibold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[200px] placeholder:text-purple-600"
                           data-testid="input-deposit-amount"
                         />
                       </div>
-                      
-                      {/* Separator */}
-                      <div className="border-t border-gray-700 mt-4"></div>
                     </div>
 
-                    {/* Final Deposit Button */}
-                    <Button
-                      onClick={async () => {
-                        if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
-                        
-                        setDepositingLend(true);
-                        try {
-                          const amountNum = parseFloat(depositAmount);
-                          if (isNaN(amountNum) || amountNum <= 0) {
-                            throw new Error('Invalid amount');
-                          }
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        onClick={async () => {
+                          if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
+                          
+                          setDepositingLend(true);
+                          try {
+                            const amountNum = parseFloat(depositAmount);
+                            if (isNaN(amountNum) || amountNum <= 0) {
+                              throw new Error('Invalid amount');
+                            }
 
-                          // Convert amount to token decimals
-                          const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+                            // Convert amount to token decimals
+                            const amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
 
-                          console.log('Building deposit transaction:', {
-                            asset: selectedReserve.mint,
-                            amount: amountInLamports,
-                            walletAddress: publicKey.toString()
-                          });
-
-                          // Build deposit transaction via backend
-                          const response = await fetch('/api/jupiter-lend/build-deposit', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
+                            console.log('Building deposit transaction:', {
                               asset: selectedReserve.mint,
                               amount: amountInLamports,
                               walletAddress: publicKey.toString()
-                            })
-                          });
+                            });
 
-                          if (!response.ok) {
-                            throw new Error('Failed to build deposit transaction');
-                          }
+                            // Build deposit transaction via backend
+                            const response = await fetch('/api/jupiter-lend/build-deposit', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                asset: selectedReserve.mint,
+                                amount: amountInLamports,
+                                walletAddress: publicKey.toString()
+                              })
+                            });
 
-                          const { transaction: base64Transaction } = await response.json();
+                            if (!response.ok) {
+                              throw new Error('Failed to build deposit transaction');
+                            }
 
-                          // Deserialize and sign transaction
-                          const txBuffer = Buffer.from(base64Transaction, 'base64');
-                          const transaction = VersionedTransaction.deserialize(txBuffer);
-                          
-                          if ('signTransaction' in wallet && wallet.signTransaction) {
-                            const signedTx = await wallet.signTransaction(transaction);
+                            const { transaction: base64Transaction } = await response.json();
+
+                            // Deserialize and sign transaction
+                            const txBuffer = Buffer.from(base64Transaction, 'base64');
+                            const transaction = VersionedTransaction.deserialize(txBuffer);
                             
-                            const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-                              skipPreflight: false,
-                              maxRetries: 3
-                            });
+                            if ('signTransaction' in wallet && wallet.signTransaction) {
+                              const signedTx = await wallet.signTransaction(transaction);
+                              
+                              const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                                skipPreflight: false,
+                                maxRetries: 3
+                              });
 
-                            await connection.confirmTransaction(signature, 'confirmed');
+                              await connection.confirmTransaction(signature, 'confirmed');
 
+                              toast({
+                                title: "Deposit Successful!",
+                                description: `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`,
+                              });
+
+                              setDepositDialogOpen(false);
+                              setDepositAmount('');
+                            }
+                          } catch (error: any) {
+                            console.error('Deposit error:', error);
                             toast({
-                              title: "Deposit Successful!",
-                              description: `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`,
+                              title: "Deposit Failed",
+                              description: error.message || "Failed to deposit assets",
+                              variant: "destructive",
                             });
-
-                            setDepositDialogOpen(false);
-                            setDepositAmount('');
+                          } finally {
+                            setDepositingLend(false);
                           }
-                        } catch (error: any) {
-                          console.error('Deposit error:', error);
-                          toast({
-                            title: "Deposit Failed",
-                            description: error.message || "Failed to deposit assets",
-                            variant: "destructive",
-                          });
-                        } finally {
-                          setDepositingLend(false);
-                        }
-                      }}
-                      disabled={depositingLend || !depositAmount}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold rounded-lg"
-                      data-testid="button-confirm-deposit"
-                    >
-                      {depositingLend ? 'Depositing...' : 'Deposit'}
-                    </Button>
+                        }}
+                        disabled={depositingLend || !depositAmount}
+                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-6 text-lg font-semibold rounded-lg shadow-lg shadow-green-500/20 border border-green-500/30"
+                        data-testid="button-confirm-deposit"
+                      >
+                        {depositingLend ? (
+                          <div className="flex items-center gap-2">
+                            <RefreshCw className="w-5 h-5 animate-spin" />
+                            Depositing...
+                          </div>
+                        ) : (
+                          'Deposit'
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-purple-500/40 bg-purple-800/20 text-purple-200 hover:text-white hover:bg-purple-700/40 py-6 text-lg font-semibold rounded-lg"
+                        data-testid="button-withdraw-action"
+                      >
+                        Withdraw
+                      </Button>
+                    </div>
                   </DialogContent>
                 </Dialog>
               </div>
