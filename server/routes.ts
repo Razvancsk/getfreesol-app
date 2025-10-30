@@ -4911,214 +4911,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Kamino Lending - Get market data with reserves and APY rates
-  app.get("/api/kamino/market-data", async (req, res) => {
+  // Jupiter Lend - Get earn pools with APY rates
+  app.get("/api/jupiter-lend/earn-pools", async (req, res) => {
     try {
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: 'Helius API key not configured' });
+      console.log('🪐 Fetching Jupiter Lend earn pools from API...');
+
+      // Fetch earn pool data from Jupiter Lend API
+      const response = await fetch('https://lite-api.jup.ag/lend/v1/earn');
+      
+      if (!response.ok) {
+        throw new Error(`Jupiter API returned ${response.status}`);
       }
 
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
-      const KAMINO_PROGRAM_ID = new PublicKey('Cyjb5r4P1j1YPEyUemWxMZKbTpBiyNQML1S1YpPvi9xE');
-      const MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
+      const earnPools = await response.json();
+      console.log(`✅ Found ${earnPools.length} Jupiter Lend earn pools`);
 
-      console.log('🔍 Fetching Kamino reserve accounts from blockchain...');
-
-      // Get all reserve accounts from Kamino program
-      const programAccounts = await connection.getProgramAccounts(KAMINO_PROGRAM_ID, {
-        filters: [
-          { dataSize: 8272 } // Reserve account size
-        ]
-      });
-
-      console.log(`✅ Found ${programAccounts.length} reserve accounts`);
-
-      // Token symbol mapping for common mints
-      const tokenMintMap: Record<string, { symbol: string; name: string; decimals: number }> = {
-        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-        'So11111111111111111111111111111111111111112': { symbol: 'SOL', name: 'Solana', decimals: 9 },
-        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', name: 'Tether USD', decimals: 6 },
-        'HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr': { symbol: 'EURC', name: 'Euro Coin', decimals: 6 },
-        'USDSwr9ApdHk5bvJKMjzff41FfuX8bSxdKcR81vTwcA': { symbol: 'USDS', name: 'USD Stablecoin', decimals: 6 },
-      };
-
-      // Parse reserve data from accounts
-      const reserves = programAccounts.slice(0, 10).map((account, index) => {
-        // This is simplified - actual parsing would need the Kamino IDL
-        // For now, return the known pools with placeholder data
-        const knownPools = [
-          { symbol: 'USDC', name: 'USD Coin', mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', depositAPY: 7.49, tvl: '380.11M', decimals: 6 },
-          { symbol: 'SOL', name: 'Solana', mint: 'So11111111111111111111111111111111111111112', depositAPY: 4.03, tvl: '0.06M', decimals: 9 },
-          { symbol: 'USDT', name: 'Tether USD', mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', depositAPY: 7.12, tvl: '36.58M', decimals: 6 },
-          { symbol: 'EURC', name: 'Euro Coin', mint: 'HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr', depositAPY: 6.39, tvl: '12.45M', decimals: 6 },
-          { symbol: 'USDG', name: 'USD Global', mint: 'USDGMQDzDQZx9XYgWc7jqWgfHQC8kjBKdDpB2sMvx3Y', depositAPY: 10.14, tvl: '36.16M', decimals: 9 },
-          { symbol: 'USDS', name: 'USD Stablecoin', mint: 'USDSwr9ApdHk5bvJKMjzff41FfuX8bSxdKcR81vTwcA', depositAPY: 8.55, tvl: '21.21M', decimals: 6 },
-        ];
-
-        const pool = knownPools[index] || knownPools[0];
-        
-        return {
-          address: account.pubkey.toString(),
-          symbol: pool.symbol,
-          name: pool.name,
-          mint: pool.mint,
-          depositAPY: pool.depositAPY,
-          borrowAPY: pool.depositAPY + 2.5,
-          tvl: pool.tvl,
-          deposited: '0.00',
-          earnings: '0.00',
-          decimals: pool.decimals,
-          reserveAccount: account.pubkey.toString()
-        };
-      });
+      // Transform the data to match our frontend format
+      const reserves = earnPools.map((pool: any) => ({
+        address: pool.mint || pool.asset,
+        symbol: pool.symbol || pool.asset,
+        name: pool.name || pool.asset,
+        mint: pool.mint || pool.asset,
+        depositAPY: parseFloat(pool.supplyApy || pool.apy || 0),
+        borrowAPY: parseFloat(pool.borrowApy || 0),
+        tvl: pool.totalSupply || pool.supply || '0',
+        deposited: '0.00',
+        earnings: '0.00',
+        decimals: pool.decimals || 6,
+        utilization: pool.utilization || 0,
+        available: pool.availableLiquidity || pool.available || '0'
+      }));
 
       res.json({
         success: true,
-        marketAddress: MAIN_MARKET.toString(),
-        programId: KAMINO_PROGRAM_ID.toString(),
-        reserves: reserves.slice(0, 6),
-        totalReserves: programAccounts.length
+        programId: 'jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9',
+        reserves,
+        totalPools: earnPools.length
       });
     } catch (error: any) {
-      console.error("Kamino market data error:", error);
-      res.status(500).json({ error: "Failed to load Kamino market data", details: error.message });
+      console.error("Jupiter Lend earn pools error:", error);
+      res.status(500).json({ error: "Failed to load Jupiter Lend earn pools", details: error.message });
     }
   });
 
-  // Kamino Lending - Get user positions
-  app.get("/api/kamino/user-positions/:walletAddress", async (req, res) => {
+  // Jupiter Lend - Get user positions
+  app.get("/api/jupiter-lend/user-positions/:walletAddress", async (req, res) => {
     try {
-      const { KaminoMarket, getMedianSlotDurationInMsFromLastEpochs } = await import('@kamino-finance/klend-sdk');
-      const { createSolanaRpcApi, createRpc, createDefaultRpcTransport, DEFAULT_RPC_CONFIG } = await import('@solana/kit');
       const { walletAddress } = req.params;
 
       if (!walletAddress) {
         return res.status(400).json({ error: 'Wallet address is required' });
       }
 
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: 'Helius API key not configured' });
+      console.log(`📊 Loading Jupiter Lend positions for wallet: ${walletAddress}`);
+
+      // Fetch user positions from Jupiter Lend API
+      const response = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?users=${walletAddress}`);
+      
+      if (!response.ok) {
+        throw new Error(`Jupiter API returned ${response.status}`);
       }
 
-      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-      const marketPubkey = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
-      const userWallet = new PublicKey(walletAddress);
+      const positionsData = await response.json();
 
-      console.log(`📊 Loading positions for wallet: ${walletAddress}`);
-      
-      // Create proper RPC connection
-      const api = createSolanaRpcApi({
-        ...DEFAULT_RPC_CONFIG,
-        defaultCommitment: 'processed',
-      });
-      const rpc = createRpc({ 
-        api, 
-        transport: createDefaultRpcTransport({ url: rpcUrl }) 
-      });
-
-      // Load market
-      const slotDuration = await getMedianSlotDurationInMsFromLastEpochs();
-      const market = await KaminoMarket.load(rpc, marketPubkey, slotDuration);
-      
-      if (!market) {
-        throw new Error('Failed to load Kamino market');
-      }
-
-      // Get user obligation
-      const obligation = await market.getUserVanillaObligation(userWallet);
-
-      if (!obligation) {
+      if (!positionsData || positionsData.length === 0) {
         return res.json({
           success: true,
           hasPositions: false,
           deposits: [],
-          borrows: [],
-          totalDepositValue: '0',
-          totalBorrowValue: '0'
+          totalDepositValue: '0'
         });
       }
 
-      // Extract deposit positions
-      const deposits = Array.from(obligation.deposits.entries()).map(([reserveAddress, deposit]) => {
-        const reserve = market.reserves.find(r => r.address.equals(reserveAddress));
-        return {
-          reserve: reserveAddress.toString(),
-          symbol: reserve?.symbol || 'Unknown',
-          amount: deposit.depositedAmount.toString(),
-          amountUSD: deposit.marketValueRefreshed.toString(),
-          apy: reserve ? reserve.totalSupplyAPY(obligation.state.lastUpdate.slot) * 100 : 0
-        };
-      });
-
-      // Extract borrow positions
-      const borrows = Array.from(obligation.borrows.entries()).map(([reserveAddress, borrow]) => {
-        const reserve = market.reserves.find(r => r.address.equals(reserveAddress));
-        return {
-          reserve: reserveAddress.toString(),
-          symbol: reserve?.symbol || 'Unknown',
-          amount: borrow.borrowedAmount.toString(),
-          amountUSD: borrow.marketValueRefreshed.toString(),
-          apy: reserve ? reserve.totalBorrowAPY(obligation.state.lastUpdate.slot) * 100 : 0
-        };
-      });
+      // Transform positions data
+      const deposits = positionsData.map((position: any) => ({
+        asset: position.asset || position.mint,
+        symbol: position.symbol,
+        amount: position.balance || position.shares,
+        amountUSD: position.balanceUsd || '0',
+        apy: position.apy || 0
+      }));
 
       res.json({
         success: true,
         hasPositions: true,
         deposits,
-        borrows,
-        totalDepositValue: obligation.depositsMarketValue.toString(),
-        totalBorrowValue: obligation.borrowsMarketValue.toString()
+        totalDepositValue: deposits.reduce((sum: number, d: any) => sum + parseFloat(d.amountUSD || 0), 0).toString()
       });
     } catch (error: any) {
-      console.error("Kamino user positions error:", error);
+      console.error("Jupiter Lend user positions error:", error);
       res.json({
         success: true,
         hasPositions: false,
         deposits: [],
-        borrows: [],
-        totalDepositValue: '0',
-        totalBorrowValue: '0'
+        totalDepositValue: '0'
       });
     }
   });
 
-  // Kamino Lending - Build deposit transaction
-  app.post("/api/kamino/build-deposit", async (req, res) => {
+  // Jupiter Lend - Build deposit transaction
+  app.post("/api/jupiter-lend/build-deposit", async (req, res) => {
     try {
-      const { walletAddress, reserveAddress, amount, tokenMint } = req.body;
+      const { walletAddress, mint, amount } = req.body;
 
-      if (!walletAddress || !reserveAddress || !amount || !tokenMint) {
+      if (!walletAddress || !mint || !amount) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: 'Helius API key not configured' });
-      }
-
-      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
-      const KAMINO_PROGRAM_ID = new PublicKey('Cyjb5r4P1j1YPEyUemWxMZKbTpBiyNQML1S1YpPvi9xE');
-      
-      console.log(`🏦 Building Kamino deposit transaction for ${amount} tokens`);
-      console.log(`   Reserve: ${reserveAddress}`);
+      console.log(`🏦 Building Jupiter Lend deposit transaction for ${amount} tokens`);
+      console.log(`   Mint: ${mint}`);
       console.log(`   Wallet: ${walletAddress}`);
 
-      const userPubkey = new PublicKey(walletAddress);
-      const reservePubkey = new PublicKey(reserveAddress);
-      const mintPubkey = new PublicKey(tokenMint);
-
-      // Build a basic deposit instruction
-      // Note: This is a simplified version - actual implementation would need proper Kamino IDL
-      const transaction = new Transaction();
-      
-      // For now, return a message that deposit functionality needs the full SDK
+      // For now, direct users to Jupiter interface
+      // Full implementation would require Jupiter Lend SDK
       res.json({
         success: false,
-        message: 'Deposit functionality requires Kamino SDK which has dependency conflicts. Please visit app.kamino.finance to deposit.',
-        kamino_url: `https://app.kamino.finance/lending/7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF`
+        message: 'Please visit Jupiter Lend to deposit and earn APY on your assets.',
+        jupiter_url: `https://jup.ag/lend/earn`
       });
 
     } catch (error: any) {

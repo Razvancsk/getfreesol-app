@@ -307,19 +307,19 @@ export default function SolRefund() {
     retry: false,
   });
 
-  // Query for Kamino market data
-  const { data: kaminoMarketData, isLoading: loadingMarket } = useQuery<{ success: boolean; marketAddress: string; reserves: any[] }>({
-    queryKey: ['/api/kamino/market-data'],
+  // Query for Jupiter Lend earn pools
+  const { data: jupiterLendData, isLoading: loadingMarket } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
+    queryKey: ['/api/jupiter-lend/earn-pools'],
     enabled: activeTab === 'lend',
     retry: false,
   });
 
   // Query for user positions
-  const { data: userPositions, isLoading: loadingPositions } = useQuery<{ success: boolean; hasPositions: boolean; deposits: any[]; borrows: any[]; totalDepositValue: string; totalBorrowValue: string }>({
-    queryKey: ['/api/kamino/user-positions', publicKey?.toString()],
+  const { data: userPositions, isLoading: loadingPositions } = useQuery<{ success: boolean; hasPositions: boolean; deposits: any[]; totalDepositValue: string }>({
+    queryKey: ['/api/jupiter-lend/user-positions', publicKey?.toString()],
     queryFn: async () => {
       if (!publicKey) return null;
-      const response = await fetch(`/api/kamino/user-positions/${publicKey.toString()}`);
+      const response = await fetch(`/api/jupiter-lend/user-positions/${publicKey.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch user positions');
       return response.json();
     },
@@ -3983,7 +3983,7 @@ export default function SolRefund() {
                       💰 Lending Vaults
                     </CardTitle>
                     <CardDescription className="text-purple-200">
-                      Earn passive income by lending your assets - Powered by Kamino Finance
+                      Earn passive income by lending your assets - Powered by Jupiter Lend
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -3992,7 +3992,7 @@ export default function SolRefund() {
                         <div className="text-4xl mb-4">⏳</div>
                         <p className="text-purple-200">Loading lending pools...</p>
                       </div>
-                    ) : kaminoMarketData?.reserves && kaminoMarketData.reserves.length > 0 ? (
+                    ) : jupiterLendData?.reserves && jupiterLendData.reserves.length > 0 ? (
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
@@ -4006,14 +4006,14 @@ export default function SolRefund() {
                             </tr>
                           </thead>
                           <tbody>
-                            {kaminoMarketData.reserves.map((reserve: any) => (
+                            {jupiterLendData.reserves.map((reserve: any) => (
                               <tr 
                                 key={reserve.address} 
                                 className="border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
                                 onClick={() => {
                                   toast({
                                     title: "Coming Soon",
-                                    description: "Deposit functionality is being integrated. Visit app.kamino.finance for now.",
+                                    description: "Deposit functionality is being integrated. Visit jup.ag/lend/earn for now.",
                                   });
                                 }}
                               >
