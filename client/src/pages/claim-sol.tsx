@@ -4262,25 +4262,51 @@ export default function SolRefund() {
                           </div>
                         </div>
 
-                        {/* HALF and MAX Buttons */}
+                        {/* Quick Amount Buttons */}
                         <div className="grid grid-cols-2 gap-2">
+                          {/* Wallet Balance Buttons */}
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
-                            onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
-                            data-testid="button-half-amount"
+                            className="text-xs bg-green-600/60 text-white hover:bg-green-500/70 py-2 h-auto rounded-lg font-bold shadow-md border border-green-400/30"
+                            onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(9))}
+                            data-testid="button-half-wallet"
                           >
-                            HALF
+                            HALF WALLET
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-sm bg-purple-600/60 text-white hover:bg-purple-500/70 py-2.5 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
-                            onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
-                            data-testid="button-max-amount"
+                            className="text-xs bg-green-600/60 text-white hover:bg-green-500/70 py-2 h-auto rounded-lg font-bold shadow-md border border-green-400/30"
+                            onClick={() => setDepositAmount(walletTokenBalance.toFixed(9))}
+                            data-testid="button-max-wallet"
                           >
-                            MAX
+                            MAX WALLET
+                          </Button>
+                          {/* Deposited Amount Buttons */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs bg-purple-600/60 text-white hover:bg-purple-500/70 py-2 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
+                            onClick={() => {
+                              const depositedNum = parseFloat(selectedReserve?.deposited || '0');
+                              setDepositAmount((depositedNum / 2).toFixed(9));
+                            }}
+                            data-testid="button-half-deposit"
+                          >
+                            HALF DEPOSIT
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs bg-purple-600/60 text-white hover:bg-purple-500/70 py-2 h-auto rounded-lg font-bold shadow-md border border-purple-400/30"
+                            onClick={() => {
+                              const depositedNum = parseFloat(selectedReserve?.deposited || '0');
+                              setDepositAmount(depositedNum.toFixed(9));
+                            }}
+                            data-testid="button-max-deposit"
+                          >
+                            MAX DEPOSIT
                           </Button>
                         </div>
                       </div>
@@ -4502,42 +4528,22 @@ export default function SolRefund() {
 
                       {/* 1. Amount Section (FIRST) */}
                     <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-3 mb-3">
-                      {/* Header with Balances and Quick Actions */}
+                      {/* Header with Balances */}
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-purple-200 text-sm font-medium">Amount</span>
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs text-purple-300 text-right">
-                            <div>💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}</div>
-                            <div>📊 {(() => {
-                              const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
-                              if (!userPosition) return '0.00';
-                              const deposited = parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
-                              return deposited.toFixed(2);
-                            })()} Deposited</div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
-                            onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(6))}
-                            data-testid="button-half-amount"
-                          >
-                            HALF
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
-                            onClick={() => setDepositAmount(walletTokenBalance.toFixed(6))}
-                            data-testid="button-max-amount"
-                          >
-                            MAX
-                          </Button>
+                        <div className="text-xs text-purple-300 text-right">
+                          <div>💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}</div>
+                          <div>📊 {(() => {
+                            const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
+                            if (!userPosition) return '0.00';
+                            const deposited = parseFloat(userPosition.amount) / Math.pow(10, userPosition.decimals);
+                            return deposited.toFixed(2);
+                          })()} Deposited</div>
                         </div>
                       </div>
 
                       {/* Token and Amount Input */}
-                      <div className="flex items-center justify-between bg-purple-950/50 rounded-lg p-2.5 border border-purple-500/20">
+                      <div className="flex items-center justify-between bg-purple-950/50 rounded-lg p-2.5 border border-purple-500/20 mb-2">
                         <div className="flex items-center gap-2">
                           {selectedReserve?.logoUrl && (
                             <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-7 h-7 rounded-full border border-purple-400/30" />
@@ -4552,6 +4558,54 @@ export default function SolRefund() {
                           className="bg-transparent border-none text-right text-xl font-semibold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[120px] placeholder:text-purple-600"
                           data-testid="input-deposit-amount"
                         />
+                      </div>
+
+                      {/* Quick Amount Buttons */}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {/* Wallet Balance Buttons */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs bg-green-600/60 text-white hover:bg-green-500/70 px-1.5 py-1.5 h-auto rounded font-bold border border-green-400/30"
+                          onClick={() => setDepositAmount((walletTokenBalance / 2).toFixed(9))}
+                          data-testid="button-half-wallet"
+                        >
+                          ½ Wallet
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs bg-green-600/60 text-white hover:bg-green-500/70 px-1.5 py-1.5 h-auto rounded font-bold border border-green-400/30"
+                          onClick={() => setDepositAmount(walletTokenBalance.toFixed(9))}
+                          data-testid="button-max-wallet"
+                        >
+                          Max Wallet
+                        </Button>
+                        {/* Deposited Amount Buttons */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs bg-purple-600/60 text-white hover:bg-purple-500/70 px-1.5 py-1.5 h-auto rounded font-bold border border-purple-400/30"
+                          onClick={() => {
+                            const depositedNum = parseFloat(selectedReserve?.deposited || '0');
+                            setDepositAmount((depositedNum / 2).toFixed(9));
+                          }}
+                          data-testid="button-half-deposit"
+                        >
+                          ½ Deposit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs bg-purple-600/60 text-white hover:bg-purple-500/70 px-1.5 py-1.5 h-auto rounded font-bold border border-purple-400/30"
+                          onClick={() => {
+                            const depositedNum = parseFloat(selectedReserve?.deposited || '0');
+                            setDepositAmount(depositedNum.toFixed(9));
+                          }}
+                          data-testid="button-max-deposit"
+                        >
+                          Max Deposit
+                        </Button>
                       </div>
                     </div>
 
