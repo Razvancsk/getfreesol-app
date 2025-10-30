@@ -5,7 +5,7 @@ import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertSca
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
@@ -5117,12 +5117,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: Buffer.from(depositIx.data),
       });
 
+      // Add compute budget instructions for better transaction success rate
+      const computeUnitIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 300000 });
+      const priorityFeeIx = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 });
+
       // Build versioned transaction
       const latestBlockhash = await connection.getLatestBlockhash();
       const messageV0 = new TransactionMessage({
         payerKey: new PublicKey(walletAddress),
         recentBlockhash: latestBlockhash.blockhash,
-        instructions: [instruction],
+        instructions: [computeUnitIx, priorityFeeIx, instruction],
       }).compileToV0Message();
 
       const transaction = new VersionedTransaction(messageV0);
