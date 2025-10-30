@@ -270,9 +270,10 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         
         const holdingsData = await holdingsResponse.json();
         
-        // Add native SOL balance
-        if (holdingsData.uiAmount > 0) {
-          newBalances['So11111111111111111111111111111111111111112'] = holdingsData.uiAmount;
+        // Add native SOL balance (from top-level, not from wrapped SOL in tokens)
+        const nativeSOLBalance = holdingsData.uiAmount || 0;
+        if (nativeSOLBalance >= 0) {
+          newBalances['So11111111111111111111111111111111111111112'] = nativeSOLBalance;
           tokensWithMetadata.push({
             address: 'So11111111111111111111111111111111111111112',
             symbol: 'SOL',
@@ -285,6 +286,11 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
         // Process SPL token holdings
         if (holdingsData.tokens) {
           for (const [mint, tokenAccounts] of Object.entries(holdingsData.tokens)) {
+            // Skip wrapped SOL since we already have native SOL balance
+            if (mint === 'So11111111111111111111111111111111111111112') {
+              continue;
+            }
+            
             // Sum all token accounts for this mint
             const totalBalance = (tokenAccounts as any[]).reduce((sum, account) => {
               return sum + (account.uiAmount || 0);
@@ -561,9 +567,10 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       
       const holdingsData = await holdingsResponse.json();
       
-      // Add native SOL balance
-      if (holdingsData.uiAmount > 0) {
-        newBalances['So11111111111111111111111111111111111111112'] = holdingsData.uiAmount;
+      // Add native SOL balance (from top-level, not from wrapped SOL in tokens)
+      const nativeSOLBalance = holdingsData.uiAmount || 0;
+      if (nativeSOLBalance >= 0) {
+        newBalances['So11111111111111111111111111111111111111112'] = nativeSOLBalance;
         tokensWithMetadata.push({
           address: 'So11111111111111111111111111111111111111112',
           symbol: 'SOL',
@@ -576,6 +583,11 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       // Process SPL token holdings
       if (holdingsData.tokens) {
         for (const [mint, tokenAccounts] of Object.entries(holdingsData.tokens)) {
+          // Skip wrapped SOL since we already have native SOL balance
+          if (mint === 'So11111111111111111111111111111111111111112') {
+            continue;
+          }
+          
           // Sum all token accounts for this mint
           const totalBalance = (tokenAccounts as any[]).reduce((sum, account) => {
             return sum + (account.uiAmount || 0);
