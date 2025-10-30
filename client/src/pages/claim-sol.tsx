@@ -4155,21 +4155,23 @@ export default function SolRefund() {
                                 <div className="text-white text-base font-semibold">
                                   {(() => {
                                     if (!userPosition) return `0.000000000 ${displaySymbol}`;
-                                    // Convert raw amount to display amount using decimals
-                                    const rawAmount = parseFloat(userPosition.amount || '0');
+                                    // Calculate original deposit from shares
+                                    const shares = parseFloat(userPosition.shares || '0');
                                     const decimals = reserve.decimals || 6;
-                                    const displayAmount = rawAmount / Math.pow(10, decimals);
-                                    return `${displayAmount.toFixed(9)} ${displaySymbol}`;
+                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
+                                    const originalDeposit = (shares / convertToShares) * Math.pow(10, 6 - decimals);
+                                    return `${originalDeposit.toFixed(9)} ${displaySymbol}`;
                                   })()}
                                 </div>
                                 <div className="text-purple-300/60 text-sm mt-0.5">
                                   {(() => {
                                     if (!userPosition) return '$0.00';
-                                    const rawAmount = parseFloat(userPosition.amount || '0');
+                                    const shares = parseFloat(userPosition.shares || '0');
                                     const decimals = reserve.decimals || 6;
-                                    const displayAmount = rawAmount / Math.pow(10, decimals);
+                                    const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
+                                    const originalDeposit = (shares / convertToShares) * Math.pow(10, 6 - decimals);
                                     const tokenPrice = parseFloat(reserve.price || '0');
-                                    const usdValue = displayAmount * tokenPrice;
+                                    const usdValue = originalDeposit * tokenPrice;
                                     return `$${usdValue.toFixed(2)}`;
                                   })()}
                                 </div>
@@ -4182,17 +4184,17 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return `0.000000000 ${displaySymbol}`;
                                     
-                                    // Current value (underlyingAssets)
+                                    // Current value from underlyingAssets
                                     const currentValueRaw = parseFloat(userPosition.amount || '0');
                                     const decimals = reserve.decimals || 6;
                                     const currentValue = currentValueRaw / Math.pow(10, decimals);
                                     
-                                    // Original deposit calculation using shares
+                                    // Original deposit from shares
                                     const shares = parseFloat(userPosition.shares || '0');
                                     const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
-                                    const originalDeposit = (shares * (1000000 / convertToShares)) / Math.pow(10, decimals);
+                                    const originalDeposit = (shares / convertToShares) * Math.pow(10, 6 - decimals);
                                     
-                                    // Earnings = current value - original deposit
+                                    // Earnings = current - original
                                     const earnings = Math.max(0, currentValue - originalDeposit);
                                     
                                     return `${earnings.toFixed(9)} ${displaySymbol}`;
@@ -4202,15 +4204,13 @@ export default function SolRefund() {
                                   {(() => {
                                     if (!userPosition) return '$0.00';
                                     
-                                    // Current value
                                     const currentValueRaw = parseFloat(userPosition.amount || '0');
                                     const decimals = reserve.decimals || 6;
                                     const currentValue = currentValueRaw / Math.pow(10, decimals);
                                     
-                                    // Original deposit
                                     const shares = parseFloat(userPosition.shares || '0');
                                     const convertToShares = parseFloat(userPosition.convertToShares || '1000000');
-                                    const originalDeposit = (shares * (1000000 / convertToShares)) / Math.pow(10, decimals);
+                                    const originalDeposit = (shares / convertToShares) * Math.pow(10, 6 - decimals);
                                     
                                     const earnings = Math.max(0, currentValue - originalDeposit);
                                     const tokenPrice = parseFloat(reserve.price || '0');
