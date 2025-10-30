@@ -4933,6 +4933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const assetMint = pool.assetAddress || pool.asset?.address || '';
         const assetSymbol = pool.asset?.symbol || pool.symbol || 'Unknown';
         const assetDecimals = pool.asset?.decimals || pool.decimals || 9;
+        const logoUrl = pool.asset?.logoUrl || '';
         
         // Convert rates from basis points to percentage (e.g., 430 -> 4.30%)
         const supplyAPY = parseFloat(pool.totalRate || pool.supplyRate || 0) / 100;
@@ -4942,6 +4943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           symbol: assetSymbol,
           name: pool.asset?.name || pool.name || assetSymbol,
           mint: assetMint, // Underlying asset mint address for deposits
+          logoUrl: logoUrl, // Token logo image URL
           depositAPY: supplyAPY,
           borrowAPY: 0,
           tvl: (parseFloat(pool.totalAssets || 0) / Math.pow(10, assetDecimals)).toFixed(2),

@@ -4033,7 +4033,19 @@ export default function SolRefund() {
                               >
                                 <td className="py-4 px-2">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                    {reserve.logoUrl ? (
+                                      <img 
+                                        src={reserve.logoUrl} 
+                                        alt={reserve.symbol}
+                                        className="w-10 h-10 rounded-full"
+                                        onError={(e) => {
+                                          // Fallback to gradient if image fails to load
+                                          e.currentTarget.style.display = 'none';
+                                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ${reserve.logoUrl ? 'hidden' : ''}`}>
                                       {reserve.symbol.substring(0, 1)}
                                     </div>
                                     <div className="text-white font-medium">{reserve.symbol}</div>
