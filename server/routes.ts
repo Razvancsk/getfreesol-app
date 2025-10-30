@@ -4927,7 +4927,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📊 Loading Kamino market data...');
       const market = await KaminoMarket.load(connection, marketAddress);
       
-      await market.loadReserves();
+      // Refresh all cached data (reserves + obligations)
+      await market.refreshAll();
       console.log(`✅ Loaded ${market.reserves.length} reserves`);
 
       // Extract reserve data with APY rates
@@ -4980,9 +4981,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📊 Loading positions for wallet: ${walletAddress}`);
       const market = await KaminoMarket.load(connection, marketAddress);
-      await market.loadReserves();
+      
+      // Refresh all cached data
+      await market.refreshAll();
 
-      const obligation = await market.getUserVanillaObligation(userWallet);
+      // Get user obligation
+      const obligation = market.getObligationByWallet(userWallet);
 
       if (!obligation) {
         return res.json({
