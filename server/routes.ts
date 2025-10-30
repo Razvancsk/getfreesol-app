@@ -4914,17 +4914,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Jupiter Lend - Get earn pools with APY rates
   app.get("/api/jupiter-lend/earn-pools", async (req, res) => {
     try {
-      console.log('🪐 Fetching Jupiter Lend earn pools from API...');
+      console.log('🪐 Fetching Jupiter Lend earn tokens from API...');
 
-      // Fetch earn pool data from Jupiter Lend API
-      const response = await fetch('https://lite-api.jup.ag/lend/v1/earn');
+      // Fetch earn tokens data from Jupiter Lend API
+      const response = await fetch('https://lite-api.jup.ag/lend/v1/earn/tokens');
       
       if (!response.ok) {
-        throw new Error(`Jupiter API returned ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Jupiter API returned ${response.status}: ${errorText}`);
       }
 
       const earnPools = await response.json();
-      console.log(`✅ Found ${earnPools.length} Jupiter Lend earn pools`);
+      console.log(`✅ Found ${earnPools.length} Jupiter Lend earn tokens`);
 
       // Transform the data to match our frontend format
       const reserves = earnPools.map((pool: any) => ({
