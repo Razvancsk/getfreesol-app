@@ -4914,21 +4914,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Get market data with reserves and APY rates
   app.get("/api/kamino/market-data", async (req, res) => {
     try {
-      const { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS, initEnv } = await import('@kamino-finance/klend-sdk');
+      const { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
+      const { initEnv } = await import('@kamino-finance/klend-sdk/dist/client/tx/CliEnv');
       
       const heliusApiKey = process.env.HELIUS_API_KEY;
       if (!heliusApiKey) {
         return res.status(500).json({ error: 'Helius API key not configured' });
       }
 
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF"); // Kamino Main Market
       const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
 
       console.log('📊 Loading Kamino market data...');
       
-      // Initialize Kamino environment (as per SDK docs)
-      const env = await initEnv('mainnet-beta');
-      const market = await KaminoMarket.load(env.provider.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      // Initialize Kamino environment with RPC URL (as per SDK docs)
+      const env = await initEnv(rpcUrl);
+      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       
       // Refresh all cached data (reserves + obligations)
       await market.refreshAll();
@@ -4966,22 +4968,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Build deposit transaction
   app.post("/api/kamino/build-deposit", async (req, res) => {
     try {
-      const { KaminoMarket, KaminoAction, VanillaObligation, DEFAULT_RECENT_SLOT_DURATION_MS, initEnv } = await import('@kamino-finance/klend-sdk');
+      const { KaminoMarket, KaminoAction, VanillaObligation, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
+      const { initEnv } = await import('@kamino-finance/klend-sdk/dist/client/tx/CliEnv');
       const { walletAddress, symbol, amount } = req.body;
 
       if (!walletAddress || !symbol || !amount) {
         return res.status(400).json({ error: 'Wallet address, symbol, and amount are required' });
       }
 
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
       const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
       const userWallet = new PublicKey(walletAddress);
 
       console.log(`🏦 Building deposit transaction for ${amount} ${symbol}`);
       
-      // Initialize Kamino environment (as per SDK docs)
-      const env = await initEnv('mainnet-beta');
-      const market = await KaminoMarket.load(env.provider.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      // Initialize Kamino environment with RPC URL (as per SDK docs)
+      const env = await initEnv(rpcUrl);
+      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       await market.refreshAll();
 
       // Get the reserve to find decimals
@@ -5042,22 +5051,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Build withdraw transaction
   app.post("/api/kamino/build-withdraw", async (req, res) => {
     try {
-      const { KaminoMarket, KaminoAction, VanillaObligation, DEFAULT_RECENT_SLOT_DURATION_MS, initEnv } = await import('@kamino-finance/klend-sdk');
+      const { KaminoMarket, KaminoAction, VanillaObligation, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
+      const { initEnv } = await import('@kamino-finance/klend-sdk/dist/client/tx/CliEnv');
       const { walletAddress, symbol, amount } = req.body;
 
       if (!walletAddress || !symbol || !amount) {
         return res.status(400).json({ error: 'Wallet address, symbol, and amount are required' });
       }
 
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
       const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
       const userWallet = new PublicKey(walletAddress);
 
       console.log(`🏦 Building withdraw transaction for ${amount} ${symbol}`);
       
-      // Initialize Kamino environment (as per SDK docs)
-      const env = await initEnv('mainnet-beta');
-      const market = await KaminoMarket.load(env.provider.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      // Initialize Kamino environment with RPC URL (as per SDK docs)
+      const env = await initEnv(rpcUrl);
+      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       await market.refreshAll();
 
       // Get the reserve to find decimals
@@ -5118,22 +5134,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lending - Get user positions
   app.get("/api/kamino/user-positions/:walletAddress", async (req, res) => {
     try {
-      const { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS, initEnv } = await import('@kamino-finance/klend-sdk');
+      const { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } = await import('@kamino-finance/klend-sdk');
+      const { initEnv } = await import('@kamino-finance/klend-sdk/dist/client/tx/CliEnv');
       const { walletAddress } = req.params;
 
       if (!walletAddress) {
         return res.status(400).json({ error: 'Wallet address is required' });
       }
 
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: 'Helius API key not configured' });
+      }
+
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
       const marketAddress = new PublicKey("7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF");
       const programId = new PublicKey("GzFgdRJmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW"); // Kamino Lending Program ID
       const userWallet = new PublicKey(walletAddress);
 
       console.log(`📊 Loading positions for wallet: ${walletAddress}`);
       
-      // Initialize Kamino environment (as per SDK docs)
-      const env = await initEnv('mainnet-beta');
-      const market = await KaminoMarket.load(env.provider.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      // Initialize Kamino environment with RPC URL (as per SDK docs)
+      const env = await initEnv(rpcUrl);
+      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       
       // Refresh all cached data
       await market.refreshAll();
