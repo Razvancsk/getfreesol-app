@@ -116,6 +116,7 @@ export default function SolRefund() {
   const [destinationWallet, setDestinationWallet] = useState<string>('');
   const [loadingTransferTokens, setLoadingTransferTokens] = useState(false);
   const [walletTokenBalance, setWalletTokenBalance] = useState<number>(0);
+  const [lendStats, setLendStats] = useState<{ totalDepositsUsd: string; totalEarningsUsd: string } | null>(null);
   
   // Swap modal state
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -342,6 +343,20 @@ export default function SolRefund() {
       }
     }
   }, [isConnected, publicKey, activeTab, burnSubTab]);
+
+  // Fetch lend statistics for platform wallet
+  useEffect(() => {
+    if (activeTab === 'lend' && publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
+      fetch('/api/jupiter-lend/statistics')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setLendStats(data);
+          }
+        })
+        .catch(err => console.error('Failed to fetch lend stats:', err));
+    }
+  }, [activeTab, publicKey]);
 
   // Query to get user's referral code and stats
   const { data: userReferrals } = useQuery({
@@ -4003,6 +4018,62 @@ export default function SolRefund() {
           {/* Lend Tab Content */}
           {activeTab === 'lend' && (
               <div className="space-y-6">
+                {/* Jupiter Lend Statistics - Only visible to platform wallet */}
+                {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
+                  <div 
+                    className="mx-auto max-w-[420px] rounded-2xl p-6 backdrop-blur-sm"
+                    style={{
+                      background: 'linear-gradient(180deg, hsl(272, 75%, 22%) 0%, hsl(280, 70%, 18%) 100%)'
+                    }}
+                  >
+                    <h2 className="text-[22px] font-semibold text-white tracking-tight text-center mb-6">
+                      Lend your assets and earn passive income on Solana
+                    </h2>
+                    
+                    <div className="flex flex-col gap-4">
+                      {/* Total Deposits Card */}
+                      <div 
+                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border"
+                        style={{
+                          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                          borderColor: 'rgba(167, 139, 250, 0.3)',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}
+                      >
+                        <div 
+                          className="text-sm font-medium"
+                          style={{ color: 'hsl(270, 60%, 75%)' }}
+                        >
+                          Total Deposits
+                        </div>
+                        <div className="text-[28px] font-bold text-white">
+                          {lendStats ? `$${parseFloat(lendStats.totalDepositsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
+                        </div>
+                      </div>
+                      
+                      {/* Total Earned Card */}
+                      <div 
+                        className="flex flex-col gap-2 p-5 rounded-xl backdrop-blur-sm border"
+                        style={{
+                          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                          borderColor: 'rgba(167, 139, 250, 0.3)',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}
+                      >
+                        <div 
+                          className="text-sm font-medium"
+                          style={{ color: 'hsl(270, 60%, 75%)' }}
+                        >
+                          Total Earned
+                        </div>
+                        <div className="text-[28px] font-bold text-white">
+                          {lendStats ? `$${parseFloat(lendStats.totalEarningsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Available Lending Pools */}
                 <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                   <CardHeader>
@@ -4227,6 +4298,37 @@ export default function SolRefund() {
                                 });
 
                                 await connection.confirmTransaction(signature, 'confirmed');
+
+                                // Record deposit for analytics
+                                try {
+                                  const tokenPrice = selectedReserve.price || 0;
+                                  const usdValue = amountNum * tokenPrice;
+                                  
+                                  await fetch('/api/jupiter-lend/record-deposit', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      signature,
+                                      walletAddress: publicKey.toString(),
+                                      tokenMint: selectedReserve.mint,
+                                      tokenSymbol: selectedReserve.symbol,
+                                      amountDeposited: amountNum.toString(),
+                                      usdValueAtDeposit: usdValue.toString(),
+                                      apyAtDeposit: selectedReserve.depositAPY.toString(),
+                                    }),
+                                  });
+                                  
+                                  // Refresh stats if platform wallet
+                                  if (publicKey.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
+                                    const statsResponse = await fetch('/api/jupiter-lend/statistics');
+                                    if (statsResponse.ok) {
+                                      const stats = await statsResponse.json();
+                                      setLendStats(stats);
+                                    }
+                                  }
+                                } catch (err) {
+                                  console.error('Failed to record deposit:', err);
+                                }
 
                                 toast({
                                   title: "Deposit Successful!",
@@ -4466,6 +4568,37 @@ export default function SolRefund() {
                               });
 
                               await connection.confirmTransaction(signature, 'confirmed');
+
+                              // Record deposit for analytics
+                              try {
+                                const tokenPrice = selectedReserve.price || 0;
+                                const usdValue = amountNum * tokenPrice;
+                                
+                                await fetch('/api/jupiter-lend/record-deposit', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    signature,
+                                    walletAddress: publicKey.toString(),
+                                    tokenMint: selectedReserve.mint,
+                                    tokenSymbol: selectedReserve.symbol,
+                                    amountDeposited: amountNum.toString(),
+                                    usdValueAtDeposit: usdValue.toString(),
+                                    apyAtDeposit: selectedReserve.depositAPY.toString(),
+                                  }),
+                                });
+                                
+                                // Refresh stats if platform wallet
+                                if (publicKey.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
+                                  const statsResponse = await fetch('/api/jupiter-lend/statistics');
+                                  if (statsResponse.ok) {
+                                    const stats = await statsResponse.json();
+                                    setLendStats(stats);
+                                  }
+                                }
+                              } catch (err) {
+                                console.error('Failed to record deposit:', err);
+                              }
 
                               toast({
                                 title: "Deposit Successful!",

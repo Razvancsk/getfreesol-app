@@ -279,6 +279,24 @@ export const insertMassTransferRecordSchema = createInsertSchema(massTransferRec
   transferredAt: true,
 });
 
+// Jupiter Lend deposit records for analytics
+export const jupiterLendDeposits = pgTable("jupiter_lend_deposits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signature: text("signature").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  tokenMint: text("token_mint").notNull(),
+  tokenSymbol: text("token_symbol").notNull(),
+  amountDeposited: decimal("amount_deposited", { precision: 18, scale: 9 }).notNull(),
+  usdValueAtDeposit: decimal("usd_value_at_deposit", { precision: 18, scale: 2 }).notNull(),
+  apyAtDeposit: decimal("apy_at_deposit", { precision: 5, scale: 2 }).notNull(),
+  depositedAt: timestamp("deposited_at").notNull().defaultNow(),
+});
+
+export const insertJupiterLendDepositSchema = createInsertSchema(jupiterLendDeposits).omit({
+  id: true,
+  depositedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type TransactionRecord = typeof transactionRecords.$inferSelect;
@@ -307,6 +325,8 @@ export type RelayerCost = typeof relayerCosts.$inferSelect;
 export type InsertRelayerCost = z.infer<typeof insertRelayerCostSchema>;
 export type MassTransferRecord = typeof massTransferRecords.$inferSelect;
 export type InsertMassTransferRecord = z.infer<typeof insertMassTransferRecordSchema>;
+export type JupiterLendDeposit = typeof jupiterLendDeposits.$inferSelect;
+export type InsertJupiterLendDeposit = z.infer<typeof insertJupiterLendDepositSchema>;
 
 // Auto-Claim Permit API schemas with validation
 export const autoClaimPermitMessageSchema = z.object({

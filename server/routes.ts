@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
@@ -5119,6 +5119,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Build withdraw transaction error:", error);
       res.status(500).json({ error: "Failed to build withdraw transaction", details: error.message });
+    }
+  });
+
+  // Record Jupiter Lend deposit for analytics
+  app.post("/api/jupiter-lend/record-deposit", async (req, res) => {
+    try {
+      const { signature, walletAddress, tokenMint, tokenSymbol, amountDeposited, usdValueAtDeposit, apyAtDeposit } = req.body;
+
+      if (!signature || !walletAddress || !tokenMint || !tokenSymbol || !amountDeposited || !usdValueAtDeposit || !apyAtDeposit) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      await db.insert(jupiterLendDeposits).values({
+        signature,
+        walletAddress,
+        tokenMint,
+        tokenSymbol,
+        amountDeposited,
+        usdValueAtDeposit,
+        apyAtDeposit,
+      });
+
+      console.log(`✅ Recorded Jupiter Lend deposit: ${walletAddress} - ${amountDeposited} ${tokenSymbol}`);
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Record deposit error:", error);
+      res.status(500).json({ error: "Failed to record deposit", details: error.message });
+    }
+  });
+
+  // Get Jupiter Lend statistics
+  app.get("/api/jupiter-lend/statistics", async (req, res) => {
+    try {
+      const deposits = await db.select().from(jupiterLendDeposits);
+
+      const totalDepositsUsd = deposits.reduce((sum, deposit) => {
+        return sum + parseFloat(deposit.usdValueAtDeposit);
+      }, 0);
+
+      // Calculate estimated earnings based on APY and time elapsed
+      let totalEarningsUsd = 0;
+      const now = new Date();
+
+      for (const deposit of deposits) {
+        const depositDate = new Date(deposit.depositedAt);
+        const daysElapsed = (now.getTime() - depositDate.getTime()) / (1000 * 60 * 60 * 24);
+        const yearlyReturn = parseFloat(deposit.usdValueAtDeposit) * (parseFloat(deposit.apyAtDeposit) / 100);
+        const earnedSoFar = yearlyReturn * (daysElapsed / 365);
+        totalEarningsUsd += earnedSoFar;
+      }
+
+      res.json({
+        success: true,
+        totalDepositsUsd: totalDepositsUsd.toFixed(2),
+        totalEarningsUsd: totalEarningsUsd.toFixed(2),
+        totalDeposits: deposits.length,
+      });
+    } catch (error: any) {
+      console.error("Get statistics error:", error);
+      res.status(500).json({ error: "Failed to get statistics", details: error.message });
     }
   });
 
