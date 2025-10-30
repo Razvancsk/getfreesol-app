@@ -2684,7 +2684,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-lend"
                 >
-                  💰 Earn
+                  📈 Earn
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
