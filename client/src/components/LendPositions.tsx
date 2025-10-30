@@ -229,6 +229,13 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
 
         {/* Mobile Card View - base to md */}
         <div className="lg:hidden space-y-0">
+          {/* Mobile Header */}
+          <div className="grid grid-cols-3 gap-3 px-4 py-3 bg-purple-900/30 border-b border-purple-500/20">
+            <div className="text-purple-300 font-semibold text-xs uppercase">Vault</div>
+            <div className="text-purple-300 font-semibold text-xs uppercase text-center">APY</div>
+            <div className="text-purple-300 font-semibold text-xs uppercase text-right">TVL</div>
+          </div>
+          
           {jupiterLendData.reserves.map((reserve: any) => {
             const userPosition = userPositions?.deposits?.find(
               (dep: any) => dep.asset === reserve.mint
