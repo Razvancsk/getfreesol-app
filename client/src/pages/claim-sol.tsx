@@ -23,6 +23,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -97,6 +98,12 @@ export default function SolRefund() {
   const [massTransferTokens, setMassTransferTokens] = useState<any[]>([]);
   const [selectedTransferTokens, setSelectedTransferTokens] = useState<Set<string>>(new Set());
   const [tokenAmounts, setTokenAmounts] = useState<Map<string, string>>(new Map());
+  
+  // Jupiter Lend states
+  const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+  const [selectedReserve, setSelectedReserve] = useState<any>(null);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositingLend, setDepositingLend] = useState(false);
   const [destinationWallet, setDestinationWallet] = useState<string>('');
   const [loadingTransferTokens, setLoadingTransferTokens] = useState(false);
   
@@ -4011,10 +4018,17 @@ export default function SolRefund() {
                                 key={reserve.address} 
                                 className="border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
                                 onClick={() => {
-                                  toast({
-                                    title: "Coming Soon",
-                                    description: "Deposit functionality is being integrated. Visit jup.ag/lend/earn for now.",
-                                  });
+                                  if (!publicKey) {
+                                    toast({
+                                      title: "Wallet Not Connected",
+                                      description: "Please connect your wallet to deposit.",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  setSelectedReserve(reserve);
+                                  setDepositAmount('');
+                                  setDepositDialogOpen(true);
                                 }}
                               >
                                 <td className="py-4 px-2">
@@ -4063,6 +4077,124 @@ export default function SolRefund() {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Deposit Dialog */}
+                <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
+                  <DialogContent className="bg-purple-900 border-purple-600 text-white">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl">Deposit {selectedReserve?.symbol}</DialogTitle>
+                      <DialogDescription className="text-purple-200">
+                        Earn {selectedReserve?.depositAPY.toFixed(2)}% APY on your {selectedReserve?.symbol}
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="deposit-amount" className="text-white">
+                          Amount to Deposit
+                        </Label>
+                        <Input
+                          id="deposit-amount"
+                          type="number"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          placeholder="Enter amount..."
+                          className="bg-purple-900/30 border-purple-500/30 text-white"
+                          data-testid="input-deposit-amount"
+                        />
+                        <p className="text-sm text-purple-300">
+                          Current APY: <span className="text-green-400 font-semibold">{selectedReserve?.depositAPY.toFixed(2)}%</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setDepositDialogOpen(false)}
+                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
+                          
+                          setDepositingLend(true);
+                          try {
+                            const amountNum = parseFloat(depositAmount);
+                            if (isNaN(amountNum) || amountNum <= 0) {
+                              throw new Error('Invalid amount');
+                            }
+
+                            // Convert amount to token decimals (assuming 9 decimals for SOL/SPL)
+                            const amountInLamports = Math.floor(amountNum * 1e9).toString();
+
+                            console.log('Building deposit transaction:', {
+                              asset: selectedReserve.mint,
+                              amount: amountInLamports,
+                              walletAddress: publicKey.toString()
+                            });
+
+                            // Build deposit transaction via backend
+                            const response = await fetch('/api/jupiter-lend/build-deposit', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                asset: selectedReserve.mint,
+                                amount: amountInLamports,
+                                walletAddress: publicKey.toString()
+                              })
+                            });
+
+                            if (!response.ok) {
+                              throw new Error('Failed to build deposit transaction');
+                            }
+
+                            const { transaction: base64Transaction } = await response.json();
+
+                            // Deserialize and sign transaction
+                            const txBuffer = Buffer.from(base64Transaction, 'base64');
+                            const transaction = VersionedTransaction.deserialize(txBuffer);
+                            
+                            if ('signTransaction' in wallet && wallet.signTransaction) {
+                              const signedTx = await wallet.signTransaction(transaction);
+                              
+                              const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                                skipPreflight: false,
+                                maxRetries: 3
+                              });
+
+                              await connection.confirmTransaction(signature, 'confirmed');
+
+                              toast({
+                                title: "Deposit Successful!",
+                                description: `Deposited ${amountNum} ${selectedReserve.symbol}. Now earning ${selectedReserve.depositAPY.toFixed(2)}% APY!`,
+                              });
+
+                              setDepositDialogOpen(false);
+                              setDepositAmount('');
+                            }
+                          } catch (error: any) {
+                            console.error('Deposit error:', error);
+                            toast({
+                              title: "Deposit Failed",
+                              description: error.message || "Failed to deposit assets",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setDepositingLend(false);
+                          }
+                        }}
+                        disabled={depositingLend || !depositAmount}
+                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+                        data-testid="button-confirm-deposit"
+                      >
+                        {depositingLend ? 'Depositing...' : `Deposit ${selectedReserve?.symbol || ''}`}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
           )}
 
