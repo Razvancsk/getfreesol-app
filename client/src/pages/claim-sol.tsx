@@ -4523,7 +4523,7 @@ export default function SolRefund() {
                         Withdraw
                       </Button>
                     </div>
-                      </div>
+                    </div>
                   </DialogContent>
                 </Dialog>
                 )}
