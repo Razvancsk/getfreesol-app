@@ -4121,41 +4121,38 @@ export default function SolRefund() {
 
                 {/* Deposit Dialog */}
                 <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
-                  <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white max-w-2xl">
+                  <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white max-w-md p-4">
                     {/* Header with Token Logo and Symbol */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
                         {selectedReserve?.logoUrl && (
-                          <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-12 h-12 rounded-full border-2 border-purple-400/30" />
+                          <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-8 h-8 rounded-full border border-purple-400/30" />
                         )}
-                        <div>
-                          <h2 className="text-2xl font-bold text-white">{selectedReserve?.symbol}</h2>
-                          <p className="text-sm text-purple-300">{selectedReserve?.name}</p>
-                        </div>
+                        <h2 className="text-lg font-bold text-white">{selectedReserve?.symbol}</h2>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setDepositDialogOpen(false)}
-                        className="text-purple-300 hover:text-white hover:bg-purple-800/30"
+                        className="text-purple-300 hover:text-white hover:bg-purple-800/30 h-7 w-7"
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                       </Button>
                     </div>
 
                     {/* 1. Deposit Amount Section (FIRST) */}
-                    <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-5 mb-6">
+                    <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-3 mb-3">
                       {/* Deposit Header with Balance and Quick Actions */}
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-purple-200 font-medium">Deposit Amount</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-purple-300">
-                            💰 {walletTokenBalance.toFixed(4)} {selectedReserve?.symbol}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-purple-200 text-sm font-medium">Deposit Amount</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-purple-300">
+                            💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-3 py-1 h-auto border border-purple-500/30"
+                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
                             onClick={() => {
                               setDepositAmount((walletTokenBalance / 2).toFixed(6));
                             }}
@@ -4166,7 +4163,7 @@ export default function SolRefund() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-3 py-1 h-auto border border-purple-500/30"
+                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
                             onClick={() => {
                               setDepositAmount(walletTokenBalance.toFixed(6));
                             }}
@@ -4178,39 +4175,39 @@ export default function SolRefund() {
                       </div>
 
                       {/* Token and Amount Input */}
-                      <div className="flex items-center justify-between bg-purple-950/50 rounded-lg p-4 border border-purple-500/20">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between bg-purple-950/50 rounded-lg p-2.5 border border-purple-500/20">
+                        <div className="flex items-center gap-2">
                           {selectedReserve?.logoUrl && (
-                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-10 h-10 rounded-full border border-purple-400/30" />
+                            <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-7 h-7 rounded-full border border-purple-400/30" />
                           )}
-                          <span className="text-white font-semibold text-lg">{selectedReserve?.symbol}</span>
+                          <span className="text-white font-semibold text-sm">{selectedReserve?.symbol}</span>
                         </div>
                         <Input
                           type="text"
                           value={depositAmount}
                           onChange={(e) => setDepositAmount(e.target.value)}
                           placeholder="0.00"
-                          className="bg-transparent border-none text-right text-3xl font-semibold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[200px] placeholder:text-purple-600"
+                          className="bg-transparent border-none text-right text-xl font-semibold text-white focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[120px] placeholder:text-purple-600"
                           data-testid="input-deposit-amount"
                         />
                       </div>
                     </div>
 
                     {/* 2. APY and TVL Info / Data Pool (SECOND) */}
-                    <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4 mb-6 space-y-3">
+                    <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-2.5 mb-3 space-y-2">
                       {/* APY */}
                       <div className="flex items-center justify-between">
-                        <span className="text-purple-300">APY</span>
-                        <Badge className="bg-blue-500/20 text-blue-300 border-blue-400/30 font-semibold">
+                        <span className="text-purple-300 text-sm">APY</span>
+                        <span className="text-green-400 text-sm font-semibold bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                           ≈ {selectedReserve?.depositAPY.toFixed(2)}%
-                        </Badge>
+                        </span>
                       </div>
 
                       <Separator className="bg-purple-500/20" />
 
                       {/* Vault TVL */}
                       <div className="flex items-center justify-between">
-                        <span className="text-purple-300">Vault TVL</span>
+                        <span className="text-purple-300 text-sm">Vault TVL</span>
                         <div className="text-right">
                           {(() => {
                             const tvl = parseFloat(selectedReserve?.tvl || '0');
@@ -4225,8 +4222,8 @@ export default function SolRefund() {
                             };
                             return (
                               <>
-                                <div className="text-white font-semibold">${formatTVL(tvl)}</div>
-                                <div className="text-sm text-purple-400">{formatTVL(tvl)} {selectedReserve?.symbol}</div>
+                                <div className="text-white text-sm font-semibold">${formatTVL(tvl)}</div>
+                                <div className="text-xs text-purple-400">{formatTVL(tvl)} {selectedReserve?.symbol}</div>
                               </>
                             );
                           })()}
@@ -4237,7 +4234,7 @@ export default function SolRefund() {
 
                       {/* Layer Total */}
                       <div className="flex items-center justify-between">
-                        <span className="text-purple-300">Layer Total</span>
+                        <span className="text-purple-300 text-sm">Layer Total</span>
                         <div className="text-right">
                           {(() => {
                             const tvl = parseFloat(selectedReserve?.tvl || '0');
@@ -4252,8 +4249,8 @@ export default function SolRefund() {
                             };
                             return (
                               <>
-                                <div className="text-white font-semibold">${formatTVL(tvl)}</div>
-                                <div className="text-sm text-purple-400">{formatTVL(tvl)} {selectedReserve?.symbol}</div>
+                                <div className="text-white text-sm font-semibold">${formatTVL(tvl)}</div>
+                                <div className="text-xs text-purple-400">{formatTVL(tvl)} {selectedReserve?.symbol}</div>
                               </>
                             );
                           })()}
@@ -4262,28 +4259,28 @@ export default function SolRefund() {
                     </div>
 
                     {/* 3. User Deposit and Earnings (THIRD) */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="grid grid-cols-2 gap-3 mb-3">
                       {/* Deposited Card */}
-                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
-                        <div className="text-sm text-purple-300 mb-2">Deposited</div>
-                        <div className="text-2xl font-bold text-white">
+                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
+                        <div className="text-xs text-purple-300 mb-1">Deposited</div>
+                        <div className="text-lg font-bold text-white">
                           {selectedReserve?.deposited || '0.00'} {selectedReserve?.symbol}
                         </div>
-                        <div className="text-sm text-purple-400">$0.00</div>
+                        <div className="text-xs text-purple-400">$0.00</div>
                       </div>
 
                       {/* Earnings Card */}
-                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-4">
-                        <div className="text-sm text-purple-300 mb-2">Your Earnings</div>
-                        <div className="text-2xl font-bold text-green-400">
+                      <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
+                        <div className="text-xs text-purple-300 mb-1">Your Earnings</div>
+                        <div className="text-lg font-bold text-green-400">
                           {selectedReserve?.earnings || '0.00'} {selectedReserve?.symbol}
                         </div>
-                        <div className="text-sm text-purple-400">$0.00</div>
+                        <div className="text-xs text-purple-400">$0.00</div>
                       </div>
                     </div>
 
                     {/* 4. Action Buttons (LAST) */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <Button
                         onClick={async () => {
                           if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
