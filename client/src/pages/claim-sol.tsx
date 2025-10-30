@@ -4022,20 +4022,19 @@ export default function SolRefund() {
                     ) : jupiterLendData?.reserves && jupiterLendData.reserves.length > 0 ? (
                       <div className="space-y-0">
                         {/* Header Row */}
-                        <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr_60px] gap-4 px-6 py-3 border-b border-purple-500/20 text-sm text-purple-300 font-medium">
+                        <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 px-6 py-3 border-b border-purple-500/20 text-sm text-purple-300 font-medium">
                           <div>Vault</div>
                           <div>APY</div>
                           <div>Deposited</div>
                           <div>Earnings</div>
                           <div>TVL</div>
-                          <div></div>
                         </div>
                         
                         {/* Vault Rows */}
                         {jupiterLendData.reserves.map((reserve: any) => (
                           <div
                             key={reserve.address}
-                            className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr_60px] gap-4 px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer items-center"
+                            className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 px-6 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer items-center"
                             onClick={async () => {
                               if (!publicKey) {
                                 toast({
@@ -4110,11 +4109,6 @@ export default function SolRefund() {
                                   </>
                                 );
                               })()}
-                            </div>
-                            
-                            {/* Arrow */}
-                            <div className="flex items-center justify-center">
-                              <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90" />
                             </div>
                           </div>
                         ))}
