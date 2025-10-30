@@ -4122,11 +4122,7 @@ export default function SolRefund() {
                 {/* Deposit Dialog */}
                 <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
                   <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white p-4" style={{ width: '512px', height: '606px', maxWidth: '512px' }}>
-                    {/* Header with Token Logo and Symbol */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        {selectedReserve?.logoUrl && (
-                          <img src={selectedReserve.logoUrl} alt={selectedReserve.symbol} className="w-8 h-8 rounded-full border border-purple-400/30" />
+rounded-full border border-purple-400/30" />
                         )}
                         <h2 className="text-lg font-bold text-white">{selectedReserve?.symbol}</h2>
                       </div>
