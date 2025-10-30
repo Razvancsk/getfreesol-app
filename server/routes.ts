@@ -4930,7 +4930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Initialize Kamino environment with RPC URL (as per SDK docs)
       const env = await initEnv(rpcUrl);
-      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      const market = await KaminoMarket.load(env.c.legacyConnection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       
       // Refresh all cached data (reserves + obligations)
       await market.refreshAll();
@@ -4990,7 +4990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Initialize Kamino environment with RPC URL (as per SDK docs)
       const env = await initEnv(rpcUrl);
-      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      const market = await KaminoMarket.load(env.c.legacyConnection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       await market.refreshAll();
 
       // Get the reserve to find decimals
@@ -5073,7 +5073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Initialize Kamino environment with RPC URL (as per SDK docs)
       const env = await initEnv(rpcUrl);
-      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      const market = await KaminoMarket.load(env.c.legacyConnection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       await market.refreshAll();
 
       // Get the reserve to find decimals
@@ -5156,7 +5156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Initialize Kamino environment with RPC URL (as per SDK docs)
       const env = await initEnv(rpcUrl);
-      const market = await KaminoMarket.load(env.c.connection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
+      const market = await KaminoMarket.load(env.c.legacyConnection, marketAddress, DEFAULT_RECENT_SLOT_DURATION_MS, programId);
       
       // Refresh all cached data
       await market.refreshAll();
