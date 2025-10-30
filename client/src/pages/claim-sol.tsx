@@ -4140,7 +4140,11 @@ export default function SolRefund() {
                         {/* Deposit Amount Section */}
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-white/90 text-sm font-semibold">Deposit Amount</span>
+                            <div className="bg-green-500/20 border border-green-400/50 rounded-full px-4 py-1.5">
+                              <span className="text-green-300 text-sm font-bold">
+                                ≈ {selectedReserve?.depositAPY.toFixed(2)}%
+                              </span>
+                            </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-white/80 font-medium">
                                 💰 {walletTokenBalance.toFixed(2)} {selectedReserve?.symbol}
@@ -4183,15 +4187,6 @@ export default function SolRefund() {
                                 className="bg-transparent border-none text-right text-3xl font-bold text-purple-300 focus-visible:ring-0 focus-visible:ring-offset-0 w-auto max-w-[180px] placeholder:text-purple-500/50"
                                 data-testid="input-deposit-amount"
                               />
-                            </div>
-                          </div>
-
-                          {/* APY Badge */}
-                          <div className="flex items-center justify-center">
-                            <div className="bg-green-500/20 border-2 border-green-400/50 rounded-full px-6 py-2.5 shadow-md">
-                              <span className="text-green-300 text-base font-bold">
-                                ≈ {selectedReserve?.depositAPY.toFixed(2)}%
-                              </span>
                             </div>
                           </div>
                         </div>
