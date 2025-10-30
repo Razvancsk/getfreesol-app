@@ -5012,27 +5012,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Jupiter Lend - Build deposit transaction
   app.post("/api/jupiter-lend/build-deposit", async (req, res) => {
     try {
-      const { walletAddress, mint, amount } = req.body;
+      const { walletAddress, asset, amount } = req.body;
 
-      if (!walletAddress || !mint || !amount) {
+      if (!walletAddress || !asset || !amount) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      console.log(`🏦 Building Jupiter Lend deposit transaction for ${amount} tokens`);
-      console.log(`   Mint: ${mint}`);
+      console.log(`🏦 Building Jupiter Lend deposit transaction`);
+      console.log(`   Asset: ${asset}`);
+      console.log(`   Amount: ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
 
-      // For now, direct users to Jupiter interface
-      // Full implementation would require Jupiter Lend SDK
+      // Call Jupiter Lend API to get deposit transaction
+      const depositResponse = await fetch('https://lite-api.jup.ag/lend/v1/earn/deposit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          asset,
+          amount,
+          signer: walletAddress,
+        })
+      });
+
+      if (!depositResponse.ok) {
+        const errorText = await depositResponse.text();
+        throw new Error(`Jupiter Lend API error: ${depositResponse.status} - ${errorText}`);
+      }
+
+      const depositData = await depositResponse.json();
+
+      console.log(`✅ Deposit transaction built successfully`);
+
       res.json({
-        success: false,
-        message: 'Please visit Jupiter Lend to deposit and earn APY on your assets.',
-        jupiter_url: `https://jup.ag/lend/earn`
+        success: true,
+        transaction: depositData.transaction || depositData,
+        message: 'Transaction ready to sign'
       });
 
     } catch (error: any) {
       console.error("Build deposit transaction error:", error);
       res.status(500).json({ error: "Failed to build deposit transaction", details: error.message });
+    }
+  });
+
+  // Jupiter Lend - Build withdraw transaction
+  app.post("/api/jupiter-lend/build-withdraw", async (req, res) => {
+    try {
+      const { walletAddress, asset, amount } = req.body;
+
+      if (!walletAddress || !asset || !amount) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      console.log(`💸 Building Jupiter Lend withdraw transaction`);
+      console.log(`   Asset: ${asset}`);
+      console.log(`   Amount: ${amount}`);
+      console.log(`   Wallet: ${walletAddress}`);
+
+      // Call Jupiter Lend API to get withdraw transaction
+      const withdrawResponse = await fetch('https://lite-api.jup.ag/lend/v1/earn/withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          asset,
+          amount,
+          signer: walletAddress,
+        })
+      });
+
+      if (!withdrawResponse.ok) {
+        const errorText = await withdrawResponse.text();
+        throw new Error(`Jupiter Lend API error: ${withdrawResponse.status} - ${errorText}`);
+      }
+
+      const withdrawData = await withdrawResponse.json();
+
+      console.log(`✅ Withdraw transaction built successfully`);
+
+      res.json({
+        success: true,
+        transaction: withdrawData.transaction || withdrawData,
+        message: 'Transaction ready to sign'
+      });
+
+    } catch (error: any) {
+      console.error("Build withdraw transaction error:", error);
+      res.status(500).json({ error: "Failed to build withdraw transaction", details: error.message });
     }
   });
 
