@@ -2478,47 +2478,15 @@ export default function SolRefund() {
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #0a1a1a 0%, #0d2020 50%, #000000 100%)' }}>
-      {/* Halloween Background Elements */}
+    <div className="min-h-screen relative overflow-hidden bg-black">
+      {/* Halloween Haunted House Background */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Haunted House Silhouettes - Full background coverage */}
-        <div className="absolute inset-0 opacity-60">
-          <svg viewBox="0 0 1200 800" className="w-full h-full" preserveAspectRatio="xMidYMax slice">
-            {/* Left haunted house - tall and prominent */}
-            <path d="M 50 800 L 50 400 L 100 350 L 150 400 L 150 800 Z" fill="#0d3030" />
-            <rect x="70" y="500" width="20" height="35" fill="#ff6600" opacity="0.9" />
-            <rect x="110" y="500" width="20" height="35" fill="#ff6600" opacity="0.9" />
-            <rect x="70" y="600" width="20" height="35" fill="#ff6600" opacity="0.7" />
-            <rect x="110" y="600" width="20" height="35" fill="#ff6600" opacity="0.7" />
-            <path d="M 80 380 L 100 360 L 120 380 Z" fill="#0a2525" />
-            <rect x="85" y="700" width="30" height="100" fill="#000" />
-            
-            {/* Middle haunted house - largest */}
-            <path d="M 500 800 L 500 300 L 580 250 L 660 300 L 660 800 Z" fill="#0d3535" />
-            <rect x="530" y="400" width="35" height="45" fill="#ff6600" opacity="0.9" />
-            <rect x="595" y="400" width="35" height="45" fill="#ff6600" opacity="0.9" />
-            <rect x="530" y="500" width="35" height="45" fill="#ff6600" opacity="0.7" />
-            <rect x="595" y="500" width="35" height="45" fill="#ff6600" opacity="0.7" />
-            <rect x="530" y="600" width="35" height="45" fill="#ff6600" opacity="0.5" />
-            <path d="M 550 280 L 580 260 L 610 280 Z" fill="#0a2828" />
-            <rect x="575" y="680" width="35" height="120" fill="#000" />
-            
-            {/* Right haunted house */}
-            <path d="M 1050 800 L 1050 380 L 1100 340 L 1150 380 L 1150 800 Z" fill="#0d3030" />
-            <rect x="1070" y="480" width="28" height="40" fill="#ff6600" opacity="0.8" />
-            <rect x="1110" y="480" width="28" height="40" fill="#ff6600" opacity="0.8" />
-            <rect x="1070" y="580" width="28" height="40" fill="#ff6600" opacity="0.6" />
-            <rect x="1110" y="580" width="28" height="40" fill="#ff6600" opacity="0.6" />
-            <path d="M 1075 365 L 1100 345 L 1125 365 Z" fill="#0a2525" />
-            <rect x="1090" y="680" width="30" height="120" fill="#000" />
-            
-            {/* Dead trees */}
-            <path d="M 250 800 L 250 500 L 240 500 L 260 470 L 240 470 L 260 450 L 280 470 L 260 470 L 280 500 L 270 500 L 270 800 Z" fill="#0a1a1a" />
-            <path d="M 900 800 L 900 520 L 890 520 L 910 490 L 890 490 L 910 470 L 930 490 L 910 490 L 930 520 L 920 520 L 920 800 Z" fill="#0a1a1a" />
-            <path d="M 350 800 L 350 600 L 370 600 L 370 800 Z" fill="#0a1515" />
-            <path d="M 800 800 L 800 620 L 820 620 L 820 800 Z" fill="#0a1515" />
-          </svg>
-        </div>
+        <img 
+          src="/attached_assets/image_1761924028059.png" 
+          alt="" 
+          className="w-full h-full object-cover opacity-50"
+          style={{ objectPosition: 'center' }}
+        />
         
         {/* Floating Ghosts - More visible */}
         <div className="absolute top-40 left-20 animate-float opacity-35">
