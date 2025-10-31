@@ -5501,11 +5501,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         marketAddress: KAMINO_MARKET_ADDRESS,
         reserves,
         capabilities: {
-          canDeposit: true,
-          canWithdraw: true,
-          canViewPositions: true,
-          comingSoon: false,
-          reason: 'Kamino SDK integration active',
+          canDeposit: false,
+          canWithdraw: false,
+          canViewPositions: false,
+          comingSoon: true,
+          reason: 'Kamino SDK has web3.js compatibility issues - awaiting SDK update from Kamino Finance team',
+          technicalDetails: 'Both @kamino-finance/klend-sdk and @kamino-finance/kliquidity-sdk throw "rpc.getAccountInfo(...).send is not a function" error due to incompatible @solana/accounts dependency',
         },
       });
       
