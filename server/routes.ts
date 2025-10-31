@@ -5533,83 +5533,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Kamino Lend - Build deposit transaction
+  // Kamino Lend - Build deposit transaction (Manual implementation - SDK has compatibility issues)
   app.post("/api/kamino-lend/build-deposit", async (req, res) => {
     try {
       const { walletAddress, asset, amount } = req.body;
       
-      console.log(`🏦 Kamino CASH deposit request`);
-      console.log(`   Asset (CASH): ${asset}`);
+      console.log(`🏦 Kamino kVault CASH deposit request`);
+      console.log(`   Asset: ${asset}`);
       console.log(`   Amount (lamports): ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
-      console.log(`   Market: ${KAMINO_MARKET_ADDRESS}`);
-      console.log(`   Program: ${KAMINO_PROGRAM_ID}`);
+      console.log(`   Vault: ${KVAULT_CASH_ADDRESS}`);
+      console.log(`   Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
       const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcEndpoint, 'confirmed');
+      const connection = new Connection(rpcEndpoint);
       
-      // 1. Load Kamino market
-      const marketPubkey = new PublicKey(KAMINO_MARKET_ADDRESS);
-      console.log(`📊 Loading Kamino market: ${KAMINO_MARKET_ADDRESS}`);
-      const kaminoMarket = await KaminoMarket.load(
-        connection,
-        marketPubkey
-      );
-      
-      // 2. Load reserves to get updated market data
-      console.log(`📊 Loading market reserves...`);
-      await kaminoMarket.loadReserves();
-      
-      // 3. Convert lamports to base amount (CASH has 6 decimals)
-      const amountInLamports = new BN(amount);
-      const amountBase = amountInLamports.toNumber() / 1_000_000; // Convert to CASH (6 decimals)
-      console.log(`💰 Amount: ${amountBase} CASH (${amount} lamports)`);
-      
-      // 4. Build deposit transaction using SDK
+      // Build manual deposit transaction for Kamino kVault CASH
       const userPubkey = new PublicKey(walletAddress);
-      console.log(`🔨 Building deposit transaction for ${amountBase} CASH...`);
+      const vaultPubkey = new PublicKey(KVAULT_CASH_ADDRESS);
+      const cashMint = new PublicKey('CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH');
+      const programId = new PublicKey(KAMINO_KVAULT_PROGRAM_ID);
       
-      const kaminoAction = await KaminoAction.buildDepositTxns(
-        kaminoMarket,
-        amountBase,
-        'CASH',
+      // Get associated token accounts
+      const userCashAta = await getAssociatedTokenAddress(
+        cashMint,
         userPubkey,
-        new VanillaObligation(KAMINO_PROGRAM_ID)
+        false,
+        TOKEN_2022_PROGRAM_ID
       );
       
-      // 5. Serialize transactions for frontend
-      const transactions: string[] = [];
+      const vaultCashAta = await getAssociatedTokenAddress(
+        cashMint,
+        vaultPubkey,
+        true,
+        TOKEN_2022_PROGRAM_ID
+      );
       
-      // Add setup transactions
-      if (kaminoAction.setupIxs && kaminoAction.setupIxs.length > 0) {
-        for (const ixGroup of kaminoAction.setupIxs) {
-          const tx = new Transaction();
-          for (const ix of ixGroup) {
-            tx.add(ix);
-          }
-          const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
-          transactions.push(serialized);
-        }
+      // Get user's vault share token account (kV-CASH)
+      const vaultShareMint = vaultPubkey; // In kVaults, the vault itself is the share mint
+      const userShareAta = await getAssociatedTokenAddress(
+        vaultShareMint,
+        userPubkey,
+        false,
+        TOKEN_PROGRAM_ID
+      );
+      
+      console.log(`📍 User CASH ATA: ${userCashAta.toBase58()}`);
+      console.log(`📍 Vault CASH ATA: ${vaultCashAta.toBase58()}`);
+      console.log(`📍 User Share ATA: ${userShareAta.toBase58()}`);
+      
+      const tx = new Transaction();
+      
+      // Check if user share ATA exists, create if needed
+      const shareAtaInfo = await connection.getAccountInfo(userShareAta);
+      if (!shareAtaInfo) {
+        console.log(`🔧 Creating user share token account...`);
+        tx.add(
+          createAssociatedTokenAccountInstruction(
+            userPubkey,
+            userShareAta,
+            userPubkey,
+            vaultShareMint,
+            TOKEN_PROGRAM_ID
+          )
+        );
       }
       
-      // Add main lending transaction
-      if (kaminoAction.lendingIxs && kaminoAction.lendingIxs.length > 0) {
-        const mainTx = new Transaction();
-        for (const ix of kaminoAction.lendingIxs) {
-          mainTx.add(ix);
-        }
-        const serialized = mainTx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
-        transactions.push(serialized);
-      }
+      // Build deposit instruction manually
+      // Format: [discriminator (8 bytes), amount (u64)]
+      const depositDiscriminator = Buffer.from([242, 35, 198, 137, 82, 225, 242, 182]); // deposit instruction
+      const amountBuffer = Buffer.alloc(8);
+      amountBuffer.writeBigUInt64LE(BigInt(amount));
+      const instructionData = Buffer.concat([depositDiscriminator, amountBuffer]);
       
-      console.log(`✅ Built ${transactions.length} Kamino deposit transactions`);
-      console.log(`📍 Using Kamino program: ${KAMINO_PROGRAM_ID}`);
+      // Build deposit instruction
+      const depositIx = new TransactionInstruction({
+        programId,
+        keys: [
+          { pubkey: userPubkey, isSigner: true, isWritable: true },
+          { pubkey: userCashAta, isSigner: false, isWritable: true },
+          { pubkey: userShareAta, isSigner: false, isWritable: true },
+          { pubkey: vaultPubkey, isSigner: false, isWritable: true },
+          { pubkey: vaultCashAta, isSigner: false, isWritable: true },
+          { pubkey: cashMint, isSigner: false, isWritable: false },
+          { pubkey: vaultShareMint, isSigner: false, isWritable: true },
+          { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
+          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        ],
+        data: instructionData,
+      });
+      
+      tx.add(depositIx);
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = userPubkey;
+      
+      const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
+      
+      console.log(`✅ Built Kamino kVault CASH deposit transaction`);
+      console.log(`📍 Using kVault program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
       res.json({
         success: true,
-        transaction: transactions[0], // Return first transaction (frontend expects single tx)
-        transactions, // Also include all transactions
-        message: `Deposit ${amountBase} CASH to Kamino`,
+        transaction: serialized,
+        message: `Deposit ${amount / 1_000_000} CASH to Kamino kVault`,
       });
       
     } catch (error: any) {
