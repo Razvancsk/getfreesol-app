@@ -46,6 +46,7 @@ import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 import pumpkinImage from '@assets/image_1761923461687.png';
+import halloweenBg from '@assets/image_1761924392146.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2482,7 +2483,7 @@ export default function SolRefund() {
       {/* Halloween Background */}
       <div className="fixed inset-0 pointer-events-none">
         <img 
-          src="/attached_assets/image_1761924392146.png" 
+          src={halloweenBg} 
           alt="" 
           className="w-full h-full object-cover opacity-60"
           style={{ objectPosition: 'center' }}
