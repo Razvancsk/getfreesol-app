@@ -1,15 +1,19 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { Kamino } from '@kamino-finance/kliquidity-sdk';
 import Decimal from 'decimal.js';
+import { applyKaminoRpcShim } from './kaminoRpcShim';
 
 const RPC_URL = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
 const KVAULT_CASH_ADDRESS = 'KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd';
 
 async function testKaminoKliquidity() {
-  console.log('🧪 Testing Kamino kLiquidity SDK...');
+  console.log('🧪 Testing Kamino kLiquidity SDK with RPC shim...');
   
   try {
-    const connection = new Connection(RPC_URL);
+    let connection = new Connection(RPC_URL);
+    connection = applyKaminoRpcShim(connection);
+    console.log('✅ Applied Kamino RPC compatibility shim');
+    
     const kamino = new Kamino('mainnet-beta', connection);
     
     console.log('✅ Created Kamino instance');
