@@ -93,9 +93,8 @@ export default function SolRefund() {
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
-  // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
-  const PROMO_END_TIME = new Date('2025-11-01T00:00:00Z').getTime();
-  const isPromoActive = Date.now() < PROMO_END_TIME;
+  // Free claim promotion - Set to false to restore 15% fees
+  const isPromoActive = true;
   const donationPercentage = isPromoActive ? 0 : 15; // 0% during promo, 15% after
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);

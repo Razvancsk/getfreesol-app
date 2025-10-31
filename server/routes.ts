@@ -878,9 +878,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
-      const PROMO_END_TIME = new Date('2025-11-01T00:00:00Z').getTime();
-      const isPromoActive = Date.now() < PROMO_END_TIME;
+      // Free claim promotion - Set to false to restore 15% fees
+      const isPromoActive = true;
       
       // Calculate fees in lamports - 0% during promo, 15% after
       const PLATFORM_FEE_PERCENTAGE = isPromoActive ? 0 : 15;
@@ -2041,9 +2040,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Failed to estimate transaction fee, using default:', error);
       }
 
-      // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
-      const PROMO_END_TIME_BURN = new Date('2025-11-01T00:00:00Z').getTime();
-      const isPromoActiveBurn = Date.now() < PROMO_END_TIME_BURN;
+      // Free claim promotion - Set to false to restore 15% fees
+      const isPromoActiveBurn = true;
       
       // Calculate fees in lamports with proper capping (0% during promo, 15% after)
       const donationFactor = isPromoActiveBurn ? 0 : 0.15;
@@ -3095,9 +3093,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = ownerPublicKey;
       
-      // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
-      const PROMO_END_TIME_NFT = new Date('2025-11-01T00:00:00Z').getTime();
-      const isPromoActiveNFT = Date.now() < PROMO_END_TIME_NFT;
+      // Free claim promotion - Set to false to restore 15% fees
+      const isPromoActiveNFT = true;
       
       // Calculate platform fee (0% during promo, 15% after)
       // Standard NFTs estimate 0.002 SOL per NFT (others provide no recovery yet)
@@ -3492,9 +3489,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchAssets = batchChunks[batchIndex];
         console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchAssets.length} Core NFTs...`);
 
-        // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
-        const PROMO_END_TIME_CORE = new Date('2025-11-01T00:00:00Z').getTime();
-        const isPromoActiveCore = Date.now() < PROMO_END_TIME_CORE;
+        // Free claim promotion - Set to false to restore 15% fees
+        const isPromoActiveCore = true;
         
         // Calculate batch-specific fees (0% during promo, 15% after)
         const batchExpectedRentLamports = batchAssets.reduce((sum, asset) => sum + Math.floor(asset.expectedRent * 1e9), 0);
@@ -3763,9 +3759,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchNfts = batchChunks[batchIndex];
         console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchNfts.length} Programmable NFTs...`);
 
-        // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
-        const PROMO_END_TIME_PNFT = new Date('2025-11-01T00:00:00Z').getTime();
-        const isPromoActivePNFT = Date.now() < PROMO_END_TIME_PNFT;
+        // Free claim promotion - Set to false to restore 15% fees
+        const isPromoActivePNFT = true;
         
         // Calculate batch-specific fees (0% during promo, 15% after)
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
@@ -4098,9 +4093,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchNfts = batchChunks[batchIndex];
         console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchNfts.length} Traditional NFTs...`);
 
-        // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
-        const PROMO_END_TIME_TNFT = new Date('2025-11-01T00:00:00Z').getTime();
-        const isPromoActiveTNFT = Date.now() < PROMO_END_TIME_TNFT;
+        // Free claim promotion - Set to false to restore 15% fees
+        const isPromoActiveTNFT = true;
         
         // Calculate batch-specific fees (0% during promo, 15% after)
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
