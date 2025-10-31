@@ -4,20 +4,7 @@
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
 ## Recent Updates (October 2025)
-- **Kamino Finance kVault CASH Integration** (October 2025): Complete lending integration with deposit/withdraw functionality
-  - **Backend Endpoints**: 
-    - `/api/kamino-lend/markets` returns kVault CASH pool with 12.14% APY and $96.03M TVL
-    - `/api/kamino-lend/build-deposit` builds deposit transactions using Kamino SDK
-    - `/api/kamino-lend/build-withdraw` builds withdraw transactions using Kamino SDK
-    - `/api/kamino-lend/user-positions/:walletAddress` fetches user's Kamino deposits
-  - **Vault Details**: kVault CASH (kV-CASH) at address `KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd`
-  - **Program ID**: kVault Program `44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd`
-  - **CASH Mint**: `CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH`
-  - **SDK Integration**: Uses `@kamino-finance/klend-sdk` for transaction building with `KaminoMarket.load()` and `KaminoAction.buildDepositTxns()/buildWithdrawTxns()`
-  - **UI Integration**: Unified lending interface displays both Jupiter Lend pools and Kamino kVault CASH pool side-by-side
-  - **Platform Badges**: Clear visual distinction between Jupiter (purple) and Kamino (orange) pools
-  - **Full Functionality**: Users can deposit CASH to earn 12.14% APY and withdraw anytime
-  - **Capability Flags**: Machine-readable flags (`canDeposit: true`, `canWithdraw: true`, `comingSoon: false`) signal feature availability
+- **Kamino Finance Integration Removed** (October 31, 2025): Removed CASH and all Kamino lending functionality due to persistent SDK compatibility issues. Both `@kamino-finance/klend-sdk` and `@kamino-finance/kliquidity-sdk` have unresolved web3.js dependency errors that prevent transaction building. Unlike Jupiter, Kamino does not provide a REST API for transaction construction. Application now features Jupiter Lend exclusively for earning yield.
 - **Jupiter Lend Earn Integration** (October 2025): Complete lending feature powered by Jupiter Lend API
   - **Backend API Endpoints**: `/api/jupiter-lend/earn-pools` fetches all available earn tokens with APY rates, `/api/jupiter-lend/user-positions/:walletAddress` retrieves user's lending positions, `/api/jupiter-lend/build-deposit` and `/api/jupiter-lend/build-withdraw` build deposit/withdraw transactions
   - **Earn Pools Display**: Shows all available Jupiter Lend earn tokens (USDC, SOL, USDT, EURC, USDG, USDS) with current APY rates

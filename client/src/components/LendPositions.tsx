@@ -17,46 +17,26 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Query for Jupiter Lend earn pools
-  const { data: jupiterLendData, isLoading: loadingJupiter } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
+  const { data: jupiterLendData, isLoading: loadingMarket } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
     queryKey: ['/api/jupiter-lend/earn-pools'],
     retry: false,
   });
-  
-  // Query for Kamino Lend markets
-  const { data: kaminoLendData, isLoading: loadingKamino } = useQuery<{ 
-    success: boolean; 
-    programId: string; 
-    marketAddress: string;
-    reserves: any[]; 
-    capabilities?: { 
-      canDeposit: boolean; 
-      canWithdraw: boolean; 
-      comingSoon: boolean;
-      reason: string;
-    };
-  }>({
-    queryKey: ['/api/kamino-lend/markets'],
-    retry: false,
-  });
-  
-  const loadingMarket = loadingJupiter || loadingKamino;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Invalidate both Jupiter and Kamino data
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/earn-pools'] }),
       queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey?.toBase58()] }),
-      queryClient.invalidateQueries({ queryKey: ['/api/kamino-lend/markets'] }),
     ]);
     setIsRefreshing(false);
   };
   
-  // Combine Jupiter and Kamino reserves
-  const allReserves = [
-    ...(jupiterLendData?.reserves || []).map((r: any) => ({ ...r, platform: 'Jupiter', capabilities: { canDeposit: true, canWithdraw: true, comingSoon: false } })),
-    ...(kaminoLendData?.reserves || []).map((r: any) => ({ ...r, platform: 'Kamino', capabilities: kaminoLendData?.capabilities })),
-  ];
+  // Use only Jupiter reserves
+  const allReserves = (jupiterLendData?.reserves || []).map((r: any) => ({ 
+    ...r, 
+    platform: 'Jupiter', 
+    capabilities: { canDeposit: true, canWithdraw: true, comingSoon: false } 
+  }));
 
   const formatTVL = (value: number, symbol: string) => {
     if (value >= 1_000_000) {
