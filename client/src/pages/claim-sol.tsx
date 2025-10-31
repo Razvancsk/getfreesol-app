@@ -2487,7 +2487,7 @@ export default function SolRefund() {
           src={halloweenBg} 
           alt="" 
           className="w-full h-full object-cover opacity-60"
-          style={{ objectPosition: 'center' }}
+          style={{ objectPosition: '50% 20%' }}
         />
         
         {/* Floating Ghosts - More visible */}
