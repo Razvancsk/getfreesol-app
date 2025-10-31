@@ -9,6 +9,7 @@ import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstructi
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
+import { KaminoMarket, KaminoAction, VanillaObligation, PROGRAM_ID as KAMINO_PROGRAM_ID } from "@kamino-finance/klend-sdk";
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
@@ -5463,11 +5464,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         marketAddress: KAMINO_MARKET_ADDRESS,
         reserves,
         capabilities: {
-          canDeposit: false,
-          canWithdraw: false,
-          canViewPositions: false,
-          comingSoon: true,
-          reason: 'SDK dependency conflicts - transaction building API pending',
+          canDeposit: true,
+          canWithdraw: true,
+          canViewPositions: true,
+          comingSoon: false,
+          reason: 'Kamino SDK integration active',
         },
       });
       
@@ -5498,33 +5499,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Kamino Lend - Build deposit transaction (stub for now)
+  // Kamino Lend - Build deposit transaction
   app.post("/api/kamino-lend/build-deposit", async (req, res) => {
     try {
       const { walletAddress, mint, amount } = req.body;
       
-      console.log(`🏦 Kamino deposit request: ${amount} of ${mint} from ${walletAddress}`);
+      console.log(`🏦 Kamino deposit request: ${amount} CASH from ${walletAddress}`);
       console.log(`📍 Target vault: ${KVAULT_CASH_ADDRESS}`);
       console.log(`📍 Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
-      // TODO: Implement deposit transaction building
-      // Required interactions:
-      // 1. Program ID: 44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd (kVault Program)
-      // 2. Vault Account: KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd (kV-CASH vault)
-      // 3. Token Mint: CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT (CASH)
-      // 
-      // SDK method: KaminoAction.buildDepositTxns()
-      // Alternative: Manual instruction building using kVault Program IDL
+      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcEndpoint);
       
-      res.status(501).json({ 
-        error: "Kamino deposit transactions not yet implemented",
-        message: "SDK integration pending - deposit functionality coming soon",
-        details: "Waiting for @kamino-finance/klend-sdk dependency resolution",
-        vaultInfo: {
-          vaultAddress: KVAULT_CASH_ADDRESS,
-          programId: KAMINO_KVAULT_PROGRAM_ID,
-          tokenMint: CASH_MINT,
-        }
+      // Load Kamino market
+      const marketPubkey = new PublicKey(KAMINO_MARKET_ADDRESS);
+      const kaminoMarket = await KaminoMarket.load(
+        connection,
+        marketPubkey,
+        KAMINO_PROGRAM_ID
+      );
+      
+      if (!kaminoMarket) {
+        throw new Error('Failed to load Kamino market');
+      }
+      
+      // Build deposit transaction
+      const depositAmount = new BN(amount);
+      const userPubkey = new PublicKey(walletAddress);
+      
+      const kaminoAction = await KaminoAction.buildDepositTxns(
+        kaminoMarket,
+        depositAmount.toString(),
+        'CASH',
+        userPubkey,
+        new VanillaObligation(KAMINO_PROGRAM_ID)
+      );
+      
+      // Serialize transactions
+      const serializedTransactions = await Promise.all(
+        kaminoAction.setupIxs.map(async (ixGroup: any) => {
+          const tx = new Transaction();
+          ixGroup.forEach((ix: any) => tx.add(ix));
+          return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
+        })
+      );
+      
+      // Add main lend transaction
+      if (kaminoAction.lendingIxs.length > 0) {
+        const mainTx = new Transaction();
+        kaminoAction.lendingIxs.forEach((ix: any) => mainTx.add(ix));
+        serializedTransactions.push(
+          mainTx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64')
+        );
+      }
+      
+      console.log(`✅ Built ${serializedTransactions.length} Kamino deposit transactions`);
+      
+      res.json({
+        success: true,
+        transactions: serializedTransactions,
+        message: `Deposit ${amount} CASH to Kamino kVault`,
       });
       
     } catch (error: any) {
@@ -5533,33 +5567,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Kamino Lend - Build withdraw transaction (stub for now)
+  // Kamino Lend - Build withdraw transaction
   app.post("/api/kamino-lend/build-withdraw", async (req, res) => {
     try {
       const { walletAddress, mint, amount } = req.body;
       
-      console.log(`🏦 Kamino withdraw request: ${amount} of ${mint} to ${walletAddress}`);
+      console.log(`🏦 Kamino withdraw request: ${amount} CASH to ${walletAddress}`);
       console.log(`📍 Target vault: ${KVAULT_CASH_ADDRESS}`);
       console.log(`📍 Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
-      // TODO: Implement withdraw transaction building
-      // Required interactions:
-      // 1. Program ID: 44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd (kVault Program)
-      // 2. Vault Account: KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd (kV-CASH vault)
-      // 3. Token Mint: CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT (CASH)
-      //
-      // SDK method: KaminoAction.buildWithdrawTxns()
-      // Alternative: Manual instruction building using kVault Program IDL
+      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcEndpoint);
       
-      res.status(501).json({ 
-        error: "Kamino withdraw transactions not yet implemented",
-        message: "SDK integration pending - withdraw functionality coming soon",
-        details: "Waiting for @kamino-finance/klend-sdk dependency resolution",
-        vaultInfo: {
-          vaultAddress: KVAULT_CASH_ADDRESS,
-          programId: KAMINO_KVAULT_PROGRAM_ID,
-          tokenMint: CASH_MINT,
-        }
+      // Load Kamino market
+      const marketPubkey = new PublicKey(KAMINO_MARKET_ADDRESS);
+      const kaminoMarket = await KaminoMarket.load(
+        connection,
+        marketPubkey,
+        KAMINO_PROGRAM_ID
+      );
+      
+      if (!kaminoMarket) {
+        throw new Error('Failed to load Kamino market');
+      }
+      
+      // Build withdraw transaction
+      const withdrawAmount = new BN(amount);
+      const userPubkey = new PublicKey(walletAddress);
+      
+      const kaminoAction = await KaminoAction.buildWithdrawTxns(
+        kaminoMarket,
+        withdrawAmount.toString(),
+        'CASH',
+        userPubkey,
+        new VanillaObligation(KAMINO_PROGRAM_ID)
+      );
+      
+      // Serialize transactions
+      const serializedTransactions = await Promise.all(
+        kaminoAction.setupIxs.map(async (ixGroup: any) => {
+          const tx = new Transaction();
+          ixGroup.forEach((ix: any) => tx.add(ix));
+          return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
+        })
+      );
+      
+      // Add main lend transaction
+      if (kaminoAction.lendingIxs.length > 0) {
+        const mainTx = new Transaction();
+        kaminoAction.lendingIxs.forEach((ix: any) => mainTx.add(ix));
+        serializedTransactions.push(
+          mainTx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64')
+        );
+      }
+      
+      console.log(`✅ Built ${serializedTransactions.length} Kamino withdraw transactions`);
+      
+      res.json({
+        success: true,
+        transactions: serializedTransactions,
+        message: `Withdraw ${amount} CASH from Kamino kVault`,
       });
       
     } catch (error: any) {
