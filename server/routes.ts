@@ -5435,11 +5435,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`🏦 Fetching Kamino kVault CASH Earn pool...`);
       
+      // Fetch CASH token metadata from Jupiter Token List
+      let cashLogoUrl = 'https://coin-images.coingecko.com/coins/images/28088/large/global.png';
+      try {
+        const tokenListResponse = await fetch('https://tokens.jup.ag/tokens?tags=verified');
+        const tokenList = await tokenListResponse.json();
+        const cashToken = tokenList.find((t: any) => t.address === CASH_MINT);
+        if (cashToken?.logoURI) {
+          cashLogoUrl = cashToken.logoURI;
+        }
+      } catch (error) {
+        console.log('Failed to fetch CASH logo from Jupiter, using fallback');
+      }
+      
       // kVault CASH Earn pool data from Kamino Finance
       const reserves = [
         {
           mint: CASH_MINT,
-          symbol: 'kV-CASH',
+          symbol: 'CASH', // Show underlying token symbol, not vault symbol
           decimals: 6,
           depositAPY: 12.14,
           tvl: '96030000', // $96.03M TVL in token units (96.03M tokens with 6 decimals)
@@ -5449,7 +5462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platform: 'Kamino',
           status: 'Balanced',
           vaultAddress: KVAULT_CASH_ADDRESS,
-          logoUrl: 'https://coin-images.coingecko.com/coins/images/28088/large/global.png',
+          logoUrl: cashLogoUrl,
           price: '1.00', // CASH is approximately $1 USD
         },
       ];
