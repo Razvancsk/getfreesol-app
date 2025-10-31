@@ -2478,40 +2478,45 @@ export default function SolRefund() {
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #0a1a1a 0%, #000f0f 50%, #000000 100%)' }}>
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #0a1a1a 0%, #0d2020 50%, #000000 100%)' }}>
       {/* Halloween Background Elements */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Haunted House Silhouettes - More visible */}
-        <div className="absolute bottom-0 left-0 right-0 opacity-70">
-          <svg viewBox="0 0 1200 400" className="w-full h-auto" style={{ filter: 'drop-shadow(0 0 20px rgba(0, 100, 100, 0.3))' }}>
-            {/* Left haunted house */}
-            <path d="M 50 350 L 50 200 L 100 150 L 150 200 L 150 350 Z" fill="#0d2d2d" />
-            <rect x="70" y="250" width="20" height="30" fill="#ff6600" opacity="0.8" />
-            <rect x="110" y="250" width="20" height="30" fill="#ff6600" opacity="0.8" />
-            <path d="M 80 180 L 100 165 L 120 180 Z" fill="#0a2020" />
-            <rect x="85" y="290" width="30" height="60" fill="#000" />
+        {/* Haunted House Silhouettes - Full background coverage */}
+        <div className="absolute inset-0 opacity-60">
+          <svg viewBox="0 0 1200 800" className="w-full h-full" preserveAspectRatio="xMidYMax slice">
+            {/* Left haunted house - tall and prominent */}
+            <path d="M 50 800 L 50 400 L 100 350 L 150 400 L 150 800 Z" fill="#0d3030" />
+            <rect x="70" y="500" width="20" height="35" fill="#ff6600" opacity="0.9" />
+            <rect x="110" y="500" width="20" height="35" fill="#ff6600" opacity="0.9" />
+            <rect x="70" y="600" width="20" height="35" fill="#ff6600" opacity="0.7" />
+            <rect x="110" y="600" width="20" height="35" fill="#ff6600" opacity="0.7" />
+            <path d="M 80 380 L 100 360 L 120 380 Z" fill="#0a2525" />
+            <rect x="85" y="700" width="30" height="100" fill="#000" />
             
-            {/* Middle haunted house - largest and most prominent */}
-            <path d="M 400 350 L 400 150 L 480 100 L 560 150 L 560 350 Z" fill="#0d3333" />
-            <rect x="430" y="200" width="30" height="40" fill="#ff6600" opacity="0.7" />
-            <rect x="500" y="200" width="30" height="40" fill="#ff6600" opacity="0.7" />
-            <rect x="430" y="270" width="30" height="40" fill="#ff6600" opacity="0.5" />
-            <path d="M 450 130 L 480 110 L 510 130 Z" fill="#0a2525" />
-            <rect x="465" y="280" width="30" height="70" fill="#000" />
-            <path d="M 470 150 L 480 140 L 490 150 Z" fill="#000" opacity="0.5" />
+            {/* Middle haunted house - largest */}
+            <path d="M 500 800 L 500 300 L 580 250 L 660 300 L 660 800 Z" fill="#0d3535" />
+            <rect x="530" y="400" width="35" height="45" fill="#ff6600" opacity="0.9" />
+            <rect x="595" y="400" width="35" height="45" fill="#ff6600" opacity="0.9" />
+            <rect x="530" y="500" width="35" height="45" fill="#ff6600" opacity="0.7" />
+            <rect x="595" y="500" width="35" height="45" fill="#ff6600" opacity="0.7" />
+            <rect x="530" y="600" width="35" height="45" fill="#ff6600" opacity="0.5" />
+            <path d="M 550 280 L 580 260 L 610 280 Z" fill="#0a2828" />
+            <rect x="575" y="680" width="35" height="120" fill="#000" />
             
             {/* Right haunted house */}
-            <path d="M 950 350 L 950 180 L 1000 140 L 1050 180 L 1050 350 Z" fill="#0d2d2d" />
-            <rect x="970" y="230" width="25" height="35" fill="#ff6600" opacity="0.6" />
-            <rect x="1005" y="230" width="25" height="35" fill="#ff6600" opacity="0.6" />
-            <path d="M 975 165 L 1000 145 L 1025 165 Z" fill="#0a2020" />
-            <rect x="985" y="270" width="30" height="80" fill="#000" />
+            <path d="M 1050 800 L 1050 380 L 1100 340 L 1150 380 L 1150 800 Z" fill="#0d3030" />
+            <rect x="1070" y="480" width="28" height="40" fill="#ff6600" opacity="0.8" />
+            <rect x="1110" y="480" width="28" height="40" fill="#ff6600" opacity="0.8" />
+            <rect x="1070" y="580" width="28" height="40" fill="#ff6600" opacity="0.6" />
+            <rect x="1110" y="580" width="28" height="40" fill="#ff6600" opacity="0.6" />
+            <path d="M 1075 365 L 1100 345 L 1125 365 Z" fill="#0a2525" />
+            <rect x="1090" y="680" width="30" height="120" fill="#000" />
             
-            {/* Additional spooky details */}
-            <path d="M 250 350 L 250 250 L 240 250 L 260 220 L 240 220 L 260 200 L 280 220 L 260 220 L 280 250 L 270 250 L 270 350 Z" fill="#0a1a1a" />
-            <path d="M 800 350 L 800 270 L 790 270 L 810 240 L 790 240 L 810 220 L 830 240 L 810 240 L 830 270 L 820 270 L 820 350 Z" fill="#0a1a1a" />
-            <path d="M 700 350 L 700 300 L 720 300 L 720 350 Z" fill="#0a1515" />
-            <path d="M 300 350 L 300 320 L 320 320 L 320 350 Z" fill="#0a1515" />
+            {/* Dead trees */}
+            <path d="M 250 800 L 250 500 L 240 500 L 260 470 L 240 470 L 260 450 L 280 470 L 260 470 L 280 500 L 270 500 L 270 800 Z" fill="#0a1a1a" />
+            <path d="M 900 800 L 900 520 L 890 520 L 910 490 L 890 490 L 910 470 L 930 490 L 910 490 L 930 520 L 920 520 L 920 800 Z" fill="#0a1a1a" />
+            <path d="M 350 800 L 350 600 L 370 600 L 370 800 Z" fill="#0a1515" />
+            <path d="M 800 800 L 800 620 L 820 620 L 820 800 Z" fill="#0a1515" />
           </svg>
         </div>
         
