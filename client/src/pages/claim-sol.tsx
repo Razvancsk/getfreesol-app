@@ -2861,13 +2861,13 @@ export default function SolRefund() {
                   {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                    <div className="text-center p-4 backdrop-blur-sm border border-orange-900/40 rounded-xl" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
                       <div className="text-2xl font-bold text-white">{scanResult.emptyAccounts}</div>
-                      <div className="text-xs text-purple-200">Empty Accounts</div>
+                      <div className="text-xs text-gray-300">Empty Accounts</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                    <div className="text-center p-4 backdrop-blur-sm border border-orange-900/40 rounded-xl" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
                       <div className="text-2xl font-bold text-white">{(refundCalc.total * 0.85).toFixed(6)}</div>
-                      <div className="text-xs text-purple-200">Total Net</div>
+                      <div className="text-xs text-gray-300">Total Net</div>
                     </div>
                   </div>
 
