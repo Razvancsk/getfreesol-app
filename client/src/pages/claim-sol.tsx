@@ -2478,55 +2478,68 @@ export default function SolRefund() {
 
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #0a1a1a 0%, #000f0f 50%, #000000 100%)' }}>
       {/* Halloween Background Elements */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Haunted House Silhouettes */}
-        <div className="absolute bottom-0 left-0 right-0 opacity-30">
-          <svg viewBox="0 0 1200 400" className="w-full h-auto">
+        {/* Haunted House Silhouettes - More visible */}
+        <div className="absolute bottom-0 left-0 right-0 opacity-70">
+          <svg viewBox="0 0 1200 400" className="w-full h-auto" style={{ filter: 'drop-shadow(0 0 20px rgba(0, 100, 100, 0.3))' }}>
             {/* Left haunted house */}
-            <path d="M 50 350 L 50 200 L 100 150 L 150 200 L 150 350 Z" fill="#1a1a1a" />
-            <rect x="70" y="250" width="20" height="30" fill="#ff6600" opacity="0.6" />
-            <rect x="110" y="250" width="20" height="30" fill="#ff6600" opacity="0.6" />
-            <path d="M 80 180 L 100 165 L 120 180 Z" fill="#1a1a1a" />
+            <path d="M 50 350 L 50 200 L 100 150 L 150 200 L 150 350 Z" fill="#0d2d2d" />
+            <rect x="70" y="250" width="20" height="30" fill="#ff6600" opacity="0.8" />
+            <rect x="110" y="250" width="20" height="30" fill="#ff6600" opacity="0.8" />
+            <path d="M 80 180 L 100 165 L 120 180 Z" fill="#0a2020" />
+            <rect x="85" y="290" width="30" height="60" fill="#000" />
             
-            {/* Middle haunted house */}
-            <path d="M 400 350 L 400 150 L 480 100 L 560 150 L 560 350 Z" fill="#0d0d0d" />
-            <rect x="430" y="200" width="30" height="40" fill="#ff6600" opacity="0.5" />
-            <rect x="500" y="200" width="30" height="40" fill="#ff6600" opacity="0.5" />
-            <rect x="430" y="270" width="30" height="40" fill="#ff6600" opacity="0.3" />
-            <path d="M 450 130 L 480 110 L 510 130 Z" fill="#0d0d0d" />
+            {/* Middle haunted house - largest and most prominent */}
+            <path d="M 400 350 L 400 150 L 480 100 L 560 150 L 560 350 Z" fill="#0d3333" />
+            <rect x="430" y="200" width="30" height="40" fill="#ff6600" opacity="0.7" />
+            <rect x="500" y="200" width="30" height="40" fill="#ff6600" opacity="0.7" />
+            <rect x="430" y="270" width="30" height="40" fill="#ff6600" opacity="0.5" />
+            <path d="M 450 130 L 480 110 L 510 130 Z" fill="#0a2525" />
+            <rect x="465" y="280" width="30" height="70" fill="#000" />
+            <path d="M 470 150 L 480 140 L 490 150 Z" fill="#000" opacity="0.5" />
             
             {/* Right haunted house */}
-            <path d="M 950 350 L 950 180 L 1000 140 L 1050 180 L 1050 350 Z" fill="#1a1a1a" />
-            <rect x="970" y="230" width="25" height="35" fill="#ff6600" opacity="0.4" />
-            <rect x="1005" y="230" width="25" height="35" fill="#ff6600" opacity="0.4" />
-            <path d="M 975 165 L 1000 145 L 1025 165 Z" fill="#1a1a1a" />
+            <path d="M 950 350 L 950 180 L 1000 140 L 1050 180 L 1050 350 Z" fill="#0d2d2d" />
+            <rect x="970" y="230" width="25" height="35" fill="#ff6600" opacity="0.6" />
+            <rect x="1005" y="230" width="25" height="35" fill="#ff6600" opacity="0.6" />
+            <path d="M 975 165 L 1000 145 L 1025 165 Z" fill="#0a2020" />
+            <rect x="985" y="270" width="30" height="80" fill="#000" />
             
-            {/* Trees */}
-            <path d="M 250 350 L 250 250 L 240 250 L 260 220 L 240 220 L 260 200 L 280 220 L 260 220 L 280 250 L 270 250 L 270 350 Z" fill="#0a0a0a" />
-            <path d="M 800 350 L 800 270 L 790 270 L 810 240 L 790 240 L 810 220 L 830 240 L 810 240 L 830 270 L 820 270 L 820 350 Z" fill="#0a0a0a" />
+            {/* Additional spooky details */}
+            <path d="M 250 350 L 250 250 L 240 250 L 260 220 L 240 220 L 260 200 L 280 220 L 260 220 L 280 250 L 270 250 L 270 350 Z" fill="#0a1a1a" />
+            <path d="M 800 350 L 800 270 L 790 270 L 810 240 L 790 240 L 810 220 L 830 240 L 810 240 L 830 270 L 820 270 L 820 350 Z" fill="#0a1a1a" />
+            <path d="M 700 350 L 700 300 L 720 300 L 720 350 Z" fill="#0a1515" />
+            <path d="M 300 350 L 300 320 L 320 320 L 320 350 Z" fill="#0a1515" />
           </svg>
         </div>
         
-        {/* Floating Ghosts */}
-        <div className="absolute top-40 left-20 animate-float opacity-20">
+        {/* Floating Ghosts - More visible */}
+        <div className="absolute top-40 left-20 animate-float opacity-35">
           <svg width="60" height="80" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#f0f0f0" />
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.6" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
         </div>
-        <div className="absolute top-60 right-32 animate-float-delayed opacity-20">
+        <div className="absolute top-60 right-32 animate-float-delayed opacity-30">
           <svg width="50" height="70" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#f0f0f0" />
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.5" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
         </div>
-        <div className="absolute top-32 right-64 animate-float opacity-15">
+        <div className="absolute top-32 right-64 animate-float opacity-25">
           <svg width="40" height="60" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#f0f0f0" />
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.4" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+        <div className="absolute top-20 left-1/2 animate-float-delayed opacity-20">
+          <svg width="55" height="75" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.4" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
