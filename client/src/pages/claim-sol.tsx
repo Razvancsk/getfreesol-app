@@ -2731,7 +2731,7 @@ export default function SolRefund() {
                       : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
                   }`}
                 >
-                  <Users className="h-4 w-4 mr-2 inline-block" />
+                  <Users className="h-4 w-4 mr-2 inline-block" style={{ color: '#ff6600' }} />
                   Referrals
                 </Button>
                 <Button
@@ -2743,21 +2743,24 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-mass-transfer"
                 >
-                  <ArrowLeftRight className="h-4 w-4 mr-2" />
+                  <ArrowLeftRight className="h-4 w-4 mr-2" style={{ color: '#ff6600' }} />
                   Transfer
                 </Button>
-                <Button
-                  onClick={() => setActiveTab('statistics')}
-                  className={`hidden md:inline-flex px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
-                    activeTab === 'statistics' 
-                      ? 'bg-black/60 text-white border-gray-600' 
-                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
-                  }`}
-                  data-testid="button-statistics"
-                >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Statistics
-                </Button>
+                {/* Statistics button - only visible to platform wallet */}
+                {isPlatformWallet && (
+                  <Button
+                    onClick={() => setActiveTab('statistics')}
+                    className={`hidden md:inline-flex px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
+                      activeTab === 'statistics' 
+                        ? 'bg-black/60 text-white border-gray-600' 
+                        : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
+                    }`}
+                    data-testid="button-statistics"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" style={{ color: '#ff6600' }} />
+                    Statistics
+                  </Button>
+                )}
                 <Button
                   onClick={() => setActiveTab('lend')}
                   className={`hidden px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
@@ -2769,21 +2772,6 @@ export default function SolRefund() {
                 >
                   🌱 Earn
                 </Button>
-                {/* Statistics button - only visible to platform wallet */}
-                {isPlatformWallet && (
-                  <Button
-                    onClick={() => setActiveTab('statistics')}
-                    className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'statistics' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                    data-testid="button-statistics"
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Statistics
-                  </Button>
-                )}
               </div>
             </div>
           )}
