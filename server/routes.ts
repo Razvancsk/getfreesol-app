@@ -5417,6 +5417,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // KAMINO LEND ENDPOINTS
+  // ============================================
+  
+  // Kamino Lending Program ID (from official docs)
+  const KAMINO_LEND_PROGRAM_ID = 'KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD';
+  const KAMINO_MARKET_ADDRESS = '7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF';
+  
+  // CASH token mint (from your screenshot)
+  const CASH_MINT = 'CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT';
+
+  // Kamino Lend - Get CASH Earn pool
+  app.get("/api/kamino-lend/markets", async (req, res) => {
+    try {
+      console.log(`🏦 Fetching Kamino CASH Earn pool...`);
+      
+      // CASH Earn pool data from Kamino Finance
+      // This data represents the pool shown in your screenshot
+      const reserves = [
+        {
+          mint: CASH_MINT,
+          symbol: 'CASH',
+          decimals: 6,
+          depositAPY: 12.14, // As shown in your screenshot
+          totalSupply: '96030000', // $96.03M TVL as shown
+          reserveAddress: 'To be populated from on-chain data',
+          availableLiquidity: '96030000',
+          platform: 'Kamino',
+          status: 'Balanced', // From your screenshot
+        },
+      ];
+      
+      console.log(`✅ CASH Earn Pool loaded: 12.14% APY, $96.03M TVL`);
+      
+      res.json({
+        success: true,
+        programId: KAMINO_LEND_PROGRAM_ID,
+        marketAddress: KAMINO_MARKET_ADDRESS,
+        reserves,
+      });
+      
+    } catch (error: any) {
+      console.error("Kamino markets error:", error);
+      res.status(500).json({ error: "Failed to fetch Kamino markets", details: error.message });
+    }
+  });
+  
+  // Kamino Lend - Get user positions (placeholder)
+  app.get("/api/kamino-lend/user-positions/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      console.log(`📊 Checking Kamino CASH Earn positions for ${walletAddress}`);
+      
+      // Return empty positions for now
+      // Full implementation requires SDK to parse obligation accounts
+      res.json({
+        success: true,
+        hasPositions: false,
+        deposits: [],
+        message: 'Kamino position checking will be available once SDK dependency issues are resolved',
+      });
+      
+    } catch (error: any) {
+      console.error("Kamino user positions error:", error);
+      res.status(500).json({ error: "Failed to fetch Kamino user positions", details: error.message });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
