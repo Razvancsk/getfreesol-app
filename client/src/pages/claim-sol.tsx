@@ -3096,7 +3096,7 @@ export default function SolRefund() {
 
           {/* Empty State Messages - Tokens */}
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length === 0 && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Token & NFT Scanner</h3>
                 <button 
@@ -3106,7 +3106,7 @@ export default function SolRefund() {
                     }
                   }}
                   disabled={scanTokensMutation.isPending || !publicKey}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-800/20 hover:bg-orange-700/30 border border-orange-500/30 hover:border-orange-400/50 backdrop-blur-sm rounded-lg text-gray-300 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
                   data-testid="button-refresh-tokens-empty"
                 >
                   Click to Refresh
@@ -3114,9 +3114,9 @@ export default function SolRefund() {
                 </button>
               </div>
               <div className="text-center space-y-4">
-                <Flame className="h-12 w-12 text-purple-400 mx-auto" />
+                <Flame className="h-12 w-12 text-orange-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
-                <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
+                <p className="text-gray-300">Scan your wallet to find tokens available for burning.</p>
               </div>
             </div>
           )}
@@ -3355,19 +3355,19 @@ export default function SolRefund() {
                 </div>
               ) : !scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
-                  <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                  <Image className="h-12 w-12 text-orange-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-white mb-2">No NFTs Found</h3>
-                  <p className="text-purple-200">Scan your wallet to find NFTs in your collection.</p>
+                  <p className="text-gray-300">Scan your wallet to find NFTs in your collection.</p>
                 </div>
               ) : null}
 
               {/* Burn Instructions */}
-              <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
+              <div className="bg-black/20 border border-orange-900/30 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-purple-200">
+                  <Info className="h-5 w-5 text-orange-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-gray-300">
                     <p className="font-medium mb-2">About NFT Burning:</p>
-                    <ul className="space-y-1 text-purple-300">
+                    <ul className="space-y-1 text-gray-400">
                       <li>• Burn unwanted NFTs and recover SOL rent deposits</li>
                       <li>• Burning permanently destroys the NFT and its metadata</li>
                       <li>• Burning NFTs usually returns 0.01 SOL, while most tokens and some scam NFTs give only 0.002 SOL. Magic Eden OCP NFTs return 0.004 SOL, and compressed NFTs return nothing.</li>
@@ -3382,7 +3382,7 @@ export default function SolRefund() {
           {activeTab === 'referrals' && (
             <div className="space-y-8">
               {/* How It Works */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
@@ -3396,7 +3396,7 @@ export default function SolRefund() {
                         <Wallet className="w-6 h-6 text-blue-400" />
                       </div>
                       <h3 className="font-semibold text-white">Connect Wallet</h3>
-                      <p className="text-sm text-purple-200">
+                      <p className="text-sm text-gray-300">
                         Connect your wallet to automatically generate your referral link
                       </p>
                     </div>
@@ -3405,16 +3405,16 @@ export default function SolRefund() {
                         <Users className="w-6 h-6 text-green-400" />
                       </div>
                       <h3 className="font-semibold text-white">Share</h3>
-                      <p className="text-sm text-purple-200">
+                      <p className="text-sm text-gray-300">
                         Share with your friends
                       </p>
                     </div>
                     <div className="text-center space-y-2">
-                      <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
-                        <DollarSign className="w-6 h-6 text-purple-400" />
+                      <div className="w-12 h-12 bg-orange-500/20 border border-orange-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <DollarSign className="w-6 h-6 text-orange-400" />
                       </div>
                       <h3 className="font-semibold text-white">Earn</h3>
-                      <p className="text-sm text-purple-200">
+                      <p className="text-sm text-gray-300">
                         Earn 50% of platform fee from every referral transaction
                       </p>
                     </div>
@@ -3424,27 +3424,27 @@ export default function SolRefund() {
 
               {/* Stats Cards */}
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 text-center" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
                   <div className="text-3xl font-bold text-white mb-2">
                     {(userReferrals as any)?.referralCode?.stats?.totalEarnings || '0'} SOL
                   </div>
-                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  <div className="text-sm text-gray-300 uppercase tracking-wider">
                     Total Earnings
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 text-center" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
                   <div className="text-3xl font-bold text-white mb-2">
                     {(userReferrals as any)?.referralCode?.stats?.totalReferrals || '0'}
                   </div>
-                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  <div className="text-sm text-gray-300 uppercase tracking-wider">
                     Total Referrals
                   </div>
                 </div>
               </div>
 
               {/* Referral Dashboard Content */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     <Globe className="w-5 h-5" />
@@ -3453,13 +3453,13 @@ export default function SolRefund() {
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-purple-200">Referral Link</Label>
+                    <Label className="text-gray-300">Referral Link</Label>
                     <div className="flex space-x-2">
                       <Input 
                         value={userReferralCode ? `${window.location.origin}/${userReferralCode}` : 'Generating referral link...'} 
                         readOnly
                         data-testid="input-referral-link"
-                        className="bg-purple-900/30 border-purple-500/30 text-white"
+                        className="bg-black/30 border-orange-500/30 text-white"
                       />
                       <Button 
                         variant="outline" 
@@ -3474,7 +3474,7 @@ export default function SolRefund() {
                           }
                         }}
                         data-testid="button-copy-link"
-                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30 hover:text-white"
+                        className="bg-orange-800/20 border-orange-500/30 text-orange-300 hover:bg-orange-700/30 hover:text-white"
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -3484,23 +3484,23 @@ export default function SolRefund() {
               </div>
 
               {/* Recent Referral Transactions */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white">Recent Referral Transactions</h3>
-                  <p className="text-purple-200 text-sm mt-2">
+                  <p className="text-gray-300 text-sm mt-2">
                     Track your recent referral earnings
                   </p>
                 </div>
                 <div className="space-y-4">
                   {(referralTransactions as any)?.transactions && (referralTransactions as any).transactions.length > 0 ? (
                     (referralTransactions as any).transactions.map((tx: any, index: number) => (
-                      <div key={index} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
+                      <div key={index} className="border border-orange-500/30 bg-black/20 rounded-lg p-4 space-y-2">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <p className="font-mono text-sm text-white">
                               {tx.referredWalletAddress?.slice(0, 8)}...{tx.referredWalletAddress?.slice(-8)}
                             </p>
-                            <p className="text-xs text-purple-300">
+                            <p className="text-xs text-gray-400">
                               {tx.paidAt ? new Date(tx.paidAt).toLocaleString() : 'Date unavailable'}
                             </p>
                           </div>
@@ -3508,19 +3508,19 @@ export default function SolRefund() {
                             <p className="font-semibold text-green-400">
                               +{tx.referralFeeAmount || '0'} SOL
                             </p>
-                            <p className="text-xs text-purple-300">
+                            <p className="text-xs text-gray-400">
                               From {tx.originalFeeAmount || '0'} SOL fee
                             </p>
                           </div>
                         </div>
-                        <Separator className="bg-purple-500/30" />
-                        <div className="flex justify-between text-xs text-purple-300">
+                        <Separator className="bg-orange-500/30" />
+                        <div className="flex justify-between text-xs text-gray-400">
                           <span>Transaction: {tx.transactionSignature?.slice(0, 12)}...</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(`https://solscan.io/tx/${tx.transactionSignature}`, "_blank")}
-                            className="text-purple-300 hover:text-white hover:bg-purple-700/30"
+                            className="text-gray-400 hover:text-white hover:bg-orange-700/30"
                           >
                             View on Solscan
                           </Button>
@@ -3529,8 +3529,8 @@ export default function SolRefund() {
                     ))
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-purple-300">No referral transactions yet</p>
-                      <p className="text-sm text-purple-400 mt-2">Share your referral link to start earning!</p>
+                      <p className="text-gray-300">No referral transactions yet</p>
+                      <p className="text-sm text-gray-400 mt-2">Share your referral link to start earning!</p>
                     </div>
                   )}
                 </div>
