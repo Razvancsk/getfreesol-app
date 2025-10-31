@@ -5091,6 +5091,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
+      // CRITICAL: CASH is ONLY available on Kamino, NOT Jupiter
+      const CASH_MINT = 'CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH';
+      if (asset === CASH_MINT) {
+        return res.status(400).json({ 
+          error: 'CASH token is only available on Kamino, not Jupiter',
+          hint: 'Use /api/kamino-lend/build-deposit instead',
+          platform: 'Kamino'
+        });
+      }
+
       console.log(`🏦 Building Jupiter Lend deposit transaction`);
       console.log(`   Asset: ${asset}`);
       console.log(`   Amount: ${amount}`);
