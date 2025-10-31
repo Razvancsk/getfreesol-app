@@ -2902,18 +2902,19 @@ export default function SolRefund() {
                     onClick={handleProcessAllRefunds}
                     disabled={refundMutation.isPending}
                     size="lg"
-                    className="w-full bg-gradient-to-r from-red-700 via-orange-600 to-red-700 hover:from-red-800 hover:via-orange-700 hover:to-red-800 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg border-2 border-orange-500/50"
-                    style={{ fontFamily: 'Georgia, serif' }}
+                    className="w-full bg-black hover:bg-gray-900 py-6 text-2xl font-bold rounded-2xl transition-all duration-200 border-2 border-orange-500 flex items-center justify-center gap-4"
+                    style={{ fontFamily: 'Georgia, serif', color: '#ff8c00' }}
                     data-testid="button-claim-all"
                   >
                     {refundMutation.isPending ? (
                       <>
-                        <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                        CLAIMING...
+                        <RefreshCw className="h-8 w-8 animate-spin" />
+                        <span>CLAIMING...</span>
                       </>
                     ) : (
                       <>
-                        🍬 CLAIM YOUR CANDY 🍬
+                        <span className="text-5xl">🎃</span>
+                        <span>TRICK OR TREAT</span>
                       </>
                     )}
                   </Button>
