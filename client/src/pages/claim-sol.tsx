@@ -4214,7 +4214,13 @@ export default function SolRefund() {
                                 amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
                               }
 
-                              const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
+                              // Route to correct endpoint based on platform (Jupiter vs Kamino)
+                              const platform = selectedReserve.platform || 'Jupiter';
+                              const platformPrefix = platform === 'Kamino' ? '/api/kamino-lend' : '/api/jupiter-lend';
+                              const endpoint = lendMode === 'deposit' 
+                                ? `${platformPrefix}/build-deposit` 
+                                : `${platformPrefix}/build-withdraw`;
+                              
                               const response = await fetch(endpoint, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
