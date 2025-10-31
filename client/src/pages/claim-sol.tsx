@@ -2550,7 +2550,7 @@ export default function SolRefund() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-x"
-                    className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                     title="Follow us on X (Twitter)"
                   >
                     <SiX className="h-4 w-4 text-white" />
@@ -2560,7 +2560,7 @@ export default function SolRefund() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-discord"
-                    className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                     title="Join our Discord community"
                   >
                     <SiDiscord className="h-4 w-4 text-white" />
@@ -2571,7 +2571,7 @@ export default function SolRefund() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        className="bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
+                        className="bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
                         data-testid="button-wallet-connected"
                       >
                         <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
@@ -2624,7 +2624,7 @@ export default function SolRefund() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="button-social-x-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                  className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                   title="Follow us on X (Twitter)"
                 >
                   <SiX className="h-4 w-4 text-white" />
@@ -2634,7 +2634,7 @@ export default function SolRefund() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="button-social-discord-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                  className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                   title="Join our Discord community"
                 >
                   <SiDiscord className="h-4 w-4 text-white" />
@@ -2645,7 +2645,7 @@ export default function SolRefund() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      className="bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
+                      className="bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
                       data-testid="button-wallet-connected-desktop"
                     >
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
