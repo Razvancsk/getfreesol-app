@@ -12,7 +12,7 @@
     - `/api/kamino-lend/user-positions/:walletAddress` fetches user's Kamino deposits
   - **Vault Details**: kVault CASH (kV-CASH) at address `KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd`
   - **Program ID**: kVault Program `44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd`
-  - **CASH Mint**: `CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT`
+  - **CASH Mint**: `CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH`
   - **SDK Integration**: Uses `@kamino-finance/klend-sdk` for transaction building with `KaminoMarket.load()` and `KaminoAction.buildDepositTxns()/buildWithdrawTxns()`
   - **UI Integration**: Unified lending interface displays both Jupiter Lend pools and Kamino kVault CASH pool side-by-side
   - **Platform Badges**: Clear visual distinction between Jupiter (purple) and Kamino (orange) pools

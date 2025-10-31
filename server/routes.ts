@@ -5428,7 +5428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // kVault CASH token (kV-CASH)
   const KVAULT_CASH_ADDRESS = 'KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd';
-  const CASH_MINT = 'CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT';
+  const CASH_MINT = 'CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH';
 
   // Kamino Lend - Get CASH Earn pool
   app.get("/api/kamino-lend/markets", async (req, res) => {
