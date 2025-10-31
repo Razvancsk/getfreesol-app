@@ -5012,12 +5012,12 @@ export default function SolRefund() {
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center justify-center space-x-3">
             <img 
-              src={pumpkinImage}
-              alt="Halloween Pumpkin"
+              src={logoImage}
+              alt="Get Free Sol Logo"
               className="h-[40px] w-[40px]"
             />
             <div className="text-center">
-              <div className="text-white font-semibold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Spooky SOL Recovery</div>
+              <div className="text-white font-semibold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Get Free Sol</div>
               <div className="text-orange-300 text-sm">2025 All rights reserved</div>
             </div>
           </div>
