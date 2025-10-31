@@ -4145,15 +4145,16 @@ export default function SolRefund() {
                                 setDepositAmount((maxAmount / 2).toFixed(decimals));
                                 setDepositRawAmount(null); // Clear raw amount for deposits
                               } else {
-                                // For withdrawals, use raw amount to avoid precision loss
+                                // For withdrawals, use SHARES for calculations
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                                 if (!userPosition) return;
-                                const rawAmount = userPosition.amount;
-                                const halfRaw = Math.floor(parseFloat(rawAmount) / 2).toString();
+                                const rawShares = userPosition.shares;
+                                const rawAmount = userPosition.amount; // For display
+                                const halfShares = Math.floor(parseFloat(rawShares) / 2).toString();
                                 const decimals = userPosition.decimals;
-                                const displayAmount = parseFloat(halfRaw) / Math.pow(10, decimals);
-                                setDepositAmount(displayAmount.toFixed(decimals));
-                                setDepositRawAmount(halfRaw);
+                                const displayAmount = parseFloat(rawAmount) / Math.pow(10, decimals);
+                                setDepositAmount((displayAmount / 2).toFixed(decimals));
+                                setDepositRawAmount(halfShares);
                               }
                             }}
                             data-testid="button-half-amount"
@@ -4369,15 +4370,16 @@ export default function SolRefund() {
                                 setDepositAmount((maxAmount / 2).toFixed(decimals));
                                 setDepositRawAmount(null);
                               } else {
-                                // For withdrawals, use raw amount to avoid precision loss
+                                // For withdrawals, use SHARES for calculations
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                                 if (!userPosition) return;
-                                const rawAmount = userPosition.amount;
-                                const halfRaw = Math.floor(parseFloat(rawAmount) / 2).toString();
+                                const rawShares = userPosition.shares;
+                                const rawAmount = userPosition.amount; // For display
+                                const halfShares = Math.floor(parseFloat(rawShares) / 2).toString();
                                 const decimals = userPosition.decimals;
-                                const displayAmount = parseFloat(halfRaw) / Math.pow(10, decimals);
-                                setDepositAmount(displayAmount.toFixed(decimals));
-                                setDepositRawAmount(halfRaw);
+                                const displayAmount = parseFloat(rawAmount) / Math.pow(10, decimals);
+                                setDepositAmount((displayAmount / 2).toFixed(decimals));
+                                setDepositRawAmount(halfShares);
                               }
                             }}
                             data-testid="button-half-amount"
