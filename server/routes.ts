@@ -5536,11 +5536,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lend - Build deposit transaction
   app.post("/api/kamino-lend/build-deposit", async (req, res) => {
     try {
-      const { walletAddress, mint, amount } = req.body;
+      const { walletAddress, asset, amount } = req.body;
       
-      console.log(`🏦 Kamino deposit request: ${amount} CASH from ${walletAddress}`);
-      console.log(`📍 Target vault: ${KVAULT_CASH_ADDRESS}`);
-      console.log(`📍 Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
+      console.log(`🏦 Kamino CASH deposit request`);
+      console.log(`   Asset (CASH): ${asset}`);
+      console.log(`   Amount: ${amount}`);
+      console.log(`   Wallet: ${walletAddress}`);
+      console.log(`   Vault: ${KVAULT_CASH_ADDRESS}`);
+      console.log(`   Program: ${KAMINO_PROGRAM_ID}`);
       
       const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
       const connection = new Connection(rpcEndpoint);
@@ -5604,11 +5607,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kamino Lend - Build withdraw transaction
   app.post("/api/kamino-lend/build-withdraw", async (req, res) => {
     try {
-      const { walletAddress, mint, amount } = req.body;
+      const { walletAddress, asset, amount } = req.body;
       
-      console.log(`🏦 Kamino withdraw request: ${amount} CASH to ${walletAddress}`);
-      console.log(`📍 Target vault: ${KVAULT_CASH_ADDRESS}`);
-      console.log(`📍 Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
+      console.log(`🏦 Kamino CASH withdraw request`);
+      console.log(`   Asset (CASH): ${asset}`);
+      console.log(`   Amount: ${amount}`);
+      console.log(`   Wallet: ${walletAddress}`);
+      console.log(`   Vault: ${KVAULT_CASH_ADDRESS}`);
+      console.log(`   Program: ${KAMINO_PROGRAM_ID}`);
       
       const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
       const connection = new Connection(rpcEndpoint);

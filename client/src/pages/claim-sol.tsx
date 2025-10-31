@@ -4217,15 +4217,19 @@ export default function SolRefund() {
                                 amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
                               }
 
-                              // Route to correct endpoint based on platform (Jupiter vs Kamino) - v2
-                              const platform = selectedReserve.platform || 'Jupiter';
-                              console.log('🏦 KAMINO FIX v2 - Deposit Platform:', platform, 'for token:', selectedReserve.symbol, selectedReserve.mint);
-                              console.log('🔍 Selected Reserve:', JSON.stringify(selectedReserve, null, 2));
+                              // CRITICAL: CASH is ONLY on Kamino, NOT Jupiter
+                              const CASH_MINT = 'CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH';
+                              const isCASH = selectedReserve.mint === CASH_MINT;
+                              
+                              // Route based on mint address (primary) or platform field (fallback)
+                              const platform = isCASH ? 'Kamino' : (selectedReserve.platform || 'Jupiter');
+                              console.log('🏦 MINT-BASED ROUTING - Token:', selectedReserve.symbol, 'Mint:', selectedReserve.mint, 'Platform:', platform);
+                              
                               const platformPrefix = platform === 'Kamino' ? '/api/kamino-lend' : '/api/jupiter-lend';
                               const endpoint = lendMode === 'deposit' 
                                 ? `${platformPrefix}/build-deposit` 
                                 : `${platformPrefix}/build-withdraw`;
-                              console.log('📍 KAMINO FIX v2 - Using endpoint:', endpoint);
+                              console.log('📍 Using endpoint:', endpoint);
                               
                               const response = await fetch(endpoint, {
                                 method: 'POST',
