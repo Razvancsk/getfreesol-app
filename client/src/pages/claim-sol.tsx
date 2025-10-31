@@ -4216,10 +4216,12 @@ export default function SolRefund() {
 
                               // Route to correct endpoint based on platform (Jupiter vs Kamino)
                               const platform = selectedReserve.platform || 'Jupiter';
+                              console.log('🏦 Deposit Platform:', platform, 'for token:', selectedReserve.symbol, selectedReserve.mint);
                               const platformPrefix = platform === 'Kamino' ? '/api/kamino-lend' : '/api/jupiter-lend';
                               const endpoint = lendMode === 'deposit' 
                                 ? `${platformPrefix}/build-deposit` 
                                 : `${platformPrefix}/build-withdraw`;
+                              console.log('📍 Using endpoint:', endpoint);
                               
                               const response = await fetch(endpoint, {
                                 method: 'POST',
