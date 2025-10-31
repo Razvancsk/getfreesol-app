@@ -2483,11 +2483,18 @@ export default function SolRefund() {
     <div className="min-h-screen relative overflow-hidden bg-black">
       {/* Halloween Background */}
       <div className="fixed inset-0 pointer-events-none">
+        <style>{`
+          @media (max-width: 768px) {
+            .halloween-bg-mobile {
+              object-position: 35% 30% !important;
+            }
+          }
+        `}</style>
         <img 
           src={halloweenBg} 
           alt="" 
-          className="w-full h-full object-cover opacity-60"
-          style={{ objectPosition: '40% 35%' }}
+          className="w-full h-full object-cover opacity-60 halloween-bg-mobile"
+          style={{ objectPosition: 'center center' }}
         />
         
         {/* Floating Ghosts - More visible */}
