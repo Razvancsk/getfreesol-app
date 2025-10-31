@@ -46,7 +46,7 @@ import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 import pumpkinImage from '@assets/image_1761923461687.png';
-import halloweenBg from '@assets/image_1761925113493.png';
+import halloweenBg from '@assets/image_1761931348253.png';
 import claimPumpkin from '@assets/image_1761926938584.png';
 
 interface EmptyTokenAccount {
