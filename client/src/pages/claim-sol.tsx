@@ -2574,18 +2574,6 @@ export default function SolRefund() {
 
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl relative z-10">
         <div className="space-y-2">
-          {/* 24-Hour Free Claim Promotion Banner */}
-          {isPromoActive && (
-            <div className="backdrop-blur-sm rounded-xl border-2 border-green-500 p-4 mb-4 text-center animate-pulse" style={{ backgroundColor: 'rgba(0, 100, 0, 0.3)' }}>
-              <h2 className="text-2xl md:text-3xl font-bold text-green-400 mb-2" style={{ fontFamily: 'Georgia, serif', textShadow: '0 0 10px #00ff00' }}>
-                🎃 24-HOUR HALLOWEEN SPECIAL - CLAIM FOR FREE! 🎃
-              </h2>
-              <p className="text-green-300 text-lg" style={{ fontFamily: 'Georgia, serif' }}>
-                NO PLATFORM FEES - Keep 100% of your recovered SOL!
-              </p>
-            </div>
-          )}
-          
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
             {/* Top row: Logo and Title */}
@@ -2906,9 +2894,18 @@ export default function SolRefund() {
                 </div>
               ) : (
                 <>
-                  <p className="text-gray-300 text-sm mb-6">
-                    Found {scanResult.emptyAccounts} empty token accounts
-                  </p>
+                  <div className="space-y-3 mb-6">
+                    <p className="text-gray-300 text-sm">
+                      Found {scanResult.emptyAccounts} empty token accounts
+                    </p>
+                    {isPromoActive && (
+                      <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-3 text-center">
+                        <p className="text-green-400 font-bold text-sm" style={{ fontFamily: 'Georgia, serif' }}>
+                          🎃 HALLOWEEN SPECIAL - ZERO FEES! Keep 100% of your SOL! 🎃
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
                   {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
@@ -2918,8 +2915,8 @@ export default function SolRefund() {
                       <div className="text-xs text-gray-300">Empty Accounts</div>
                     </div>
                     <div className="text-center p-4 backdrop-blur-sm border border-orange-900/40 rounded-xl" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
-                      <div className="text-2xl font-bold text-white">{(refundCalc.total * 0.85).toFixed(6)}</div>
-                      <div className="text-xs text-gray-300">Total Net</div>
+                      <div className="text-2xl font-bold text-white">{refundCalc.net.toFixed(6)}</div>
+                      <div className="text-xs text-gray-300">{isPromoActive ? 'You Get (100%)' : 'Total Net'}</div>
                     </div>
                   </div>
 
