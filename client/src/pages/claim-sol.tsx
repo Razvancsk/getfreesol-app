@@ -5078,7 +5078,7 @@ export default function SolRefund() {
         }
         
         .halloween-pumpkin {
-          filter: drop-shadow(0 0 10px #ff6600) drop-shadow(0 0 20px #ff6600);
+          filter: none;
         }
       `}</style>
     </div>
