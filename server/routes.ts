@@ -5433,7 +5433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================
   
   // Kamino kVault Program and addresses
-  const KAMINO_KVAULT_PROGRAM_ID = '44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd';
+  const KAMINO_KVAULT_PROGRAM_ID = 'KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD'; // Kamino Lend program
   const KAMINO_MARKET_ADDRESS = '7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF';
   
   // kVault CASH token (kV-CASH)
@@ -5552,7 +5552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userPubkey = new PublicKey(walletAddress);
       const vaultPubkey = new PublicKey(KVAULT_CASH_ADDRESS);
       const cashMint = new PublicKey('CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH');
-      const programId = vaultPubkey; // The vault IS the program for deposit
+      const programId = new PublicKey(KAMINO_KVAULT_PROGRAM_ID); // Use Kamino Lend program
       
       // Get associated token accounts
       const userCashAta = await getAssociatedTokenAddress(
@@ -5569,45 +5569,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         TOKEN_2022_PROGRAM_ID
       );
       
-      // Fetch vault account to get share mint
-      const vaultAccount = await connection.getAccountInfo(vaultPubkey);
-      if (!vaultAccount) {
-        throw new Error('Vault account not found');
-      }
-      
-      // The vault share mint is at offset 8+32 in the account data (after discriminator + authority)
-      // For now, let's skip creating the ATA and let the vault program handle it
-      const tx = new Transaction();
-      
       console.log(`📍 User CASH ATA: ${userCashAta.toBase58()}`);
       console.log(`📍 Vault CASH ATA: ${vaultCashAta.toBase58()}`);
-      console.log(`📍 Vault (program): ${vaultPubkey.toBase58()}`);
+      console.log(`📍 Vault: ${vaultPubkey.toBase58()}`);
+      console.log(`📍 Program ID: ${programId.toBase58()}`);
       
-      // Build deposit instruction manually
-      // Format: [discriminator (8 bytes), amount (u64)]
-      const depositDiscriminator = Buffer.from([242, 35, 198, 137, 82, 225, 242, 182]); // deposit instruction
-      const amountBuffer = Buffer.alloc(8);
-      amountBuffer.writeBigUInt64LE(BigInt(amount));
-      const instructionData = Buffer.concat([depositDiscriminator, amountBuffer]);
+      // Try using Kamino SDK with correct program ID
+      const marketPubkey = new PublicKey(KAMINO_MARKET_ADDRESS);
+      const kaminoMarket = await KaminoMarket.load(
+        connection,
+        marketPubkey,
+        programId
+      );
       
-      // Build deposit instruction
-      const depositIx = new TransactionInstruction({
-        programId,
-        keys: [
-          { pubkey: userPubkey, isSigner: true, isWritable: true },
-          { pubkey: userCashAta, isSigner: false, isWritable: true },
-          { pubkey: userShareAta, isSigner: false, isWritable: true },
-          { pubkey: vaultPubkey, isSigner: false, isWritable: true },
-          { pubkey: vaultCashAta, isSigner: false, isWritable: true },
-          { pubkey: cashMint, isSigner: false, isWritable: false },
-          { pubkey: vaultShareMint, isSigner: false, isWritable: true },
-          { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
-          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-        ],
-        data: instructionData,
-      });
+      if (!kaminoMarket) {
+        throw new Error('Failed to load Kamino market');
+      }
       
-      tx.add(depositIx);
+      // Build deposit transaction using Kamino SDK
+      const depositAmount = new BN(amount);
+      const depositAction = await KaminoAction.buildDepositTxns(
+        kaminoMarket,
+        depositAmount,
+        cashMint,
+        userPubkey,
+        new VanillaObligation(programId)
+      );
+      
+      if (!depositAction || !depositAction.setupIxs || !depositAction.lendingIxs) {
+        throw new Error('Failed to build deposit transaction');
+      }
+      
+      // Combine all instructions into a single transaction
+      const tx = new Transaction();
+      tx.add(...depositAction.setupIxs);
+      tx.add(...depositAction.lendingIxs);
       
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
@@ -5617,7 +5613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
       
       console.log(`✅ Built Kamino kVault CASH deposit transaction`);
-      console.log(`📍 Program ID (vault): ${KVAULT_CASH_ADDRESS}`);
+      console.log(`📍 Program ID: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
       res.json({
         success: true,
