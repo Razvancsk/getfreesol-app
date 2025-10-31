@@ -24,6 +24,11 @@ import bs58 from 'bs58';
 import { xApiService } from './xApiService';
 import cron from 'node-cron';
 
+// Extend global for temporary OAuth token storage
+declare global {
+  var pendingOAuthTokens: Record<string, string>;
+}
+
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
   try {
@@ -5572,7 +5577,186 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Save X OAuth credentials (manual entry for now)
+  // OAuth 1.0a flow - Step 1: Get request token and redirect to X
+  app.get("/api/x-bot/oauth/request-token", async (req, res) => {
+    try {
+      const { walletAddress, signature, message } = req.query;
+      
+      // Verify platform wallet
+      if (!walletAddress || walletAddress !== PLATFORM_WALLET) {
+        return res.status(403).send('Access denied: Platform wallet required');
+      }
+      
+      if (!signature || !message) {
+        return res.status(401).send('Authentication required');
+      }
+      
+      const isValid = verifySignature(message as string, signature as string, walletAddress as string);
+      if (!isValid) {
+        return res.status(401).send('Invalid signature');
+      }
+      
+      // Check if we have API keys stored
+      const existingCreds = await db.select().from(xAuthTokens).limit(1);
+      if (existingCreds.length === 0) {
+        return res.status(400).send('X API keys not configured. Please contact administrator.');
+      }
+      
+      const { apiKey, apiKeySecret } = existingCreds[0];
+      
+      // Create OAuth client
+      const oauth = new OAuth({
+        consumer: {
+          key: apiKey,
+          secret: apiKeySecret,
+        },
+        signature_method: 'HMAC-SHA1',
+        hash_function(base_string, key) {
+          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+        },
+      });
+      
+      const callbackUrl = `${req.protocol}://${req.get('host')}/api/x-bot/oauth/callback`;
+      const requestData = {
+        url: 'https://api.twitter.com/oauth/request_token',
+        method: 'POST' as const,
+        data: { oauth_callback: callbackUrl },
+      };
+      
+      const authHeader = oauth.toHeader(oauth.authorize(requestData));
+      
+      console.log('🔐 Requesting OAuth token from X...');
+      
+      const response = await axios.post(requestData.url, `oauth_callback=${encodeURIComponent(callbackUrl)}`, {
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      
+      const params = new URLSearchParams(response.data);
+      const oauthToken = params.get('oauth_token');
+      const oauthTokenSecret = params.get('oauth_token_secret');
+      
+      if (!oauthToken) {
+        throw new Error('Failed to get OAuth token from X');
+      }
+      
+      // Store token secret temporarily (we'll need it in callback)
+      // In production, use Redis or session storage
+      global.pendingOAuthTokens = global.pendingOAuthTokens || {};
+      global.pendingOAuthTokens[oauthToken] = oauthTokenSecret;
+      
+      console.log('✅ Got request token, redirecting to X authorization...');
+      
+      // Redirect user to X authorization page
+      res.redirect(`https://api.twitter.com/oauth/authorize?oauth_token=${oauthToken}`);
+    } catch (error: any) {
+      console.error('❌ OAuth request token error:', error.response?.data || error.message);
+      res.status(500).send(`OAuth failed: ${error.message}`);
+    }
+  });
+  
+  // OAuth 1.0a flow - Step 2: Handle callback and exchange for access token
+  app.get("/api/x-bot/oauth/callback", async (req, res) => {
+    try {
+      const { oauth_token, oauth_verifier } = req.query;
+      
+      if (!oauth_token || !oauth_verifier) {
+        return res.status(400).send('Missing OAuth parameters');
+      }
+      
+      console.log('🔐 Received OAuth callback from X...');
+      
+      // Retrieve token secret
+      const oauthTokenSecret = global.pendingOAuthTokens?.[oauth_token as string];
+      if (!oauthTokenSecret) {
+        return res.status(400).send('Invalid or expired OAuth token');
+      }
+      
+      // Get API keys
+      const existingCreds = await db.select().from(xAuthTokens).limit(1);
+      if (existingCreds.length === 0) {
+        return res.status(400).send('X API keys not configured');
+      }
+      
+      const { apiKey, apiKeySecret } = existingCreds[0];
+      
+      // Create OAuth client
+      const oauth = new OAuth({
+        consumer: {
+          key: apiKey,
+          secret: apiKeySecret,
+        },
+        signature_method: 'HMAC-SHA1',
+        hash_function(base_string, key) {
+          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+        },
+      });
+      
+      const requestData = {
+        url: 'https://api.twitter.com/oauth/access_token',
+        method: 'POST' as const,
+      };
+      
+      const token = {
+        key: oauth_token as string,
+        secret: oauthTokenSecret,
+      };
+      
+      const authHeader = oauth.toHeader(oauth.authorize(requestData, token));
+      
+      console.log('🔐 Exchanging verifier for access token...');
+      
+      const response = await axios.post(
+        requestData.url,
+        `oauth_verifier=${oauth_verifier}`,
+        {
+          headers: {
+            ...authHeader,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      );
+      
+      const params = new URLSearchParams(response.data);
+      const accessToken = params.get('oauth_token');
+      const accessTokenSecret = params.get('oauth_token_secret');
+      const screenName = params.get('screen_name');
+      const userId = params.get('user_id');
+      
+      if (!accessToken || !accessTokenSecret) {
+        throw new Error('Failed to get access token from X');
+      }
+      
+      console.log(`✅ OAuth successful for @${screenName}`);
+      
+      // Deactivate old tokens
+      await db.update(xAuthTokens).set({ isActive: false });
+      
+      // Save new tokens
+      await db.insert(xAuthTokens).values({
+        apiKey,
+        apiKeySecret,
+        accessToken,
+        accessTokenSecret,
+        accountName: `@${screenName}`,
+        accountId: userId,
+        isActive: true,
+      });
+      
+      // Clean up pending token
+      delete global.pendingOAuthTokens[oauth_token as string];
+      
+      // Redirect to admin page with success message
+      res.redirect('/admin/x-bot?connected=true');
+    } catch (error: any) {
+      console.error('❌ OAuth callback error:', error.response?.data || error.message);
+      res.redirect('/admin/x-bot?error=oauth_failed');
+    }
+  });
+  
+  // Save X OAuth credentials (manual entry fallback)
   app.post("/api/x-bot/save-credentials", requirePlatformWallet, async (req, res) => {
     try {
       const { apiKey, apiKeySecret, accessToken, accessTokenSecret, accountName } = req.body;

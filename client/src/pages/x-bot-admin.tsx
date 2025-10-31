@@ -6,12 +6,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import bs58 from 'bs58';
 
 const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
 export default function XBotAdmin() {
-  const { publicKey, connected } = useWallet();
+  const { publicKey, connected, signMessage } = useWallet();
   const [isPlatformWallet, setIsPlatformWallet] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (publicKey) {
@@ -19,7 +23,73 @@ export default function XBotAdmin() {
     } else {
       setIsPlatformWallet(false);
     }
-  }, [publicKey]);
+    
+    // Check for OAuth callback status
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('connected') === 'true') {
+      toast({
+        title: 'Success!',
+        description: 'Your X account has been connected successfully',
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/admin/x-bot');
+    } else if (params.get('error') === 'oauth_failed') {
+      toast({
+        title: 'Connection Failed',
+        description: 'Failed to connect your X account. Please try again.',
+        variant: 'destructive',
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/admin/x-bot');
+    }
+  }, [publicKey, toast]);
+  
+  // Handle OAuth connection
+  const handleConnectXAccount = async () => {
+    if (!publicKey || !signMessage) {
+      toast({
+        title: 'Error',
+        description: 'Please connect your wallet first',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      setIsConnecting(true);
+      
+      // Create timestamped message
+      const messageData = {
+        action: 'x-oauth-request',
+        timestamp: new Date().toISOString(),
+        wallet: publicKey.toBase58(),
+      };
+      
+      const message = JSON.stringify(messageData);
+      const messageBytes = new TextEncoder().encode(message);
+      
+      // Sign the message
+      const signature = await signMessage(messageBytes);
+      const signatureBase58 = bs58.encode(signature);
+      
+      // Redirect to OAuth endpoint with auth params
+      const authParams = new URLSearchParams({
+        walletAddress: publicKey.toBase58(),
+        signature: signatureBase58,
+        message: message,
+      });
+      
+      window.location.href = `/api/x-bot/oauth/request-token?${authParams.toString()}`;
+    } catch (error: any) {
+      console.error('OAuth initiation error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to initiate X authentication',
+        variant: 'destructive',
+      });
+      setIsConnecting(false);
+    }
+  };
 
   // Access denied screen
   if (!connected || !isPlatformWallet) {
@@ -195,14 +265,16 @@ export default function XBotAdmin() {
                 
                 <div className="text-center py-8">
                   <Button 
+                    onClick={handleConnectXAccount}
+                    disabled={isConnecting}
                     className="bg-blue-500 hover:bg-blue-600 text-white"
                     data-testid="button-connect-x"
                   >
                     <Twitter className="h-4 w-4 mr-2" />
-                    Connect X Account
+                    {isConnecting ? 'Connecting...' : 'Connect X Account'}
                   </Button>
                   <p className="text-sm text-purple-300 mt-3">
-                    Coming soon: OAuth authentication flow
+                    Click to authorize your X account via OAuth
                   </p>
                 </div>
               </CardContent>
