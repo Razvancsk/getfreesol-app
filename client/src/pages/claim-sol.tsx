@@ -2479,12 +2479,12 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
-      {/* Halloween Haunted House Background */}
+      {/* Halloween Background */}
       <div className="fixed inset-0 pointer-events-none">
         <img 
-          src="/attached_assets/image_1761924028059.png" 
+          src="/attached_assets/image_1761924392146.png" 
           alt="" 
-          className="w-full h-full object-cover opacity-50"
+          className="w-full h-full object-cover opacity-60"
           style={{ objectPosition: 'center' }}
         />
         
