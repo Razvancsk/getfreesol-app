@@ -5552,7 +5552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userPubkey = new PublicKey(walletAddress);
       const vaultPubkey = new PublicKey(KVAULT_CASH_ADDRESS);
       const cashMint = new PublicKey('CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH');
-      const programId = new PublicKey(KAMINO_KVAULT_PROGRAM_ID);
+      const programId = vaultPubkey; // The vault itself is the program
       
       // Get associated token accounts
       const userCashAta = await getAssociatedTokenAddress(
@@ -5633,7 +5633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
       
       console.log(`✅ Built Kamino kVault CASH deposit transaction`);
-      console.log(`📍 Using kVault program: ${KAMINO_KVAULT_PROGRAM_ID}`);
+      console.log(`📍 Using vault/program: ${KVAULT_CASH_ADDRESS}`);
       
       res.json({
         success: true,
