@@ -4198,7 +4198,11 @@ export default function SolRefund() {
                       <DrawerFooter className="pt-3 pb-6 bg-transparent px-4">
                         <Button
                           onClick={async () => {
-                            if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
+                            console.log('🚀 DEPOSIT BUTTON CLICKED - Starting deposit flow');
+                            if (!publicKey || !wallet || !selectedReserve || !depositAmount) {
+                              console.error('❌ Missing required fields:', { publicKey: !!publicKey, wallet: !!wallet, selectedReserve: !!selectedReserve, depositAmount });
+                              return;
+                            }
                             
                             setDepositingLend(true);
                             try {
@@ -4241,8 +4245,11 @@ export default function SolRefund() {
                                 }),
                               });
 
+                              console.log('📨 Response status:', response.status);
                               if (!response.ok) {
-                                throw new Error(`Failed to build ${lendMode} transaction`);
+                                const errorData = await response.json();
+                                console.error('❌ Server error:', errorData);
+                                throw new Error(errorData.error || `Failed to build ${lendMode} transaction`);
                               }
 
                               const { transaction: base64Transaction } = await response.json();
