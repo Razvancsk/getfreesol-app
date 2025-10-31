@@ -5504,14 +5504,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { walletAddress, mint, amount } = req.body;
       
       console.log(`🏦 Kamino deposit request: ${amount} of ${mint} from ${walletAddress}`);
+      console.log(`📍 Target vault: ${KVAULT_CASH_ADDRESS}`);
+      console.log(`📍 Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
-      // TODO: Implement once SDK dependency conflicts are resolved
-      // This will use KaminoAction.buildDepositTxns() to create the deposit transaction
+      // TODO: Implement deposit transaction building
+      // Required interactions:
+      // 1. Program ID: 44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd (kVault Program)
+      // 2. Vault Account: KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd (kV-CASH vault)
+      // 3. Token Mint: CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT (CASH)
+      // 
+      // SDK method: KaminoAction.buildDepositTxns()
+      // Alternative: Manual instruction building using kVault Program IDL
       
       res.status(501).json({ 
         error: "Kamino deposit transactions not yet implemented",
         message: "SDK integration pending - deposit functionality coming soon",
-        details: "Waiting for @kamino-finance/klend-sdk dependency resolution"
+        details: "Waiting for @kamino-finance/klend-sdk dependency resolution",
+        vaultInfo: {
+          vaultAddress: KVAULT_CASH_ADDRESS,
+          programId: KAMINO_KVAULT_PROGRAM_ID,
+          tokenMint: CASH_MINT,
+        }
       });
       
     } catch (error: any) {
@@ -5526,14 +5539,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { walletAddress, mint, amount } = req.body;
       
       console.log(`🏦 Kamino withdraw request: ${amount} of ${mint} to ${walletAddress}`);
+      console.log(`📍 Target vault: ${KVAULT_CASH_ADDRESS}`);
+      console.log(`📍 Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
-      // TODO: Implement once SDK dependency conflicts are resolved
-      // This will use KaminoAction.buildWithdrawTxns() to create the withdraw transaction
+      // TODO: Implement withdraw transaction building
+      // Required interactions:
+      // 1. Program ID: 44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd (kVault Program)
+      // 2. Vault Account: KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd (kV-CASH vault)
+      // 3. Token Mint: CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT (CASH)
+      //
+      // SDK method: KaminoAction.buildWithdrawTxns()
+      // Alternative: Manual instruction building using kVault Program IDL
       
       res.status(501).json({ 
         error: "Kamino withdraw transactions not yet implemented",
         message: "SDK integration pending - withdraw functionality coming soon",
-        details: "Waiting for @kamino-finance/klend-sdk dependency resolution"
+        details: "Waiting for @kamino-finance/klend-sdk dependency resolution",
+        vaultInfo: {
+          vaultAddress: KVAULT_CASH_ADDRESS,
+          programId: KAMINO_KVAULT_PROGRAM_ID,
+          tokenMint: CASH_MINT,
+        }
       });
       
     } catch (error: any) {
