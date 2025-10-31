@@ -9,7 +9,8 @@ import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstructi
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
-import { KaminoMarket, KaminoAction, VanillaObligation, PROGRAM_ID as KAMINO_PROGRAM_ID } from "@kamino-finance/klend-sdk";
+import { KaminoMarket, KaminoAction, VanillaObligation, PROGRAM_ID as KAMINO_PROGRAM_ID, KaminoManager, KaminoVault } from "@kamino-finance/klend-sdk";
+import Decimal from 'decimal.js';
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
@@ -5574,21 +5575,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📍 Vault: ${vaultPubkey.toBase58()}`);
       console.log(`📍 Program ID: ${programId.toBase58()}`);
       
-      // NOTE: Kamino SDK (@kamino-finance/klend-sdk) has web3.js compatibility issues
-      // Error: "rpc.getAccountInfo(...).send is not a function" at fetchEncodedAccount
-      // This occurs even with the correct program ID KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD
-      // The SDK uses an incompatible version of @solana/web3.js
-      // Deposit functionality is temporarily disabled until SDK compatibility is resolved
+      // Use KaminoManager for kVault deposits (not KaminoMarket)
+      const kaminoManager = new KaminoManager(connection);
+      const vault = new KaminoVault(connection, vaultPubkey);
       
-      console.log(`⏸️  Kamino kVault CASH deposits correctly routed but disabled due to SDK compatibility`);
-      console.log(`✅ ROUTING VERIFIED: CASH → /api/kamino-lend/build-deposit → program ${KAMINO_KVAULT_PROGRAM_ID}`);
+      // Read vault state (needed for LUT in transaction)
+      const vaultState = await vault.getState();
       
-      return res.status(501).json({
-        error: "Kamino kVault CASH deposits coming soon",
-        details: "The routing is working correctly (CASH → Kamino Lend program KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD). The Kamino SDK has web3.js compatibility issues that prevent transaction building. This feature will be available once the SDK is updated or an alternative implementation is developed.",
-        vault: KVAULT_CASH_ADDRESS,
-        program: KAMINO_KVAULT_PROGRAM_ID,
-        status: "correctly_routed_sdk_incompatible"
+      // Build deposit instruction with Decimal amount
+      const depositAmount = new Decimal(amount).div(new Decimal(10).pow(6)); // Convert lamports to CASH (6 decimals)
+      const depositIx = await kaminoManager.depositToVaultIxs(userPubkey, vault, depositAmount);
+      
+      // Combine all instructions
+      const tx = new Transaction();
+      tx.add(...depositIx.depositIxs);
+      tx.add(...depositIx.stakeInFarmIfNeededIxs);
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = userPubkey;
+      
+      const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
+      
+      console.log(`✅ Built Kamino kVault CASH deposit transaction`);
+      console.log(`📍 Amount: ${depositAmount.toString()} CASH`);
+      console.log(`📍 Program ID: ${KAMINO_KVAULT_PROGRAM_ID}`);
+      
+      res.json({
+        success: true,
+        transaction: serialized,
+        message: `Deposit ${depositAmount.toString()} CASH to Kamino kVault`,
       });
       
     } catch (error: any) {
