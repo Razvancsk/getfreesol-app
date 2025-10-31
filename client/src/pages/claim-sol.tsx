@@ -4204,10 +4204,15 @@ export default function SolRefund() {
                                 throw new Error('Invalid amount');
                               }
 
-                              // For withdrawals, use raw amount if available to avoid precision loss
-                              const amountInLamports = (lendMode === 'withdraw' && depositRawAmount) 
-                                ? depositRawAmount 
-                                : Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+                              // For withdrawals, ALWAYS fetch LATEST shares (they accrue in real-time!)
+                              let amountInLamports: string;
+                              if (lendMode === 'withdraw') {
+                                const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve.mint);
+                                if (!userPosition) throw new Error('Position not found');
+                                amountInLamports = userPosition.shares; // Use CURRENT shares, not cached value
+                              } else {
+                                amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+                              }
 
                               const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
                               const response = await fetch(endpoint, {
@@ -4574,10 +4579,15 @@ export default function SolRefund() {
                             throw new Error('Invalid amount');
                           }
 
-                          // For withdrawals, use raw amount if available to avoid precision loss
-                          const amountInLamports = (lendMode === 'withdraw' && depositRawAmount) 
-                            ? depositRawAmount 
-                            : Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+                          // For withdrawals, ALWAYS fetch LATEST shares (they accrue in real-time!)
+                          let amountInLamports: string;
+                          if (lendMode === 'withdraw') {
+                            const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve.mint);
+                            if (!userPosition) throw new Error('Position not found');
+                            amountInLamports = userPosition.shares; // Use CURRENT shares, not cached value
+                          } else {
+                            amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
+                          }
 
                           const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
                           const response = await fetch(endpoint, {
