@@ -4173,14 +4173,15 @@ export default function SolRefund() {
                                 setDepositAmount(maxAmount.toFixed(decimals));
                                 setDepositRawAmount(null); // Clear raw amount for deposits
                               } else {
-                                // For withdrawals, store raw amount directly to avoid precision loss
+                                // For withdrawals, use SHARES not amount (Jupiter SDK expects shares)
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                                 if (!userPosition) return;
-                                const rawAmount = userPosition.amount;
+                                const rawShares = userPosition.shares; // Use shares, not amount!
+                                const rawAmount = userPosition.amount; // For display only
                                 const decimals = userPosition.decimals;
                                 const displayAmount = parseFloat(rawAmount) / Math.pow(10, decimals);
                                 setDepositAmount(displayAmount.toFixed(decimals));
-                                setDepositRawAmount(rawAmount); // Store exact raw amount
+                                setDepositRawAmount(rawShares); // Store shares for withdrawal
                               }
                             }}
                             data-testid="button-max-amount"
@@ -4396,14 +4397,15 @@ export default function SolRefund() {
                                 setDepositAmount(maxAmount.toFixed(decimals));
                                 setDepositRawAmount(null);
                               } else {
-                                // For withdrawals, store raw amount directly to avoid precision loss
+                                // For withdrawals, use SHARES not amount (Jupiter SDK expects shares)
                                 const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                                 if (!userPosition) return;
-                                const rawAmount = userPosition.amount;
+                                const rawShares = userPosition.shares; // Use shares, not amount!
+                                const rawAmount = userPosition.amount; // For display only
                                 const decimals = userPosition.decimals;
                                 const displayAmount = parseFloat(rawAmount) / Math.pow(10, decimals);
                                 setDepositAmount(displayAmount.toFixed(decimals));
-                                setDepositRawAmount(rawAmount);
+                                setDepositRawAmount(rawShares); // Store shares for withdrawal
                               }
                             }}
                             data-testid="button-max-amount"
