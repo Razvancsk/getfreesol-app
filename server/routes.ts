@@ -5580,20 +5580,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Save X app credentials (API key/secret only)
-  app.post("/api/x-bot/save-app-credentials", async (req, res) => {
+  // Initialize X API credentials from environment variables on startup
+  async function initializeXApiCredentials() {
     try {
-      const { apiKey, apiSecret } = req.body;
+      const apiKey = process.env.X_API_KEY;
+      const apiSecret = process.env.X_API_SECRET;
       
       if (!apiKey || !apiSecret) {
-        return res.status(400).json({ error: 'API Key and Secret are required' });
+        console.log('⚠️ X API credentials not found in environment variables');
+        return;
       }
       
       // Check if credentials already exist
       const existing = await db.select().from(xAuthTokens).limit(1);
       
       if (existing.length > 0) {
-        // Update existing record
+        // Update existing record with env credentials
         await db.update(xAuthTokens)
           .set({ 
             apiKey, 
@@ -5601,6 +5603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isActive: true
           })
           .where(eq(xAuthTokens.id, existing[0].id));
+        console.log('✅ X API credentials updated from environment');
       } else {
         // Create new record
         await db.insert(xAuthTokens).values({
@@ -5611,19 +5614,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           accountName: 'Not connected',
           isActive: true,
         });
+        console.log('✅ X API credentials initialized from environment');
       }
-      
-      console.log('✅ X API credentials saved');
-      
-      res.json({
-        success: true,
-        message: 'API credentials saved successfully',
-      });
     } catch (error: any) {
-      console.error("Save app credentials error:", error);
-      res.status(500).json({ error: "Failed to save credentials", details: error.message });
+      console.error('❌ Failed to initialize X API credentials:', error);
     }
-  });
+  }
+  
+  // Initialize on server start
+  initializeXApiCredentials();
   
   // OAuth 1.0a flow - Step 1: Get request token and redirect to X
   app.get("/api/x-bot/oauth/request-token", async (req, res) => {

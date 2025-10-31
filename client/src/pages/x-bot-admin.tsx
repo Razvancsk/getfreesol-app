@@ -4,13 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon } from 'lucide-react';
+import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useLocation } from 'wouter';
 
 const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
@@ -18,38 +19,12 @@ export default function XBotAdmin() {
   const { publicKey, connected } = useWallet();
   const [isPlatformWallet, setIsPlatformWallet] = useState(false);
   const { toast } = useToast();
-  
-  // Form state for API credentials
-  const [apiKey, setApiKey] = useState('');
-  const [apiSecret, setApiSecret] = useState('');
+  const [, setLocation] = useLocation();
   
   // Fetch X bot status
   const { data: botStatus, isLoading: statusLoading } = useQuery({
     queryKey: ['/api/x-bot/status'],
     enabled: isPlatformWallet,
-  });
-  
-  // Mutation to save API credentials
-  const saveCredentialsMutation = useMutation({
-    mutationFn: async (data: { apiKey: string; apiSecret: string }) => {
-      return await apiRequest('POST', '/api/x-bot/save-app-credentials', data);
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'API credentials saved! Now connect your X account.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/x-bot/status'] });
-      setApiKey('');
-      setApiSecret('');
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to save credentials',
-        variant: 'destructive',
-      });
-    },
   });
 
   useEffect(() => {
@@ -136,6 +111,15 @@ export default function XBotAdmin() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => setLocation('/')}
+                  variant="ghost"
+                  size="icon"
+                  className="text-purple-300 hover:text-white hover:bg-purple-700"
+                  data-testid="button-back-home"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
                 <div className="p-2 bg-blue-500 rounded-lg">
                   <Twitter className="h-6 w-6 text-white" />
                 </div>
@@ -242,88 +226,11 @@ export default function XBotAdmin() {
           </TabsContent>
 
           <TabsContent value="auth" className="space-y-4">
-            {/* Step 1: API Credentials */}
             <Card className="bg-purple-800/50 border-purple-600">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-white">Step 1: X Developer API Keys</CardTitle>
-                    <CardDescription className="text-purple-200">
-                      Get these from developer.x.com when you create an app
-                    </CardDescription>
-                  </div>
-                  {botStatus?.hasAppCredentials && (
-                    <Badge className="bg-green-500 text-white">
-                      <Check className="h-3 w-3 mr-1" />
-                      Configured
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {botStatus?.hasAppCredentials ? (
-                  <Alert className="bg-green-900/30 border-green-600">
-                    <Check className="h-4 w-4 text-green-400" />
-                    <AlertDescription className="text-green-200">
-                      Your X API credentials are configured. Proceed to Step 2 to connect your account.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <>
-                    <Alert className="bg-blue-900/30 border-blue-600">
-                      <AlertCircle className="h-4 w-4 text-blue-400" />
-                      <AlertDescription className="text-blue-200">
-                        First, create an app at <a href="https://developer.x.com" target="_blank" rel="noopener noreferrer" className="underline">developer.x.com</a> to get your API Key and Secret
-                      </AlertDescription>
-                    </Alert>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="api-key" className="text-purple-200">API Key (Consumer Key)</Label>
-                        <Input
-                          id="api-key"
-                          type="text"
-                          value={apiKey}
-                          onChange={(e) => setApiKey(e.target.value)}
-                          placeholder="Enter your X API Key"
-                          className="bg-purple-900/30 border-purple-600 text-white"
-                          data-testid="input-api-key"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="api-secret" className="text-purple-200">API Secret (Consumer Secret)</Label>
-                        <Input
-                          id="api-secret"
-                          type="password"
-                          value={apiSecret}
-                          onChange={(e) => setApiSecret(e.target.value)}
-                          placeholder="Enter your X API Secret"
-                          className="bg-purple-900/30 border-purple-600 text-white"
-                          data-testid="input-api-secret"
-                        />
-                      </div>
-                      
-                      <Button
-                        onClick={() => saveCredentialsMutation.mutate({ apiKey, apiSecret })}
-                        disabled={!apiKey || !apiSecret || saveCredentialsMutation.isPending}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
-                        data-testid="button-save-credentials"
-                      >
-                        {saveCredentialsMutation.isPending ? 'Saving...' : 'Save API Credentials'}
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Step 2: Connect Account */}
-            <Card className="bg-purple-800/50 border-purple-600">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-white">Step 2: Connect Your X Account</CardTitle>
+                    <CardTitle className="text-white">Connect Your X Account</CardTitle>
                     <CardDescription className="text-purple-200">
                       Authorize the app to post on your X account
                     </CardDescription>
@@ -337,14 +244,7 @@ export default function XBotAdmin() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!botStatus?.hasAppCredentials ? (
-                  <Alert className="bg-yellow-900/30 border-yellow-600">
-                    <AlertCircle className="h-4 w-4 text-yellow-400" />
-                    <AlertDescription className="text-yellow-200">
-                      Complete Step 1 first by entering your API credentials
-                    </AlertDescription>
-                  </Alert>
-                ) : botStatus?.isConnected ? (
+                {botStatus?.isConnected ? (
                   <Alert className="bg-green-900/30 border-green-600">
                     <Check className="h-4 w-4 text-green-400" />
                     <AlertDescription className="text-green-200">
@@ -352,19 +252,28 @@ export default function XBotAdmin() {
                     </AlertDescription>
                   </Alert>
                 ) : (
-                  <div className="text-center py-4">
-                    <Button 
-                      onClick={handleConnectXAccount}
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
-                      data-testid="button-connect-x"
-                    >
-                      <Twitter className="h-4 w-4 mr-2" />
-                      Connect X Account
-                    </Button>
-                    <p className="text-sm text-purple-300 mt-3">
-                      You'll be redirected to X to authorize the app
-                    </p>
-                  </div>
+                  <>
+                    <Alert className="bg-blue-900/30 border-blue-600">
+                      <AlertCircle className="h-4 w-4 text-blue-400" />
+                      <AlertDescription className="text-blue-200">
+                        Click the button below to connect your X (Twitter) account. You'll be redirected to X to authorize the app.
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="text-center py-4">
+                      <Button 
+                        onClick={handleConnectXAccount}
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        data-testid="button-connect-x"
+                      >
+                        <Twitter className="h-4 w-4 mr-2" />
+                        Connect X Account
+                      </Button>
+                      <p className="text-sm text-purple-300 mt-3">
+                        You'll authorize once and the bot can post automatically
+                      </p>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
