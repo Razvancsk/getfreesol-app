@@ -5456,6 +5456,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         programId: KAMINO_LEND_PROGRAM_ID,
         marketAddress: KAMINO_MARKET_ADDRESS,
         reserves,
+        capabilities: {
+          canDeposit: false,
+          canWithdraw: false,
+          canViewPositions: false,
+          comingSoon: true,
+          reason: 'SDK dependency conflicts - transaction building API pending',
+        },
       });
       
     } catch (error: any) {
@@ -5482,6 +5489,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Kamino user positions error:", error);
       res.status(500).json({ error: "Failed to fetch Kamino user positions", details: error.message });
+    }
+  });
+  
+  // Kamino Lend - Build deposit transaction (stub for now)
+  app.post("/api/kamino-lend/build-deposit", async (req, res) => {
+    try {
+      const { walletAddress, mint, amount } = req.body;
+      
+      console.log(`🏦 Kamino deposit request: ${amount} of ${mint} from ${walletAddress}`);
+      
+      // TODO: Implement once SDK dependency conflicts are resolved
+      // This will use KaminoAction.buildDepositTxns() to create the deposit transaction
+      
+      res.status(501).json({ 
+        error: "Kamino deposit transactions not yet implemented",
+        message: "SDK integration pending - deposit functionality coming soon",
+        details: "Waiting for @kamino-finance/klend-sdk dependency resolution"
+      });
+      
+    } catch (error: any) {
+      console.error("Kamino deposit error:", error);
+      res.status(500).json({ error: "Failed to build Kamino deposit", details: error.message });
+    }
+  });
+  
+  // Kamino Lend - Build withdraw transaction (stub for now)
+  app.post("/api/kamino-lend/build-withdraw", async (req, res) => {
+    try {
+      const { walletAddress, mint, amount } = req.body;
+      
+      console.log(`🏦 Kamino withdraw request: ${amount} of ${mint} to ${walletAddress}`);
+      
+      // TODO: Implement once SDK dependency conflicts are resolved
+      // This will use KaminoAction.buildWithdrawTxns() to create the withdraw transaction
+      
+      res.status(501).json({ 
+        error: "Kamino withdraw transactions not yet implemented",
+        message: "SDK integration pending - withdraw functionality coming soon",
+        details: "Waiting for @kamino-finance/klend-sdk dependency resolution"
+      });
+      
+    } catch (error: any) {
+      console.error("Kamino withdraw error:", error);
+      res.status(500).json({ error: "Failed to build Kamino withdraw", details: error.message });
     }
   });
 
