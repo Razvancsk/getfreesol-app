@@ -2534,7 +2534,7 @@ export default function SolRefund() {
                   className="h-[100px] w-[100px] halloween-pumpkin"
                 />
                 <div className="hidden sm:block">
-                  <h1 className="text-3xl lg:text-4xl font-bold text-white halloween-title" style={{ fontFamily: 'Georgia, serif', textShadow: '0 0 20px #ff6600, 0 0 30px #ff6600, 2px 2px 4px #000' }}>
+                  <h1 className="text-3xl lg:text-4xl font-bold text-white halloween-title" style={{ fontFamily: 'Georgia, serif', textShadow: '2px 2px 4px #000' }}>
                     Spooky SOL Recovery
                   </h1>
                   <p className="text-orange-300 text-sm" style={{ fontFamily: 'Georgia, serif' }}>Get your SOL back... if you dare!</p>
