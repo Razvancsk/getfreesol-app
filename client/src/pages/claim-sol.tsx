@@ -5063,29 +5063,47 @@ export default function SolRefund() {
         }
         
         @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
+          0% {
+            transform: translate(0px, 0px);
+          }
+          25% {
+            transform: translate(30px, -40px);
           }
           50% {
-            transform: translateY(-20px);
+            transform: translate(-20px, -80px);
+          }
+          75% {
+            transform: translate(40px, -60px);
+          }
+          100% {
+            transform: translate(0px, 0px);
           }
         }
         
         @keyframes float-delayed {
-          0%, 100% {
-            transform: translateY(0px) translateX(0px);
+          0% {
+            transform: translate(0px, 0px) rotate(0deg);
+          }
+          25% {
+            transform: translate(-40px, -50px) rotate(5deg);
           }
           50% {
-            transform: translateY(-15px) translateX(10px);
+            transform: translate(30px, -100px) rotate(-5deg);
+          }
+          75% {
+            transform: translate(-30px, -70px) rotate(3deg);
+          }
+          100% {
+            transform: translate(0px, 0px) rotate(0deg);
           }
         }
         
         .animate-float {
-          animation: float 6s ease-in-out infinite;
+          animation: float 15s ease-in-out infinite;
         }
         
         .animate-float-delayed {
-          animation: float-delayed 8s ease-in-out infinite;
+          animation: float-delayed 18s ease-in-out infinite;
         }
         
         .halloween-pumpkin {
