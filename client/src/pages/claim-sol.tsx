@@ -2552,7 +2552,6 @@ export default function SolRefund() {
                     data-testid="button-social-x"
                     className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                     title="Follow us on X (Twitter)"
-                    style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   >
                     <SiX className="h-4 w-4 text-white" />
                   </a>
@@ -2563,7 +2562,6 @@ export default function SolRefund() {
                     data-testid="button-social-discord"
                     className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                     title="Join our Discord community"
-                    style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   >
                     <SiDiscord className="h-4 w-4 text-white" />
                   </a>
@@ -2574,7 +2572,6 @@ export default function SolRefund() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         className="bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
-                        style={{ boxShadow: '0 0 15px rgba(255, 102, 0, 0.4)' }}
                         data-testid="button-wallet-connected"
                       >
                         <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
@@ -2608,7 +2605,6 @@ export default function SolRefund() {
                       setVisible(true);
                     }}
                     className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-orange-500/30"
-                    style={{ boxShadow: '0 0 20px rgba(255, 102, 0, 0.5)' }}
                     title="Connect your wallet"
                     data-testid="button-connect"
                   >
@@ -2629,7 +2625,6 @@ export default function SolRefund() {
                   rel="noopener noreferrer"
                   data-testid="button-social-x-desktop"
                   className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
-                  style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   title="Follow us on X (Twitter)"
                 >
                   <SiX className="h-4 w-4 text-white" />
@@ -2640,7 +2635,6 @@ export default function SolRefund() {
                   rel="noopener noreferrer"
                   data-testid="button-social-discord-desktop"
                   className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
-                  style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   title="Join our Discord community"
                 >
                   <SiDiscord className="h-4 w-4 text-white" />
@@ -2652,7 +2646,6 @@ export default function SolRefund() {
                   <DropdownMenuTrigger asChild>
                     <Button
                       className="bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
-                      style={{ boxShadow: '0 0 15px rgba(255, 102, 0, 0.4)' }}
                       data-testid="button-wallet-connected-desktop"
                     >
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
@@ -2687,7 +2680,6 @@ export default function SolRefund() {
                       setVisible(true);
                     }}
                     className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-orange-500/30"
-                    style={{ boxShadow: '0 0 20px rgba(255, 102, 0, 0.5)' }}
                     title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
                     data-testid="button-connect-desktop"
                   >
@@ -2839,7 +2831,7 @@ export default function SolRefund() {
 
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
-            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
+            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-bold text-white" style={{ fontFamily: 'Georgia, serif' }}>Scan Results</h3>
                 <button 
@@ -2857,12 +2849,12 @@ export default function SolRefund() {
                 </button>
               </div>
               {!scanResult ? (
-                <div className="text-center text-purple-300 py-8">
+                <div className="text-center text-gray-300 py-8">
                   {scanMutation.isPending ? 'Scanning wallet...' : 'Connect wallet and scan to find empty accounts'}
                 </div>
               ) : (
                 <>
-                  <p className="text-white text-sm mb-6">
+                  <p className="text-gray-300 text-sm mb-6">
                     Found {scanResult.emptyAccounts} empty token accounts
                   </p>
 
@@ -5033,7 +5025,7 @@ export default function SolRefund() {
         className="fixed bottom-4 left-4 md:left-8 z-40 hover:scale-105 transition-all bg-black/60 border-2 border-gray-700 px-6 py-3 rounded-lg text-white font-bold text-xl"
         data-testid="button-floating-swap"
         title="Toggle Token Swap"
-        style={{ fontFamily: 'Georgia, serif', boxShadow: '0 0 15px rgba(255, 102, 0, 0.3)' }}
+        style={{ fontFamily: 'Georgia, serif' }}
       >
         SWAP
       </button>
