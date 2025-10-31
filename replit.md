@@ -31,7 +31,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Mass Transfer**: Sends multiple tokens to a single destination wallet in one transaction.
 - **Jupiter Lend Integration**: Allows users to earn yield by depositing tokens into Jupiter Lend pools.
 - **Auto-Claim Feature**: Permit-based automated SOL reclamation from empty accounts, supporting both standard SPL and Token-2022 programs.
-- **X (Twitter) Bot**: Automated social media marketing system for platform wallet, including scheduled posting and auto-engagement.
+- **X (Twitter) Bot**: Automated social media marketing system for platform wallet with OAuth 1.0a authentication, scheduled posting, and auto-engagement.
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
@@ -62,7 +62,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Jupiter Ultra Holdings API**: Token balance aggregation endpoint.
 - **Jupiter Token List V2 API**: Token metadata provider.
 - **Jupiter Lend API**: Provides earn pools and lending functionalities.
-- **X (Twitter) API**: For automated social media interactions.
+- **X (Twitter) API**: OAuth 1.0a flow for account connection and automated social media interactions.
 - **Multi-Wallet Support**: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
 - **Ledger Hardware Wallet**: Secure cold storage wallet integration with WebHID support.
 - **PostgreSQL**: Primary database.
