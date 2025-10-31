@@ -2540,29 +2540,40 @@ export default function SolRefund() {
             <div className="flex items-center justify-between">
               {/* Jack-o-lantern Logo with Spooky Title */}
               <div className="flex items-center space-x-4">
-                <svg width="100" height="100" viewBox="0 0 100 100" className="halloween-pumpkin">
+                <svg width="100" height="100" viewBox="0 0 120 120" className="halloween-pumpkin">
                   <defs>
                     <filter id="glow">
-                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
                       <feMerge>
                         <feMergeNode in="coloredBlur"/>
                         <feMergeNode in="SourceGraphic"/>
                       </feMerge>
                     </filter>
                   </defs>
-                  <ellipse cx="50" cy="55" rx="35" ry="33" fill="#ff6600" filter="url(#glow)" />
-                  <path d="M 45 30 L 48 20 L 52 18 L 54 22 L 51 30 Z" fill="#228B22" />
-                  <path d="M 30 45 L 35 40 L 40 45 L 35 50 Z" fill="#1a1a1a" />
-                  <path d="M 60 45 L 65 40 L 70 45 L 65 50 Z" fill="#1a1a1a" />
-                  <path d="M 35 65 Q 40 70 50 70 Q 60 70 65 65 L 63 67 Q 58 73 50 73 Q 42 73 37 67 Z" fill="#1a1a1a" />
-                  <path d="M 42 62 L 45 60 L 42 58" fill="#1a1a1a" />
-                  <path d="M 58 62 L 55 60 L 58 58" fill="#1a1a1a" />
+                  
+                  {/* Dark outer circle for depth */}
+                  <circle cx="60" cy="60" r="48" fill="#1a1a1a" />
+                  
+                  {/* Main pumpkin body - bright orange */}
+                  <circle cx="60" cy="60" r="42" fill="#ff6600" filter="url(#glow)" />
+                  
+                  {/* Stem */}
+                  <rect x="56" y="15" width="8" height="12" fill="#2d5016" rx="2" />
+                  
+                  {/* Left eye - triangle carved out */}
+                  <path d="M 40 48 L 47 40 L 54 48 Z" fill="#1a1a1a" />
+                  
+                  {/* Right eye - triangle carved out */}
+                  <path d="M 66 48 L 73 40 L 80 48 Z" fill="#1a1a1a" />
+                  
+                  {/* Mouth - wide grin with zigzag teeth */}
+                  <path d="M 35 68 Q 35 75 40 78 L 44 72 L 48 78 L 52 72 L 56 78 L 60 72 L 64 78 L 68 72 L 72 78 L 76 78 Q 82 75 85 68 L 82 70 L 78 67 L 74 70 L 70 67 L 66 70 L 62 67 L 58 70 L 54 67 L 50 70 L 46 67 L 42 70 L 38 67 Z" fill="#1a1a1a" />
                 </svg>
                 <div className="hidden sm:block">
                   <h1 className="text-3xl lg:text-4xl font-bold text-white halloween-title" style={{ fontFamily: 'Georgia, serif', textShadow: '0 0 20px #ff6600, 0 0 30px #ff6600, 2px 2px 4px #000' }}>
                     Spooky SOL Recovery
                   </h1>
-                  <p className="text-orange-300 text-sm" style={{ fontFamily: 'Georgia, serif' }}>Get your SOL back... if you dare! 🎃👻</p>
+                  <p className="text-orange-300 text-sm" style={{ fontFamily: 'Georgia, serif' }}>Get your SOL back... if you dare!</p>
                 </div>
               </div>
 
@@ -5024,16 +5035,17 @@ export default function SolRefund() {
       <div className="border-t border-gray-700 bg-black/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center justify-center space-x-3">
-            <svg width="40" height="40" viewBox="0 0 100 100">
-              <ellipse cx="50" cy="55" rx="35" ry="33" fill="#ff6600" />
-              <path d="M 45 30 L 48 20 L 52 18 L 54 22 L 51 30 Z" fill="#228B22" />
-              <path d="M 30 45 L 35 40 L 40 45 L 35 50 Z" fill="#1a1a1a" />
-              <path d="M 60 45 L 65 40 L 70 45 L 65 50 Z" fill="#1a1a1a" />
-              <path d="M 35 65 Q 40 70 50 70 Q 60 70 65 65 L 63 67 Q 58 73 50 73 Q 42 73 37 67 Z" fill="#1a1a1a" />
+            <svg width="40" height="40" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="48" fill="#1a1a1a" />
+              <circle cx="60" cy="60" r="42" fill="#ff6600" />
+              <rect x="56" y="15" width="8" height="12" fill="#2d5016" rx="2" />
+              <path d="M 40 48 L 47 40 L 54 48 Z" fill="#1a1a1a" />
+              <path d="M 66 48 L 73 40 L 80 48 Z" fill="#1a1a1a" />
+              <path d="M 35 68 Q 35 75 40 78 L 44 72 L 48 78 L 52 72 L 56 78 L 60 72 L 64 78 L 68 72 L 72 78 L 76 78 Q 82 75 85 68 L 82 70 L 78 67 L 74 70 L 70 67 L 66 70 L 62 67 L 58 70 L 54 67 L 50 70 L 46 67 L 42 70 L 38 67 Z" fill="#1a1a1a" />
             </svg>
             <div className="text-center">
               <div className="text-white font-semibold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Spooky SOL Recovery</div>
-              <div className="text-orange-300 text-sm">2025 All rights reserved 🎃</div>
+              <div className="text-orange-300 text-sm">2025 All rights reserved</div>
             </div>
           </div>
         </div>
