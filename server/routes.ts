@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
@@ -21,6 +21,8 @@ import { unwrapOption, base58 } from '@metaplex-foundation/umi';
 import { z } from 'zod';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { xApiService } from './xApiService';
+import cron from 'node-cron';
 
 // Helper: Verify Ed25519 signature
 function verifySignature(message: string, signature: string, publicKey: string): boolean {
@@ -5426,6 +5428,534 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to get statistics", details: error.message });
     }
   });
+
+  // ============================================
+  // X (TWITTER) BOT API ENDPOINTS
+  // ============================================
+  
+  const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+  
+  // Middleware to verify platform wallet signature (POST requests)
+  const requirePlatformWallet = (req: any, res: any, next: any) => {
+    const { walletAddress, signature, message } = req.body;
+    
+    if (!walletAddress || !signature || !message) {
+      return res.status(401).json({ error: 'Missing authentication credentials' });
+    }
+    
+    if (walletAddress !== PLATFORM_WALLET) {
+      return res.status(403).json({ error: 'Access denied: Platform wallet required' });
+    }
+    
+    // Verify signature
+    const isValid = verifySignature(message, signature, walletAddress);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+    
+    // Prevent replay attacks: message must include timestamp within last 5 minutes
+    try {
+      const messageData = JSON.parse(message);
+      const timestamp = messageData.timestamp;
+      
+      if (!timestamp) {
+        return res.status(401).json({ error: 'Message must include timestamp' });
+      }
+      
+      const now = Date.now();
+      const messageTime = new Date(timestamp).getTime();
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (now - messageTime > fiveMinutes) {
+        return res.status(401).json({ error: 'Signature expired (>5 minutes old)' });
+      }
+      
+      if (messageTime > now + 60000) { // Allow 1 minute clock skew
+        return res.status(401).json({ error: 'Invalid timestamp (future)' });
+      }
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid message format (must be JSON with timestamp)' });
+    }
+    
+    next();
+  };
+  
+  // Helper to verify platform wallet for GET requests
+  const verifyPlatformWalletQuery = (req: any, res: any): boolean => {
+    const { walletAddress, signature, message } = req.query;
+    
+    if (!walletAddress || !signature || !message) {
+      res.status(401).json({ error: 'Missing authentication credentials' });
+      return false;
+    }
+    
+    if (walletAddress !== PLATFORM_WALLET) {
+      res.status(403).json({ error: 'Access denied: Platform wallet required' });
+      return false;
+    }
+    
+    // Verify signature
+    const isValid = verifySignature(message as string, signature as string, walletAddress as string);
+    if (!isValid) {
+      res.status(401).json({ error: 'Invalid signature' });
+      return false;
+    }
+    
+    // Prevent replay attacks: message must include timestamp within last 5 minutes
+    try {
+      const messageData = JSON.parse(message as string);
+      const timestamp = messageData.timestamp;
+      
+      if (!timestamp) {
+        res.status(401).json({ error: 'Message must include timestamp' });
+        return false;
+      }
+      
+      const now = Date.now();
+      const messageTime = new Date(timestamp).getTime();
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (now - messageTime > fiveMinutes) {
+        res.status(401).json({ error: 'Signature expired (>5 minutes old)' });
+        return false;
+      }
+      
+      if (messageTime > now + 60000) { // Allow 1 minute clock skew
+        res.status(401).json({ error: 'Invalid timestamp (future)' });
+        return false;
+      }
+    } catch (error) {
+      res.status(401).json({ error: 'Invalid message format (must be JSON with timestamp)' });
+      return false;
+    }
+    
+    return true;
+  };
+  
+  // Get X bot status and stats
+  app.get("/api/x-bot/status", async (req, res) => {
+    try {
+      if (!verifyPlatformWalletQuery(req, res)) return;
+      
+      // Check if X is authenticated
+      const authTokens = await db.select().from(xAuthTokens).where(eq(xAuthTokens.isActive, true)).limit(1);
+      const isAuthenticated = authTokens.length > 0;
+      
+      // Get post stats
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const postsThisMonth = await db.select().from(xPosts)
+        .where(sql`${xPosts.postedAt} >= ${firstDayOfMonth.toISOString()}`);
+      
+      // Calculate total engagement
+      let totalEngagement = 0;
+      for (const post of postsThisMonth) {
+        totalEngagement += (post.likes || 0) + (post.retweets || 0) + (post.replies || 0);
+      }
+      
+      // Get active schedules
+      const activeSchedules = await db.select().from(xSchedules).where(eq(xSchedules.isActive, true));
+      
+      res.json({
+        success: true,
+        isAuthenticated,
+        accountName: isAuthenticated ? authTokens[0].accountName : null,
+        postsThisMonth: postsThisMonth.length,
+        monthlyLimit: 1500, // Free tier limit
+        totalEngagement,
+        activeSchedules: activeSchedules.length,
+        botStatus: isAuthenticated ? 'active' : 'not_configured',
+      });
+    } catch (error: any) {
+      console.error("X bot status error:", error);
+      res.status(500).json({ error: "Failed to get X bot status", details: error.message });
+    }
+  });
+  
+  // Save X OAuth credentials (manual entry for now)
+  app.post("/api/x-bot/save-credentials", requirePlatformWallet, async (req, res) => {
+    try {
+      const { apiKey, apiKeySecret, accessToken, accessTokenSecret, accountName } = req.body;
+      
+      // Deactivate old tokens
+      await db.update(xAuthTokens).set({ isActive: false });
+      
+      // Save new tokens
+      await db.insert(xAuthTokens).values({
+        apiKey,
+        apiKeySecret,
+        accessToken,
+        accessTokenSecret,
+        accountName: accountName || 'Unknown',
+        isActive: true,
+      });
+      
+      console.log(`✅ X credentials saved for ${accountName}`);
+      
+      res.json({
+        success: true,
+        message: 'X credentials saved successfully',
+      });
+    } catch (error: any) {
+      console.error("Save X credentials error:", error);
+      res.status(500).json({ error: "Failed to save credentials", details: error.message });
+    }
+  });
+  
+  // Get recent posts
+  app.get("/api/x-bot/posts", async (req, res) => {
+    try {
+      if (!verifyPlatformWalletQuery(req, res)) return;
+      
+      const { limit = '20' } = req.query;
+      
+      const posts = await db.select().from(xPosts)
+        .orderBy(sql`${xPosts.createdAt} DESC`)
+        .limit(parseInt(limit as string));
+      
+      res.json({
+        success: true,
+        posts,
+      });
+    } catch (error: any) {
+      console.error("Get X posts error:", error);
+      res.status(500).json({ error: "Failed to get posts", details: error.message });
+    }
+  });
+  
+  // Get schedules
+  app.get("/api/x-bot/schedules", async (req, res) => {
+    try {
+      if (!verifyPlatformWalletQuery(req, res)) return;
+      
+      const schedules = await db.select().from(xSchedules);
+      
+      res.json({
+        success: true,
+        schedules,
+      });
+    } catch (error: any) {
+      console.error("Get X schedules error:", error);
+      res.status(500).json({ error: "Failed to get schedules", details: error.message });
+    }
+  });
+  
+  // Create or update schedule
+  app.post("/api/x-bot/schedule", requirePlatformWallet, async (req, res) => {
+    try {
+      const { scheduleType, timeOfDay, frequency, isActive } = req.body;
+      
+      // Check if schedule exists
+      const existing = await db.select().from(xSchedules)
+        .where(eq(xSchedules.scheduleType, scheduleType))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        // Update existing
+        await db.update(xSchedules)
+          .set({ timeOfDay, frequency, isActive })
+          .where(eq(xSchedules.scheduleType, scheduleType));
+      } else {
+        // Create new
+        await db.insert(xSchedules).values({
+          scheduleType,
+          timeOfDay,
+          frequency,
+          isActive,
+        });
+      }
+      
+      console.log(`✅ Schedule ${scheduleType} updated: ${timeOfDay} (${frequency})`);
+      
+      res.json({
+        success: true,
+        message: 'Schedule saved successfully',
+      });
+    } catch (error: any) {
+      console.error("Save X schedule error:", error);
+      res.status(500).json({ error: "Failed to save schedule", details: error.message });
+    }
+  });
+  
+  // Manual post tweet endpoint (for testing)
+  app.post("/api/x-bot/post-tweet", requirePlatformWallet, async (req, res) => {
+    try {
+      const { content, postType } = req.body;
+      
+      const result = await xApiService.postTweet({ content, postType: postType || 'manual' });
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          tweetId: result.tweetId,
+          message: 'Tweet posted successfully',
+        });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+    } catch (error: any) {
+      console.error("Post tweet error:", error);
+      res.status(500).json({ error: "Failed to post tweet", details: error.message });
+    }
+  });
+  
+  // ============================================
+  // X BOT SCHEDULED POSTING SYSTEM
+  // ============================================
+  
+  async function generateDailyReportContent(): Promise<string> {
+    // Get yesterday's stats
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const yesterdayTransactions = await db.select()
+      .from(transactionLedger)
+      .where(sql`${transactionLedger.processedAt} >= ${yesterday.toISOString()} AND ${transactionLedger.processedAt} < ${today.toISOString()}`);
+    
+    let accountsClosed = 0;
+    let solRecovered = 0;
+    
+    for (const tx of yesterdayTransactions) {
+      accountsClosed += tx.itemsProcessed;
+      solRecovered += parseFloat(tx.solRecovered.toString());
+    }
+    
+    const messages = [
+      `📊 Daily Report\n\n${accountsClosed} accounts closed\n${solRecovered.toFixed(4)} SOL recovered\n\nReclaim your SOL: getyoursolback.app`,
+      `🔥 Yesterday's Impact\n\nHelped Solana users close ${accountsClosed} empty accounts\nRecovered ${solRecovered.toFixed(4)} SOL\n\n💰 Get yours: getyoursolback.app`,
+      `📈 Daily Stats\n\nAccounts processed: ${accountsClosed}\nSOL back to users: ${solRecovered.toFixed(4)}\n\nFree your locked SOL: getyoursolback.app`,
+    ];
+    
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+  
+  function generatePromoContent(): string {
+    const promos = [
+      `Did you know? Solana stores rent deposits in every token account.\n\nIf you're not using an account, you can close it and get your SOL back! 💰\n\nCheck now: getyoursolback.app`,
+      `🔓 Free up locked SOL from your empty token accounts\n\n✅ Safe & secure\n✅ No fees on reclaimed SOL\n✅ Works with all wallets\n\nStart now: getyoursolback.app`,
+      `💡 Solana Tip: Every token account holds ~0.002 SOL in rent\n\nGot old tokens you don't use anymore? Close those accounts and reclaim your SOL!\n\ngetyoursolback.app`,
+      `Thousands of Solana users have recovered their locked SOL 🚀\n\nDon't leave money on the table - check your wallet for empty accounts:\n\ngetyoursolback.app`,
+      `Your Solana wallet might be holding more SOL than you think! 💎\n\nEmpty token accounts = locked rent deposits\n\nReclaim yours in seconds: getyoursolback.app`,
+    ];
+    
+    return promos[Math.floor(Math.random() * promos.length)];
+  }
+  
+  // Initialize scheduled jobs
+  let scheduledJobsStarted = false;
+  
+  function startScheduledJobs() {
+    if (scheduledJobsStarted) return;
+    scheduledJobsStarted = true;
+    
+    console.log('🤖 Starting X bot scheduled jobs...');
+    
+    // GM Post - 8:00 AM UTC
+    cron.schedule('0 8 * * *', async () => {
+      try {
+        const schedule = await db.select().from(xSchedules)
+          .where(eq(xSchedules.scheduleType, 'gm'))
+          .limit(1);
+        
+        if (schedule.length > 0 && schedule[0].isActive) {
+          console.log('☀️ Posting GM tweet...');
+          const gmMessages = [
+            'GM Solana! ☀️\n\nReady to reclaim some SOL today?',
+            'GM Solana fam! 🌅\n\nDon\'t forget to check for empty token accounts 👀',
+            'GM! ☕️\n\nAnother day, another opportunity to free up locked SOL 💰',
+            'GM Solana! 🚀\n\nLet\'s make today count - reclaim that SOL!',
+          ];
+          const content = gmMessages[Math.floor(Math.random() * gmMessages.length)];
+          await xApiService.postTweet({ content, postType: 'gm' });
+          await db.update(xSchedules)
+            .set({ lastRun: new Date() })
+            .where(eq(xSchedules.scheduleType, 'gm'));
+        }
+      } catch (error) {
+        console.error('Failed to post GM tweet:', error);
+      }
+    });
+    
+    // GN Post - 22:00 (10 PM) UTC
+    cron.schedule('0 22 * * *', async () => {
+      try {
+        const schedule = await db.select().from(xSchedules)
+          .where(eq(xSchedules.scheduleType, 'gn'))
+          .limit(1);
+        
+        if (schedule.length > 0 && schedule[0].isActive) {
+          console.log('🌙 Posting GN tweet...');
+          const gnMessages = [
+            'GN Solana! 🌙\n\nSweet dreams and may your SOL be unl...I mean, well-secured! 😴',
+            'GN fam! 🌃\n\nTomorrow is a new day to optimize your Solana wallet 💎',
+            'GN Solana! ✨\n\nRest well, tomorrow we reclaim more SOL 🚀',
+            'GN! 🌟\n\nWhile you sleep, your empty accounts are waiting to be closed 👀\n\nSee you tomorrow!',
+          ];
+          const content = gnMessages[Math.floor(Math.random() * gnMessages.length)];
+          await xApiService.postTweet({ content, postType: 'gn' });
+          await db.update(xSchedules)
+            .set({ lastRun: new Date() })
+            .where(eq(xSchedules.scheduleType, 'gn'));
+        }
+      } catch (error) {
+        console.error('Failed to post GN tweet:', error);
+      }
+    });
+    
+    // Daily Report - 16:00 (4 PM) UTC
+    cron.schedule('0 16 * * *', async () => {
+      try {
+        const schedule = await db.select().from(xSchedules)
+          .where(eq(xSchedules.scheduleType, 'daily_report'))
+          .limit(1);
+        
+        if (schedule.length > 0 && schedule[0].isActive) {
+          console.log('📊 Posting daily report...');
+          const content = await generateDailyReportContent();
+          await xApiService.postTweet({ content, postType: 'daily_report' });
+          await db.update(xSchedules)
+            .set({ lastRun: new Date() })
+            .where(eq(xSchedules.scheduleType, 'daily_report'));
+        }
+      } catch (error) {
+        console.error('Failed to post daily report:', error);
+      }
+    });
+    
+    // Promotional Content - 12:00 PM and 18:00 (6 PM) UTC
+    cron.schedule('0 12,18 * * *', async () => {
+      try {
+        const schedule = await db.select().from(xSchedules)
+          .where(eq(xSchedules.scheduleType, 'promotional'))
+          .limit(1);
+        
+        if (schedule.length > 0 && schedule[0].isActive) {
+          console.log('📢 Posting promotional content...');
+          const content = generatePromoContent();
+          await xApiService.postTweet({ content, postType: 'promotional' });
+          await db.update(xSchedules)
+            .set({ lastRun: new Date() })
+            .where(eq(xSchedules.scheduleType, 'promotional'));
+        }
+      } catch (error) {
+        console.error('Failed to post promotional content:', error);
+      }
+    });
+    
+    console.log('✅ X bot scheduled jobs started');
+  }
+  
+  // ============================================
+  // X BOT ENGAGEMENT SYSTEM
+  // ============================================
+  
+  // Search and engage with Solana content
+  app.post("/api/x-bot/engage", requirePlatformWallet, async (req, res) => {
+    try {
+      const { query, maxResults } = req.body;
+      
+      const tweets = await xApiService.searchTweets({ query: query || 'Solana', maxResults: maxResults || 10 });
+      
+      res.json({
+        success: true,
+        tweets,
+        message: `Found ${tweets.length} tweets`,
+      });
+    } catch (error: any) {
+      console.error("Search tweets error:", error);
+      res.status(500).json({ error: "Failed to search tweets", details: error.message });
+    }
+  });
+  
+  // Reply to a tweet
+  app.post("/api/x-bot/reply", requirePlatformWallet, async (req, res) => {
+    try {
+      const { tweetId, content } = req.body;
+      
+      const result = await xApiService.replyToTweet(tweetId, content);
+      
+      if (result.success) {
+        // Save engagement record
+        await db.insert(xEngagement).values({
+          sourceTweetId: tweetId,
+          engagementType: 'reply',
+          ourTweetId: result.replyTweetId,
+          ourContent: content,
+          status: 'completed',
+          engagedAt: new Date(),
+        });
+        
+        res.json({
+          success: true,
+          replyTweetId: result.replyTweetId,
+          message: 'Reply posted successfully',
+        });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+    } catch (error: any) {
+      console.error("Reply to tweet error:", error);
+      res.status(500).json({ error: "Failed to reply to tweet", details: error.message });
+    }
+  });
+  
+  // Auto-engagement cron job (runs every 2 hours)
+  cron.schedule('0 */2 * * *', async () => {
+    try {
+      const authTokens = await db.select().from(xAuthTokens).where(eq(xAuthTokens.isActive, true)).limit(1);
+      if (authTokens.length === 0) return;
+      
+      console.log('🤖 Running auto-engagement...');
+      
+      const searchQueries = [
+        'Solana #NFT',
+        'Solana rent deposits',
+        'Solana token accounts',
+        '#Solana development',
+        'Solana DeFi',
+      ];
+      
+      const query = searchQueries[Math.floor(Math.random() * searchQueries.length)];
+      const tweets = await xApiService.searchTweets({ query, maxResults: 5 });
+      
+      for (const tweet of tweets.slice(0, 2)) { // Engage with max 2 tweets per run
+        const replyMessages = [
+          `Interesting! Did you know you can reclaim SOL from empty token accounts? 💰\n\nCheck it out: getyoursolback.app`,
+          `Great point! Speaking of Solana, make sure you're not leaving SOL locked in empty accounts 👀\n\ngetyoursolback.app`,
+          `Love the Solana community! 🚀\n\nBTW, if you have old token accounts you're not using, you might have SOL waiting to be reclaimed:\n\ngetyoursolback.app`,
+        ];
+        
+        const content = replyMessages[Math.floor(Math.random() * replyMessages.length)];
+        const result = await xApiService.replyToTweet(tweet.id, content);
+        
+        if (result.success) {
+          await db.insert(xEngagement).values({
+            sourceTweetId: tweet.id,
+            sourceTweetAuthor: tweet.author_id,
+            sourceTweetContent: tweet.text,
+            engagementType: 'reply',
+            ourTweetId: result.replyTweetId,
+            ourContent: content,
+            status: 'completed',
+            engagedAt: new Date(),
+          });
+        }
+        
+        // Wait 30 seconds between replies to avoid spam detection
+        await new Promise(resolve => setTimeout(resolve, 30000));
+      }
+    } catch (error) {
+      console.error('Auto-engagement error:', error);
+    }
+  });
+  
+  // Start scheduled jobs
+  // Jobs will only run if X credentials are configured in database
+  startScheduledJobs();
 
 
 

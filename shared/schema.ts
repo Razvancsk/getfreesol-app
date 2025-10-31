@@ -369,3 +369,72 @@ export type AutoClaimPermitMessage = z.infer<typeof autoClaimPermitMessageSchema
 export type AutoClaimRevokeMessage = z.infer<typeof autoClaimRevokeMessageSchema>;
 export type CreateAutoClaimPermitRequest = z.infer<typeof createAutoClaimPermitRequestSchema>;
 export type RevokeAutoClaimPermitRequest = z.infer<typeof revokeAutoClaimPermitRequestSchema>;
+
+// X (Twitter) Bot Tables
+export const xAuthTokens = pgTable("x_auth_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accessToken: text("access_token").notNull(),
+  accessTokenSecret: text("access_token_secret").notNull(),
+  apiKey: text("api_key").notNull(),
+  apiKeySecret: text("api_key_secret").notNull(),
+  accountName: text("account_name"),
+  accountId: text("account_id"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const xPosts = pgTable("x_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tweetId: text("tweet_id"),
+  content: text("content").notNull(),
+  postType: text("post_type").notNull(), // 'gm', 'gn', 'daily_report', 'promotional', 'engagement'
+  status: text("status").notNull().default("pending"), // 'pending', 'posted', 'failed'
+  scheduledFor: timestamp("scheduled_for"),
+  postedAt: timestamp("posted_at"),
+  errorMessage: text("error_message"),
+  likes: integer("likes").default(0),
+  retweets: integer("retweets").default(0),
+  replies: integer("replies").default(0),
+  views: integer("views").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const xSchedules = pgTable("x_schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scheduleType: text("schedule_type").notNull(), // 'gm', 'gn', 'daily_report', 'promotional'
+  timeOfDay: text("time_of_day").notNull(), // '08:00', '22:00', etc. in UTC
+  frequency: text("frequency").notNull().default("daily"), // 'daily', 'weekly', 'custom'
+  isActive: boolean("is_active").notNull().default(true),
+  lastRun: timestamp("last_run"),
+  nextRun: timestamp("next_run"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const xEngagement = pgTable("x_engagement", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sourceTweetId: text("source_tweet_id").notNull(),
+  sourceTweetAuthor: text("source_tweet_author"),
+  sourceTweetContent: text("source_tweet_content"),
+  engagementType: text("engagement_type").notNull(), // 'like', 'retweet', 'reply', 'quote'
+  ourTweetId: text("our_tweet_id"), // If we replied/quoted
+  ourContent: text("our_content"), // Our reply/quote text
+  status: text("status").notNull().default("pending"), // 'pending', 'completed', 'failed'
+  engagedAt: timestamp("engaged_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertXAuthTokenSchema = createInsertSchema(xAuthTokens).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertXPostSchema = createInsertSchema(xPosts).omit({ id: true, createdAt: true });
+export const insertXScheduleSchema = createInsertSchema(xSchedules).omit({ id: true, createdAt: true });
+export const insertXEngagementSchema = createInsertSchema(xEngagement).omit({ id: true, createdAt: true });
+
+export type XAuthToken = typeof xAuthTokens.$inferSelect;
+export type InsertXAuthToken = z.infer<typeof insertXAuthTokenSchema>;
+export type XPost = typeof xPosts.$inferSelect;
+export type InsertXPost = z.infer<typeof insertXPostSchema>;
+export type XSchedule = typeof xSchedules.$inferSelect;
+export type InsertXSchedule = z.infer<typeof insertXScheduleSchema>;
+export type XEngagement = typeof xEngagement.$inferSelect;
+export type InsertXEngagement = z.infer<typeof insertXEngagementSchema>;
