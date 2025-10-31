@@ -5441,13 +5441,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           symbol: 'kV-CASH',
           decimals: 6,
           depositAPY: 12.14,
-          totalSupply: '96030000', // $96.03M TVL
+          tvl: '96030000', // $96.03M TVL in token units (96.03M tokens with 6 decimals)
+          totalSupply: '96030000',
           reserveAddress: KVAULT_CASH_ADDRESS,
           availableLiquidity: '96030000',
           platform: 'Kamino',
           status: 'Balanced',
           vaultAddress: KVAULT_CASH_ADDRESS,
-          logoUrl: 'https://coin-images.coingecko.com/coins/images/28088/large/global.png', // CASH logo
+          logoUrl: 'https://coin-images.coingecko.com/coins/images/28088/large/global.png',
+          price: '1.00', // CASH is approximately $1 USD
         },
       ];
       
