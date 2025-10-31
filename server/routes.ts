@@ -5580,22 +5580,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth 1.0a flow - Step 1: Get request token and redirect to X
   app.get("/api/x-bot/oauth/request-token", async (req, res) => {
     try {
-      const { walletAddress, signature, message } = req.query;
-      
-      // Verify platform wallet
-      if (!walletAddress || walletAddress !== PLATFORM_WALLET) {
-        return res.status(403).send('Access denied: Platform wallet required');
-      }
-      
-      if (!signature || !message) {
-        return res.status(401).send('Authentication required');
-      }
-      
-      const isValid = verifySignature(message as string, signature as string, walletAddress as string);
-      if (!isValid) {
-        return res.status(401).send('Invalid signature');
-      }
-      
       // Check if we have API keys stored
       const existingCreds = await db.select().from(xAuthTokens).limit(1);
       if (existingCreds.length === 0) {

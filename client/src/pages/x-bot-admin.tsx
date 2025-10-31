@@ -45,50 +45,9 @@ export default function XBotAdmin() {
   }, [publicKey, toast]);
   
   // Handle OAuth connection
-  const handleConnectXAccount = async () => {
-    if (!publicKey || !signMessage) {
-      toast({
-        title: 'Error',
-        description: 'Please connect your wallet first',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    try {
-      setIsConnecting(true);
-      
-      // Create timestamped message
-      const messageData = {
-        action: 'x-oauth-request',
-        timestamp: new Date().toISOString(),
-        wallet: publicKey.toBase58(),
-      };
-      
-      const message = JSON.stringify(messageData);
-      const messageBytes = new TextEncoder().encode(message);
-      
-      // Sign the message
-      const signature = await signMessage(messageBytes);
-      const signatureBase58 = bs58.encode(signature);
-      
-      // Redirect to OAuth endpoint with auth params
-      const authParams = new URLSearchParams({
-        walletAddress: publicKey.toBase58(),
-        signature: signatureBase58,
-        message: message,
-      });
-      
-      window.location.href = `/api/x-bot/oauth/request-token?${authParams.toString()}`;
-    } catch (error: any) {
-      console.error('OAuth initiation error:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to initiate X authentication',
-        variant: 'destructive',
-      });
-      setIsConnecting(false);
-    }
+  const handleConnectXAccount = () => {
+    // Simply redirect to OAuth endpoint - it will redirect to X for authorization
+    window.location.href = '/api/x-bot/oauth/request-token';
   };
 
   // Access denied screen
