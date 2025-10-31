@@ -3064,24 +3064,30 @@ export default function SolRefund() {
                 </div>
 
                 {/* Burn Button */}
-                <Button
-                  onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
-                  disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  data-testid="button-burn-selected-tokens"
-                >
-                  {bulkBurnTokensMutation.isPending ? (
-                    <>
-                      <RefreshCw className="h-5 w-5 animate-spin" />
-                      Burning...
-                    </>
-                  ) : (
-                    <>
-                      <Flame className="h-5 w-5" />
-                      BURN
-                    </>
-                  )}
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                    className="w-full relative overflow-hidden bg-gradient-to-b from-red-950/80 to-red-900/60 hover:from-red-900/80 hover:to-red-800/60 border-2 border-red-600 py-6 text-xl font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                    style={{ fontFamily: 'Georgia, serif', color: '#d4af77' }}
+                    data-testid="button-burn-selected-tokens"
+                  >
+                    {bulkBurnTokensMutation.isPending ? (
+                      <>
+                        <RefreshCw className="h-6 w-6 animate-spin" />
+                        <span>BURNING...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-3xl">🔥</span>
+                        <span>BURN THE CURSED TOKENS</span>
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-center text-sm text-gray-400" style={{ fontFamily: 'Georgia, serif' }}>
+                    Send your unwanted tokens to the underworld.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -3295,50 +3301,56 @@ export default function SolRefund() {
                     </div>
 
                     {/* Burn Button */}
-                    <Button
-                      onClick={() => {
-                        if (!publicKey) {
-                          toast({
-                            title: "Error",
-                            description: "Please connect your wallet first",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-
-                        const selectedIds = Array.from(selectedNfts);
-                        const selectedNftData = nftData.nfts.filter((nft: any) => 
-                          selectedIds.includes(nft.mint || nft.id || nft.assetId)
-                        );
-                        
-                        // Group by type and burn
-                        const nftsByType: { [key: string]: any[] } = {};
-                        selectedNftData.forEach((nft: any) => {
-                          if (!nftsByType[nft.type]) {
-                            nftsByType[nft.type] = [];
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => {
+                          if (!publicKey) {
+                            toast({
+                              title: "Error",
+                              description: "Please connect your wallet first",
+                              variant: "destructive",
+                            });
+                            return;
                           }
-                          nftsByType[nft.type].push(nft);
-                        });
 
-                        // Call burn mutation with selected NFT IDs
-                        burnNftsMutation.mutate(selectedIds);
-                      }}
-                      disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      data-testid="button-burn-selected-nfts"
-                    >
-                      {burnNftsMutation.isPending ? (
-                        <>
-                          <RefreshCw className="h-5 w-5 animate-spin" />
-                          Burning...
-                        </>
-                      ) : (
-                        <>
-                          <Flame className="h-5 w-5" />
-                          BURN
-                        </>
-                      )}
-                    </Button>
+                          const selectedIds = Array.from(selectedNfts);
+                          const selectedNftData = nftData.nfts.filter((nft: any) => 
+                            selectedIds.includes(nft.mint || nft.id || nft.assetId)
+                          );
+                          
+                          // Group by type and burn
+                          const nftsByType: { [key: string]: any[] } = {};
+                          selectedNftData.forEach((nft: any) => {
+                            if (!nftsByType[nft.type]) {
+                              nftsByType[nft.type] = [];
+                            }
+                            nftsByType[nft.type].push(nft);
+                          });
+
+                          // Call burn mutation with selected NFT IDs
+                          burnNftsMutation.mutate(selectedIds);
+                        }}
+                        disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
+                        className="w-full relative overflow-hidden bg-gradient-to-b from-red-950/80 to-red-900/60 hover:from-red-900/80 hover:to-red-800/60 border-2 border-red-600 py-6 text-xl font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                        style={{ fontFamily: 'Georgia, serif', color: '#d4af77' }}
+                        data-testid="button-burn-selected-nfts"
+                      >
+                        {burnNftsMutation.isPending ? (
+                          <>
+                            <RefreshCw className="h-6 w-6 animate-spin" />
+                            <span>BURNING...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-3xl">🔥</span>
+                            <span>BURN THE CURSED NFTs</span>
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-center text-sm text-gray-400" style={{ fontFamily: 'Georgia, serif' }}>
+                        Send your unwanted NFTs to the underworld.
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : !scanNftsMutation.isPending ? (
