@@ -2936,13 +2936,13 @@ export default function SolRefund() {
 
           {/* Burn Tokens Results */}
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length > 0 && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
                   {scanTokensMutation.isPending && (
-                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                    <p className="text-xs text-gray-300 mt-1">Scanning wallet...</p>
                   )}
                 </div>
                 <button 
@@ -2968,7 +2968,7 @@ export default function SolRefund() {
                     className={`relative flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${
                       selectedTokens.has(token.mint)
                         ? 'bg-gradient-to-r from-red-900/40 to-pink-900/40 border-2 border-red-500' 
-                        : 'bg-purple-900/40 border-2 border-purple-700/50 hover:border-purple-600/60'
+                        : 'bg-black/30 border-2 border-orange-900/50 hover:border-orange-700/70'
                     }`}
                     onClick={() => toggleTokenSelection(token.mint)}
                     data-testid={`card-token-${index}`}
@@ -2978,8 +2978,8 @@ export default function SolRefund() {
                       <div 
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors pointer-events-none ${
                           selectedTokens.has(token.mint)
-                            ? 'bg-purple-600 border-purple-600' 
-                            : 'bg-transparent border-purple-400'
+                            ? 'bg-orange-600 border-orange-600' 
+                            : 'bg-transparent border-orange-400'
                         }`}
                       >
                         {selectedTokens.has(token.mint) && <Check className="h-4 w-4 text-white" />}
@@ -2998,8 +2998,8 @@ export default function SolRefund() {
                           }}
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-purple-600/30 flex items-center justify-center">
-                          <Coins className="h-6 w-6 text-purple-300" />
+                        <div className="w-12 h-12 rounded-full bg-orange-600/30 flex items-center justify-center">
+                          <Coins className="h-6 w-6 text-orange-300" />
                         </div>
                       )}
                     </div>
@@ -3009,11 +3009,11 @@ export default function SolRefund() {
                       <div className="text-lg font-semibold text-white truncate">
                         {token.symbol || token.name || 'Unknown Token'}
                       </div>
-                      <div className="text-sm text-purple-200">
+                      <div className="text-sm text-gray-300">
                         Balance: {token.balance.toLocaleString()} {token.symbol || ''}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-purple-300 font-mono truncate">
+                        <span className="text-xs text-gray-400 font-mono truncate">
                           {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
                         </span>
                         {token.usdPrice && token.usdPrice > 0 && (
@@ -3042,14 +3042,14 @@ export default function SolRefund() {
                 <div className="flex gap-3">
                   <Button
                     onClick={selectAllTokens}
-                    className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
+                    className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
                     data-testid="button-select-all-tokens"
                   >
                     Select All
                   </Button>
                   <Button
                     onClick={clearTokenSelection}
-                    className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
+                    className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
                     data-testid="button-clear-selection-tokens"
                   >
                     Clear
@@ -3058,7 +3058,7 @@ export default function SolRefund() {
 
                 {/* Total Selected */}
                 <div className="text-center">
-                  <div className="text-sm text-purple-300 mb-2">
+                  <div className="text-sm text-gray-300 mb-2">
                     Total Selected: {selectedTokens.size} token{selectedTokens.size !== 1 ? 's' : ''} (~{calculateTotalSOL(selectedTokens.size)} SOL net)
                   </div>
                 </div>
@@ -3117,7 +3117,7 @@ export default function SolRefund() {
 
           {/* NFT Burning Interface */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -3127,7 +3127,7 @@ export default function SolRefund() {
                       : 'NFT Scanner'}
                   </h3>
                   {scanNftsMutation.isPending && (
-                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                    <p className="text-xs text-gray-300 mt-1">Scanning wallet...</p>
                   )}
                 </div>
                 <button 
@@ -3149,13 +3149,13 @@ export default function SolRefund() {
               {/* Individual NFT Grid */}
               {scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
-                  <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
-                  <p className="text-purple-200">Scanning for NFTs...</p>
+                  <RefreshCw className="h-8 w-8 text-orange-400 mx-auto animate-spin mb-4" />
+                  <p className="text-gray-300">Scanning for NFTs...</p>
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
                 <div className="space-y-4">
                   {/* NFT Grid */}
-                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50 mb-6">
+                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-orange-900/20 scrollbar-thumb-orange-500/50 mb-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {nftData.nfts.map((nft: any) => {
                       // Use a stable identifier that works for all NFT types
@@ -3166,14 +3166,14 @@ export default function SolRefund() {
                       return (
                         <div
                           key={nftId}
-                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all ${
+                          className={`relative bg-black/30 backdrop-blur-sm border rounded-lg p-3 transition-all ${
                             isFrozen 
                               ? 'cursor-not-allowed opacity-75' 
                               : 'cursor-pointer'
                           } ${
                             isSelected 
                               ? 'border-green-400/50 bg-green-900/20' 
-                              : 'border-purple-500/30 hover:border-purple-400/50'
+                              : 'border-orange-900/50 hover:border-orange-700/70'
                           }`}
                           onClick={() => {
                             if (isFrozen) return; // Prevent selection of frozen NFTs
@@ -3196,7 +3196,7 @@ export default function SolRefund() {
                                 ? 'bg-gray-600/50 border-gray-500 cursor-not-allowed' 
                                 : isSelected 
                                   ? 'bg-green-500 border-green-500' 
-                                  : 'bg-purple-900/50 border-purple-400'
+                                  : 'bg-black/50 border-orange-400'
                             }`}>
                               {isSelected && !isFrozen && <Check className="h-3 w-3 text-white" />}
                             </div>
@@ -3204,7 +3204,7 @@ export default function SolRefund() {
 
                           
                           {/* NFT Image */}
-                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30 relative">
+                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-black/30 relative">
                             {nft.image ? (
                               <img
                                 src={nft.image}
@@ -3218,7 +3218,7 @@ export default function SolRefund() {
                               />
                             ) : null}
                             <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
-                              <Image className="h-8 w-8 text-purple-400" />
+                              <Image className="h-8 w-8 text-orange-400" />
                             </div>
                             
                             {/* FROZEN overlay for frozen NFTs */}
@@ -3275,14 +3275,14 @@ export default function SolRefund() {
                             .filter(Boolean);
                           setSelectedNfts(new Set(selectableNfts));
                         }}
-                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
+                        className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
                         data-testid="button-select-all-nfts"
                       >
                         Select All
                       </Button>
                       <Button
                         onClick={() => setSelectedNfts(new Set())}
-                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
+                        className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
                         data-testid="button-clear-selection-nfts"
                       >
                         Clear
@@ -3291,7 +3291,7 @@ export default function SolRefund() {
 
                     {/* Total Selected */}
                     <div className="text-center">
-                      <div className="text-sm text-purple-300 mb-2">Total Selected: {selectedNfts.size} NFT{selectedNfts.size !== 1 ? 's' : ''}</div>
+                      <div className="text-sm text-gray-300 mb-2">Total Selected: {selectedNfts.size} NFT{selectedNfts.size !== 1 ? 's' : ''}</div>
                     </div>
 
                     {/* Burn Button */}
