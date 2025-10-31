@@ -47,6 +47,7 @@ import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 import pumpkinImage from '@assets/image_1761923461687.png';
 import halloweenBg from '@assets/image_1761925113493.png';
+import claimPumpkin from '@assets/image_1761926876391.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2913,7 +2914,7 @@ export default function SolRefund() {
                       </>
                     ) : (
                       <>
-                        <span className="text-5xl">🎃</span>
+                        <img src={claimPumpkin} alt="Pumpkin" className="h-12 w-12" />
                         <span>TRICK OR TREAT</span>
                       </>
                     )}
