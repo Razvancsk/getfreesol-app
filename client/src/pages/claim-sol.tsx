@@ -2501,29 +2501,29 @@ export default function SolRefund() {
           className="w-full h-full opacity-60 halloween-bg-mobile"
         />
         
-        {/* Floating Ghosts - More visible */}
-        <div className="absolute top-40 left-20 animate-float opacity-35">
+        {/* Floating Ghosts - Spread out across screen */}
+        <div className="absolute top-20 left-10 animate-float opacity-35 hidden md:block">
           <svg width="60" height="80" viewBox="0 0 60 80">
             <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.6" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
         </div>
-        <div className="absolute top-60 right-32 animate-float-delayed opacity-30">
+        <div className="absolute top-10 right-20 animate-float-delayed opacity-30 hidden md:block">
           <svg width="50" height="70" viewBox="0 0 60 80">
             <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.5" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
         </div>
-        <div className="absolute top-32 right-64 animate-float opacity-25">
+        <div className="absolute bottom-32 left-1/4 animate-float opacity-25 hidden lg:block">
           <svg width="40" height="60" viewBox="0 0 60 80">
             <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.4" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
         </div>
-        <div className="absolute top-20 left-1/2 animate-float-delayed opacity-20">
+        <div className="absolute bottom-40 right-1/4 animate-float-delayed opacity-20 hidden lg:block">
           <svg width="55" height="75" viewBox="0 0 60 80">
             <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.4" />
             <circle cx="22" cy="28" r="4" fill="#000" />
