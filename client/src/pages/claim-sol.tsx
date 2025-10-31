@@ -1051,6 +1051,9 @@ export default function SolRefund() {
               const transaction = Transaction.from(transactionBuffer);
 
               // Sign this batch transaction
+              if (!wallet.signTransaction) {
+                throw new Error('Wallet does not support transaction signing');
+              }
               const signedTransaction = await wallet.signTransaction(transaction);
               console.log(`✅ Batch ${batch.batchIndex} transaction signed for ${batch.nftCount} Core NFTs!`);
 
@@ -1114,7 +1117,7 @@ export default function SolRefund() {
 
             // Show any failed NFTs as warnings
             if (prepareResponse.failedNfts && prepareResponse.failedNfts.length > 0) {
-              console.warn(`⚠️ ${prepareResponse.failedNfts.length} NFTs failed validation:`, prepareResponse.failedNfts.map(f => f.nftId));
+              console.warn(`⚠️ ${prepareResponse.failedNfts.length} NFTs failed validation:`, prepareResponse.failedNfts.map((f: any) => f.nftId));
             }
 
             // Optimistically remove burned NFTs from local state immediately
