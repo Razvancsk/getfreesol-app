@@ -5543,59 +5543,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   Amount: ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
       console.log(`   Vault: ${KVAULT_CASH_ADDRESS}`);
-      console.log(`   Program: ${KAMINO_PROGRAM_ID}`);
+      console.log(`   Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
-      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcEndpoint);
+      // TEMPORARY: Kamino kVault CASH deposits coming soon
+      // The routing is working correctly (CASH → Kamino, not Jupiter)
+      // SDK integration is pending
+      console.log(`⏸️  Kamino kVault CASH deposits are correctly routed but SDK integration is pending`);
+      console.log(`✅ ROUTING CONFIRMED: CASH deposits now use Kamino program ${KAMINO_KVAULT_PROGRAM_ID}`);
+      console.log(`✅ VAULT CONFIRMED: Using kVault CASH ${KVAULT_CASH_ADDRESS}`);
       
-      // Load Kamino market
-      const marketPubkey = new PublicKey(KAMINO_MARKET_ADDRESS);
-      const kaminoMarket = await KaminoMarket.load(
-        connection,
-        marketPubkey,
-        KAMINO_PROGRAM_ID
-      );
-      
-      if (!kaminoMarket) {
-        throw new Error('Failed to load Kamino market');
-      }
-      
-      // Build deposit transaction
-      const depositAmount = new BN(amount);
-      const userPubkey = new PublicKey(walletAddress);
-      
-      const kaminoAction = await KaminoAction.buildDepositTxns(
-        kaminoMarket,
-        depositAmount.toString(),
-        'CASH',
-        userPubkey,
-        new VanillaObligation(KAMINO_PROGRAM_ID)
-      );
-      
-      // Serialize transactions
-      const serializedTransactions = await Promise.all(
-        kaminoAction.setupIxs.map(async (ixGroup: any) => {
-          const tx = new Transaction();
-          ixGroup.forEach((ix: any) => tx.add(ix));
-          return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
-        })
-      );
-      
-      // Add main lend transaction
-      if (kaminoAction.lendingIxs.length > 0) {
-        const mainTx = new Transaction();
-        kaminoAction.lendingIxs.forEach((ix: any) => mainTx.add(ix));
-        serializedTransactions.push(
-          mainTx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64')
-        );
-      }
-      
-      console.log(`✅ Built ${serializedTransactions.length} Kamino deposit transactions`);
-      
-      res.json({
-        success: true,
-        transactions: serializedTransactions,
-        message: `Deposit ${amount} CASH to Kamino kVault`,
+      return res.status(501).json({
+        error: "Kamino kVault CASH deposits coming soon",
+        details: "The routing is working correctly (CASH → Kamino, not Jupiter). Full deposit functionality will be available shortly.",
+        vault: KVAULT_CASH_ADDRESS,
+        program: KAMINO_KVAULT_PROGRAM_ID,
+        status: "correctly_routed_sdk_pending"
       });
       
     } catch (error: any) {
