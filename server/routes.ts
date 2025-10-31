@@ -5435,18 +5435,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`🏦 Fetching Kamino kVault CASH Earn pool...`);
       
-      // Fetch CASH token metadata from Jupiter Token List
-      let cashLogoUrl = 'https://coin-images.coingecko.com/coins/images/28088/large/global.png';
-      try {
-        const tokenListResponse = await fetch('https://tokens.jup.ag/tokens?tags=verified');
-        const tokenList = await tokenListResponse.json();
-        const cashToken = tokenList.find((t: any) => t.address === CASH_MINT);
-        if (cashToken?.logoURI) {
-          cashLogoUrl = cashToken.logoURI;
-        }
-      } catch (error) {
-        console.log('Failed to fetch CASH logo from Jupiter, using fallback');
-      }
+      // CASH token logo - using verified URL from Jupiter's CDN
+      const cashLogoUrl = 'https://img.fotofolio.xyz/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsolana-labs%2Ftoken-list%2Fmain%2Fassets%2Fmainnet%2FCASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT%2Flogo.png';
       
       // kVault CASH Earn pool data from Kamino Finance
       const reserves = [
