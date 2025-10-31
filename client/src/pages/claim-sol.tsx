@@ -46,7 +46,8 @@ import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 import pumpkinImage from '@assets/image_1761923461687.png';
-import halloweenBg from '@assets/image_1761931348253.png';
+import halloweenBgMobile from '@assets/image_1761931348253.png';
+import halloweenBgDesktop from '@assets/image_1761932648693.png';
 import claimPumpkin from '@assets/image_1761926938584.png';
 
 interface EmptyTokenAccount {
@@ -2486,19 +2487,24 @@ export default function SolRefund() {
         <style>{`
           .halloween-bg-mobile {
             object-fit: cover;
+            object-position: 50% 50%;
+          }
+          .halloween-bg-desktop {
+            object-fit: cover;
             object-position: center center;
           }
-          @media (max-width: 768px) {
-            .halloween-bg-mobile {
-              object-fit: cover !important;
-              object-position: 50% 50% !important;
-            }
-          }
         `}</style>
+        {/* Mobile Background */}
         <img 
-          src={halloweenBg} 
+          src={halloweenBgMobile} 
           alt="" 
-          className="w-full h-full opacity-60 halloween-bg-mobile"
+          className="w-full h-full opacity-60 halloween-bg-mobile md:hidden"
+        />
+        {/* Desktop Background */}
+        <img 
+          src={halloweenBgDesktop} 
+          alt="" 
+          className="w-full h-full opacity-60 halloween-bg-desktop hidden md:block"
         />
         
         {/* Floating Ghosts - Flying all over screen */}
