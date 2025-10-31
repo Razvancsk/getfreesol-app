@@ -45,6 +45,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
+import pumpkinImage from '@assets/image_1761923461687.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2540,35 +2541,11 @@ export default function SolRefund() {
             <div className="flex items-center justify-between">
               {/* Jack-o-lantern Logo with Spooky Title */}
               <div className="flex items-center space-x-4">
-                <svg width="100" height="100" viewBox="0 0 120 120" className="halloween-pumpkin">
-                  <defs>
-                    <filter id="glow">
-                      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
-                      <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  
-                  {/* Dark outer circle for depth */}
-                  <circle cx="60" cy="60" r="48" fill="#1a1a1a" />
-                  
-                  {/* Main pumpkin body - bright orange */}
-                  <circle cx="60" cy="60" r="42" fill="#ff6600" filter="url(#glow)" />
-                  
-                  {/* Stem */}
-                  <rect x="56" y="15" width="8" height="12" fill="#2d5016" rx="2" />
-                  
-                  {/* Left eye - triangle carved out */}
-                  <path d="M 40 48 L 47 40 L 54 48 Z" fill="#1a1a1a" />
-                  
-                  {/* Right eye - triangle carved out */}
-                  <path d="M 66 48 L 73 40 L 80 48 Z" fill="#1a1a1a" />
-                  
-                  {/* Mouth - wide grin with zigzag teeth */}
-                  <path d="M 35 68 Q 35 75 40 78 L 44 72 L 48 78 L 52 72 L 56 78 L 60 72 L 64 78 L 68 72 L 72 78 L 76 78 Q 82 75 85 68 L 82 70 L 78 67 L 74 70 L 70 67 L 66 70 L 62 67 L 58 70 L 54 67 L 50 70 L 46 67 L 42 70 L 38 67 Z" fill="#1a1a1a" />
-                </svg>
+                <img 
+                  src={pumpkinImage}
+                  alt="Halloween Pumpkin"
+                  className="h-[100px] w-[100px] halloween-pumpkin"
+                />
                 <div className="hidden sm:block">
                   <h1 className="text-3xl lg:text-4xl font-bold text-white halloween-title" style={{ fontFamily: 'Georgia, serif', textShadow: '0 0 20px #ff6600, 0 0 30px #ff6600, 2px 2px 4px #000' }}>
                     Spooky SOL Recovery
@@ -5035,14 +5012,11 @@ export default function SolRefund() {
       <div className="border-t border-gray-700 bg-black/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center justify-center space-x-3">
-            <svg width="40" height="40" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="48" fill="#1a1a1a" />
-              <circle cx="60" cy="60" r="42" fill="#ff6600" />
-              <rect x="56" y="15" width="8" height="12" fill="#2d5016" rx="2" />
-              <path d="M 40 48 L 47 40 L 54 48 Z" fill="#1a1a1a" />
-              <path d="M 66 48 L 73 40 L 80 48 Z" fill="#1a1a1a" />
-              <path d="M 35 68 Q 35 75 40 78 L 44 72 L 48 78 L 52 72 L 56 78 L 60 72 L 64 78 L 68 72 L 72 78 L 76 78 Q 82 75 85 68 L 82 70 L 78 67 L 74 70 L 70 67 L 66 70 L 62 67 L 58 70 L 54 67 L 50 70 L 46 67 L 42 70 L 38 67 Z" fill="#1a1a1a" />
-            </svg>
+            <img 
+              src={pumpkinImage}
+              alt="Halloween Pumpkin"
+              className="h-[40px] w-[40px]"
+            />
             <div className="text-center">
               <div className="text-white font-semibold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Spooky SOL Recovery</div>
               <div className="text-orange-300 text-sm">2025 All rights reserved</div>
