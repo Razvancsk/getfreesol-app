@@ -5540,28 +5540,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🏦 Kamino CASH deposit request`);
       console.log(`   Asset (CASH): ${asset}`);
-      console.log(`   Amount: ${amount}`);
+      console.log(`   Amount (lamports): ${amount}`);
       console.log(`   Wallet: ${walletAddress}`);
-      console.log(`   Vault: ${KVAULT_CASH_ADDRESS}`);
-      console.log(`   Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
+      console.log(`   Market: ${KAMINO_MARKET_ADDRESS}`);
+      console.log(`   Program: ${KAMINO_PROGRAM_ID}`);
       
-      // TEMPORARY: Kamino kVault CASH deposits coming soon
-      // The routing is working correctly (CASH → Kamino, not Jupiter)
-      // SDK integration is pending
-      console.log(`⏸️  Kamino kVault CASH deposits are correctly routed but SDK integration is pending`);
-      console.log(`✅ ROUTING CONFIRMED: CASH deposits now use Kamino program ${KAMINO_KVAULT_PROGRAM_ID}`);
-      console.log(`✅ VAULT CONFIRMED: Using kVault CASH ${KVAULT_CASH_ADDRESS}`);
+      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcEndpoint);
       
-      return res.status(501).json({
-        error: "Kamino kVault CASH deposits coming soon",
-        details: "The routing is working correctly (CASH → Kamino, not Jupiter). Full deposit functionality will be available shortly.",
-        vault: KVAULT_CASH_ADDRESS,
-        program: KAMINO_KVAULT_PROGRAM_ID,
-        status: "correctly_routed_sdk_pending"
+      // 1. Load Kamino market
+      const marketPubkey = new PublicKey(KAMINO_MARKET_ADDRESS);
+      console.log(`📊 Loading Kamino market: ${KAMINO_MARKET_ADDRESS}`);
+      const kaminoMarket = await KaminoMarket.load(
+        connection,
+        marketPubkey
+      );
+      
+      // 2. Load reserves to get updated market data
+      console.log(`📊 Loading market reserves...`);
+      await kaminoMarket.loadReserves();
+      
+      // 3. Convert lamports to base amount (CASH has 6 decimals)
+      const amountInLamports = new BN(amount);
+      const amountBase = amountInLamports.toNumber() / 1_000_000; // Convert to CASH (6 decimals)
+      console.log(`💰 Amount: ${amountBase} CASH (${amount} lamports)`);
+      
+      // 4. Build deposit transaction using SDK
+      const userPubkey = new PublicKey(walletAddress);
+      console.log(`🔨 Building deposit transaction for ${amountBase} CASH...`);
+      
+      const kaminoAction = await KaminoAction.buildDepositTxns(
+        kaminoMarket,
+        amountBase,
+        'CASH',
+        userPubkey,
+        new VanillaObligation(KAMINO_PROGRAM_ID)
+      );
+      
+      // 5. Serialize transactions for frontend
+      const transactions: string[] = [];
+      
+      // Add setup transactions
+      if (kaminoAction.setupIxs && kaminoAction.setupIxs.length > 0) {
+        for (const ixGroup of kaminoAction.setupIxs) {
+          const tx = new Transaction();
+          for (const ix of ixGroup) {
+            tx.add(ix);
+          }
+          const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
+          transactions.push(serialized);
+        }
+      }
+      
+      // Add main lending transaction
+      if (kaminoAction.lendingIxs && kaminoAction.lendingIxs.length > 0) {
+        const mainTx = new Transaction();
+        for (const ix of kaminoAction.lendingIxs) {
+          mainTx.add(ix);
+        }
+        const serialized = mainTx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
+        transactions.push(serialized);
+      }
+      
+      console.log(`✅ Built ${transactions.length} Kamino deposit transactions`);
+      console.log(`📍 Using Kamino program: ${KAMINO_PROGRAM_ID}`);
+      
+      res.json({
+        success: true,
+        transaction: transactions[0], // Return first transaction (frontend expects single tx)
+        transactions, // Also include all transactions
+        message: `Deposit ${amountBase} CASH to Kamino`,
       });
       
     } catch (error: any) {
-      console.error("Kamino deposit error:", error);
+      console.error("❌ Kamino deposit error:", error);
       res.status(500).json({ error: "Failed to build Kamino deposit", details: error.message });
     }
   });
