@@ -5540,8 +5540,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get X bot status and stats
   app.get("/api/x-bot/status", async (req, res) => {
     try {
-      if (!verifyPlatformWalletQuery(req, res)) return;
-      
       // Check if X credentials exist
       const authTokens = await db.select().from(xAuthTokens).where(eq(xAuthTokens.isActive, true)).limit(1);
       
