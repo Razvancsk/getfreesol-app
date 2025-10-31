@@ -4943,7 +4943,7 @@ export default function SolRefund() {
                       <button
                         onClick={loadMoreTransactions}
                         disabled={isLoadingTransactions}
-                        className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 bg-transparent hover:bg-white/10 border border-orange-600/40 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isLoadingTransactions ? 'Loading...' : 'Load More'}
                       </button>
@@ -4956,13 +4956,13 @@ export default function SolRefund() {
 
           {/* Safety & Security Section - Only show on reclaim tab - Bottom of page */}
           {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 mb-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
               <div className="flex items-center mb-4">
                 <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
                 <h3 className="text-lg font-semibold text-white">Safety & Security</h3>
               </div>
 
-              <div className="space-y-3 text-purple-200">
+              <div className="space-y-3 text-gray-300">
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">Only empty accounts (0 token balance) are eligible for closure</span>
@@ -4985,13 +4985,13 @@ export default function SolRefund() {
 
           {/* What is this rent? Section - Only show on reclaim tab - Bottom of page */}
           {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 mb-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
               <div className="flex items-center mb-4">
                 <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
                 <h3 className="text-lg font-semibold text-white">What is this rent?</h3>
               </div>
 
-              <div className="space-y-3 text-purple-200 text-sm">
+              <div className="space-y-3 text-gray-300 text-sm">
                 <p>
                   Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
                 </p>
