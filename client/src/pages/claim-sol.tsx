@@ -93,7 +93,10 @@ export default function SolRefund() {
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
-  const donationPercentage = 15; // Fixed 15% service fee
+  // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
+  const PROMO_END_TIME = new Date('2025-11-01T00:00:00Z').getTime();
+  const isPromoActive = Date.now() < PROMO_END_TIME;
+  const donationPercentage = isPromoActive ? 0 : 15; // 0% during promo, 15% after
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'massTransfer' | 'lend'>('reclaim');
@@ -786,6 +789,8 @@ export default function SolRefund() {
       console.log('Transaction confirmed successfully!');
 
       // Record the successful transaction
+      const feeMultiplier = isPromoActive ? 1.0 : 0.85;
+      const feePercentage = isPromoActive ? 0 : 0.15;
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -795,8 +800,8 @@ export default function SolRefund() {
           tokenMints: [tokenMint],
           tokensProcessed: 1,
           solRecovered: parseFloat(solRecovered),
-          netAmount: parseFloat(solRecovered) * 0.85, // 15% fee
-          feeAmount: parseFloat(solRecovered) * 0.15
+          netAmount: parseFloat(solRecovered) * feeMultiplier,
+          feeAmount: parseFloat(solRecovered) * feePercentage
         })
       });
 
@@ -2161,17 +2166,18 @@ export default function SolRefund() {
     setSelectedTokens(new Set());
   };
 
-  // Calculate total SOL to recover (net after 15% fee)
+  // Calculate total SOL to recover (net after fee)
   const calculateTotalSOL = (count: number) => {
     const grossAmount = count * 0.00203928;
-    const netAmount = grossAmount * 0.85; // 15% fee deducted
+    const feeMultiplier = isPromoActive ? 1.0 : 0.85; // 0% during promo, 15% after
+    const netAmount = grossAmount * feeMultiplier;
     return `${netAmount.toFixed(6)}`;
   };
 
-  // Process SOL refund (15% service fee)
+  // Process SOL refund
   const refundMutation = useMutation({
     mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string }) => {
-      // Get transaction (15% service fee)
+      // Get transaction
       const response = await fetch('/api/sol-refund/prepare-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2468,13 +2474,13 @@ export default function SolRefund() {
   };
 
   const calculateRefund = () => {
-    if (!scanResult) return { total: 0, donation: 0, net: 0 };
+    if (!scanResult) return { total: 0, donation: 0, net: 0, isPromo: false };
 
     const total = parseFloat(scanResult.totalReclaimable);
-    const donation = total * 0.15; // 15% service fee
-    const net = total - donation; // 85% to user
+    const donation = total * (donationPercentage / 100); // 0% during promo, 15% after
+    const net = total - donation;
 
-    return { total, donation, net };
+    return { total, donation, net, isPromo: isPromoActive };
   };
 
   const refundCalc = calculateRefund();
@@ -2568,6 +2574,18 @@ export default function SolRefund() {
 
       <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl relative z-10">
         <div className="space-y-2">
+          {/* 24-Hour Free Claim Promotion Banner */}
+          {isPromoActive && (
+            <div className="backdrop-blur-sm rounded-xl border-2 border-green-500 p-4 mb-4 text-center animate-pulse" style={{ backgroundColor: 'rgba(0, 100, 0, 0.3)' }}>
+              <h2 className="text-2xl md:text-3xl font-bold text-green-400 mb-2" style={{ fontFamily: 'Georgia, serif', textShadow: '0 0 10px #00ff00' }}>
+                🎃 24-HOUR HALLOWEEN SPECIAL - CLAIM FOR FREE! 🎃
+              </h2>
+              <p className="text-green-300 text-lg" style={{ fontFamily: 'Georgia, serif' }}>
+                NO PLATFORM FEES - Keep 100% of your recovered SOL!
+              </p>
+            </div>
+          )}
+          
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
             {/* Top row: Logo and Title */}
@@ -5010,7 +5028,11 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">15% service fee supports platform maintenance and development</span>
+                  {isPromoActive ? (
+                    <span className="text-sm font-bold text-green-400">🎃 24-HOUR FREE CLAIM PROMOTION - NO FEES! 🎃</span>
+                  ) : (
+                    <span className="text-sm">15% service fee supports platform maintenance and development</span>
+                  )}
                 </div>
               </div>
             </div>

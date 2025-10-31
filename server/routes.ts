@@ -878,8 +878,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate fees in lamports - always charge 15% total (server-enforced)
-      const PLATFORM_FEE_PERCENTAGE = 15; // Server-enforced 15% total fee
+      // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
+      const PROMO_END_TIME = new Date('2025-11-01T00:00:00Z').getTime();
+      const isPromoActive = Date.now() < PROMO_END_TIME;
+      
+      // Calculate fees in lamports - 0% during promo, 15% after
+      const PLATFORM_FEE_PERCENTAGE = isPromoActive ? 0 : 15;
       const totalFeeLamports = Math.floor(totalRecoveredLamports * (PLATFORM_FEE_PERCENTAGE / 100));
       
       let referralFeeLamports = 0;
@@ -2037,8 +2041,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Failed to estimate transaction fee, using default:', error);
       }
 
-      // Calculate fees in lamports with proper capping (15% fee)
-      const donationFactor = 0.15; // 15% fee for token burning
+      // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
+      const PROMO_END_TIME_BURN = new Date('2025-11-01T00:00:00Z').getTime();
+      const isPromoActiveBurn = Date.now() < PROMO_END_TIME_BURN;
+      
+      // Calculate fees in lamports with proper capping (0% during promo, 15% after)
+      const donationFactor = isPromoActiveBurn ? 0 : 0.15;
       const requestedFeeLamports = Math.floor(totalRecoveredLamports * donationFactor);
       const safetyBufferLamports = 50000; // 0.00005 SOL buffer
       const maxAllowedFeeLamports = Math.max(0, totalRecoveredLamports - estimatedTxFeeLamports - safetyBufferLamports);
@@ -3087,10 +3095,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = ownerPublicKey;
       
-      // Calculate platform fee (15% of estimated SOL recovery)
+      // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
+      const PROMO_END_TIME_NFT = new Date('2025-11-01T00:00:00Z').getTime();
+      const isPromoActiveNFT = Date.now() < PROMO_END_TIME_NFT;
+      
+      // Calculate platform fee (0% during promo, 15% after)
       // Standard NFTs estimate 0.002 SOL per NFT (others provide no recovery yet)
       const estimatedSolRecovery = nftType === 'standard' ? nftMints.length * 0.002 : 0;
-      const platformFeeAmount = estimatedSolRecovery * 0.15; // 15% platform fee
+      const platformFeeAmount = estimatedSolRecovery * (isPromoActiveNFT ? 0 : 0.15);
       const referralFeeAmount = referralCodeData ? platformFeeAmount * 0.5 : 0; // 50% of platform fee goes to referral
       const finalPlatformFeeAmount = platformFeeAmount - referralFeeAmount;
       
@@ -3480,9 +3492,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchAssets = batchChunks[batchIndex];
         console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchAssets.length} Core NFTs...`);
 
-        // Calculate batch-specific fees
+        // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
+        const PROMO_END_TIME_CORE = new Date('2025-11-01T00:00:00Z').getTime();
+        const isPromoActiveCore = Date.now() < PROMO_END_TIME_CORE;
+        
+        // Calculate batch-specific fees (0% during promo, 15% after)
         const batchExpectedRentLamports = batchAssets.reduce((sum, asset) => sum + Math.floor(asset.expectedRent * 1e9), 0);
-        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.15);
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * (isPromoActiveCore ? 0 : 0.15));
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
@@ -3747,9 +3763,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchNfts = batchChunks[batchIndex];
         console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchNfts.length} Programmable NFTs...`);
 
-        // Calculate batch-specific fees
+        // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
+        const PROMO_END_TIME_PNFT = new Date('2025-11-01T00:00:00Z').getTime();
+        const isPromoActivePNFT = Date.now() < PROMO_END_TIME_PNFT;
+        
+        // Calculate batch-specific fees (0% during promo, 15% after)
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
-        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.15); // 15% fee
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * (isPromoActivePNFT ? 0 : 0.15));
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
@@ -4078,9 +4098,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchNfts = batchChunks[batchIndex];
         console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchNfts.length} Traditional NFTs...`);
 
-        // Calculate batch-specific fees
+        // 24-hour free claim promotion (November 1, 2025 00:00:00 UTC end time)
+        const PROMO_END_TIME_TNFT = new Date('2025-11-01T00:00:00Z').getTime();
+        const isPromoActiveTNFT = Date.now() < PROMO_END_TIME_TNFT;
+        
+        // Calculate batch-specific fees (0% during promo, 15% after)
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
-        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.15); // 15% fee
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * (isPromoActiveTNFT ? 0 : 0.15));
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
