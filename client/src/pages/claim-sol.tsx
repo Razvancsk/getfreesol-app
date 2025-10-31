@@ -2484,6 +2484,9 @@ export default function SolRefund() {
       {/* Halloween Background */}
       <div className="fixed inset-0 pointer-events-none">
         <style>{`
+          .halloween-bg-mobile {
+            object-position: center center;
+          }
           @media (max-width: 768px) {
             .halloween-bg-mobile {
               object-position: 50% 50% !important;
@@ -2494,7 +2497,6 @@ export default function SolRefund() {
           src={halloweenBg} 
           alt="" 
           className="w-full h-full object-cover opacity-60 halloween-bg-mobile"
-          style={{ objectPosition: 'center center' }}
         />
         
         {/* Floating Ghosts - More visible */}
