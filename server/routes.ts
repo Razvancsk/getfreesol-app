@@ -5542,9 +5542,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!verifyPlatformWalletQuery(req, res)) return;
       
-      // Check if X is authenticated
+      // Check if X credentials exist
       const authTokens = await db.select().from(xAuthTokens).where(eq(xAuthTokens.isActive, true)).limit(1);
-      const isAuthenticated = authTokens.length > 0;
+      
+      const hasAppCredentials = authTokens.length > 0 && !!(authTokens[0].apiKey && authTokens[0].apiKeySecret);
+      const isConnected = authTokens.length > 0 && !!(authTokens[0].accessToken && authTokens[0].accessTokenSecret);
+      const isAuthenticated = isConnected;
       
       // Get post stats
       const now = new Date();
@@ -5564,6 +5567,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         isAuthenticated,
+        hasAppCredentials,
+        isConnected,
         accountName: isAuthenticated ? authTokens[0].accountName : null,
         postsThisMonth: postsThisMonth.length,
         monthlyLimit: 1500, // Free tier limit
@@ -5574,6 +5579,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("X bot status error:", error);
       res.status(500).json({ error: "Failed to get X bot status", details: error.message });
+    }
+  });
+  
+  // Save X app credentials (API key/secret only)
+  app.post("/api/x-bot/save-app-credentials", async (req, res) => {
+    try {
+      const { apiKey, apiSecret } = req.body;
+      
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({ error: 'API Key and Secret are required' });
+      }
+      
+      // Check if credentials already exist
+      const existing = await db.select().from(xAuthTokens).limit(1);
+      
+      if (existing.length > 0) {
+        // Update existing record
+        await db.update(xAuthTokens)
+          .set({ 
+            apiKey, 
+            apiKeySecret: apiSecret,
+            isActive: true
+          })
+          .where(eq(xAuthTokens.id, existing[0].id));
+      } else {
+        // Create new record
+        await db.insert(xAuthTokens).values({
+          apiKey,
+          apiKeySecret: apiSecret,
+          accessToken: '',
+          accessTokenSecret: '',
+          accountName: 'Not connected',
+          isActive: true,
+        });
+      }
+      
+      console.log('✅ X API credentials saved');
+      
+      res.json({
+        success: true,
+        message: 'API credentials saved successfully',
+      });
+    } catch (error: any) {
+      console.error("Save app credentials error:", error);
+      res.status(500).json({ error: "Failed to save credentials", details: error.message });
     }
   });
   
