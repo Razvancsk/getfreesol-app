@@ -2490,8 +2490,8 @@ export default function SolRefund() {
           }
           @media (max-width: 768px) {
             .halloween-bg-mobile {
-              object-fit: contain !important;
-              object-position: center center !important;
+              object-fit: cover !important;
+              object-position: 50% 50% !important;
             }
           }
         `}</style>
