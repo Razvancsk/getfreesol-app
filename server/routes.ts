@@ -5435,14 +5435,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`🏦 Fetching Kamino kVault CASH Earn pool...`);
       
-      // CASH token logo - using official CASH token logo  
-      const cashLogoUrl = 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH/logo.png';
+      // Fetch CASH token metadata from Jupiter Token API V2
+      let cashLogoUrl = 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH/logo.png';
+      let cashSymbol = 'CASH';
+      let cashName = 'CASH';
+      
+      try {
+        const jupiterResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${CASH_MINT}`);
+        const jupiterTokens = await jupiterResponse.json();
+        
+        if (jupiterTokens && jupiterTokens.length > 0) {
+          const cashToken = jupiterTokens[0];
+          console.log(`✅ Fetched CASH metadata from Jupiter:`, cashToken);
+          
+          if (cashToken.icon) cashLogoUrl = cashToken.icon;
+          if (cashToken.symbol) cashSymbol = cashToken.symbol;
+          if (cashToken.name) cashName = cashToken.name;
+        } else {
+          console.log('⚠️ CASH token not found in Jupiter API, using fallback metadata');
+        }
+      } catch (error) {
+        console.log('⚠️ Failed to fetch CASH metadata from Jupiter, using fallback:', error);
+      }
       
       // kVault CASH Earn pool data from Kamino Finance
       const reserves = [
         {
           mint: CASH_MINT,
-          symbol: 'CASH', // Show underlying token symbol, not vault symbol
+          symbol: cashSymbol,
+          name: cashName,
           decimals: 6,
           depositAPY: 12.14,
           tvl: '96030000', // $96.03M TVL in token units (96.03M tokens with 6 decimals)
