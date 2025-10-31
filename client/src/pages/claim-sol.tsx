@@ -2486,7 +2486,7 @@ export default function SolRefund() {
         <style>{`
           @media (max-width: 768px) {
             .halloween-bg-mobile {
-              object-position: 35% 30% !important;
+              object-position: 50% 50% !important;
             }
           }
         `}</style>
