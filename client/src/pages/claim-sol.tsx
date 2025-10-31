@@ -2531,6 +2531,16 @@ export default function SolRefund() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                      {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
+                        <Link href="/admin/x-bot">
+                          <DropdownMenuItem 
+                            className="text-white hover:bg-purple-600/40 cursor-pointer"
+                            data-testid="button-admin-xbot"
+                          >
+                            🤖 X Bot Admin
+                          </DropdownMenuItem>
+                        </Link>
+                      )}
                       <DropdownMenuItem 
                         onClick={disconnectWallet}
                         className="text-white hover:bg-purple-600/40 cursor-pointer"
@@ -2595,6 +2605,16 @@ export default function SolRefund() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                    {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
+                      <Link href="/admin/x-bot">
+                        <DropdownMenuItem 
+                          className="text-white hover:bg-purple-600/40 cursor-pointer"
+                          data-testid="button-admin-xbot-desktop"
+                        >
+                          🤖 X Bot Admin
+                        </DropdownMenuItem>
+                      </Link>
+                    )}
                     <DropdownMenuItem 
                       onClick={disconnectWallet}
                       className="text-white hover:bg-purple-600/40 cursor-pointer"
