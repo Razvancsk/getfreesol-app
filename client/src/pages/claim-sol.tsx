@@ -4593,7 +4593,11 @@ export default function SolRefund() {
                     {/* 4. Action Button (LAST) */}
                     <Button
                       onClick={async () => {
-                        if (!publicKey || !wallet || !selectedReserve || !depositAmount) return;
+                        console.log('🚀 DIALOG DEPOSIT BUTTON CLICKED');
+                        if (!publicKey || !wallet || !selectedReserve || !depositAmount) {
+                          console.error('❌ Missing required fields:', { publicKey: !!publicKey, wallet: !!wallet, selectedReserve: !!selectedReserve, depositAmount });
+                          return;
+                        }
                         
                         setDepositingLend(true);
                         try {
@@ -4612,7 +4616,20 @@ export default function SolRefund() {
                             amountInLamports = Math.floor(amountNum * Math.pow(10, selectedReserve.decimals || 9)).toString();
                           }
 
-                          const endpoint = lendMode === 'deposit' ? '/api/jupiter-lend/build-deposit' : '/api/jupiter-lend/build-withdraw';
+                          // CRITICAL: CASH is ONLY on Kamino, NOT Jupiter
+                          const CASH_MINT = 'CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH';
+                          const isCASH = selectedReserve.mint === CASH_MINT;
+                          
+                          // Route based on mint address (primary) or platform field (fallback)
+                          const platform = isCASH ? 'Kamino' : (selectedReserve.platform || 'Jupiter');
+                          console.log('🏦 MINT-BASED ROUTING (Dialog) - Token:', selectedReserve.symbol, 'Mint:', selectedReserve.mint, 'Platform:', platform);
+                          
+                          const platformPrefix = platform === 'Kamino' ? '/api/kamino-lend' : '/api/jupiter-lend';
+                          const endpoint = lendMode === 'deposit' 
+                            ? `${platformPrefix}/build-deposit` 
+                            : `${platformPrefix}/build-withdraw`;
+                          console.log('📍 Using endpoint (Dialog):', endpoint);
+                          
                           const response = await fetch(endpoint, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -4623,8 +4640,11 @@ export default function SolRefund() {
                             })
                           });
 
+                          console.log('📨 Response status (Dialog):', response.status);
                           if (!response.ok) {
-                            throw new Error(`Failed to build ${lendMode} transaction`);
+                            const errorData = await response.json();
+                            console.error('❌ Server error (Dialog):', errorData);
+                            throw new Error(errorData.error || `Failed to build ${lendMode} transaction`);
                           }
 
                           const { transaction: base64Transaction } = await response.json();
