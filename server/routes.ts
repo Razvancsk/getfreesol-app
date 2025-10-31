@@ -13,6 +13,8 @@ import { KaminoMarket, KaminoAction, VanillaObligation, PROGRAM_ID as KAMINO_PRO
 import Decimal from 'decimal.js';
 import * as anchor from '@coral-xyz/anchor';
 import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
+import { Kamino } from '@kamino-finance/kliquidity-sdk';
+import { applyKaminoRpcShim } from './kaminoRpcShim';
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
@@ -5501,12 +5503,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         marketAddress: KAMINO_MARKET_ADDRESS,
         reserves,
         capabilities: {
-          canDeposit: false,
-          canWithdraw: false,
-          canViewPositions: false,
-          comingSoon: true,
-          reason: 'Kamino SDK has web3.js compatibility issues - awaiting SDK update from Kamino Finance team',
-          technicalDetails: 'Both @kamino-finance/klend-sdk and @kamino-finance/kliquidity-sdk throw "rpc.getAccountInfo(...).send is not a function" error due to incompatible @solana/accounts dependency',
+          canDeposit: true,
+          canWithdraw: true,
+          canViewPositions: true,
+          comingSoon: false,
+          reason: 'Kamino kVault CASH integration enabled',
         },
       });
       
@@ -5577,17 +5578,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📍 Vault: ${vaultPubkey.toBase58()}`);
       console.log(`📍 Program ID: ${programId.toBase58()}`);
       
-      // FALLBACK: Due to Kamino SDK compatibility issues, route CASH to Jupiter Lend temporarily
-      // This allows CASH deposits to work while Kamino kVault SDK issues are resolved
-      console.log(`⚠️  Kamino SDK incompatible - falling back to Jupiter Lend for CASH`);
+      // Use Kamino kLiquidity SDK with RPC compatibility shim
+      console.log('🔧 Applying Kamino RPC compatibility shim...');
+      const shimmedConnection = applyKaminoRpcShim(connection);
       
-      // Use Jupiter Lend deposit instruction for CASH
-      const depositIx = await getDepositIx(
-        connection,
-        userPubkey,
-        cashMint,
-        new BN(amount)
+      const kamino = new Kamino('mainnet-beta', shimmedConnection);
+      console.log('✅ Created Kamino kLiquidity instance');
+      
+      // Get the kVault strategy
+      const strategy = await kamino.getStrategyByAddress(vaultPubkey);
+      if (!strategy) {
+        throw new Error('Failed to load Kamino kVault strategy');
+      }
+      
+      console.log('✅ Loaded kVault CASH strategy');
+      console.log(`📍 Shares Mint: ${strategy.sharesMint.toBase58()}`);
+      
+      // Build deposit instruction
+      // For CASH (single asset vault), deposit full amount to token A, 0 to token B
+      const depositAmountDecimal = new Decimal(amount).div(new Decimal(10).pow(6)); // Convert lamports to CASH (6 decimals)
+      const depositIx = await kamino.deposit(
+        strategy,
+        depositAmountDecimal, // tokenMaxA
+        new Decimal(0),       // tokenMaxB (0 for single-sided deposit)
+        userPubkey
       );
+      
+      console.log('✅ Built Kamino kVault deposit instruction');
       
       const tx = new Transaction().add(depositIx);
       
@@ -5598,13 +5615,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString('base64');
       
-      console.log(`✅ Built CASH deposit transaction (via Jupiter Lend fallback)`);
-      console.log(`📍 Amount: ${amount / 1_000_000} CASH`);
+      console.log(`✅ Built Kamino kVault CASH deposit transaction`);
+      console.log(`📍 Amount: ${depositAmountDecimal.toString()} CASH`);
       
       res.json({
         success: true,
         transaction: serialized,
-        message: `Deposit ${amount / 1_000_000} CASH`,
+        message: `Deposit ${depositAmountDecimal.toString()} CASH to Kamino kVault`,
       });
       
     } catch (error: any) {
