@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight, RefreshCw } from 'lucide-react';
+import { ChevronRight, RefreshCw, Clock } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { queryClient } from '@/lib/queryClient';
 
 interface LendPositionsProps {
@@ -16,20 +17,46 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Query for Jupiter Lend earn pools
-  const { data: jupiterLendData, isLoading: loadingMarket } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
+  const { data: jupiterLendData, isLoading: loadingJupiter } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
     queryKey: ['/api/jupiter-lend/earn-pools'],
     retry: false,
   });
+  
+  // Query for Kamino Lend markets
+  const { data: kaminoLendData, isLoading: loadingKamino } = useQuery<{ 
+    success: boolean; 
+    programId: string; 
+    marketAddress: string;
+    reserves: any[]; 
+    capabilities?: { 
+      canDeposit: boolean; 
+      canWithdraw: boolean; 
+      comingSoon: boolean;
+      reason: string;
+    };
+  }>({
+    queryKey: ['/api/kamino-lend/markets'],
+    retry: false,
+  });
+  
+  const loadingMarket = loadingJupiter || loadingKamino;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Invalidate both earn pools and user positions to refresh all data
+    // Invalidate both Jupiter and Kamino data
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/earn-pools'] }),
       queryClient.invalidateQueries({ queryKey: ['/api/jupiter-lend/user-positions', publicKey?.toBase58()] }),
+      queryClient.invalidateQueries({ queryKey: ['/api/kamino-lend/markets'] }),
     ]);
     setIsRefreshing(false);
   };
+  
+  // Combine Jupiter and Kamino reserves
+  const allReserves = [
+    ...(jupiterLendData?.reserves || []).map((r: any) => ({ ...r, platform: 'Jupiter', capabilities: { canDeposit: true, canWithdraw: true, comingSoon: false } })),
+    ...(kaminoLendData?.reserves || []).map((r: any) => ({ ...r, platform: 'Kamino', capabilities: kaminoLendData?.capabilities })),
+  ];
 
   const formatTVL = (value: number, symbol: string) => {
     if (value >= 1_000_000) {
@@ -91,7 +118,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
     );
   }
 
-  if (!jupiterLendData?.reserves || jupiterLendData.reserves.length === 0) {
+  if (allReserves.length === 0) {
     return (
       <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
         <CardContent className="p-12">
@@ -112,7 +139,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
               💰 Lending Vaults
             </CardTitle>
             <CardDescription className="text-purple-200">
-              Earn passive income by lending your assets - Powered by Jupiter Lend
+              Earn passive income by lending your assets - Powered by Jupiter Lend & Kamino Finance
             </CardDescription>
           </div>
           <Button
@@ -134,6 +161,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
             <TableHeader>
               <TableRow className="border-purple-500/20 hover:bg-transparent">
                 <TableHead className="text-purple-300 font-semibold">Vault</TableHead>
+                <TableHead className="text-purple-300 font-semibold">Platform</TableHead>
                 <TableHead className="text-purple-300 font-semibold">APY</TableHead>
                 <TableHead className="text-purple-300 font-semibold">Deposited</TableHead>
                 <TableHead className="text-purple-300 font-semibold">Earnings</TableHead>
@@ -142,7 +170,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
               </TableRow>
             </TableHeader>
             <TableBody>
-              {jupiterLendData.reserves.map((reserve: any) => {
+              {allReserves.map((reserve: any) => {
                 const userPosition = userPositions?.deposits?.find(
                   (dep: any) => dep.asset === reserve.mint
                 );
@@ -157,9 +185,9 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
 
                 return (
                   <TableRow
-                    key={reserve.address}
-                    className="border-purple-500/10 hover:bg-purple-900/20 cursor-pointer transition-colors"
-                    onClick={() => onVaultClick(reserve)}
+                    key={`${reserve.platform}-${reserve.address || reserve.mint}`}
+                    className={`border-purple-500/10 transition-colors ${reserve.capabilities?.comingSoon ? 'opacity-75' : 'hover:bg-purple-900/20 cursor-pointer'}`}
+                    onClick={() => !reserve.capabilities?.comingSoon && onVaultClick(reserve)}
                     data-testid={`vault-${reserve.symbol}`}
                   >
                     {/* Vault Column */}
@@ -181,6 +209,21 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
                           {displaySymbol.substring(0, 1)}
                         </div>
                         <span className="text-white font-semibold">{displaySymbol}</span>
+                      </div>
+                    </TableCell>
+                    
+                    {/* Platform Column */}
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={reserve.platform === 'Jupiter' ? 'default' : 'secondary'} className={reserve.platform === 'Jupiter' ? 'bg-purple-600 text-white' : 'bg-orange-600 text-white'}>
+                          {reserve.platform}
+                        </Badge>
+                        {reserve.capabilities?.comingSoon && (
+                          <Badge variant="outline" className="border-yellow-500/50 text-yellow-300 gap-1">
+                            <Clock className="w-3 h-3" />
+                            Coming Soon
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
 
@@ -262,7 +305,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
             <div className="text-purple-300 font-semibold text-xs uppercase text-right">TVL</div>
           </div>
           
-          {jupiterLendData.reserves.map((reserve: any) => {
+          {allReserves.map((reserve: any) => {
             const userPosition = userPositions?.deposits?.find(
               (dep: any) => dep.asset === reserve.mint
             );
@@ -271,31 +314,44 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
 
             return (
               <div
-                key={reserve.address}
-                className="px-4 py-4 border-b border-purple-500/10 hover:bg-purple-900/20 transition-colors cursor-pointer"
-                onClick={() => onVaultClick(reserve)}
+                key={`${reserve.platform}-${reserve.address || reserve.mint}`}
+                className={`px-4 py-4 border-b border-purple-500/10 transition-colors ${reserve.capabilities?.comingSoon ? 'opacity-75' : 'hover:bg-purple-900/20 cursor-pointer'}`}
+                onClick={() => !reserve.capabilities?.comingSoon && onVaultClick(reserve)}
                 data-testid={`vault-mobile-${reserve.symbol}`}
               >
                 {/* Top Row: Token, APY, TVL */}
                 <div className="grid grid-cols-3 gap-3 mb-3">
-                  {/* Token Column */}
-                  <div className="flex items-center gap-2">
-                    {reserve.logoUrl ? (
-                      <img 
-                        src={reserve.logoUrl} 
-                        alt={displaySymbol}
-                        className="w-8 h-8 rounded-full flex-shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                          if (fallback) fallback.classList.remove('hidden');
-                        }}
-                      />
-                    ) : null}
-                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${reserve.logoUrl ? 'hidden' : ''}`}>
-                      {displaySymbol.substring(0, 1)}
+                  {/* Token Column with Platform Badge */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      {reserve.logoUrl ? (
+                        <img 
+                          src={reserve.logoUrl} 
+                          alt={displaySymbol}
+                          className="w-8 h-8 rounded-full flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${reserve.logoUrl ? 'hidden' : ''}`}>
+                        {displaySymbol.substring(0, 1)}
+                      </div>
+                      <div className="text-white font-medium text-sm">{displaySymbol}</div>
                     </div>
-                    <div className="text-white font-medium text-sm">{displaySymbol}</div>
+                    <div className="flex items-center gap-1.5 pl-10">
+                      <Badge variant={reserve.platform === 'Jupiter' ? 'default' : 'secondary'} className={`text-xs ${reserve.platform === 'Jupiter' ? 'bg-purple-600 text-white' : 'bg-orange-600 text-white'}`}>
+                        {reserve.platform}
+                      </Badge>
+                      {reserve.capabilities?.comingSoon && (
+                        <Badge variant="outline" className="border-yellow-500/50 text-yellow-300 text-xs gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          Soon
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   {/* APY Column */}
