@@ -2501,7 +2501,7 @@ export default function SolRefund() {
           className="w-full h-full opacity-60 halloween-bg-mobile"
         />
         
-        {/* Floating Ghosts - Spread out across screen */}
+        {/* Floating Ghosts - Flying all over screen */}
         <div className="absolute top-20 left-10 animate-float opacity-40">
           <svg width="60" height="80" viewBox="0 0 60 80">
             <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.8" />
@@ -2516,16 +2516,44 @@ export default function SolRefund() {
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
         </div>
-        <div className="absolute bottom-32 left-1/4 animate-float opacity-30 hidden md:block">
+        <div className="absolute bottom-32 left-1/4 animate-float opacity-30">
           <svg width="40" height="60" viewBox="0 0 60 80">
             <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.6" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
         </div>
-        <div className="absolute bottom-40 right-1/4 animate-float-delayed opacity-25 hidden md:block">
+        <div className="absolute bottom-40 right-1/4 animate-float-delayed opacity-25">
           <svg width="55" height="75" viewBox="0 0 60 80">
             <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.5" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+        <div className="absolute top-1/3 left-1/3 animate-float opacity-28">
+          <svg width="45" height="65" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.65" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+        <div className="absolute top-1/2 right-1/3 animate-float-delayed opacity-32">
+          <svg width="52" height="72" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.7" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+        <div className="absolute top-2/3 left-1/2 animate-float opacity-26 hidden md:block">
+          <svg width="48" height="68" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.6" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+        <div className="absolute bottom-20 right-10 animate-float-delayed opacity-30 hidden md:block">
+          <svg width="58" height="78" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.75" />
             <circle cx="22" cy="28" r="4" fill="#000" />
             <circle cx="38" cy="28" r="4" fill="#000" />
           </svg>
@@ -5064,46 +5092,52 @@ export default function SolRefund() {
         
         @keyframes float {
           0% {
-            transform: translate(0px, 0px);
+            transform: translate(0vw, 0vh);
           }
-          25% {
-            transform: translate(30px, -40px);
+          20% {
+            transform: translate(15vw, -10vh);
           }
-          50% {
-            transform: translate(-20px, -80px);
+          40% {
+            transform: translate(-10vw, 20vh);
           }
-          75% {
-            transform: translate(40px, -60px);
+          60% {
+            transform: translate(20vw, 15vh);
+          }
+          80% {
+            transform: translate(-15vw, -5vh);
           }
           100% {
-            transform: translate(0px, 0px);
+            transform: translate(0vw, 0vh);
           }
         }
         
         @keyframes float-delayed {
           0% {
-            transform: translate(0px, 0px) rotate(0deg);
+            transform: translate(0vw, 0vh) rotate(0deg);
           }
-          25% {
-            transform: translate(-40px, -50px) rotate(5deg);
+          20% {
+            transform: translate(-20vw, 15vh) rotate(5deg);
           }
-          50% {
-            transform: translate(30px, -100px) rotate(-5deg);
+          40% {
+            transform: translate(10vw, -10vh) rotate(-5deg);
           }
-          75% {
-            transform: translate(-30px, -70px) rotate(3deg);
+          60% {
+            transform: translate(-15vw, 20vh) rotate(3deg);
+          }
+          80% {
+            transform: translate(25vw, -15vh) rotate(-3deg);
           }
           100% {
-            transform: translate(0px, 0px) rotate(0deg);
+            transform: translate(0vw, 0vh) rotate(0deg);
           }
         }
         
         .animate-float {
-          animation: float 15s ease-in-out infinite;
+          animation: float 20s ease-in-out infinite;
         }
         
         .animate-float-delayed {
-          animation: float-delayed 18s ease-in-out infinite;
+          animation: float-delayed 25s ease-in-out infinite;
         }
         
         .halloween-pumpkin {
