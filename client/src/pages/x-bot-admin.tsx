@@ -32,7 +32,7 @@ export default function XBotAdmin() {
   // Mutation to save API credentials
   const saveCredentialsMutation = useMutation({
     mutationFn: async (data: { apiKey: string; apiSecret: string }) => {
-      return await apiRequest('/api/x-bot/save-app-credentials', 'POST', data);
+      return await apiRequest('POST', '/api/x-bot/save-app-credentials', data);
     },
     onSuccess: () => {
       toast({
