@@ -5421,39 +5421,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // KAMINO LEND ENDPOINTS
   // ============================================
   
-  // Kamino Lending Program ID (from official docs)
-  const KAMINO_LEND_PROGRAM_ID = 'KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD';
+  // Kamino kVault Program and addresses
+  const KAMINO_KVAULT_PROGRAM_ID = '44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd';
   const KAMINO_MARKET_ADDRESS = '7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF';
   
-  // CASH token mint (from your screenshot)
+  // kVault CASH token (kV-CASH)
+  const KVAULT_CASH_ADDRESS = 'KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd';
   const CASH_MINT = 'CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT';
 
   // Kamino Lend - Get CASH Earn pool
   app.get("/api/kamino-lend/markets", async (req, res) => {
     try {
-      console.log(`🏦 Fetching Kamino CASH Earn pool...`);
+      console.log(`🏦 Fetching Kamino kVault CASH Earn pool...`);
       
-      // CASH Earn pool data from Kamino Finance
-      // This data represents the pool shown in your screenshot
+      // kVault CASH Earn pool data from Kamino Finance
       const reserves = [
         {
           mint: CASH_MINT,
-          symbol: 'CASH',
+          symbol: 'kV-CASH',
           decimals: 6,
-          depositAPY: 12.14, // As shown in your screenshot
-          totalSupply: '96030000', // $96.03M TVL as shown
-          reserveAddress: 'To be populated from on-chain data',
+          depositAPY: 12.14,
+          totalSupply: '96030000', // $96.03M TVL
+          reserveAddress: KVAULT_CASH_ADDRESS,
           availableLiquidity: '96030000',
           platform: 'Kamino',
-          status: 'Balanced', // From your screenshot
+          status: 'Balanced',
+          vaultAddress: KVAULT_CASH_ADDRESS,
+          logoUrl: 'https://coin-images.coingecko.com/coins/images/28088/large/global.png', // CASH logo
         },
       ];
       
-      console.log(`✅ CASH Earn Pool loaded: 12.14% APY, $96.03M TVL`);
+      console.log(`✅ kVault CASH Earn Pool loaded: 12.14% APY, $96.03M TVL`);
+      console.log(`📍 Vault Address: ${KVAULT_CASH_ADDRESS}`);
+      console.log(`📍 Program: ${KAMINO_KVAULT_PROGRAM_ID}`);
       
       res.json({
         success: true,
-        programId: KAMINO_LEND_PROGRAM_ID,
+        programId: KAMINO_KVAULT_PROGRAM_ID,
         marketAddress: KAMINO_MARKET_ADDRESS,
         reserves,
         capabilities: {

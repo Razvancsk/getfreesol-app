@@ -4,6 +4,18 @@
 "Get Your SOL Back!" is a full-stack TypeScript application designed to help Solana users reclaim SOL from empty token accounts. It features a React frontend and a Node.js Express backend with PostgreSQL, integrating directly with the Solana blockchain to identify empty accounts and facilitate rent deposit reclamation. The project supports 8 different wallet types including hardware wallets (Ledger) for maximum security and accessibility. The application aims to provide a seamless and efficient way for users to recover SOL previously locked in dormant accounts.
 
 ## Recent Updates (October 2025)
+- **Kamino Finance kVault CASH Integration** (October 2025): Read-only Kamino kVault CASH Earn pool display
+  - **Backend Endpoint**: `/api/kamino-lend/markets` returns kVault CASH pool with 12.14% APY and $96.03M TVL
+  - **Vault Details**: kVault CASH (kV-CASH) at address `KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd`
+  - **Program ID**: kVault Program `44jZGfgAp9t36m2JJeNNxKL7cFQemi2TiaS7dyBxLpzd`
+  - **CASH Mint**: `CASHVDm2wsJXfhj6VWxb7GiMdoLc17Du7paH4bNr5woT`
+  - **UI Integration**: Unified lending interface displays both Jupiter Lend pools and Kamino kVault CASH pool side-by-side
+  - **Platform Badges**: Clear visual distinction between Jupiter (purple) and Kamino (orange) pools
+  - **Coming Soon Indicator**: Yellow "Coming Soon" badges for Kamino deposit/withdraw actions
+  - **Capability Flags**: Machine-readable flags (`canDeposit`, `canWithdraw`, `comingSoon`) to signal feature availability
+  - **SDK Constraint**: Transaction building blocked by @kamino-finance/klend-sdk and @hubbleprotocol/kamino-lending-sdk dependency conflicts with existing Solana packages
+  - **Architecture**: Hybrid read-only approach approved by architect - displays pool data now, defer transactions until SDK compatibility or REST API available
+  - **Stub Endpoints**: `/api/kamino-lend/build-deposit` and `/api/kamino-lend/build-withdraw` return 501 Not Implemented with clear messaging
 - **Jupiter Lend Earn Integration** (October 2025): Complete lending feature powered by Jupiter Lend API
   - **Backend API Endpoints**: `/api/jupiter-lend/earn-pools` fetches all available earn tokens with APY rates, `/api/jupiter-lend/user-positions/:walletAddress` retrieves user's lending positions, `/api/jupiter-lend/build-deposit` and `/api/jupiter-lend/build-withdraw` build deposit/withdraw transactions
   - **Earn Pools Display**: Shows all available Jupiter Lend earn tokens (USDC, SOL, USDT, EURC, USDG, USDS) with current APY rates
