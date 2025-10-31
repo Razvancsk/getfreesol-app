@@ -5569,35 +5569,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         TOKEN_2022_PROGRAM_ID
       );
       
-      // Get user's vault share token account (kV-CASH)
-      const vaultShareMint = vaultPubkey; // In kVaults, the vault itself is the share mint
-      const userShareAta = await getAssociatedTokenAddress(
-        vaultShareMint,
-        userPubkey,
-        false,
-        TOKEN_PROGRAM_ID
-      );
+      // Fetch vault account to get share mint
+      const vaultAccount = await connection.getAccountInfo(vaultPubkey);
+      if (!vaultAccount) {
+        throw new Error('Vault account not found');
+      }
+      
+      // The vault share mint is at offset 8+32 in the account data (after discriminator + authority)
+      // For now, let's skip creating the ATA and let the vault program handle it
+      const tx = new Transaction();
       
       console.log(`📍 User CASH ATA: ${userCashAta.toBase58()}`);
       console.log(`📍 Vault CASH ATA: ${vaultCashAta.toBase58()}`);
-      console.log(`📍 User Share ATA: ${userShareAta.toBase58()}`);
-      
-      const tx = new Transaction();
-      
-      // Check if user share ATA exists, create if needed
-      const shareAtaInfo = await connection.getAccountInfo(userShareAta);
-      if (!shareAtaInfo) {
-        console.log(`🔧 Creating user share token account...`);
-        tx.add(
-          createAssociatedTokenAccountInstruction(
-            userPubkey,
-            userShareAta,
-            userPubkey,
-            vaultShareMint,
-            TOKEN_PROGRAM_ID
-          )
-        );
-      }
+      console.log(`📍 Vault (program): ${vaultPubkey.toBase58()}`);
       
       // Build deposit instruction manually
       // Format: [discriminator (8 bytes), amount (u64)]
