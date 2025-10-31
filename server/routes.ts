@@ -11,6 +11,8 @@ import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
 import { KaminoMarket, KaminoAction, VanillaObligation, PROGRAM_ID as KAMINO_PROGRAM_ID, KaminoManager, KaminoVault } from "@kamino-finance/klend-sdk";
 import Decimal from 'decimal.js';
+import * as anchor from '@coral-xyz/anchor';
+import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
 // Metaplex Core burning - server-side UMI implementation
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplCore, burn, fetchAsset, collectionAddress, fetchCollection } from '@metaplex-foundation/mpl-core';
