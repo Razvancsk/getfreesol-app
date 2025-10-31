@@ -5546,7 +5546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   Program: ${KAMINO_PROGRAM_ID}`);
       
       const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcEndpoint);
+      const connection = new Connection(rpcEndpoint, 'confirmed');
       
       // 1. Load Kamino market
       const marketPubkey = new PublicKey(KAMINO_MARKET_ADDRESS);
