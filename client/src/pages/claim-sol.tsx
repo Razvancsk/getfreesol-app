@@ -2477,20 +2477,93 @@ export default function SolRefund() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Halloween Background Elements */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Haunted House Silhouettes */}
+        <div className="absolute bottom-0 left-0 right-0 opacity-30">
+          <svg viewBox="0 0 1200 400" className="w-full h-auto">
+            {/* Left haunted house */}
+            <path d="M 50 350 L 50 200 L 100 150 L 150 200 L 150 350 Z" fill="#1a1a1a" />
+            <rect x="70" y="250" width="20" height="30" fill="#ff6600" opacity="0.6" />
+            <rect x="110" y="250" width="20" height="30" fill="#ff6600" opacity="0.6" />
+            <path d="M 80 180 L 100 165 L 120 180 Z" fill="#1a1a1a" />
+            
+            {/* Middle haunted house */}
+            <path d="M 400 350 L 400 150 L 480 100 L 560 150 L 560 350 Z" fill="#0d0d0d" />
+            <rect x="430" y="200" width="30" height="40" fill="#ff6600" opacity="0.5" />
+            <rect x="500" y="200" width="30" height="40" fill="#ff6600" opacity="0.5" />
+            <rect x="430" y="270" width="30" height="40" fill="#ff6600" opacity="0.3" />
+            <path d="M 450 130 L 480 110 L 510 130 Z" fill="#0d0d0d" />
+            
+            {/* Right haunted house */}
+            <path d="M 950 350 L 950 180 L 1000 140 L 1050 180 L 1050 350 Z" fill="#1a1a1a" />
+            <rect x="970" y="230" width="25" height="35" fill="#ff6600" opacity="0.4" />
+            <rect x="1005" y="230" width="25" height="35" fill="#ff6600" opacity="0.4" />
+            <path d="M 975 165 L 1000 145 L 1025 165 Z" fill="#1a1a1a" />
+            
+            {/* Trees */}
+            <path d="M 250 350 L 250 250 L 240 250 L 260 220 L 240 220 L 260 200 L 280 220 L 260 220 L 280 250 L 270 250 L 270 350 Z" fill="#0a0a0a" />
+            <path d="M 800 350 L 800 270 L 790 270 L 810 240 L 790 240 L 810 220 L 830 240 L 810 240 L 830 270 L 820 270 L 820 350 Z" fill="#0a0a0a" />
+          </svg>
+        </div>
+        
+        {/* Floating Ghosts */}
+        <div className="absolute top-40 left-20 animate-float opacity-20">
+          <svg width="60" height="80" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#f0f0f0" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+        <div className="absolute top-60 right-32 animate-float-delayed opacity-20">
+          <svg width="50" height="70" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#f0f0f0" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+        <div className="absolute top-32 right-64 animate-float opacity-15">
+          <svg width="40" height="60" viewBox="0 0 60 80">
+            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#f0f0f0" />
+            <circle cx="22" cy="28" r="4" fill="#000" />
+            <circle cx="38" cy="28" r="4" fill="#000" />
+          </svg>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl relative z-10">
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            {/* Top row: Logo and Wallet Connection (mobile) */}
+            {/* Top row: Logo and Title */}
             <div className="flex items-center justify-between">
-              {/* Logo */}
-              <div className="flex items-center">
-                <img 
-                  src={logoImage}
-                  alt="Get your SOL back!"
-                  className="h-[100px] w-[100px]"
-                />
+              {/* Jack-o-lantern Logo with Spooky Title */}
+              <div className="flex items-center space-x-4">
+                <svg width="100" height="100" viewBox="0 0 100 100" className="halloween-pumpkin">
+                  <defs>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <ellipse cx="50" cy="55" rx="35" ry="33" fill="#ff6600" filter="url(#glow)" />
+                  <path d="M 45 30 L 48 20 L 52 18 L 54 22 L 51 30 Z" fill="#228B22" />
+                  <path d="M 30 45 L 35 40 L 40 45 L 35 50 Z" fill="#1a1a1a" />
+                  <path d="M 60 45 L 65 40 L 70 45 L 65 50 Z" fill="#1a1a1a" />
+                  <path d="M 35 65 Q 40 70 50 70 Q 60 70 65 65 L 63 67 Q 58 73 50 73 Q 42 73 37 67 Z" fill="#1a1a1a" />
+                  <path d="M 42 62 L 45 60 L 42 58" fill="#1a1a1a" />
+                  <path d="M 58 62 L 55 60 L 58 58" fill="#1a1a1a" />
+                </svg>
+                <div className="hidden sm:block">
+                  <h1 className="text-3xl lg:text-4xl font-bold text-white halloween-title" style={{ fontFamily: 'Georgia, serif', textShadow: '0 0 20px #ff6600, 0 0 30px #ff6600, 2px 2px 4px #000' }}>
+                    Spooky SOL Recovery
+                  </h1>
+                  <p className="text-orange-300 text-sm" style={{ fontFamily: 'Georgia, serif' }}>Get your SOL back... if you dare! 🎃👻</p>
+                </div>
               </div>
 
               {/* Mobile Wallet Connection */}
@@ -2502,8 +2575,9 @@ export default function SolRefund() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-x"
-                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                     title="Follow us on X (Twitter)"
+                    style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   >
                     <SiX className="h-4 w-4 text-white" />
                   </a>
@@ -2512,8 +2586,9 @@ export default function SolRefund() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-discord"
-                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
                     title="Join our Discord community"
+                    style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   >
                     <SiDiscord className="h-4 w-4 text-white" />
                   </a>
@@ -2523,18 +2598,19 @@ export default function SolRefund() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                        className="bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
+                        style={{ boxShadow: '0 0 15px rgba(255, 102, 0, 0.4)' }}
                         data-testid="button-wallet-connected"
                       >
                         <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
                         <ChevronDown className="h-3 w-3" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                    <DropdownMenuContent className="bg-slate-900 border-orange-500/30">
                       {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                         <Link href="/admin/x-bot">
                           <DropdownMenuItem 
-                            className="text-white hover:bg-purple-600/40 cursor-pointer"
+                            className="text-white hover:bg-orange-600/40 cursor-pointer"
                             data-testid="button-admin-xbot"
                           >
                             🤖 X Bot Admin
@@ -2543,7 +2619,7 @@ export default function SolRefund() {
                       )}
                       <DropdownMenuItem 
                         onClick={disconnectWallet}
-                        className="text-white hover:bg-purple-600/40 cursor-pointer"
+                        className="text-white hover:bg-orange-600/40 cursor-pointer"
                         data-testid="button-disconnect"
                       >
                         Disconnect
@@ -2556,7 +2632,8 @@ export default function SolRefund() {
                       select(null);
                       setVisible(true);
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
+                    className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-orange-500/30"
+                    style={{ boxShadow: '0 0 20px rgba(255, 102, 0, 0.5)' }}
                     title="Connect your wallet"
                     data-testid="button-connect"
                   >
@@ -2576,7 +2653,8 @@ export default function SolRefund() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="button-social-x-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                  style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   title="Follow us on X (Twitter)"
                 >
                   <SiX className="h-4 w-4 text-white" />
@@ -2586,7 +2664,8 @@ export default function SolRefund() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="button-social-discord-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  className="flex items-center justify-center w-8 h-8 bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                  style={{ boxShadow: '0 0 10px rgba(255, 102, 0, 0.3)' }}
                   title="Join our Discord community"
                 >
                   <SiDiscord className="h-4 w-4 text-white" />
@@ -2597,18 +2676,19 @@ export default function SolRefund() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                      className="bg-orange-900/60 hover:bg-orange-800/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
+                      style={{ boxShadow: '0 0 15px rgba(255, 102, 0, 0.4)' }}
                       data-testid="button-wallet-connected-desktop"
                     >
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                  <DropdownMenuContent className="bg-slate-900 border-orange-500/30">
                     {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                       <Link href="/admin/x-bot">
                         <DropdownMenuItem 
-                          className="text-white hover:bg-purple-600/40 cursor-pointer"
+                          className="text-white hover:bg-orange-600/40 cursor-pointer"
                           data-testid="button-admin-xbot-desktop"
                         >
                           🤖 X Bot Admin
@@ -2617,7 +2697,7 @@ export default function SolRefund() {
                     )}
                     <DropdownMenuItem 
                       onClick={disconnectWallet}
-                      className="text-white hover:bg-purple-600/40 cursor-pointer"
+                      className="text-white hover:bg-orange-600/40 cursor-pointer"
                       data-testid="button-disconnect-desktop"
                     >
                       Disconnect
@@ -2631,7 +2711,8 @@ export default function SolRefund() {
                       select(null);
                       setVisible(true);
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
+                    className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-orange-500/30"
+                    style={{ boxShadow: '0 0 20px rgba(255, 102, 0, 0.5)' }}
                     title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
                     data-testid="button-connect-desktop"
                   >
@@ -2646,16 +2727,16 @@ export default function SolRefund() {
           {/* Center Navigation Buttons */}
           {isConnected && (
             <div className="flex justify-center py-2 px-2">
-              <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <div className="flex items-center space-x-2">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
                     activeTab === 'reclaim' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                      ? 'bg-black/60 text-white border-gray-600' 
+                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
                   }`}
                 >
-                  <svg className="h-4 w-4 sm:mr-2" viewBox="0 0 397.7 311.7" style={{ fill: activeTab === 'reclaim' ? 'white' : '#00FFA3' }}>
+                  <svg className="h-4 w-4 mr-2 inline-block" viewBox="0 0 397.7 311.7" style={{ fill: '#ff6600' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
@@ -2665,40 +2746,53 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => setActiveTab('burnTokens')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
                     activeTab === 'burnTokens' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                      ? 'bg-black/60 text-white border-gray-600' 
+                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
                   }`}
                 >
-                  🔥 Burn
+                  <Flame className="h-4 w-4 mr-2 inline-block" style={{ color: '#ff6600' }} />
+                  Burn
                 </Button>
                 <Button
                   onClick={() => setActiveTab('referrals')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
                     activeTab === 'referrals' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                      ? 'bg-black/60 text-white border-gray-600' 
+                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
                   }`}
                 >
-                  <Users className="h-4 w-4 mr-2" />
+                  <Users className="h-4 w-4 mr-2 inline-block" />
                   Referrals
                 </Button>
                 <Button
                   onClick={() => setActiveTab('massTransfer')}
-                  className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
+                  className={`hidden md:inline-flex px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
                     activeTab === 'massTransfer' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                      ? 'bg-black/60 text-white border-gray-600' 
+                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
                   }`}
                   data-testid="button-mass-transfer"
                 >
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  <ArrowLeftRight className="h-4 w-4 mr-2" />
                   Transfer
                 </Button>
                 <Button
+                  onClick={() => setActiveTab('statistics')}
+                  className={`hidden md:inline-flex px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
+                    activeTab === 'statistics' 
+                      ? 'bg-black/60 text-white border-gray-600' 
+                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
+                  }`}
+                  data-testid="button-statistics"
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Statistics
+                </Button>
+                <Button
                   onClick={() => setActiveTab('lend')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`hidden px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
                     activeTab === 'lend' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
@@ -2770,9 +2864,9 @@ export default function SolRefund() {
 
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Scan Results</h3>
+                <h3 className="text-2xl font-bold text-white" style={{ fontFamily: 'Georgia, serif' }}>Scan Results</h3>
                 <button 
                   onClick={() => {
                     if (publicKey) {
@@ -2852,10 +2946,10 @@ export default function SolRefund() {
                   </Button>
                 </div>
               ) : (
-                <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-6 text-center">
-                  <CheckCircle className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-purple-400 mb-2">Great news!</h4>
-                  <p className="text-white">
+                <div className="bg-black/40 backdrop-blur-sm border border-gray-700 rounded-lg p-8 text-center">
+                  <CheckCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-xl font-semibold text-white mb-2" style={{ fontFamily: 'Georgia, serif' }}>Great news!</h4>
+                  <p className="text-gray-300">
                     Your wallet has no empty token accounts. All your accounts are either active or already closed.
                   </p>
                 </div>
@@ -4762,21 +4856,21 @@ export default function SolRefund() {
           {activeTab === 'reclaim' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Total SOL Recovered */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
+              <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-8 text-center">
+                <div className="text-4xl font-bold text-white mb-3" style={{ fontFamily: 'Georgia, serif' }}>
                   {stats ? stats.totalSolRecovered.toFixed(6) : '0.000000'}
                 </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                <div className="text-sm text-gray-300 uppercase tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
                   TOTAL SOL RECOVERED
                 </div>
               </div>
 
               {/* Total Accounts Closed */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
+              <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-8 text-center">
+                <div className="text-4xl font-bold text-white mb-3" style={{ fontFamily: 'Georgia, serif' }}>
                   {stats ? stats.totalAccountsClaimed : 0}
                 </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
+                <div className="text-sm text-gray-300 uppercase tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
                   TOTAL ACCOUNTS CLOSED
                 </div>
               </div>
@@ -4785,25 +4879,25 @@ export default function SolRefund() {
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
           {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-6 mb-6">
               <div className="flex items-center mb-6">
-                <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
+                <h3 className="text-2xl font-bold text-white text-center w-full" style={{ fontFamily: 'Georgia, serif' }}>ALL TIME LEDGER</h3>
               </div>
 
               <div className="overflow-x-auto">
                 <div className="min-w-full">
                   {/* Header */}
-                  <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                  <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-gray-600">
+                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
                       WALLET/TX
                     </div>
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider text-center" style={{ fontFamily: 'Georgia, serif' }}>
                       ACCTS
                     </div>
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider text-center" style={{ fontFamily: 'Georgia, serif' }}>
                       CLAIMED SOL
                     </div>
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider text-center" style={{ fontFamily: 'Georgia, serif' }}>
                       DATE
                     </div>
                   </div>
@@ -4811,18 +4905,18 @@ export default function SolRefund() {
                   {/* Transaction Rows */}
                   <div>
                     {isLoadingTransactions && allTransactions.length === 0 ? (
-                      <div className="text-center text-purple-300 py-8">
+                      <div className="text-center text-gray-400 py-8">
                         Loading transactions...
                       </div>
                     ) : allTransactions.length === 0 ? (
-                      <div className="text-center text-purple-300 py-8">
+                      <div className="text-center text-gray-400 py-8">
                         No transactions yet
                       </div>
                     ) : (
                       allTransactions.map((tx, index) => (
                         <div key={tx.signature}>
                           <div 
-                            className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                            className="grid grid-cols-4 gap-4 py-3 hover:bg-gray-800/40 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-gray-600"
                             onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
                             title="Click to view transaction on Solscan"
                           >
@@ -4927,17 +5021,19 @@ export default function SolRefund() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm">
+      <div className="border-t border-gray-700 bg-black/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center justify-center space-x-3">
-            <img 
-              src={logoImage}
-              alt="Get Free Sol"
-              className="h-8 w-8"
-            />
+            <svg width="40" height="40" viewBox="0 0 100 100">
+              <ellipse cx="50" cy="55" rx="35" ry="33" fill="#ff6600" />
+              <path d="M 45 30 L 48 20 L 52 18 L 54 22 L 51 30 Z" fill="#228B22" />
+              <path d="M 30 45 L 35 40 L 40 45 L 35 50 Z" fill="#1a1a1a" />
+              <path d="M 60 45 L 65 40 L 70 45 L 65 50 Z" fill="#1a1a1a" />
+              <path d="M 35 65 Q 40 70 50 70 Q 60 70 65 65 L 63 67 Q 58 73 50 73 Q 42 73 37 67 Z" fill="#1a1a1a" />
+            </svg>
             <div className="text-center">
-              <div className="text-white font-semibold text-lg">Get Free Sol</div>
-              <div className="text-purple-300 text-sm">2025 All rights reserved</div>
+              <div className="text-white font-semibold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Spooky SOL Recovery</div>
+              <div className="text-orange-300 text-sm">2025 All rights reserved 🎃</div>
             </div>
           </div>
         </div>
@@ -4958,18 +5054,15 @@ export default function SolRefund() {
         />
       )}
 
-      {/* Floating Swap Toggle Button */}
+      {/* Floating Swap Toggle Button - Halloween Style */}
       <button
         onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
-        className="fixed -bottom-4 left-0 md:bottom-4 md:left-8 z-40 hover:scale-105 transition-transform bg-transparent border-0 p-0"
+        className="fixed bottom-4 left-4 md:left-8 z-40 hover:scale-105 transition-all bg-black/60 border-2 border-gray-700 px-6 py-3 rounded-lg text-white font-bold text-xl"
         data-testid="button-floating-swap"
         title="Toggle Token Swap"
+        style={{ fontFamily: 'Georgia, serif', boxShadow: '0 0 15px rgba(255, 102, 0, 0.3)' }}
       >
-        <img 
-          src={swapButtonImage} 
-          alt="Swap" 
-          className="h-36 w-auto drop-shadow-2xl"
-        />
+        SWAP
       </button>
 
       <style>{`
@@ -4983,6 +5076,36 @@ export default function SolRefund() {
         }
         .animate-spin-slow {
           animation: spin-slow 10s linear infinite;
+        }
+        
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+        
+        @keyframes float-delayed {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px);
+          }
+          50% {
+            transform: translateY(-15px) translateX(10px);
+          }
+        }
+        
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-float-delayed {
+          animation: float-delayed 8s ease-in-out infinite;
+        }
+        
+        .halloween-pumpkin {
+          filter: drop-shadow(0 0 10px #ff6600) drop-shadow(0 0 20px #ff6600);
         }
       `}</style>
     </div>
