@@ -72,103 +72,301 @@ export default function HalloweenThemes() {
 
   if (showPreview && selectedThemeData) {
     const Icon = selectedThemeData.icon;
-    return (
-      <div className={`min-h-screen bg-gradient-to-b ${selectedThemeData.gradient} p-4 relative overflow-hidden`}>
-        {/* Halloween decorative elements */}
-        <Icon className={`absolute top-10 right-10 h-32 w-32 ${selectedThemeData.textColor} opacity-10 animate-pulse`} />
-        <Icon className={`absolute bottom-20 left-10 h-24 w-24 ${selectedThemeData.textColor} opacity-10 animate-pulse`} style={{ animationDelay: '1s' }} />
-        
-        <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-          {/* Preview Header */}
-          <Card className={`${selectedThemeData.cardBg} ${selectedThemeData.borderColor} backdrop-blur border-2`}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={() => setShowPreview(false)}
-                    variant="ghost"
-                    size="icon"
-                    className="text-white hover:text-white hover:bg-white/20"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                  <div>
-                    <CardTitle className="text-2xl text-white">Full Preview - {selectedThemeData.name}</CardTitle>
-                    <CardDescription className="text-white/70">
-                      This is how your entire website will look!
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge className={`${selectedThemeData.accentColor} text-white text-lg px-4 py-2`}>
-                  Preview Mode
-                </Badge>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Main Content Preview */}
-          <Card className={`${selectedThemeData.cardBg} ${selectedThemeData.borderColor} backdrop-blur border-2`}>
-            <CardHeader className="text-center space-y-4 py-12">
-              <div className="flex justify-center mb-4">
-                <Icon className={`h-20 w-20 ${selectedThemeData.textColor}`} />
-              </div>
-              <CardTitle className="text-5xl font-bold text-white">
-                🎃 Get Your SOL Back! 🎃
-              </CardTitle>
-              <CardDescription className={`text-xl ${selectedThemeData.textColor} max-w-2xl mx-auto`}>
-                Reclaim SOL from empty token accounts this Halloween season!
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pb-12">
-              <div className="flex flex-col items-center gap-4">
-                <Button className={`${selectedThemeData.accentColor} hover:opacity-90 text-white text-lg px-8 py-6`}>
-                  🎃 Connect Wallet & Scan
-                </Button>
-                <p className={`text-sm ${selectedThemeData.textColor}`}>
-                  Happy Halloween! Scan your wallet for free SOL
-                </p>
-              </div>
-
-              {/* Stats Preview */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                {[
-                  { label: "Total SOL Recovered", value: "3.45 SOL", icon: "💰" },
-                  { label: "Empty Accounts Found", value: "127", icon: "👻" },
-                  { label: "Happy Users", value: "89", icon: "🎃" },
-                ].map((stat, i) => (
-                  <Card key={i} className={`${selectedThemeData.cardBg} ${selectedThemeData.borderColor} border text-center`}>
-                    <CardContent className="pt-6">
-                      <p className="text-3xl mb-2">{stat.icon}</p>
-                      <p className="text-2xl font-bold text-white">{stat.value}</p>
-                      <p className={`text-sm ${selectedThemeData.textColor} mt-1`}>{stat.label}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 justify-center">
-            <Button
-              onClick={() => setShowPreview(false)}
-              variant="outline"
-              className="border-white text-white hover:bg-white/20"
-            >
-              ← Back to Themes
+    
+    // Different layouts for each theme
+    if (selectedThemeData.id === 1) {
+      // Haunted Mansion - Spooky Purple
+      return (
+        <div className={`min-h-screen bg-gradient-to-b ${selectedThemeData.gradient} p-4 relative overflow-hidden`}>
+          {/* Cobwebs in corners */}
+          <div className="absolute top-0 left-0 w-64 h-64 opacity-20">
+            <svg viewBox="0 0 200 200" className="text-purple-300">
+              <path d="M0,0 L100,100 L0,200 M0,0 L200,0 L100,100 M100,100 L200,200" stroke="currentColor" fill="none" strokeWidth="2"/>
+              <circle cx="100" cy="100" r="3" fill="currentColor"/>
+            </svg>
+          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 opacity-20 transform scale-x-[-1]">
+            <svg viewBox="0 0 200 200" className="text-purple-300">
+              <path d="M0,0 L100,100 L0,200 M0,0 L200,0 L100,100 M100,100 L200,200" stroke="currentColor" fill="none" strokeWidth="2"/>
+            </svg>
+          </div>
+          
+          {/* Floating ghosts */}
+          <Ghost className="absolute top-20 right-1/4 h-16 w-16 text-purple-400 opacity-30 animate-bounce" style={{animationDuration: '3s'}} />
+          <Ghost className="absolute top-40 left-1/3 h-12 w-12 text-purple-300 opacity-20 animate-bounce" style={{animationDuration: '4s', animationDelay: '1s'}} />
+          
+          <div className="max-w-5xl mx-auto space-y-8 relative z-10">
+            <Button onClick={() => setShowPreview(false)} variant="ghost" className="text-purple-200 hover:text-white mb-4">
+              ← Back
             </Button>
-            <Button
-              onClick={() => {
-                alert(`${selectedThemeData.name} will be applied to your website!`);
-              }}
-              className={`${selectedThemeData.accentColor} text-white hover:opacity-90 px-8`}
-            >
-              Apply This Theme
+            
+            {/* Gothic mansion style header */}
+            <div className="text-center border-8 border-purple-800 bg-purple-950/80 p-12 rounded-none relative">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-purple-950 px-4">
+                <Ghost className="h-12 w-12 text-purple-400" />
+              </div>
+              <h1 className="text-6xl font-serif text-purple-100 mb-4" style={{textShadow: '3px 3px 0 #000'}}>
+                HAUNTED SOL RECOVERY
+              </h1>
+              <p className="text-purple-300 text-xl italic">Enter if you dare... reclaim your cursed SOL</p>
+              <Button className="mt-8 bg-purple-600 hover:bg-purple-700 text-white px-12 py-6 text-xl border-4 border-purple-900">
+                👻 ENTER THE MANSION
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-purple-900/50 border-4 border-purple-700 p-6 text-center">
+                <p className="text-4xl mb-2">⚰️</p>
+                <p className="text-3xl font-bold text-white">666</p>
+                <p className="text-purple-300">Haunted Accounts</p>
+              </div>
+              <div className="bg-purple-900/50 border-4 border-purple-700 p-6 text-center">
+                <p className="text-4xl mb-2">🕷️</p>
+                <p className="text-3xl font-bold text-white">13.13</p>
+                <p className="text-purple-300">SOL Exorcised</p>
+              </div>
+              <div className="bg-purple-900/50 border-4 border-purple-700 p-6 text-center">
+                <p className="text-4xl mb-2">🦇</p>
+                <p className="text-3xl font-bold text-white">99</p>
+                <p className="text-purple-300">Brave Souls</p>
+              </div>
+            </div>
+            
+            <Button onClick={() => alert('Haunted Mansion theme selected!')} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-6 text-lg">
+              CLAIM THIS HAUNTED THEME
             </Button>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+    
+    if (selectedThemeData.id === 2) {
+      // Pumpkin Patch - Orange
+      return (
+        <div className={`min-h-screen bg-gradient-to-b ${selectedThemeData.gradient} p-4 relative overflow-hidden`}>
+          {/* Pumpkin decorations */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 opacity-30">
+            <div className="flex justify-around items-end h-full">
+              <div className="text-7xl">🎃</div>
+              <div className="text-9xl">🎃</div>
+              <div className="text-7xl">🎃</div>
+              <div className="text-8xl">🎃</div>
+              <div className="text-7xl">🎃</div>
+            </div>
+          </div>
+          
+          <div className="max-w-5xl mx-auto space-y-8 relative z-10">
+            <Button onClick={() => setShowPreview(false)} variant="ghost" className="text-orange-200 hover:text-white mb-4">
+              ← Back
+            </Button>
+            
+            {/* Carved pumpkin style */}
+            <div className="relative">
+              <div className="text-center bg-orange-600 rounded-full p-16 border-8 border-orange-900 shadow-2xl">
+                <div className="text-8xl mb-4">🎃</div>
+                <h1 className="text-5xl font-black text-orange-100 mb-4">
+                  PUMPKIN PATCH<br/>SOL HARVEST
+                </h1>
+                <p className="text-orange-200 text-xl mb-6">Pick your pumpkins, claim your SOL!</p>
+                <Button className="bg-orange-800 hover:bg-orange-900 text-white px-12 py-8 text-2xl rounded-full">
+                  🎃 START HARVEST
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-6">
+              {['🎃 3.45 SOL\nHarvested', '🎃 127\nPumpkins', '🎃 89\nFarmers'].map((stat, i) => (
+                <div key={i} className="bg-orange-700/80 rounded-3xl p-8 text-center border-4 border-orange-900">
+                  <p className="text-2xl font-bold text-white whitespace-pre-line">{stat}</p>
+                </div>
+              ))}
+            </div>
+            
+            <Button onClick={() => alert('Pumpkin Patch theme selected!')} className="w-full bg-orange-600 hover:bg-orange-700 text-white py-6 text-lg rounded-full">
+              PICK THIS PUMPKIN THEME
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
+    if (selectedThemeData.id === 3) {
+      // Witch's Cauldron - Green
+      return (
+        <div className={`min-h-screen bg-gradient-to-b ${selectedThemeData.gradient} p-4 relative overflow-hidden`}>
+          {/* Bubbling effect */}
+          <div className="absolute bottom-0 left-0 right-0 h-96 opacity-20">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute bottom-0 w-4 h-4 bg-green-400 rounded-full animate-ping"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`
+                }}
+              />
+            ))}
+          </div>
+          
+          <div className="max-w-5xl mx-auto space-y-8 relative z-10">
+            <Button onClick={() => setShowPreview(false)} variant="ghost" className="text-green-200 hover:text-white mb-4">
+              ← Back
+            </Button>
+            
+            {/* Cauldron design */}
+            <div className="text-center">
+              <div className="inline-block bg-green-900/80 rounded-t-full rounded-b-3xl p-12 border-8 border-green-600 relative">
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                  <Skull className="h-16 w-16 text-green-400" />
+                </div>
+                <div className="text-6xl mb-4 animate-pulse">🧙</div>
+                <h1 className="text-5xl font-black text-green-100 mb-4">
+                  WITCH'S BREW<br/>SOL POTION
+                </h1>
+                <p className="text-green-300 text-xl mb-6 italic">Stir the cauldron, extract your SOL...</p>
+                <Button className="bg-green-600 hover:bg-green-700 text-white px-12 py-8 text-2xl">
+                  🧪 BREW POTION
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-6">
+              {[{icon: '🔮', label: 'Crystal Ball', value: '3.45 SOL'}, {icon: '📜', label: 'Spells Cast', value: '127'}, {icon: '🧹', label: 'Witches', value: '89'}].map((item, i) => (
+                <div key={i} className="bg-gradient-to-b from-green-900 to-green-950 rounded-lg p-6 text-center border-2 border-green-500 shadow-lg shadow-green-500/50">
+                  <p className="text-4xl mb-2">{item.icon}</p>
+                  <p className="text-2xl font-bold text-green-100">{item.value}</p>
+                  <p className="text-green-400 text-sm">{item.label}</p>
+                </div>
+              ))}
+            </div>
+            
+            <Button onClick={() => alert('Witch Cauldron theme selected!')} className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg">
+              CLAIM THIS MAGICAL THEME
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
+    if (selectedThemeData.id === 4) {
+      // Moonlight - Blue
+      return (
+        <div className={`min-h-screen bg-gradient-to-b ${selectedThemeData.gradient} p-4 relative overflow-hidden`}>
+          {/* Moon */}
+          <div className="absolute top-20 right-20 w-48 h-48 bg-blue-100 rounded-full shadow-2xl shadow-blue-400/50 opacity-80" />
+          
+          {/* Flying bats */}
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute text-4xl opacity-50 animate-bounce"
+              style={{
+                top: `${20 + Math.random() * 40}%`,
+                left: `${10 + Math.random() * 80}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: '3s'
+              }}
+            >
+              🦇
+            </div>
+          ))}
+          
+          <div className="max-w-5xl mx-auto space-y-8 relative z-10">
+            <Button onClick={() => setShowPreview(false)} variant="ghost" className="text-blue-200 hover:text-white mb-4">
+              ← Back
+            </Button>
+            
+            {/* Night sky design */}
+            <div className="text-center relative">
+              <div className="bg-blue-950/60 backdrop-blur-md rounded-3xl p-16 border border-blue-500 shadow-2xl shadow-blue-500/30">
+                <Moon className="h-20 w-20 text-blue-300 mx-auto mb-6 animate-pulse" />
+                <h1 className="text-6xl font-black text-blue-100 mb-4">
+                  MOONLIT SOL HUNT
+                </h1>
+                <p className="text-blue-300 text-2xl mb-8">Under the full moon, your SOL awakens...</p>
+                <Button className="bg-blue-500 hover:bg-blue-600 text-white px-16 py-8 text-2xl rounded-full shadow-lg shadow-blue-500/50">
+                  🌙 NIGHT HUNT
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex justify-center gap-8">
+              {[{icon: '🌙', value: '3.45', label: 'Moon SOL'}, {icon: '⭐', value: '127', label: 'Stars'}, {icon: '🦇', value: '89', label: 'Night Owls'}].map((item, i) => (
+                <div key={i} className="bg-blue-900/40 backdrop-blur rounded-2xl p-8 text-center border border-blue-500 min-w-[150px]">
+                  <p className="text-5xl mb-3">{item.icon}</p>
+                  <p className="text-3xl font-bold text-blue-100">{item.value}</p>
+                  <p className="text-blue-400">{item.label}</p>
+                </div>
+              ))}
+            </div>
+            
+            <Button onClick={() => alert('Moonlight theme selected!')} className="w-full bg-blue-500 hover:bg-blue-600 text-white py-6 text-lg rounded-full">
+              CLAIM THIS MOONLIGHT THEME
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
+    if (selectedThemeData.id === 5) {
+      // Candy Corn - Yellow/Orange
+      return (
+        <div className={`min-h-screen bg-gradient-to-b ${selectedThemeData.gradient} p-4 relative overflow-hidden`}>
+          {/* Candy scattered */}
+          <div className="absolute inset-0 opacity-20">
+            {[...Array(15)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute text-4xl"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  transform: `rotate(${Math.random() * 360}deg)`
+                }}
+              >
+                🍬
+              </div>
+            ))}
+          </div>
+          
+          <div className="max-w-5xl mx-auto space-y-8 relative z-10">
+            <Button onClick={() => setShowPreview(false)} variant="ghost" className="text-yellow-200 hover:text-white mb-4">
+              ← Back
+            </Button>
+            
+            {/* Candy bag design */}
+            <div className="text-center">
+              <div className="inline-block bg-gradient-to-b from-yellow-500 via-orange-500 to-orange-700 rounded-3xl p-12 border-8 border-yellow-600 shadow-2xl transform rotate-2">
+                <Candy className="h-20 w-20 text-white mx-auto mb-6" />
+                <h1 className="text-6xl font-black text-white mb-4 transform -rotate-2">
+                  TRICK OR TREAT<br/>SOL CANDY!
+                </h1>
+                <p className="text-yellow-100 text-2xl mb-8">Fill your bag with sweet SOL rewards!</p>
+                <Button className="bg-yellow-600 hover:bg-yellow-700 text-white px-16 py-8 text-2xl rounded-full transform -rotate-1">
+                  🍭 COLLECT CANDY
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-6">
+              {[{candy: '🍬', value: '3.45 SOL'}, {candy: '🍭', value: '127 Treats'}, {candy: '🍫', value: '89 Kids'}].map((item, i) => (
+                <div key={i} className="bg-gradient-to-br from-yellow-400 to-orange-600 rounded-2xl p-8 text-center border-4 border-yellow-700 transform hover:scale-105 transition">
+                  <p className="text-6xl mb-3">{item.candy}</p>
+                  <p className="text-2xl font-bold text-white">{item.value}</p>
+                </div>
+              ))}
+            </div>
+            
+            <Button onClick={() => alert('Candy Corn theme selected!')} className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-6 text-lg rounded-full">
+              GRAB THIS SWEET THEME
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
   }
 
   return (
