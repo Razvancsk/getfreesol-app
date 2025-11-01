@@ -2517,6 +2517,16 @@ export default function SolRefund() {
                   >
                     <SiDiscord className="h-4 w-4 text-white" />
                   </a>
+                  <a
+                    href="https://docs.getfreesol.xyz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="button-social-docs"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="Documentation"
+                  >
+                    <Code className="h-4 w-4 text-white" />
+                  </a>
                 </div>
 
                 {isConnected && publicKey ? (
@@ -2590,6 +2600,16 @@ export default function SolRefund() {
                   title="Join our Discord community"
                 >
                   <SiDiscord className="h-4 w-4 text-white" />
+                </a>
+                <a
+                  href="https://docs.getfreesol.xyz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-social-docs-desktop"
+                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  title="Documentation"
+                >
+                  <Code className="h-4 w-4 text-white" />
                 </a>
               </div>
 
