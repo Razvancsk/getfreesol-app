@@ -27,6 +27,16 @@ import {
   type InsertRelayerCost,
   type MassTransferRecord,
   type InsertMassTransferRecord,
+  type Developer,
+  type InsertDeveloper,
+  type FeeAccount,
+  type InsertFeeAccount,
+  type FeeBalance,
+  type InsertFeeBalance,
+  type FeeTransaction,
+  type InsertFeeTransaction,
+  type FeeClaim,
+  type InsertFeeClaim,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -40,7 +50,12 @@ import {
   autoClaimPermits,
   relayerJobs,
   relayerCosts,
-  massTransferRecords
+  massTransferRecords,
+  developers,
+  feeAccounts,
+  feeBalances,
+  feeTransactions,
+  feeClaims
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -129,6 +144,32 @@ export interface IStorage {
   // Mass Transfer Records
   createMassTransferRecord(record: InsertMassTransferRecord): Promise<MassTransferRecord>;
   getMassTransferStats(): Promise<{ totalUniqueUsers: number; totalTransfers: number }>;
+  
+  // Developer Fee System
+  createDeveloper(developer: InsertDeveloper): Promise<Developer>;
+  getDeveloperByPayoutWallet(payoutWallet: string): Promise<Developer | undefined>;
+  getDeveloperById(id: string): Promise<Developer | undefined>;
+  updateDeveloperEarnings(id: string, totalEarned: string): Promise<void>;
+  updateDeveloperClaimed(id: string, totalClaimed: string): Promise<void>;
+  
+  createFeeAccount(feeAccount: InsertFeeAccount): Promise<FeeAccount>;
+  getFeeAccountByPublicKey(publicKey: string): Promise<FeeAccount | undefined>;
+  getFeeAccountByDeveloperId(developerId: string): Promise<FeeAccount | undefined>;
+  updateFeeAccountStatus(id: string, status: string): Promise<void>;
+  
+  createOrUpdateFeeBalance(balance: InsertFeeBalance): Promise<FeeBalance>;
+  getFeeBalanceByDeveloperId(developerId: string): Promise<FeeBalance | undefined>;
+  incrementFeeBalance(developerId: string, lamports: string): Promise<void>;
+  decrementFeeBalance(developerId: string, lamports: string): Promise<void>;
+  updateFeeBalanceUsd(developerId: string, usdValue: string): Promise<void>;
+  
+  createFeeTransaction(transaction: InsertFeeTransaction): Promise<FeeTransaction>;
+  getFeeTransactionsByDeveloperId(developerId: string, limit?: number): Promise<FeeTransaction[]>;
+  getTotalDeveloperFees(developerId: string): Promise<{ totalGross: string; totalDeveloperShare: string; totalPlatformShare: string }>;
+  
+  createFeeClaim(claim: InsertFeeClaim): Promise<FeeClaim>;
+  getFeeClaimsByDeveloperId(developerId: string, limit?: number): Promise<FeeClaim[]>;
+  updateFeeClaimStatus(id: string, status: string, errorMessage?: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -750,6 +791,195 @@ export class DatabaseStorage implements IStorage {
       totalUniqueUsers: parseInt(result?.totalUniqueUsers || "0"),
       totalTransfers: parseInt(result?.totalTransfers || "0")
     };
+  }
+
+  // Developer Fee System
+  async createDeveloper(insertDeveloper: InsertDeveloper): Promise<Developer> {
+    const [developer] = await db
+      .insert(developers)
+      .values(insertDeveloper)
+      .returning();
+    return developer;
+  }
+
+  async getDeveloperByPayoutWallet(payoutWallet: string): Promise<Developer | undefined> {
+    const [developer] = await db
+      .select()
+      .from(developers)
+      .where(eq(developers.payoutWalletAddress, payoutWallet));
+    return developer || undefined;
+  }
+
+  async getDeveloperById(id: string): Promise<Developer | undefined> {
+    const [developer] = await db
+      .select()
+      .from(developers)
+      .where(eq(developers.id, id));
+    return developer || undefined;
+  }
+
+  async updateDeveloperEarnings(id: string, totalEarned: string): Promise<void> {
+    await db
+      .update(developers)
+      .set({ totalEarned, updatedAt: new Date() })
+      .where(eq(developers.id, id));
+  }
+
+  async updateDeveloperClaimed(id: string, totalClaimed: string): Promise<void> {
+    await db
+      .update(developers)
+      .set({ totalClaimed, updatedAt: new Date() })
+      .where(eq(developers.id, id));
+  }
+
+  async createFeeAccount(insertFeeAccount: InsertFeeAccount): Promise<FeeAccount> {
+    const [feeAccount] = await db
+      .insert(feeAccounts)
+      .values(insertFeeAccount)
+      .returning();
+    return feeAccount;
+  }
+
+  async getFeeAccountByPublicKey(publicKey: string): Promise<FeeAccount | undefined> {
+    const [feeAccount] = await db
+      .select()
+      .from(feeAccounts)
+      .where(eq(feeAccounts.publicKey, publicKey));
+    return feeAccount || undefined;
+  }
+
+  async getFeeAccountByDeveloperId(developerId: string): Promise<FeeAccount | undefined> {
+    const [feeAccount] = await db
+      .select()
+      .from(feeAccounts)
+      .where(eq(feeAccounts.developerId, developerId));
+    return feeAccount || undefined;
+  }
+
+  async updateFeeAccountStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(feeAccounts)
+      .set({ status })
+      .where(eq(feeAccounts.id, id));
+  }
+
+  async createOrUpdateFeeBalance(insertBalance: InsertFeeBalance): Promise<FeeBalance> {
+    const existing = await this.getFeeBalanceByDeveloperId(insertBalance.developerId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(feeBalances)
+        .set({ ...insertBalance, updatedAt: new Date() })
+        .where(eq(feeBalances.developerId, insertBalance.developerId))
+        .returning();
+      return updated;
+    }
+    
+    const [balance] = await db
+      .insert(feeBalances)
+      .values(insertBalance)
+      .returning();
+    return balance;
+  }
+
+  async getFeeBalanceByDeveloperId(developerId: string): Promise<FeeBalance | undefined> {
+    const [balance] = await db
+      .select()
+      .from(feeBalances)
+      .where(eq(feeBalances.developerId, developerId));
+    return balance || undefined;
+  }
+
+  async incrementFeeBalance(developerId: string, lamports: string): Promise<void> {
+    await db
+      .update(feeBalances)
+      .set({
+        unclaimedLamports: sql`${feeBalances.unclaimedLamports} + ${lamports}`,
+        updatedAt: new Date()
+      })
+      .where(eq(feeBalances.developerId, developerId));
+  }
+
+  async decrementFeeBalance(developerId: string, lamports: string): Promise<void> {
+    await db
+      .update(feeBalances)
+      .set({
+        unclaimedLamports: sql`${feeBalances.unclaimedLamports} - ${lamports}`,
+        updatedAt: new Date()
+      })
+      .where(eq(feeBalances.developerId, developerId));
+  }
+
+  async updateFeeBalanceUsd(developerId: string, usdValue: string): Promise<void> {
+    await db
+      .update(feeBalances)
+      .set({
+        unclaimedUsd: usdValue,
+        lastUsdUpdate: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(feeBalances.developerId, developerId));
+  }
+
+  async createFeeTransaction(insertTransaction: InsertFeeTransaction): Promise<FeeTransaction> {
+    const [transaction] = await db
+      .insert(feeTransactions)
+      .values(insertTransaction)
+      .returning();
+    return transaction;
+  }
+
+  async getFeeTransactionsByDeveloperId(developerId: string, limit: number = 50): Promise<FeeTransaction[]> {
+    return await db
+      .select()
+      .from(feeTransactions)
+      .where(eq(feeTransactions.developerId, developerId))
+      .orderBy(desc(feeTransactions.createdAt))
+      .limit(limit);
+  }
+
+  async getTotalDeveloperFees(developerId: string): Promise<{ totalGross: string; totalDeveloperShare: string; totalPlatformShare: string }> {
+    const [result] = await db
+      .select({
+        totalGross: sql<string>`coalesce(sum(${feeTransactions.grossFee}), 0)`,
+        totalDeveloperShare: sql<string>`coalesce(sum(${feeTransactions.developerShare}), 0)`,
+        totalPlatformShare: sql<string>`coalesce(sum(${feeTransactions.platformShare}), 0)`
+      })
+      .from(feeTransactions)
+      .where(eq(feeTransactions.developerId, developerId));
+    
+    return {
+      totalGross: result?.totalGross || "0",
+      totalDeveloperShare: result?.totalDeveloperShare || "0",
+      totalPlatformShare: result?.totalPlatformShare || "0"
+    };
+  }
+
+  async createFeeClaim(insertClaim: InsertFeeClaim): Promise<FeeClaim> {
+    const [claim] = await db
+      .insert(feeClaims)
+      .values(insertClaim)
+      .returning();
+    return claim;
+  }
+
+  async getFeeClaimsByDeveloperId(developerId: string, limit: number = 50): Promise<FeeClaim[]> {
+    return await db
+      .select()
+      .from(feeClaims)
+      .where(eq(feeClaims.developerId, developerId))
+      .orderBy(desc(feeClaims.claimedAt))
+      .limit(limit);
+  }
+
+  async updateFeeClaimStatus(id: string, status: string, errorMessage?: string): Promise<void> {
+    const updateData: any = { status };
+    if (errorMessage) updateData.errorMessage = errorMessage;
+    
+    await db
+      .update(feeClaims)
+      .set(updateData)
+      .where(eq(feeClaims.id, id));
   }
 }
 
