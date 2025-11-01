@@ -443,6 +443,8 @@ export type InsertXEngagement = z.infer<typeof insertXEngagementSchema>;
 export const developers = pgTable("developers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   payoutWalletAddress: text("payout_wallet_address").notNull().unique(), // Developer's personal wallet for payouts
+  projectName: text("project_name").notNull(), // User-provided project name
+  feePercentage: decimal("fee_percentage", { precision: 5, scale: 2 }).notNull().default("0"), // 0-10%
   email: text("email"),
   vanityPrefix: text("vanity_prefix"), // 3-letter prefix requested (e.g., "ABC")
   status: text("status").notNull().default("active"), // active, suspended

@@ -9,6 +9,7 @@ import Referrals from "@/pages/referrals";
 import AdminSettings from "@/pages/admin-settings";
 import XBotAdmin from "@/pages/x-bot-admin";
 import ApiDocs from "@/pages/api-docs";
+import DeveloperDashboard from "@/pages/developer-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
       <Route path="/referrals" component={Referrals} />
+      <Route path="/developer" component={DeveloperDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/x-bot" component={XBotAdmin} />
       <Route path="/docs" component={ApiDocs} />

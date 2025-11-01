@@ -6172,7 +6172,403 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Jobs will only run if X credentials are configured in database
   startScheduledJobs();
 
-
+  // ===== Developer Fee Account Management =====
+  // Import vanity address service
+  const { generateRandomKeypair, generateVanityKeypair, encryptPrivateKey, decryptPrivateKey, keypairFromEncrypted } = await import('./vanityAddressService.js');
+  
+  // Create developer fee account (requires wallet signature)
+  app.post("/api/developer/create-account", async (req, res) => {
+    try {
+      const { walletAddress, signature, message, projectName, vanityPrefix } = req.body;
+      
+      console.log('🏗️ Creating developer fee account...');
+      console.log('  Wallet:', walletAddress);
+      console.log('  Project:', projectName);
+      console.log('  Vanity prefix:', vanityPrefix || 'none (random)');
+      
+      // Validate required fields
+      if (!walletAddress || !signature || !message || !projectName) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: walletAddress, signature, message, projectName' 
+        });
+      }
+      
+      // Verify signature
+      if (!verifySignature(message, signature, walletAddress)) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      // Check if developer already has an account
+      const existingDeveloper = await storage.getDeveloperByPayoutWallet(walletAddress);
+      if (existingDeveloper) {
+        // Get the fee account for this developer
+        const feeAccounts = await storage.getFeeAccountsByDeveloperId(existingDeveloper.id);
+        const feeAccount = feeAccounts[0];
+        
+        return res.status(400).json({ 
+          error: 'Developer account already exists for this wallet',
+          existingAccount: {
+            feeAccount: feeAccount?.publicKey || 'none',
+            projectName: existingDeveloper.projectName
+          }
+        });
+      }
+      
+      // Validate vanity prefix if provided (3 letters max)
+      if (vanityPrefix) {
+        if (vanityPrefix.length !== 3) {
+          return res.status(400).json({ 
+            error: 'Vanity prefix must be exactly 3 characters' 
+          });
+        }
+      }
+      
+      // Generate fee collection account
+      let feeKeypair;
+      let attempts = 0;
+      const generationType = vanityPrefix ? 'vanity' : 'random';
+      
+      if (vanityPrefix) {
+        console.log(`  Generating vanity address with prefix "${vanityPrefix}"...`);
+        const result = await generateVanityKeypair(vanityPrefix, 1000000, (attemptCount) => {
+          console.log(`  Still searching... ${attemptCount} attempts so far`);
+        });
+        
+        if (!result) {
+          return res.status(500).json({ 
+            error: 'Failed to generate vanity address within reasonable time. Please try a different prefix.' 
+          });
+        }
+        
+        feeKeypair = result.keypair;
+        attempts = result.attempts;
+        console.log(`  ✅ Found vanity address after ${attempts} attempts: ${result.publicKey}`);
+      } else {
+        console.log('  Generating random fee account...');
+        const result = generateRandomKeypair();
+        feeKeypair = result.keypair;
+        console.log(`  ✅ Generated random fee account: ${result.publicKey}`);
+      }
+      
+      // Encrypt the fee account private key
+      const encryptedPrivateKey = encryptPrivateKey(feeKeypair.secretKey);
+      const feeAccountPublicKey = feeKeypair.publicKey.toBase58();
+      
+      // Create developer record
+      const developer = await storage.createDeveloper({
+        payoutWalletAddress: walletAddress,
+        projectName,
+        vanityPrefix: vanityPrefix || null,
+        status: 'active',
+      });
+      
+      // Create fee account record
+      const feeAccount = await storage.createFeeAccount({
+        developerId: developer.id,
+        publicKey: feeAccountPublicKey,
+        encryptedPrivateKey,
+        generationType,
+        vanityPrefix: vanityPrefix || null,
+      });
+      
+      // Initialize balance record
+      await storage.createFeeBalance({
+        developerId: developer.id,
+        feeAccountId: feeAccount.id,
+      });
+      
+      console.log('✅ Developer fee account created successfully');
+      
+      res.json({
+        success: true,
+        developer: {
+          id: developer.id,
+          walletAddress: developer.payoutWalletAddress,
+          projectName: developer.projectName,
+          feeAccountAddress: feeAccount.publicKey,
+          feePercentage: parseFloat(developer.feePercentage),
+          vanityPrefix: developer.vanityPrefix,
+          status: developer.status,
+          createdAt: developer.createdAt,
+        },
+        message: vanityPrefix 
+          ? `Fee account created with vanity prefix "${vanityPrefix}" after ${attempts} attempts`
+          : 'Fee account created with random address'
+      });
+    } catch (error: any) {
+      console.error('❌ Create developer account error:', error);
+      res.status(500).json({ 
+        error: 'Failed to create developer account', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Get developer account info and balance
+  app.get("/api/developer/account/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const developer = await storage.getDeveloperByPayoutWallet(walletAddress);
+      if (!developer) {
+        return res.json({ 
+          exists: false,
+          message: 'No developer account found for this wallet'
+        });
+      }
+      
+      const balance = await storage.getFeeBalanceByDeveloperId(developer.id);
+      const feeAccounts = await storage.getFeeAccountsByDeveloperId(developer.id);
+      const feeAccount = feeAccounts[0];
+      
+      res.json({
+        exists: true,
+        developer: {
+          id: developer.id,
+          walletAddress: developer.payoutWalletAddress,
+          projectName: developer.projectName,
+          feeAccountAddress: feeAccount?.publicKey || 'none',
+          feePercentage: parseFloat(developer.feePercentage),
+          vanityPrefix: developer.vanityPrefix,
+          status: developer.status,
+          createdAt: developer.createdAt,
+          updatedAt: developer.updatedAt,
+        },
+        balance: balance ? {
+          unclaimedLamports: parseFloat(balance.unclaimedLamports),
+          unclaimedUsd: parseFloat(balance.unclaimedUsd),
+          lastUsdUpdate: balance.lastUsdUpdate,
+        } : {
+          unclaimedLamports: 0,
+          unclaimedUsd: 0,
+          lastUsdUpdate: null,
+        }
+      });
+    } catch (error: any) {
+      console.error('Get developer account error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get developer account', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Set developer fee percentage
+  app.post("/api/developer/set-fee", async (req, res) => {
+    try {
+      const { walletAddress, signature, message, feePercentage } = req.body;
+      
+      // Validate required fields
+      if (!walletAddress || !signature || !message || feePercentage === undefined) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: walletAddress, signature, message, feePercentage' 
+        });
+      }
+      
+      // Verify signature
+      if (!verifySignature(message, signature, walletAddress)) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      // Validate fee percentage (0-10%)
+      const feeNum = parseFloat(feePercentage);
+      if (isNaN(feeNum) || feeNum < 0 || feeNum > 10) {
+        return res.status(400).json({ 
+          error: 'Fee percentage must be between 0 and 10' 
+        });
+      }
+      
+      // Get developer account
+      const developer = await storage.getDeveloperByPayoutWallet(walletAddress);
+      if (!developer) {
+        return res.status(404).json({ error: 'Developer account not found' });
+      }
+      
+      // Update fee percentage
+      await storage.updateDeveloper(developer.id, { feePercentage: feeNum.toString() });
+      
+      console.log(`✅ Developer ${walletAddress} set fee to ${feeNum}%`);
+      
+      res.json({
+        success: true,
+        feePercentage: feeNum,
+        message: `Fee percentage updated to ${feeNum}%`
+      });
+    } catch (error: any) {
+      console.error('Set developer fee error:', error);
+      res.status(500).json({ 
+        error: 'Failed to set fee percentage', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Get developer transaction history
+  app.get("/api/developer/transactions/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const { limit = '50' } = req.query;
+      
+      const developer = await storage.getDeveloperByPayoutWallet(walletAddress);
+      if (!developer) {
+        return res.json({ transactions: [] });
+      }
+      
+      const transactions = await storage.getFeeTransactionsByDeveloperId(
+        developer.id, 
+        parseInt(limit as string, 10)
+      );
+      
+      res.json({
+        success: true,
+        transactions
+      });
+    } catch (error: any) {
+      console.error('Get developer transactions error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get transactions', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Claim developer earnings (80/20 split)
+  app.post("/api/developer/claim", async (req, res) => {
+    try {
+      const { walletAddress, signature, message } = req.body;
+      
+      // Validate required fields
+      if (!walletAddress || !signature || !message) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: walletAddress, signature, message' 
+        });
+      }
+      
+      // Verify signature
+      if (!verifySignature(message, signature, walletAddress)) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      // Get developer account
+      const developer = await storage.getDeveloperByPayoutWallet(walletAddress);
+      if (!developer) {
+        return res.status(404).json({ error: 'Developer account not found' });
+      }
+      
+      // Get fee accounts
+      const feeAccounts = await storage.getFeeAccountsByDeveloperId(developer.id);
+      const feeAccount = feeAccounts[0];
+      
+      if (!feeAccount) {
+        return res.status(404).json({ error: 'Fee account not found' });
+      }
+      
+      // Get current balance
+      const balance = await storage.getFeeBalanceByDeveloperId(developer.id);
+      const unclaimedLamports = balance ? parseFloat(balance.unclaimedLamports) : 0;
+      
+      if (unclaimedLamports === 0) {
+        return res.status(400).json({ 
+          error: 'No pending balance to claim',
+          unclaimed: 0
+        });
+      }
+      
+      // Calculate split (80% to developer, 20% to platform)
+      const developerAmount = Math.floor(unclaimedLamports * 0.8);
+      const platformAmount = unclaimedLamports - developerAmount;
+      
+      console.log(`💰 Processing claim for ${walletAddress}`);
+      console.log(`  Unclaimed: ${unclaimedLamports} lamports`);
+      console.log(`  Developer (80%): ${developerAmount} lamports`);
+      console.log(`  Platform (20%): ${platformAmount} lamports`);
+      
+      // Reconstruct fee account keypair
+      const feeKeypair = keypairFromEncrypted(feeAccount.encryptedPrivateKey);
+      
+      // Platform wallet
+      const platformWallet = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+      const developerWallet = new PublicKey(walletAddress);
+      
+      // Create transaction to transfer SOL
+      const connection = new Connection(
+        process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      const transaction = new Transaction();
+      
+      // Transfer to developer (80%)
+      if (developerAmount > 0) {
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: feeKeypair.publicKey,
+            toPubkey: developerWallet,
+            lamports: developerAmount,
+          })
+        );
+      }
+      
+      // Transfer to platform (20%)
+      if (platformAmount > 0) {
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: feeKeypair.publicKey,
+            toPubkey: platformWallet,
+            lamports: platformAmount,
+          })
+        );
+      }
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = feeKeypair.publicKey;
+      
+      // Sign and send
+      transaction.sign(feeKeypair);
+      const txSignature = await connection.sendRawTransaction(transaction.serialize());
+      await connection.confirmTransaction(txSignature, 'confirmed');
+      
+      console.log(`✅ Claim transaction sent: ${txSignature}`);
+      
+      // Update balance - reset unclaimed to 0
+      await storage.updateFeeBalance(developer.id, {
+        unclaimedLamports: '0',
+      });
+      
+      // Update developer total claimed
+      const newTotalClaimed = parseFloat(developer.totalClaimed) + developerAmount;
+      await storage.updateDeveloper(developer.id, {
+        totalClaimed: newTotalClaimed.toString()
+      });
+      
+      // Record the claim
+      await storage.createFeeClaim({
+        developerId: developer.id,
+        feeAccountId: feeAccount.id,
+        claimSignature: txSignature,
+        amountClaimed: unclaimedLamports.toString(),
+        developerReceived: developerAmount.toString(),
+        platformReceived: platformAmount.toString(),
+      });
+      
+      res.json({
+        success: true,
+        signature: txSignature,
+        developerAmount,
+        platformAmount,
+        totalClaimed: unclaimedLamports,
+        message: 'Claim processed successfully'
+      });
+    } catch (error: any) {
+      console.error('Claim earnings error:', error);
+      res.status(500).json({ 
+        error: 'Failed to process claim', 
+        details: error.message 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

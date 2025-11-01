@@ -5,24 +5,36 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 // Encryption configuration
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
 
-// Validate encryption key exists and is correct length
-if (!process.env.FEE_ACCOUNT_ENCRYPTION_KEY) {
-  throw new Error("CRITICAL: FEE_ACCOUNT_ENCRYPTION_KEY environment variable must be set (64 hex characters = 32 bytes)");
-}
-
+// Get encryption key (optional during development, required for production)
 const ENCRYPTION_KEY = process.env.FEE_ACCOUNT_ENCRYPTION_KEY;
 
-// Validate key length (should be 64 hex characters = 32 bytes)
-if (ENCRYPTION_KEY.length !== 64 || !/^[0-9a-fA-F]+$/.test(ENCRYPTION_KEY)) {
-  throw new Error("CRITICAL: FEE_ACCOUNT_ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes)");
+if (ENCRYPTION_KEY) {
+  // Validate key length if provided (should be 64 hex characters = 32 bytes)
+  if (ENCRYPTION_KEY.length !== 64 || !/^[0-9a-fA-F]+$/.test(ENCRYPTION_KEY)) {
+    throw new Error("CRITICAL: FEE_ACCOUNT_ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes)");
+  }
+}
+
+/**
+ * Checks if encryption key is configured
+ */
+function requireEncryptionKey(): string {
+  if (!ENCRYPTION_KEY) {
+    throw new Error("FEE_ACCOUNT_ENCRYPTION_KEY environment variable must be set to create fee accounts");
+  }
+  if (ENCRYPTION_KEY.length !== 64 || !/^[0-9a-fA-F]+$/.test(ENCRYPTION_KEY)) {
+    throw new Error("FEE_ACCOUNT_ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes)");
+  }
+  return ENCRYPTION_KEY;
 }
 
 /**
  * Encrypts a private key for secure database storage
  */
 export function encryptPrivateKey(privateKeyBytes: Uint8Array): string {
+  const encryptionKey = requireEncryptionKey(); // Validate key is set
   const iv = randomBytes(16);
-  const key = Buffer.from(ENCRYPTION_KEY, "hex");
+  const key = Buffer.from(encryptionKey, "hex");
   const cipher = createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
   
   const encrypted = Buffer.concat([
@@ -40,11 +52,12 @@ export function encryptPrivateKey(privateKeyBytes: Uint8Array): string {
  * Decrypts a private key from database storage
  */
 export function decryptPrivateKey(encryptedData: string): Uint8Array {
+  const encryptionKey = requireEncryptionKey(); // Validate key is set
   const [ivB64, authTagB64, encryptedB64] = encryptedData.split(":");
   const iv = Buffer.from(ivB64, "base64");
   const authTag = Buffer.from(authTagB64, "base64");
   const encrypted = Buffer.from(encryptedB64, "base64");
-  const key = Buffer.from(ENCRYPTION_KEY, "hex");
+  const key = Buffer.from(encryptionKey, "hex");
   
   const decipher = createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);
