@@ -64,6 +64,48 @@ export default function ApiDocs() {
             </CardContent>
           </Card>
 
+          {/* Revenue Sharing */}
+          <Card className="bg-gradient-to-br from-purple-600/60 to-pink-600/60 border-purple-500 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">💰 Revenue Sharing Model</CardTitle>
+              <CardDescription className="text-purple-100">
+                Set your own fees and earn from every transaction
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-white space-y-4">
+              <div className="space-y-2">
+                <p className="font-semibold">How it works:</p>
+                <ul className="list-disc list-inside space-y-2 text-purple-100">
+                  <li>You set your own fee percentage for each transaction</li>
+                  <li>Platform takes 20% of your fee</li>
+                  <li>You keep 80% of your fee</li>
+                </ul>
+              </div>
+              
+              <div className="bg-slate-900/50 p-4 rounded-lg border border-purple-400/30">
+                <p className="text-purple-300 text-sm mb-2">Example:</p>
+                <div className="space-y-1 text-sm">
+                  <p>• You set fee: <span className="text-green-400 font-semibold">10%</span></p>
+                  <p>• You receive: <span className="text-green-400 font-semibold">8%</span> (80% of your fee)</p>
+                  <p>• Platform receives: <span className="text-purple-300 font-semibold">2%</span> (20% of your fee)</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 p-4 rounded-lg border border-purple-400/30">
+                <p className="text-purple-300 text-sm mb-2">Another example:</p>
+                <div className="space-y-1 text-sm">
+                  <p>• You set fee: <span className="text-green-400 font-semibold">5%</span></p>
+                  <p>• You receive: <span className="text-green-400 font-semibold">4%</span> (80% of your fee)</p>
+                  <p>• Platform receives: <span className="text-purple-300 font-semibold">1%</span> (20% of your fee)</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-purple-200 italic">
+                The higher fee you set, the more you earn - but make sure to stay competitive!
+              </p>
+            </CardContent>
+          </Card>
+
           {/* SOL Rent Recovery */}
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
