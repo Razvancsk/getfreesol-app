@@ -60,15 +60,12 @@ export default function ApiDocs() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest("/api/developer/create-account", {
-        method: "POST",
-        body: JSON.stringify({
-          walletAddress: publicKey.toBase58(),
-          signature: bs58.encode(signature),
-          message,
-          projectName: projectName.trim(),
-          vanityPrefix: vanityPrefix.trim() || undefined,
-        }),
+      return await apiRequest('POST', '/api/developer/create-account', {
+        walletAddress: publicKey.toBase58(),
+        signature: bs58.encode(signature),
+        message,
+        projectName: projectName.trim(),
+        vanityPrefix: vanityPrefix.trim() || undefined,
       });
     },
     onSuccess: () => {
