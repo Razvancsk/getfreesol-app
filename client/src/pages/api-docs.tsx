@@ -169,7 +169,7 @@ export default function ApiDocs() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vanity-prefix-docs" className="text-white text-sm text-muted-foreground">
+                <Label htmlFor="vanity-prefix-docs" className="text-white text-sm">
                   Vanity Prefix (Optional)
                 </Label>
                 <Input
@@ -181,6 +181,13 @@ export default function ApiDocs() {
                   maxLength={3}
                   className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
                 />
+                <p className="text-xs text-purple-300">
+                  {vanityPrefix ? (
+                    <span className="text-yellow-400">⏱️ May take 5-30 seconds to find "{vanityPrefix}..."</span>
+                  ) : (
+                    <span>Leave empty for instant random address</span>
+                  )}
+                </p>
               </div>
 
               <Button

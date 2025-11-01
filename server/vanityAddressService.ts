@@ -104,7 +104,7 @@ function matchesPrefix(publicKey: string, prefix: string): boolean {
  */
 export async function generateVanityKeypair(
   prefix: string,
-  maxAttempts: number = 1000000,
+  maxAttempts: number = 500000, // Reduced max attempts
   onProgress?: (attempts: number) => void
 ): Promise<{
   publicKey: string;
@@ -123,7 +123,9 @@ export async function generateVanityKeypair(
   
   let attempts = 0;
   const progressInterval = 10000; // Report progress every 10k attempts
-  const yieldInterval = 1000; // Yield to event loop every 1k attempts
+  const yieldInterval = 5000; // Yield to event loop every 5k attempts (optimized)
+  const startTime = Date.now();
+  const maxTimeMs = 30000; // Maximum 30 seconds
   
   while (attempts < maxAttempts) {
     attempts++;
@@ -142,12 +144,21 @@ export async function generateVanityKeypair(
       };
     }
     
+    // Check timeout every 10k attempts
+    if (attempts % 10000 === 0) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > maxTimeMs) {
+        console.log(`⏱️ Vanity generation timeout after ${elapsed}ms and ${attempts} attempts`);
+        return null; // Timeout - suggest trying different prefix
+      }
+    }
+    
     // Progress callback
     if (onProgress && attempts % progressInterval === 0) {
       onProgress(attempts);
     }
     
-    // Yield to event loop periodically to prevent blocking
+    // Yield to event loop periodically to prevent blocking (optimized to every 5k)
     if (attempts % yieldInterval === 0) {
       await new Promise(resolve => setImmediate(resolve));
     }

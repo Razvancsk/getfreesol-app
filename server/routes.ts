@@ -6230,13 +6230,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (vanityPrefix) {
         console.log(`  Generating vanity address with prefix "${vanityPrefix}"...`);
-        const result = await generateVanityKeypair(vanityPrefix, 1000000, (attemptCount) => {
+        const result = await generateVanityKeypair(vanityPrefix, 500000, (attemptCount) => {
           console.log(`  Still searching... ${attemptCount} attempts so far`);
         });
         
         if (!result) {
-          return res.status(500).json({ 
-            error: 'Failed to generate vanity address within reasonable time. Please try a different prefix.' 
+          return res.status(408).json({ 
+            error: `Vanity prefix "${vanityPrefix}" took too long to generate (30 second timeout). Try a different 3-letter combo or leave blank for instant random address.`,
+            suggestion: 'Leave the vanity prefix field empty for instant account creation'
           });
         }
         

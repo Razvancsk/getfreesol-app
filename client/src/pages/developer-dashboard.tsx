@@ -224,7 +224,11 @@ export default function DeveloperDashboard() {
                   maxLength={3}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Optional: Choose a 3-letter prefix for your fee account address. Leave blank for random address.
+                  {vanityPrefix ? (
+                    <span className="text-yellow-600">⏱️ May take 5-30 seconds to find "{vanityPrefix}..."</span>
+                  ) : (
+                    <>Optional: Choose a 3-letter prefix for your fee account address. Leave blank for instant random address.</>
+                  )}
                 </p>
               </div>
 
