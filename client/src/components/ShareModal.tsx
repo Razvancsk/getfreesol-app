@@ -61,26 +61,21 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm border border-orange-900/40 p-5 rounded-3xl" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+      <DialogContent className="sm:max-w-sm bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30 p-5 rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-white" style={{ fontFamily: 'Georgia, serif' }}>
+          <DialogTitle className="text-xl font-bold text-white">
             Share
           </DialogTitle>
-          <p className="text-sm text-orange-300 pt-1" style={{ fontFamily: 'Georgia, serif' }}>
+          <p className="text-sm text-purple-200 pt-1">
             Invite friends to earn more $SOL
           </p>
         </DialogHeader>
         
         <div className="space-y-3.5 pt-2">
           {/* Success Message */}
-          <div className="text-center space-y-1">
-            <p className="text-lg font-bold text-orange-400" style={{ fontFamily: 'Georgia, serif' }}>
-              💀 The spirits rewarded your bravery… you've claimed your cursed SOL!
-            </p>
-            <p className="text-xl font-bold text-green-400">
-              Your wallet has been haunted with {solClaimed.toFixed(6)} SOL
-            </p>
-          </div>
+          <p className="text-2xl font-bold text-green-400 text-center">
+            {solClaimed.toFixed(6)} SOL Claimed! 🎉
+          </p>
           
           {/* Social Share Button */}
           <div className="flex justify-center">
@@ -98,7 +93,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
             <Input
               value={shareUrl}
               readOnly
-              className="bg-black/40 border-orange-900/40 text-white text-sm flex-1 rounded-xl"
+              className="bg-slate-800/50 border-purple-500/30 text-white text-sm flex-1 rounded-xl"
               data-testid="input-share-link"
             />
             <Button
@@ -114,15 +109,15 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
           {referralCode && (
             <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-3.5">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-sm text-green-300" style={{ fontFamily: 'Georgia, serif' }}>Your Commission Rate</p>
+                <p className="text-sm text-green-300">Your Commission Rate</p>
                 <div className="bg-green-500/20 px-2.5 py-0.5 rounded-full">
-                  <p className="text-xs text-green-300 font-semibold" style={{ fontFamily: 'Georgia, serif' }}>
+                  <p className="text-xs text-green-300 font-semibold">
                     Highest in Market
                   </p>
                 </div>
               </div>
               <p className="text-2xl font-bold text-green-400">{commissionRate}</p>
-              <p className="text-xs text-green-200 mt-1.5" style={{ fontFamily: 'Georgia, serif' }}>
+              <p className="text-xs text-green-200 mt-1.5">
                 Earn {commissionRate} commission of every SOL your referrals claim!
               </p>
             </div>

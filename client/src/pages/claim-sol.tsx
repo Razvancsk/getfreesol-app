@@ -45,10 +45,6 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
-import pumpkinImage from '@assets/image_1761923461687.png';
-import halloweenBgMobile from '@assets/image_1761931348253.png';
-import halloweenBgDesktop from '@assets/image_1761932648693.png';
-import claimPumpkin from '@assets/image_1761926938584.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -93,9 +89,7 @@ export default function SolRefund() {
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
-  // Free claim promotion - Set to false to restore 15% fees
-  const isPromoActive = true;
-  const donationPercentage = isPromoActive ? 0 : 15; // 0% during promo, 15% after
+  const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'massTransfer' | 'lend'>('reclaim');
@@ -788,8 +782,6 @@ export default function SolRefund() {
       console.log('Transaction confirmed successfully!');
 
       // Record the successful transaction
-      const feeMultiplier = isPromoActive ? 1.0 : 0.85;
-      const feePercentage = isPromoActive ? 0 : 0.15;
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -799,8 +791,8 @@ export default function SolRefund() {
           tokenMints: [tokenMint],
           tokensProcessed: 1,
           solRecovered: parseFloat(solRecovered),
-          netAmount: parseFloat(solRecovered) * feeMultiplier,
-          feeAmount: parseFloat(solRecovered) * feePercentage
+          netAmount: parseFloat(solRecovered) * 0.85, // 15% fee
+          feeAmount: parseFloat(solRecovered) * 0.15
         })
       });
 
@@ -2165,18 +2157,17 @@ export default function SolRefund() {
     setSelectedTokens(new Set());
   };
 
-  // Calculate total SOL to recover (net after fee)
+  // Calculate total SOL to recover (net after 15% fee)
   const calculateTotalSOL = (count: number) => {
     const grossAmount = count * 0.00203928;
-    const feeMultiplier = isPromoActive ? 1.0 : 0.85; // 0% during promo, 15% after
-    const netAmount = grossAmount * feeMultiplier;
+    const netAmount = grossAmount * 0.85; // 15% fee deducted
     return `${netAmount.toFixed(6)}`;
   };
 
-  // Process SOL refund
+  // Process SOL refund (15% service fee)
   const refundMutation = useMutation({
     mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string }) => {
-      // Get transaction
+      // Get transaction (15% service fee)
       const response = await fetch('/api/sol-refund/prepare-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2473,123 +2464,33 @@ export default function SolRefund() {
   };
 
   const calculateRefund = () => {
-    if (!scanResult) return { total: 0, donation: 0, net: 0, isPromo: false };
+    if (!scanResult) return { total: 0, donation: 0, net: 0 };
 
     const total = parseFloat(scanResult.totalReclaimable);
-    const donation = total * (donationPercentage / 100); // 0% during promo, 15% after
-    const net = total - donation;
+    const donation = total * 0.15; // 15% service fee
+    const net = total - donation; // 85% to user
 
-    return { total, donation, net, isPromo: isPromoActive };
+    return { total, donation, net };
   };
 
   const refundCalc = calculateRefund();
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-black">
-      {/* Halloween Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <style>{`
-          .halloween-bg-mobile {
-            object-fit: cover;
-            object-position: 50% 50%;
-          }
-          .halloween-bg-desktop {
-            object-fit: cover;
-            object-position: center center;
-          }
-        `}</style>
-        {/* Mobile Background */}
-        <img 
-          src={halloweenBgMobile} 
-          alt="" 
-          className="w-full h-full opacity-60 halloween-bg-mobile md:hidden"
-        />
-        {/* Desktop Background */}
-        <img 
-          src={halloweenBgDesktop} 
-          alt="" 
-          className="w-full h-full opacity-60 halloween-bg-desktop hidden md:block"
-        />
-        
-        {/* Floating Ghosts - Flying all over screen */}
-        <div className="absolute top-20 left-10 animate-float opacity-40">
-          <svg width="60" height="80" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.8" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-        <div className="absolute top-10 right-20 animate-float-delayed opacity-35">
-          <svg width="50" height="70" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.7" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-        <div className="absolute bottom-32 left-1/4 animate-float opacity-30">
-          <svg width="40" height="60" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.6" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-        <div className="absolute bottom-40 right-1/4 animate-float-delayed opacity-25">
-          <svg width="55" height="75" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.5" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-        <div className="absolute top-1/3 left-1/3 animate-float opacity-28">
-          <svg width="45" height="65" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.65" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-        <div className="absolute top-1/2 right-1/3 animate-float-delayed opacity-32">
-          <svg width="52" height="72" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.7" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-        <div className="absolute top-2/3 left-1/2 animate-float opacity-26 hidden md:block">
-          <svg width="48" height="68" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.6" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-        <div className="absolute bottom-20 right-10 animate-float-delayed opacity-30 hidden md:block">
-          <svg width="58" height="78" viewBox="0 0 60 80">
-            <path d="M 30 10 Q 15 10 10 25 Q 10 45 15 55 L 15 70 Q 15 75 20 75 Q 20 65 25 65 Q 25 75 30 75 Q 30 65 35 65 Q 35 75 40 75 Q 45 75 45 70 L 45 55 Q 50 45 50 25 Q 45 10 30 10 Z" fill="#d0f0d0" opacity="0.75" />
-            <circle cx="22" cy="28" r="4" fill="#000" />
-            <circle cx="38" cy="28" r="4" fill="#000" />
-          </svg>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-4 pt-1 pb-2 max-w-6xl">
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            {/* Top row: Logo and Title */}
+            {/* Top row: Logo and Wallet Connection (mobile) */}
             <div className="flex items-center justify-between">
-              {/* Jack-o-lantern Logo with Spooky Title */}
-              <div className="flex items-center space-x-4">
+              {/* Logo */}
+              <div className="flex items-center">
                 <img 
-                  src={pumpkinImage}
-                  alt="Halloween Pumpkin"
-                  className="h-[100px] w-[100px] halloween-pumpkin"
+                  src={logoImage}
+                  alt="Get your SOL back!"
+                  className="h-[100px] w-[100px]"
                 />
-                <div className="hidden sm:block">
-                  <h1 className="text-3xl lg:text-4xl font-bold text-white halloween-title" style={{ fontFamily: 'Georgia, serif', textShadow: '2px 2px 4px #000' }}>
-                    Spooky SOL Recovery
-                  </h1>
-                  <p className="text-orange-300 text-sm" style={{ fontFamily: 'Georgia, serif' }}>Get your SOL back... if you dare!</p>
-                </div>
               </div>
 
               {/* Mobile Wallet Connection */}
@@ -2601,7 +2502,7 @@ export default function SolRefund() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-x"
-                    className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                     title="Follow us on X (Twitter)"
                   >
                     <SiX className="h-4 w-4 text-white" />
@@ -2611,7 +2512,7 @@ export default function SolRefund() {
                     target="_blank"
                     rel="noopener noreferrer"
                     data-testid="button-social-discord"
-                    className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                     title="Join our Discord community"
                   >
                     <SiDiscord className="h-4 w-4 text-white" />
@@ -2622,18 +2523,18 @@ export default function SolRefund() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        className="bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
                         data-testid="button-wallet-connected"
                       >
                         <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
                         <ChevronDown className="h-3 w-3" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-slate-900 border-orange-500/30">
+                    <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
                       {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                         <Link href="/admin/x-bot">
                           <DropdownMenuItem 
-                            className="text-white hover:bg-orange-600/40 cursor-pointer"
+                            className="text-white hover:bg-purple-600/40 cursor-pointer"
                             data-testid="button-admin-xbot"
                           >
                             🤖 X Bot Admin
@@ -2642,7 +2543,7 @@ export default function SolRefund() {
                       )}
                       <DropdownMenuItem 
                         onClick={disconnectWallet}
-                        className="text-white hover:bg-orange-600/40 cursor-pointer"
+                        className="text-white hover:bg-purple-600/40 cursor-pointer"
                         data-testid="button-disconnect"
                       >
                         Disconnect
@@ -2655,7 +2556,7 @@ export default function SolRefund() {
                       select(null);
                       setVisible(true);
                     }}
-                    className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-orange-500/30"
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30"
                     title="Connect your wallet"
                     data-testid="button-connect"
                   >
@@ -2675,7 +2576,7 @@ export default function SolRefund() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="button-social-x-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                   title="Follow us on X (Twitter)"
                 >
                   <SiX className="h-4 w-4 text-white" />
@@ -2685,7 +2586,7 @@ export default function SolRefund() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="button-social-discord-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-md transition-colors border border-orange-500/30"
+                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                   title="Join our Discord community"
                 >
                   <SiDiscord className="h-4 w-4 text-white" />
@@ -2696,18 +2597,18 @@ export default function SolRefund() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      className="bg-transparent hover:bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-orange-500/30 flex items-center space-x-2"
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
                       data-testid="button-wallet-connected-desktop"
                     >
                       <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-slate-900 border-orange-500/30">
+                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
                     {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                       <Link href="/admin/x-bot">
                         <DropdownMenuItem 
-                          className="text-white hover:bg-orange-600/40 cursor-pointer"
+                          className="text-white hover:bg-purple-600/40 cursor-pointer"
                           data-testid="button-admin-xbot-desktop"
                         >
                           🤖 X Bot Admin
@@ -2716,7 +2617,7 @@ export default function SolRefund() {
                     )}
                     <DropdownMenuItem 
                       onClick={disconnectWallet}
-                      className="text-white hover:bg-orange-600/40 cursor-pointer"
+                      className="text-white hover:bg-purple-600/40 cursor-pointer"
                       data-testid="button-disconnect-desktop"
                     >
                       Disconnect
@@ -2730,7 +2631,7 @@ export default function SolRefund() {
                       select(null);
                       setVisible(true);
                     }}
-                    className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-orange-500/30"
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
                     title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
                     data-testid="button-connect-desktop"
                   >
@@ -2745,16 +2646,16 @@ export default function SolRefund() {
           {/* Center Navigation Buttons */}
           {isConnected && (
             <div className="flex justify-center py-2 px-2">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
                     activeTab === 'reclaim' 
-                      ? 'bg-black/60 text-white border-gray-600' 
-                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                 >
-                  <svg className="h-4 w-4 mr-2 inline-block" viewBox="0 0 397.7 311.7" style={{ fill: '#ff6600' }}>
+                  <svg className="h-4 w-4 sm:mr-2" viewBox="0 0 397.7 311.7" style={{ fill: activeTab === 'reclaim' ? 'white' : '#00FFA3' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
@@ -2764,56 +2665,40 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => setActiveTab('burnTokens')}
-                  className={`px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
                     activeTab === 'burnTokens' 
-                      ? 'bg-black/60 text-white border-gray-600' 
-                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                 >
-                  <Flame className="h-4 w-4 mr-2 inline-block" style={{ color: '#ff6600' }} />
-                  Burn
+                  🔥 Burn
                 </Button>
                 <Button
                   onClick={() => setActiveTab('referrals')}
-                  className={`px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
                     activeTab === 'referrals' 
-                      ? 'bg-black/60 text-white border-gray-600' 
-                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                 >
-                  <Users className="h-4 w-4 mr-2 inline-block" style={{ color: '#ff6600' }} />
+                  <Users className="h-4 w-4 mr-2" />
                   Referrals
                 </Button>
                 <Button
                   onClick={() => setActiveTab('massTransfer')}
-                  className={`hidden md:inline-flex px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
+                  className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
                     activeTab === 'massTransfer' 
-                      ? 'bg-black/60 text-white border-gray-600' 
-                      : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-mass-transfer"
                 >
-                  <ArrowLeftRight className="h-4 w-4 mr-2" style={{ color: '#ff6600' }} />
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
                   Transfer
                 </Button>
-                {/* Statistics button - only visible to platform wallet */}
-                {isPlatformWallet && (
-                  <Button
-                    onClick={() => setActiveTab('statistics')}
-                    className={`hidden md:inline-flex px-4 py-2.5 text-sm font-medium rounded-md border transition-all ${
-                      activeTab === 'statistics' 
-                        ? 'bg-black/60 text-white border-gray-600' 
-                        : 'bg-black/40 text-gray-300 border-gray-700 hover:border-gray-600'
-                    }`}
-                    data-testid="button-statistics"
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" style={{ color: '#ff6600' }} />
-                    Statistics
-                  </Button>
-                )}
                 <Button
                   onClick={() => setActiveTab('lend')}
-                  className={`hidden px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
                     activeTab === 'lend' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
@@ -2822,6 +2707,21 @@ export default function SolRefund() {
                 >
                   🌱 Earn
                 </Button>
+                {/* Statistics button - only visible to platform wallet */}
+                {isPlatformWallet && (
+                  <Button
+                    onClick={() => setActiveTab('statistics')}
+                    className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
+                      activeTab === 'statistics' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                    data-testid="button-statistics"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Statistics
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -2836,13 +2736,13 @@ export default function SolRefund() {
           {/* Burn Sub-Tabs */}
           {activeTab === 'burnTokens' && (
             <div className="flex justify-center mb-6">
-              <div className="bg-transparent backdrop-blur-sm border border-orange-500/30 rounded-lg p-1 flex space-x-1">
+              <div className="bg-purple-800/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1 flex space-x-1">
                 <button
                   onClick={() => setBurnSubTab('tokens')}
                   className={`px-4 py-2 text-sm font-medium rounded transition-all ${
                     burnSubTab === 'tokens' 
-                      ? 'bg-orange-600/30 text-white border border-orange-500/50' 
-                      : 'bg-transparent text-gray-300 hover:bg-orange-600/20'
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-burn-tokens"
                 >
@@ -2852,8 +2752,8 @@ export default function SolRefund() {
                   onClick={() => setBurnSubTab('nft')}
                   className={`px-4 py-2 text-sm font-medium rounded transition-all ${
                     burnSubTab === 'nft' 
-                      ? 'bg-orange-600/30 text-white border border-orange-500/50' 
-                      : 'bg-transparent text-gray-300 hover:bg-orange-600/20'
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-burn-nft"
                 >
@@ -2870,9 +2770,9 @@ export default function SolRefund() {
 
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
-            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold text-white" style={{ fontFamily: 'Georgia, serif' }}>Scan Results</h3>
+                <h3 className="text-lg font-semibold text-white">Scan Results</h3>
                 <button 
                   onClick={() => {
                     if (publicKey) {
@@ -2888,34 +2788,25 @@ export default function SolRefund() {
                 </button>
               </div>
               {!scanResult ? (
-                <div className="text-center text-gray-300 py-8">
+                <div className="text-center text-purple-300 py-8">
                   {scanMutation.isPending ? 'Scanning wallet...' : 'Connect wallet and scan to find empty accounts'}
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 mb-6">
-                    <p className="text-gray-300 text-sm">
-                      Found {scanResult.emptyAccounts} empty token accounts
-                    </p>
-                    {isPromoActive && (
-                      <div className="bg-green-900/30 border border-green-500/50 rounded-lg p-3 text-center">
-                        <p className="text-green-400 font-bold text-sm" style={{ fontFamily: 'Georgia, serif' }}>
-                          🎃 HALLOWEEN SPECIAL - ZERO FEES! Keep 100% of your SOL! 🎃
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-white text-sm mb-6">
+                    Found {scanResult.emptyAccounts} empty token accounts
+                  </p>
 
                   {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 backdrop-blur-sm border border-orange-900/40 rounded-xl" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
                       <div className="text-2xl font-bold text-white">{scanResult.emptyAccounts}</div>
-                      <div className="text-xs text-gray-300">Empty Accounts</div>
+                      <div className="text-xs text-purple-200">Empty Accounts</div>
                     </div>
-                    <div className="text-center p-4 backdrop-blur-sm border border-orange-900/40 rounded-xl" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
-                      <div className="text-2xl font-bold text-white">{refundCalc.net.toFixed(6)}</div>
-                      <div className="text-xs text-gray-300">{isPromoActive ? 'You Get (100%)' : 'Total Net'}</div>
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                      <div className="text-2xl font-bold text-white">{(refundCalc.total * 0.85).toFixed(6)}</div>
+                      <div className="text-xs text-purple-200">Total Net</div>
                     </div>
                   </div>
 
@@ -2950,28 +2841,21 @@ export default function SolRefund() {
                     onClick={handleProcessAllRefunds}
                     disabled={refundMutation.isPending}
                     size="lg"
-                    className="w-full bg-black hover:bg-gray-900 py-6 text-2xl font-bold rounded-2xl transition-all duration-200 border-2 border-orange-500 flex items-center justify-center gap-4"
-                    style={{ fontFamily: 'Georgia, serif', color: '#ff8c00' }}
-                    data-testid="button-claim-all"
+                    className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
                   >
                     {refundMutation.isPending ? (
-                      <>
-                        <RefreshCw className="h-8 w-8 animate-spin" />
-                        <span>CLAIMING...</span>
-                      </>
+                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
                     ) : (
-                      <>
-                        <img src={claimPumpkin} alt="Pumpkin" className="h-12 w-12" />
-                        <span>TRICK OR TREAT</span>
-                      </>
+                      <CheckCircle className="h-5 w-5 mr-2" />
                     )}
+                    CLAIM ALL
                   </Button>
                 </div>
               ) : (
-                <div className="bg-black/40 backdrop-blur-sm border border-gray-700 rounded-lg p-8 text-center">
-                  <CheckCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h4 className="text-xl font-semibold text-white mb-2" style={{ fontFamily: 'Georgia, serif' }}>Great news!</h4>
-                  <p className="text-gray-300">
+                <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-6 text-center">
+                  <CheckCircle className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-purple-400 mb-2">Great news!</h4>
+                  <p className="text-white">
                     Your wallet has no empty token accounts. All your accounts are either active or already closed.
                   </p>
                 </div>
@@ -2983,13 +2867,13 @@ export default function SolRefund() {
 
           {/* Burn Tokens Results */}
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length > 0 && (
-            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
                   {scanTokensMutation.isPending && (
-                    <p className="text-xs text-gray-300 mt-1">Scanning wallet...</p>
+                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
                   )}
                 </div>
                 <button 
@@ -3015,7 +2899,7 @@ export default function SolRefund() {
                     className={`relative flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${
                       selectedTokens.has(token.mint)
                         ? 'bg-gradient-to-r from-red-900/40 to-pink-900/40 border-2 border-red-500' 
-                        : 'bg-black/30 border-2 border-orange-900/50 hover:border-orange-700/70'
+                        : 'bg-purple-900/40 border-2 border-purple-700/50 hover:border-purple-600/60'
                     }`}
                     onClick={() => toggleTokenSelection(token.mint)}
                     data-testid={`card-token-${index}`}
@@ -3025,8 +2909,8 @@ export default function SolRefund() {
                       <div 
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors pointer-events-none ${
                           selectedTokens.has(token.mint)
-                            ? 'bg-orange-600 border-orange-600' 
-                            : 'bg-transparent border-orange-400'
+                            ? 'bg-purple-600 border-purple-600' 
+                            : 'bg-transparent border-purple-400'
                         }`}
                       >
                         {selectedTokens.has(token.mint) && <Check className="h-4 w-4 text-white" />}
@@ -3045,8 +2929,8 @@ export default function SolRefund() {
                           }}
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-orange-600/30 flex items-center justify-center">
-                          <Coins className="h-6 w-6 text-orange-300" />
+                        <div className="w-12 h-12 rounded-full bg-purple-600/30 flex items-center justify-center">
+                          <Coins className="h-6 w-6 text-purple-300" />
                         </div>
                       )}
                     </div>
@@ -3056,11 +2940,11 @@ export default function SolRefund() {
                       <div className="text-lg font-semibold text-white truncate">
                         {token.symbol || token.name || 'Unknown Token'}
                       </div>
-                      <div className="text-sm text-gray-300">
+                      <div className="text-sm text-purple-200">
                         Balance: {token.balance.toLocaleString()} {token.symbol || ''}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 font-mono truncate">
+                        <span className="text-xs text-purple-300 font-mono truncate">
                           {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
                         </span>
                         {token.usdPrice && token.usdPrice > 0 && (
@@ -3089,14 +2973,14 @@ export default function SolRefund() {
                 <div className="flex gap-3">
                   <Button
                     onClick={selectAllTokens}
-                    className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
+                    className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                     data-testid="button-select-all-tokens"
                   >
                     Select All
                   </Button>
                   <Button
                     onClick={clearTokenSelection}
-                    className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
+                    className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                     data-testid="button-clear-selection-tokens"
                   >
                     Clear
@@ -3105,36 +2989,30 @@ export default function SolRefund() {
 
                 {/* Total Selected */}
                 <div className="text-center">
-                  <div className="text-sm text-gray-300 mb-2">
+                  <div className="text-sm text-purple-300 mb-2">
                     Total Selected: {selectedTokens.size} token{selectedTokens.size !== 1 ? 's' : ''} (~{calculateTotalSOL(selectedTokens.size)} SOL net)
                   </div>
                 </div>
 
                 {/* Burn Button */}
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
-                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
-                    className="w-full relative overflow-hidden bg-gradient-to-b from-red-950/80 to-red-900/60 hover:from-red-900/80 hover:to-red-800/60 border-2 border-red-600 py-6 text-xl font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                    style={{ fontFamily: 'Georgia, serif', color: '#d4af77' }}
-                    data-testid="button-burn-selected-tokens"
-                  >
-                    {bulkBurnTokensMutation.isPending ? (
-                      <>
-                        <RefreshCw className="h-6 w-6 animate-spin" />
-                        <span>BURNING...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-3xl">🔥</span>
-                        <span>BURN THE CURSED TOKENS</span>
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-center text-sm text-gray-400" style={{ fontFamily: 'Georgia, serif' }}>
-                    Send your unwanted tokens to the underworld.
-                  </p>
-                </div>
+                <Button
+                  onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                  disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  data-testid="button-burn-selected-tokens"
+                >
+                  {bulkBurnTokensMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      Burning...
+                    </>
+                  ) : (
+                    <>
+                      <Flame className="h-5 w-5" />
+                      BURN
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           )}
@@ -3143,7 +3021,7 @@ export default function SolRefund() {
 
           {/* Empty State Messages - Tokens */}
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length === 0 && (
-            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Token & NFT Scanner</h3>
                 <button 
@@ -3153,7 +3031,7 @@ export default function SolRefund() {
                     }
                   }}
                   disabled={scanTokensMutation.isPending || !publicKey}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-800/20 hover:bg-orange-700/30 border border-orange-500/30 hover:border-orange-400/50 backdrop-blur-sm rounded-lg text-gray-300 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
                   data-testid="button-refresh-tokens-empty"
                 >
                   Click to Refresh
@@ -3161,16 +3039,16 @@ export default function SolRefund() {
                 </button>
               </div>
               <div className="text-center space-y-4">
-                <Flame className="h-12 w-12 text-orange-400 mx-auto" />
+                <Flame className="h-12 w-12 text-purple-400 mx-auto" />
                 <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
-                <p className="text-gray-300">Scan your wallet to find tokens available for burning.</p>
+                <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
               </div>
             </div>
           )}
 
           {/* NFT Burning Interface */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
-            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -3180,7 +3058,7 @@ export default function SolRefund() {
                       : 'NFT Scanner'}
                   </h3>
                   {scanNftsMutation.isPending && (
-                    <p className="text-xs text-gray-300 mt-1">Scanning wallet...</p>
+                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
                   )}
                 </div>
                 <button 
@@ -3202,13 +3080,13 @@ export default function SolRefund() {
               {/* Individual NFT Grid */}
               {scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
-                  <RefreshCw className="h-8 w-8 text-orange-400 mx-auto animate-spin mb-4" />
-                  <p className="text-gray-300">Scanning for NFTs...</p>
+                  <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
+                  <p className="text-purple-200">Scanning for NFTs...</p>
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
                 <div className="space-y-4">
                   {/* NFT Grid */}
-                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-orange-900/20 scrollbar-thumb-orange-500/50 mb-6">
+                  <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50 mb-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {nftData.nfts.map((nft: any) => {
                       // Use a stable identifier that works for all NFT types
@@ -3219,14 +3097,14 @@ export default function SolRefund() {
                       return (
                         <div
                           key={nftId}
-                          className={`relative bg-black/30 backdrop-blur-sm border rounded-lg p-3 transition-all ${
+                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all ${
                             isFrozen 
                               ? 'cursor-not-allowed opacity-75' 
                               : 'cursor-pointer'
                           } ${
                             isSelected 
                               ? 'border-green-400/50 bg-green-900/20' 
-                              : 'border-orange-900/50 hover:border-orange-700/70'
+                              : 'border-purple-500/30 hover:border-purple-400/50'
                           }`}
                           onClick={() => {
                             if (isFrozen) return; // Prevent selection of frozen NFTs
@@ -3249,7 +3127,7 @@ export default function SolRefund() {
                                 ? 'bg-gray-600/50 border-gray-500 cursor-not-allowed' 
                                 : isSelected 
                                   ? 'bg-green-500 border-green-500' 
-                                  : 'bg-black/50 border-orange-400'
+                                  : 'bg-purple-900/50 border-purple-400'
                             }`}>
                               {isSelected && !isFrozen && <Check className="h-3 w-3 text-white" />}
                             </div>
@@ -3257,7 +3135,7 @@ export default function SolRefund() {
 
                           
                           {/* NFT Image */}
-                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-black/30 relative">
+                          <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-purple-900/30 relative">
                             {nft.image ? (
                               <img
                                 src={nft.image}
@@ -3271,7 +3149,7 @@ export default function SolRefund() {
                               />
                             ) : null}
                             <div className={`w-full h-full flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
-                              <Image className="h-8 w-8 text-orange-400" />
+                              <Image className="h-8 w-8 text-purple-400" />
                             </div>
                             
                             {/* FROZEN overlay for frozen NFTs */}
@@ -3328,14 +3206,14 @@ export default function SolRefund() {
                             .filter(Boolean);
                           setSelectedNfts(new Set(selectableNfts));
                         }}
-                        className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
+                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                         data-testid="button-select-all-nfts"
                       >
                         Select All
                       </Button>
                       <Button
                         onClick={() => setSelectedNfts(new Set())}
-                        className="flex-1 bg-transparent hover:bg-white/10 text-white border border-orange-600/40 rounded-xl py-3"
+                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                         data-testid="button-clear-selection-nfts"
                       >
                         Clear
@@ -3344,77 +3222,71 @@ export default function SolRefund() {
 
                     {/* Total Selected */}
                     <div className="text-center">
-                      <div className="text-sm text-gray-300 mb-2">Total Selected: {selectedNfts.size} NFT{selectedNfts.size !== 1 ? 's' : ''}</div>
+                      <div className="text-sm text-purple-300 mb-2">Total Selected: {selectedNfts.size} NFT{selectedNfts.size !== 1 ? 's' : ''}</div>
                     </div>
 
                     {/* Burn Button */}
-                    <div className="space-y-2">
-                      <Button
-                        onClick={() => {
-                          if (!publicKey) {
-                            toast({
-                              title: "Error",
-                              description: "Please connect your wallet first",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-
-                          const selectedIds = Array.from(selectedNfts);
-                          const selectedNftData = nftData.nfts.filter((nft: any) => 
-                            selectedIds.includes(nft.mint || nft.id || nft.assetId)
-                          );
-                          
-                          // Group by type and burn
-                          const nftsByType: { [key: string]: any[] } = {};
-                          selectedNftData.forEach((nft: any) => {
-                            if (!nftsByType[nft.type]) {
-                              nftsByType[nft.type] = [];
-                            }
-                            nftsByType[nft.type].push(nft);
+                    <Button
+                      onClick={() => {
+                        if (!publicKey) {
+                          toast({
+                            title: "Error",
+                            description: "Please connect your wallet first",
+                            variant: "destructive",
                           });
+                          return;
+                        }
 
-                          // Call burn mutation with selected NFT IDs
-                          burnNftsMutation.mutate(selectedIds);
-                        }}
-                        disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
-                        className="w-full relative overflow-hidden bg-gradient-to-b from-red-950/80 to-red-900/60 hover:from-red-900/80 hover:to-red-800/60 border-2 border-red-600 py-6 text-xl font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                        style={{ fontFamily: 'Georgia, serif', color: '#d4af77' }}
-                        data-testid="button-burn-selected-nfts"
-                      >
-                        {burnNftsMutation.isPending ? (
-                          <>
-                            <RefreshCw className="h-6 w-6 animate-spin" />
-                            <span>BURNING...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-3xl">🔥</span>
-                            <span>BURN THE CURSED NFTs</span>
-                          </>
-                        )}
-                      </Button>
-                      <p className="text-center text-sm text-gray-400" style={{ fontFamily: 'Georgia, serif' }}>
-                        Send your unwanted NFTs to the underworld.
-                      </p>
-                    </div>
+                        const selectedIds = Array.from(selectedNfts);
+                        const selectedNftData = nftData.nfts.filter((nft: any) => 
+                          selectedIds.includes(nft.mint || nft.id || nft.assetId)
+                        );
+                        
+                        // Group by type and burn
+                        const nftsByType: { [key: string]: any[] } = {};
+                        selectedNftData.forEach((nft: any) => {
+                          if (!nftsByType[nft.type]) {
+                            nftsByType[nft.type] = [];
+                          }
+                          nftsByType[nft.type].push(nft);
+                        });
+
+                        // Call burn mutation with selected NFT IDs
+                        burnNftsMutation.mutate(selectedIds);
+                      }}
+                      disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      data-testid="button-burn-selected-nfts"
+                    >
+                      {burnNftsMutation.isPending ? (
+                        <>
+                          <RefreshCw className="h-5 w-5 animate-spin" />
+                          Burning...
+                        </>
+                      ) : (
+                        <>
+                          <Flame className="h-5 w-5" />
+                          BURN
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               ) : !scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
-                  <Image className="h-12 w-12 text-orange-400 mx-auto mb-4" />
+                  <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-white mb-2">No NFTs Found</h3>
-                  <p className="text-gray-300">Scan your wallet to find NFTs in your collection.</p>
+                  <p className="text-purple-200">Scan your wallet to find NFTs in your collection.</p>
                 </div>
               ) : null}
 
               {/* Burn Instructions */}
-              <div className="bg-black/20 border border-orange-900/30 rounded-lg p-4">
+              <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <Info className="h-5 w-5 text-orange-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-gray-300">
+                  <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-purple-200">
                     <p className="font-medium mb-2">About NFT Burning:</p>
-                    <ul className="space-y-1 text-gray-400">
+                    <ul className="space-y-1 text-purple-300">
                       <li>• Burn unwanted NFTs and recover SOL rent deposits</li>
                       <li>• Burning permanently destroys the NFT and its metadata</li>
                       <li>• Burning NFTs usually returns 0.01 SOL, while most tokens and some scam NFTs give only 0.002 SOL. Magic Eden OCP NFTs return 0.004 SOL, and compressed NFTs return nothing.</li>
@@ -3429,7 +3301,7 @@ export default function SolRefund() {
           {activeTab === 'referrals' && (
             <div className="space-y-8">
               {/* How It Works */}
-              <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
@@ -3443,7 +3315,7 @@ export default function SolRefund() {
                         <Wallet className="w-6 h-6 text-blue-400" />
                       </div>
                       <h3 className="font-semibold text-white">Connect Wallet</h3>
-                      <p className="text-sm text-gray-300">
+                      <p className="text-sm text-purple-200">
                         Connect your wallet to automatically generate your referral link
                       </p>
                     </div>
@@ -3452,16 +3324,16 @@ export default function SolRefund() {
                         <Users className="w-6 h-6 text-green-400" />
                       </div>
                       <h3 className="font-semibold text-white">Share</h3>
-                      <p className="text-sm text-gray-300">
+                      <p className="text-sm text-purple-200">
                         Share with your friends
                       </p>
                     </div>
                     <div className="text-center space-y-2">
-                      <div className="w-12 h-12 bg-orange-500/20 border border-orange-500/30 rounded-full flex items-center justify-center mx-auto">
-                        <DollarSign className="w-6 h-6 text-orange-400" />
+                      <div className="w-12 h-12 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto">
+                        <DollarSign className="w-6 h-6 text-purple-400" />
                       </div>
                       <h3 className="font-semibold text-white">Earn</h3>
-                      <p className="text-sm text-gray-300">
+                      <p className="text-sm text-purple-200">
                         Earn 50% of platform fee from every referral transaction
                       </p>
                     </div>
@@ -3471,27 +3343,27 @@ export default function SolRefund() {
 
               {/* Stats Cards */}
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 text-center" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
                     {(userReferrals as any)?.referralCode?.stats?.totalEarnings || '0'} SOL
                   </div>
-                  <div className="text-sm text-gray-300 uppercase tracking-wider">
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
                     Total Earnings
                   </div>
                 </div>
 
-                <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 text-center" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
                     {(userReferrals as any)?.referralCode?.stats?.totalReferrals || '0'}
                   </div>
-                  <div className="text-sm text-gray-300 uppercase tracking-wider">
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
                     Total Referrals
                   </div>
                 </div>
               </div>
 
               {/* Referral Dashboard Content */}
-              <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     <Globe className="w-5 h-5" />
@@ -3500,13 +3372,13 @@ export default function SolRefund() {
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-gray-300">Referral Link</Label>
+                    <Label className="text-purple-200">Referral Link</Label>
                     <div className="flex space-x-2">
                       <Input 
                         value={userReferralCode ? `${window.location.origin}/${userReferralCode}` : 'Generating referral link...'} 
                         readOnly
                         data-testid="input-referral-link"
-                        className="bg-black/30 border-orange-500/30 text-white"
+                        className="bg-purple-900/30 border-purple-500/30 text-white"
                       />
                       <Button 
                         variant="outline" 
@@ -3521,7 +3393,7 @@ export default function SolRefund() {
                           }
                         }}
                         data-testid="button-copy-link"
-                        className="bg-orange-800/20 border-orange-500/30 text-orange-300 hover:bg-orange-700/30 hover:text-white"
+                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30 hover:text-white"
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -3531,23 +3403,23 @@ export default function SolRefund() {
               </div>
 
               {/* Recent Referral Transactions */}
-              <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white">Recent Referral Transactions</h3>
-                  <p className="text-gray-300 text-sm mt-2">
+                  <p className="text-purple-200 text-sm mt-2">
                     Track your recent referral earnings
                   </p>
                 </div>
                 <div className="space-y-4">
                   {(referralTransactions as any)?.transactions && (referralTransactions as any).transactions.length > 0 ? (
                     (referralTransactions as any).transactions.map((tx: any, index: number) => (
-                      <div key={index} className="border border-orange-500/30 bg-black/20 rounded-lg p-4 space-y-2">
+                      <div key={index} className="border border-purple-500/30 bg-purple-900/20 rounded-lg p-4 space-y-2">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <p className="font-mono text-sm text-white">
                               {tx.referredWalletAddress?.slice(0, 8)}...{tx.referredWalletAddress?.slice(-8)}
                             </p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-purple-300">
                               {tx.paidAt ? new Date(tx.paidAt).toLocaleString() : 'Date unavailable'}
                             </p>
                           </div>
@@ -3555,19 +3427,19 @@ export default function SolRefund() {
                             <p className="font-semibold text-green-400">
                               +{tx.referralFeeAmount || '0'} SOL
                             </p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-purple-300">
                               From {tx.originalFeeAmount || '0'} SOL fee
                             </p>
                           </div>
                         </div>
-                        <Separator className="bg-orange-500/30" />
-                        <div className="flex justify-between text-xs text-gray-400">
+                        <Separator className="bg-purple-500/30" />
+                        <div className="flex justify-between text-xs text-purple-300">
                           <span>Transaction: {tx.transactionSignature?.slice(0, 12)}...</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(`https://solscan.io/tx/${tx.transactionSignature}`, "_blank")}
-                            className="text-gray-400 hover:text-white hover:bg-orange-700/30"
+                            className="text-purple-300 hover:text-white hover:bg-purple-700/30"
                           >
                             View on Solscan
                           </Button>
@@ -3576,8 +3448,8 @@ export default function SolRefund() {
                     ))
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-gray-300">No referral transactions yet</p>
-                      <p className="text-sm text-gray-400 mt-2">Share your referral link to start earning!</p>
+                      <p className="text-purple-300">No referral transactions yet</p>
+                      <p className="text-sm text-purple-400 mt-2">Share your referral link to start earning!</p>
                     </div>
                   )}
                 </div>
@@ -4890,21 +4762,21 @@ export default function SolRefund() {
           {activeTab === 'reclaim' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Total SOL Recovered */}
-              <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-8 text-center">
-                <div className="text-4xl font-bold text-white mb-3" style={{ fontFamily: 'Georgia, serif' }}>
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
                   {stats ? stats.totalSolRecovered.toFixed(6) : '0.000000'}
                 </div>
-                <div className="text-sm text-gray-300 uppercase tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
                   TOTAL SOL RECOVERED
                 </div>
               </div>
 
               {/* Total Accounts Closed */}
-              <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-8 text-center">
-                <div className="text-4xl font-bold text-white mb-3" style={{ fontFamily: 'Georgia, serif' }}>
+              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">
                   {stats ? stats.totalAccountsClaimed : 0}
                 </div>
-                <div className="text-sm text-gray-300 uppercase tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
+                <div className="text-sm text-purple-200 uppercase tracking-wider">
                   TOTAL ACCOUNTS CLOSED
                 </div>
               </div>
@@ -4913,25 +4785,25 @@ export default function SolRefund() {
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
           {activeTab === 'reclaim' && (
-            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700 p-6 mb-6">
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-6">
-                <h3 className="text-2xl font-bold text-white text-center w-full" style={{ fontFamily: 'Georgia, serif' }}>ALL TIME LEDGER</h3>
+                <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
               </div>
 
               <div className="overflow-x-auto">
                 <div className="min-w-full">
                   {/* Header */}
-                  <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-gray-600">
-                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
+                  <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
                       WALLET/TX
                     </div>
-                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider text-center" style={{ fontFamily: 'Georgia, serif' }}>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
                       ACCTS
                     </div>
-                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider text-center" style={{ fontFamily: 'Georgia, serif' }}>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
                       CLAIMED SOL
                     </div>
-                    <div className="text-sm font-semibold text-gray-300 uppercase tracking-wider text-center" style={{ fontFamily: 'Georgia, serif' }}>
+                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
                       DATE
                     </div>
                   </div>
@@ -4939,18 +4811,18 @@ export default function SolRefund() {
                   {/* Transaction Rows */}
                   <div>
                     {isLoadingTransactions && allTransactions.length === 0 ? (
-                      <div className="text-center text-gray-400 py-8">
+                      <div className="text-center text-purple-300 py-8">
                         Loading transactions...
                       </div>
                     ) : allTransactions.length === 0 ? (
-                      <div className="text-center text-gray-400 py-8">
+                      <div className="text-center text-purple-300 py-8">
                         No transactions yet
                       </div>
                     ) : (
                       allTransactions.map((tx, index) => (
                         <div key={tx.signature}>
                           <div 
-                            className="grid grid-cols-4 gap-4 py-3 hover:bg-gray-800/40 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-gray-600"
+                            className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
                             onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
                             title="Click to view transaction on Solscan"
                           >
@@ -4990,7 +4862,7 @@ export default function SolRefund() {
                       <button
                         onClick={loadMoreTransactions}
                         disabled={isLoadingTransactions}
-                        className="px-6 py-2 bg-transparent hover:bg-white/10 border border-orange-600/40 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isLoadingTransactions ? 'Loading...' : 'Load More'}
                       </button>
@@ -5003,13 +4875,13 @@ export default function SolRefund() {
 
           {/* Safety & Security Section - Only show on reclaim tab - Bottom of page */}
           {activeTab === 'reclaim' && (
-            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 mb-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
                 <h3 className="text-lg font-semibold text-white">Safety & Security</h3>
               </div>
 
-              <div className="space-y-3 text-gray-300">
+              <div className="space-y-3 text-purple-200">
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">Only empty accounts (0 token balance) are eligible for closure</span>
@@ -5024,11 +4896,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  {isPromoActive ? (
-                    <span className="text-sm font-bold text-green-400">🎃 24-HOUR FREE CLAIM PROMOTION - NO FEES! 🎃</span>
-                  ) : (
-                    <span className="text-sm">15% service fee supports platform maintenance and development</span>
-                  )}
+                  <span className="text-sm">15% service fee supports platform maintenance and development</span>
                 </div>
               </div>
             </div>
@@ -5036,13 +4904,13 @@ export default function SolRefund() {
 
           {/* What is this rent? Section - Only show on reclaim tab - Bottom of page */}
           {activeTab === 'reclaim' && (
-            <div className="backdrop-blur-sm rounded-xl border border-orange-900/40 p-6 mb-6" style={{ backgroundColor: 'rgba(40, 20, 10, 0.6)' }}>
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
                 <h3 className="text-lg font-semibold text-white">What is this rent?</h3>
               </div>
 
-              <div className="space-y-3 text-gray-300 text-sm">
+              <div className="space-y-3 text-purple-200 text-sm">
                 <p>
                   Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
                 </p>
@@ -5059,17 +4927,17 @@ export default function SolRefund() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-gray-700 bg-black/30 backdrop-blur-sm">
+      <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center justify-center space-x-3">
             <img 
               src={logoImage}
-              alt="Get Free Sol Logo"
-              className="h-[40px] w-[40px]"
+              alt="Get Free Sol"
+              className="h-8 w-8"
             />
             <div className="text-center">
-              <div className="text-white font-semibold text-lg" style={{ fontFamily: 'Georgia, serif' }}>Get Free Sol</div>
-              <div className="text-orange-300 text-sm">2025 All rights reserved</div>
+              <div className="text-white font-semibold text-lg">Get Free Sol</div>
+              <div className="text-purple-300 text-sm">2025 All rights reserved</div>
             </div>
           </div>
         </div>
@@ -5090,15 +4958,18 @@ export default function SolRefund() {
         />
       )}
 
-      {/* Floating Swap Toggle Button - Halloween Style */}
+      {/* Floating Swap Toggle Button */}
       <button
         onClick={() => setIsSwapModalOpen(!isSwapModalOpen)}
-        className="fixed bottom-4 left-4 md:left-8 z-40 hover:scale-105 transition-all bg-black/60 border-2 border-gray-700 px-6 py-3 rounded-lg text-white font-bold text-xl"
+        className="fixed -bottom-4 left-0 md:bottom-4 md:left-8 z-40 hover:scale-105 transition-transform bg-transparent border-0 p-0"
         data-testid="button-floating-swap"
         title="Toggle Token Swap"
-        style={{ fontFamily: 'Georgia, serif' }}
       >
-        SWAP
+        <img 
+          src={swapButtonImage} 
+          alt="Swap" 
+          className="h-36 w-auto drop-shadow-2xl"
+        />
       </button>
 
       <style>{`
@@ -5112,60 +4983,6 @@ export default function SolRefund() {
         }
         .animate-spin-slow {
           animation: spin-slow 10s linear infinite;
-        }
-        
-        @keyframes float {
-          0% {
-            transform: translate(0vw, 0vh);
-          }
-          20% {
-            transform: translate(15vw, -10vh);
-          }
-          40% {
-            transform: translate(-10vw, 20vh);
-          }
-          60% {
-            transform: translate(20vw, 15vh);
-          }
-          80% {
-            transform: translate(-15vw, -5vh);
-          }
-          100% {
-            transform: translate(0vw, 0vh);
-          }
-        }
-        
-        @keyframes float-delayed {
-          0% {
-            transform: translate(0vw, 0vh) rotate(0deg);
-          }
-          20% {
-            transform: translate(-20vw, 15vh) rotate(5deg);
-          }
-          40% {
-            transform: translate(10vw, -10vh) rotate(-5deg);
-          }
-          60% {
-            transform: translate(-15vw, 20vh) rotate(3deg);
-          }
-          80% {
-            transform: translate(25vw, -15vh) rotate(-3deg);
-          }
-          100% {
-            transform: translate(0vw, 0vh) rotate(0deg);
-          }
-        }
-        
-        .animate-float {
-          animation: float 20s ease-in-out infinite;
-        }
-        
-        .animate-float-delayed {
-          animation: float-delayed 25s ease-in-out infinite;
-        }
-        
-        .halloween-pumpkin {
-          filter: none;
         }
       `}</style>
     </div>
