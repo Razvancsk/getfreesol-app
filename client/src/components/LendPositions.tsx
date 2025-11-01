@@ -119,7 +119,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
               💰 Lending Vaults
             </CardTitle>
             <CardDescription className="text-purple-200">
-              Earn passive income by lending your assets - Powered by Jupiter Lend & Kamino Finance
+              Earn passive income by lending your assets - Powered by Jupiter Lend
             </CardDescription>
           </div>
           <Button
