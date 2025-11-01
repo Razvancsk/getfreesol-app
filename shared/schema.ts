@@ -438,3 +438,107 @@ export type XSchedule = typeof xSchedules.$inferSelect;
 export type InsertXSchedule = z.infer<typeof insertXScheduleSchema>;
 export type XEngagement = typeof xEngagement.$inferSelect;
 export type InsertXEngagement = z.infer<typeof insertXEngagementSchema>;
+
+// Developer Fee System Tables (Jupiter-style referral accounts)
+export const developers = pgTable("developers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  payoutWalletAddress: text("payout_wallet_address").notNull().unique(), // Developer's personal wallet for payouts
+  email: text("email"),
+  vanityPrefix: text("vanity_prefix"), // 3-letter prefix requested (e.g., "ABC")
+  status: text("status").notNull().default("active"), // active, suspended
+  totalEarned: decimal("total_earned", { precision: 18, scale: 9 }).notNull().default("0"),
+  totalClaimed: decimal("total_claimed", { precision: 18, scale: 9 }).notNull().default("0"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const feeAccounts = pgTable("fee_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  developerId: varchar("developer_id").notNull(), // Links to developers table
+  publicKey: text("public_key").notNull().unique(), // Solana account public key
+  encryptedPrivateKey: text("encrypted_private_key").notNull(), // Encrypted secret key
+  generationType: text("generation_type").notNull(), // 'vanity' or 'random'
+  vanityPrefix: text("vanity_prefix"), // Actual prefix if vanity (e.g., "ABC")
+  status: text("status").notNull().default("pending"), // pending, active, disabled
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const feeBalances = pgTable("fee_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  developerId: varchar("developer_id").notNull().unique(), // One balance per developer
+  feeAccountId: varchar("fee_account_id").notNull(),
+  unclaimedLamports: decimal("unclaimed_lamports", { precision: 18, scale: 9 }).notNull().default("0"),
+  unclaimedUsd: decimal("unclaimed_usd", { precision: 18, scale: 2 }).notNull().default("0"), // Cached USD value
+  lastUsdUpdate: timestamp("last_usd_update"), // When USD value was last updated
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const feeTransactions = pgTable("fee_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  developerId: varchar("developer_id").notNull(),
+  feeAccountId: varchar("fee_account_id").notNull(),
+  sourceSignature: text("source_signature").notNull(), // Original SOL recovery/burn transaction
+  transactionType: text("transaction_type").notNull(), // 'sol_recovery', 'token_burn', 'nft_burn'
+  grossFee: decimal("gross_fee", { precision: 18, scale: 9 }).notNull(), // Total fee charged to user
+  developerShare: decimal("developer_share", { precision: 18, scale: 9 }).notNull(), // 80% of gross
+  platformShare: decimal("platform_share", { precision: 18, scale: 9 }).notNull(), // 20% of gross
+  userWallet: text("user_wallet").notNull(), // User who paid the fee
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const feeClaims = pgTable("fee_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  developerId: varchar("developer_id").notNull(),
+  feeAccountId: varchar("fee_account_id").notNull(),
+  claimSignature: text("claim_signature").notNull().unique(), // On-chain transaction signature
+  amountClaimed: decimal("amount_claimed", { precision: 18, scale: 9 }).notNull(), // Total claimed
+  developerReceived: decimal("developer_received", { precision: 18, scale: 9 }).notNull(), // 80% sent to developer
+  platformReceived: decimal("platform_received", { precision: 18, scale: 9 }).notNull(), // 20% sent to platform
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  errorMessage: text("error_message"),
+  claimedAt: timestamp("claimed_at").notNull().defaultNow(),
+});
+
+export const insertDeveloperSchema = createInsertSchema(developers).omit({
+  id: true,
+  totalEarned: true,
+  totalClaimed: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertFeeAccountSchema = createInsertSchema(feeAccounts).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export const insertFeeBalanceSchema = createInsertSchema(feeBalances).omit({
+  id: true,
+  unclaimedLamports: true,
+  unclaimedUsd: true,
+  lastUsdUpdate: true,
+  updatedAt: true,
+});
+
+export const insertFeeTransactionSchema = createInsertSchema(feeTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFeeClaimSchema = createInsertSchema(feeClaims).omit({
+  id: true,
+  status: true,
+  claimedAt: true,
+});
+
+export type Developer = typeof developers.$inferSelect;
+export type InsertDeveloper = z.infer<typeof insertDeveloperSchema>;
+export type FeeAccount = typeof feeAccounts.$inferSelect;
+export type InsertFeeAccount = z.infer<typeof insertFeeAccountSchema>;
+export type FeeBalance = typeof feeBalances.$inferSelect;
+export type InsertFeeBalance = z.infer<typeof insertFeeBalanceSchema>;
+export type FeeTransaction = typeof feeTransactions.$inferSelect;
+export type InsertFeeTransaction = z.infer<typeof insertFeeTransactionSchema>;
+export type FeeClaim = typeof feeClaims.$inferSelect;
+export type InsertFeeClaim = z.infer<typeof insertFeeClaimSchema>;
