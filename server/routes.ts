@@ -6861,8 +6861,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No balance to claim' });
       }
       
-      // Minimum claimable amount (0.001 SOL)
-      const MIN_CLAIM_AMOUNT = 1000000; // 0.001 SOL in lamports
+      // Minimum claimable amount (0.0001 SOL)
+      const MIN_CLAIM_AMOUNT = 100000; // 0.0001 SOL in lamports
       
       // Calculate claimable amount (leave rent exempt amount + transaction fee)
       const minRent = await connection.getMinimumBalanceForRentExemption(0);
@@ -6871,7 +6871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (transferAmount < MIN_CLAIM_AMOUNT) {
         return res.status(400).json({ 
-          error: 'Minimum 0.001 SOL required for claim',
+          error: 'Minimum 0.0001 SOL required for claim',
           details: {
             balance: balance / 1e9,
             claimable: transferAmount / 1e9,
