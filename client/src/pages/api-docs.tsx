@@ -293,7 +293,10 @@ export default function ApiDocs() {
                       ✅ <strong>Project:</strong> {referralAccount.projectName}
                     </p>
                     <p className="text-purple-100 text-sm mt-1">
-                      💰 <strong>Fee Split:</strong> You earn {developerReceives}% of fees, platform gets {platformReceives}%
+                      💰 <strong>Fee Flow:</strong> 100% of fees → Your PDA wallet
+                    </p>
+                    <p className="text-purple-100 text-sm mt-1">
+                      💵 <strong>When you claim:</strong> {developerReceives}% to you, {platformReceives}% to platform
                     </p>
                   </div>
                   <p className="text-purple-200 text-xs">
@@ -555,15 +558,26 @@ export default function ApiDocs() {
 Content-Type: application/json
 
 {
-  "walletAddress": "YOUR_WALLET_ADDRESS",
+  "walletAddress": "USER_WALLET_ADDRESS",
   "selectedAccounts": ["account1", "account2"],
-  "donationPercentage": ${feePercentage || '10'}
+  "donationPercentage": ${feePercentage || '10'},
+  "feeReceiverAddress": "${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}"
 }`}
                   </pre>
                   <p className="text-purple-300 text-xs mt-2">
-                    Note: All parameters above are required. No referral code needed!
+                    💰 <strong>feeReceiverAddress</strong>: Your PDA where fees are sent (${referralAccount ? 'auto-filled with your PDA' : 'shown in purple box above'})
                   </p>
                 </div>
+                {referralAccount && (
+                  <div className="bg-green-900/30 p-3 rounded-lg border border-green-500/50">
+                    <p className="text-green-200 text-sm font-semibold">
+                      ✅ Fee Flow: User claims {feePercentage}% → <strong>100%</strong> goes to your PDA: <code className="text-green-400">{referralAccount.referralPda.substring(0, 12)}...</code>
+                    </p>
+                    <p className="text-green-200 text-xs mt-1">
+                      When you claim from PDA: {developerReceives}% to your wallet, {platformReceives}% to platform
+                    </p>
+                  </div>
+                )}
                 <div className="bg-slate-900/50 p-4 rounded-lg">
                   <p className="text-purple-300 text-sm mb-2">Example Response:</p>
                   <pre className="text-green-400 text-sm overflow-x-auto">
@@ -728,15 +742,26 @@ Content-Type: application/json
 Content-Type: application/json
 
 {
-  "ownerPublicKey": "YOUR_WALLET_ADDRESS",
+  "ownerPublicKey": "USER_WALLET_ADDRESS",
   "selectedTokens": [
     { "mint": "mint1", "tokenAccount": "account1" },
     { "mint": "mint2", "tokenAccount": "account2" }
   ],
-  "donationPercentage": ${feePercentage || '10'}
+  "donationPercentage": ${feePercentage || '10'},
+  "feeReceiverAddress": "${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}"
 }`}
                   </pre>
+                  <p className="text-purple-300 text-xs mt-2">
+                    💰 <strong>feeReceiverAddress</strong>: Your PDA where fees are sent
+                  </p>
                 </div>
+                {referralAccount && (
+                  <div className="bg-green-900/30 p-3 rounded-lg border border-green-500/50">
+                    <p className="text-green-200 text-sm font-semibold">
+                      ✅ 100% of token burn fees → Your PDA: <code className="text-green-400">{referralAccount.referralPda.substring(0, 12)}...</code>
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Separator className="bg-purple-600/30" />
@@ -831,15 +856,26 @@ Content-Type: application/json
 Content-Type: application/json
 
 {
-  "ownerPublicKey": "YOUR_WALLET_ADDRESS",
+  "ownerPublicKey": "USER_WALLET_ADDRESS",
   "nfts": [
     { "mint": "nft_mint_1", "isCompressed": false },
     { "mint": "nft_mint_2", "isCompressed": true }
   ],
-  "donationPercentage": ${feePercentage || '10'}
+  "donationPercentage": ${feePercentage || '10'},
+  "feeReceiverAddress": "${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}"
 }`}
                   </pre>
+                  <p className="text-purple-300 text-xs mt-2">
+                    💰 <strong>feeReceiverAddress</strong>: Your PDA where fees are sent
+                  </p>
                 </div>
+                {referralAccount && (
+                  <div className="bg-green-900/30 p-3 rounded-lg border border-green-500/50">
+                    <p className="text-green-200 text-sm font-semibold">
+                      ✅ 100% of NFT burn fees → Your PDA: <code className="text-green-400">{referralAccount.referralPda.substring(0, 12)}...</code>
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Separator className="bg-purple-600/30" />
@@ -919,7 +955,8 @@ const recoverSOL = async (walletAddress, wallet) => {
       body: JSON.stringify({
         walletAddress,
         selectedAccounts: scanData.accounts.map(a => a.accountAddress),
-        donationPercentage: ${feePercentage || '10'}
+        donationPercentage: ${feePercentage || '10'},
+        feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
       })
     }
   );

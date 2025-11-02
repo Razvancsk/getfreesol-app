@@ -735,14 +735,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Prepare transaction for SOL refund
   app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
     try {
-      const { walletAddress, selectedAccounts, donationPercentage, referralCode } = req.body;
+      const { walletAddress, selectedAccounts, donationPercentage, referralCode, feeReceiverAddress } = req.body;
       
       // Check for permanent wallet association first (first referral wins forever)
       let referralCodeData = null;
       let permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
       
-      if (permanentAssociation) {
-        // Use permanent association
+      // Developer API Platform: If feeReceiverAddress is provided, use it directly (no referral code needed)
+      let useDirectFeeAddress = false;
+      if (feeReceiverAddress) {
+        console.log('💼 Developer API: Using direct fee receiver address:', feeReceiverAddress);
+        useDirectFeeAddress = true;
+      } else if (permanentAssociation) {
+        // Use permanent association (old affiliate system)
         referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
         console.log('Using permanent referral association:', permanentAssociation.referralCode);
       } else if (referralCode) {
@@ -887,9 +892,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fee calculation: recovered=${totalRecoveredLamports} lamports, total fee=${totalFeeLamports} lamports (${PLATFORM_FEE_PERCENTAGE}%)`);
       
-      // Check referral wallet BEFORE calculating final fees
+      // Check referral/developer fee wallet BEFORE calculating final fees
       let referralWalletExists = false;
-      if (referralCodeData && totalFeeLamports > 0) {
+      let developerWalletAddress = null;
+      
+      // Developer API Platform: Use direct fee receiver address (100% to PDA, split happens on claim)
+      if (useDirectFeeAddress && feeReceiverAddress && totalFeeLamports > 0) {
+        try {
+          developerWalletAddress = new PublicKey(feeReceiverAddress);
+          const developerBalance = await connection.getBalance(developerWalletAddress);
+          referralWalletExists = developerBalance >= 0; // Accept even 0 balance for Developer API
+          
+          if (referralWalletExists) {
+            // Developer API Platform: 100% goes to partner's PDA wallet
+            // Split (80/20) happens later when partner claims from PDA
+            referralFeeLamports = totalFeeLamports;
+            platformFeeLamports = 0;
+            console.log(`💼 Developer API Platform - 100% (${totalFeeLamports} lamports) to partner PDA: ${feeReceiverAddress}`);
+          } else {
+            console.log(`❌ Developer fee receiver ${feeReceiverAddress} is invalid - platform gets all`);
+            platformFeeLamports = totalFeeLamports;
+            referralFeeLamports = 0;
+          }
+        } catch (error) {
+          console.log('Failed to validate developer fee receiver:', error);
+          platformFeeLamports = totalFeeLamports;
+          referralFeeLamports = 0;
+        }
+      }
+      // Old affiliate system: Use referral code (50/50 split)
+      else if (referralCodeData && totalFeeLamports > 0) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
         // Check if referral wallet exists (has SOL balance)
@@ -906,7 +938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 50% of total fee goes to referral, 50% stays with platform
           referralFeeLamports = Math.floor(totalFeeLamports * 0.5);
           platformFeeLamports = totalFeeLamports - referralFeeLamports;
-          console.log(`✅ Referral wallet exists - platform=${platformFeeLamports} (50% of 15%), referral=${referralFeeLamports} (50% of 15%)`);
+          console.log(`✅ Referral wallet exists - platform=${platformFeeLamports} (50%), referral=${referralFeeLamports} (50%)`);
         } else {
           // Referral wallet doesn't exist, all fees go to platform
           platformFeeLamports = totalFeeLamports;
@@ -933,18 +965,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Platform fee transfer added: ${platformFeeLamports} lamports`);
       }
       
-      // Add referral fee transfer only if referral wallet exists
-      if (referralFeeLamports > 0 && referralCodeData && referralWalletExists) {
-        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-        
-        const referralFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: new PublicKey(walletAddress),
-          toPubkey: referralWalletPublicKey,
-          lamports: referralFeeLamports,
-        });
-        
-        transaction.add(referralFeeTransferInstruction);
-        console.log(`Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
+      // Add developer/referral fee transfer
+      if (referralFeeLamports > 0 && referralWalletExists) {
+        // Developer API Platform: Use direct fee receiver address
+        if (useDirectFeeAddress && developerWalletAddress) {
+          const developerFeeTransferInstruction = SystemProgram.transfer({
+            fromPubkey: new PublicKey(walletAddress),
+            toPubkey: developerWalletAddress,
+            lamports: referralFeeLamports,
+          });
+          
+          transaction.add(developerFeeTransferInstruction);
+          console.log(`💼 Developer fee transfer added: ${referralFeeLamports} lamports to ${feeReceiverAddress}`);
+        }
+        // Old affiliate system: Use referral code wallet
+        else if (referralCodeData) {
+          const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+          
+          const referralFeeTransferInstruction = SystemProgram.transfer({
+            fromPubkey: new PublicKey(walletAddress),
+            toPubkey: referralWalletPublicKey,
+            lamports: referralFeeLamports,
+          });
+          
+          transaction.add(referralFeeTransferInstruction);
+          console.log(`Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
+        }
       }
       
 
