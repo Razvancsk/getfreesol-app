@@ -16,6 +16,7 @@ export default function DeveloperDashboard() {
   const { publicKey, signMessage } = useWallet();
   const { toast } = useToast();
   const [projectName, setProjectName] = useState("");
+  const [vanityPrefix, setVanityPrefix] = useState("");
   const [feePercentage, setFeePercentage] = useState(0);
 
   const walletAddress = publicKey?.toBase58();
@@ -114,14 +115,14 @@ export default function DeveloperDashboard() {
           // Create Account Form
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-2xl">Create Developer Account</CardTitle>
+              <CardTitle className="text-2xl">Create Ultra Referral Account</CardTitle>
               <CardDescription>
-                Set up your developer account to start earning fees from user transactions
+                Use your project name
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="projectName">Project Name</Label>
+                <Label htmlFor="projectName">Name</Label>
                 <Input
                   id="projectName"
                   data-testid="input-project-name"
@@ -130,8 +131,23 @@ export default function DeveloperDashboard() {
                   onChange={(e) => setProjectName(e.target.value)}
                   maxLength={50}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vanityPrefix" className="text-muted-foreground">
+                  Vanity Prefix (Optional)
+                </Label>
+                <Input
+                  id="vanityPrefix"
+                  data-testid="input-vanity-prefix"
+                  placeholder="e.g., ABC, XYZ"
+                  value={vanityPrefix}
+                  onChange={(e) => setVanityPrefix(e.target.value.toUpperCase())}
+                  maxLength={3}
+                  className="uppercase"
+                />
                 <p className="text-xs text-muted-foreground">
-                  A unique fee collection account will be created for your wallet
+                  3-letter prefix for vanity fee collection address (coming soon)
                 </p>
               </div>
 
