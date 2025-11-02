@@ -6974,15 +6974,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   Platform (20%): ${(platformAmount / 1e9).toFixed(9)} SOL`);
       const signature = await connection.sendRawTransaction(transaction.serialize(), {
         skipPreflight: false,
-        preflightCommitment: 'confirmed'
+        preflightCommitment: 'finalized'
       });
       
-      // Wait for confirmation
+      // Wait for finalized confirmation (ensures Solscan can find it)
+      console.log(`⏳ Waiting for finalized confirmation...`);
       await connection.confirmTransaction({
         signature,
         blockhash,
         lastValidBlockHeight
-      }, 'confirmed');
+      }, 'finalized');
       
       console.log(`✅ Claim successful! Signature: ${signature}`);
       

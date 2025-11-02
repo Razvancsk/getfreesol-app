@@ -36,6 +36,8 @@ export default function ApiDocs() {
     enabled: !!walletAddress,
     retry: false,
     refetchInterval: 10000, // Auto-refresh every 10 seconds
+    refetchOnMount: true, // Refresh when component mounts
+    refetchOnWindowFocus: true, // Refresh when window gains focus
   });
 
   const referralAccount = accountData?.account;
