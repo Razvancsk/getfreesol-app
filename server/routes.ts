@@ -7007,7 +7007,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: amountClaimed,
         amountSol: `${amountClaimed.toFixed(9)} SOL`,
         message: `Claim successful! ${amountClaimed.toFixed(6)} SOL has been transferred to your wallet.`,
-        explorerUrl: `https://solscan.io/tx/${signature}`
+        explorerUrl: `https://explorer.solana.com/tx/${signature}`,
+        solscanUrl: `https://solscan.io/tx/${signature}`
       });
     } catch (error: any) {
       console.error('Claim error:', error);
