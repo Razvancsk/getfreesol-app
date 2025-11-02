@@ -471,98 +471,78 @@ export default function ApiDocs() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(`async function recoverRent(accountAddress: string) {
-  const walletAddress = 'USER_WALLET_ADDRESS'; // Your user's wallet
-  const YOUR_PDA = '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}';
-  
-  try {
-    // 1. Prepare transaction
-    const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletAddress: walletAddress,
-        selectedAccounts: [accountAddress],
-        donationPercentage: ${feePercentage || '10'},
-        feeReceiverAddress: YOUR_PDA
-      })
-    });
-    const { transaction } = await prepareResponse.json();
-    
-    // 2. Sign and send
-    const { signature } = await wallet.signAndSendTransaction(transaction);
-    
-    // 3. Record success
-    await fetch('${baseUrl}/api/sol-refund/record-success', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        signature,
-        walletAddress,
-        selectedAccounts: [accountAddress],
-        feeReceiverAddress: YOUR_PDA
-      })
-    });
-    
-    console.log('✅ Done! Signature:', signature);
-    return signature;
-  } catch (error) {
-    console.error('❌ Failed:', error);
-    throw error;
-  }
-}
+                    onClick={() => copyToClipboard(`const handleRecover = async (address: string) => {
+  // STEP 1: Prepare transaction
+  const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      walletAddress: walletAddress,
+      selectedAccounts: [address],
+      donationPercentage: ${feePercentage || '10'},
+      feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+    }),
+  });
+  const prepareData = await prepareResponse.json();
 
-// Use it:
-await recoverRent('ACCOUNT_ADDRESS_HERE');`, 'integration-example')}
+  // STEP 2: User signs
+  const { signature } = await wallet.signAndSendTransaction(prepareData.transaction);
+
+  // STEP 3: Record success
+  await fetch('${baseUrl}/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signature,
+      walletAddress: walletAddress,
+      selectedAccounts: [address],
+      accountsClosed: 1,
+      solRecovered: parseFloat(account?.rentAmount || "0"),
+      feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}',
+      donationPercentage: ${feePercentage || '10'},
+      ...prepareData
+    }),
+  });
+};`, 'integration-example')}
                     className="text-purple-300 hover:text-white"
                   >
                     {copiedId === 'integration-example' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
                 <pre className="text-green-400 text-xs overflow-x-auto">
-{`async function recoverRent(accountAddress: string) {
-  const walletAddress = 'USER_WALLET_ADDRESS'; // Your user's wallet
-  const YOUR_PDA = '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}';
-  
-  try {
-    // 1. Prepare transaction
-    const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletAddress: walletAddress,
-        selectedAccounts: [accountAddress],
-        donationPercentage: ${feePercentage || '10'},
-        feeReceiverAddress: YOUR_PDA
-      })
-    });
-    const { transaction } = await prepareResponse.json();
-    
-    // 2. Sign and send
-    const { signature } = await wallet.signAndSendTransaction(transaction);
-    
-    // 3. Record success
-    await fetch('${baseUrl}/api/sol-refund/record-success', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        signature,
-        walletAddress,
-        selectedAccounts: [accountAddress],
-        feeReceiverAddress: YOUR_PDA
-      })
-    });
-    
-    console.log('✅ Done! Signature:', signature);
-    return signature;
-  } catch (error) {
-    console.error('❌ Failed:', error);
-    throw error;
-  }
-}
+{`const handleRecover = async (address: string) => {
+  // STEP 1: Prepare transaction
+  const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      walletAddress: walletAddress,
+      selectedAccounts: [address],
+      donationPercentage: ${feePercentage || '10'},
+      feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+    }),
+  });
+  const prepareData = await prepareResponse.json();
 
-// Use it:
-await recoverRent('ACCOUNT_ADDRESS_HERE');`}
+  // STEP 2: User signs
+  const { signature } = await wallet.signAndSendTransaction(prepareData.transaction);
+
+  // STEP 3: Record success
+  await fetch('${baseUrl}/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signature,
+      walletAddress: walletAddress,
+      selectedAccounts: [address],
+      accountsClosed: 1,
+      solRecovered: parseFloat(account?.rentAmount || "0"),
+      feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}',
+      donationPercentage: ${feePercentage || '10'},
+      ...prepareData
+    }),
+  });
+};`}
                 </pre>
               </div>
               
@@ -598,36 +578,26 @@ await recoverRent('ACCOUNT_ADDRESS_HERE');`}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(`async function scanWallet(walletAddress: string) {
-  const response = await fetch('${baseUrl}/api/sol-refund/scan/' + walletAddress);
-  const data = await response.json();
-  
-  console.log('Empty accounts:', data.emptyAccounts);
-  console.log('Total SOL reclaimable:', data.totalReclaimable);
-  
-  return data;
-}
+                      onClick={() => copyToClipboard(`// Scan wallet for empty token accounts
+const response = await fetch('${baseUrl}/api/sol-refund/scan/' + walletAddress);
+const scanData = await response.json();
 
-// Use it:
-const scan = await scanWallet('USER_WALLET_ADDRESS');`, 'scan-js')}
+console.log('Empty accounts:', scanData.emptyAccounts);
+console.log('Total reclaimable:', scanData.totalReclaimable, 'SOL');
+console.log('Accounts:', scanData.accounts);`, 'scan-js')}
                       className="text-purple-300 hover:text-white"
                     >
                       {copiedId === 'scan-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
                   <pre className="text-green-400 text-xs overflow-x-auto">
-{`async function scanWallet(walletAddress: string) {
-  const response = await fetch('${baseUrl}/api/sol-refund/scan/' + walletAddress);
-  const data = await response.json();
-  
-  console.log('Empty accounts:', data.emptyAccounts);
-  console.log('Total SOL reclaimable:', data.totalReclaimable);
-  
-  return data;
-}
+{`// Scan wallet for empty token accounts
+const response = await fetch('${baseUrl}/api/sol-refund/scan/' + walletAddress);
+const scanData = await response.json();
 
-// Use it:
-const scan = await scanWallet('USER_WALLET_ADDRESS');`}
+console.log('Empty accounts:', scanData.emptyAccounts);
+console.log('Total reclaimable:', scanData.totalReclaimable, 'SOL');
+console.log('Accounts:', scanData.accounts);`}
                   </pre>
                 </div>
 
@@ -675,52 +645,40 @@ const scan = await scanWallet('USER_WALLET_ADDRESS');`}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(`async function prepareTransaction(walletAddress: string, accounts: string[]) {
-  const YOUR_PDA = '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}';
-  
-  const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      walletAddress,
-      selectedAccounts: accounts,
-      donationPercentage: ${feePercentage || '10'},
-      feeReceiverAddress: YOUR_PDA
-    })
-  });
-  
-  const data = await response.json();
-  return data.transaction; // base64 encoded transaction
-}
+                      onClick={() => copyToClipboard(`// Prepare transaction for closing empty accounts
+const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    walletAddress: walletAddress,
+    selectedAccounts: ['account1', 'account2'],
+    donationPercentage: ${feePercentage || '10'},
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+  }),
+});
+const prepareData = await prepareResponse.json();
 
-// Use it:
-const tx = await prepareTransaction('USER_WALLET', ['account1', 'account2']);`, 'prepare-js')}
+// prepareData contains: { transaction, totalSolReclaimed, feeAmount, netAmount }`, 'prepare-js')}
                       className="text-purple-300 hover:text-white"
                     >
                       {copiedId === 'prepare-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
                   <pre className="text-green-400 text-xs overflow-x-auto">
-{`async function prepareTransaction(walletAddress: string, accounts: string[]) {
-  const YOUR_PDA = '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}';
-  
-  const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      walletAddress,
-      selectedAccounts: accounts,
-      donationPercentage: ${feePercentage || '10'},
-      feeReceiverAddress: YOUR_PDA
-    })
-  });
-  
-  const data = await response.json();
-  return data.transaction; // base64 encoded transaction
-}
+{`// Prepare transaction for closing empty accounts
+const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    walletAddress: walletAddress,
+    selectedAccounts: ['account1', 'account2'],
+    donationPercentage: ${feePercentage || '10'},
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+  }),
+});
+const prepareData = await prepareResponse.json();
 
-// Use it:
-const tx = await prepareTransaction('USER_WALLET', ['account1', 'account2']);`}
+// prepareData contains: { transaction, totalSolReclaimed, feeAmount, netAmount }`}
                   </pre>
                   <p className="text-purple-300 text-xs mt-2">
                     💰 <strong>feeReceiverAddress</strong>: Your PDA where fees are sent (${referralAccount ? 'auto-filled with your PDA' : 'shown in purple box above'})
@@ -764,54 +722,42 @@ const tx = await prepareTransaction('USER_WALLET', ['account1', 'account2']);`}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(`async function recordSuccess(signature: string, walletAddress: string, accounts: string[]) {
-  const YOUR_PDA = '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}';
-  
-  const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      signature,
-      walletAddress,
-      selectedAccounts: accounts,
-      feeReceiverAddress: YOUR_PDA
-    })
-  });
-  
-  const data = await response.json();
-  console.log('✅ Success recorded:', data.message);
-  return data;
-}
-
-// Use it:
-await recordSuccess('TRANSACTION_SIG', 'USER_WALLET', ['account1', 'account2']);`, 'record-js')}
+                      onClick={() => copyToClipboard(`// Record transaction success (updates stats and earnings)
+await fetch('${baseUrl}/api/sol-refund/record-success', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    signature,
+    walletAddress: walletAddress,
+    selectedAccounts: ['account1', 'account2'],
+    accountsClosed: 2,
+    solRecovered: 0.00406,
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}',
+    donationPercentage: ${feePercentage || '10'},
+    ...prepareData
+  }),
+});`, 'record-js')}
                       className="text-purple-300 hover:text-white"
                     >
                       {copiedId === 'record-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
                   <pre className="text-green-400 text-xs overflow-x-auto">
-{`async function recordSuccess(signature: string, walletAddress: string, accounts: string[]) {
-  const YOUR_PDA = '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}';
-  
-  const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      signature,
-      walletAddress,
-      selectedAccounts: accounts,
-      feeReceiverAddress: YOUR_PDA
-    })
-  });
-  
-  const data = await response.json();
-  console.log('✅ Success recorded:', data.message);
-  return data;
-}
-
-// Use it:
-await recordSuccess('TRANSACTION_SIG', 'USER_WALLET', ['account1', 'account2']);`}
+{`// Record transaction success (updates stats and earnings)
+await fetch('${baseUrl}/api/sol-refund/record-success', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    signature,
+    walletAddress: walletAddress,
+    selectedAccounts: ['account1', 'account2'],
+    accountsClosed: 2,
+    solRecovered: 0.00406,
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}',
+    donationPercentage: ${feePercentage || '10'},
+    ...prepareData
+  }),
+});`}
                   </pre>
                 </div>
 
