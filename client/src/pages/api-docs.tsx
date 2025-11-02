@@ -30,23 +30,25 @@ export default function ApiDocs() {
   
   const walletAddress = publicKey?.toBase58();
 
-  // Fetch developer account
+  // Fetch referral account (PDA-based)
   const { data: accountData } = useQuery<any>({
-    queryKey: ["/api/developer/account", walletAddress],
+    queryKey: ["/api/referral/account", walletAddress],
     enabled: !!walletAddress,
+    retry: false,
   });
 
-  const developer = accountData?.developer;
+  const referralAccount = accountData?.account;
+  const developer = referralAccount; // Alias for backward compatibility
 
-  // Auto-populate from developer account (unless manually edited)
+  // Auto-populate from referral account (unless manually edited)
   useEffect(() => {
-    if (developer?.feeAccountAddress && !manuallyEditedWallet) {
-      setFeeWallet(developer.feeAccountAddress);
+    if (referralAccount?.referralPda && !manuallyEditedWallet) {
+      setFeeWallet(referralAccount.referralPda);
     }
-    if (developer?.feePercentage !== undefined && !manuallyEditedFee) {
-      setFeePercentage(developer.feePercentage.toString());
+    if (referralAccount?.feePercentage !== undefined && !manuallyEditedFee) {
+      setFeePercentage(referralAccount.feePercentage.toString());
     }
-  }, [developer, manuallyEditedWallet, manuallyEditedFee]);
+  }, [referralAccount, manuallyEditedWallet, manuallyEditedFee]);
 
   // Create account mutation
   const createAccount = useMutation({
@@ -59,7 +61,7 @@ export default function ApiDocs() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest('POST', '/api/developer/create-account', {
+      return await apiRequest('POST', '/api/referral/create-account', {
         walletAddress: publicKey.toBase58(),
         signature: bs58.encode(signature),
         message,
@@ -67,10 +69,10 @@ export default function ApiDocs() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/developer/account", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
       toast({
         title: "Success!",
-        description: "Your developer account has been created. You can now access the API documentation.",
+        description: `Referral account created for "${projectName.trim()}". You can now access the API documentation.`,
       });
       setProjectName("");
     },
@@ -96,8 +98,8 @@ export default function ApiDocs() {
   const developerReceives = (developerFee * 0.8).toFixed(2);
   const platformReceives = (developerFee * 0.2).toFixed(2);
 
-  // Check if developer account exists
-  const hasAccount = accountData?.exists;
+  // Check if referral account exists
+  const hasAccount = accountData?.success && accountData?.account;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
