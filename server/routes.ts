@@ -6861,18 +6861,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No balance to claim' });
       }
       
+      // Minimum claimable amount (0.001 SOL)
+      const MIN_CLAIM_AMOUNT = 1000000; // 0.001 SOL in lamports
+      
       // Calculate claimable amount (leave rent exempt amount + transaction fee)
       const minRent = await connection.getMinimumBalanceForRentExemption(0);
       const estimatedFee = 5000; // 0.000005 SOL for transaction fee
       const transferAmount = balance - minRent - estimatedFee;
       
-      if (transferAmount <= 0) {
+      if (transferAmount < MIN_CLAIM_AMOUNT) {
         return res.status(400).json({ 
-          error: 'Insufficient balance after rent exemption and fees',
+          error: 'Minimum 0.001 SOL required for claim',
           details: {
             balance: balance / 1e9,
-            minRent: minRent / 1e9,
-            estimatedFee: estimatedFee / 1e9
+            claimable: transferAmount / 1e9,
+            minimum: MIN_CLAIM_AMOUNT / 1e9
           }
         });
       }
@@ -6920,20 +6923,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`✅ Claim successful! Signature: ${signature}`);
       
+      // Calculate platform/developer splits (80% to developer, 20% to platform)
+      const amountClaimed = transferAmount / 1e9;
+      const developerReceived = amountClaimed * 0.8;
+      const platformReceived = amountClaimed * 0.2;
+      
       // Record claim in database
       await storage.createReferralClaim({
         referralAccountId: referralAccount.id,
-        txSignature: signature,
-        claimAmount: (transferAmount / 1e9).toString(),
-        developerWallet: walletAddress
+        claimSignature: signature,
+        amountClaimed: amountClaimed.toString(),
+        developerReceived: developerReceived.toString(),
+        platformReceived: platformReceived.toString(),
       });
       
       res.json({
         success: true,
         signature,
-        amount: transferAmount / 1e9,
-        amountSol: `${(transferAmount / 1e9).toFixed(9)} SOL`,
-        message: 'Claim successful! Funds have been transferred to your wallet.'
+        amount: amountClaimed,
+        amountSol: `${amountClaimed.toFixed(9)} SOL`,
+        message: `Claim successful! ${amountClaimed.toFixed(6)} SOL has been transferred to your wallet.`,
+        explorerUrl: `https://solscan.io/tx/${signature}`
       });
     } catch (error: any) {
       console.error('Claim error:', error);
