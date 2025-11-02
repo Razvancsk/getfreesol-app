@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Copy, ExternalLink } from "lucide-react";
+import { Loader2, Copy, ExternalLink, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import bs58 from "bs58";
 import { Slider } from "@/components/ui/slider";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Link } from "wouter";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 export default function DeveloperDashboard() {
   const { publicKey, signMessage } = useWallet();
@@ -108,8 +110,26 @@ export default function DeveloperDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 py-12 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900">
+      {/* Header */}
+      <div className="border-b border-purple-500/30 bg-black/30 backdrop-blur">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              className="text-white hover:text-purple-200 hover:bg-purple-800/50"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back
+            </Button>
+          </Link>
+          <WalletMultiButton />
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-2xl mx-auto space-y-6">
         {!accountExists ? (
           // Create Account Form
           <Card className="bg-black/50 border-purple-500/30 backdrop-blur max-w-md mx-auto">
@@ -287,6 +307,7 @@ export default function DeveloperDashboard() {
             </Card>
           </>
         )}
+        </div>
       </div>
     </div>
   );
