@@ -1,0 +1,62 @@
+1️⃣ Recovery Function - 3 Changes
+Change 1: Add fee parameter
+// OLD:
+export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+// NEW:
+export async function recoverSOLRent(
+  walletPublicKey: PublicKey, 
+  wallet: any,
+  feePercentage: number = 15  // ⬅️ ADD THIS
+) {
+
+Change 2: Remove donation, add fee
+// OLD:
+body: JSON.stringify({
+  walletAddress,
+  selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+  donationPercentage: 0.00,  // ⬅️ REMOVE THIS LINE
+  feeReceiverAddress: 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'
+})
+// NEW:
+body: JSON.stringify({
+  walletAddress,
+  selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+  feeReceiverAddress: 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3',
+  feePercentage: feePercentage  // ⬅️ ADD THIS LINE
+})
+
+Change 3: Add 4 missing fields to record-success
+// OLD:
+body: JSON.stringify({
+  signature,
+  walletAddress,
+  selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+  accountsClosed: scanData.emptyAccounts,
+  solRecovered: prepareData.totalSolReclaimed
+})
+// NEW:
+body: JSON.stringify({
+  signature,
+  walletAddress,
+  selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+  accountsClosed: scanData.emptyAccounts,
+  solRecovered: prepareData.totalSolReclaimed,
+  netAmount: prepareData.netAmount,                    // ⬅️ ADD
+  feeAmount: prepareData.feeAmount,                    // ⬅️ ADD
+  platformFeeAmount: prepareData.platformFeeAmount,    // ⬅️ ADD
+  referralFeeAmount: prepareData.referralFeeAmount     // ⬅️ ADD
+})
+
+✅ 2️⃣ Backend Proxy - NO CHANGES
+The proxy code is perfect as-is! Just forwards requests.
+
+✅ 3️⃣ Usage Examples - ADD custom fee examples
+// OLD (only this):
+const signature = await recoverSOLRent(wallet.publicKey, wallet);
+// NEW (show all options):
+// Default 15% fee
+const signature = await recoverSOLRent(wallet.publicKey, wallet);
+// Custom 10% fee
+const signature = await recoverSOLRent(wallet.publicKey, wallet, 10);
+// Custom 5% fee
+const signature = await recoverSOLRent(wallet.publicKey, wallet, 5);

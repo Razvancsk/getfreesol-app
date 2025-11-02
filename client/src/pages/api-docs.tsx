@@ -469,7 +469,11 @@ export default function ApiDocs() {
                     size="sm"
                     onClick={() => copyToClipboard(`import { Transaction, PublicKey } from '@solana/web3.js';
 
-export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+export async function recoverSOLRent(
+  walletPublicKey: PublicKey, 
+  wallet: any,
+  feePercentage: number = ${feePercentage || '15'}
+) {
   const walletAddress = walletPublicKey.toBase58();
   
   // Step 1: Scan for empty accounts
@@ -487,8 +491,8 @@ export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     body: JSON.stringify({
       walletAddress,
       selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
-      donationPercentage: ${feePercentage || '0.00'},
-      feeReceiverAddress: '${referralAccount?.referralPda || 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'}'
+      feeReceiverAddress: '${referralAccount?.referralPda || 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'}',
+      feePercentage: feePercentage
     })
   });
   
@@ -532,7 +536,11 @@ export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
                 <pre className="text-green-400 text-xs overflow-x-auto">
 {`import { Transaction, PublicKey } from '@solana/web3.js';
 
-export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+export async function recoverSOLRent(
+  walletPublicKey: PublicKey, 
+  wallet: any,
+  feePercentage: number = ${feePercentage || '15'}
+) {
   const walletAddress = walletPublicKey.toBase58();
   
   // Step 1: Scan for empty accounts
@@ -550,8 +558,8 @@ export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     body: JSON.stringify({
       walletAddress,
       selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
-      donationPercentage: ${feePercentage || '0.00'},
-      feeReceiverAddress: '${referralAccount?.referralPda || 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'}'
+      feeReceiverAddress: '${referralAccount?.referralPda || 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'}',
+      feePercentage: feePercentage
     })
   });
   
@@ -672,8 +680,7 @@ app.post("/api/sol-refund/record-success", async (req, res) => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-purple-300 text-sm font-semibold">Example Usage</p>
+                <div className="flex items-center justify-end mb-2">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -683,8 +690,15 @@ import { recoverSOLRent } from './recoverSol';
 // Connect wallet first
 await wallet.connect();
 
-// Recover SOL
+// Default ${feePercentage || '15'}% fee
 const signature = await recoverSOLRent(wallet.publicKey, wallet);
+
+// Custom 10% fee
+const signature = await recoverSOLRent(wallet.publicKey, wallet, 10);
+
+// Custom 5% fee
+const signature = await recoverSOLRent(wallet.publicKey, wallet, 5);
+
 console.log('Success! Transaction:', signature);`, 'usage-example')}
                     className="text-purple-300 hover:text-white"
                   >
@@ -698,8 +712,15 @@ import { recoverSOLRent } from './recoverSol';
 // Connect wallet first
 await wallet.connect();
 
-// Recover SOL
+// Default ${feePercentage || '15'}% fee
 const signature = await recoverSOLRent(wallet.publicKey, wallet);
+
+// Custom 10% fee
+const signature = await recoverSOLRent(wallet.publicKey, wallet, 10);
+
+// Custom 5% fee
+const signature = await recoverSOLRent(wallet.publicKey, wallet, 5);
+
 console.log('Success! Transaction:', signature);`}
                 </pre>
               </div>
