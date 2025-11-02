@@ -6939,12 +6939,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const developerPubkey = new PublicKey(walletAddress);
       const platformPubkey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
       
-      // Get recent blockhash first
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      
       // Create transaction and set properties
       const transaction = new Transaction();
-      transaction.recentBlockhash = blockhash;
       transaction.feePayer = feeWalletKeypair.publicKey;
       
       // Add transfer to developer (80%)
@@ -6965,16 +6961,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
+      // Get FRESH blockhash right before signing (critical for timing)
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+      
       // Sign transaction with platform-managed key
       transaction.sign(feeWalletKeypair);
       
-      // Send transaction
+      // Send transaction (skip preflight to avoid timing issues)
       console.log(`📤 Sending claim transaction for ${walletAddress}...`);
       console.log(`   Developer (80%): ${(developerAmount / 1e9).toFixed(9)} SOL`);
       console.log(`   Platform (20%): ${(platformAmount / 1e9).toFixed(9)} SOL`);
       const signature = await connection.sendRawTransaction(transaction.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'finalized'
+        skipPreflight: true,
+        maxRetries: 3
       });
       
       // Wait for finalized confirmation (ensures Solscan can find it)
