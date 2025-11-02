@@ -205,9 +205,6 @@ export default function ApiDocs() {
           <Card className="bg-black/50 border-purple-500 backdrop-blur max-w-md mx-auto mt-12">
             <CardHeader>
               <CardTitle className="text-white text-2xl">Create Referral Account</CardTitle>
-              <CardDescription className="text-purple-200">
-                Sign to create your fee collection account
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
