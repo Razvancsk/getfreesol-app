@@ -264,22 +264,6 @@ export default function ApiDocs() {
                     <p className="text-sm font-semibold text-white mb-1">Response Format:</p>
                     <p className="text-sm text-purple-200">All endpoints return JSON with <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs">success</code> field</p>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-white">Your PDA:</p>
-                      {referralAccount?.referralPda && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(referralAccount.referralPda, 'pda-address')}
-                          className="text-purple-300 hover:text-white h-6 px-2"
-                        >
-                          {copiedId === 'pda-address' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        </Button>
-                      )}
-                    </div>
-                    <code className="block bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs break-all">{referralAccount?.referralPda || 'Create account to see your PDA'}</code>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -378,8 +362,19 @@ export default function ApiDocs() {
                   </Tooltip>
                 </div>
                 {developer ? (
-                  <div className="p-2 bg-gray-100 dark:bg-gray-200 rounded text-sm font-mono break-all text-gray-800">
-                    {feeWallet}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 p-2 bg-gray-100 dark:bg-gray-200 rounded text-sm font-mono break-all text-gray-800">
+                      {feeWallet}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(feeWallet, 'pda-address')}
+                      className="text-purple-300 hover:text-white hover:bg-purple-700/50 h-9 px-3"
+                      data-testid="button-copy-pda"
+                    >
+                      {copiedId === 'pda-address' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
                   </div>
                 ) : (
                   <Input
