@@ -6644,8 +6644,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PDA-based Referral System (Jupiter-style)
   // ============================================================================
   
-  // Create referral account (PDA-based, no keypairs)
-  app.post("/api/referral/create-account", async (req, res) => {
+  // Step 1: Create account creation intent (generates rent payment transaction)
+  app.post("/api/referral/create-account-intent", async (req, res) => {
     try {
       const { walletAddress, signature, message, projectName } = req.body;
       
@@ -6674,6 +6674,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check for pending intent
+      const pendingIntent = await storage.getPendingIntentByWallet(walletAddress);
+      if (pendingIntent) {
+        // Return existing intent if not expired
+        if (new Date(pendingIntent.expiresAt) > new Date()) {
+          return res.status(409).json({ 
+            error: 'Account creation already in progress',
+            intentId: pendingIntent.id,
+            expiresAt: pendingIntent.expiresAt
+          });
+        }
+        // Mark expired intent as expired
+        await storage.updateIntentStatus(pendingIntent.id, 'expired');
+      }
+      
       // Get project account
       const project = await storage.getProjectAccount();
       if (!project) {
@@ -6684,19 +6699,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { generateReferralKeypair } = await import('./pdaService.js');
       const { publicKey, encryptedPrivateKey } = generateReferralKeypair();
       
-      // Create referral account
-      const account = await storage.createReferralAccount({
-        projectAccountId: project.id,
+      // Create intent with 10-minute expiry
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const rentAmount = '0.002'; // 0.002 SOL rent
+      
+      const intent = await storage.createAccountCreationIntent({
         developerWallet: walletAddress,
-        referralPda: publicKey, // Now a regular wallet address, not a PDA
-        encryptedPrivateKey, // Store encrypted private key
-        bump: 0, // No longer used, but kept for schema compatibility
+        referralPda: publicKey,
+        encryptedPrivateKey,
+        projectAccountId: project.id,
         projectName: projectName || 'Unnamed Project',
-        feePercentage: '0' // Can be set later by admin
+        feePercentage: '0',
+        bump: 0,
+        rentAmount,
+        expiresAt
       });
       
-      console.log(`✅ Created referral account for ${walletAddress}`);
+      // Build rent payment transaction
+      const connection = new Connection(
+        process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      const { Transaction, SystemProgram, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
+      
+      const developerPubkey = new PublicKey(walletAddress);
+      const referralPubkey = new PublicKey(publicKey);
+      const rentLamports = Math.floor(parseFloat(rentAmount) * LAMPORTS_PER_SOL);
+      
+      // Create transfer instruction
+      const transferIx = SystemProgram.transfer({
+        fromPubkey: developerPubkey,
+        toPubkey: referralPubkey,
+        lamports: rentLamports
+      });
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
+      
+      // Create transaction
+      const transaction = new Transaction();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = developerPubkey;
+      transaction.add(transferIx);
+      
+      // Serialize transaction
+      const serializedTx = transaction.serialize({ requireAllSignatures: false }).toString('base64');
+      
+      console.log(`📋 Created account intent for ${walletAddress}`);
+      console.log(`   Intent ID: ${intent.id}`);
       console.log(`   Referral Wallet: ${publicKey}`);
+      console.log(`   Rent Required: ${rentAmount} SOL`);
+      
+      res.json({
+        success: true,
+        intentId: intent.id,
+        referralPda: publicKey,
+        rentAmount,
+        expiresAt,
+        transaction: serializedTx
+      });
+    } catch (error: any) {
+      console.error('Create account intent error:', error);
+      res.status(500).json({ 
+        error: 'Failed to create account intent', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Step 2: Finalize account creation (verify rent payment and create account)
+  app.post("/api/referral/finalize-account", async (req, res) => {
+    try {
+      const { intentId, signature } = req.body;
+      
+      if (!intentId || !signature) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: intentId, signature' 
+        });
+      }
+      
+      // Get intent
+      const intent = await storage.getAccountCreationIntent(intentId);
+      if (!intent) {
+        return res.status(404).json({ error: 'Intent not found' });
+      }
+      
+      if (intent.status !== 'pending') {
+        return res.status(400).json({ 
+          error: `Intent is ${intent.status}`,
+          status: intent.status
+        });
+      }
+      
+      // Check expiry
+      if (new Date(intent.expiresAt) < new Date()) {
+        await storage.updateIntentStatus(intentId, 'expired');
+        return res.status(400).json({ error: 'Intent has expired' });
+      }
+      
+      // Verify transaction on-chain
+      const connection = new Connection(
+        process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+      
+      try {
+        const txInfo = await connection.getTransaction(signature, {
+          maxSupportedTransactionVersion: 0,
+          commitment: 'confirmed'
+        });
+        
+        if (!txInfo || txInfo.meta?.err) {
+          return res.status(400).json({ 
+            error: 'Transaction failed or not found',
+            signature
+          });
+        }
+        
+        // Verify transaction details
+        const { LAMPORTS_PER_SOL } = await import('@solana/web3.js');
+        const expectedLamports = Math.floor(parseFloat(intent.rentAmount) * LAMPORTS_PER_SOL);
+        
+        // Check pre and post balances
+        const accountKeys = txInfo.transaction.message.getAccountKeys();
+        const referralPubkey = new PublicKey(intent.referralPda);
+        const developerPubkey = new PublicKey(intent.developerWallet);
+        
+        let referralIndex = -1;
+        let developerIndex = -1;
+        
+        for (let i = 0; i < accountKeys.length; i++) {
+          const key = accountKeys.get(i);
+          if (key && key.equals(referralPubkey)) {
+            referralIndex = i;
+          }
+          if (key && key.equals(developerPubkey)) {
+            developerIndex = i;
+          }
+        }
+        
+        if (referralIndex === -1 || developerIndex === -1) {
+          return res.status(400).json({ 
+            error: 'Transaction does not involve correct accounts',
+            expected: { referral: intent.referralPda, developer: intent.developerWallet }
+          });
+        }
+        
+        const preBalance = txInfo.meta!.preBalances[referralIndex] || 0;
+        const postBalance = txInfo.meta!.postBalances[referralIndex] || 0;
+        const balanceDelta = postBalance - preBalance;
+        
+        if (balanceDelta < expectedLamports) {
+          return res.status(400).json({ 
+            error: 'Insufficient rent payment',
+            expected: expectedLamports,
+            received: balanceDelta
+          });
+        }
+        
+      } catch (verifyError: any) {
+        console.error('Transaction verification error:', verifyError);
+        return res.status(400).json({ 
+          error: 'Failed to verify transaction',
+          details: verifyError.message
+        });
+      }
+      
+      // Create referral account from intent
+      const account = await storage.createReferralAccount({
+        projectAccountId: intent.projectAccountId,
+        developerWallet: intent.developerWallet,
+        referralPda: intent.referralPda,
+        encryptedPrivateKey: intent.encryptedPrivateKey,
+        bump: intent.bump,
+        projectName: intent.projectName || 'Unnamed Project',
+        feePercentage: intent.feePercentage || '0',
+        rentSignature: signature,
+        rentAmount: intent.rentAmount
+      });
+      
+      // Update intent status
+      await storage.updateIntentStatus(intentId, 'completed');
+      
+      console.log(`✅ Finalized referral account for ${intent.developerWallet}`);
+      console.log(`   Referral Wallet: ${account.referralPda}`);
+      console.log(`   Rent Paid: ${intent.rentAmount} SOL (${signature})`);
       
       res.json({
         success: true,
@@ -6706,13 +6894,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           projectName: account.projectName,
           feePercentage: account.feePercentage,
           status: account.status,
+          rentPaid: account.rentPaid,
+          rentSignature: account.rentSignature,
           createdAt: account.createdAt
         }
       });
     } catch (error: any) {
-      console.error('Create referral account error:', error);
+      console.error('Finalize account error:', error);
       res.status(500).json({ 
-        error: 'Failed to create referral account', 
+        error: 'Failed to finalize account', 
         details: error.message 
       });
     }
