@@ -2497,17 +2497,15 @@ export default function SolRefund() {
               <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
-                  {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
-                    <Link href="/docs">
-                      <a
-                        data-testid="button-social-docs"
-                        className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                        title="API Documentation"
-                      >
-                        <Code className="h-4 w-4 text-white" />
-                      </a>
-                    </Link>
-                  )}
+                  <Link href="/docs">
+                    <a
+                      data-testid="button-social-docs"
+                      className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                      title="API Documentation"
+                    >
+                      <Code className="h-4 w-4 text-white" />
+                    </a>
+                  </Link>
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
@@ -2582,17 +2580,15 @@ export default function SolRefund() {
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
               <div className="flex items-center space-x-1">
-                {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
-                  <Link href="/docs">
-                    <a
-                      data-testid="button-social-docs-desktop"
-                      className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                      title="API Documentation"
-                    >
-                      <Code className="h-4 w-4 text-white" />
-                    </a>
-                  </Link>
-                )}
+                <Link href="/docs">
+                  <a
+                    data-testid="button-social-docs-desktop"
+                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="API Documentation"
+                  >
+                    <Code className="h-4 w-4 text-white" />
+                  </a>
+                </Link>
                 <a
                   href="https://x.com/getfreesol_xyz"
                   target="_blank"
