@@ -97,12 +97,48 @@ export default function ApiDocs() {
     }
   };
 
+  // Claim mutation
+  const claimMutation = useMutation({
+    mutationFn: async () => {
+      if (!walletAddress) {
+        throw new Error("Wallet not connected");
+      }
+      
+      return await apiRequest('POST', '/api/referral/claim', {
+        walletAddress
+      });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
+      toast({
+        title: "Claim Successful! 🎉",
+        description: (
+          <div className="space-y-1">
+            <p>Amount: {data.amountSol}</p>
+            <a 
+              href={`https://solscan.io/tx/${data.signature}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+            >
+              View on Solscan <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        ),
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Claim Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle claim button click
   const handleClaim = () => {
-    toast({
-      title: "Coming Soon",
-      description: "PDA withdrawals require a Solana program to be deployed. This feature is being developed.",
-    });
+    claimMutation.mutate();
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -248,11 +284,18 @@ export default function ApiDocs() {
                   </div>
                   <Button
                     onClick={handleClaim}
-                    disabled={!referralAccount?.pdaBalance || referralAccount.pdaBalance === 0}
+                    disabled={!referralAccount?.pdaBalance || referralAccount.pdaBalance === 0 || claimMutation.isPending}
                     className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                     data-testid="button-claim-earnings"
                   >
-                    Claim
+                    {claimMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Claiming...
+                      </>
+                    ) : (
+                      'Claim'
+                    )}
                   </Button>
                 </div>
               </CardContent>

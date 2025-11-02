@@ -558,13 +558,14 @@ export const projectAccount = pgTable("project_account", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Developer referral accounts (one per developer) - PDA derived from [project_pda, developer_wallet]
+// Developer referral accounts (one per developer) - Platform-managed wallet with encrypted keys
 export const referralAccounts = pgTable("referral_accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   projectAccountId: varchar("project_account_id").notNull(), // Links to project
   developerWallet: text("developer_wallet").notNull().unique(), // Developer's wallet address
-  referralPda: text("referral_pda").notNull().unique(), // Derived PDA: findProgramAddress([project_pda, developer_wallet])
-  bump: integer("bump").notNull(), // PDA bump seed
+  referralPda: text("referral_pda").notNull().unique(), // Platform-managed wallet for fee collection
+  encryptedPrivateKey: text("encrypted_private_key"), // Encrypted private key for the fee collection wallet
+  bump: integer("bump").notNull(), // Legacy field (kept for compatibility)
   projectName: text("project_name"), // Developer's project name
   feePercentage: decimal("fee_percentage", { precision: 5, scale: 2 }).notNull().default("0"), // 0-10%
   status: text("status").notNull().default("active"), // active, suspended

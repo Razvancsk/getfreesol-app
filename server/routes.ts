@@ -6634,18 +6634,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Platform not initialized' });
       }
       
-      // Derive PDA
-      const { deriveReferralPDA } = await import('./pdaService.js');
-      const projectPDA = new PublicKey(project.projectPda);
-      const developerWallet = new PublicKey(walletAddress);
-      const [referralPDA, bump] = deriveReferralPDA(projectPDA, developerWallet);
+      // Generate a new keypair for the referral account
+      const { generateReferralKeypair } = await import('./pdaService.js');
+      const { publicKey, encryptedPrivateKey } = generateReferralKeypair();
       
       // Create referral account
       const account = await storage.createReferralAccount({
         projectAccountId: project.id,
         developerWallet: walletAddress,
-        referralPda: referralPDA.toBase58(),
-        bump,
+        referralPda: publicKey, // Now a regular wallet address, not a PDA
+        encryptedPrivateKey, // Store encrypted private key
+        bump: 0, // No longer used, but kept for schema compatibility
         projectName: projectName || 'Unnamed Project',
         feePercentage: '0' // Can be set later by admin
       });
@@ -6826,7 +6825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Claim earnings from referral PDA
+  // Claim earnings from referral account
   app.post("/api/referral/claim", async (req, res) => {
     try {
       const { walletAddress } = req.body;
@@ -6841,35 +6840,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Referral account not found' });
       }
       
-      // Get PDA balance
+      // Check if encrypted private key exists
+      if (!referralAccount.encryptedPrivateKey) {
+        return res.status(400).json({ 
+          error: 'This referral account does not have a managed wallet. Please contact support.' 
+        });
+      }
+      
+      // Get fee collection wallet balance
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusApiKey ? 
         `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
         'https://api.mainnet-beta.solana.com';
       const connection = new Connection(rpcUrl, 'confirmed');
       
-      const pdaPubkey = new PublicKey(referralAccount.referralPda);
-      const balance = await connection.getBalance(pdaPubkey);
+      const feeWalletPubkey = new PublicKey(referralAccount.referralPda);
+      const balance = await connection.getBalance(feeWalletPubkey);
       
       if (balance === 0) {
         return res.status(400).json({ error: 'No balance to claim' });
       }
       
-      // Create transfer transaction
+      // Calculate claimable amount (leave rent exempt amount + transaction fee)
+      const minRent = await connection.getMinimumBalanceForRentExemption(0);
+      const estimatedFee = 5000; // 0.000005 SOL for transaction fee
+      const transferAmount = balance - minRent - estimatedFee;
+      
+      if (transferAmount <= 0) {
+        return res.status(400).json({ 
+          error: 'Insufficient balance after rent exemption and fees',
+          details: {
+            balance: balance / 1e9,
+            minRent: minRent / 1e9,
+            estimatedFee: estimatedFee / 1e9
+          }
+        });
+      }
+      
+      // Decrypt private key and create keypair
+      const { decryptPrivateKey } = await import('./pdaService.js');
+      const secretKey = decryptPrivateKey(referralAccount.encryptedPrivateKey);
+      const feeWalletKeypair = Keypair.fromSecretKey(secretKey);
+      
+      // Create and sign transfer transaction
       const transaction = new Transaction();
       const recipientPubkey = new PublicKey(walletAddress);
       
-      // Transfer all SOL from PDA to developer wallet (minus rent exempt minimum)
-      const minRent = await connection.getMinimumBalanceForRentExemption(0);
-      const transferAmount = balance - minRent;
-      
-      if (transferAmount <= 0) {
-        return res.status(400).json({ error: 'Insufficient balance after rent exemption' });
-      }
-      
       transaction.add(
         SystemProgram.transfer({
-          fromPubkey: pdaPubkey,
+          fromPubkey: feeWalletPubkey.publicKey,
           toPubkey: recipientPubkey,
           lamports: transferAmount,
         })
@@ -6878,19 +6897,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recent blockhash
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
-      transaction.feePayer = recipientPubkey;
+      transaction.feePayer = feeWalletKeypair.publicKey;
       
-      // Serialize transaction
-      const serializedTransaction = transaction.serialize({
-        requireAllSignatures: false,
-        verifySignatures: false,
+      // Sign transaction with platform-managed key
+      transaction.sign(feeWalletKeypair);
+      
+      // Send transaction
+      console.log(`📤 Sending claim transaction for ${walletAddress}...`);
+      const signature = await connection.sendRawTransaction(transaction.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed'
+      });
+      
+      // Wait for confirmation
+      await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      }, 'confirmed');
+      
+      console.log(`✅ Claim successful! Signature: ${signature}`);
+      
+      // Record claim in database
+      await storage.createReferralClaim({
+        referralAccountId: referralAccount.id,
+        txSignature: signature,
+        claimAmount: (transferAmount / 1e9).toString(),
+        developerWallet: walletAddress
       });
       
       res.json({
         success: true,
-        transaction: Buffer.from(serializedTransaction).toString('base64'),
-        amount: transferAmount / LAMPORTS_PER_SOL,
-        message: 'Note: This requires the PDA to have signing authority. If the PDA is controlled by a program, you may need to use that program to withdraw funds.'
+        signature,
+        amount: transferAmount / 1e9,
+        amountSol: `${(transferAmount / 1e9).toFixed(9)} SOL`,
+        message: 'Claim successful! Funds have been transferred to your wallet.'
       });
     } catch (error: any) {
       console.error('Claim error:', error);
