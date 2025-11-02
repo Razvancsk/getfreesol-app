@@ -475,7 +475,7 @@ export default function ApiDocs() {
 export async function recoverSOLRent(
   walletPublicKey: PublicKey, 
   wallet: any,
-  feePercentage: number = 0.00  // Customize your fee here
+  feePercentage: number = ${feePercentage || '15'}  // Customize your fee here
 ) {
   const walletAddress = walletPublicKey.toBase58();
   
@@ -542,7 +542,7 @@ export async function recoverSOLRent(
 export async function recoverSOLRent(
   walletPublicKey: PublicKey, 
   wallet: any,
-  feePercentage: number = 0.00  // Customize your fee here
+  feePercentage: number = ${feePercentage || '15'}  // Customize your fee here
 ) {
   const walletAddress = walletPublicKey.toBase58();
   
@@ -692,7 +692,7 @@ import { recoverSOLRent } from './recoverSol';
 // Connect wallet first
 await wallet.connect();
 
-// Default 0% fee (no fee)
+// Default ${feePercentage || '15'}% fee
 const signature = await recoverSOLRent(wallet.publicKey, wallet);
 
 // Custom 10% fee
@@ -714,7 +714,7 @@ import { recoverSOLRent } from './recoverSol';
 // Connect wallet first
 await wallet.connect();
 
-// Default 0% fee (no fee)
+// Default ${feePercentage || '15'}% fee
 const signature = await recoverSOLRent(wallet.publicKey, wallet);
 
 // Custom 10% fee
