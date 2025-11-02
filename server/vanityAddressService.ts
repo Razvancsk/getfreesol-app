@@ -1,8 +1,12 @@
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import bs58 from "bs58";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 import { writeFileSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
+
+// Wrapped SOL mint address
+export const WSOL_MINT = new PublicKey("So11111111111111111111111111111111111111112");
 
 // Encryption configuration
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
@@ -93,21 +97,30 @@ export function decryptPrivateKey(encryptedData: string): Uint8Array {
 }
 
 /**
- * Generates a random Solana keypair instantly
+ * Generates a random Solana keypair instantly with WSOL ATA
  */
 export function generateRandomKeypair(): {
   publicKey: string;
   encryptedPrivateKey: string;
   keypair: Keypair;
+  wsolAta: string;
 } {
   const keypair = Keypair.generate();
   const publicKey = keypair.publicKey.toBase58();
   const encryptedPrivateKey = encryptPrivateKey(keypair.secretKey);
   
+  // Calculate the WSOL ATA address for this keypair
+  const wsolAta = getAssociatedTokenAddressSync(
+    WSOL_MINT,
+    keypair.publicKey,
+    true // Allow owner off curve
+  );
+  
   return {
     publicKey,
     encryptedPrivateKey,
-    keypair
+    keypair,
+    wsolAta: wsolAta.toBase58()
   };
 }
 

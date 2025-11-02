@@ -459,6 +459,7 @@ export const feeAccounts = pgTable("fee_accounts", {
   developerId: varchar("developer_id").notNull(), // Links to developers table
   publicKey: text("public_key").notNull().unique(), // Solana account public key
   encryptedPrivateKey: text("encrypted_private_key").notNull(), // Encrypted secret key
+  wsolAta: text("wsol_ata"), // WSOL Associated Token Account address (nullable for old accounts)
   generationType: text("generation_type").notNull(), // 'vanity' or 'random'
   vanityPrefix: text("vanity_prefix"), // Actual prefix if vanity (e.g., "ABC")
   status: text("status").notNull().default("pending"), // pending, active, disabled

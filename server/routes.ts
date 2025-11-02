@@ -6213,11 +6213,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Generate random fee collection account (instant)
-      console.log('  Generating random fee account...');
+      // Generate random fee collection account with WSOL ATA (instant)
+      console.log('  Generating random fee account with WSOL ATA...');
       const result = generateRandomKeypair();
       const feeKeypair = result.keypair;
+      const wsolAta = result.wsolAta;
       console.log(`  ✅ Generated random fee account: ${result.publicKey}`);
+      console.log(`  ✅ WSOL ATA address: ${wsolAta}`);
       
       // Encrypt the fee account private key
       const encryptedPrivateKey = encryptPrivateKey(feeKeypair.secretKey);
@@ -6236,6 +6238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         developerId: developer.id,
         publicKey: feeAccountPublicKey,
         encryptedPrivateKey,
+        wsolAta: wsolAta,
         generationType: 'random',
         vanityPrefix: null,
       });
@@ -6255,11 +6258,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           walletAddress: developer.payoutWalletAddress,
           projectName: developer.projectName,
           feeAccountAddress: feeAccount.publicKey,
+          wsolAtaAddress: feeAccount.wsolAta,
           feePercentage: parseFloat(developer.feePercentage),
           status: developer.status,
           createdAt: developer.createdAt,
         },
-        message: 'Developer account created successfully with instant random fee collection address'
+        message: 'Developer account created successfully with WSOL fee collection address'
       });
     } catch (error: any) {
       console.error('❌ Create developer account error:', error);
