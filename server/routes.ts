@@ -6888,11 +6888,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recent blockhash first
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       
-      // Create transaction with proper setup
-      const transaction = new Transaction({
-        recentBlockhash: blockhash,
-        feePayer: feeWalletKeypair.publicKey
-      });
+      // Create transaction and set properties
+      const transaction = new Transaction();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = feeWalletKeypair.publicKey;
       
       transaction.add(
         SystemProgram.transfer({
