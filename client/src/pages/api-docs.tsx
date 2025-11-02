@@ -460,6 +460,9 @@ export default function ApiDocs() {
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
               <CardTitle className="text-white">1️⃣ Recovery Function</CardTitle>
+              <CardDescription className="text-purple-200">
+                Copy this function to your project
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
@@ -472,7 +475,7 @@ export default function ApiDocs() {
 export async function recoverSOLRent(
   walletPublicKey: PublicKey, 
   wallet: any,
-  feePercentage: number = ${feePercentage || '15'}
+  feePercentage: number = ${feePercentage || '15'}  // Customize your fee here
 ) {
   const walletAddress = walletPublicKey.toBase58();
   
@@ -539,7 +542,7 @@ export async function recoverSOLRent(
 export async function recoverSOLRent(
   walletPublicKey: PublicKey, 
   wallet: any,
-  feePercentage: number = ${feePercentage || '15'}
+  feePercentage: number = ${feePercentage || '15'}  // Customize your fee here
 ) {
   const walletAddress = walletPublicKey.toBase58();
   
@@ -605,13 +608,12 @@ export async function recoverSOLRent(
             <CardHeader>
               <CardTitle className="text-white">2️⃣ Backend Proxy (Required to avoid CORS errors)</CardTitle>
               <CardDescription className="text-purple-200">
-                Add these routes to your backend server
+                Add these routes to your backend server (Node.js/Express)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-purple-300 text-sm font-semibold">Node.js/Express Example</p>
+                <div className="flex items-center justify-end mb-2">
                   <Button
                     variant="ghost"
                     size="sm"
