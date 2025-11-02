@@ -6698,6 +6698,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`✅ Created referral account for ${walletAddress}`);
       console.log(`   Referral Wallet: ${publicKey}`);
       
+      // Build transaction to fund the new referral wallet with 0.001 SOL
+      const connection = new Connection(
+        process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
+      );
+      
+      const fromPubkey = new PublicKey(walletAddress);
+      const toPubkey = new PublicKey(publicKey);
+      
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey,
+          toPubkey,
+          lamports: 0.001 * LAMPORTS_PER_SOL // 0.001 SOL
+        })
+      );
+      
+      // Get recent blockhash
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = fromPubkey;
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false
+      }).toString('base64');
+      
       res.json({
         success: true,
         account: {
@@ -6707,7 +6734,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           feePercentage: account.feePercentage,
           status: account.status,
           createdAt: account.createdAt
-        }
+        },
+        transaction: serializedTransaction,
+        message: 'Account created. Please sign the transaction to fund your referral wallet with 0.001 SOL.'
       });
     } catch (error: any) {
       console.error('Create referral account error:', error);

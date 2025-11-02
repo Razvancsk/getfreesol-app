@@ -15,7 +15,7 @@ import { Link } from "wouter";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 export default function DeveloperDashboard() {
-  const { publicKey, signMessage } = useWallet();
+  const { publicKey, signMessage, sendTransaction } = useWallet();
   const { toast } = useToast();
   const [projectName, setProjectName] = useState("");
   const [feePercentage, setFeePercentage] = useState(0);
@@ -51,20 +51,66 @@ export default function DeveloperDashboard() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest('POST', '/api/referral/create-account', {
+      const response = await apiRequest('POST', '/api/referral/create-account', {
         walletAddress: publicKey.toBase58(),
         signature: bs58.encode(signature),
         message,
         projectName: projectName.trim(),
       });
+      
+      return response;
     },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
-      toast({
-        title: "Success!",
-        description: `Referral account created for "${projectName.trim()}"`,
-      });
-      setProjectName("");
+    onSuccess: async (data: any) => {
+      // If transaction is returned, we need to sign and send it
+      if (data.transaction && sendTransaction) {
+        try {
+          toast({
+            title: "Account Created",
+            description: "Please sign the transaction to fund your referral wallet with 0.001 SOL",
+          });
+          
+          // Import what we need
+          const { Transaction, Connection } = await import("@solana/web3.js");
+          
+          // Deserialize transaction
+          const transaction = Transaction.from(
+            Buffer.from(data.transaction, 'base64')
+          );
+          
+          // Create connection
+          const connection = new Connection(
+            import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
+          );
+          
+          // Send transaction (wallet adapter handles signing)
+          const txSignature = await sendTransaction(transaction, connection);
+          
+          // Wait for confirmation
+          await connection.confirmTransaction(txSignature, 'confirmed');
+          
+          queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
+          toast({
+            title: "Success!",
+            description: `Referral account created and funded with 0.001 SOL`,
+          });
+          setProjectName("");
+        } catch (txError: any) {
+          console.error("Transaction error:", txError);
+          toast({
+            title: "Transaction Failed",
+            description: "Account created but failed to fund. Please contact support.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Old flow (no transaction)
+        queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
+        toast({
+          title: "Success!",
+          description: `Referral account created for "${projectName.trim()}"`,
+        });
+        setProjectName("");
+      }
     },
     onError: (error: Error) => {
       toast({
