@@ -457,7 +457,7 @@ export default function ApiDocs() {
           </Card>
 
           {/* Integration Example */}
-          <Card className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-purple-600 backdrop-blur">
+          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
               <CardTitle className="text-white">📦 Full Integration Example</CardTitle>
               <CardDescription className="text-purple-200">
