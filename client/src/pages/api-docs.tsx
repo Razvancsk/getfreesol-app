@@ -456,6 +456,208 @@ export default function ApiDocs() {
             </CardContent>
           </Card>
 
+          {/* Step 1: Integration Code */}
+          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">1️⃣ Recovery Function</CardTitle>
+              <CardDescription className="text-purple-200">
+                Copy this file to your project: <code className="bg-slate-900/50 px-1 py-0.5 rounded text-xs">client/src/lib/recoverSol.ts</code>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-purple-300 text-sm font-semibold">recoverSol.ts</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`import { Transaction, PublicKey } from '@solana/web3.js';
+
+export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+  const walletAddress = walletPublicKey.toBase58();
+  
+  // Step 1: Scan for empty accounts
+  const scanResponse = await fetch(\`/api/sol-refund/scan/\${walletAddress}\`);
+  const scanData = await scanResponse.json();
+  
+  if (!scanData.accounts || scanData.emptyAccounts === 0) {
+    throw new Error('No empty accounts found');
+  }
+  
+  // Step 2: Prepare transaction
+  const prepareResponse = await fetch('/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      walletAddress,
+      selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+      donationPercentage: ${feePercentage || '0.00'},
+      feeReceiverAddress: '${referralAccount?.referralPda || 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'}'
+    })
+  });
+  
+  const prepareData = await prepareResponse.json();
+  
+  // Step 3: Decode transaction (browser-safe, no Buffer!)
+  const binaryString = atob(prepareData.transaction);
+  const transactionBytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    transactionBytes[i] = binaryString.charCodeAt(i);
+  }
+  const transaction = Transaction.from(transactionBytes);
+  
+  // Step 4: Sign and send
+  const signature = await wallet.signAndSendTransaction(transaction);
+  
+  // Step 5: Record success
+  await fetch('/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signature,
+      walletAddress,
+      selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+      accountsClosed: scanData.emptyAccounts,
+      solRecovered: prepareData.totalSolReclaimed
+    })
+  });
+  
+  return signature;
+}`, 'recovery-function')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'recovery-function' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <pre className="text-green-400 text-xs overflow-x-auto">
+{`import { Transaction, PublicKey } from '@solana/web3.js';
+
+export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+  const walletAddress = walletPublicKey.toBase58();
+  
+  // Step 1: Scan for empty accounts
+  const scanResponse = await fetch(\`/api/sol-refund/scan/\${walletAddress}\`);
+  const scanData = await scanResponse.json();
+  
+  if (!scanData.accounts || scanData.emptyAccounts === 0) {
+    throw new Error('No empty accounts found');
+  }
+  
+  // Step 2: Prepare transaction
+  const prepareResponse = await fetch('/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      walletAddress,
+      selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+      donationPercentage: ${feePercentage || '0.00'},
+      feeReceiverAddress: '${referralAccount?.referralPda || 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'}'
+    })
+  });
+  
+  const prepareData = await prepareResponse.json();
+  
+  // Step 3: Decode transaction (browser-safe, no Buffer!)
+  const binaryString = atob(prepareData.transaction);
+  const transactionBytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    transactionBytes[i] = binaryString.charCodeAt(i);
+  }
+  const transaction = Transaction.from(transactionBytes);
+  
+  // Step 4: Sign and send
+  const signature = await wallet.signAndSendTransaction(transaction);
+  
+  // Step 5: Record success
+  await fetch('/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signature,
+      walletAddress,
+      selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+      accountsClosed: scanData.emptyAccounts,
+      solRecovered: prepareData.totalSolReclaimed
+    })
+  });
+  
+  return signature;
+}`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Step 2: Backend Proxy */}
+          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">2️⃣ Backend Proxy (Required to avoid CORS errors)</CardTitle>
+              <CardDescription className="text-purple-200">
+                Add these routes to your backend server
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-purple-300 text-sm font-semibold">Node.js/Express Example</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`app.get("/api/sol-refund/scan/:address", async (req, res) => {
+  const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${req.params.address}\`);
+  res.json(await response.json());
+});
+
+app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
+  const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req.body),
+  });
+  res.json(await response.json());
+});
+
+app.post("/api/sol-refund/record-success", async (req, res) => {
+  const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req.body),
+  });
+  res.json(await response.json());
+});`, 'backend-proxy')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'backend-proxy' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <pre className="text-green-400 text-xs overflow-x-auto">
+{`app.get("/api/sol-refund/scan/:address", async (req, res) => {
+  const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${req.params.address}\`);
+  res.json(await response.json());
+});
+
+app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
+  const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req.body),
+  });
+  res.json(await response.json());
+});
+
+app.post("/api/sol-refund/record-success", async (req, res) => {
+  const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req.body),
+  });
+  res.json(await response.json());
+});`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Support */}
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>

