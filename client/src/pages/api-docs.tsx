@@ -259,53 +259,6 @@ export default function ApiDocs() {
               </CardContent>
             </Card>
 
-            {/* Your PDA Address - Prominent Display */}
-            {referralAccount && (
-              <Card className="bg-gradient-to-r from-purple-600/50 to-pink-600/50 border-purple-400 backdrop-blur">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    🔑 Your Platform-Managed Wallet (PDA)
-                  </CardTitle>
-                  <CardDescription className="text-purple-100">
-                    This wallet collects fees from all transactions. Use this address in your integration.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <Label className="text-white text-sm mb-2 block">PDA Address:</Label>
-                    <div className="flex gap-2">
-                      <div className="flex-1 p-3 bg-black/40 rounded text-sm font-mono break-all text-green-400 border border-purple-400/30">
-                        {referralAccount.referralPda}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyToClipboard(referralAccount.referralPda, 'pda-address')}
-                        className="bg-purple-700/50 hover:bg-purple-700 text-white border-purple-400/50"
-                        data-testid="button-copy-pda"
-                      >
-                        {copiedId === 'pda-address' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="bg-purple-900/30 p-3 rounded-lg border border-purple-400/30">
-                    <p className="text-purple-100 text-sm">
-                      ✅ <strong>Project:</strong> {referralAccount.projectName}
-                    </p>
-                    <p className="text-purple-100 text-sm mt-1">
-                      💰 <strong>Fee Flow:</strong> 100% of fees → Your PDA wallet
-                    </p>
-                    <p className="text-purple-100 text-sm mt-1">
-                      💵 <strong>When you claim:</strong> {developerReceives}% to you, {platformReceives}% to platform
-                    </p>
-                  </div>
-                  <p className="text-purple-200 text-xs">
-                    ℹ️ This address is automatically included in all code examples below
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
           {/* Balance Card - Only show for developers */}
           {developer && (
             <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
