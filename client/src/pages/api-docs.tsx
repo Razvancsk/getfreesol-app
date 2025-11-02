@@ -467,12 +467,24 @@ export default function ApiDocs() {
             <CardContent className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-purple-300 text-sm font-semibold">Copy-Paste Ready Function</p>
+                  <p className="text-purple-300 text-sm font-semibold">Copy-Paste Ready Functions</p>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(`const handleRecover = async (address: string) => {
-  // STEP 1: Prepare transaction
+                    onClick={() => copyToClipboard(`// STEP 1: SCAN WALLET (finds all closeable accounts)
+const handleScan = async () => {
+  const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`);
+  const data = await response.json();
+  
+  console.log('Found accounts:', data.emptyAccounts);
+  console.log('Total reclaimable:', data.totalReclaimable, 'SOL');
+  
+  setAccounts(data.accounts); // Show in UI
+};
+
+// STEP 2: RECOVER RENT (for each account)
+const handleRecover = async (address: string) => {
+  // Prepare transaction
   const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -485,10 +497,10 @@ export default function ApiDocs() {
   });
   const prepareData = await prepareResponse.json();
 
-  // STEP 2: User signs
+  // User signs
   const { signature } = await wallet.signAndSendTransaction(prepareData.transaction);
 
-  // STEP 3: Record success
+  // Record success
   await fetch('${baseUrl}/api/sol-refund/record-success', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -510,8 +522,20 @@ export default function ApiDocs() {
                   </Button>
                 </div>
                 <pre className="text-green-400 text-xs overflow-x-auto">
-{`const handleRecover = async (address: string) => {
-  // STEP 1: Prepare transaction
+{`// STEP 1: SCAN WALLET (finds all closeable accounts)
+const handleScan = async () => {
+  const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`);
+  const data = await response.json();
+  
+  console.log('Found accounts:', data.emptyAccounts);
+  console.log('Total reclaimable:', data.totalReclaimable, 'SOL');
+  
+  setAccounts(data.accounts); // Show in UI
+};
+
+// STEP 2: RECOVER RENT (for each account)
+const handleRecover = async (address: string) => {
+  // Prepare transaction
   const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -524,10 +548,10 @@ export default function ApiDocs() {
   });
   const prepareData = await prepareResponse.json();
 
-  // STEP 2: User signs
+  // User signs
   const { signature } = await wallet.signAndSendTransaction(prepareData.transaction);
 
-  // STEP 3: Record success
+  // Record success
   await fetch('${baseUrl}/api/sol-refund/record-success', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
