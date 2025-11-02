@@ -465,10 +465,9 @@ export default function ApiDocs() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-purple-200 text-sm">Example Integration Code:</p>
-              <div className="bg-[#1e0f3a] p-6 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs text-purple-300 uppercase tracking-wider">Integration Functions</span>
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-purple-300 text-sm font-semibold">Copy-Paste Ready Functions</p>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -522,7 +521,7 @@ const handleRecover = async (address: string) => {
                     {copiedId === 'integration-example' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
-                <pre className="text-green-300 text-sm overflow-x-auto font-mono">
+                <pre className="text-green-400 text-xs overflow-x-auto">
 {`// STEP 1: SCAN WALLET (finds all closeable accounts)
 const handleScan = async () => {
   const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`);
