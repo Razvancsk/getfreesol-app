@@ -248,14 +248,28 @@ export default function ApiDocs() {
             {/* Introduction */}
             <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
               <CardHeader>
-                <CardTitle className="text-white">Getting Started</CardTitle>
+                <CardTitle className="text-white">🚀 Getting Started</CardTitle>
                 <CardDescription className="text-purple-200">
-                  Use our API to integrate SOL rent recovery and token burning into your applications
+                  Integrate SOL rent recovery and token burning directly into your application
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-purple-100 space-y-2">
-                <p>Base URL: <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">{baseUrl}/api</code></p>
-                <p>All endpoints return JSON responses with a <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">success</code> field</p>
+              <CardContent className="text-purple-100 space-y-4">
+                <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/50">
+                  <p className="text-blue-100 font-semibold mb-2">🎯 How It Works:</p>
+                  <ol className="text-sm text-blue-200 space-y-2 list-decimal list-inside">
+                    <li>Build your own UI in your application</li>
+                    <li>Call our API endpoints from your backend/frontend</li>
+                    <li>Pass your <code className="bg-blue-950/50 px-1 rounded">feeReceiverAddress</code> (your PDA) to collect fees</li>
+                    <li>Display results in your app with your branding</li>
+                    <li>Earn 80% of fees collected - claim anytime!</li>
+                  </ol>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm"><strong>Base URL:</strong> <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">{baseUrl}/api</code></p>
+                  <p className="text-sm"><strong>Response Format:</strong> All endpoints return JSON with <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">success</code> field</p>
+                  <p className="text-sm"><strong>Your PDA:</strong> <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">{referralAccount?.referralPda || 'Create account to see your PDA'}</code></p>
+                </div>
               </CardContent>
             </Card>
 
@@ -439,6 +453,120 @@ export default function ApiDocs() {
               <p className="text-sm text-purple-200 italic">
                 💡 The examples below will update based on your settings
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Integration Example */}
+          <Card className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-purple-600 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">📦 Full Integration Example</CardTitle>
+              <CardDescription className="text-purple-200">
+                Complete workflow showing how to integrate SOL rent recovery into your app
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-purple-300 text-sm font-semibold">React Component Example</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`// 1. Scan for empty accounts
+const scanResponse = await fetch('${baseUrl}/api/sol-refund/scan/USER_WALLET');
+const scanData = await scanResponse.json();
+
+// 2. Show results to user in YOUR app UI
+console.log('Found accounts:', scanData.emptyAccounts);
+console.log('Total reclaimable:', scanData.totalReclaimable, 'SOL');
+
+// 3. Prepare transaction with YOUR PDA as fee receiver
+const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    walletAddress: 'USER_WALLET',
+    selectedAccounts: scanData.accounts.map(a => a.accountAddress),
+    donationPercentage: ${feePercentage || '10'},
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}' // Fees go to YOUR PDA
+  })
+});
+const { transaction } = await prepareResponse.json();
+
+// 4. User signs transaction in YOUR app
+const signedTx = await wallet.signTransaction(transaction);
+const signature = await connection.sendRawTransaction(signedTx.serialize());
+await connection.confirmTransaction(signature);
+
+// 5. Record success to update stats and YOUR earnings
+await fetch('${baseUrl}/api/sol-refund/record-success', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    signature,
+    walletAddress: 'USER_WALLET',
+    selectedAccounts: scanData.accounts.map(a => a.accountAddress),
+    accountsClosed: scanData.emptyAccounts,
+    solRecovered: scanData.totalReclaimable,
+    // ... other fields from prepare-transaction response
+  })
+});
+
+// ✅ Done! Fees are in YOUR PDA. User sees results in YOUR app.`, 'integration-example')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'integration-example' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <pre className="text-green-400 text-xs overflow-x-auto">
+{`// 1. Scan for empty accounts
+const scanResponse = await fetch('${baseUrl}/api/sol-refund/scan/USER_WALLET');
+const scanData = await scanResponse.json();
+
+// 2. Show results to user in YOUR app UI
+console.log('Found accounts:', scanData.emptyAccounts);
+console.log('Total reclaimable:', scanData.totalReclaimable, 'SOL');
+
+// 3. Prepare transaction with YOUR PDA as fee receiver
+const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    walletAddress: 'USER_WALLET',
+    selectedAccounts: scanData.accounts.map(a => a.accountAddress),
+    donationPercentage: ${feePercentage || '10'},
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}' // Fees go to YOUR PDA
+  })
+});
+const { transaction } = await prepareResponse.json();
+
+// 4. User signs transaction in YOUR app
+const signedTx = await wallet.signTransaction(transaction);
+const signature = await connection.sendRawTransaction(signedTx.serialize());
+await connection.confirmTransaction(signature);
+
+// 5. Record success to update stats and YOUR earnings
+await fetch('${baseUrl}/api/sol-refund/record-success', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    signature,
+    walletAddress: 'USER_WALLET',
+    selectedAccounts: scanData.accounts.map(a => a.accountAddress),
+    accountsClosed: scanData.emptyAccounts,
+    solRecovered: scanData.totalReclaimable,
+    // ... other fields from prepare-transaction response
+  })
+});
+
+// ✅ Done! Fees are in YOUR PDA. User sees results in YOUR app.`}
+                </pre>
+              </div>
+              
+              <div className="bg-green-900/30 p-3 rounded-lg border border-green-500/50">
+                <p className="text-green-200 text-sm">
+                  💡 <strong>Key Point:</strong> Users never leave your app. They see your UI, your branding. Our API just handles the Solana blockchain logic. Fees go directly to your PDA!
+                </p>
+              </div>
             </CardContent>
           </Card>
 
