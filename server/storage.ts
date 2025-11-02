@@ -37,6 +37,16 @@ import {
   type InsertFeeTransaction,
   type FeeClaim,
   type InsertFeeClaim,
+  type ProjectAccount,
+  type InsertProjectAccount,
+  type ReferralAccount,
+  type InsertReferralAccount,
+  type ReferralTokenAccount,
+  type InsertReferralTokenAccount,
+  type ReferralFeeTransaction,
+  type InsertReferralFeeTransaction,
+  type ReferralClaim,
+  type InsertReferralClaim,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -55,7 +65,12 @@ import {
   feeAccounts,
   feeBalances,
   feeTransactions,
-  feeClaims
+  feeClaims,
+  projectAccount,
+  referralAccounts,
+  referralTokenAccounts,
+  referralFeeTransactions,
+  referralClaims
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -170,6 +185,30 @@ export interface IStorage {
   createFeeClaim(claim: InsertFeeClaim): Promise<FeeClaim>;
   getFeeClaimsByDeveloperId(developerId: string, limit?: number): Promise<FeeClaim[]>;
   updateFeeClaimStatus(id: string, status: string, errorMessage?: string): Promise<void>;
+  
+  // PDA-based Referral System (Jupiter-style)
+  getProjectAccount(): Promise<ProjectAccount | undefined>;
+  createProjectAccount(project: InsertProjectAccount): Promise<ProjectAccount>;
+  
+  getReferralAccountByWallet(developerWallet: string): Promise<ReferralAccount | undefined>;
+  getReferralAccountById(id: string): Promise<ReferralAccount | undefined>;
+  createReferralAccount(account: InsertReferralAccount): Promise<ReferralAccount>;
+  updateReferralAccountFee(id: string, feePercentage: string): Promise<void>;
+  
+  getTokenAccountsByReferralId(referralAccountId: string): Promise<ReferralTokenAccount[]>;
+  getTokenAccountByMint(referralAccountId: string, tokenMint: string): Promise<ReferralTokenAccount | undefined>;
+  createTokenAccount(tokenAccount: InsertReferralTokenAccount): Promise<ReferralTokenAccount>;
+  updateTokenAccountBalance(id: string, unclaimedBalance: string, totalEarned: string): Promise<void>;
+  decrementTokenAccountBalance(id: string, amount: string, totalClaimed: string): Promise<void>;
+  
+  createReferralFeeTransaction(transaction: InsertReferralFeeTransaction): Promise<ReferralFeeTransaction>;
+  getReferralFeeTransactionsByAccountId(referralAccountId: string, limit?: number): Promise<ReferralFeeTransaction[]>;
+  
+  createReferralClaim(claim: InsertReferralClaim): Promise<ReferralClaim>;
+  getReferralClaimsByAccountId(referralAccountId: string, limit?: number): Promise<ReferralClaim[]>;
+  getFeeAccountsByDeveloperId(developerId: string): Promise<FeeAccount[]>;
+  updateDeveloper(id: string, updates: Partial<Developer>): Promise<void>;
+  updateFeeBalance(developerId: string, updates: Partial<FeeBalance>): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -980,6 +1019,164 @@ export class DatabaseStorage implements IStorage {
       .update(feeClaims)
       .set(updateData)
       .where(eq(feeClaims.id, id));
+  }
+
+  async getFeeAccountsByDeveloperId(developerId: string): Promise<FeeAccount[]> {
+    return await db
+      .select()
+      .from(feeAccounts)
+      .where(eq(feeAccounts.developerId, developerId));
+  }
+
+  async updateDeveloper(id: string, updates: Partial<Developer>): Promise<void> {
+    await db
+      .update(developers)
+      .set(updates)
+      .where(eq(developers.id, id));
+  }
+
+  async updateFeeBalance(developerId: string, updates: Partial<FeeBalance>): Promise<void> {
+    await db
+      .update(feeBalances)
+      .set(updates)
+      .where(eq(feeBalances.developerId, developerId));
+  }
+
+  // PDA-based Referral System (Jupiter-style) Implementation
+  async getProjectAccount(): Promise<ProjectAccount | undefined> {
+    const [project] = await db.select().from(projectAccount).limit(1);
+    return project || undefined;
+  }
+
+  async createProjectAccount(project: InsertProjectAccount): Promise<ProjectAccount> {
+    const [created] = await db
+      .insert(projectAccount)
+      .values(project)
+      .returning();
+    return created;
+  }
+
+  async getReferralAccountByWallet(developerWallet: string): Promise<ReferralAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(referralAccounts)
+      .where(eq(referralAccounts.developerWallet, developerWallet));
+    return account || undefined;
+  }
+
+  async getReferralAccountById(id: string): Promise<ReferralAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(referralAccounts)
+      .where(eq(referralAccounts.id, id));
+    return account || undefined;
+  }
+
+  async createReferralAccount(account: InsertReferralAccount): Promise<ReferralAccount> {
+    const [created] = await db
+      .insert(referralAccounts)
+      .values(account)
+      .returning();
+    return created;
+  }
+
+  async updateReferralAccountFee(id: string, feePercentage: string): Promise<void> {
+    await db
+      .update(referralAccounts)
+      .set({ feePercentage, updatedAt: new Date() })
+      .where(eq(referralAccounts.id, id));
+  }
+
+  async getTokenAccountsByReferralId(referralAccountId: string): Promise<ReferralTokenAccount[]> {
+    return await db
+      .select()
+      .from(referralTokenAccounts)
+      .where(eq(referralTokenAccounts.referralAccountId, referralAccountId));
+  }
+
+  async getTokenAccountByMint(referralAccountId: string, tokenMint: string): Promise<ReferralTokenAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(referralTokenAccounts)
+      .where(
+        and(
+          eq(referralTokenAccounts.referralAccountId, referralAccountId),
+          eq(referralTokenAccounts.tokenMint, tokenMint)
+        )
+      );
+    return account || undefined;
+  }
+
+  async createTokenAccount(tokenAccount: InsertReferralTokenAccount): Promise<ReferralTokenAccount> {
+    const [created] = await db
+      .insert(referralTokenAccounts)
+      .values(tokenAccount)
+      .returning();
+    return created;
+  }
+
+  async updateTokenAccountBalance(id: string, unclaimedBalance: string, totalEarned: string): Promise<void> {
+    await db
+      .update(referralTokenAccounts)
+      .set({ unclaimedBalance, totalEarned, updatedAt: new Date() })
+      .where(eq(referralTokenAccounts.id, id));
+  }
+
+  async decrementTokenAccountBalance(id: string, amount: string, totalClaimed: string): Promise<void> {
+    const account = await db
+      .select()
+      .from(referralTokenAccounts)
+      .where(eq(referralTokenAccounts.id, id))
+      .limit(1);
+
+    if (account.length === 0) return;
+
+    const current = parseFloat(account[0].unclaimedBalance);
+    const decrease = parseFloat(amount);
+    const newBalance = Math.max(0, current - decrease).toString();
+
+    await db
+      .update(referralTokenAccounts)
+      .set({ 
+        unclaimedBalance: newBalance,
+        totalClaimed,
+        updatedAt: new Date()
+      })
+      .where(eq(referralTokenAccounts.id, id));
+  }
+
+  async createReferralFeeTransaction(transaction: InsertReferralFeeTransaction): Promise<ReferralFeeTransaction> {
+    const [created] = await db
+      .insert(referralFeeTransactions)
+      .values(transaction)
+      .returning();
+    return created;
+  }
+
+  async getReferralFeeTransactionsByAccountId(referralAccountId: string, limit: number = 50): Promise<ReferralFeeTransaction[]> {
+    return await db
+      .select()
+      .from(referralFeeTransactions)
+      .where(eq(referralFeeTransactions.referralAccountId, referralAccountId))
+      .orderBy(desc(referralFeeTransactions.createdAt))
+      .limit(limit);
+  }
+
+  async createReferralClaim(claim: InsertReferralClaim): Promise<ReferralClaim> {
+    const [created] = await db
+      .insert(referralClaims)
+      .values(claim)
+      .returning();
+    return created;
+  }
+
+  async getReferralClaimsByAccountId(referralAccountId: string, limit: number = 50): Promise<ReferralClaim[]> {
+    return await db
+      .select()
+      .from(referralClaims)
+      .where(eq(referralClaims.referralAccountId, referralAccountId))
+      .orderBy(desc(referralClaims.claimedAt))
+      .limit(limit);
   }
 }
 

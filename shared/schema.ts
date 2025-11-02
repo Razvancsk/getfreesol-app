@@ -545,3 +545,120 @@ export type FeeTransaction = typeof feeTransactions.$inferSelect;
 export type InsertFeeTransaction = z.infer<typeof insertFeeTransactionSchema>;
 export type FeeClaim = typeof feeClaims.$inferSelect;
 export type InsertFeeClaim = z.infer<typeof insertFeeClaimSchema>;
+
+// PDA-based Referral System (Jupiter-style)
+// Platform's project account (single project for our platform)
+export const projectAccount = pgTable("project_account", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectName: text("project_name").notNull().default("Get Your SOL Back"),
+  baseKey: text("base_key").notNull().unique(), // Seed for PDA derivation
+  projectPda: text("project_pda").notNull().unique(), // Derived PDA address
+  adminWallet: text("admin_wallet").notNull(), // Platform wallet (GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6)
+  bump: integer("bump").notNull(), // PDA bump seed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Developer referral accounts (one per developer) - PDA derived from [project_pda, developer_wallet]
+export const referralAccounts = pgTable("referral_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectAccountId: varchar("project_account_id").notNull(), // Links to project
+  developerWallet: text("developer_wallet").notNull().unique(), // Developer's wallet address
+  referralPda: text("referral_pda").notNull().unique(), // Derived PDA: findProgramAddress([project_pda, developer_wallet])
+  bump: integer("bump").notNull(), // PDA bump seed
+  projectName: text("project_name"), // Developer's project name
+  feePercentage: decimal("fee_percentage", { precision: 5, scale: 2 }).notNull().default("0"), // 0-10%
+  status: text("status").notNull().default("active"), // active, suspended
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Token accounts for fee collection (multiple per developer, one for each mint)
+export const referralTokenAccounts = pgTable("referral_token_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referralAccountId: varchar("referral_account_id").notNull(), // Links to referral account
+  tokenMint: text("token_mint").notNull(), // Token mint address (e.g., So11111111... for SOL)
+  tokenSymbol: text("token_symbol"), // Human-readable symbol (SOL, USDC, USDT)
+  tokenName: text("token_name"), // Full token name
+  tokenDecimals: integer("token_decimals").notNull().default(9),
+  tokenAccountAddress: text("token_account_address").notNull().unique(), // ATA for this mint
+  unclaimedBalance: decimal("unclaimed_balance", { precision: 18, scale: 9 }).notNull().default("0"),
+  totalEarned: decimal("total_earned", { precision: 18, scale: 9 }).notNull().default("0"),
+  totalClaimed: decimal("total_claimed", { precision: 18, scale: 9 }).notNull().default("0"),
+  status: text("status").notNull().default("active"), // active, inactive
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Fee transactions for PDA-based system
+export const referralFeeTransactions = pgTable("referral_fee_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referralAccountId: varchar("referral_account_id").notNull(),
+  tokenAccountId: varchar("token_account_id").notNull(),
+  sourceSignature: text("source_signature").notNull(), // Original transaction that generated fees
+  transactionType: text("transaction_type").notNull(), // 'sol_recovery', 'token_burn', 'nft_burn'
+  tokenMint: text("token_mint").notNull(),
+  grossFee: decimal("gross_fee", { precision: 18, scale: 9 }).notNull(), // Total fee in tokens
+  developerShare: decimal("developer_share", { precision: 18, scale: 9 }).notNull(), // 80%
+  platformShare: decimal("platform_share", { precision: 18, scale: 9 }).notNull(), // 20%
+  userWallet: text("user_wallet").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Claims from token accounts
+export const referralClaims = pgTable("referral_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referralAccountId: varchar("referral_account_id").notNull(),
+  tokenAccountId: varchar("token_account_id").notNull(),
+  claimSignature: text("claim_signature").notNull().unique(),
+  tokenMint: text("token_mint").notNull(),
+  amountClaimed: decimal("amount_claimed", { precision: 18, scale: 9 }).notNull(),
+  developerReceived: decimal("developer_received", { precision: 18, scale: 9 }).notNull(), // 80%
+  platformReceived: decimal("platform_received", { precision: 18, scale: 9 }).notNull(), // 20%
+  status: text("status").notNull().default("completed"),
+  errorMessage: text("error_message"),
+  claimedAt: timestamp("claimed_at").notNull().defaultNow(),
+});
+
+export const insertProjectAccountSchema = createInsertSchema(projectAccount).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertReferralAccountSchema = createInsertSchema(referralAccounts).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertReferralTokenAccountSchema = createInsertSchema(referralTokenAccounts).omit({
+  id: true,
+  unclaimedBalance: true,
+  totalEarned: true,
+  totalClaimed: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertReferralFeeTransactionSchema = createInsertSchema(referralFeeTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertReferralClaimSchema = createInsertSchema(referralClaims).omit({
+  id: true,
+  status: true,
+  claimedAt: true,
+});
+
+export type ProjectAccount = typeof projectAccount.$inferSelect;
+export type InsertProjectAccount = z.infer<typeof insertProjectAccountSchema>;
+export type ReferralAccount = typeof referralAccounts.$inferSelect;
+export type InsertReferralAccount = z.infer<typeof insertReferralAccountSchema>;
+export type ReferralTokenAccount = typeof referralTokenAccounts.$inferSelect;
+export type InsertReferralTokenAccount = z.infer<typeof insertReferralTokenAccountSchema>;
+export type ReferralFeeTransaction = typeof referralFeeTransactions.$inferSelect;
+export type InsertReferralFeeTransaction = z.infer<typeof insertReferralFeeTransactionSchema>;
+export type ReferralClaim = typeof referralClaims.$inferSelect;
+export type InsertReferralClaim = z.infer<typeof insertReferralClaimSchema>;
