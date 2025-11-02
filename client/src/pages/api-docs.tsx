@@ -506,7 +506,7 @@ export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
   // Step 4: Sign and send
   const signature = await wallet.signAndSendTransaction(transaction);
   
-  // Step 5: Record success
+  // Step 5: Record success - Send ALL data to getfreesol.xyz
   await fetch('/api/sol-refund/record-success', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -515,7 +515,11 @@ export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
       walletAddress,
       selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
       accountsClosed: scanData.emptyAccounts,
-      solRecovered: prepareData.totalSolReclaimed
+      solRecovered: prepareData.totalSolReclaimed,
+      netAmount: prepareData.netAmount,
+      feeAmount: prepareData.feeAmount,
+      platformFeeAmount: prepareData.platformFeeAmount,
+      referralFeeAmount: prepareData.referralFeeAmount
     })
   });
   
@@ -565,7 +569,7 @@ export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
   // Step 4: Sign and send
   const signature = await wallet.signAndSendTransaction(transaction);
   
-  // Step 5: Record success
+  // Step 5: Record success - Send ALL data to getfreesol.xyz
   await fetch('/api/sol-refund/record-success', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -574,7 +578,11 @@ export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
       walletAddress,
       selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
       accountsClosed: scanData.emptyAccounts,
-      solRecovered: prepareData.totalSolReclaimed
+      solRecovered: prepareData.totalSolReclaimed,
+      netAmount: prepareData.netAmount,
+      feeAmount: prepareData.feeAmount,
+      platformFeeAmount: prepareData.platformFeeAmount,
+      referralFeeAmount: prepareData.referralFeeAmount
     })
   });
   
