@@ -6647,17 +6647,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Step 1: Prepare referral account creation (generate keypair and return transaction)
   app.post("/api/referral/create-account", async (req, res) => {
     try {
-      const { walletAddress, signature, message, projectName } = req.body;
+      const { walletAddress, projectName } = req.body;
       
-      if (!walletAddress || !signature || !message) {
+      if (!walletAddress || !projectName) {
         return res.status(400).json({ 
-          error: 'Missing required fields: walletAddress, signature, message' 
+          error: 'Missing required fields: walletAddress, projectName' 
         });
-      }
-      
-      // Verify signature
-      if (!verifySignature(message, signature, walletAddress)) {
-        return res.status(401).json({ error: 'Invalid signature' });
       }
       
       // Check if account already exists

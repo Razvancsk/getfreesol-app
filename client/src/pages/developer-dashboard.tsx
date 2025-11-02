@@ -15,7 +15,7 @@ import { Link } from "wouter";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 export default function DeveloperDashboard() {
-  const { publicKey, signMessage, sendTransaction } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
   const { toast } = useToast();
   const [projectName, setProjectName] = useState("");
   const [feePercentage, setFeePercentage] = useState(0);
@@ -43,19 +43,13 @@ export default function DeveloperDashboard() {
   // Create account mutation
   const createAccount = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !sendTransaction || !projectName.trim()) {
+      if (!publicKey || !sendTransaction || !projectName.trim()) {
         throw new Error("Missing wallet or project name");
       }
 
-      const message = `Create developer fee account for project: ${projectName}`;
-      const encodedMessage = new TextEncoder().encode(message);
-      const signature = await signMessage(encodedMessage);
-
-      // Step 1: Get the transaction from backend
+      // Step 1: Get the transaction from backend (no message signing needed)
       const prepareResponse: any = await apiRequest('POST', '/api/referral/create-account', {
         walletAddress: publicKey.toBase58(),
-        signature: bs58.encode(signature),
-        message,
         projectName: projectName.trim(),
       });
       
@@ -63,7 +57,7 @@ export default function DeveloperDashboard() {
         throw new Error("No transaction received from server");
       }
       
-      // Step 2: Sign and send the transaction
+      // Step 2: Sign and send the 0.001 SOL deposit transaction
       const { Transaction, Connection } = await import("@solana/web3.js");
       
       const transaction = Transaction.from(
