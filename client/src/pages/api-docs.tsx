@@ -115,26 +115,16 @@ export default function ApiDocs() {
       toast({
         title: "Claim Successful! 🎉",
         description: (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <p>Amount: {data.amountSol}</p>
-            <div className="flex flex-col gap-1">
-              <a 
-                href={data.explorerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:underline flex items-center gap-1"
-              >
-                View on Solana Explorer <ExternalLink className="h-3 w-3" />
-              </a>
-              <a 
-                href={data.solscanUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:underline flex items-center gap-1"
-              >
-                View on Solscan <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
+            <a 
+              href={`https://solscan.io/tx/${data.signature}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+            >
+              View on Solscan <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
         ),
       });

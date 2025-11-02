@@ -6939,8 +6939,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const developerPubkey = new PublicKey(walletAddress);
       const platformPubkey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
       
+      // Get recent blockhash first
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      
       // Create transaction and set properties
       const transaction = new Transaction();
+      transaction.recentBlockhash = blockhash;
       transaction.feePayer = feeWalletKeypair.publicKey;
       
       // Add transfer to developer (80%)
@@ -6961,20 +6965,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
-      // Get FRESH blockhash right before signing (critical for timing)
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-      transaction.recentBlockhash = blockhash;
-      
       // Sign transaction with platform-managed key
       transaction.sign(feeWalletKeypair);
       
-      // Send transaction (skip preflight to avoid timing issues)
+      // Send transaction
       console.log(`📤 Sending claim transaction for ${walletAddress}...`);
       console.log(`   Developer (80%): ${(developerAmount / 1e9).toFixed(9)} SOL`);
       console.log(`   Platform (20%): ${(platformAmount / 1e9).toFixed(9)} SOL`);
       const signature = await connection.sendRawTransaction(transaction.serialize(), {
-        skipPreflight: true,
-        maxRetries: 3
+        skipPreflight: false,
+        preflightCommitment: 'finalized'
       });
       
       // Wait for finalized confirmation (ensures Solscan can find it)
@@ -7007,8 +7007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: amountClaimed,
         amountSol: `${amountClaimed.toFixed(9)} SOL`,
         message: `Claim successful! ${amountClaimed.toFixed(6)} SOL has been transferred to your wallet.`,
-        explorerUrl: `https://explorer.solana.com/tx/${signature}`,
-        solscanUrl: `https://solscan.io/tx/${signature}`
+        explorerUrl: `https://solscan.io/tx/${signature}`
       });
     } catch (error: any) {
       console.error('Claim error:', error);
