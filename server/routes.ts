@@ -735,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Prepare transaction for SOL refund
   app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
     try {
-      const { walletAddress, selectedAccounts, donationPercentage, referralCode, feeReceiverAddress } = req.body;
+      const { walletAddress, selectedAccounts, donationPercentage, referralCode, feeReceiverAddress, feePercentage } = req.body;
       
       // Check for permanent wallet association first (first referral wins forever)
       let referralCodeData = null;
@@ -883,8 +883,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate fees in lamports - always charge 15% total (server-enforced)
-      const PLATFORM_FEE_PERCENTAGE = 15; // Server-enforced 15% total fee
+      // Calculate fees in lamports - use partner's fee or default to 15%
+      const PLATFORM_FEE_PERCENTAGE = feePercentage || donationPercentage || 15; // Partner's fee or fallback to 15%
       const totalFeeLamports = Math.floor(totalRecoveredLamports * (PLATFORM_FEE_PERCENTAGE / 100));
       
       let referralFeeLamports = 0;
