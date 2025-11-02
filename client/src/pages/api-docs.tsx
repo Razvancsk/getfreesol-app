@@ -489,43 +489,108 @@ export default function ApiDocs() {
 
               <Separator className="bg-purple-600/30" />
 
-              {/* Build Claim Transaction */}
+              {/* Prepare Transaction */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Badge className="bg-blue-600">POST</Badge>
-                  <code className="text-purple-200">/api/sol-refund/build-claim-transaction</code>
+                  <code className="text-purple-200">/api/sol-refund/prepare-transaction</code>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(`${baseUrl}/api/sol-refund/build-claim-transaction`, 'claim-tx')}
+                    onClick={() => copyToClipboard(`${baseUrl}/api/sol-refund/prepare-transaction`, 'prepare-tx')}
                     className="ml-auto text-purple-300 hover:text-white"
                   >
-                    {copiedId === 'claim-tx' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedId === 'prepare-tx' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
                 <p className="text-purple-200 text-sm">Build a transaction to close empty accounts and recover SOL rent</p>
                 <div className="bg-slate-900/50 p-4 rounded-lg">
                   <p className="text-purple-300 text-sm mb-2">Example Request:</p>
                   <pre className="text-green-400 text-sm overflow-x-auto">
-{`POST ${baseUrl}/api/sol-refund/build-claim-transaction
+{`POST ${baseUrl}/api/sol-refund/prepare-transaction
 Content-Type: application/json
 
 {
   "walletAddress": "YOUR_WALLET_ADDRESS",
-  "accountAddresses": ["account1", "account2"],
-  "feeReceiverAddress": "${feeWallet || 'YOUR_FEE_WALLET'}",
-  "feePercentage": ${feePercentage || '10'}
+  "selectedAccounts": ["account1", "account2"],
+  "donationPercentage": ${feePercentage || '10'},
+  "referralCode": "${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}"
 }`}
                   </pre>
                 </div>
-                {feeWallet && feePercentage && (
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Example Response:</p>
+                  <pre className="text-green-400 text-sm overflow-x-auto">
+{`{
+  "transaction": "base64_encoded_transaction",
+  "message": "Prepared transaction to close 8 accounts",
+  "totalSolReclaimed": 0.0162,
+  "feeAmount": 0.00162,
+  "netAmount": 0.01458,
+  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}"
+}`}
+                  </pre>
+                </div>
+                {referralAccount && (
                   <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30">
                     <p className="text-blue-200 text-sm">
-                      ℹ️ With your settings: Users pay {feePercentage}% fee. You receive {developerReceives}% 
-                      ({feeWallet.substring(0, 8)}...), platform receives {platformReceives}%
+                      ✅ Your Referral Code: <strong>{referralAccount.referralCode}</strong> - Include this in every request to earn {developerReceives}% of fees!
                     </p>
                   </div>
                 )}
+              </div>
+
+              <Separator className="bg-purple-600/30" />
+
+              {/* Record Success - CRITICAL */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-orange-600">POST</Badge>
+                  <code className="text-purple-200">/api/sol-refund/record-success</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`${baseUrl}/api/sol-refund/record-success`, 'record-success')}
+                    className="ml-auto text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'record-success' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-purple-200 text-sm font-semibold">⚠️ CRITICAL: Call this after transaction confirmation to update platform stats and record fees</p>
+                <div className="bg-orange-900/30 p-3 rounded-lg border border-orange-500/50">
+                  <p className="text-orange-200 text-sm">
+                    <strong>Required:</strong> You MUST call this endpoint after the transaction is confirmed. This updates global statistics (TOTAL SOL RECOVERED, TOTAL ACCOUNTS CLOSED) and records your referral earnings.
+                  </p>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Example Request:</p>
+                  <pre className="text-green-400 text-sm overflow-x-auto">
+{`POST ${baseUrl}/api/sol-refund/record-success
+Content-Type: application/json
+
+{
+  "signature": "TRANSACTION_SIGNATURE",
+  "walletAddress": "USER_WALLET_ADDRESS",
+  "selectedAccounts": ["account1", "account2"],
+  "accountsClosed": 8,
+  "solRecovered": 0.0162,
+  "netAmount": 0.01458,
+  "feeAmount": 0.00162,
+  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}",
+  "platformFeeAmount": 0.000324,
+  "referralFeeAmount": 0.001296
+}`}
+                  </pre>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Example Response:</p>
+                  <pre className="text-green-400 text-sm overflow-x-auto">
+{`{
+  "success": true,
+  "message": "Successfully processed 8 accounts and recovered 0.01458 SOL!"
+}`}
+                  </pre>
+                </div>
               </div>
 
               <Separator className="bg-purple-600/30" />
@@ -604,43 +669,86 @@ Content-Type: application/json
 
               <Separator className="bg-purple-600/30" />
 
-              {/* Build Burn Transaction */}
+              {/* Bulk Burn Tokens */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Badge className="bg-blue-600">POST</Badge>
-                  <code className="text-purple-200">/api/tokens/build-burn-transaction</code>
+                  <code className="text-purple-200">/api/tokens/bulk-burn</code>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(`${baseUrl}/api/tokens/build-burn-transaction`, 'burn-tx')}
+                    onClick={() => copyToClipboard(`${baseUrl}/api/tokens/bulk-burn`, 'bulk-burn-tx')}
                     className="ml-auto text-purple-300 hover:text-white"
                   >
-                    {copiedId === 'burn-tx' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedId === 'bulk-burn-tx' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
-                <p className="text-purple-200 text-sm">Build a transaction to burn tokens and close the account</p>
+                <p className="text-purple-200 text-sm">Build a transaction to burn multiple tokens and close accounts</p>
                 <div className="bg-slate-900/50 p-4 rounded-lg">
                   <p className="text-purple-300 text-sm mb-2">Example Request:</p>
                   <pre className="text-green-400 text-sm overflow-x-auto">
-{`POST ${baseUrl}/api/tokens/build-burn-transaction
+{`POST ${baseUrl}/api/tokens/bulk-burn
 Content-Type: application/json
 
 {
-  "walletAddress": "YOUR_WALLET_ADDRESS",
-  "tokenMints": ["mint1", "mint2"],
-  "feeReceiverAddress": "${feeWallet || 'YOUR_FEE_WALLET'}",
-  "feePercentage": ${feePercentage || '10'}
+  "ownerPublicKey": "YOUR_WALLET_ADDRESS",
+  "selectedTokens": [
+    { "mint": "mint1", "tokenAccount": "account1" },
+    { "mint": "mint2", "tokenAccount": "account2" }
+  ],
+  "donationPercentage": ${feePercentage || '10'},
+  "referralCode": "${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}"
 }`}
                   </pre>
                 </div>
-                {feeWallet && feePercentage && (
+                {referralAccount && (
                   <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30">
                     <p className="text-blue-200 text-sm">
-                      ℹ️ With your settings: Users pay {feePercentage}% fee. You receive {developerReceives}% 
-                      ({feeWallet.substring(0, 8)}...), platform receives {platformReceives}%
+                      ✅ Include your referral code <strong>{referralAccount.referralCode}</strong> to earn {developerReceives}% of fees!
                     </p>
                   </div>
                 )}
+              </div>
+
+              <Separator className="bg-purple-600/30" />
+
+              {/* Record Token Burn Success */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-orange-600">POST</Badge>
+                  <code className="text-purple-200">/api/tokens/record-burn-success</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`${baseUrl}/api/tokens/record-burn-success`, 'record-token-burn')}
+                    className="ml-auto text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'record-token-burn' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-purple-200 text-sm font-semibold">⚠️ CRITICAL: Call this after token burn confirmation</p>
+                <div className="bg-orange-900/30 p-3 rounded-lg border border-orange-500/50">
+                  <p className="text-orange-200 text-sm">
+                    <strong>Required:</strong> Call this to update global stats and record your referral earnings from token burns.
+                  </p>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Example Request:</p>
+                  <pre className="text-green-400 text-sm overflow-x-auto">
+{`POST ${baseUrl}/api/tokens/record-burn-success
+Content-Type: application/json
+
+{
+  "signature": "TRANSACTION_SIGNATURE",
+  "walletAddress": "USER_WALLET_ADDRESS",
+  "tokensBurned": 5,
+  "solRecovered": 0.01,
+  "netAmount": 0.009,
+  "feeAmount": 0.001,
+  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}"
+}`}
+                  </pre>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -650,10 +758,11 @@ Content-Type: application/json
             <CardHeader>
               <CardTitle className="text-white">🖼️ NFT Burning</CardTitle>
               <CardDescription className="text-purple-200">
-                Scan and burn unwanted NFTs
+                Scan and burn unwanted NFTs (including compressed NFTs)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* NFT Scan */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Badge className="bg-green-600">GET</Badge>
@@ -669,51 +778,162 @@ Content-Type: application/json
                 </div>
                 <p className="text-purple-200 text-sm">Scan a wallet for all NFTs (including compressed NFTs)</p>
               </div>
+
+              <Separator className="bg-purple-600/30" />
+
+              {/* Build NFT Burn Transaction */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-blue-600">POST</Badge>
+                  <code className="text-purple-200">/api/nfts/burn/build</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`${baseUrl}/api/nfts/burn/build`, 'nft-burn-build')}
+                    className="ml-auto text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'nft-burn-build' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-purple-200 text-sm">Build a transaction to burn NFTs and close accounts</p>
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Example Request:</p>
+                  <pre className="text-green-400 text-sm overflow-x-auto">
+{`POST ${baseUrl}/api/nfts/burn/build
+Content-Type: application/json
+
+{
+  "ownerPublicKey": "YOUR_WALLET_ADDRESS",
+  "nfts": [
+    { "mint": "nft_mint_1", "isCompressed": false },
+    { "mint": "nft_mint_2", "isCompressed": true }
+  ],
+  "donationPercentage": ${feePercentage || '10'},
+  "referralCode": "${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}"
+}`}
+                  </pre>
+                </div>
+                {referralAccount && (
+                  <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30">
+                    <p className="text-blue-200 text-sm">
+                      ✅ Include your referral code <strong>{referralAccount.referralCode}</strong> to earn {developerReceives}% of fees!
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <Separator className="bg-purple-600/30" />
+
+              {/* Record NFT Burn Success */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-orange-600">POST</Badge>
+                  <code className="text-purple-200">/api/nfts/burn/record</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`${baseUrl}/api/nfts/burn/record`, 'record-nft-burn')}
+                    className="ml-auto text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'record-nft-burn' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-purple-200 text-sm font-semibold">⚠️ CRITICAL: Call this after NFT burn confirmation</p>
+                <div className="bg-orange-900/30 p-3 rounded-lg border border-orange-500/50">
+                  <p className="text-orange-200 text-sm">
+                    <strong>Required:</strong> Call this to update global stats and record your referral earnings from NFT burns.
+                  </p>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Example Request:</p>
+                  <pre className="text-green-400 text-sm overflow-x-auto">
+{`POST ${baseUrl}/api/nfts/burn/record
+Content-Type: application/json
+
+{
+  "signature": "TRANSACTION_SIGNATURE",
+  "walletAddress": "USER_WALLET_ADDRESS",
+  "nftsBurned": 3,
+  "solRecovered": 0.015,
+  "netAmount": 0.0135,
+  "feeAmount": 0.0015,
+  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}"
+}`}
+                  </pre>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           {/* Usage Example */}
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
-              <CardTitle className="text-white">💻 Usage Example</CardTitle>
+              <CardTitle className="text-white">💻 Complete Integration Example</CardTitle>
               <CardDescription className="text-purple-200">
-                Sample JavaScript code to integrate SOL recovery
+                Full workflow: Scan → Prepare → Sign → Submit → Record
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="bg-slate-900/50 p-4 rounded-lg">
                 <pre className="text-green-400 text-sm overflow-x-auto">
-{`// Example: Scan wallet and recover SOL
-const scanWallet = async (walletAddress) => {
-  const response = await fetch(
+{`// Complete SOL Recovery Integration
+const recoverSOL = async (walletAddress, wallet) => {
+  // Step 1: Scan for empty accounts
+  const scanRes = await fetch(
     '${baseUrl}/api/sol-refund/scan/' + walletAddress
   );
-  const data = await response.json();
+  const scanData = await scanRes.json();
   
-  if (data.success && data.emptyAccounts > 0) {
-    console.log(\`Found \${data.emptyAccounts} empty accounts\`);
-    console.log(\`Can recover \${data.totalReclaimable} SOL\`);
-    
-    // Build claim transaction with your fee settings
-    const txResponse = await fetch(
-      '${baseUrl}/api/sol-refund/build-claim-transaction',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: walletAddress,
-          accountAddresses: data.accounts.map(a => a.accountAddress),
-          feeReceiverAddress: '${feeWallet || 'YOUR_FEE_WALLET'}',
-          feePercentage: ${feePercentage || '10'}
-        })
-      }
-    );
-    
-    const txData = await txResponse.json();
-    // Sign and send the transaction...
-    // You'll receive ${developerReceives}% of recovered SOL
-    // Platform receives ${platformReceives}%
+  if (scanData.emptyAccounts === 0) {
+    return console.log('No empty accounts found');
   }
+  
+  console.log(\`Found \${scanData.emptyAccounts} empty accounts\`);
+  console.log(\`Can recover \${scanData.totalReclaimable} SOL\`);
+  
+  // Step 2: Prepare transaction with your referral code
+  const prepareRes = await fetch(
+    '${baseUrl}/api/sol-refund/prepare-transaction',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress,
+        selectedAccounts: scanData.accounts.map(a => a.accountAddress),
+        donationPercentage: ${feePercentage || '10'},
+        referralCode: '${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}'
+      })
+    }
+  );
+  const { transaction, totalSolReclaimed, feeAmount, 
+          netAmount, platformFeeAmount, referralFeeAmount } = await prepareRes.json();
+  
+  // Step 3: Sign and send transaction
+  const tx = Transaction.from(Buffer.from(transaction, 'base64'));
+  const signed = await wallet.signTransaction(tx);
+  const signature = await connection.sendRawTransaction(signed.serialize());
+  await connection.confirmTransaction(signature);
+  
+  // Step 4: ⚠️ CRITICAL - Record success to update global stats
+  await fetch('${baseUrl}/api/sol-refund/record-success', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signature,
+      walletAddress,
+      selectedAccounts: scanData.accounts.map(a => a.accountAddress),
+      accountsClosed: scanData.emptyAccounts,
+      solRecovered: totalSolReclaimed,
+      netAmount,
+      feeAmount,
+      referralCodeUsed: '${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}',
+      platformFeeAmount,
+      referralFeeAmount
+    })
+  });
+  
+  console.log('Success! You earned ' + referralFeeAmount + ' SOL in fees!');
+  // Global stats (TOTAL SOL RECOVERED, TOTAL ACCOUNTS CLOSED) now updated!
 };`}
                 </pre>
               </div>
