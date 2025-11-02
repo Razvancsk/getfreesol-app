@@ -29,6 +29,10 @@ export default function ApiDocs() {
   const [projectName, setProjectName] = useState('');
   
   const walletAddress = publicKey?.toBase58();
+  
+  // Platform wallet address (admin only)
+  const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+  const isPlatformWallet = walletAddress === PLATFORM_WALLET;
 
   // Fetch referral account (PDA-based)
   const { data: accountData, refetch: refetchAccount } = useQuery<any>({
@@ -188,17 +192,35 @@ export default function ApiDocs() {
           </div>
         </div>
 
-        {/* Show account creation form if no account exists */}
+        {/* Access restriction - Platform wallet only */}
         {!publicKey ? (
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur max-w-2xl mx-auto mt-12">
             <CardHeader>
               <CardTitle className="text-white text-center">Connect Wallet to Continue</CardTitle>
               <CardDescription className="text-purple-200 text-center">
-                Connect your wallet to create a developer account and access API documentation
+                Connect your wallet to access API documentation
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center text-purple-100">
-              <p>Please connect your Solana wallet using the button in the top right corner to get started.</p>
+              <p>Please connect your Solana wallet using the button in the top right corner.</p>
+            </CardContent>
+          </Card>
+        ) : !isPlatformWallet ? (
+          <Card className="bg-red-900/50 border-red-600 backdrop-blur max-w-2xl mx-auto mt-12">
+            <CardHeader>
+              <CardTitle className="text-white text-center">Access Denied</CardTitle>
+              <CardDescription className="text-red-200 text-center">
+                This page is restricted to platform administrators only
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center text-red-100">
+              <p className="mb-4">You do not have permission to access this page.</p>
+              <p className="text-sm text-red-200">Connected wallet: {walletAddress}</p>
+              <Link href="/">
+                <Button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white">
+                  Go Back Home
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ) : !hasAccount ? (
