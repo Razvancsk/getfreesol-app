@@ -460,9 +460,6 @@ export default function ApiDocs() {
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
               <CardTitle className="text-white">1️⃣ Recovery Function</CardTitle>
-              <CardDescription className="text-purple-200">
-                Copy this file to your project: <code className="bg-slate-900/50 px-1 py-0.5 rounded text-xs">client/src/lib/recoverSol.ts</code>
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
