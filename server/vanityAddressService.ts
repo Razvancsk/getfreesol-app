@@ -1,18 +1,43 @@
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { writeFileSync, readFileSync, existsSync } from "fs";
+import { join } from "path";
 
 // Encryption configuration
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
+const KEY_FILE_PATH = join(process.cwd(), ".fee_encryption_key");
 
-// Get encryption key (optional during development, required for production)
-const ENCRYPTION_KEY = process.env.FEE_ACCOUNT_ENCRYPTION_KEY;
+// Get or auto-generate encryption key
+let ENCRYPTION_KEY = process.env.FEE_ACCOUNT_ENCRYPTION_KEY;
 
-if (ENCRYPTION_KEY) {
-  // Validate key length if provided (should be 64 hex characters = 32 bytes)
-  if (ENCRYPTION_KEY.length !== 64 || !/^[0-9a-fA-F]+$/.test(ENCRYPTION_KEY)) {
-    throw new Error("CRITICAL: FEE_ACCOUNT_ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes)");
+if (!ENCRYPTION_KEY) {
+  // Try to load from file
+  if (existsSync(KEY_FILE_PATH)) {
+    try {
+      ENCRYPTION_KEY = readFileSync(KEY_FILE_PATH, "utf-8").trim();
+      console.log("🔐 Loaded encryption key from .fee_encryption_key file");
+    } catch (error) {
+      console.error("Failed to read encryption key file:", error);
+    }
   }
+  
+  // If still no key, auto-generate one
+  if (!ENCRYPTION_KEY) {
+    ENCRYPTION_KEY = randomBytes(32).toString("hex");
+    try {
+      writeFileSync(KEY_FILE_PATH, ENCRYPTION_KEY, { mode: 0o600 });
+      console.log("🔑 Auto-generated encryption key and saved to .fee_encryption_key");
+      console.log("⚠️  IMPORTANT: Keep this file secure and backed up!");
+    } catch (error) {
+      console.error("Failed to save encryption key:", error);
+    }
+  }
+}
+
+// Validate key length
+if (ENCRYPTION_KEY.length !== 64 || !/^[0-9a-fA-F]+$/.test(ENCRYPTION_KEY)) {
+  throw new Error("CRITICAL: Encryption key must be exactly 64 hexadecimal characters (32 bytes)");
 }
 
 /**
@@ -20,10 +45,7 @@ if (ENCRYPTION_KEY) {
  */
 function requireEncryptionKey(): string {
   if (!ENCRYPTION_KEY) {
-    throw new Error("FEE_ACCOUNT_ENCRYPTION_KEY environment variable must be set to create fee accounts");
-  }
-  if (ENCRYPTION_KEY.length !== 64 || !/^[0-9a-fA-F]+$/.test(ENCRYPTION_KEY)) {
-    throw new Error("FEE_ACCOUNT_ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes)");
+    throw new Error("Failed to initialize encryption key");
   }
   return ENCRYPTION_KEY;
 }
