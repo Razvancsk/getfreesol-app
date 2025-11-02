@@ -61,6 +61,10 @@ export default function DeveloperDashboard() {
       return response;
     },
     onSuccess: async (data: any) => {
+      console.log("Create account response:", data);
+      console.log("Has transaction?", !!data.transaction);
+      console.log("Has sendTransaction?", !!sendTransaction);
+      
       // If transaction is returned, we need to sign and send it
       if (data.transaction && sendTransaction) {
         try {
@@ -78,9 +82,11 @@ export default function DeveloperDashboard() {
           );
           
           // Create connection
-          const connection = new Connection(
-            import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
-          );
+          const heliusApiKey = import.meta.env.VITE_HELIUS_API_KEY;
+          const rpcUrl = heliusApiKey
+            ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+            : 'https://api.mainnet-beta.solana.com';
+          const connection = new Connection(rpcUrl);
           
           // Send transaction (wallet adapter handles signing)
           const txSignature = await sendTransaction(transaction, connection);
@@ -104,6 +110,7 @@ export default function DeveloperDashboard() {
         }
       } else {
         // Old flow (no transaction)
+        console.log("No transaction to process, account created without funding");
         queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
         toast({
           title: "Success!",

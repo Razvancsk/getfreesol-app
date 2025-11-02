@@ -6699,9 +6699,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`   Referral Wallet: ${publicKey}`);
       
       // Build transaction to fund the new referral wallet with 0.001 SOL
-      const connection = new Connection(
-        process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
-      );
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl);
       
       const fromPubkey = new PublicKey(walletAddress);
       const toPubkey = new PublicKey(publicKey);
@@ -6724,6 +6726,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requireAllSignatures: false,
         verifySignatures: false
       }).toString('base64');
+      
+      console.log('📤 Sending response with transaction:', {
+        hasTransaction: !!serializedTransaction,
+        transactionLength: serializedTransaction.length,
+        accountId: account.id
+      });
       
       res.json({
         success: true,
