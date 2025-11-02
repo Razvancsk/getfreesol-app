@@ -594,36 +594,6 @@ const handleRecover = async (address: string) => {
                   <code className="text-purple-200">/api/sol-refund/scan/:address</code>
                 </div>
                 <p className="text-purple-200 text-sm">Scan a wallet for empty token accounts that can be closed to recover rent</p>
-                
-                {/* Code Example */}
-                <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-purple-300 text-sm font-semibold">Code Example</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(`// Scan wallet for empty token accounts
-const response = await fetch('${baseUrl}/api/sol-refund/scan/' + walletAddress);
-const scanData = await response.json();
-
-console.log('Empty accounts:', scanData.emptyAccounts);
-console.log('Total reclaimable:', scanData.totalReclaimable, 'SOL');
-console.log('Accounts:', scanData.accounts);`, 'scan-js')}
-                      className="text-purple-300 hover:text-white"
-                    >
-                      {copiedId === 'scan-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <pre className="text-green-400 text-xs overflow-x-auto">
-{`// Scan wallet for empty token accounts
-const response = await fetch('${baseUrl}/api/sol-refund/scan/' + walletAddress);
-const scanData = await response.json();
-
-console.log('Empty accounts:', scanData.emptyAccounts);
-console.log('Total reclaimable:', scanData.totalReclaimable, 'SOL');
-console.log('Accounts:', scanData.accounts);`}
-                  </pre>
-                </div>
 
                 {/* Response Example */}
                 <div className="bg-slate-900/50 p-4 rounded-lg">
@@ -651,64 +621,6 @@ console.log('Accounts:', scanData.accounts);`}
                 </div>
                 <p className="text-purple-200 text-sm">Build a transaction to close empty accounts and recover SOL rent</p>
                 
-                {referralAccount && (
-                  <div className="bg-green-900/30 p-3 rounded-lg border border-green-500/50">
-                    <p className="text-green-200 text-sm font-semibold">
-                      ✅ Fee Flow: User claims {feePercentage}% → <strong>100%</strong> goes to your PDA: <code className="text-green-400">{referralAccount.referralPda.substring(0, 12)}...</code>
-                    </p>
-                    <p className="text-green-200 text-xs mt-1">
-                      When you claim from PDA: {developerReceives}% to your wallet, {platformReceives}% to platform
-                    </p>
-                  </div>
-                )}
-
-                {/* Code Example */}
-                <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-purple-300 text-sm font-semibold">Code Example</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(`// Prepare transaction for closing empty accounts
-const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    walletAddress: walletAddress,
-    selectedAccounts: ['account1', 'account2'],
-    donationPercentage: ${feePercentage || '10'},
-    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
-  }),
-});
-const prepareData = await prepareResponse.json();
-
-// prepareData contains: { transaction, totalSolReclaimed, feeAmount, netAmount }`, 'prepare-js')}
-                      className="text-purple-300 hover:text-white"
-                    >
-                      {copiedId === 'prepare-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <pre className="text-green-400 text-xs overflow-x-auto">
-{`// Prepare transaction for closing empty accounts
-const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    walletAddress: walletAddress,
-    selectedAccounts: ['account1', 'account2'],
-    donationPercentage: ${feePercentage || '10'},
-    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
-  }),
-});
-const prepareData = await prepareResponse.json();
-
-// prepareData contains: { transaction, totalSolReclaimed, feeAmount, netAmount }`}
-                  </pre>
-                  <p className="text-purple-300 text-xs mt-2">
-                    💰 <strong>feeReceiverAddress</strong>: Your PDA where fees are sent (${referralAccount ? 'auto-filled with your PDA' : 'shown in purple box above'})
-                  </p>
-                </div>
-
                 {/* Response Example */}
                 <div className="bg-slate-900/50 p-4 rounded-lg">
                   <p className="text-purple-300 text-sm mb-2">Response:</p>
@@ -737,52 +649,6 @@ const prepareData = await prepareResponse.json();
                   <p className="text-orange-200 text-sm">
                     <strong>Required:</strong> You MUST call this endpoint after the transaction is confirmed. This updates global statistics (TOTAL SOL RECOVERED, TOTAL ACCOUNTS CLOSED) and records your referral earnings.
                   </p>
-                </div>
-
-                {/* Code Example */}
-                <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-purple-300 text-sm font-semibold">Code Example</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(`// Record transaction success (updates stats and earnings)
-await fetch('${baseUrl}/api/sol-refund/record-success', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    signature,
-    walletAddress: walletAddress,
-    selectedAccounts: ['account1', 'account2'],
-    accountsClosed: 2,
-    solRecovered: 0.00406,
-    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}',
-    donationPercentage: ${feePercentage || '10'},
-    ...prepareData
-  }),
-});`, 'record-js')}
-                      className="text-purple-300 hover:text-white"
-                    >
-                      {copiedId === 'record-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <pre className="text-green-400 text-xs overflow-x-auto">
-{`// Record transaction success (updates stats and earnings)
-await fetch('${baseUrl}/api/sol-refund/record-success', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    signature,
-    walletAddress: walletAddress,
-    selectedAccounts: ['account1', 'account2'],
-    accountsClosed: 2,
-    solRecovered: 0.00406,
-    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}',
-    donationPercentage: ${feePercentage || '10'},
-    ...prepareData
-  }),
-});`}
-                  </pre>
                 </div>
 
                 {/* Response Example */}
