@@ -265,7 +265,19 @@ export default function ApiDocs() {
                     <p className="text-sm text-purple-200">All endpoints return JSON with <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs">success</code> field</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white mb-1">Your PDA:</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-semibold text-white">Your PDA:</p>
+                      {referralAccount?.referralPda && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(referralAccount.referralPda, 'pda-address')}
+                          className="text-purple-300 hover:text-white h-6 px-2"
+                        >
+                          {copiedId === 'pda-address' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        </Button>
+                      )}
+                    </div>
                     <code className="block bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs break-all">{referralAccount?.referralPda || 'Create account to see your PDA'}</code>
                   </div>
                 </div>
