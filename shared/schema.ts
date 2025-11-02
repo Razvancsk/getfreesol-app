@@ -605,13 +605,13 @@ export const referralFeeTransactions = pgTable("referral_fee_transactions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Claims from token accounts
+// Claims from token accounts (and native SOL)
 export const referralClaims = pgTable("referral_claims", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   referralAccountId: varchar("referral_account_id").notNull(),
-  tokenAccountId: varchar("token_account_id").notNull(),
+  tokenAccountId: varchar("token_account_id"), // Nullable for native SOL claims
   claimSignature: text("claim_signature").notNull().unique(),
-  tokenMint: text("token_mint").notNull(),
+  tokenMint: text("token_mint"), // Nullable for native SOL
   amountClaimed: decimal("amount_claimed", { precision: 18, scale: 9 }).notNull(),
   developerReceived: decimal("developer_received", { precision: 18, scale: 9 }).notNull(), // 80%
   platformReceived: decimal("platform_received", { precision: 18, scale: 9 }).notNull(), // 20%
