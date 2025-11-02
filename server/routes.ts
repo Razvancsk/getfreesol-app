@@ -6883,8 +6883,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const feeWalletKeypair = Keypair.fromSecretKey(secretKey);
       
       // Create and sign transfer transaction
-      const transaction = new Transaction();
       const recipientPubkey = new PublicKey(walletAddress);
+      
+      // Get recent blockhash first
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      
+      // Create transaction with proper setup
+      const transaction = new Transaction({
+        recentBlockhash: blockhash,
+        feePayer: feeWalletKeypair.publicKey
+      });
       
       transaction.add(
         SystemProgram.transfer({
@@ -6893,11 +6901,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lamports: transferAmount,
         })
       );
-      
-      // Get recent blockhash
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = feeWalletKeypair.publicKey;
       
       // Sign transaction with platform-managed key
       transaction.sign(feeWalletKeypair);
