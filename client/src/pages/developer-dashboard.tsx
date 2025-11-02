@@ -108,20 +108,20 @@ export default function DeveloperDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 py-12 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
         {!accountExists ? (
           // Create Account Form
-          <Card className="border-border bg-card">
+          <Card className="bg-black/50 border-purple-500/30 backdrop-blur max-w-md mx-auto">
             <CardHeader>
-              <CardTitle className="text-2xl">Create Ultra Referral Account</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white text-2xl">Create Ultra Referral Account</CardTitle>
+              <CardDescription className="text-purple-200">
                 Use your project name
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="projectName">Name</Label>
+                <Label htmlFor="projectName" className="text-white">Name</Label>
                 <Input
                   id="projectName"
                   data-testid="input-project-name"
@@ -129,12 +129,13 @@ export default function DeveloperDashboard() {
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   maxLength={50}
+                  className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
                 />
               </div>
 
               <Button
                 data-testid="button-create-account"
-                className="w-full"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => createAccount.mutate()}
                 disabled={!projectName.trim() || createAccount.isPending}
               >
