@@ -6935,55 +6935,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const secretKey = decryptPrivateKey(referralAccount.encryptedPrivateKey);
       const feeWalletKeypair = Keypair.fromSecretKey(secretKey);
       
-      // Create and sign transfer transaction with 2 transfers
+      // Setup pubkeys
       const developerPubkey = new PublicKey(walletAddress);
       const platformPubkey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
       
-      // Get recent blockhash first
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      
-      // Create transaction and set properties
-      const transaction = new Transaction();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = feeWalletKeypair.publicKey;
-      
-      // Add transfer to developer (80%)
-      transaction.add(
-        SystemProgram.transfer({
-          fromPubkey: feeWalletKeypair.publicKey,
-          toPubkey: developerPubkey,
-          lamports: developerAmount,
-        })
-      );
-      
-      // Add transfer to platform (20%)
-      transaction.add(
-        SystemProgram.transfer({
-          fromPubkey: feeWalletKeypair.publicKey,
-          toPubkey: platformPubkey,
-          lamports: platformAmount,
-        })
-      );
-      
-      // Sign transaction with platform-managed key
-      transaction.sign(feeWalletKeypair);
-      
-      // Send transaction
       console.log(`📤 Sending claim transaction for ${walletAddress}...`);
       console.log(`   Developer (80%): ${(developerAmount / 1e9).toFixed(9)} SOL`);
       console.log(`   Platform (20%): ${(platformAmount / 1e9).toFixed(9)} SOL`);
-      const signature = await connection.sendRawTransaction(transaction.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'finalized'
-      });
       
-      // Wait for finalized confirmation (ensures Solscan can find it)
-      console.log(`⏳ Waiting for finalized confirmation...`);
+      // Retry logic for blockhash expiration
+      let signature = '';
+      let blockhash = '';
+      let lastValidBlockHeight = 0;
+      const maxRetries = 3;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Get FRESH blockhash right before sending
+          console.log(`🔄 Attempt ${attempt}/${maxRetries}: Fetching fresh blockhash...`);
+          const blockhashData = await connection.getLatestBlockhash('confirmed');
+          blockhash = blockhashData.blockhash;
+          lastValidBlockHeight = blockhashData.lastValidBlockHeight;
+          
+          // Create transaction with fresh blockhash
+          const transaction = new Transaction();
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = feeWalletKeypair.publicKey;
+          
+          // Add transfer to developer (80%)
+          transaction.add(
+            SystemProgram.transfer({
+              fromPubkey: feeWalletKeypair.publicKey,
+              toPubkey: developerPubkey,
+              lamports: developerAmount,
+            })
+          );
+          
+          // Add transfer to platform (20%)
+          transaction.add(
+            SystemProgram.transfer({
+              fromPubkey: feeWalletKeypair.publicKey,
+              toPubkey: platformPubkey,
+              lamports: platformAmount,
+            })
+          );
+          
+          // Sign transaction with platform-managed key
+          transaction.sign(feeWalletKeypair);
+          
+          // Send transaction immediately
+          signature = await connection.sendRawTransaction(transaction.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+            maxRetries: 3
+          });
+          
+          console.log(`✅ Transaction sent! Signature: ${signature}`);
+          break; // Success, exit retry loop
+          
+        } catch (sendError: any) {
+          console.error(`❌ Attempt ${attempt} failed:`, sendError.message);
+          
+          if (attempt === maxRetries) {
+            throw sendError; // Throw on final attempt
+          }
+          
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      // Wait for confirmation
+      console.log(`⏳ Waiting for confirmation...`);
       await connection.confirmTransaction({
         signature,
         blockhash,
         lastValidBlockHeight
-      }, 'finalized');
+      }, 'confirmed');
       
       console.log(`✅ Claim successful! Signature: ${signature}`);
       
