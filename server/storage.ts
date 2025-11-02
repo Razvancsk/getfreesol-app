@@ -39,6 +39,8 @@ import {
   type InsertFeeClaim,
   type ProjectAccount,
   type InsertProjectAccount,
+  type AccountCreationIntent,
+  type InsertAccountCreationIntent,
   type ReferralAccount,
   type InsertReferralAccount,
   type ReferralTokenAccount,
@@ -67,6 +69,7 @@ import {
   feeTransactions,
   feeClaims,
   projectAccount,
+  accountCreationIntents,
   referralAccounts,
   referralTokenAccounts,
   referralFeeTransactions,
@@ -190,10 +193,18 @@ export interface IStorage {
   getProjectAccount(): Promise<ProjectAccount | undefined>;
   createProjectAccount(project: InsertProjectAccount): Promise<ProjectAccount>;
   
+  // Account Creation Intents
+  createAccountCreationIntent(intent: InsertAccountCreationIntent): Promise<AccountCreationIntent>;
+  getAccountCreationIntent(id: string): Promise<AccountCreationIntent | undefined>;
+  getPendingIntentByWallet(developerWallet: string): Promise<AccountCreationIntent | undefined>;
+  updateIntentStatus(id: string, status: string): Promise<void>;
+  cleanupExpiredIntents(): Promise<void>;
+  
   getReferralAccountByWallet(developerWallet: string): Promise<ReferralAccount | undefined>;
   getReferralAccountById(id: string): Promise<ReferralAccount | undefined>;
   createReferralAccount(account: InsertReferralAccount): Promise<ReferralAccount>;
   updateReferralAccountFee(id: string, feePercentage: string): Promise<void>;
+  updateReferralAccountRent(id: string, rentSignature: string, rentAmount: string): Promise<void>;
   
   getTokenAccountsByReferralId(referralAccountId: string): Promise<ReferralTokenAccount[]>;
   getTokenAccountByMint(referralAccountId: string, tokenMint: string): Promise<ReferralTokenAccount | undefined>;
@@ -1056,6 +1067,57 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  // Account Creation Intents Implementation
+  async createAccountCreationIntent(intent: InsertAccountCreationIntent): Promise<AccountCreationIntent> {
+    const [created] = await db
+      .insert(accountCreationIntents)
+      .values(intent)
+      .returning();
+    return created;
+  }
+
+  async getAccountCreationIntent(id: string): Promise<AccountCreationIntent | undefined> {
+    const [intent] = await db
+      .select()
+      .from(accountCreationIntents)
+      .where(eq(accountCreationIntents.id, id));
+    return intent || undefined;
+  }
+
+  async getPendingIntentByWallet(developerWallet: string): Promise<AccountCreationIntent | undefined> {
+    const [intent] = await db
+      .select()
+      .from(accountCreationIntents)
+      .where(
+        and(
+          eq(accountCreationIntents.developerWallet, developerWallet),
+          eq(accountCreationIntents.status, 'pending')
+        )
+      )
+      .orderBy(desc(accountCreationIntents.createdAt))
+      .limit(1);
+    return intent || undefined;
+  }
+
+  async updateIntentStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(accountCreationIntents)
+      .set({ status })
+      .where(eq(accountCreationIntents.id, id));
+  }
+
+  async cleanupExpiredIntents(): Promise<void> {
+    await db
+      .update(accountCreationIntents)
+      .set({ status: 'expired' })
+      .where(
+        and(
+          eq(accountCreationIntents.status, 'pending'),
+          sql`${accountCreationIntents.expiresAt} < NOW()`
+        )
+      );
+  }
+
   async getReferralAccountByWallet(developerWallet: string): Promise<ReferralAccount | undefined> {
     const [account] = await db
       .select()
@@ -1084,6 +1146,19 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(referralAccounts)
       .set({ feePercentage, updatedAt: new Date() })
+      .where(eq(referralAccounts.id, id));
+  }
+
+  async updateReferralAccountRent(id: string, rentSignature: string, rentAmount: string): Promise<void> {
+    await db
+      .update(referralAccounts)
+      .set({ 
+        rentPaid: true,
+        rentSignature, 
+        rentAmount, 
+        rentPaidAt: new Date(),
+        updatedAt: new Date() 
+      })
       .where(eq(referralAccounts.id, id));
   }
 

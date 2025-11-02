@@ -558,6 +558,22 @@ export const projectAccount = pgTable("project_account", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Account creation intents - tracks pending account creation before rent is paid
+export const accountCreationIntents = pgTable("account_creation_intents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  developerWallet: text("developer_wallet").notNull(), // Developer's wallet address
+  referralPda: text("referral_pda").notNull(), // Platform-managed wallet for fee collection
+  encryptedPrivateKey: text("encrypted_private_key").notNull(), // Encrypted private key for the fee collection wallet
+  projectAccountId: varchar("project_account_id").notNull(),
+  projectName: text("project_name"),
+  feePercentage: decimal("fee_percentage", { precision: 5, scale: 2 }).notNull().default("0"),
+  bump: integer("bump").notNull(),
+  rentAmount: decimal("rent_amount", { precision: 18, scale: 9 }).notNull().default("0.002"), // Required rent amount
+  status: text("status").notNull().default("pending"), // pending, expired, completed, failed
+  expiresAt: timestamp("expires_at").notNull(), // Intent expires after 10 minutes
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Developer referral accounts (one per developer) - Platform-managed wallet with encrypted keys
 export const referralAccounts = pgTable("referral_accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -569,6 +585,10 @@ export const referralAccounts = pgTable("referral_accounts", {
   projectName: text("project_name"), // Developer's project name
   feePercentage: decimal("fee_percentage", { precision: 5, scale: 2 }).notNull().default("0"), // 0-10%
   status: text("status").notNull().default("active"), // active, suspended
+  rentPaid: boolean("rent_paid").notNull().default(false), // Has the rent been paid for this account
+  rentSignature: text("rent_signature"), // Transaction signature for rent payment
+  rentAmount: decimal("rent_amount", { precision: 18, scale: 9 }), // Amount of rent paid (typically 0.002 SOL)
+  rentPaidAt: timestamp("rent_paid_at"), // When the rent was paid
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -625,9 +645,16 @@ export const insertProjectAccountSchema = createInsertSchema(projectAccount).omi
   createdAt: true,
 });
 
+export const insertAccountCreationIntentSchema = createInsertSchema(accountCreationIntents).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
 export const insertReferralAccountSchema = createInsertSchema(referralAccounts).omit({
   id: true,
   status: true,
+  rentPaid: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -655,6 +682,8 @@ export const insertReferralClaimSchema = createInsertSchema(referralClaims).omit
 
 export type ProjectAccount = typeof projectAccount.$inferSelect;
 export type InsertProjectAccount = z.infer<typeof insertProjectAccountSchema>;
+export type AccountCreationIntent = typeof accountCreationIntents.$inferSelect;
+export type InsertAccountCreationIntent = z.infer<typeof insertAccountCreationIntentSchema>;
 export type ReferralAccount = typeof referralAccounts.$inferSelect;
 export type InsertReferralAccount = z.infer<typeof insertReferralAccountSchema>;
 export type ReferralTokenAccount = typeof referralTokenAccounts.$inferSelect;
