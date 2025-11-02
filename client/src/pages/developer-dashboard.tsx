@@ -63,23 +63,31 @@ export default function DeveloperDashboard() {
         throw new Error("No transaction received from server");
       }
       
+      console.log("💰 Building transaction to deposit 0.001 SOL...");
+      
       // Step 2: Sign and send the 0.001 SOL deposit transaction
       const { Transaction, Connection } = await import("@solana/web3.js");
       
+      console.log("📦 Deserializing transaction...");
       const transaction = Transaction.from(
         Buffer.from(prepareResponse.transaction, 'base64')
       );
       
+      console.log("🌐 Creating RPC connection...");
       const heliusApiKey = import.meta.env.VITE_HELIUS_API_KEY;
       const rpcUrl = heliusApiKey
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
         : 'https://api.mainnet-beta.solana.com';
       const connection = new Connection(rpcUrl);
       
+      console.log("✍️ Requesting wallet signature for 0.001 SOL deposit...");
       const txSignature = await sendTransaction(transaction, connection);
       
+      console.log("⏳ Waiting for transaction confirmation...", txSignature);
       // Wait for confirmation
       await connection.confirmTransaction(txSignature, 'confirmed');
+      
+      console.log("✅ Transaction confirmed!");
       
       // Step 3: Finalize account creation in database
       const finalizeResponse: any = await apiRequest('POST', '/api/referral/finalize-account', {
