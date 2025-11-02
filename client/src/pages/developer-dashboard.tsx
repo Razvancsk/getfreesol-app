@@ -43,7 +43,7 @@ export default function DeveloperDashboard() {
   // Create account mutation
   const createAccount = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !projectName.trim()) {
+      if (!publicKey || !signMessage || !sendTransaction || !projectName.trim()) {
         throw new Error("Missing wallet or project name");
       }
 
@@ -51,73 +51,54 @@ export default function DeveloperDashboard() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      const response = await apiRequest('POST', '/api/referral/create-account', {
+      // Step 1: Get the transaction from backend
+      const prepareResponse: any = await apiRequest('POST', '/api/referral/create-account', {
         walletAddress: publicKey.toBase58(),
         signature: bs58.encode(signature),
         message,
         projectName: projectName.trim(),
       });
       
-      return response;
-    },
-    onSuccess: async (data: any) => {
-      console.log("Create account response:", data);
-      console.log("Has transaction?", !!data.transaction);
-      console.log("Has sendTransaction?", !!sendTransaction);
-      
-      // If transaction is returned, we need to sign and send it
-      if (data.transaction && sendTransaction) {
-        try {
-          toast({
-            title: "Account Created",
-            description: "Please sign the transaction to fund your referral wallet with 0.001 SOL",
-          });
-          
-          // Import what we need
-          const { Transaction, Connection } = await import("@solana/web3.js");
-          
-          // Deserialize transaction
-          const transaction = Transaction.from(
-            Buffer.from(data.transaction, 'base64')
-          );
-          
-          // Create connection
-          const heliusApiKey = import.meta.env.VITE_HELIUS_API_KEY;
-          const rpcUrl = heliusApiKey
-            ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-            : 'https://api.mainnet-beta.solana.com';
-          const connection = new Connection(rpcUrl);
-          
-          // Send transaction (wallet adapter handles signing)
-          const txSignature = await sendTransaction(transaction, connection);
-          
-          // Wait for confirmation
-          await connection.confirmTransaction(txSignature, 'confirmed');
-          
-          queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
-          toast({
-            title: "Success!",
-            description: `Referral account created and funded with 0.001 SOL`,
-          });
-          setProjectName("");
-        } catch (txError: any) {
-          console.error("Transaction error:", txError);
-          toast({
-            title: "Transaction Failed",
-            description: "Account created but failed to fund. Please contact support.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        // Old flow (no transaction)
-        console.log("No transaction to process, account created without funding");
-        queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
-        toast({
-          title: "Success!",
-          description: `Referral account created for "${projectName.trim()}"`,
-        });
-        setProjectName("");
+      if (!prepareResponse.transaction) {
+        throw new Error("No transaction received from server");
       }
+      
+      // Step 2: Sign and send the transaction
+      const { Transaction, Connection } = await import("@solana/web3.js");
+      
+      const transaction = Transaction.from(
+        Buffer.from(prepareResponse.transaction, 'base64')
+      );
+      
+      const heliusApiKey = import.meta.env.VITE_HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl);
+      
+      const txSignature = await sendTransaction(transaction, connection);
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(txSignature, 'confirmed');
+      
+      // Step 3: Finalize account creation in database
+      const finalizeResponse: any = await apiRequest('POST', '/api/referral/finalize-account', {
+        walletAddress: publicKey.toBase58(),
+        referralPda: prepareResponse.referralPda,
+        encryptedPrivateKey: prepareResponse.encryptedPrivateKey,
+        projectName: prepareResponse.projectName,
+        transactionSignature: txSignature,
+      });
+      
+      return finalizeResponse;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
+      toast({
+        title: "Success!",
+        description: `Referral account created and funded with 0.001 SOL`,
+      });
+      setProjectName("");
     },
     onError: (error: Error) => {
       toast({

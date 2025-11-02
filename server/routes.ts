@@ -6644,7 +6644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PDA-based Referral System (Jupiter-style)
   // ============================================================================
   
-  // Create referral account (PDA-based, no keypairs)
+  // Step 1: Prepare referral account creation (generate keypair and return transaction)
   app.post("/api/referral/create-account", async (req, res) => {
     try {
       const { walletAddress, signature, message, projectName } = req.body;
@@ -6684,19 +6684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { generateReferralKeypair } = await import('./pdaService.js');
       const { publicKey, encryptedPrivateKey } = generateReferralKeypair();
       
-      // Create referral account
-      const account = await storage.createReferralAccount({
-        projectAccountId: project.id,
-        developerWallet: walletAddress,
-        referralPda: publicKey, // Now a regular wallet address, not a PDA
-        encryptedPrivateKey, // Store encrypted private key
-        bump: 0, // No longer used, but kept for schema compatibility
-        projectName: projectName || 'Unnamed Project',
-        feePercentage: '0' // Can be set later by admin
-      });
-      
-      console.log(`✅ Created referral account for ${walletAddress}`);
-      console.log(`   Referral Wallet: ${publicKey}`);
+      console.log(`🔑 Generated referral wallet for ${walletAddress}: ${publicKey}`);
       
       // Build transaction to fund the new referral wallet with 0.001 SOL
       const heliusApiKey = process.env.HELIUS_API_KEY;
@@ -6727,11 +6715,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verifySignatures: false
       }).toString('base64');
       
-      console.log('📤 Sending response with transaction:', {
-        hasTransaction: !!serializedTransaction,
-        transactionLength: serializedTransaction.length,
-        accountId: account.id
+      console.log('📤 Sending transaction for user to sign (account will be created after confirmation)');
+      
+      res.json({
+        success: true,
+        transaction: serializedTransaction,
+        referralPda: publicKey,
+        encryptedPrivateKey, // Send this back so frontend can pass it to finalize endpoint
+        projectName: projectName || 'Unnamed Project',
+        message: 'Sign the transaction to deposit 0.001 SOL and create your referral account'
       });
+    } catch (error: any) {
+      console.error('Prepare referral account error:', error);
+      res.status(500).json({ 
+        error: 'Failed to prepare referral account', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Step 2: Finalize referral account creation (after transaction is confirmed)
+  app.post("/api/referral/finalize-account", async (req, res) => {
+    try {
+      const { walletAddress, referralPda, encryptedPrivateKey, projectName, transactionSignature } = req.body;
+      
+      if (!walletAddress || !referralPda || !encryptedPrivateKey || !transactionSignature) {
+        return res.status(400).json({ 
+          error: 'Missing required fields' 
+        });
+      }
+      
+      // Get project account
+      const project = await storage.getProjectAccount();
+      if (!project) {
+        return res.status(500).json({ error: 'Platform not initialized' });
+      }
+      
+      // Create referral account in database
+      const account = await storage.createReferralAccount({
+        projectAccountId: project.id,
+        developerWallet: walletAddress,
+        referralPda,
+        encryptedPrivateKey,
+        bump: 0,
+        projectName: projectName || 'Unnamed Project',
+        feePercentage: '0'
+      });
+      
+      console.log(`✅ Finalized referral account for ${walletAddress}`);
+      console.log(`   Referral Wallet: ${referralPda}`);
+      console.log(`   Transaction: ${transactionSignature}`);
       
       res.json({
         success: true,
@@ -6742,14 +6775,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           feePercentage: account.feePercentage,
           status: account.status,
           createdAt: account.createdAt
-        },
-        transaction: serializedTransaction,
-        message: 'Account created. Please sign the transaction to fund your referral wallet with 0.001 SOL.'
+        }
       });
     } catch (error: any) {
-      console.error('Create referral account error:', error);
+      console.error('Finalize referral account error:', error);
       res.status(500).json({ 
-        error: 'Failed to create referral account', 
+        error: 'Failed to finalize referral account', 
         details: error.message 
       });
     }
