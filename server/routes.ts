@@ -6942,6 +6942,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint: Migrate existing referral accounts to add encrypted keypairs
+  app.post("/api/referral/admin/migrate-accounts", async (req, res) => {
+    try {
+      const { adminWallet, signature, message } = req.body;
+      
+      // Verify admin wallet
+      const PLATFORM_ADMIN = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      if (adminWallet !== PLATFORM_ADMIN) {
+        return res.status(403).json({ error: 'Unauthorized - admin only' });
+      }
+      
+      // Verify signature
+      if (!verifySignature(message, signature, adminWallet)) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      // Get all referral accounts without encrypted keys
+      const { db } = await import('./db.js');
+      const { referralAccounts } = await import('../shared/schema.js');
+      const { sql } = await import('drizzle-orm');
+      
+      const accountsToMigrate = await db.select()
+        .from(referralAccounts)
+        .where(sql`${referralAccounts.encryptedPrivateKey} IS NULL`);
+      
+      if (accountsToMigrate.length === 0) {
+        return res.json({
+          success: true,
+          message: 'No accounts need migration',
+          migrated: 0
+        });
+      }
+      
+      console.log(`🔄 Migrating ${accountsToMigrate.length} referral accounts...`);
+      
+      const { generateReferralKeypair } = await import('./pdaService.js');
+      const { eq } = await import('drizzle-orm');
+      
+      let migratedCount = 0;
+      const results = [];
+      
+      for (const account of accountsToMigrate) {
+        try {
+          // Generate new keypair and encrypt
+          const { publicKey, encryptedPrivateKey } = generateReferralKeypair();
+          
+          // Update the account
+          await db.update(referralAccounts)
+            .set({ 
+              referralPda: publicKey, // Update to new wallet address
+              encryptedPrivateKey 
+            })
+            .where(eq(referralAccounts.id, account.id));
+          
+          migratedCount++;
+          results.push({
+            developerId: account.id,
+            oldAddress: account.referralPda,
+            newAddress: publicKey,
+            projectName: account.projectName
+          });
+          
+          console.log(`  ✅ Migrated ${account.projectName || 'Unknown'}: ${publicKey}`);
+        } catch (error: any) {
+          console.error(`  ❌ Failed to migrate account ${account.id}:`, error.message);
+          results.push({
+            developerId: account.id,
+            error: error.message,
+            projectName: account.projectName
+          });
+        }
+      }
+      
+      console.log(`✅ Migration complete: ${migratedCount}/${accountsToMigrate.length} accounts`);
+      
+      res.json({
+        success: true,
+        migrated: migratedCount,
+        total: accountsToMigrate.length,
+        results
+      });
+    } catch (error: any) {
+      console.error('Migration error:', error);
+      res.status(500).json({ 
+        error: 'Migration failed', 
+        details: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
