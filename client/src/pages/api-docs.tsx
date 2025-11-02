@@ -463,8 +463,7 @@ export default function ApiDocs() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-purple-300 text-sm font-semibold">recoverSol.ts</p>
+                <div className="flex items-center justify-end mb-2">
                   <Button
                     variant="ghost"
                     size="sm"
