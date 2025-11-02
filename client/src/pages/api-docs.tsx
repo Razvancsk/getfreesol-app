@@ -214,6 +214,35 @@ export default function ApiDocs() {
               </CardContent>
             </Card>
 
+          {/* Balance Card - Only show for developers */}
+          {developer && (
+            <Card className="bg-gradient-to-br from-green-600/60 to-emerald-600/60 border-green-500 backdrop-blur">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-green-200 mb-1">Your Earnings</p>
+                    <p className="text-2xl font-bold text-white" data-testid="text-pda-balance">
+                      {referralAccount?.pdaBalance?.toFixed(6) || '0.000000'} SOL
+                    </p>
+                    <p className="text-xs text-green-200 mt-1">{developer.projectName}</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Claim functionality will be available soon",
+                      });
+                    }}
+                    className="bg-green-700 hover:bg-green-800 text-white"
+                    data-testid="button-claim-earnings"
+                  >
+                    Claim
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Configuration */}
           <Card className="bg-gradient-to-br from-purple-600/60 to-pink-600/60 border-purple-500 backdrop-blur">
             <CardHeader>
@@ -265,31 +294,8 @@ export default function ApiDocs() {
                   </Tooltip>
                 </div>
                 {developer ? (
-                  <div className="space-y-2">
-                    <div className="p-2 bg-gray-100 dark:bg-gray-200 rounded text-sm font-mono break-all text-gray-800">
-                      {feeWallet}
-                    </div>
-                    {/* Balance and Claim Section */}
-                    <div className="flex items-center justify-between p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
-                      <div>
-                        <p className="text-xs text-green-200 mb-1">Balance</p>
-                        <p className="text-xl font-bold text-green-100" data-testid="text-pda-balance">
-                          {referralAccount?.pdaBalance?.toFixed(6) || '0.000000'} SOL
-                        </p>
-                      </div>
-                      <Button
-                        onClick={() => {
-                          toast({
-                            title: "Coming Soon",
-                            description: "Claim functionality will be available soon",
-                          });
-                        }}
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                        data-testid="button-claim-earnings"
-                      >
-                        Claim
-                      </Button>
-                    </div>
+                  <div className="p-2 bg-gray-100 dark:bg-gray-200 rounded text-sm font-mono break-all text-gray-800">
+                    {feeWallet}
                   </div>
                 ) : (
                   <Input
