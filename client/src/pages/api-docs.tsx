@@ -183,7 +183,6 @@ export default function ApiDocs() {
                 <Code className="h-8 w-8" />
                 API Documentation
               </h1>
-              <p className="text-purple-200">Build apps that recover SOL rent and burn tokens</p>
             </div>
           </div>
         </div>
