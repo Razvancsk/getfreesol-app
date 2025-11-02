@@ -513,10 +513,12 @@ Content-Type: application/json
 {
   "walletAddress": "YOUR_WALLET_ADDRESS",
   "selectedAccounts": ["account1", "account2"],
-  "donationPercentage": ${feePercentage || '10'},
-  "referralCode": "${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}"
+  "donationPercentage": ${feePercentage || '10'}
 }`}
                   </pre>
+                  <p className="text-purple-300 text-xs mt-2">
+                    Note: All parameters above are required. No referral code needed!
+                  </p>
                 </div>
                 <div className="bg-slate-900/50 p-4 rounded-lg">
                   <p className="text-purple-300 text-sm mb-2">Example Response:</p>
@@ -526,18 +528,10 @@ Content-Type: application/json
   "message": "Prepared transaction to close 8 accounts",
   "totalSolReclaimed": 0.0162,
   "feeAmount": 0.00162,
-  "netAmount": 0.01458,
-  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}"
+  "netAmount": 0.01458
 }`}
                   </pre>
                 </div>
-                {referralAccount && (
-                  <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30">
-                    <p className="text-blue-200 text-sm">
-                      ✅ Your Referral Code: <strong>{referralAccount.referralCode}</strong> - Include this in every request to earn {developerReceives}% of fees!
-                    </p>
-                  </div>
-                )}
               </div>
 
               <Separator className="bg-purple-600/30" />
@@ -576,7 +570,6 @@ Content-Type: application/json
   "solRecovered": 0.0162,
   "netAmount": 0.01458,
   "feeAmount": 0.00162,
-  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}",
   "platformFeeAmount": 0.000324,
   "referralFeeAmount": 0.001296
 }`}
@@ -696,18 +689,10 @@ Content-Type: application/json
     { "mint": "mint1", "tokenAccount": "account1" },
     { "mint": "mint2", "tokenAccount": "account2" }
   ],
-  "donationPercentage": ${feePercentage || '10'},
-  "referralCode": "${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}"
+  "donationPercentage": ${feePercentage || '10'}
 }`}
                   </pre>
                 </div>
-                {referralAccount && (
-                  <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30">
-                    <p className="text-blue-200 text-sm">
-                      ✅ Include your referral code <strong>{referralAccount.referralCode}</strong> to earn {developerReceives}% of fees!
-                    </p>
-                  </div>
-                )}
               </div>
 
               <Separator className="bg-purple-600/30" />
@@ -744,8 +729,7 @@ Content-Type: application/json
   "tokensBurned": 5,
   "solRecovered": 0.01,
   "netAmount": 0.009,
-  "feeAmount": 0.001,
-  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}"
+  "feeAmount": 0.001
 }`}
                   </pre>
                 </div>
@@ -808,18 +792,10 @@ Content-Type: application/json
     { "mint": "nft_mint_1", "isCompressed": false },
     { "mint": "nft_mint_2", "isCompressed": true }
   ],
-  "donationPercentage": ${feePercentage || '10'},
-  "referralCode": "${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}"
+  "donationPercentage": ${feePercentage || '10'}
 }`}
                   </pre>
                 </div>
-                {referralAccount && (
-                  <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/30">
-                    <p className="text-blue-200 text-sm">
-                      ✅ Include your referral code <strong>{referralAccount.referralCode}</strong> to earn {developerReceives}% of fees!
-                    </p>
-                  </div>
-                )}
               </div>
 
               <Separator className="bg-purple-600/30" />
@@ -856,8 +832,7 @@ Content-Type: application/json
   "nftsBurned": 3,
   "solRecovered": 0.015,
   "netAmount": 0.0135,
-  "feeAmount": 0.0015,
-  "referralCodeUsed": "${referralAccount?.referralCode || 'YOUR_CODE'}"
+  "feeAmount": 0.0015
 }`}
                   </pre>
                 </div>
@@ -900,8 +875,7 @@ const recoverSOL = async (walletAddress, wallet) => {
       body: JSON.stringify({
         walletAddress,
         selectedAccounts: scanData.accounts.map(a => a.accountAddress),
-        donationPercentage: ${feePercentage || '10'},
-        referralCode: '${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}'
+        donationPercentage: ${feePercentage || '10'}
       })
     }
   );
@@ -926,13 +900,12 @@ const recoverSOL = async (walletAddress, wallet) => {
       solRecovered: totalSolReclaimed,
       netAmount,
       feeAmount,
-      referralCodeUsed: '${referralAccount?.referralCode || 'YOUR_REFERRAL_CODE'}',
       platformFeeAmount,
       referralFeeAmount
     })
   });
   
-  console.log('Success! You earned ' + referralFeeAmount + ' SOL in fees!');
+  console.log('Success! SOL recovered and sent to user!');
   // Global stats (TOTAL SOL RECOVERED, TOTAL ACCOUNTS CLOSED) now updated!
 };`}
                 </pre>
