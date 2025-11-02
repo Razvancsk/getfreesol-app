@@ -268,7 +268,7 @@ export default function ApiDocs() {
                       <Info className="h-4 w-4 text-purple-300" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>The Solana account that will receive fees from user transactions</p>
+                      <p>The Solana account with WSOL ATA that will receive fees from user transactions</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -283,7 +283,7 @@ export default function ApiDocs() {
                 />
                 {developer && (
                   <p className="text-xs text-green-200">
-                    Using your managed fee account (you don't need the private key!)
+                    Using your managed WSOL fee collection account (you don't need the private key!)
                   </p>
                 )}
               </div>
@@ -300,7 +300,7 @@ export default function ApiDocs() {
                       <Info className="h-4 w-4 text-purple-300" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Total fee percentage you'll charge users. Platform takes 20% of this.</p>
+                      <p>Total fee percentage you'll charge users in WSOL. Platform takes 20% of this.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>

@@ -83,14 +83,11 @@ export default function DeveloperDashboard() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest("/api/developer/set-fee", {
-        method: "POST",
-        body: JSON.stringify({
-          walletAddress: publicKey.toBase58(),
-          signature: bs58.encode(signature),
-          message,
-          feePercentage: newFee,
-        }),
+      return await apiRequest("POST", "/api/developer/set-fee", {
+        walletAddress: publicKey.toBase58(),
+        signature: bs58.encode(signature),
+        message,
+        feePercentage: newFee,
       });
     },
     onSuccess: () => {
@@ -120,20 +117,17 @@ export default function DeveloperDashboard() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest("/api/developer/claim", {
-        method: "POST",
-        body: JSON.stringify({
-          walletAddress: publicKey.toBase58(),
-          signature: bs58.encode(signature),
-          message,
-        }),
+      return await apiRequest("POST", "/api/developer/claim", {
+        walletAddress: publicKey.toBase58(),
+        signature: bs58.encode(signature),
+        message,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/developer/account", walletAddress] });
       toast({
         title: "Claim Successful!",
-        description: `You received ${(data.developerAmount / LAMPORTS_PER_SOL).toFixed(4)} SOL`,
+        description: `You received ${(data.developerAmount / LAMPORTS_PER_SOL).toFixed(4)} WSOL`,
       });
     },
     onError: (error: Error) => {
@@ -269,11 +263,46 @@ export default function DeveloperDashboard() {
                   </div>
                 </div>
 
+                {developer.wsolAtaAddress && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">WSOL Fee Collection Address</Label>
+                    <div className="flex items-center gap-2">
+                      <code
+                        data-testid="text-wsol-ata"
+                        className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all"
+                      >
+                        {developer.wsolAtaAddress}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        data-testid="button-copy-wsol-ata"
+                        onClick={() => copyToClipboard(developer.wsolAtaAddress)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        data-testid="button-view-wsol-explorer"
+                        onClick={() =>
+                          window.open(
+                            `https://solscan.io/account/${developer.wsolAtaAddress}`,
+                            "_blank"
+                          )
+                        }
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-sm text-muted-foreground">Unclaimed Balance</Label>
                     <p data-testid="text-unclaimed-balance" className="text-2xl font-bold">
-                      {(balance?.unclaimedLamports / LAMPORTS_PER_SOL || 0).toFixed(6)} SOL
+                      {(balance?.unclaimedLamports / LAMPORTS_PER_SOL || 0).toFixed(6)} WSOL
                     </p>
                     {balance?.unclaimedUsd > 0 && (
                       <p className="text-sm text-muted-foreground">
@@ -285,7 +314,7 @@ export default function DeveloperDashboard() {
                   <div className="space-y-1">
                     <Label className="text-sm text-muted-foreground">Total Claimed</Label>
                     <p data-testid="text-total-claimed" className="text-2xl font-bold">
-                      {(parseFloat(developer.totalClaimed || "0") / LAMPORTS_PER_SOL).toFixed(6)} SOL
+                      {(parseFloat(developer.totalClaimed || "0") / LAMPORTS_PER_SOL).toFixed(6)} WSOL
                     </p>
                   </div>
                 </div>
@@ -306,7 +335,7 @@ export default function DeveloperDashboard() {
                   )}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  You receive 80% of fees, platform keeps 20%
+                  You receive 80% of fees in WSOL, platform keeps 20%
                 </p>
               </CardContent>
             </Card>
