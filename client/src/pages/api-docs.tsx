@@ -218,26 +218,6 @@ export default function ApiDocs() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {developer && (
-                <div className="p-3 bg-green-500/20 border border-green-400/30 rounded-lg space-y-2">
-                  <p className="text-sm text-green-100 font-semibold">Developer Account Detected</p>
-                  <p className="text-xs text-green-200">
-                    Your fee collection settings are automatically loaded from your account. You can still edit them below to test different configurations.
-                  </p>
-                  <Link href="/developer">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 bg-green-500/10 border-green-400/50 text-green-100 hover:bg-green-500/20"
-                      data-testid="link-developer-dashboard"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Manage Account
-                    </Button>
-                  </Link>
-                </div>
-              )}
-
               {!developer && walletAddress && (
                 <div className="p-3 bg-blue-500/20 border border-blue-400/30 rounded-lg space-y-2">
                   <p className="text-sm text-blue-100 font-semibold">No Developer Account</p>
@@ -262,31 +242,34 @@ export default function ApiDocs() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Label htmlFor="fee-wallet" className="text-white font-semibold">
-                    Fee Collection Account
-                    {developer && <Badge className="ml-2 bg-green-500/20 text-green-100 border-green-400/30">Auto-loaded</Badge>}
+                    Referral PDA (Program Derived Address)
                   </Label>
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-4 w-4 text-purple-300" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>The Solana account with WSOL ATA that will receive fees from user transactions</p>
+                      <p>Use this PDA address in your integration to collect referral fees</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Input
-                  id="fee-wallet"
-                  type="text"
-                  placeholder="Your Solana fee collection address"
-                  value={feeWallet}
-                  onChange={(e) => setFeeWallet(e.target.value)}
-                  className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50 font-mono text-sm"
-                  data-testid="input-fee-wallet"
-                />
-                {developer && (
-                  <p className="text-xs text-green-200">
-                    Using your managed WSOL fee collection account (you don't need the private key!)
-                  </p>
+                {developer ? (
+                  <div className="p-2 bg-gray-100 dark:bg-gray-200 rounded text-sm font-mono break-all text-gray-800">
+                    {feeWallet}
+                  </div>
+                ) : (
+                  <Input
+                    id="fee-wallet"
+                    type="text"
+                    placeholder="Your Solana referral PDA address"
+                    value={feeWallet}
+                    onChange={(e) => {
+                      setFeeWallet(e.target.value);
+                      setManuallyEditedWallet(true);
+                    }}
+                    className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50 font-mono text-sm"
+                    data-testid="input-fee-wallet"
+                  />
                 )}
               </div>
 
