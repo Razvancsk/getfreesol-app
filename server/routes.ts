@@ -6826,6 +6826,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Claim earnings from referral PDA
+  app.post("/api/referral/claim", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: 'Wallet address required' });
+      }
+      
+      // Get referral account
+      const referralAccount = await storage.getReferralAccountByWallet(walletAddress);
+      if (!referralAccount) {
+        return res.status(404).json({ error: 'Referral account not found' });
+      }
+      
+      // Get PDA balance
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? 
+        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
+        'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      const pdaPubkey = new PublicKey(referralAccount.referralPda);
+      const balance = await connection.getBalance(pdaPubkey);
+      
+      if (balance === 0) {
+        return res.status(400).json({ error: 'No balance to claim' });
+      }
+      
+      // Create transfer transaction
+      const transaction = new Transaction();
+      const recipientPubkey = new PublicKey(walletAddress);
+      
+      // Transfer all SOL from PDA to developer wallet (minus rent exempt minimum)
+      const minRent = await connection.getMinimumBalanceForRentExemption(0);
+      const transferAmount = balance - minRent;
+      
+      if (transferAmount <= 0) {
+        return res.status(400).json({ error: 'Insufficient balance after rent exemption' });
+      }
+      
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: pdaPubkey,
+          toPubkey: recipientPubkey,
+          lamports: transferAmount,
+        })
+      );
+      
+      // Get recent blockhash
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = recipientPubkey;
+      
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false,
+      });
+      
+      res.json({
+        success: true,
+        transaction: Buffer.from(serializedTransaction).toString('base64'),
+        amount: transferAmount / LAMPORTS_PER_SOL,
+        message: 'Note: This requires the PDA to have signing authority. If the PDA is controlled by a program, you may need to use that program to withdraw funds.'
+      });
+    } catch (error: any) {
+      console.error('Claim error:', error);
+      res.status(500).json({ 
+        error: 'Failed to prepare claim transaction', 
+        details: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

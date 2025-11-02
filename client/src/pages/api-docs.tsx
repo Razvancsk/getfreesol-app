@@ -97,6 +97,56 @@ export default function ApiDocs() {
     }
   };
 
+  // Claim earnings mutation
+  const claimMutation = useMutation({
+    mutationFn: async () => {
+      if (!publicKey) {
+        throw new Error("Wallet not connected");
+      }
+
+      const response = await apiRequest("POST", "/api/referral/claim", {
+        walletAddress: publicKey.toBase58(),
+      });
+
+      if (!response.transaction) {
+        throw new Error("No transaction returned from server");
+      }
+
+      // Deserialize and send transaction
+      const { Connection, Transaction } = await import("@solana/web3.js");
+      const connection = new Connection(
+        import.meta.env.VITE_HELIUS_RPC_URL || "https://api.mainnet-beta.solana.com",
+        "confirmed"
+      );
+
+      const transaction = Transaction.from(
+        Buffer.from(response.transaction, "base64")
+      );
+
+      // Send transaction
+      const signature = await (window as any).solana.signAndSendTransaction(transaction);
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature.signature || signature, "confirmed");
+
+      return { signature: signature.signature || signature, amount: response.amount };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
+      toast({
+        title: "Success!",
+        description: `Claimed ${data.amount.toFixed(6)} SOL to your wallet.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Claim Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -239,16 +289,23 @@ export default function ApiDocs() {
                     <p className="text-xs text-purple-200 mt-1">{developer.projectName}</p>
                   </div>
                   <Button
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Claim functionality will be available soon",
-                      });
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    onClick={() => claimMutation.mutate()}
+                    disabled={
+                      claimMutation.isPending || 
+                      !referralAccount?.pdaBalance || 
+                      referralAccount.pdaBalance === 0
+                    }
+                    className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                     data-testid="button-claim-earnings"
                   >
-                    Claim
+                    {claimMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Claiming...
+                      </>
+                    ) : (
+                      "Claim"
+                    )}
                   </Button>
                 </div>
               </CardContent>
