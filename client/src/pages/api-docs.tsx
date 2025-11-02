@@ -31,7 +31,7 @@ export default function ApiDocs() {
   const walletAddress = publicKey?.toBase58();
 
   // Fetch developer account
-  const { data: accountData } = useQuery({
+  const { data: accountData } = useQuery<any>({
     queryKey: ["/api/developer/account", walletAddress],
     enabled: !!walletAddress,
   });

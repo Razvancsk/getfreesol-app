@@ -31,6 +31,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Mass Transfer**: Sends multiple tokens to a single destination wallet in one transaction.
 - **Jupiter Lend Integration**: Allows users to earn yield by depositing tokens into Jupiter Lend pools.
 - **Auto-Claim Feature**: Permit-based automated SOL reclamation from empty accounts, supporting both standard SPL and Token-2022 programs.
+- **Developer API Platform**: Jupiter-style developer platform with managed fee collection accounts. Developers create accounts via wallet signature, receive platform-managed keypairs with WSOL ATAs for fee collection, and claim 80% of earnings in WSOL tokens. API documentation is gated - requires account creation first.
 - **X (Twitter) Bot**: Automated social media marketing system for platform wallet with OAuth 1.0a authentication, scheduled posting, and auto-engagement.
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
