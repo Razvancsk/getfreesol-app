@@ -216,7 +216,7 @@ export default function ApiDocs() {
 
           {/* Balance Card - Only show for developers */}
           {developer && (
-            <Card className="bg-gradient-to-br from-purple-600/60 to-pink-600/60 border-purple-500 backdrop-blur">
+            <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -233,7 +233,7 @@ export default function ApiDocs() {
                         description: "Claim functionality will be available soon",
                       });
                     }}
-                    className="bg-purple-700 hover:bg-purple-800 text-white"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
                     data-testid="button-claim-earnings"
                   >
                     Claim
@@ -244,7 +244,7 @@ export default function ApiDocs() {
           )}
 
           {/* Configuration */}
-          <Card className="bg-gradient-to-br from-purple-600/60 to-pink-600/60 border-purple-500 backdrop-blur">
+          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
               <CardTitle className="text-white">⚙️ Configure Your Integration</CardTitle>
               <CardDescription className="text-purple-100">
