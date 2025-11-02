@@ -6895,7 +6895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       transaction.add(
         SystemProgram.transfer({
-          fromPubkey: feeWalletPubkey.publicKey,
+          fromPubkey: feeWalletKeypair.publicKey,
           toPubkey: recipientPubkey,
           lamports: transferAmount,
         })
