@@ -6910,9 +6910,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Minimum claimable amount (0.0001 SOL)
       const MIN_CLAIM_AMOUNT = 100000; // 0.0001 SOL in lamports
       
-      // Calculate claimable amount (leave rent exempt amount + transaction fee)
+      // Calculate claimable amount (leave rent exempt amount + transaction fee for TWO transfers)
       const minRent = await connection.getMinimumBalanceForRentExemption(0);
-      const estimatedFee = 5000; // 0.000005 SOL for transaction fee
+      const estimatedFee = 10000; // 0.00001 SOL for transaction fee (2 transfers)
       const transferAmount = balance - minRent - estimatedFee;
       
       if (transferAmount < MIN_CLAIM_AMOUNT) {
@@ -6926,13 +6926,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Calculate platform/developer splits (80% to developer, 20% to platform)
+      const developerAmount = Math.floor(transferAmount * 0.8);
+      const platformAmount = Math.floor(transferAmount * 0.2);
+      
       // Decrypt private key and create keypair
       const { decryptPrivateKey } = await import('./pdaService.js');
       const secretKey = decryptPrivateKey(referralAccount.encryptedPrivateKey);
       const feeWalletKeypair = Keypair.fromSecretKey(secretKey);
       
-      // Create and sign transfer transaction
-      const recipientPubkey = new PublicKey(walletAddress);
+      // Create and sign transfer transaction with 2 transfers
+      const developerPubkey = new PublicKey(walletAddress);
+      const platformPubkey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
       
       // Get recent blockhash first
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
@@ -6942,11 +6947,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = feeWalletKeypair.publicKey;
       
+      // Add transfer to developer (80%)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: feeWalletKeypair.publicKey,
-          toPubkey: recipientPubkey,
-          lamports: transferAmount,
+          toPubkey: developerPubkey,
+          lamports: developerAmount,
+        })
+      );
+      
+      // Add transfer to platform (20%)
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: feeWalletKeypair.publicKey,
+          toPubkey: platformPubkey,
+          lamports: platformAmount,
         })
       );
       
@@ -6955,6 +6970,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send transaction
       console.log(`📤 Sending claim transaction for ${walletAddress}...`);
+      console.log(`   Developer (80%): ${(developerAmount / 1e9).toFixed(9)} SOL`);
+      console.log(`   Platform (20%): ${(platformAmount / 1e9).toFixed(9)} SOL`);
       const signature = await connection.sendRawTransaction(transaction.serialize(), {
         skipPreflight: false,
         preflightCommitment: 'confirmed'
@@ -6969,10 +6986,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`✅ Claim successful! Signature: ${signature}`);
       
-      // Calculate platform/developer splits (80% to developer, 20% to platform)
+      // Convert to SOL for database
       const amountClaimed = transferAmount / 1e9;
-      const developerReceived = amountClaimed * 0.8;
-      const platformReceived = amountClaimed * 0.2;
+      const developerReceived = developerAmount / 1e9;
+      const platformReceived = platformAmount / 1e9;
       
       // Record claim in database
       await storage.createReferralClaim({
