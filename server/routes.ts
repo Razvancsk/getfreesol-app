@@ -6650,7 +6650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       console.log(`✅ Created referral account for ${walletAddress}`);
-      console.log(`   Referral PDA: ${referralPDA.toBase58()}`);
+      console.log(`   Referral Wallet: ${publicKey}`);
       
       res.json({
         success: true,
