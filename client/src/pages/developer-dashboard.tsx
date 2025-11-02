@@ -16,7 +16,6 @@ export default function DeveloperDashboard() {
   const { publicKey, signMessage } = useWallet();
   const { toast } = useToast();
   const [projectName, setProjectName] = useState("");
-  const [vanityPrefix, setVanityPrefix] = useState("");
   const [feePercentage, setFeePercentage] = useState(0);
 
   const walletAddress = publicKey?.toBase58();
@@ -126,29 +125,11 @@ export default function DeveloperDashboard() {
                 <Input
                   id="projectName"
                   data-testid="input-project-name"
-                  placeholder="e.g., Birdeye, Meteora, Solend"
+                  placeholder="meg"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   maxLength={50}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="vanityPrefix" className="text-muted-foreground">
-                  Vanity Prefix (Optional)
-                </Label>
-                <Input
-                  id="vanityPrefix"
-                  data-testid="input-vanity-prefix"
-                  placeholder="e.g., ABC, XYZ"
-                  value={vanityPrefix}
-                  onChange={(e) => setVanityPrefix(e.target.value.toUpperCase())}
-                  maxLength={3}
-                  className="uppercase"
-                />
-                <p className="text-xs text-muted-foreground">
-                  3-letter prefix for vanity fee collection address (coming soon)
-                </p>
               </div>
 
               <Button
