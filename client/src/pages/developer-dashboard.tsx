@@ -134,7 +134,7 @@ export default function DeveloperDashboard() {
           // Create Account Form
           <Card className="bg-black/50 border-purple-500/30 backdrop-blur max-w-md mx-auto">
             <CardHeader>
-              <CardTitle className="text-white text-2xl">Create Referral Account</CardTitle>
+              <CardTitle className="text-white text-2xl">Create API Account</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
