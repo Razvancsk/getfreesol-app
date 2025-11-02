@@ -528,6 +528,260 @@ app.post('/api/proxy/record', async (req, res) => {
             </CardContent>
           </Card>
 
+          {/* Complete Implementation Files */}
+          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">📁 Complete Implementation Files</CardTitle>
+              <CardDescription className="text-purple-200">
+                Copy-paste ready files for your full-stack integration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              
+              {/* File 1: Recovery Logic */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-purple-300 text-sm font-semibold">1️⃣ Frontend - Recovery Logic</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`import { Transaction, PublicKey } from '@solana/web3.js';
+
+export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+  try {
+    const walletAddress = walletPublicKey.toBase58();
+    
+    // STEP 1: Scan for empty token accounts
+    const scanResponse = await fetch(
+      \`/api/sol-refund/scan/\${walletAddress}\`
+    );
+    
+    if (!scanResponse.ok) {
+      const errorData = await scanResponse.json();
+      throw new Error(errorData.error || 'Failed to scan wallet');
+    }
+    
+    const scanData = await scanResponse.json();
+    
+    if (!scanData.accounts || scanData.emptyAccounts === 0) {
+      throw new Error('No empty accounts found to close');
+    }
+    
+    // STEP 2: Prepare transaction
+    const prepareResponse = await fetch('/api/sol-refund/prepare-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress,
+        selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+        donationPercentage: ${feePercentage || '10'},
+        feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+      })
+    });
+    
+    if (!prepareResponse.ok) {
+      const errorData = await prepareResponse.json();
+      throw new Error(errorData.error || 'Failed to prepare transaction');
+    }
+    
+    const prepareData = await prepareResponse.json();
+    
+    if (!prepareData.transaction) {
+      throw new Error(prepareData.error || 'Failed to prepare transaction');
+    }
+    
+    // STEP 3: Deserialize transaction from base64
+    const binaryString = atob(prepareData.transaction);
+    const transactionBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      transactionBytes[i] = binaryString.charCodeAt(i);
+    }
+    const transaction = Transaction.from(transactionBytes);
+    
+    // STEP 4 & 5: Wallet signs and sends
+    const signature = await wallet.signAndSendTransaction(transaction);
+    
+    // STEP 6: Record success (CRITICAL - updates platform stats)
+    const recordResponse = await fetch('/api/sol-refund/record-success', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        signature,
+        walletAddress,
+        selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+        accountsClosed: scanData.emptyAccounts,
+        solRecovered: prepareData.totalSolReclaimed,
+        netAmount: prepareData.netAmount,
+        feeAmount: prepareData.feeAmount,
+        platformFeeAmount: prepareData.platformFeeAmount,
+        referralFeeAmount: prepareData.referralFeeAmount
+      })
+    });
+    
+    if (!recordResponse.ok) {
+      const errorData = await recordResponse.json();
+      throw new Error(
+        \`Transaction succeeded (signature: \${signature}) but failed to record stats: \${errorData.error || 'Unknown error'}. Please contact support to manually record this transaction.\`
+      );
+    }
+    
+    return signature;
+  } catch (error: any) {
+    throw error;
+  }
+}`, 'recovery-logic')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'recovery-logic' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-purple-300/70">File: <code>client/src/lib/recoverSol.ts</code></p>
+              </div>
+
+              {/* File 2: Wallet Adapter */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-purple-300 text-sm font-semibold">2️⃣ Frontend - Wallet Adapter</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`import { PublicKey, Transaction } from '@solana/web3.js';
+
+class SolanaWallet {
+  publicKey: PublicKey | null = null;
+  connected: boolean = false;
+  private solana: any = null;
+  
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.solana = (window as any).solana || (window as any).phantom?.solana;
+    }
+  }
+  
+  async connect(): Promise<string> {
+    if (!this.solana) {
+      throw new Error('Please install Phantom, Solflare, or another Solana wallet.');
+    }
+    const response = await this.solana.connect();
+    this.publicKey = response.publicKey;
+    this.connected = true;
+    
+    if (!this.publicKey) {
+      throw new Error('Failed to get public key from wallet');
+    }
+    
+    this.solana.on('disconnect', () => {
+      this.publicKey = null;
+      this.connected = false;
+    });
+    return this.publicKey.toBase58();
+  }
+  
+  async disconnect(): Promise<void> {
+    if (this.solana) {
+      await this.solana.disconnect();
+    }
+    this.publicKey = null;
+    this.connected = false;
+  }
+  
+  async signTransaction(transaction: Transaction): Promise<Transaction> {
+    if (!this.solana || !this.connected) {
+      throw new Error('Wallet not connected');
+    }
+    return await this.solana.signTransaction(transaction);
+  }
+  
+  async signAndSendTransaction(transaction: Transaction): Promise<string> {
+    if (!this.solana || !this.connected) {
+      throw new Error('Wallet not connected');
+    }
+    const { signature } = await this.solana.signAndSendTransaction(transaction);
+    return signature;
+  }
+  
+  isInstalled(): boolean {
+    return !!this.solana;
+  }
+}
+
+export const wallet = new SolanaWallet();`, 'wallet-adapter')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'wallet-adapter' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-purple-300/70">File: <code>client/src/lib/walletAdapter.ts</code></p>
+              </div>
+
+              {/* File 3: Backend Proxy */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-purple-300 text-sm font-semibold">3️⃣ Backend - API Proxy Routes</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`// Backend proxy routes (Express.js)
+app.get("/api/sol-refund/scan/:address", async (req, res) => {
+  try {
+    const { address } = req.params;
+    const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${address}\`);
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Scan error:", error);
+    res.status(500).json({ error: "Failed to scan wallet" });
+  }
+});
+
+app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
+  try {
+    const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Prepare error:", error);
+    res.status(500).json({ error: "Failed to prepare transaction" });
+  }
+});
+
+app.post("/api/sol-refund/record-success", async (req, res) => {
+  try {
+    const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Record error:", error);
+    res.status(500).json({ error: "Failed to record success" });
+  }
+});`, 'backend-proxy')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'backend-proxy' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-purple-300/70">File: <code>server/routes.ts</code> or <code>server.js</code></p>
+              </div>
+
+              <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/50">
+                <p className="text-blue-200 text-xs mb-2">
+                  💡 <strong>Usage:</strong> Create these files in your project, then call <code className="bg-slate-900/50 px-1 py-0.5 rounded">recoverSOLRent(wallet.publicKey, wallet)</code> from your UI components.
+                </p>
+                <p className="text-blue-200 text-xs">
+                  ⚠️ <strong>Error Handling:</strong> If the record-success call fails after the transaction succeeds, the error message will include the transaction signature. Show this to users and optionally retry the stats recording or contact support.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Integration Example */}
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>

