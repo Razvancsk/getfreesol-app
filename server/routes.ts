@@ -6787,6 +6787,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tokenAccounts = await storage.getTokenAccountsByReferralId(referralAccount.id);
       
+      // Fetch SOL balance of the referral PDA
+      let pdaBalance = 0;
+      if (referralAccount.referralPda) {
+        try {
+          const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+          const rpcUrl = heliusApiKey ? 
+            `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
+            'https://api.mainnet-beta.solana.com';
+          const connection = new Connection(rpcUrl, 'confirmed');
+          const pdaPubkey = new PublicKey(referralAccount.referralPda);
+          const balance = await connection.getBalance(pdaPubkey);
+          pdaBalance = balance / LAMPORTS_PER_SOL;
+        } catch (balanceError) {
+          console.error("Error fetching PDA balance:", balanceError);
+        }
+      }
+      
       res.json({
         success: true,
         account: {
@@ -6795,7 +6812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           projectName: referralAccount.projectName,
           feePercentage: referralAccount.feePercentage,
           status: referralAccount.status,
-          createdAt: referralAccount.createdAt
+          createdAt: referralAccount.createdAt,
+          pdaBalance
         },
         tokenAccounts
       });
