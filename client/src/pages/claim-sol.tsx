@@ -2532,10 +2532,10 @@ export default function SolRefund() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white font-mono text-xs border border-purple-500/30 flex items-center space-x-1"
                         data-testid="button-wallet-connected"
                       >
-                        <span>{publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</span>
+                        <span>{publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}</span>
                         <ChevronDown className="h-3 w-3" />
                       </Button>
                     </DropdownMenuTrigger>
