@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Code, ArrowLeft, Copy, Check, Info, ExternalLink } from 'lucide-react';
+import { Code, ArrowLeft, Copy, Check, Info, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,10 +31,11 @@ export default function ApiDocs() {
   const walletAddress = publicKey?.toBase58();
 
   // Fetch referral account (PDA-based)
-  const { data: accountData } = useQuery<any>({
+  const { data: accountData, refetch: refetchAccount } = useQuery<any>({
     queryKey: ["/api/referral/account", walletAddress],
     enabled: !!walletAddress,
     retry: false,
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
   });
 
   const referralAccount = accountData?.account;
@@ -219,8 +220,19 @@ export default function ApiDocs() {
             <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-purple-200 mb-1">Your Earnings</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-purple-200 mb-1">Your Earnings</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => refetchAccount()}
+                        className="h-6 w-6 p-0 text-purple-300 hover:text-white"
+                        data-testid="button-refresh-balance"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <p className="text-2xl font-bold text-white" data-testid="text-pda-balance">
                       {referralAccount?.pdaBalance?.toFixed(6) || '0.000000'} SOL
                     </p>
