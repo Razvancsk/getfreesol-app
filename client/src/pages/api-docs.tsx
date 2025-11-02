@@ -17,7 +17,7 @@ import { Loader2 } from 'lucide-react';
 import bs58 from 'bs58';
 
 export default function ApiDocs() {
-  const { publicKey, signMessage } = useWallet();
+  const { publicKey, signMessage, signTransaction } = useWallet();
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [feeWallet, setFeeWallet] = useState('');
@@ -51,29 +51,76 @@ export default function ApiDocs() {
     }
   }, [referralAccount, manuallyEditedWallet, manuallyEditedFee]);
 
-  // Create account mutation
+  // Create account mutation (two-phase: intent + finalize)
   const createAccount = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !projectName.trim()) {
+      if (!publicKey || !signMessage || !signTransaction || !projectName.trim()) {
         throw new Error("Missing wallet or project name");
       }
 
+      // Phase 1: Create intent and get rent payment transaction
       const message = `Create developer fee account for project: ${projectName}`;
       const encodedMessage = new TextEncoder().encode(message);
-      const signature = await signMessage(encodedMessage);
+      const messageSig = await signMessage(encodedMessage);
 
-      return await apiRequest('POST', '/api/referral/create-account', {
+      const intentResponse: any = await apiRequest('POST', '/api/referral/create-account-intent', {
         walletAddress: publicKey.toBase58(),
-        signature: bs58.encode(signature),
+        signature: bs58.encode(messageSig),
         message,
         projectName: projectName.trim(),
       });
+
+      const { intentId, transaction: serializedTx, rentAmount } = intentResponse;
+
+      // Deserialize and sign the rent payment transaction
+      const { Transaction } = await import('@solana/web3.js');
+      const txBuffer = Buffer.from(serializedTx, 'base64');
+      const transaction = Transaction.from(txBuffer);
+
+      // Sign transaction with wallet
+      const signedTx = await signTransaction(transaction);
+
+      // Send transaction
+      const { Connection } = await import('@solana/web3.js');
+      const connection = new Connection(
+        import.meta.env.VITE_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+
+      const txSignature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed'
+      });
+
+      // Wait for confirmation
+      await connection.confirmTransaction(txSignature, 'confirmed');
+
+      // Phase 2: Finalize account creation
+      const finalizeResponse = await apiRequest('POST', '/api/referral/finalize-account', {
+        intentId,
+        signature: txSignature,
+      });
+
+      return { ...finalizeResponse, rentAmount, txSignature };
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
       toast({
         title: "Success!",
-        description: `Referral account created for "${projectName.trim()}". You can now access the API documentation.`,
+        description: (
+          <div className="space-y-1">
+            <p>Account created for "{projectName.trim()}"!</p>
+            <p className="text-xs">Rent paid: {data.rentAmount} SOL</p>
+            <a 
+              href={`https://solscan.io/tx/${data.txSignature}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+            >
+              View transaction <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        ),
       });
       setProjectName("");
     },
