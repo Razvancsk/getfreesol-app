@@ -6179,12 +6179,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create developer fee account (requires wallet signature)
   app.post("/api/developer/create-account", async (req, res) => {
     try {
-      const { walletAddress, signature, message, projectName, vanityPrefix } = req.body;
+      const { walletAddress, signature, message, projectName } = req.body;
       
       console.log('🏗️ Creating developer fee account...');
       console.log('  Wallet:', walletAddress);
       console.log('  Project:', projectName);
-      console.log('  Vanity prefix:', vanityPrefix || 'none (random)');
       
       // Validate required fields
       if (!walletAddress || !signature || !message || !projectName) {
@@ -6214,42 +6213,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Validate vanity prefix if provided (3 letters max)
-      if (vanityPrefix) {
-        if (vanityPrefix.length !== 3) {
-          return res.status(400).json({ 
-            error: 'Vanity prefix must be exactly 3 characters' 
-          });
-        }
-      }
-      
-      // Generate fee collection account
-      let feeKeypair;
-      let attempts = 0;
-      const generationType = vanityPrefix ? 'vanity' : 'random';
-      
-      if (vanityPrefix) {
-        console.log(`  Generating vanity address with prefix "${vanityPrefix}"...`);
-        const result = await generateVanityKeypair(vanityPrefix, 500000, (attemptCount) => {
-          console.log(`  Still searching... ${attemptCount} attempts so far`);
-        });
-        
-        if (!result) {
-          return res.status(408).json({ 
-            error: `Vanity prefix "${vanityPrefix}" took too long to generate (30 second timeout). Try a different 3-letter combo or leave blank for instant random address.`,
-            suggestion: 'Leave the vanity prefix field empty for instant account creation'
-          });
-        }
-        
-        feeKeypair = result.keypair;
-        attempts = result.attempts;
-        console.log(`  ✅ Found vanity address after ${attempts} attempts: ${result.publicKey}`);
-      } else {
-        console.log('  Generating random fee account...');
-        const result = generateRandomKeypair();
-        feeKeypair = result.keypair;
-        console.log(`  ✅ Generated random fee account: ${result.publicKey}`);
-      }
+      // Generate random fee collection account (instant)
+      console.log('  Generating random fee account...');
+      const result = generateRandomKeypair();
+      const feeKeypair = result.keypair;
+      console.log(`  ✅ Generated random fee account: ${result.publicKey}`);
       
       // Encrypt the fee account private key
       const encryptedPrivateKey = encryptPrivateKey(feeKeypair.secretKey);
@@ -6259,7 +6227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const developer = await storage.createDeveloper({
         payoutWalletAddress: walletAddress,
         projectName,
-        vanityPrefix: vanityPrefix || null,
+        vanityPrefix: null,
         status: 'active',
       });
       
@@ -6268,8 +6236,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         developerId: developer.id,
         publicKey: feeAccountPublicKey,
         encryptedPrivateKey,
-        generationType,
-        vanityPrefix: vanityPrefix || null,
+        generationType: 'random',
+        vanityPrefix: null,
       });
       
       // Initialize balance record
@@ -6288,13 +6256,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           projectName: developer.projectName,
           feeAccountAddress: feeAccount.publicKey,
           feePercentage: parseFloat(developer.feePercentage),
-          vanityPrefix: developer.vanityPrefix,
           status: developer.status,
           createdAt: developer.createdAt,
         },
-        message: vanityPrefix 
-          ? `Fee account created with vanity prefix "${vanityPrefix}" after ${attempts} attempts`
-          : 'Fee account created with random address'
+        message: 'Developer account created successfully with instant random fee collection address'
       });
     } catch (error: any) {
       console.error('❌ Create developer account error:', error);

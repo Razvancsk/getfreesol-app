@@ -27,7 +27,6 @@ export default function ApiDocs() {
   
   // Account creation form state
   const [projectName, setProjectName] = useState('');
-  const [vanityPrefix, setVanityPrefix] = useState('');
   
   const walletAddress = publicKey?.toBase58();
 
@@ -65,7 +64,6 @@ export default function ApiDocs() {
         signature: bs58.encode(signature),
         message,
         projectName: projectName.trim(),
-        vanityPrefix: vanityPrefix.trim() || undefined,
       });
     },
     onSuccess: () => {
@@ -75,7 +73,6 @@ export default function ApiDocs() {
         description: "Your developer account has been created. You can now access the API documentation.",
       });
       setProjectName("");
-      setVanityPrefix("");
     },
     onError: (error: Error) => {
       toast({
@@ -151,12 +148,12 @@ export default function ApiDocs() {
             <CardHeader>
               <CardTitle className="text-white text-2xl">Create Ultra Referral Account</CardTitle>
               <CardDescription className="text-purple-200">
-                Use your project name
+                Sign to create your fee collection account
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="project-name" className="text-white">Name</Label>
+                <Label htmlFor="project-name" className="text-white">Project Name</Label>
                 <Input
                   id="project-name"
                   data-testid="input-project-name-docs"
@@ -166,27 +163,8 @@ export default function ApiDocs() {
                   maxLength={50}
                   className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="vanity-prefix-docs" className="text-white text-sm">
-                  Vanity Prefix (Optional)
-                </Label>
-                <Input
-                  id="vanity-prefix-docs"
-                  data-testid="input-vanity-prefix-docs"
-                  placeholder="3 letters (optional)"
-                  value={vanityPrefix}
-                  onChange={(e) => setVanityPrefix(e.target.value.toUpperCase().slice(0, 3))}
-                  maxLength={3}
-                  className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
-                />
                 <p className="text-xs text-purple-300">
-                  {vanityPrefix ? (
-                    <span className="text-yellow-400">⏱️ May take 5-30 seconds to find "{vanityPrefix}..."</span>
-                  ) : (
-                    <span>Leave empty for instant random address</span>
-                  )}
+                  A unique fee collection account will be created for your wallet
                 </p>
               </div>
 
@@ -202,7 +180,7 @@ export default function ApiDocs() {
                     Creating...
                   </>
                 ) : (
-                  "Create"
+                  "Create Account"
                 )}
               </Button>
             </CardContent>

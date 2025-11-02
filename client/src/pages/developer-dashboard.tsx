@@ -16,7 +16,6 @@ export default function DeveloperDashboard() {
   const { publicKey, signMessage } = useWallet();
   const { toast } = useToast();
   const [projectName, setProjectName] = useState("");
-  const [vanityPrefix, setVanityPrefix] = useState("");
   const [feePercentage, setFeePercentage] = useState(0);
 
   const walletAddress = publicKey?.toBase58();
@@ -49,15 +48,11 @@ export default function DeveloperDashboard() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest("/api/developer/create-account", {
-        method: "POST",
-        body: JSON.stringify({
-          walletAddress: publicKey.toBase58(),
-          signature: bs58.encode(signature),
-          message,
-          projectName: projectName.trim(),
-          vanityPrefix: vanityPrefix.trim() || undefined,
-        }),
+      return await apiRequest('POST', '/api/developer/create-account', {
+        walletAddress: publicKey.toBase58(),
+        signature: bs58.encode(signature),
+        message,
+        projectName: projectName.trim(),
       });
     },
     onSuccess: () => {
@@ -67,7 +62,6 @@ export default function DeveloperDashboard() {
         description: "Your developer account has been created.",
       });
       setProjectName("");
-      setVanityPrefix("");
     },
     onError: (error: Error) => {
       toast({
@@ -209,26 +203,7 @@ export default function DeveloperDashboard() {
                   maxLength={50}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Give your project a name - this helps identify your fee account
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="vanityPrefix">Vanity Prefix (Optional)</Label>
-                <Input
-                  id="vanityPrefix"
-                  data-testid="input-vanity-prefix"
-                  placeholder="3 letters (e.g., ABC, DEV, APP)"
-                  value={vanityPrefix}
-                  onChange={(e) => setVanityPrefix(e.target.value.toUpperCase().slice(0, 3))}
-                  maxLength={3}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {vanityPrefix ? (
-                    <span className="text-yellow-600">⏱️ May take 5-30 seconds to find "{vanityPrefix}..."</span>
-                  ) : (
-                    <>Optional: Choose a 3-letter prefix for your fee account address. Leave blank for instant random address.</>
-                  )}
+                  A unique fee collection account will be created for your wallet
                 </p>
               </div>
 
