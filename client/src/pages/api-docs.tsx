@@ -85,6 +85,41 @@ export default function ApiDocs() {
     },
   });
 
+  // Set fee mutation
+  const setFeeMutation = useMutation({
+    mutationFn: async (newFee: number) => {
+      if (!publicKey || !signMessage) {
+        throw new Error("Wallet not connected");
+      }
+
+      const message = `Set fee percentage to ${newFee}%`;
+      const encodedMessage = new TextEncoder().encode(message);
+      const signature = await signMessage(encodedMessage);
+
+      return await apiRequest("POST", "/api/developer/set-fee", {
+        walletAddress: publicKey.toBase58(),
+        signature: bs58.encode(signature),
+        message,
+        feePercentage: newFee,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
+      toast({
+        title: "Success!",
+        description: "Fee percentage updated.",
+      });
+      setManuallyEditedFee(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -278,34 +313,54 @@ export default function ApiDocs() {
                 <div className="flex items-center gap-2">
                   <Label htmlFor="fee-percentage" className="text-white font-semibold">
                     Fee to Charge (%)
-                    {developer && <Badge className="ml-2 bg-green-500/20 text-green-100 border-green-400/30">Auto-loaded</Badge>}
                   </Label>
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-4 w-4 text-purple-300" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Total fee percentage you'll charge users in WSOL. Platform takes 20% of this.</p>
+                      <p>Total fee percentage you'll charge users. Platform takes 20% of this.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Input
-                  id="fee-percentage"
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  placeholder="10"
-                  value={feePercentage}
-                  onChange={(e) => setFeePercentage(e.target.value)}
-                  className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
-                  data-testid="input-fee-percentage"
-                />
-                {developer && (
-                  <p className="text-xs text-green-200">
-                    Current fee configured in your developer account
-                  </p>
-                )}
+                <div className="flex gap-2">
+                  <Input
+                    id="fee-percentage"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    placeholder="10"
+                    value={feePercentage}
+                    onChange={(e) => {
+                      setFeePercentage(e.target.value);
+                      setManuallyEditedFee(true);
+                    }}
+                    className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
+                    data-testid="input-fee-percentage"
+                  />
+                  {developer && (
+                    <Button
+                      onClick={() => setFeeMutation.mutate(parseFloat(feePercentage))}
+                      disabled={
+                        !feePercentage || 
+                        parseFloat(feePercentage) === parseFloat(referralAccount?.feePercentage || "0") || 
+                        setFeeMutation.isPending
+                      }
+                      className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
+                      data-testid="button-set-fee"
+                    >
+                      {setFeeMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Setting...
+                        </>
+                      ) : (
+                        "Set"
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Fee Breakdown */}
