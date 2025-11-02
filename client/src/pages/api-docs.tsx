@@ -178,12 +178,6 @@ export default function ApiDocs() {
               alt="Get Free SOL"
               className="h-16 w-16"
             />
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                <Code className="h-8 w-8" />
-                API Documentation
-              </h1>
-            </div>
           </div>
         </div>
 
