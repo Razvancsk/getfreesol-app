@@ -20,22 +20,23 @@ export default function DeveloperDashboard() {
 
   const walletAddress = publicKey?.toBase58();
 
-  // Fetch developer account
+  // Fetch referral account (PDA-based)
   const { data: accountData, isLoading } = useQuery<any>({
-    queryKey: ["/api/developer/account", walletAddress],
+    queryKey: ["/api/referral/account", walletAddress],
     enabled: !!walletAddress,
+    retry: false,
   });
 
-  const accountExists = accountData?.exists;
-  const developer = accountData?.developer;
-  const balance = accountData?.balance;
+  const accountExists = accountData?.success && accountData?.account;
+  const referralAccount = accountData?.account;
+  const tokenAccounts = accountData?.tokenAccounts || [];
 
   // Initialize fee percentage from existing account
   useEffect(() => {
-    if (developer?.feePercentage !== undefined) {
-      setFeePercentage(developer.feePercentage);
+    if (referralAccount?.feePercentage !== undefined) {
+      setFeePercentage(parseFloat(referralAccount.feePercentage));
     }
-  }, [developer]);
+  }, [referralAccount]);
 
   // Create account mutation
   const createAccount = useMutation({
@@ -48,87 +49,20 @@ export default function DeveloperDashboard() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest('POST', '/api/developer/create-account', {
+      return await apiRequest('POST', '/api/referral/create-account', {
         walletAddress: publicKey.toBase58(),
         signature: bs58.encode(signature),
         message,
         projectName: projectName.trim(),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/developer/account", walletAddress] });
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
       toast({
         title: "Success!",
-        description: "Your developer account has been created.",
+        description: `Referral account created for "${projectName.trim()}"`,
       });
       setProjectName("");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Set fee mutation
-  const setFeeMutation = useMutation({
-    mutationFn: async (newFee: number) => {
-      if (!publicKey || !signMessage) {
-        throw new Error("Wallet not connected");
-      }
-
-      const message = `Set fee percentage to ${newFee}%`;
-      const encodedMessage = new TextEncoder().encode(message);
-      const signature = await signMessage(encodedMessage);
-
-      return await apiRequest("POST", "/api/developer/set-fee", {
-        walletAddress: publicKey.toBase58(),
-        signature: bs58.encode(signature),
-        message,
-        feePercentage: newFee,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/developer/account", walletAddress] });
-      toast({
-        title: "Success!",
-        description: "Fee percentage updated.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Claim mutation
-  const claimMutation = useMutation({
-    mutationFn: async () => {
-      if (!publicKey || !signMessage) {
-        throw new Error("Wallet not connected");
-      }
-
-      const message = `Claim developer earnings`;
-      const encodedMessage = new TextEncoder().encode(message);
-      const signature = await signMessage(encodedMessage);
-
-      return await apiRequest("POST", "/api/developer/claim", {
-        walletAddress: publicKey.toBase58(),
-        signature: bs58.encode(signature),
-        message,
-      });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/developer/account", walletAddress] });
-      toast({
-        title: "Claim Successful!",
-        description: `You received ${(data.developerAmount / LAMPORTS_PER_SOL).toFixed(4)} WSOL`,
-      });
     },
     onError: (error: Error) => {
       toast({
@@ -224,26 +158,26 @@ export default function DeveloperDashboard() {
             {/* Account Info */}
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle>Developer Account</CardTitle>
-                <CardDescription className="text-lg font-semibold text-foreground">
-                  {developer.projectName}
-                </CardDescription>
+                <div className="space-y-1">
+                  <CardTitle className="text-2xl">{referralAccount.projectName}</CardTitle>
+                  <CardDescription>Your referral account is active</CardDescription>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Fee Collection Account</Label>
+                  <Label className="text-sm text-muted-foreground">Referral PDA (Program Derived Address)</Label>
                   <div className="flex items-center gap-2">
                     <code
-                      data-testid="text-fee-account"
+                      data-testid="text-referral-pda"
                       className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all"
                     >
-                      {developer.feeAccountAddress}
+                      {referralAccount.referralPda}
                     </code>
                     <Button
                       variant="outline"
                       size="icon"
-                      data-testid="button-copy-address"
-                      onClick={() => copyToClipboard(developer.feeAccountAddress)}
+                      data-testid="button-copy-pda"
+                      onClick={() => copyToClipboard(referralAccount.referralPda)}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -253,7 +187,7 @@ export default function DeveloperDashboard() {
                       data-testid="button-view-explorer"
                       onClick={() =>
                         window.open(
-                          `https://solscan.io/account/${developer.feeAccountAddress}`,
+                          `https://solscan.io/account/${referralAccount.referralPda}`,
                           "_blank"
                         )
                       }
@@ -261,143 +195,95 @@ export default function DeveloperDashboard() {
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Use this PDA address in your integration to collect referral fees
+                  </p>
                 </div>
 
-                {developer.wsolAtaAddress && (
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">WSOL Fee Collection Address</Label>
-                    <div className="flex items-center gap-2">
-                      <code
-                        data-testid="text-wsol-ata"
-                        className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all"
-                      >
-                        {developer.wsolAtaAddress}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        data-testid="button-copy-wsol-ata"
-                        onClick={() => copyToClipboard(developer.wsolAtaAddress)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        data-testid="button-view-wsol-explorer"
-                        onClick={() =>
-                          window.open(
-                            `https://solscan.io/account/${developer.wsolAtaAddress}`,
-                            "_blank"
-                          )
-                        }
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-sm text-muted-foreground">Unclaimed Balance</Label>
-                    <p data-testid="text-unclaimed-balance" className="text-2xl font-bold">
-                      {(balance?.unclaimedLamports / LAMPORTS_PER_SOL || 0).toFixed(6)} WSOL
-                    </p>
-                    {balance?.unclaimedUsd > 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        ≈ ${balance.unclaimedUsd.toFixed(2)} USD
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-sm text-muted-foreground">Total Claimed</Label>
-                    <p data-testid="text-total-claimed" className="text-2xl font-bold">
-                      {(parseFloat(developer.totalClaimed || "0") / LAMPORTS_PER_SOL).toFixed(6)} WSOL
-                    </p>
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Your Wallet</Label>
+                  <code className="block p-2 bg-muted rounded text-sm font-mono break-all">
+                    {walletAddress}
+                  </code>
                 </div>
 
-                <Button
-                  className="w-full"
-                  data-testid="button-claim"
-                  onClick={() => claimMutation.mutate()}
-                  disabled={balance?.unclaimedLamports === 0 || claimMutation.isPending}
-                >
-                  {claimMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Claiming...
-                    </>
-                  ) : (
-                    `Claim Earnings (80%)`
-                  )}
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  You receive 80% of fees in WSOL, platform keeps 20%
-                </p>
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Fee Share</Label>
+                  <p className="text-lg">
+                    You earn <span className="font-bold text-green-500">80%</span> of fees collected
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Platform retains 20% • Fees collected in multiple token types
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Fee Configuration */}
+            {/* Token Accounts */}
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle>Fee Configuration</CardTitle>
+                <CardTitle>Fee Collection Token Accounts</CardTitle>
                 <CardDescription>
-                  Set the fee percentage you want to charge users (0-10%)
+                  Create token accounts for different token types you want to collect fees in
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Fee Percentage</Label>
-                    <span data-testid="text-fee-percentage" className="text-2xl font-bold">
-                      {feePercentage.toFixed(2)}%
-                    </span>
+                {tokenAccounts.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-muted-foreground mb-4">
+                      No token accounts created yet. Create one to start collecting fees.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Common tokens: SOL, USDC, USDT, BONK, JUP
+                    </p>
                   </div>
-                  
-                  <Slider
-                    data-testid="slider-fee-percentage"
-                    value={[feePercentage]}
-                    onValueChange={(values) => setFeePercentage(values[0])}
-                    max={10}
-                    step={0.1}
+                ) : (
+                  <div className="space-y-3">
+                    {tokenAccounts.map((tokenAccount: any) => (
+                      <div
+                        key={tokenAccount.id}
+                        data-testid={`token-account-${tokenAccount.tokenMint}`}
+                        className="p-3 border border-border rounded-lg space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">{tokenAccount.tokenSymbol || "Unknown Token"}</p>
+                            <p className="text-xs text-muted-foreground">{tokenAccount.tokenName || tokenAccount.tokenMint}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">
+                              {parseFloat(tokenAccount.unclaimedBalance || "0").toFixed(6)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Unclaimed</p>
+                          </div>
+                        </div>
+                        <div className="text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total Earned:</span>
+                            <span>{parseFloat(tokenAccount.totalEarned || "0").toFixed(6)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total Claimed:</span>
+                            <span>{parseFloat(tokenAccount.totalClaimed || "0").toFixed(6)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-border">
+                  <Button
                     className="w-full"
-                  />
-
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>0%</span>
-                    <span>5%</span>
-                    <span>10%</span>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full"
-                  data-testid="button-save-fee"
-                  onClick={() => setFeeMutation.mutate(feePercentage)}
-                  disabled={
-                    feePercentage === developer.feePercentage || setFeeMutation.isPending
-                  }
-                >
-                  {setFeeMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Fee Configuration"
-                  )}
-                </Button>
-
-                <div className="p-3 bg-muted rounded text-sm space-y-2">
-                  <p className="font-semibold">Fee Breakdown:</p>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• Users pay: {feePercentage.toFixed(2)}% fee on transactions</li>
-                    <li>• You receive: {(feePercentage * 0.8).toFixed(2)}% (80% of fee)</li>
-                    <li>• Platform receives: {(feePercentage * 0.2).toFixed(2)}% (20% of fee)</li>
-                  </ul>
+                    data-testid="button-create-token-account"
+                    variant="outline"
+                    disabled
+                  >
+                    Create Token Account (Coming Soon)
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Multiple token support for SOL, USDC, USDT, and more
+                  </p>
                 </div>
               </CardContent>
             </Card>
