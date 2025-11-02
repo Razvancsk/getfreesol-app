@@ -85,40 +85,16 @@ export default function ApiDocs() {
     },
   });
 
-  // Set fee mutation
-  const setFeeMutation = useMutation({
-    mutationFn: async (newFee: number) => {
-      if (!publicKey || !signMessage) {
-        throw new Error("Wallet not connected");
-      }
-
-      const message = `Set fee percentage to ${newFee}%`;
-      const encodedMessage = new TextEncoder().encode(message);
-      const signature = await signMessage(encodedMessage);
-
-      return await apiRequest("POST", "/api/developer/set-fee", {
-        walletAddress: publicKey.toBase58(),
-        signature: bs58.encode(signature),
-        message,
-        feePercentage: newFee,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
+  // Handle setting fee for documentation preview
+  const handleSetFee = () => {
+    if (feePercentage && parseFloat(feePercentage) > 0) {
+      setManuallyEditedFee(true);
       toast({
-        title: "Success!",
-        description: "Fee percentage updated.",
+        title: "Documentation Updated",
+        description: `Examples now show ${feePercentage}% fee.`,
       });
-      setManuallyEditedFee(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  };
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -339,27 +315,14 @@ export default function ApiDocs() {
                     className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
                     data-testid="input-fee-percentage"
                   />
-                  {developer && (
-                    <Button
-                      onClick={() => setFeeMutation.mutate(parseFloat(feePercentage))}
-                      disabled={
-                        !feePercentage || 
-                        parseFloat(feePercentage) === parseFloat(referralAccount?.feePercentage || "0") || 
-                        setFeeMutation.isPending
-                      }
-                      className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
-                      data-testid="button-set-fee"
-                    >
-                      {setFeeMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Setting...
-                        </>
-                      ) : (
-                        "Set"
-                      )}
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleSetFee}
+                    disabled={!feePercentage || parseFloat(feePercentage) <= 0}
+                    className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
+                    data-testid="button-set-fee"
+                  >
+                    Set
+                  </Button>
                 </div>
               </div>
 
