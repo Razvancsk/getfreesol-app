@@ -456,12 +456,84 @@ export default function ApiDocs() {
             </CardContent>
           </Card>
 
+          {/* CORS Warning */}
+          <Card className="bg-orange-900/50 border-orange-600 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">⚠️ Important: CORS & Backend Proxy</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-orange-200 text-sm">
+                <strong>Browser Security:</strong> Direct API calls from your frontend to <code className="bg-slate-900/50 px-1 py-0.5 rounded">getfreesol.xyz</code> will be blocked by CORS (Cross-Origin Resource Sharing) browser security.
+              </p>
+              <p className="text-orange-200 text-sm">
+                <strong>Solution:</strong> Create backend proxy routes in your server that forward requests to our API. This is a standard practice for production apps.
+              </p>
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <p className="text-purple-300 text-sm font-semibold mb-2">Example Backend Proxy (Express.js)</p>
+                <pre className="text-green-400 text-xs overflow-x-auto">
+{`// In your backend (server.js / api/routes.js)
+app.get('/api/proxy/scan/:address', async (req, res) => {
+  try {
+    const response = await fetch(
+      \`${baseUrl}/api/sol-refund/scan/\${req.params.address}\`
+    );
+    const data = await response.json();
+    
+    // Forward upstream status code
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/proxy/prepare', async (req, res) => {
+  try {
+    const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    
+    // Forward upstream status code
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/proxy/record', async (req, res) => {
+  try {
+    const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    
+    // Forward upstream status code
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});`}
+                </pre>
+              </div>
+              <p className="text-orange-200 text-sm">
+                💡 The examples below assume you've set up these proxy routes. Replace <code className="bg-slate-900/50 px-1 py-0.5 rounded">/api/proxy/*</code> with your actual backend endpoints.
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Integration Example */}
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
               <CardTitle className="text-white">📦 Full Integration Example</CardTitle>
               <CardDescription className="text-purple-200">
-                Complete workflow showing how to integrate SOL rent recovery into your app
+                Frontend code calling your backend proxy routes
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -473,7 +545,8 @@ export default function ApiDocs() {
                     size="sm"
                     onClick={() => copyToClipboard(`// STEP 1: SCAN WALLET (finds all closeable accounts)
 const handleScan = async () => {
-  const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`);
+  // Call YOUR backend proxy (not getfreesol.xyz directly)
+  const response = await fetch(\`/api/proxy/scan/\${walletAddress}\`);
   const data = await response.json();
   
   console.log('Found accounts:', data.emptyAccounts);
@@ -484,8 +557,8 @@ const handleScan = async () => {
 
 // STEP 2: RECOVER RENT (for each account)
 const handleRecover = async (address: string) => {
-  // Prepare transaction
-  const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  // Prepare transaction via YOUR backend proxy
+  const prepareResponse = await fetch('/api/proxy/prepare', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -497,11 +570,16 @@ const handleRecover = async (address: string) => {
   });
   const prepareData = await prepareResponse.json();
 
+  // Validate response (API returns transaction field, not success field)
+  if (!prepareData.transaction) {
+    throw new Error('Failed to prepare transaction');
+  }
+
   // User signs
   const { signature } = await wallet.signAndSendTransaction(prepareData.transaction);
 
-  // Record success
-  await fetch('${baseUrl}/api/sol-refund/record-success', {
+  // Record success via YOUR backend proxy
+  await fetch('/api/proxy/record', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -524,7 +602,8 @@ const handleRecover = async (address: string) => {
                 <pre className="text-green-400 text-xs overflow-x-auto">
 {`// STEP 1: SCAN WALLET (finds all closeable accounts)
 const handleScan = async () => {
-  const response = await fetch(\`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`);
+  // Call YOUR backend proxy (not getfreesol.xyz directly)
+  const response = await fetch(\`/api/proxy/scan/\${walletAddress}\`);
   const data = await response.json();
   
   console.log('Found accounts:', data.emptyAccounts);
@@ -535,8 +614,8 @@ const handleScan = async () => {
 
 // STEP 2: RECOVER RENT (for each account)
 const handleRecover = async (address: string) => {
-  // Prepare transaction
-  const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  // Prepare transaction via YOUR backend proxy
+  const prepareResponse = await fetch('/api/proxy/prepare', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -548,11 +627,16 @@ const handleRecover = async (address: string) => {
   });
   const prepareData = await prepareResponse.json();
 
+  // Validate response (API returns transaction field, not success field)
+  if (!prepareData.transaction) {
+    throw new Error('Failed to prepare transaction');
+  }
+
   // User signs
   const { signature } = await wallet.signAndSendTransaction(prepareData.transaction);
 
-  // Record success
-  await fetch('${baseUrl}/api/sol-refund/record-success', {
+  // Record success via YOUR backend proxy
+  await fetch('/api/proxy/record', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -617,18 +701,24 @@ const handleRecover = async (address: string) => {
 // Setup Solana connection
 const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
 
+// Browser-compatible base64 to Uint8Array conversion
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  return Uint8Array.from(binaryString, char => char.charCodeAt(0));
+}
+
 // Your integration function
 async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
   try {
     const walletAddress = walletPublicKey.toBase58();
     
-    // STEP 1: Scan for empty token accounts
+    // STEP 1: Scan for empty token accounts (via YOUR backend proxy)
     const scanResponse = await fetch(
-      \`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`
+      \`/api/proxy/scan/\${walletAddress}\`
     );
     const scanData = await scanResponse.json();
     
-    if (!scanData.success || scanData.emptyAccounts === 0) {
+    if (scanData.emptyAccounts === 0) {
       console.log('No empty accounts found');
       return;
     }
@@ -636,8 +726,8 @@ async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     console.log(\`Found \${scanData.emptyAccounts} empty accounts\`);
     console.log(\`Total SOL to recover: \${scanData.totalReclaimable}\`);
     
-    // STEP 2: Prepare transaction
-    const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+    // STEP 2: Prepare transaction (via YOUR backend proxy)
+    const prepareResponse = await fetch('/api/proxy/prepare', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -650,16 +740,17 @@ async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     
     const prepareData = await prepareResponse.json();
     
-    if (!prepareData.success) {
+    // Validate response (API returns transaction field, not success field)
+    if (!prepareData.transaction) {
       throw new Error('Failed to prepare transaction');
     }
     
     console.log(\`Net amount to user: \${prepareData.netAmount} SOL\`);
     console.log(\`Fee amount: \${prepareData.feeAmount} SOL\`);
     
-    // STEP 3: Deserialize transaction from base64
-    const transactionBuffer = Buffer.from(prepareData.transaction, 'base64');
-    const transaction = Transaction.from(transactionBuffer);
+    // STEP 3: Deserialize transaction from base64 (browser-compatible)
+    const transactionBytes = base64ToUint8Array(prepareData.transaction);
+    const transaction = Transaction.from(transactionBytes);
     
     // STEP 4: Sign transaction with wallet
     const signedTransaction = await wallet.signTransaction(transaction);
@@ -684,8 +775,8 @@ async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     
     console.log('Transaction confirmed!');
     
-    // STEP 7: Record success (CRITICAL - updates platform stats)
-    await fetch('${baseUrl}/api/sol-refund/record-success', {
+    // STEP 7: Record success (CRITICAL - updates platform stats, via YOUR backend proxy)
+    await fetch('/api/proxy/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -723,18 +814,24 @@ async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
 // Setup Solana connection
 const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
 
+// Browser-compatible base64 to Uint8Array conversion
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  return Uint8Array.from(binaryString, char => char.charCodeAt(0));
+}
+
 // Your integration function
 async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
   try {
     const walletAddress = walletPublicKey.toBase58();
     
-    // STEP 1: Scan for empty token accounts
+    // STEP 1: Scan for empty token accounts (via YOUR backend proxy)
     const scanResponse = await fetch(
-      \`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`
+      \`/api/proxy/scan/\${walletAddress}\`
     );
     const scanData = await scanResponse.json();
     
-    if (!scanData.success || scanData.emptyAccounts === 0) {
+    if (scanData.emptyAccounts === 0) {
       console.log('No empty accounts found');
       return;
     }
@@ -742,8 +839,8 @@ async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     console.log(\`Found \${scanData.emptyAccounts} empty accounts\`);
     console.log(\`Total SOL to recover: \${scanData.totalReclaimable}\`);
     
-    // STEP 2: Prepare transaction
-    const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+    // STEP 2: Prepare transaction (via YOUR backend proxy)
+    const prepareResponse = await fetch('/api/proxy/prepare', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -756,16 +853,17 @@ async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     
     const prepareData = await prepareResponse.json();
     
-    if (!prepareData.success) {
+    // Validate response (API returns transaction field, not success field)
+    if (!prepareData.transaction) {
       throw new Error('Failed to prepare transaction');
     }
     
     console.log(\`Net amount to user: \${prepareData.netAmount} SOL\`);
     console.log(\`Fee amount: \${prepareData.feeAmount} SOL\`);
     
-    // STEP 3: Deserialize transaction from base64
-    const transactionBuffer = Buffer.from(prepareData.transaction, 'base64');
-    const transaction = Transaction.from(transactionBuffer);
+    // STEP 3: Deserialize transaction from base64 (browser-compatible)
+    const transactionBytes = base64ToUint8Array(prepareData.transaction);
+    const transaction = Transaction.from(transactionBytes);
     
     // STEP 4: Sign transaction with wallet
     const signedTransaction = await wallet.signTransaction(transaction);
@@ -790,8 +888,8 @@ async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
     
     console.log('Transaction confirmed!');
     
-    // STEP 7: Record success (CRITICAL - updates platform stats)
-    await fetch('${baseUrl}/api/sol-refund/record-success', {
+    // STEP 7: Record success (CRITICAL - updates platform stats, via YOUR backend proxy)
+    await fetch('/api/proxy/record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
