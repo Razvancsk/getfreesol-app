@@ -2500,10 +2500,11 @@ export default function SolRefund() {
                   <Link href="/docs">
                     <a
                       data-testid="button-social-docs"
-                      className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                      className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                       title="API Documentation"
                     >
                       <Code className="h-4 w-4 text-white" />
+                      <span className="text-white text-xs font-medium">API</span>
                     </a>
                   </Link>
                   <a
@@ -2583,10 +2584,11 @@ export default function SolRefund() {
                 <Link href="/docs">
                   <a
                     data-testid="button-social-docs-desktop"
-                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                     title="API Documentation"
                   >
                     <Code className="h-4 w-4 text-white" />
+                    <span className="text-white text-xs font-medium">API</span>
                   </a>
                 </Link>
                 <a
