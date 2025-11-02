@@ -255,10 +255,19 @@ export default function ApiDocs() {
                   </ol>
                 </div>
                 
-                <div className="space-y-2">
-                  <p className="text-sm"><strong>Base URL:</strong> <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">{baseUrl}/api</code></p>
-                  <p className="text-sm"><strong>Response Format:</strong> All endpoints return JSON with <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">success</code> field</p>
-                  <p className="text-sm"><strong>Your PDA:</strong> <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200">{referralAccount?.referralPda || 'Create account to see your PDA'}</code></p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white mb-1">Base URL:</p>
+                    <code className="block bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs break-all">{baseUrl}/api</code>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white mb-1">Response Format:</p>
+                    <p className="text-sm text-purple-200">All endpoints return JSON with <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs">success</code> field</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white mb-1">Your PDA:</p>
+                    <code className="block bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs break-all">{referralAccount?.referralPda || 'Create account to see your PDA'}</code>
+                  </div>
                 </div>
               </CardContent>
             </Card>
