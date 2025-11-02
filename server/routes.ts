@@ -6594,6 +6594,220 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // PDA-based Referral System (Jupiter-style)
+  // ============================================================================
+  
+  // Create referral account (PDA-based, no keypairs)
+  app.post("/api/referral/create-account", async (req, res) => {
+    try {
+      const { walletAddress, signature, message, projectName } = req.body;
+      
+      if (!walletAddress || !signature || !message) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: walletAddress, signature, message' 
+        });
+      }
+      
+      // Verify signature
+      if (!verifySignature(message, signature, walletAddress)) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      // Check if account already exists
+      const existing = await storage.getReferralAccountByWallet(walletAddress);
+      if (existing) {
+        return res.status(400).json({ 
+          error: 'Referral account already exists',
+          account: {
+            referralPda: existing.referralPda,
+            projectName: existing.projectName,
+            feePercentage: existing.feePercentage,
+            status: existing.status
+          }
+        });
+      }
+      
+      // Get project account
+      const project = await storage.getProjectAccount();
+      if (!project) {
+        return res.status(500).json({ error: 'Platform not initialized' });
+      }
+      
+      // Derive PDA
+      const { deriveReferralPDA } = await import('./pdaService.js');
+      const projectPDA = new PublicKey(project.projectPda);
+      const developerWallet = new PublicKey(walletAddress);
+      const [referralPDA, bump] = deriveReferralPDA(projectPDA, developerWallet);
+      
+      // Create referral account
+      const account = await storage.createReferralAccount({
+        projectAccountId: project.id,
+        developerWallet: walletAddress,
+        referralPda: referralPDA.toBase58(),
+        bump,
+        projectName: projectName || 'Unnamed Project',
+        feePercentage: '0' // Can be set later by admin
+      });
+      
+      console.log(`✅ Created referral account for ${walletAddress}`);
+      console.log(`   Referral PDA: ${referralPDA.toBase58()}`);
+      
+      res.json({
+        success: true,
+        account: {
+          id: account.id,
+          referralPda: account.referralPda,
+          projectName: account.projectName,
+          feePercentage: account.feePercentage,
+          status: account.status,
+          createdAt: account.createdAt
+        }
+      });
+    } catch (error: any) {
+      console.error('Create referral account error:', error);
+      res.status(500).json({ 
+        error: 'Failed to create referral account', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Create token account for a specific mint
+  app.post("/api/referral/create-token-account", async (req, res) => {
+    try {
+      const { walletAddress, signature, message, tokenMint } = req.body;
+      
+      if (!walletAddress || !signature || !message || !tokenMint) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: walletAddress, signature, message, tokenMint' 
+        });
+      }
+      
+      // Verify signature
+      if (!verifySignature(message, signature, walletAddress)) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      // Get referral account
+      const referralAccount = await storage.getReferralAccountByWallet(walletAddress);
+      if (!referralAccount) {
+        return res.status(404).json({ error: 'Referral account not found. Create one first.' });
+      }
+      
+      // Check if token account already exists
+      const existing = await storage.getTokenAccountByMint(referralAccount.id, tokenMint);
+      if (existing) {
+        return res.status(400).json({ 
+          error: 'Token account already exists for this mint',
+          tokenAccount: {
+            tokenAccountAddress: existing.tokenAccountAddress,
+            tokenMint: existing.tokenMint,
+            unclaimedBalance: existing.unclaimedBalance
+          }
+        });
+      }
+      
+      // Derive token account address (ATA)
+      const { getTokenAccountAddress } = await import('./pdaService.js');
+      const referralPDA = new PublicKey(referralAccount.referralPda);
+      const mint = new PublicKey(tokenMint);
+      const tokenAccountAddress = await getTokenAccountAddress(mint, referralPDA);
+      
+      // Create token account record
+      const tokenAccount = await storage.createTokenAccount({
+        referralAccountId: referralAccount.id,
+        tokenMint,
+        tokenAccountAddress: tokenAccountAddress.toBase58()
+      });
+      
+      console.log(`✅ Created token account for ${walletAddress}`);
+      console.log(`   Mint: ${tokenMint}`);
+      console.log(`   Token Account: ${tokenAccountAddress.toBase58()}`);
+      
+      res.json({
+        success: true,
+        tokenAccount: {
+          id: tokenAccount.id,
+          tokenMint: tokenAccount.tokenMint,
+          tokenAccountAddress: tokenAccount.tokenAccountAddress,
+          unclaimedBalance: tokenAccount.unclaimedBalance,
+          totalEarned: tokenAccount.totalEarned,
+          totalClaimed: tokenAccount.totalClaimed
+        }
+      });
+    } catch (error: any) {
+      console.error('Create token account error:', error);
+      res.status(500).json({ 
+        error: 'Failed to create token account', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Get all token accounts for a developer
+  app.get("/api/referral/token-accounts/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const referralAccount = await storage.getReferralAccountByWallet(walletAddress);
+      if (!referralAccount) {
+        return res.json({ tokenAccounts: [] });
+      }
+      
+      const tokenAccounts = await storage.getTokenAccountsByReferralId(referralAccount.id);
+      
+      res.json({
+        success: true,
+        referralAccount: {
+          referralPda: referralAccount.referralPda,
+          projectName: referralAccount.projectName,
+          feePercentage: referralAccount.feePercentage
+        },
+        tokenAccounts
+      });
+    } catch (error: any) {
+      console.error('Get token accounts error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get token accounts', 
+        details: error.message 
+      });
+    }
+  });
+  
+  // Get referral account info
+  app.get("/api/referral/account/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const referralAccount = await storage.getReferralAccountByWallet(walletAddress);
+      if (!referralAccount) {
+        return res.status(404).json({ error: 'Referral account not found' });
+      }
+      
+      const tokenAccounts = await storage.getTokenAccountsByReferralId(referralAccount.id);
+      
+      res.json({
+        success: true,
+        account: {
+          id: referralAccount.id,
+          referralPda: referralAccount.referralPda,
+          projectName: referralAccount.projectName,
+          feePercentage: referralAccount.feePercentage,
+          status: referralAccount.status,
+          createdAt: referralAccount.createdAt
+        },
+        tokenAccounts
+      });
+    } catch (error: any) {
+      console.error('Get referral account error:', error);
+      res.status(500).json({ 
+        error: 'Failed to get referral account', 
+        details: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
