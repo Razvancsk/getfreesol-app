@@ -43,15 +43,21 @@ export default function DeveloperDashboard() {
   // Create account mutation
   const createAccount = useMutation({
     mutationFn: async () => {
+      console.log("🚀 Starting account creation - NO MESSAGE SIGNING");
+      
       if (!publicKey || !sendTransaction || !projectName.trim()) {
         throw new Error("Missing wallet or project name");
       }
 
+      console.log("📡 Calling backend to generate transaction...");
+      
       // Step 1: Get the transaction from backend (no message signing needed)
       const prepareResponse: any = await apiRequest('POST', '/api/referral/create-account', {
         walletAddress: publicKey.toBase58(),
         projectName: projectName.trim(),
       });
+      
+      console.log("✅ Received response from backend:", prepareResponse);
       
       if (!prepareResponse.transaction) {
         throw new Error("No transaction received from server");
