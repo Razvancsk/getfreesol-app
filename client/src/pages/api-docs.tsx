@@ -456,25 +456,53 @@ export default function ApiDocs() {
                 <div className="flex items-center gap-2">
                   <Badge className="bg-green-600">GET</Badge>
                   <code className="text-purple-200">/api/sol-refund/scan/:address</code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(`${baseUrl}/api/sol-refund/scan/YOUR_WALLET_ADDRESS`, 'scan')}
-                    className="ml-auto text-purple-300 hover:text-white"
-                  >
-                    {copiedId === 'scan' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
                 </div>
                 <p className="text-purple-200 text-sm">Scan a wallet for empty token accounts that can be closed to recover rent</p>
+                
+                {/* cURL Example */}
                 <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <p className="text-purple-300 text-sm mb-2">Example Request:</p>
-                  <pre className="text-green-400 text-sm overflow-x-auto">
-{`GET ${baseUrl}/api/sol-refund/scan/YOUR_WALLET_ADDRESS`}
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-purple-300 text-sm font-semibold">cURL</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`curl "${baseUrl}/api/sol-refund/scan/YOUR_WALLET_ADDRESS"`, 'scan-curl')}
+                      className="text-purple-300 hover:text-white"
+                    >
+                      {copiedId === 'scan-curl' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
+{`curl "${baseUrl}/api/sol-refund/scan/YOUR_WALLET_ADDRESS"`}
                   </pre>
                 </div>
+
+                {/* JavaScript/TypeScript Example */}
                 <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <p className="text-purple-300 text-sm mb-2">Example Response:</p>
-                  <pre className="text-green-400 text-sm overflow-x-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-purple-300 text-sm font-semibold">JavaScript / TypeScript</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`const response = await fetch('${baseUrl}/api/sol-refund/scan/YOUR_WALLET_ADDRESS');
+const data = await response.json();
+console.log(data);`, 'scan-js')}
+                      className="text-purple-300 hover:text-white"
+                    >
+                      {copiedId === 'scan-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
+{`const response = await fetch('${baseUrl}/api/sol-refund/scan/YOUR_WALLET_ADDRESS');
+const data = await response.json();
+console.log(data);`}
+                  </pre>
+                </div>
+
+                {/* Response Example */}
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Response:</p>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
 {`{
   "success": true,
   "walletAddress": "...",
@@ -494,33 +522,9 @@ export default function ApiDocs() {
                 <div className="flex items-center gap-2">
                   <Badge className="bg-blue-600">POST</Badge>
                   <code className="text-purple-200">/api/sol-refund/prepare-transaction</code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(`${baseUrl}/api/sol-refund/prepare-transaction`, 'prepare-tx')}
-                    className="ml-auto text-purple-300 hover:text-white"
-                  >
-                    {copiedId === 'prepare-tx' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
                 </div>
                 <p className="text-purple-200 text-sm">Build a transaction to close empty accounts and recover SOL rent</p>
-                <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <p className="text-purple-300 text-sm mb-2">Example Request:</p>
-                  <pre className="text-green-400 text-sm overflow-x-auto">
-{`POST ${baseUrl}/api/sol-refund/prepare-transaction
-Content-Type: application/json
-
-{
-  "walletAddress": "USER_WALLET_ADDRESS",
-  "selectedAccounts": ["account1", "account2"],
-  "donationPercentage": ${feePercentage || '10'},
-  "feeReceiverAddress": "${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}"
-}`}
-                  </pre>
-                  <p className="text-purple-300 text-xs mt-2">
-                    💰 <strong>feeReceiverAddress</strong>: Your PDA where fees are sent (${referralAccount ? 'auto-filled with your PDA' : 'shown in purple box above'})
-                  </p>
-                </div>
+                
                 {referralAccount && (
                   <div className="bg-green-900/30 p-3 rounded-lg border border-green-500/50">
                     <p className="text-green-200 text-sm font-semibold">
@@ -531,9 +535,86 @@ Content-Type: application/json
                     </p>
                   </div>
                 )}
+
+                {/* cURL Example */}
                 <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <p className="text-purple-300 text-sm mb-2">Example Response:</p>
-                  <pre className="text-green-400 text-sm overflow-x-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-purple-300 text-sm font-semibold">cURL</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`curl -X POST "${baseUrl}/api/sol-refund/prepare-transaction" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "walletAddress": "USER_WALLET_ADDRESS",
+    "selectedAccounts": ["account1", "account2"],
+    "donationPercentage": ${feePercentage || '10'},
+    "feeReceiverAddress": "${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}"
+  }'`, 'prepare-curl')}
+                      className="text-purple-300 hover:text-white"
+                    >
+                      {copiedId === 'prepare-curl' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
+{`curl -X POST "${baseUrl}/api/sol-refund/prepare-transaction" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "walletAddress": "USER_WALLET_ADDRESS",
+    "selectedAccounts": ["account1", "account2"],
+    "donationPercentage": ${feePercentage || '10'},
+    "feeReceiverAddress": "${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}"
+  }'`}
+                  </pre>
+                </div>
+
+                {/* JavaScript/TypeScript Example */}
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-purple-300 text-sm font-semibold">JavaScript / TypeScript</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    walletAddress: 'USER_WALLET_ADDRESS',
+    selectedAccounts: ['account1', 'account2'],
+    donationPercentage: ${feePercentage || '10'},
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+  })
+});
+const data = await response.json();
+console.log(data);`, 'prepare-js')}
+                      className="text-purple-300 hover:text-white"
+                    >
+                      {copiedId === 'prepare-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
+{`const response = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    walletAddress: 'USER_WALLET_ADDRESS',
+    selectedAccounts: ['account1', 'account2'],
+    donationPercentage: ${feePercentage || '10'},
+    feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+  })
+});
+const data = await response.json();
+console.log(data);`}
+                  </pre>
+                  <p className="text-purple-300 text-xs mt-2">
+                    💰 <strong>feeReceiverAddress</strong>: Your PDA where fees are sent (${referralAccount ? 'auto-filled with your PDA' : 'shown in purple box above'})
+                  </p>
+                </div>
+
+                {/* Response Example */}
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Response:</p>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
 {`{
   "transaction": "base64_encoded_transaction",
   "message": "Prepared transaction to close 8 accounts",
@@ -552,14 +633,6 @@ Content-Type: application/json
                 <div className="flex items-center gap-2">
                   <Badge className="bg-orange-600">POST</Badge>
                   <code className="text-purple-200">/api/sol-refund/record-success</code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(`${baseUrl}/api/sol-refund/record-success`, 'record-success')}
-                    className="ml-auto text-purple-300 hover:text-white"
-                  >
-                    {copiedId === 'record-success' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
                 </div>
                 <p className="text-purple-200 text-sm font-semibold">⚠️ CRITICAL: Call this after transaction confirmation to update platform stats and record fees</p>
                 <div className="bg-orange-900/30 p-3 rounded-lg border border-orange-500/50">
@@ -567,28 +640,103 @@ Content-Type: application/json
                     <strong>Required:</strong> You MUST call this endpoint after the transaction is confirmed. This updates global statistics (TOTAL SOL RECOVERED, TOTAL ACCOUNTS CLOSED) and records your referral earnings.
                   </p>
                 </div>
-                <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <p className="text-purple-300 text-sm mb-2">Example Request:</p>
-                  <pre className="text-green-400 text-sm overflow-x-auto">
-{`POST ${baseUrl}/api/sol-refund/record-success
-Content-Type: application/json
 
-{
-  "signature": "TRANSACTION_SIGNATURE",
-  "walletAddress": "USER_WALLET_ADDRESS",
-  "selectedAccounts": ["account1", "account2"],
-  "accountsClosed": 8,
-  "solRecovered": 0.0162,
-  "netAmount": 0.01458,
-  "feeAmount": 0.00162,
-  "platformFeeAmount": 0.000324,
-  "referralFeeAmount": 0.001296
-}`}
+                {/* cURL Example */}
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-purple-300 text-sm font-semibold">cURL</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`curl -X POST "${baseUrl}/api/sol-refund/record-success" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "signature": "TRANSACTION_SIGNATURE",
+    "walletAddress": "USER_WALLET_ADDRESS",
+    "selectedAccounts": ["account1", "account2"],
+    "accountsClosed": 8,
+    "solRecovered": 0.0162,
+    "netAmount": 0.01458,
+    "feeAmount": 0.00162,
+    "platformFeeAmount": 0.000324,
+    "referralFeeAmount": 0.001296
+  }'`, 'record-curl')}
+                      className="text-purple-300 hover:text-white"
+                    >
+                      {copiedId === 'record-curl' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
+{`curl -X POST "${baseUrl}/api/sol-refund/record-success" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "signature": "TRANSACTION_SIGNATURE",
+    "walletAddress": "USER_WALLET_ADDRESS",
+    "selectedAccounts": ["account1", "account2"],
+    "accountsClosed": 8,
+    "solRecovered": 0.0162,
+    "netAmount": 0.01458,
+    "feeAmount": 0.00162,
+    "platformFeeAmount": 0.000324,
+    "referralFeeAmount": 0.001296
+  }'`}
                   </pre>
                 </div>
+
+                {/* JavaScript/TypeScript Example */}
                 <div className="bg-slate-900/50 p-4 rounded-lg">
-                  <p className="text-purple-300 text-sm mb-2">Example Response:</p>
-                  <pre className="text-green-400 text-sm overflow-x-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-purple-300 text-sm font-semibold">JavaScript / TypeScript</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    signature: 'TRANSACTION_SIGNATURE',
+    walletAddress: 'USER_WALLET_ADDRESS',
+    selectedAccounts: ['account1', 'account2'],
+    accountsClosed: 8,
+    solRecovered: 0.0162,
+    netAmount: 0.01458,
+    feeAmount: 0.00162,
+    platformFeeAmount: 0.000324,
+    referralFeeAmount: 0.001296
+  })
+});
+const data = await response.json();
+console.log(data);`, 'record-js')}
+                      className="text-purple-300 hover:text-white"
+                    >
+                      {copiedId === 'record-js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
+{`const response = await fetch('${baseUrl}/api/sol-refund/record-success', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    signature: 'TRANSACTION_SIGNATURE',
+    walletAddress: 'USER_WALLET_ADDRESS',
+    selectedAccounts: ['account1', 'account2'],
+    accountsClosed: 8,
+    solRecovered: 0.0162,
+    netAmount: 0.01458,
+    feeAmount: 0.00162,
+    platformFeeAmount: 0.000324,
+    referralFeeAmount: 0.001296
+  })
+});
+const data = await response.json();
+console.log(data);`}
+                  </pre>
+                </div>
+
+                {/* Response Example */}
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <p className="text-purple-300 text-sm mb-2">Response:</p>
+                  <pre className="text-green-400 text-xs overflow-x-auto">
 {`{
   "success": true,
   "message": "Successfully processed 8 accounts and recovered 0.01458 SOL!"
