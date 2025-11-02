@@ -658,6 +658,50 @@ app.post("/api/sol-refund/record-success", async (req, res) => {
             </CardContent>
           </Card>
 
+          {/* Step 3: Usage Example */}
+          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">3️⃣ Usage Example</CardTitle>
+              <CardDescription className="text-purple-200">
+                How to call the recovery function in your app
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-purple-300 text-sm font-semibold">Example Usage</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`import { wallet } from './walletAdapter'; // Your Phantom/Solflare wallet
+import { recoverSOLRent } from './recoverSol';
+
+// Connect wallet first
+await wallet.connect();
+
+// Recover SOL
+const signature = await recoverSOLRent(wallet.publicKey, wallet);
+console.log('Success! Transaction:', signature);`, 'usage-example')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'usage-example' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <pre className="text-green-400 text-xs overflow-x-auto">
+{`import { wallet } from './walletAdapter'; // Your Phantom/Solflare wallet
+import { recoverSOLRent } from './recoverSol';
+
+// Connect wallet first
+await wallet.connect();
+
+// Recover SOL
+const signature = await recoverSOLRent(wallet.publicKey, wallet);
+console.log('Success! Transaction:', signature);`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Support */}
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
