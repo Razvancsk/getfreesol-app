@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
 // Metaplex Core burning - server-side UMI implementation
@@ -6454,13 +6454,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`  Platform (20%): ${platformAmount} lamports`);
       
       // Reconstruct fee account keypair
+      const { keypairFromEncrypted, WSOL_MINT } = await import('./vanityAddressService.js');
       const feeKeypair = keypairFromEncrypted(feeAccount.encryptedPrivateKey);
       
       // Platform wallet
       const platformWallet = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
       const developerWallet = new PublicKey(walletAddress);
       
-      // Create transaction to transfer SOL
+      // Create transaction to transfer WSOL
       const connection = new Connection(
         process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com',
         'confirmed'
@@ -6468,25 +6469,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const transaction = new Transaction();
       
-      // Transfer to developer (80%)
-      if (developerAmount > 0) {
+      // Get the fee account's WSOL ATA (source)
+      const feeAccountWsolAta = new PublicKey(feeAccount.wsolAta!);
+      
+      // Get or create developer's WSOL ATA
+      const developerWsolAta = getAssociatedTokenAddressSync(
+        WSOL_MINT,
+        developerWallet,
+        true
+      );
+      
+      // Get or create platform's WSOL ATA
+      const platformWsolAta = getAssociatedTokenAddressSync(
+        WSOL_MINT,
+        platformWallet,
+        true
+      );
+      
+      // Check if developer's WSOL ATA exists, create if not
+      try {
+        await getAccount(connection, developerWsolAta);
+      } catch {
+        console.log('  Creating developer WSOL ATA...');
         transaction.add(
-          SystemProgram.transfer({
-            fromPubkey: feeKeypair.publicKey,
-            toPubkey: developerWallet,
-            lamports: developerAmount,
-          })
+          createAssociatedTokenAccountInstruction(
+            feeKeypair.publicKey,
+            developerWsolAta,
+            developerWallet,
+            WSOL_MINT
+          )
         );
       }
       
-      // Transfer to platform (20%)
+      // Check if platform's WSOL ATA exists, create if not
+      try {
+        await getAccount(connection, platformWsolAta);
+      } catch {
+        console.log('  Creating platform WSOL ATA...');
+        transaction.add(
+          createAssociatedTokenAccountInstruction(
+            feeKeypair.publicKey,
+            platformWsolAta,
+            platformWallet,
+            WSOL_MINT
+          )
+        );
+      }
+      
+      // Transfer WSOL to developer (80%)
+      if (developerAmount > 0) {
+        transaction.add(
+          createTransferInstruction(
+            feeAccountWsolAta,
+            developerWsolAta,
+            feeKeypair.publicKey,
+            developerAmount,
+            [],
+            TOKEN_PROGRAM_ID
+          )
+        );
+      }
+      
+      // Transfer WSOL to platform (20%)
       if (platformAmount > 0) {
         transaction.add(
-          SystemProgram.transfer({
-            fromPubkey: feeKeypair.publicKey,
-            toPubkey: platformWallet,
-            lamports: platformAmount,
-          })
+          createTransferInstruction(
+            feeAccountWsolAta,
+            platformWsolAta,
+            feeKeypair.publicKey,
+            platformAmount,
+            [],
+            TOKEN_PROGRAM_ID
+          )
         );
       }
       
