@@ -578,6 +578,257 @@ const handleRecover = async (address: string) => {
             </CardContent>
           </Card>
 
+          {/* Solana Web3.js Integration */}
+          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">⚙️ @solana/web3.js Integration</CardTitle>
+              <CardDescription className="text-purple-200">
+                Complete integration using Solana's Web3.js SDK for full control
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Installation */}
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-purple-300 text-sm font-semibold">Installation</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard('npm install @solana/web3.js', 'install-web3js')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'install-web3js' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <pre className="text-green-400 text-sm overflow-x-auto">
+{`npm install @solana/web3.js`}
+                </pre>
+              </div>
+
+              {/* Complete Implementation */}
+              <div className="bg-slate-900/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-purple-300 text-sm font-semibold">Complete Implementation with Web3.js</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`import { Connection, Transaction, PublicKey } from '@solana/web3.js';
+
+// Setup Solana connection
+const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+
+// Your integration function
+async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+  try {
+    const walletAddress = walletPublicKey.toBase58();
+    
+    // STEP 1: Scan for empty token accounts
+    const scanResponse = await fetch(
+      \`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`
+    );
+    const scanData = await scanResponse.json();
+    
+    if (!scanData.success || scanData.emptyAccounts === 0) {
+      console.log('No empty accounts found');
+      return;
+    }
+    
+    console.log(\`Found \${scanData.emptyAccounts} empty accounts\`);
+    console.log(\`Total SOL to recover: \${scanData.totalReclaimable}\`);
+    
+    // STEP 2: Prepare transaction
+    const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress,
+        selectedAccounts: scanData.accounts.map(acc => acc.accountAddress),
+        donationPercentage: ${feePercentage || '10'},
+        feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+      })
+    });
+    
+    const prepareData = await prepareResponse.json();
+    
+    if (!prepareData.success) {
+      throw new Error('Failed to prepare transaction');
+    }
+    
+    console.log(\`Net amount to user: \${prepareData.netAmount} SOL\`);
+    console.log(\`Fee amount: \${prepareData.feeAmount} SOL\`);
+    
+    // STEP 3: Deserialize transaction from base64
+    const transactionBuffer = Buffer.from(prepareData.transaction, 'base64');
+    const transaction = Transaction.from(transactionBuffer);
+    
+    // STEP 4: Sign transaction with wallet
+    const signedTransaction = await wallet.signTransaction(transaction);
+    
+    // STEP 5: Send transaction to Solana network
+    const signature = await connection.sendRawTransaction(
+      signedTransaction.serialize(),
+      {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed'
+      }
+    );
+    
+    console.log('Transaction sent:', signature);
+    
+    // STEP 6: Confirm transaction
+    const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+    
+    if (confirmation.value.err) {
+      throw new Error('Transaction failed: ' + JSON.stringify(confirmation.value.err));
+    }
+    
+    console.log('Transaction confirmed!');
+    
+    // STEP 7: Record success (CRITICAL - updates platform stats)
+    await fetch('${baseUrl}/api/sol-refund/record-success', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        signature,
+        walletAddress,
+        selectedAccounts: scanData.accounts.map(acc => acc.accountAddress),
+        accountsClosed: scanData.emptyAccounts,
+        solRecovered: prepareData.totalSolReclaimed,
+        netAmount: prepareData.netAmount,
+        feeAmount: prepareData.feeAmount,
+        platformFeeAmount: prepareData.platformFeeAmount,
+        referralFeeAmount: prepareData.referralFeeAmount
+      })
+    });
+    
+    console.log('✅ Success! SOL recovered and stats updated');
+    return signature;
+    
+  } catch (error) {
+    console.error('Error recovering SOL:', error);
+    throw error;
+  }
+}
+
+// Usage example
+// recoverSOLRent(wallet.publicKey, wallet);`, 'web3js-integration')}
+                    className="text-purple-300 hover:text-white"
+                  >
+                    {copiedId === 'web3js-integration' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <pre className="text-green-400 text-xs overflow-x-auto">
+{`import { Connection, Transaction, PublicKey } from '@solana/web3.js';
+
+// Setup Solana connection
+const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+
+// Your integration function
+async function recoverSOLRent(walletPublicKey: PublicKey, wallet: any) {
+  try {
+    const walletAddress = walletPublicKey.toBase58();
+    
+    // STEP 1: Scan for empty token accounts
+    const scanResponse = await fetch(
+      \`${baseUrl}/api/sol-refund/scan/\${walletAddress}\`
+    );
+    const scanData = await scanResponse.json();
+    
+    if (!scanData.success || scanData.emptyAccounts === 0) {
+      console.log('No empty accounts found');
+      return;
+    }
+    
+    console.log(\`Found \${scanData.emptyAccounts} empty accounts\`);
+    console.log(\`Total SOL to recover: \${scanData.totalReclaimable}\`);
+    
+    // STEP 2: Prepare transaction
+    const prepareResponse = await fetch('${baseUrl}/api/sol-refund/prepare-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress,
+        selectedAccounts: scanData.accounts.map(acc => acc.accountAddress),
+        donationPercentage: ${feePercentage || '10'},
+        feeReceiverAddress: '${referralAccount?.referralPda || 'YOUR_PDA_ADDRESS'}'
+      })
+    });
+    
+    const prepareData = await prepareResponse.json();
+    
+    if (!prepareData.success) {
+      throw new Error('Failed to prepare transaction');
+    }
+    
+    console.log(\`Net amount to user: \${prepareData.netAmount} SOL\`);
+    console.log(\`Fee amount: \${prepareData.feeAmount} SOL\`);
+    
+    // STEP 3: Deserialize transaction from base64
+    const transactionBuffer = Buffer.from(prepareData.transaction, 'base64');
+    const transaction = Transaction.from(transactionBuffer);
+    
+    // STEP 4: Sign transaction with wallet
+    const signedTransaction = await wallet.signTransaction(transaction);
+    
+    // STEP 5: Send transaction to Solana network
+    const signature = await connection.sendRawTransaction(
+      signedTransaction.serialize(),
+      {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed'
+      }
+    );
+    
+    console.log('Transaction sent:', signature);
+    
+    // STEP 6: Confirm transaction
+    const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+    
+    if (confirmation.value.err) {
+      throw new Error('Transaction failed: ' + JSON.stringify(confirmation.value.err));
+    }
+    
+    console.log('Transaction confirmed!');
+    
+    // STEP 7: Record success (CRITICAL - updates platform stats)
+    await fetch('${baseUrl}/api/sol-refund/record-success', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        signature,
+        walletAddress,
+        selectedAccounts: scanData.accounts.map(acc => acc.accountAddress),
+        accountsClosed: scanData.emptyAccounts,
+        solRecovered: prepareData.totalSolReclaimed,
+        netAmount: prepareData.netAmount,
+        feeAmount: prepareData.feeAmount,
+        platformFeeAmount: prepareData.platformFeeAmount,
+        referralFeeAmount: prepareData.referralFeeAmount
+      })
+    });
+    
+    console.log('✅ Success! SOL recovered and stats updated');
+    return signature;
+    
+  } catch (error) {
+    console.error('Error recovering SOL:', error);
+    throw error;
+  }
+}
+
+// Usage example
+// recoverSOLRent(wallet.publicKey, wallet);`}
+                </pre>
+              </div>
+
+              <div className="bg-blue-900/30 p-3 rounded-lg border border-blue-500/50">
+                <p className="text-blue-200 text-sm">
+                  💡 <strong>Pro Tip:</strong> This example uses @solana/web3.js for full transaction control. Perfect for developers who need low-level access to Solana transactions and want to customize the signing and submission process.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Support */}
           <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
             <CardHeader>
