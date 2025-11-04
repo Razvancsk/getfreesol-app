@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowUpDown, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -39,7 +39,7 @@ import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction, Connection, PublicKey, Transaction } from '@solana/web3.js';
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction, createTransferInstruction } from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
@@ -92,7 +92,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'massTransfer' | 'lend'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'lend'>('reclaim');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -104,11 +104,6 @@ export default function SolRefund() {
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
   
-  // Mass transfer states
-  const [massTransferTokens, setMassTransferTokens] = useState<any[]>([]);
-  const [selectedTransferTokens, setSelectedTransferTokens] = useState<Set<string>>(new Set());
-  const [tokenAmounts, setTokenAmounts] = useState<Map<string, string>>(new Map());
-  
   // Jupiter Lend states
   const [depositDialogOpen, setDepositDialogOpen] = useState(false);
   const [selectedReserve, setSelectedReserve] = useState<any>(null);
@@ -116,8 +111,6 @@ export default function SolRefund() {
   const [depositRawAmount, setDepositRawAmount] = useState<string | null>(null); // Store raw amount for withdrawals to avoid float precision loss
   const [depositingLend, setDepositingLend] = useState(false);
   const [lendMode, setLendMode] = useState<'deposit' | 'withdraw'>('deposit');
-  const [destinationWallet, setDestinationWallet] = useState<string>('');
-  const [loadingTransferTokens, setLoadingTransferTokens] = useState(false);
   const [walletTokenBalance, setWalletTokenBalance] = useState<number>(0);
   const [lendStats, setLendStats] = useState<{ totalDepositsUsd: string; totalEarningsUsd: string } | null>(null);
   
@@ -229,64 +222,6 @@ export default function SolRefund() {
   } = useWalletAdapter();
 
 
-  // Function to load mass transfer tokens
-  const loadMassTransferTokens = async () => {
-    if (!publicKey) {
-      console.log('No publicKey available for loading tokens');
-      return;
-    }
-    
-    console.log('Loading tokens for wallet:', publicKey.toBase58());
-    setLoadingTransferTokens(true);
-    try {
-      // Fetch SPL tokens
-      const response = await fetch(`/api/tokens/holdings/${publicKey.toBase58()}`);
-      console.log('Holdings API response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Holdings API error:', errorText);
-        throw new Error(`Failed to fetch token holdings: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('Received token data:', data);
-      const tokensWithBalance = data.filter((t: any) => t.balance > 0);
-      
-      // Get SOL balance
-      const solBalance = await rpcConnection.getBalance(publicKey);
-      const solInSol = solBalance / 1_000_000_000;
-      console.log('SOL balance:', solInSol);
-      
-      // Add SOL as the first token if balance > 0
-      const allTokens = [];
-      if (solInSol > 0) {
-        allTokens.push({
-          mint: 'So11111111111111111111111111111111111111112', // SOL mint address
-          symbol: 'SOL',
-          name: 'Solana',
-          logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
-          balance: solInSol,
-          decimals: 9,
-          isNativeSOL: true,
-          accounts: [] // No token accounts for native SOL
-        });
-      }
-      allTokens.push(...tokensWithBalance);
-      
-      console.log('Total tokens loaded:', allTokens.length);
-      setMassTransferTokens(allTokens);
-      setSelectedTransferTokens(new Set());
-    } catch (error: any) {
-      console.error('Token loading error:', error);
-      toast({
-        title: "Error loading tokens",
-        description: error.message || 'Unknown error',
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingTransferTokens(false);
-    }
-  };
 
   // Function to fetch wallet balance for a specific token (for Lend deposit dialog)
   const fetchTokenBalance = async (tokenMint: string) => {
@@ -340,9 +275,6 @@ export default function SolRefund() {
         } else if (burnSubTab === 'nft') {
           scanNftsMutation.mutate(publicKey.toString());
         }
-      } else if (activeTab === 'massTransfer') {
-        // Auto-load tokens for mass transfer tab
-        loadMassTransferTokens();
       }
     }
   }, [isConnected, publicKey, activeTab, burnSubTab]);
@@ -368,13 +300,8 @@ export default function SolRefund() {
     retry: false,
   });
 
-  // Query to get mass transfer stats (only fetch when platform wallet is connected)
+  // Check if platform wallet
   const isPlatformWallet = publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
-  const { data: massTransferStats } = useQuery<{ success: boolean; stats: { totalUniqueUsers: number; totalTransfers: number } }>({
-    queryKey: ['/api/mass-transfer/stats'],
-    enabled: activeTab === 'massTransfer' && isPlatformWallet,
-    retry: false,
-  });
 
   // Query to get referral transactions
   const { data: referralTransactions } = useQuery({
@@ -2497,15 +2424,14 @@ export default function SolRefund() {
               <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
-                  <Link href="/docs">
-                    <a
-                      data-testid="button-social-docs"
-                      className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                      title="API Documentation"
-                    >
-                      <Code className="h-4 w-4 text-white" />
-                      <span className="text-white text-xs font-medium">API</span>
-                    </a>
+                  <Link 
+                    href="/docs"
+                    data-testid="button-social-docs"
+                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="API Documentation"
+                  >
+                    <Code className="h-4 w-4 text-white" />
+                    <span className="text-white text-xs font-medium">API</span>
                   </Link>
                   <a
                     href="https://x.com/getfreesol_xyz"
@@ -2581,15 +2507,14 @@ export default function SolRefund() {
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
               <div className="flex items-center space-x-1">
-                <Link href="/docs">
-                  <a
-                    data-testid="button-social-docs-desktop"
-                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                    title="API Documentation"
-                  >
-                    <Code className="h-4 w-4 text-white" />
-                    <span className="text-white text-xs font-medium">API</span>
-                  </a>
+                <Link 
+                  href="/docs"
+                  data-testid="button-social-docs-desktop"
+                  className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  title="API Documentation"
+                >
+                  <Code className="h-4 w-4 text-white" />
+                  <span className="text-white text-xs font-medium">API</span>
                 </Link>
                 <a
                   href="https://x.com/getfreesol_xyz"
@@ -2705,18 +2630,6 @@ export default function SolRefund() {
                   Referrals
                 </Button>
                 <Button
-                  onClick={() => setActiveTab('massTransfer')}
-                  className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
-                    activeTab === 'massTransfer' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-mass-transfer"
-                >
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
-                  Transfer
-                </Button>
-                <Button
                   onClick={() => setActiveTab('lend')}
                   className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
                     activeTab === 'lend' 
@@ -2749,7 +2662,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'massTransfer' ? 'Select and send multiple tokens from one wallet to another' : activeTab === 'lend' ? 'Earn passive income on your Solana assets' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'lend' ? 'Earn passive income on your Solana assets' : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -3635,425 +3548,6 @@ export default function SolRefund() {
             );
           })()}
 
-          {/* Mass Transfer Tab Content */}
-          {activeTab === 'massTransfer' && (
-            <div className="space-y-6">
-              {/* Transfer Stats - Only visible to platform wallet */}
-              {isPlatformWallet && massTransferStats && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                    <div className="text-3xl font-bold text-white mb-2">
-                      {massTransferStats.stats.totalUniqueUsers}
-                    </div>
-                    <div className="text-sm text-purple-200 uppercase tracking-wider">
-                      USERS USING TRANSFER
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                    <div className="text-3xl font-bold text-white mb-2">
-                      {massTransferStats.stats.totalTransfers}
-                    </div>
-                    <div className="text-sm text-purple-200 uppercase tracking-wider">
-                      TOTAL TRANSFERS
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <ArrowUpDown className="w-6 h-6 text-green-400" />
-                    Mass Transfer
-                  </CardTitle>
-                  <CardDescription className="text-purple-200">
-                    Select multiple tokens from your wallet and send them all to one destination address
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Destination Wallet Input */}
-                  <div className="space-y-2">
-                    <Label htmlFor="destination-wallet" className="text-white">
-                      Destination Wallet Address
-                    </Label>
-                    <Input
-                      id="destination-wallet"
-                      value={destinationWallet}
-                      onChange={(e) => setDestinationWallet(e.target.value)}
-                      placeholder="Enter Solana wallet address..."
-                      className="bg-purple-900/30 border-purple-500/30 text-white placeholder-purple-400"
-                      data-testid="input-destination-wallet"
-                    />
-                  </div>
-
-                  {/* Token List */}
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-white text-lg">Your Tokens</Label>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (!wallet.publicKey) {
-                            toast({
-                              title: "Wallet not connected",
-                              description: "Please connect your wallet first",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-                          loadMassTransferTokens();
-                        }}
-                        disabled={loadingTransferTokens}
-                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
-                        data-testid="button-refresh-tokens"
-                      >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loadingTransferTokens ? 'animate-spin' : ''}`} />
-                        {loadingTransferTokens ? 'Loading...' : 'Refresh'}
-                      </Button>
-                    </div>
-
-                    {/* Token Selection List */}
-                    <div className="border border-purple-500/30 rounded-lg p-4 bg-purple-900/20 max-h-96 overflow-y-auto">
-                      {massTransferTokens.length > 0 ? (
-                        <div className="space-y-3">
-                          {massTransferTokens.map((token, index) => {
-                            const isSelected = selectedTransferTokens.has(token.mint);
-                            const currentAmount = tokenAmounts.has(token.mint) ? tokenAmounts.get(token.mint)! : token.balance.toString();
-                            return (
-                              <div
-                                key={token.mint}
-                                className={`p-3 rounded-lg transition-all cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-purple-600/40 border-2 border-purple-500'
-                                    : 'bg-purple-900/20 border border-purple-700/50 hover:border-purple-600/60'
-                                }`}
-                                onClick={() => {
-                                  const newSelection = new Set(selectedTransferTokens);
-                                  if (isSelected) {
-                                    newSelection.delete(token.mint);
-                                  } else {
-                                    newSelection.add(token.mint);
-                                    // Initialize with max amount
-                                    setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance.toString()));
-                                  }
-                                  setSelectedTransferTokens(newSelection);
-                                }}
-                                data-testid={`token-transfer-${index}`}
-                              >
-                                <div className="flex items-center gap-3 mb-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                    }}
-                                    className="w-4 h-4 cursor-pointer pointer-events-none"
-                                  />
-                                  {token.logo && (
-                                    <img src={token.logo} alt={token.symbol} className="w-10 h-10 rounded-full flex-shrink-0" />
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-white font-semibold">{token.symbol || 'Unknown'}</div>
-                                    <div className="text-purple-300 text-xs">
-                                      Balance: {token.balance.toLocaleString(undefined, {maximumFractionDigits: 4})} {token.symbol}
-                                    </div>
-                                    <div className="text-purple-400 text-xs font-mono truncate">
-                                      {token.mint.slice(0, 8)}...{token.mint.slice(-6)}
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                {isSelected && (
-                                  <div className="ml-7 space-y-2">
-                                    <div className="flex gap-2">
-                                      <Input
-                                        type="number"
-                                        value={currentAmount}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          if (value === '') {
-                                            setTokenAmounts(prev => new Map(prev).set(token.mint, ''));
-                                          } else {
-                                            const numValue = parseFloat(value);
-                                            const clamped = Math.min(Math.max(0, numValue), token.balance);
-                                            setTokenAmounts(prev => new Map(prev).set(token.mint, clamped.toString()));
-                                          }
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        step={1 / Math.pow(10, token.decimals)}
-                                        max={token.balance}
-                                        placeholder="Enter amount"
-                                        className="flex-1 bg-purple-900/30 border-purple-500/30 text-white"
-                                        data-testid={`input-amount-${index}`}
-                                      />
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, (token.balance * 0.25).toString()));
-                                        }}
-                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
-                                      >
-                                        25%
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, (token.balance * 0.5).toString()));
-                                        }}
-                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
-                                      >
-                                        50%
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, (token.balance * 0.75).toString()));
-                                        }}
-                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
-                                      >
-                                        75%
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setTokenAmounts(prev => new Map(prev).set(token.mint, token.balance.toString()));
-                                        }}
-                                        className="flex-1 bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30"
-                                      >
-                                        Max
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-purple-300 text-center py-8">
-                          {loadingTransferTokens ? 'Loading tokens...' : 'Connect your wallet and click Refresh to load your tokens'}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Transfer Summary */}
-                  {selectedTransferTokens.size > 0 && (
-                    <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-4 space-y-2">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-purple-300">Selected Tokens:</span>
-                        <span className="text-white font-medium">{selectedTransferTokens.size}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-purple-300">Platform Fee:</span>
-                        <span className="text-white font-medium">{(selectedTransferTokens.size * 0.0002).toFixed(4)} SOL</span>
-                      </div>
-                      <div className="border-t border-purple-500/20 pt-2 mt-2">
-                        <p className="text-xs text-purple-400 text-center">
-                          0.0002 SOL per token + Solana network fees
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Transfer Button */}
-                  <div className="flex justify-center pt-4">
-                    <Button
-                      size="lg"
-                      disabled={selectedTransferTokens.size === 0 || !destinationWallet || processing}
-                      onClick={async () => {
-                        if (!wallet.publicKey || !wallet.signTransaction) {
-                          toast({
-                            title: "Wallet not connected",
-                            description: "Please connect your wallet first",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-
-                        // Validate destination address
-                        try {
-                          new PublicKey(destinationWallet);
-                        } catch (error) {
-                          toast({
-                            title: "Invalid destination address",
-                            description: "Please enter a valid Solana wallet address",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-
-                        setProcessing(true);
-                        try {
-                          // Use the wallet's RPC connection
-                          const transaction = new Transaction();
-                          const destinationPubkey = new PublicKey(destinationWallet);
-                          
-                          // Add platform fee (0.0002 SOL per token)
-                          const platformFeeWallet = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
-                          const feePerToken = 0.0002 * 1_000_000_000; // Convert to lamports
-                          const totalPlatformFee = selectedTransferTokens.size * feePerToken;
-                          
-                          const { SystemProgram } = await import('@solana/web3.js');
-                          const feeInstruction = SystemProgram.transfer({
-                            fromPubkey: wallet.publicKey!,
-                            toPubkey: platformFeeWallet,
-                            lamports: totalPlatformFee,
-                          });
-                          transaction.add(feeInstruction);
-                          
-                          // Create transfer instructions for each selected token
-                          for (const mintAddress of selectedTransferTokens) {
-                            const token = massTransferTokens.find(t => t.mint === mintAddress);
-                            if (!token) continue;
-                            
-                            // Get the custom amount or use full balance
-                            const amountStr = tokenAmounts.has(mintAddress) ? tokenAmounts.get(mintAddress)! : token.balance.toString();
-                            const transferAmount = amountStr === '' ? 0 : parseFloat(amountStr);
-                            if (transferAmount <= 0) continue;
-                            
-                            // Handle native SOL transfer
-                            if (token.isNativeSOL) {
-                              const lamports = Math.floor(transferAmount * 1_000_000_000);
-                              const solTransferIx = SystemProgram.transfer({
-                                fromPubkey: wallet.publicKey!,
-                                toPubkey: destinationPubkey,
-                                lamports: lamports,
-                              });
-                              transaction.add(solTransferIx);
-                            } else {
-                              // Handle SPL token transfer
-                              const mintPubkey = new PublicKey(mintAddress);
-                              const programId = token.accounts[0].programId === 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' 
-                                ? TOKEN_2022_PROGRAM_ID 
-                                : TOKEN_PROGRAM_ID;
-                              
-                              // Get source token account (prefer ATA)
-                              const sourceAccount = token.accounts.find((acc: any) => acc.isAssociatedTokenAccount) || token.accounts[0];
-                              const sourceAccountPubkey = new PublicKey(sourceAccount.address);
-                              
-                              // Convert UI amount to raw amount (multiply by 10^decimals)
-                              const rawAmount = BigInt(Math.floor(transferAmount * Math.pow(10, token.decimals)));
-                              
-                              // Get or create destination ATA
-                              const destTokenAccount = await getAssociatedTokenAddress(
-                                mintPubkey,
-                                destinationPubkey,
-                                false,
-                                programId
-                              );
-                              
-                              // Check if destination account exists
-                              const destAccountInfo = await rpcConnection.getAccountInfo(destTokenAccount);
-                              
-                              // Create account if it doesn't exist
-                              if (!destAccountInfo) {
-                                const createIx = createAssociatedTokenAccountInstruction(
-                                  wallet.publicKey!,
-                                  destTokenAccount,
-                                  destinationPubkey,
-                                  mintPubkey,
-                                  programId
-                                );
-                                transaction.add(createIx);
-                              }
-                              
-                              // Add transfer instruction with custom amount
-                              const transferIx = createTransferInstruction(
-                                sourceAccountPubkey,
-                                destTokenAccount,
-                                wallet.publicKey!,
-                                rawAmount,
-                                [],
-                                programId
-                              );
-                              transaction.add(transferIx);
-                            }
-                          }
-                          
-                          // Get recent blockhash
-                          const { blockhash } = await rpcConnection.getLatestBlockhash();
-                          transaction.recentBlockhash = blockhash;
-                          transaction.feePayer = wallet.publicKey;
-                          
-                          // Sign and send
-                          const signed = await wallet.signTransaction(transaction);
-                          const signature = await rpcConnection.sendRawTransaction(signed.serialize());
-                          
-                          // Confirm
-                          await rpcConnection.confirmTransaction(signature, 'confirmed');
-                          
-                          // Record the transfer for analytics
-                          try {
-                            const tokenDetails = Array.from(selectedTransferTokens).map(mintAddress => {
-                              const token = massTransferTokens.find(t => t.mint === mintAddress);
-                              const amountStr = tokenAmounts.has(mintAddress) ? tokenAmounts.get(mintAddress)! : token?.balance.toString() || '0';
-                              return {
-                                mint: mintAddress,
-                                symbol: token?.symbol || 'Unknown',
-                                amount: amountStr
-                              };
-                            });
-                            
-                            await fetch('/api/mass-transfer/record', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                signature,
-                                walletAddress: wallet.publicKey!.toBase58(),
-                                destinationWallet,
-                                tokensCount: selectedTransferTokens.size,
-                                tokenDetails: JSON.stringify(tokenDetails),
-                                totalPlatformFees: (selectedTransferTokens.size * 0.0002).toString()
-                              })
-                            });
-                          } catch (recordError) {
-                            console.error('Failed to record transfer analytics:', recordError);
-                          }
-                          
-                          toast({
-                            title: "Transfer Successful!",
-                            description: `Transferred ${selectedTransferTokens.size} tokens to ${destinationWallet.slice(0, 8)}...`,
-                          });
-                          
-                          // Clear selection and reload tokens
-                          setSelectedTransferTokens(new Set());
-                          setDestinationWallet('');
-                          setMassTransferTokens([]);
-                          
-                        } catch (error: any) {
-                          console.error('Transfer error:', error);
-                          toast({
-                            title: "Transfer Failed",
-                            description: error.message || "Failed to transfer tokens",
-                            variant: "destructive",
-                          });
-                        } finally {
-                          setProcessing(false);
-                        }
-                      }}
-                      className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold px-8 disabled:opacity-50 disabled:cursor-not-allowed"
-                      data-testid="button-execute-transfer"
-                    >
-                      <ArrowUpDown className="w-5 h-5 mr-2" />
-                      {processing ? 'Transferring...' : `Transfer ${selectedTransferTokens.size} Token${selectedTransferTokens.size !== 1 ? 's' : ''}`}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
 
           {/* Lend Tab Content */}
           {activeTab === 'lend' && (
