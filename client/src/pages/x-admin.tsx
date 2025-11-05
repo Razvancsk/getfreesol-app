@@ -110,6 +110,29 @@ export default function XAdmin() {
     },
   });
 
+  const testPostMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/x/test-post', {
+        solAmount: "0.020801",
+        walletAddress: "58AzpFr9...c6ByezPf8"
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Test Post Successful!",
+        description: "Check your X account to see the test post",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Test Post Failed",
+        description: error.message || "Failed to post to X",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 dark:from-background dark:to-secondary/10">
       <div className="container max-w-4xl mx-auto px-4 py-16">
@@ -188,13 +211,30 @@ export default function XAdmin() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-border/50">
+                <div className="pt-4 border-t border-border/50 flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => testPostMutation.mutate()}
+                    disabled={testPostMutation.isPending}
+                    data-testid="button-test-post"
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  >
+                    {testPostMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Posting...
+                      </>
+                    ) : (
+                      <>
+                        <Twitter className="mr-2 h-4 w-4" />
+                        Test Post
+                      </>
+                    )}
+                  </Button>
                   <Button
                     variant="destructive"
                     onClick={() => disconnectMutation.mutate()}
                     disabled={disconnectMutation.isPending}
                     data-testid="button-disconnect"
-                    className="w-full sm:w-auto"
                   >
                     {disconnectMutation.isPending ? (
                       <>
