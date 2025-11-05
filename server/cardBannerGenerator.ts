@@ -33,8 +33,8 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   ctx.font = '40px sans-serif';
   ctx.fillText('Claimer:', 80, 390);
 
-  ctx.font = '30px sans-serif';
-  ctx.fillText(walletAddress, 80, 450);
+  ctx.font = '24px sans-serif';
+  ctx.fillText(walletAddress, 80, 440);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 34px sans-serif';
