@@ -42,11 +42,11 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   const getFreeSolText = 'GET FREE SOL';
   const textMetrics = ctx.measureText(getFreeSolText);
   const textWidth = textMetrics.width;
-  const textEndX = width - 50;
+  const textEndX = width - 25;
   const textStartX = textEndX - textWidth;
   const textCenterX = textStartX + (textWidth / 2);
   
-  ctx.fillText(getFreeSolText, width - 50, height - 80);
+  ctx.fillText(getFreeSolText, width - 25, height - 80);
 
   try {
     const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
