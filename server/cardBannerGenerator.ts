@@ -23,18 +23,18 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 100px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('CLAIMED', 80, 160);
+  ctx.textAlign = 'center';
+  ctx.fillText('CLAIMED', width / 2, 160);
 
   const solText = `+ ${parseFloat(solAmount).toFixed(4)} SOL`;
   ctx.font = 'bold 130px sans-serif';
-  ctx.fillText(solText, 80, 310);
+  ctx.fillText(solText, width / 2, 310);
 
   ctx.font = '40px sans-serif';
-  ctx.fillText('Claimer:', 80, 390);
+  ctx.fillText('Claimer:', width / 2, 390);
 
   ctx.font = '24px sans-serif';
-  ctx.fillText(walletAddress, 80, 440);
+  ctx.fillText(walletAddress, width / 2, 440);
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 34px sans-serif';
