@@ -18,109 +18,90 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-  bgGradient.addColorStop(0, '#1e1b4b');
-  bgGradient.addColorStop(0.5, '#312e81');
-  bgGradient.addColorStop(1, '#4c1d95');
-  ctx.fillStyle = bgGradient;
+  ctx.fillStyle = '#5b21b6';
   ctx.fillRect(0, 0, width, height);
 
-  for (let i = 0; i < 5; i++) {
-    const circleGradient = ctx.createRadialGradient(
-      Math.random() * width, 
-      Math.random() * height, 
-      0, 
-      Math.random() * width, 
-      Math.random() * height, 
-      300
-    );
-    circleGradient.addColorStop(0, `rgba(168, 85, 247, ${0.1 + Math.random() * 0.2})`);
-    circleGradient.addColorStop(1, 'rgba(168, 85, 247, 0)');
-    ctx.fillStyle = circleGradient;
-    ctx.fillRect(0, 0, width, height);
-  }
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 100px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('CLAIMED', 80, 160);
 
-  ctx.strokeStyle = 'rgba(196, 181, 253, 0.2)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 8; i++) {
-    ctx.beginPath();
-    ctx.arc(100 + i * 150, 150, 60 + i * 10, 0, Math.PI * 2);
-    ctx.stroke();
-  }
+  const solText = `+ ${parseFloat(solAmount).toFixed(4)} SOL`;
+  ctx.font = 'bold 130px sans-serif';
+  ctx.fillText(solText, 80, 310);
 
-  const headerGradient = ctx.createLinearGradient(100, 80, width - 100, 120);
-  headerGradient.addColorStop(0, 'rgba(168, 85, 247, 0.3)');
-  headerGradient.addColorStop(0.5, 'rgba(192, 132, 252, 0.4)');
-  headerGradient.addColorStop(1, 'rgba(168, 85, 247, 0.3)');
-  ctx.fillStyle = headerGradient;
-  roundRect(ctx, 100, 80, width - 200, 60, 30);
-  ctx.fill();
+  ctx.font = '40px sans-serif';
+  ctx.fillText('Claimer:', 80, 390);
 
-  ctx.fillStyle = '#e9d5ff';
-  ctx.font = 'bold 42px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('✨ Successful Reclaim', width / 2, 125);
+  ctx.font = '34px sans-serif';
+  ctx.fillText(walletAddress, 80, 450);
 
-  const amountBg = ctx.createLinearGradient(width / 2 - 450, 240, width / 2 + 450, 320);
-  amountBg.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
-  amountBg.addColorStop(0.5, 'rgba(167, 139, 250, 0.5)');
-  amountBg.addColorStop(1, 'rgba(139, 92, 246, 0.4)');
-  ctx.fillStyle = amountBg;
-  roundRect(ctx, width / 2 - 450, 240, 900, 100, 50);
-  ctx.fill();
-
-  ctx.strokeStyle = 'rgba(196, 181, 253, 0.6)';
-  ctx.lineWidth = 3;
-  roundRect(ctx, width / 2 - 450, 240, 900, 100, 50);
-  ctx.stroke();
-
-  const solText = `${parseFloat(solAmount).toFixed(4)} SOL`;
-  ctx.font = 'bold 90px sans-serif';
-  
-  ctx.shadowColor = 'rgba(168, 85, 247, 0.8)';
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-
-  const solGradient = ctx.createLinearGradient(width / 2 - 300, 290, width / 2 + 300, 290);
-  solGradient.addColorStop(0, '#fef3c7');
-  solGradient.addColorStop(0.5, '#ffffff');
-  solGradient.addColorStop(1, '#fef3c7');
-  ctx.fillStyle = solGradient;
-  ctx.textAlign = 'center';
-  ctx.fillText(solText, width / 2, 305);
-
-  ctx.shadowBlur = 0;
-
-  const shortWallet = `${walletAddress.slice(0, 12)}...${walletAddress.slice(-12)}`;
-  ctx.fillStyle = 'rgba(196, 181, 253, 0.4)';
-  roundRect(ctx, width / 2 - 350, 380, 700, 50, 25);
-  ctx.fill();
-
-  ctx.fillStyle = '#d8b4fe';
-  ctx.font = '28px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(shortWallet, width / 2, 415);
-
-  ctx.fillStyle = 'rgba(139, 92, 246, 0.3)';
-  roundRect(ctx, width / 2 - 550, height - 100, 500, 60, 30);
-  ctx.fill();
+  drawGeometricGLogo(ctx, width - 280, height - 280);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 32px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('🚀 GetFreeSol.xyz', width / 2 - 520, height - 55);
-
-  ctx.fillStyle = 'rgba(139, 92, 246, 0.3)';
-  roundRect(ctx, width / 2 + 80, height - 100, 470, 60, 30);
-  ctx.fill();
-
-  ctx.fillStyle = '#c4b5fd';
-  ctx.font = '26px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('Reclaim your SOL today! 💜', width / 2 + 110, height - 55);
+  ctx.font = 'bold 34px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('GET FREE SOL', width - 80, height - 80);
 
   return canvas.toBuffer('image/png');
+}
+
+function drawGeometricGLogo(ctx: any, x: number, y: number) {
+  const size = 160;
+  
+  ctx.fillStyle = '#c4b5fd';
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + size * 0.7, y);
+  ctx.lineTo(x + size * 0.7, y + size * 0.35);
+  ctx.lineTo(x, y + size * 0.35);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#a78bfa';
+  ctx.beginPath();
+  ctx.moveTo(x + size * 0.7, y);
+  ctx.lineTo(x + size, y);
+  ctx.lineTo(x + size, y + size * 0.35);
+  ctx.lineTo(x + size * 0.7, y + size * 0.35);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#8b5cf6';
+  ctx.beginPath();
+  ctx.moveTo(x + size * 0.7, y + size * 0.35);
+  ctx.lineTo(x + size, y + size * 0.35);
+  ctx.lineTo(x + size, y + size * 0.65);
+  ctx.lineTo(x + size * 0.7, y + size * 0.65);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#7c3aed';
+  ctx.beginPath();
+  ctx.moveTo(x, y + size * 0.35);
+  ctx.lineTo(x + size * 0.7, y + size * 0.35);
+  ctx.lineTo(x + size * 0.7, y + size * 0.65);
+  ctx.lineTo(x, y + size * 0.65);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#6d28d9';
+  ctx.beginPath();
+  ctx.moveTo(x, y + size * 0.65);
+  ctx.lineTo(x + size * 0.35, y + size * 0.65);
+  ctx.lineTo(x + size * 0.35, y + size);
+  ctx.lineTo(x, y + size);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#5b21b6';
+  ctx.beginPath();
+  ctx.moveTo(x + size * 0.35, y + size * 0.65);
+  ctx.lineTo(x + size * 0.7, y + size * 0.65);
+  ctx.lineTo(x + size * 0.7, y + size);
+  ctx.lineTo(x + size * 0.35, y + size);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function roundRect(ctx: any, x: number, y: number, width: number, height: number, radius: number) {
