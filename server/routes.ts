@@ -1102,8 +1102,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Post to X (Twitter) for claims of 0.01 SOL or more
-      const MIN_CLAIM_FOR_POST = 0.01;
+      // Post to X (Twitter) for ALL claims (testing mode)
+      const MIN_CLAIM_FOR_POST = 0; // Changed from 0.01 for testing
       if (solRecovered >= MIN_CLAIM_FOR_POST) {
         try {
           const tweetContent = `🔥 Hot drop! ${solRecovered.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
