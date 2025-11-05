@@ -1102,6 +1102,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Send ALL claims to Discord (no minimum threshold)
+      try {
+        const { sendClaimAlert } = await import('./discordWebhookService.js');
+        await sendClaimAlert({
+          walletAddress,
+          solAmount: solRecovered,
+          accountsClosed,
+          signature
+        });
+      } catch (discordError) {
+        // Don't fail the whole request if Discord post fails
+        console.error('Failed to send Discord alert:', discordError);
+      }
+
       // Post to X (Twitter) for claims >= 0.01 SOL
       const MIN_CLAIM_FOR_POST = 0.01;
       let xPostId: string | null = null;
