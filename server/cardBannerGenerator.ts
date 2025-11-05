@@ -37,7 +37,7 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   ctx.fillText(walletAddress, width / 2, 440);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 34px sans-serif';
+  ctx.font = 'bold 42px sans-serif';
   ctx.textAlign = 'right';
   const getFreeSolText = 'GET FREE SOL';
   const textMetrics = ctx.measureText(getFreeSolText);
@@ -51,9 +51,9 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   try {
     const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
     const logo = await loadImage(logoPath);
-    const logoSize = 100;
+    const logoSize = 120;
     const logoX = textCenterX - (logoSize / 2);
-    ctx.drawImage(logo, logoX, height - 210, logoSize, logoSize);
+    ctx.drawImage(logo, logoX, height - 220, logoSize, logoSize);
   } catch (error) {
     console.error('Failed to load logo:', error);
   }
