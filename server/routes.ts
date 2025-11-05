@@ -1106,7 +1106,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const MIN_CLAIM_FOR_POST = 0; // Changed from 0.01 for testing
       if (solRecovered >= MIN_CLAIM_FOR_POST) {
         try {
-          const tweetContent = `🔥 Hot drop! ${solRecovered.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
+          // Tiered messaging based on claim amount
+          let claimMessages: string[];
+          if (solRecovered >= 4) {
+            // 🔥 Massive Claims (4 SOL and up)
+            claimMessages = ["💥 JACKPOT!", "🏆 Unreal", "⚡ Legendary drop"];
+          } else if (solRecovered >= 1) {
+            // 🟡 Big Claims (1 – 3.99 SOL)
+            claimMessages = ["🔥 Hot drop!", "🚨 Big claim", "🏆 On-chain win"];
+          } else if (solRecovered >= 0.1) {
+            // 🔵 Medium-High Claims (0.1 – 0.999 SOL)
+            claimMessages = ["💎 Nice one!", "🪙 That's a sweet claim", "🎯 Boom! 🎯 Hot claim"];
+          } else {
+            // 🟢 Tiny Claims (0.01 – 0.1 SOL)
+            claimMessages = ["🚀 Claimed", "🎉 Free SOL claimed", "💥 Another smooth claim"];
+          }
+          
+          // Randomly select a message from the tier
+          const randomMessage = claimMessages[Math.floor(Math.random() * claimMessages.length)];
+          
+          const tweetContent = `${randomMessage} ${solRecovered.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
 
 Claimer: ${walletAddress}`;
           
