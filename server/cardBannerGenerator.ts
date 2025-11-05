@@ -18,7 +18,10 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#5b21b6';
+  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+  bgGradient.addColorStop(0, '#2d1b4e');
+  bgGradient.addColorStop(1, '#1a0f2e');
+  ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
 
   ctx.fillStyle = '#ffffff';
