@@ -29,12 +29,20 @@ export async function initializeDiscordBot() {
     // Ignore bot messages
     if (message.author.bot) return;
 
-    // Check if message contains a Solana address
-    const matches = message.content.match(SOLANA_ADDRESS_REGEX);
-    if (!matches) return;
+    // Check for !check or !scan command
+    const content = message.content.trim();
+    if (!content.startsWith('!check') && !content.startsWith('!scan')) {
+      return;
+    }
 
-    // Get the first address match
-    const potentialAddress = matches[0];
+    // Extract wallet address from command
+    const parts = content.split(/\s+/);
+    if (parts.length < 2) {
+      await message.reply('❌ Please provide a wallet address. Usage: `!check <wallet_address>`');
+      return;
+    }
+
+    const potentialAddress = parts[1];
 
     // Validate it's a real Solana address
     let walletAddress: string;
@@ -42,7 +50,7 @@ export async function initializeDiscordBot() {
       const pubkey = new PublicKey(potentialAddress);
       walletAddress = pubkey.toString();
     } catch (error) {
-      // Not a valid Solana address, ignore
+      await message.reply('❌ Invalid Solana wallet address. Please check and try again.');
       return;
     }
 
