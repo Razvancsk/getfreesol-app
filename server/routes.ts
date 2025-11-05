@@ -1111,9 +1111,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 Claimer: ${walletAddress}`;
           
           console.log(`📢 Posting claim alert to X for ${solRecovered} SOL...`);
+          
+          const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
+          const cardImage = await generateClaimCardBanner({
+            solAmount: solRecovered.toString(),
+            walletAddress
+          });
+          
+          const uploadResult = await xApiService.uploadMedia(cardImage);
+          
+          let mediaIds: string[] = [];
+          if (uploadResult.success && uploadResult.mediaId) {
+            mediaIds = [uploadResult.mediaId];
+          }
+          
           await xApiService.postTweet({ 
             content: tweetContent, 
-            postType: 'claim_alert' 
+            postType: 'claim_alert',
+            mediaIds 
           });
         } catch (xError) {
           // Don't fail the whole request if X post fails
@@ -5595,9 +5610,24 @@ Claimer: ${walletAddress}`;
 Claimer: ${walletAddress}`;
 
       console.log(`📢 Test posting to X: ${solAmount} SOL...`);
+      
+      const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
+      const cardImage = await generateClaimCardBanner({
+        solAmount,
+        walletAddress
+      });
+      
+      const uploadResult = await xApiService.uploadMedia(cardImage);
+      
+      let mediaIds: string[] = [];
+      if (uploadResult.success && uploadResult.mediaId) {
+        mediaIds = [uploadResult.mediaId];
+      }
+      
       const result = await xApiService.postTweet({ 
         content: tweetContent, 
-        postType: 'test_post' 
+        postType: 'test_post',
+        mediaIds 
       });
 
       if (result.success) {

@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 interface PostTweetParams {
   content: string;
   postType?: string;
+  mediaIds?: string[];
 }
 
 interface SearchTweetsParams {
@@ -80,9 +81,16 @@ export class XApiService {
 
       console.log(`🐦 Posting tweet: "${params.content.substring(0, 50)}..."`);
 
+      const tweetPayload: any = { text: params.content };
+      if (params.mediaIds && params.mediaIds.length > 0) {
+        tweetPayload.media = {
+          media_ids: params.mediaIds
+        };
+      }
+
       const response = await axios.post(
         requestData.url,
-        { text: params.content },
+        tweetPayload,
         {
           headers: {
             ...authHeader,
@@ -154,6 +162,57 @@ export class XApiService {
     } catch (error: any) {
       console.error('❌ Failed to search tweets:', error.response?.data || error.message);
       return [];
+    }
+  }
+
+  async uploadMedia(imageBuffer: Buffer): Promise<{ success: boolean; mediaId?: string; error?: string }> {
+    try {
+      if (!this.oauth || !this.token) {
+        const initialized = await this.initialize();
+        if (!initialized) {
+          return { success: false, error: 'X API not initialized' };
+        }
+      }
+
+      const requestData = {
+        url: 'https://upload.twitter.com/1.1/media/upload.json',
+        method: 'POST' as const,
+      };
+
+      const authHeader = this.oauth!.toHeader(this.oauth!.authorize(requestData, this.token!));
+
+      console.log(`📸 Uploading media (${imageBuffer.length} bytes)...`);
+
+      const FormData = (await import('form-data')).default;
+      const formData = new FormData();
+      formData.append('media', imageBuffer, {
+        filename: 'card.png',
+        contentType: 'image/png',
+      });
+
+      const response = await axios.post(
+        requestData.url,
+        formData,
+        {
+          headers: {
+            ...authHeader,
+            ...formData.getHeaders(),
+          },
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+        }
+      );
+
+      const mediaId = response.data.media_id_string;
+      console.log(`✅ Media uploaded successfully: ${mediaId}`);
+
+      return { success: true, mediaId };
+    } catch (error: any) {
+      console.error('❌ Failed to upload media:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.message 
+      };
     }
   }
 
