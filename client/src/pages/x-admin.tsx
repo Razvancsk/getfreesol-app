@@ -2,9 +2,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Twitter, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { Twitter, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 
 interface XConnectionStatus {
@@ -15,7 +17,9 @@ interface XConnectionStatus {
 
 export default function XAdmin() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [showPinInput, setShowPinInput] = useState(false);
+  const [oauthToken, setOauthToken] = useState('');
+  const [pin, setPin] = useState('');
 
   const { data: status, isLoading } = useQuery<XConnectionStatus>({
     queryKey: ['/api/x/oauth/status'],
@@ -24,15 +28,47 @@ export default function XAdmin() {
   const connectMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/x/oauth/request', {});
-      return response as { authUrl: string };
+      return response as { authUrl: string; oauthToken: string };
     },
     onSuccess: (data) => {
-      window.location.href = data.authUrl;
+      setOauthToken(data.oauthToken);
+      setShowPinInput(true);
+      window.open(data.authUrl, '_blank', 'width=600,height=700');
+      toast({
+        title: "Authorization Page Opened",
+        description: "Please authorize the app on X and copy the PIN code",
+      });
     },
     onError: (error: any) => {
       toast({
         title: "Connection Failed",
         description: error.message || "Failed to initiate OAuth flow",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyPinMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/x/oauth/verify-pin', {
+        oauthToken,
+        pin,
+      }) as { accountName: string };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/x/oauth/status'] });
+      setShowPinInput(false);
+      setPin('');
+      setOauthToken('');
+      toast({
+        title: "Success!",
+        description: `Connected as @${data.accountName}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Verification Failed",
+        description: error.message || "Failed to verify PIN",
         variant: "destructive",
       });
     },
@@ -57,30 +93,6 @@ export default function XAdmin() {
       });
     },
   });
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const success = params.get('success');
-    const error = params.get('error');
-
-    if (success) {
-      toast({
-        title: "Success!",
-        description: "Your X account has been connected successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/x/oauth/status'] });
-      setLocation('/x-admin');
-    }
-
-    if (error) {
-      toast({
-        title: "Connection Failed",
-        description: decodeURIComponent(error),
-        variant: "destructive",
-      });
-      setLocation('/x-admin');
-    }
-  }, [toast, setLocation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 dark:from-background dark:to-secondary/10">
@@ -168,6 +180,72 @@ export default function XAdmin() {
                   </Button>
                 </div>
               </div>
+            ) : showPinInput ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 p-4 bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/30 rounded-lg" data-testid="status-awaiting-pin">
+                  <ExternalLink className="h-6 w-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-blue-900 dark:text-blue-100">
+                      Awaiting PIN
+                    </p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      A popup window has been opened. Authorize the app and copy the PIN.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pin" className="text-sm font-medium">
+                      Enter PIN from X
+                    </Label>
+                    <Input
+                      id="pin"
+                      type="text"
+                      placeholder="1234567"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      disabled={verifyPinMutation.isPending}
+                      data-testid="input-pin"
+                      className="font-mono text-lg tracking-wider"
+                      maxLength={10}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      After authorizing on X, you'll see a 7-digit PIN. Copy and paste it here.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => verifyPinMutation.mutate()}
+                      disabled={verifyPinMutation.isPending || !pin.trim()}
+                      data-testid="button-verify-pin"
+                      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    >
+                      {verifyPinMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        'Verify PIN'
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowPinInput(false);
+                        setPin('');
+                        setOauthToken('');
+                      }}
+                      disabled={verifyPinMutation.isPending}
+                      data-testid="button-cancel-pin"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="space-y-6">
                 <div className="flex items-center gap-3 p-4 bg-orange-500/10 dark:bg-orange-500/20 border border-orange-500/30 rounded-lg" data-testid="status-disconnected">
@@ -193,15 +271,15 @@ export default function XAdmin() {
                     </li>
                     <li className="flex gap-2">
                       <span className="font-semibold text-foreground">2.</span>
-                      Authorize the app on X's website
+                      Authorize the app on X's website (opens in popup)
                     </li>
                     <li className="flex gap-2">
                       <span className="font-semibold text-foreground">3.</span>
-                      You'll be redirected back here automatically
+                      Copy the PIN code shown on X
                     </li>
                     <li className="flex gap-2">
                       <span className="font-semibold text-foreground">4.</span>
-                      Automatic posting will be enabled immediately
+                      Paste the PIN here to complete connection
                     </li>
                   </ol>
                 </div>

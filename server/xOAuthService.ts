@@ -44,16 +44,16 @@ export class XOAuthService {
     });
   }
 
-  async getRequestToken(callbackUrl: string): Promise<{ authUrl: string; oauthToken: string }> {
+  async getRequestToken(): Promise<{ authUrl: string; oauthToken: string }> {
     try {
       const requestData = {
-        url: 'https://api.twitter.com/oauth/request_token?oauth_callback=' + encodeURIComponent(callbackUrl),
+        url: 'https://api.twitter.com/oauth/request_token?oauth_callback=oob',
         method: 'POST' as const,
       };
 
       const authHeader = this.oauth.toHeader(this.oauth.authorize(requestData));
 
-      console.log('🔐 Requesting OAuth token from X...');
+      console.log('🔐 Requesting OAuth token from X (Desktop/PIN flow)...');
 
       const response = await axios.post(
         requestData.url,
@@ -68,9 +68,8 @@ export class XOAuthService {
       const params = new URLSearchParams(response.data);
       const oauthToken = params.get('oauth_token');
       const oauthTokenSecret = params.get('oauth_token_secret');
-      const oauthCallbackConfirmed = params.get('oauth_callback_confirmed');
 
-      if (!oauthToken || !oauthTokenSecret || oauthCallbackConfirmed !== 'true') {
+      if (!oauthToken || !oauthTokenSecret) {
         throw new Error('Invalid request token response');
       }
 
@@ -78,7 +77,7 @@ export class XOAuthService {
 
       const authUrl = `https://api.twitter.com/oauth/authorize?oauth_token=${oauthToken}`;
 
-      console.log('✅ OAuth request token received');
+      console.log('✅ OAuth request token received (PIN-based flow)');
 
       return { authUrl, oauthToken };
     } catch (error: any) {

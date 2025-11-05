@@ -5524,14 +5524,10 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Initiate OAuth flow
+  // Initiate OAuth flow (PIN-based for Desktop apps)
   app.post("/api/x/oauth/request", async (req, res) => {
     try {
-      const protocol = req.get('x-forwarded-proto') || req.protocol;
-      const host = req.get('host');
-      const callbackUrl = `${protocol}://${host}/api/x/oauth/callback`;
-
-      const { authUrl, oauthToken } = await xOAuthService.getRequestToken(callbackUrl);
+      const { authUrl, oauthToken } = await xOAuthService.getRequestToken();
 
       res.json({ 
         success: true, 
@@ -5544,26 +5540,29 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // OAuth callback
-  app.get("/api/x/oauth/callback", async (req, res) => {
+  // Verify PIN and complete OAuth
+  app.post("/api/x/oauth/verify-pin", async (req, res) => {
     try {
-      const { oauth_token, oauth_verifier } = req.query;
+      const { oauthToken, pin } = req.body;
 
-      if (!oauth_token || !oauth_verifier) {
-        return res.redirect('/x-admin?error=missing_params');
+      if (!oauthToken || !pin) {
+        return res.status(400).json({ error: 'OAuth token and PIN are required' });
       }
 
       const accessTokenData = await xOAuthService.getAccessToken(
-        oauth_token as string,
-        oauth_verifier as string
+        oauthToken,
+        pin.trim()
       );
 
       await xOAuthService.saveCredentials(accessTokenData);
 
-      res.redirect('/x-admin?success=true');
+      res.json({ 
+        success: true, 
+        accountName: accessTokenData.screen_name 
+      });
     } catch (error: any) {
-      console.error('OAuth callback error:', error);
-      res.redirect(`/x-admin?error=${encodeURIComponent(error.message)}`);
+      console.error('OAuth PIN verification error:', error);
+      res.status(500).json({ error: error.message || 'Failed to verify PIN' });
     }
   });
 
