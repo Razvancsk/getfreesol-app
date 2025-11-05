@@ -23,10 +23,8 @@ export default function XAdmin() {
 
   const connectMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest<{ authUrl: string }>('/api/x/oauth/request', {
-        method: 'POST',
-      });
-      return response;
+      const response = await apiRequest('POST', '/api/x/oauth/request', {});
+      return response as { authUrl: string };
     },
     onSuccess: (data) => {
       window.location.href = data.authUrl;
@@ -42,9 +40,7 @@ export default function XAdmin() {
 
   const disconnectMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/x/oauth/disconnect', {
-        method: 'POST',
-      });
+      return await apiRequest('POST', '/api/x/oauth/disconnect', {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/x/oauth/status'] });

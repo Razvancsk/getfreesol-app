@@ -188,6 +188,11 @@ export class XOAuthService {
       }
 
       const credentials = authTokens[0];
+      
+      if (!credentials.accountName || !credentials.accountId) {
+        return null;
+      }
+      
       return {
         accountName: credentials.accountName,
         accountId: credentials.accountId,
