@@ -40,7 +40,7 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
     const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
     const logo = await loadImage(logoPath);
     const logoSize = 100;
-    ctx.drawImage(logo, width - 230, height - 210, logoSize, logoSize);
+    ctx.drawImage(logo, width - 265, height - 210, logoSize, logoSize);
   } catch (error) {
     console.error('Failed to load logo:', error);
   }
