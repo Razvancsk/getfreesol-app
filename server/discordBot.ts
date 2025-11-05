@@ -1,17 +1,17 @@
-import { Client, GatewayIntentBits, EmbedBuilder, Message } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder, SlashCommandBuilder, REST, Routes } from 'discord.js';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-
-// Solana address validation regex (base58, 32-44 chars)
-const SOLANA_ADDRESS_REGEX = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g;
 
 export async function initializeDiscordBot() {
   if (!DISCORD_BOT_TOKEN) {
     console.log('⚠️  DISCORD_BOT_TOKEN not configured - Discord bot disabled');
     return;
   }
+
+  // Register slash commands
+  await registerSlashCommands();
 
   const client = new Client({
     intents: [
@@ -25,84 +25,109 @@ export async function initializeDiscordBot() {
     console.log(`🤖 Discord bot is online as ${client.user?.tag}`);
   });
 
-  client.on('messageCreate', async (message: Message) => {
-    // Ignore bot messages
-    if (message.author.bot) return;
+  // Handle slash command interactions
+  client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
 
-    // Check for !check or !scan command
-    const content = message.content.trim();
-    if (!content.startsWith('!check') && !content.startsWith('!scan')) {
-      return;
-    }
+    if (interaction.commandName === 'scan') {
+      const walletAddress = interaction.options.getString('wallet', true);
 
-    // Extract wallet address from command
-    const parts = content.split(/\s+/);
-    if (parts.length < 2) {
-      await message.reply('❌ Please provide a wallet address. Usage: `!check <wallet_address>`');
-      return;
-    }
+      // Validate Solana address
+      try {
+        const pubkey = new PublicKey(walletAddress);
+        const validatedAddress = pubkey.toString();
 
-    const potentialAddress = parts[1];
+        console.log(`🔍 Discord: Scanning wallet ${validatedAddress} requested by ${interaction.user.tag}`);
 
-    // Validate it's a real Solana address
-    let walletAddress: string;
-    try {
-      const pubkey = new PublicKey(potentialAddress);
-      walletAddress = pubkey.toString();
-    } catch (error) {
-      await message.reply('❌ Invalid Solana wallet address. Please check and try again.');
-      return;
-    }
+        // Defer reply since scanning might take time
+        await interaction.deferReply();
 
-    console.log(`🔍 Discord: Detected wallet address ${walletAddress} from ${message.author.tag}`);
+        try {
+          // Scan the wallet
+          const scanResult = await scanWallet(validatedAddress);
 
-    // Send "scanning..." message
-    const scanningMessage = await message.reply('🔍 Scanning wallet for claimable rent...');
+          // Create embed response
+          const embed = new EmbedBuilder()
+            .setTitle(scanResult.emptyAccounts > 0 ? '💰 Claimable Rent Found!' : '❌ No Claimable Rent')
+            .setColor(scanResult.emptyAccounts > 0 ? 0x00FF00 : 0x808080)
+            .addFields(
+              { name: '👤 Wallet', value: `\`${validatedAddress}\``, inline: false },
+              { name: '🗑️ Empty Accounts', value: `**${scanResult.emptyAccounts}**`, inline: true },
+              { name: '💰 Claimable SOL', value: `**~${scanResult.totalReclaimable} SOL**`, inline: true }
+            )
+            .setFooter({ text: 'GetFreeSol.com • Claim your SOL today!' })
+            .setTimestamp();
 
-    try {
-      // Scan the wallet
-      const scanResult = await scanWallet(walletAddress);
+          if (scanResult.emptyAccounts > 0) {
+            embed.addFields({
+              name: '🚀 Claim Now',
+              value: `Visit [GetFreeSol.com](https://getfreesol.com) to claim your rent!`,
+              inline: false
+            });
+          }
 
-      // Create embed response
-      const embed = new EmbedBuilder()
-        .setTitle(scanResult.emptyAccounts > 0 ? '💰 Claimable Rent Found!' : '❌ No Claimable Rent')
-        .setColor(scanResult.emptyAccounts > 0 ? 0x00FF00 : 0x808080)
-        .addFields(
-          { name: '👤 Wallet', value: `\`${walletAddress}\``, inline: false },
-          { name: '🗑️ Empty Accounts', value: `**${scanResult.emptyAccounts}**`, inline: true },
-          { name: '💰 Claimable SOL', value: `**~${scanResult.totalReclaimable} SOL**`, inline: true }
-        )
-        .setFooter({ text: 'GetFreeSol.com • Claim your SOL today!' })
-        .setTimestamp();
+          await interaction.editReply({ embeds: [embed] });
 
-      if (scanResult.emptyAccounts > 0) {
-        embed.addFields({
-          name: '🚀 Claim Now',
-          value: `Visit [GetFreeSol.com](https://getfreesol.com) to claim your rent!`,
-          inline: false
+          console.log(`✅ Discord: Scan complete for ${validatedAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
+
+        } catch (error) {
+          console.error('❌ Discord: Error scanning wallet:', error);
+          
+          const errorEmbed = new EmbedBuilder()
+            .setTitle('❌ Scan Failed')
+            .setColor(0xFF0000)
+            .setDescription('Sorry, there was an error scanning this wallet. Please try again later or visit GetFreeSol.com')
+            .setFooter({ text: 'GetFreeSol.com' })
+            .setTimestamp();
+
+          await interaction.editReply({ embeds: [errorEmbed] });
+        }
+
+      } catch (error) {
+        // Invalid Solana address
+        await interaction.reply({
+          content: '❌ Invalid Solana wallet address. Please check and try again.',
+          ephemeral: true
         });
       }
-
-      // Edit the scanning message with results
-      await scanningMessage.edit({ content: null, embeds: [embed] });
-
-      console.log(`✅ Discord: Scan complete for ${walletAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
-
-    } catch (error) {
-      console.error('❌ Discord: Error scanning wallet:', error);
-      
-      const errorEmbed = new EmbedBuilder()
-        .setTitle('❌ Scan Failed')
-        .setColor(0xFF0000)
-        .setDescription('Sorry, there was an error scanning this wallet. Please try again later or visit GetFreeSol.com')
-        .setFooter({ text: 'GetFreeSol.com' })
-        .setTimestamp();
-
-      await scanningMessage.edit({ content: null, embeds: [errorEmbed] });
     }
   });
 
   client.login(DISCORD_BOT_TOKEN);
+}
+
+async function registerSlashCommands() {
+  if (!DISCORD_BOT_TOKEN) return;
+
+  // Extract application ID from token (first part before first dot)
+  const applicationId = Buffer.from(DISCORD_BOT_TOKEN.split('.')[0], 'base64').toString();
+
+  const commands = [
+    new SlashCommandBuilder()
+      .setName('scan')
+      .setDescription('Scan a Solana wallet for claimable rent from empty token accounts')
+      .addStringOption(option =>
+        option
+          .setName('wallet')
+          .setDescription('Solana wallet address to scan')
+          .setRequired(true)
+      )
+  ].map(command => command.toJSON());
+
+  const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN);
+
+  try {
+    console.log('🔄 Registering Discord slash commands...');
+    
+    await rest.put(
+      Routes.applicationCommands(applicationId),
+      { body: commands }
+    );
+
+    console.log('✅ Discord slash commands registered successfully');
+  } catch (error) {
+    console.error('❌ Failed to register Discord slash commands:', error);
+  }
 }
 
 async function scanWallet(walletAddress: string): Promise<{
