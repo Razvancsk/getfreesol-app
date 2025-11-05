@@ -2248,33 +2248,53 @@ export default function SolRefund() {
         
         console.log('Transaction confirmed successfully!');
 
-        // Save successful transaction to database and get points message
+        // Save successful transaction to database and get points message (with retries)
         let pointsMessage = '';
-        try {
-          const dbResponse = await fetch('/api/sol-refund/record-success', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              signature,
-              walletAddress: data.walletAddress,
-              selectedAccounts: data.selectedAccounts, // Account addresses that were closed
-              accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
-              solRecovered: totalSolReclaimed,
-              netAmount: netAmount,
-              feeAmount: feeAmount,
-              referralCodeUsed: referralCodeUsed,
-              platformFeeAmount: platformFeeAmount || feeAmount,
-              referralFeeAmount: referralFeeAmount || 0
-            })
-          });
+        const recordData = {
+          signature,
+          walletAddress: data.walletAddress,
+          selectedAccounts: data.selectedAccounts, // Account addresses that were closed
+          accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
+          solRecovered: totalSolReclaimed,
+          netAmount: netAmount,
+          feeAmount: feeAmount,
+          referralCodeUsed: referralCodeUsed,
+          platformFeeAmount: platformFeeAmount || feeAmount,
+          referralFeeAmount: referralFeeAmount || 0
+        };
 
-          if (dbResponse.ok) {
-            const dbResult = await dbResponse.json();
-            pointsMessage = dbResult.message || '';
-            console.log('Transaction recorded in database successfully');
+        // Retry up to 3 times with exponential backoff
+        let recordSuccess = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            console.log(`📝 Recording transaction (attempt ${attempt}/3)...`);
+            const dbResponse = await fetch('/api/sol-refund/record-success', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(recordData)
+            });
+
+            if (dbResponse.ok) {
+              const dbResult = await dbResponse.json();
+              pointsMessage = dbResult.message || '';
+              console.log('✅ Transaction recorded and posted to X successfully');
+              recordSuccess = true;
+              break;
+            } else {
+              console.warn(`⚠️ Record attempt ${attempt} failed with status ${dbResponse.status}`);
+            }
+          } catch (dbError) {
+            console.warn(`⚠️ Record attempt ${attempt} failed:`, dbError);
           }
-        } catch (dbError) {
-          console.warn('Failed to record transaction in database:', dbError);
+
+          // Wait before retry (exponential backoff: 1s, 2s, 4s)
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+          }
+        }
+
+        if (!recordSuccess) {
+          console.error('❌ Failed to record transaction after 3 attempts - X post may have been missed');
         }
 
         return {
