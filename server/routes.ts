@@ -5581,6 +5581,40 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Test post to X (manual trigger)
+  app.post("/api/x/test-post", async (req, res) => {
+    try {
+      const { solAmount, walletAddress } = req.body;
+
+      if (!solAmount || !walletAddress) {
+        return res.status(400).json({ error: 'solAmount and walletAddress are required' });
+      }
+
+      const tweetContent = `🔥 Hot drop! ${Number(solAmount).toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
+
+Claimer: ${walletAddress}`;
+
+      console.log(`📢 Test posting to X: ${solAmount} SOL...`);
+      const result = await xApiService.postTweet({ 
+        content: tweetContent, 
+        postType: 'test_post' 
+      });
+
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          tweetId: result.tweetId,
+          message: 'Test post sent successfully' 
+        });
+      } else {
+        res.status(500).json({ error: result.error || 'Failed to post tweet' });
+      }
+    } catch (error: any) {
+      console.error('Test post error:', error);
+      res.status(500).json({ error: error.message || 'Failed to post test tweet' });
+    }
+  });
+
   // ============================================
   // X (TWITTER) BOT API ENDPOINTS
   // ============================================
