@@ -716,6 +716,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createEmptyTokenAccount(account);
       }
 
+      // Send wallet check notification to Discord
+      try {
+        const { sendWalletCheckAlert } = await import('./discordWebhookService.js');
+        await sendWalletCheckAlert({
+          walletAddress: address,
+          emptyAccountsFound: emptyAccounts.length,
+          estimatedSOL: totalReclaimable
+        });
+      } catch (discordError) {
+        // Don't fail the whole request if Discord post fails
+        console.error('Failed to send Discord wallet check alert:', discordError);
+      }
+
       const response = {
         success: true,
         walletAddress: address,
