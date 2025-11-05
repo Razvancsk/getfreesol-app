@@ -2468,14 +2468,24 @@ export default function SolRefund() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
                       {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
-                        <Link href="/admin/x-bot">
-                          <DropdownMenuItem 
-                            className="text-white hover:bg-purple-600/40 cursor-pointer"
-                            data-testid="button-admin-xbot"
-                          >
-                            🤖 X Bot Admin
-                          </DropdownMenuItem>
-                        </Link>
+                        <>
+                          <Link href="/admin/x-bot">
+                            <DropdownMenuItem 
+                              className="text-white hover:bg-purple-600/40 cursor-pointer"
+                              data-testid="button-admin-xbot"
+                            >
+                              🤖 X Bot Admin
+                            </DropdownMenuItem>
+                          </Link>
+                          <Link href="/x-admin">
+                            <DropdownMenuItem 
+                              className="text-white hover:bg-purple-600/40 cursor-pointer"
+                              data-testid="button-x-admin"
+                            >
+                              🐦 X Account
+                            </DropdownMenuItem>
+                          </Link>
+                        </>
                       )}
                       <DropdownMenuItem 
                         onClick={disconnectWallet}
@@ -2551,14 +2561,24 @@ export default function SolRefund() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
                     {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
-                      <Link href="/admin/x-bot">
-                        <DropdownMenuItem 
-                          className="text-white hover:bg-purple-600/40 cursor-pointer"
-                          data-testid="button-admin-xbot-desktop"
-                        >
-                          🤖 X Bot Admin
-                        </DropdownMenuItem>
-                      </Link>
+                      <>
+                        <Link href="/admin/x-bot">
+                          <DropdownMenuItem 
+                            className="text-white hover:bg-purple-600/40 cursor-pointer"
+                            data-testid="button-admin-xbot-desktop"
+                          >
+                            🤖 X Bot Admin
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link href="/x-admin">
+                          <DropdownMenuItem 
+                            className="text-white hover:bg-purple-600/40 cursor-pointer"
+                            data-testid="button-x-admin-desktop"
+                          >
+                            🐦 X Account
+                          </DropdownMenuItem>
+                        </Link>
+                      </>
                     )}
                     <DropdownMenuItem 
                       onClick={disconnectWallet}
