@@ -22,6 +22,7 @@ import { z } from 'zod';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import { xApiService } from './xApiService';
+import { xOAuthService } from './xOAuthService';
 import cron from 'node-cron';
 
 // Extend global for temporary OAuth token storage
@@ -5496,6 +5497,88 @@ Claimer: ${walletAddress}`;
     } catch (error: any) {
       console.error("Get statistics error:", error);
       res.status(500).json({ error: "Failed to get statistics", details: error.message });
+    }
+  });
+
+  // ============================================
+  // X (TWITTER) OAUTH ENDPOINTS
+  // ============================================
+
+  // Get OAuth connection status
+  app.get("/api/x/oauth/status", async (req, res) => {
+    try {
+      const account = await xOAuthService.getActiveAccount();
+      
+      if (!account) {
+        return res.json({ connected: false });
+      }
+
+      res.json({
+        connected: true,
+        accountName: account.accountName,
+        accountId: account.accountId,
+      });
+    } catch (error) {
+      console.error('Failed to get OAuth status:', error);
+      res.status(500).json({ error: 'Failed to get connection status' });
+    }
+  });
+
+  // Initiate OAuth flow
+  app.post("/api/x/oauth/request", async (req, res) => {
+    try {
+      const protocol = req.get('x-forwarded-proto') || req.protocol;
+      const host = req.get('host');
+      const callbackUrl = `${protocol}://${host}/api/x/oauth/callback`;
+
+      const { authUrl, oauthToken } = await xOAuthService.getRequestToken(callbackUrl);
+
+      res.json({ 
+        success: true, 
+        authUrl, 
+        oauthToken 
+      });
+    } catch (error: any) {
+      console.error('OAuth request error:', error);
+      res.status(500).json({ error: error.message || 'Failed to initiate OAuth' });
+    }
+  });
+
+  // OAuth callback
+  app.get("/api/x/oauth/callback", async (req, res) => {
+    try {
+      const { oauth_token, oauth_verifier } = req.query;
+
+      if (!oauth_token || !oauth_verifier) {
+        return res.redirect('/x-admin?error=missing_params');
+      }
+
+      const accessTokenData = await xOAuthService.getAccessToken(
+        oauth_token as string,
+        oauth_verifier as string
+      );
+
+      await xOAuthService.saveCredentials(accessTokenData);
+
+      res.redirect('/x-admin?success=true');
+    } catch (error: any) {
+      console.error('OAuth callback error:', error);
+      res.redirect(`/x-admin?error=${encodeURIComponent(error.message)}`);
+    }
+  });
+
+  // Disconnect X account
+  app.post("/api/x/oauth/disconnect", async (req, res) => {
+    try {
+      await xOAuthService.disconnect();
+
+      res.json({ 
+        success: true, 
+        message: 'X account disconnected successfully' 
+      });
+    } catch (error: any) {
+      console.error('OAuth disconnect error:', error);
+      res.status(500).json({ error: error.message || 'Failed to disconnect' });
     }
   });
 
