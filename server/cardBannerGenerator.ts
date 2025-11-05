@@ -39,17 +39,19 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   try {
     const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
     const logo = await loadImage(logoPath);
-    const logoSize = 120;
-    ctx.drawImage(logo, (width - logoSize) / 2, height - 200, logoSize, logoSize);
+    const logoSize = 100;
+    const logoX = width - 200;
+    const logoY = 320;
+    ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
   } catch (error) {
     console.error('Failed to load logo:', error);
-    drawGeometricGLogo(ctx, (width - 90) / 2, height - 200);
+    drawGeometricGLogo(ctx, width - 200, 320);
   }
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 30px sans-serif';
+  ctx.font = 'bold 28px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('GET FREE SOL', width / 2, height - 50);
+  ctx.fillText('GET FREE SOL', width - 150, 450);
 
   return canvas.toBuffer('image/png');
 }
