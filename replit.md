@@ -32,7 +32,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Jupiter Lend Integration**: Allows users to earn yield by depositing tokens into Jupiter Lend pools.
 - **Auto-Claim Feature**: Permit-based automated SOL reclamation from empty accounts, supporting both standard SPL and Token-2022 programs.
 - **Developer API Platform**: Jupiter-style developer platform with PDA-based referral fee collection. Developers create referral accounts via wallet signature, receive deterministic PDA addresses derived from [project_pda, developer_wallet] for secure fee collection without private key management. Supports multiple token mints (SOL, USDC, USDT, BONK, JUP, etc.) with separate token account tracking. Developers earn 80% of collected fees. API documentation is gated - requires account creation first.
-- **X (Twitter) Bot**: Automated social media marketing system for platform wallet with OAuth 1.0a authentication, scheduled posting, and auto-engagement.
+- **X (Twitter) Bot**: Automated social media marketing system for platform wallet with PIN-based OAuth 1.0a authentication (Desktop app flow), scheduled posting, and auto-engagement. Posts automatically when SOL claims >= 0.01 SOL occur.
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.

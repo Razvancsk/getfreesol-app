@@ -20,6 +20,7 @@ export default function XAdmin() {
   const [showPinInput, setShowPinInput] = useState(false);
   const [oauthToken, setOauthToken] = useState('');
   const [pin, setPin] = useState('');
+  const [authUrl, setAuthUrl] = useState('');
 
   const { data: status, isLoading } = useQuery<XConnectionStatus>({
     queryKey: ['/api/x/oauth/status'],
@@ -28,16 +29,28 @@ export default function XAdmin() {
   const connectMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/x/oauth/request', {});
-      return response as { authUrl: string; oauthToken: string };
+      return await response.json() as { authUrl: string; oauthToken: string };
     },
     onSuccess: (data) => {
+      console.log('OAuth data received:', data);
       setOauthToken(data.oauthToken);
+      setAuthUrl(data.authUrl);
       setShowPinInput(true);
-      window.open(data.authUrl, '_blank', 'width=600,height=700');
-      toast({
-        title: "Authorization Page Opened",
-        description: "Please authorize the app on X and copy the PIN code",
-      });
+      
+      const popup = window.open(data.authUrl, 'x-oauth', 'width=600,height=700,popup=1');
+      
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        toast({
+          title: "Popup Blocked",
+          description: "Use the manual link below to authorize",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Authorization Page Opened",
+          description: "Please authorize the app on X and copy the PIN code",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -50,16 +63,18 @@ export default function XAdmin() {
 
   const verifyPinMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', '/api/x/oauth/verify-pin', {
+      const response = await apiRequest('POST', '/api/x/oauth/verify-pin', {
         oauthToken,
         pin,
-      }) as { accountName: string };
+      });
+      return await response.json() as { accountName: string };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/x/oauth/status'] });
       setShowPinInput(false);
       setPin('');
       setOauthToken('');
+      setAuthUrl('');
       toast({
         title: "Success!",
         description: `Connected as @${data.accountName}`,
@@ -76,7 +91,8 @@ export default function XAdmin() {
 
   const disconnectMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', '/api/x/oauth/disconnect', {});
+      const response = await apiRequest('POST', '/api/x/oauth/disconnect', {});
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/x/oauth/status'] });
@@ -195,6 +211,24 @@ export default function XAdmin() {
                 </div>
 
                 <div className="space-y-4">
+                  {authUrl && (
+                    <div className="p-3 bg-secondary/50 dark:bg-secondary/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        If the popup didn't open, click here:
+                      </p>
+                      <a
+                        href={authUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                        data-testid="link-manual-auth"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Open X Authorization Page
+                      </a>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="pin" className="text-sm font-medium">
                       Enter PIN from X
@@ -237,6 +271,7 @@ export default function XAdmin() {
                         setShowPinInput(false);
                         setPin('');
                         setOauthToken('');
+                        setAuthUrl('');
                       }}
                       disabled={verifyPinMutation.isPending}
                       data-testid="button-cancel-pin"
