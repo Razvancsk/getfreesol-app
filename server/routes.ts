@@ -2506,6 +2506,59 @@ Claimer: ${walletAddress}`;
         console.error('Failed to send Discord token burn alert:', discordError);
       }
 
+      // Post to X (Twitter) for token burns >= 0.01 SOL (same as regular claims)
+      const MIN_CLAIM_FOR_POST = 0.01;
+      const netAmountNumber = Number(netAmount || 0);
+      if (netAmountNumber >= MIN_CLAIM_FOR_POST) {
+        try {
+          const { default: xApiService } = await import('./xApiService.js');
+          
+          // Tiered messaging based on claim amount (same as regular claims)
+          let claimMessages: string[];
+          if (netAmountNumber >= 4) {
+            claimMessages = ["💥 JACKPOT!", "🏆 Unreal", "⚡ Legendary drop"];
+          } else if (netAmountNumber >= 1) {
+            claimMessages = ["🔥 Hot drop!", "🚨 Big claim", "🏆 On-chain win"];
+          } else if (netAmountNumber >= 0.1) {
+            claimMessages = ["💎 Nice one!", "🪙 That's a sweet claim", "🎯 Boom! 🎯 Hot claim"];
+          } else {
+            claimMessages = ["🚀 Claimed", "🎉 Free SOL claimed", "💥 Another smooth claim"];
+          }
+          
+          const randomMessage = claimMessages[Math.floor(Math.random() * claimMessages.length)];
+          const tweetContent = `${randomMessage} ${netAmountNumber.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
+
+Claimer: ${walletAddress}`;
+          
+          console.log(`📢 Posting token burn to X as claim for ${netAmountNumber} SOL...`);
+          
+          const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
+          const cardImage = await generateClaimCardBanner({
+            solAmount: netAmountNumber.toString(),
+            walletAddress
+          });
+          
+          const uploadResult = await xApiService.uploadMedia(cardImage);
+          let mediaIds: string[] = [];
+          if (uploadResult.success && uploadResult.mediaId) {
+            mediaIds = [uploadResult.mediaId];
+          }
+          
+          const postResult = await xApiService.postTweet({ 
+            content: tweetContent, 
+            postType: 'claim_alert',
+            mediaIds 
+          });
+
+          if (postResult.success && postResult.postId) {
+            console.log(`✅ Posted token burn to X! Post ID: ${postResult.postId}`);
+            await storage.markTransactionPostedToX(signature, postResult.postId);
+          }
+        } catch (xError) {
+          console.error('Failed to post token burn to X:', xError);
+        }
+      }
+
       res.json({
         success: true,
         message: `Successfully burned ${tokensProcessed} tokens and recovered ${Number(netAmount || 0).toFixed(6)} SOL!`
@@ -3457,6 +3510,58 @@ Claimer: ${walletAddress}`;
           });
         } catch (discordError) {
           console.error('Failed to send Discord NFT burn alert:', discordError);
+        }
+
+        // Post to X (Twitter) for NFT burns >= 0.01 SOL (same as regular claims)
+        const MIN_CLAIM_FOR_POST = 0.01;
+        if (realNetAmount >= MIN_CLAIM_FOR_POST) {
+          try {
+            const { default: xApiService } = await import('./xApiService.js');
+            
+            // Tiered messaging based on claim amount (same as regular claims)
+            let claimMessages: string[];
+            if (realNetAmount >= 4) {
+              claimMessages = ["💥 JACKPOT!", "🏆 Unreal", "⚡ Legendary drop"];
+            } else if (realNetAmount >= 1) {
+              claimMessages = ["🔥 Hot drop!", "🚨 Big claim", "🏆 On-chain win"];
+            } else if (realNetAmount >= 0.1) {
+              claimMessages = ["💎 Nice one!", "🪙 That's a sweet claim", "🎯 Boom! 🎯 Hot claim"];
+            } else {
+              claimMessages = ["🚀 Claimed", "🎉 Free SOL claimed", "💥 Another smooth claim"];
+            }
+            
+            const randomMessage = claimMessages[Math.floor(Math.random() * claimMessages.length)];
+            const tweetContent = `${randomMessage} ${realNetAmount.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
+
+Claimer: ${walletAddress}`;
+            
+            console.log(`📢 Posting NFT burn to X as claim for ${realNetAmount} SOL...`);
+            
+            const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
+            const cardImage = await generateClaimCardBanner({
+              solAmount: realNetAmount.toString(),
+              walletAddress
+            });
+            
+            const uploadResult = await xApiService.uploadMedia(cardImage);
+            let mediaIds: string[] = [];
+            if (uploadResult.success && uploadResult.mediaId) {
+              mediaIds = [uploadResult.mediaId];
+            }
+            
+            const postResult = await xApiService.postTweet({ 
+              content: tweetContent, 
+              postType: 'claim_alert',
+              mediaIds 
+            });
+
+            if (postResult.success && postResult.postId) {
+              console.log(`✅ Posted NFT burn to X! Post ID: ${postResult.postId}`);
+              await storage.markTransactionPostedToX(signature, postResult.postId);
+            }
+          } catch (xError) {
+            console.error('Failed to post NFT burn to X:', xError);
+          }
         }
       } else {
         // Failed burn attempt
