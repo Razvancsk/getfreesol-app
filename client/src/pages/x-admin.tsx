@@ -191,7 +191,7 @@ export default function XAdmin() {
                   </h3>
                   <div className="bg-secondary/30 dark:bg-secondary/20 p-4 rounded-lg">
                     <img 
-                      src="/api/x/preview-card?solAmount=0.0208&walletAddress=58AzpFr9...c6ByezPf8" 
+                      src="/api/x/preview-card?solAmount=0.0208&walletAddress=DCkHDfBLL3FEJmnkeHtjteMQdCRVoe0jjRSganfvV9Ko" 
                       alt="Card banner preview"
                       className="w-full rounded-lg border border-border/50"
                       data-testid="img-card-preview"
