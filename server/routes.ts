@@ -1110,7 +1110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { sendClaimAlert } = await import('./discordWebhookService.js');
         await sendClaimAlert({
           walletAddress,
-          solAmount: solRecovered,
+          solAmount: netAmount,  // Use NET amount (what user actually received after fees)
           accountsClosed,
           signature
         });
