@@ -91,6 +91,8 @@ export interface IStorage {
   getTransactionLedger(limit?: number, offset?: number, source?: string): Promise<TransactionLedger[]>;
   getTransactionLedgerBySignature(signature: string): Promise<TransactionLedger | undefined>;
   getTransactionLedgerByWallet(walletAddress: string, limit?: number, offset?: number, source?: string): Promise<TransactionLedger[]>;
+  markTransactionPostedToX(signature: string, xPostId: string): Promise<void>;
+  getUnpostedTransactions(limit?: number): Promise<TransactionLedger[]>;
   
   // Token Burn Records
   createTokenBurnRecord(record: InsertTokenBurnRecord): Promise<TokenBurnRecord>;
@@ -307,6 +309,22 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(transactionLedger.processedAt))
       .limit(limit)
       .offset(offset);
+  }
+
+  async markTransactionPostedToX(signature: string, xPostId: string): Promise<void> {
+    await db
+      .update(transactionLedger)
+      .set({ postedToX: true, xPostId: xPostId })
+      .where(eq(transactionLedger.signature, signature));
+  }
+
+  async getUnpostedTransactions(limit: number = 50): Promise<TransactionLedger[]> {
+    return await db
+      .select()
+      .from(transactionLedger)
+      .where(eq(transactionLedger.postedToX, false))
+      .orderBy(desc(transactionLedger.processedAt))
+      .limit(limit);
   }
 
   async updateTransactionLedgerBySig(signature: string, updateData: Partial<Pick<TransactionLedger, 'solRecovered' | 'netAmount' | 'feeAmount' | 'itemDetails'>>): Promise<TransactionLedger | undefined> {

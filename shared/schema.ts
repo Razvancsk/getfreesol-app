@@ -57,6 +57,8 @@ export const transactionLedger = pgTable("transaction_ledger", {
   itemsProcessed: integer("items_processed").notNull(), // accounts closed, tokens burned, NFTs burned, or NFTs resized
   itemDetails: text("item_details"), // JSON string with mint addresses, account addresses, etc.
   processedAt: timestamp("processed_at").notNull().defaultNow(),
+  postedToX: boolean("posted_to_x").notNull().default(false), // tracks if transaction has been posted to X
+  xPostId: text("x_post_id"), // stores X post ID if posted
 });
 
 // Token burning records

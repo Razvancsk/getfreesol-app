@@ -1104,6 +1104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Post to X (Twitter) for ALL claims (testing mode)
       const MIN_CLAIM_FOR_POST = 0; // Changed from 0.01 for testing
+      let xPostId: string | null = null;
       if (solRecovered >= MIN_CLAIM_FOR_POST) {
         try {
           // Tiered messaging based on claim amount (only the beginning varies)
@@ -1144,11 +1145,18 @@ Claimer: ${walletAddress}`;
             mediaIds = [uploadResult.mediaId];
           }
           
-          await xApiService.postTweet({ 
+          const postResult = await xApiService.postTweet({ 
             content: tweetContent, 
             postType: 'claim_alert',
             mediaIds 
           });
+
+          if (postResult.success && postResult.postId) {
+            xPostId = postResult.postId;
+            console.log(`✅ Posted to X successfully! Post ID: ${xPostId}`);
+            // Update the transaction ledger to mark as posted
+            await storage.markTransactionPostedToX(signature, xPostId);
+          }
         } catch (xError) {
           // Don't fail the whole request if X post fails
           console.error('Failed to post claim alert to X:', xError);
