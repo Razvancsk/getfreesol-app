@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Twitter, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
+import { Twitter, CheckCircle2, XCircle, Loader2, ExternalLink, ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 interface XConnectionStatus {
   connected: boolean;
@@ -113,6 +113,17 @@ export default function XAdmin() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 dark:from-background dark:to-secondary/10">
       <div className="container max-w-4xl mx-auto px-4 py-16">
+        <Link href="/">
+          <Button
+            variant="ghost"
+            className="mb-6 -ml-2"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Button>
+        </Link>
+        
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
             X (Twitter) Admin
