@@ -1,4 +1,4 @@
-import { createCanvas, registerFont } from 'canvas';
+import { createCanvas, loadImage } from 'canvas';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -36,7 +36,15 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   ctx.font = '34px sans-serif';
   ctx.fillText(walletAddress, 80, 450);
 
-  drawGeometricGLogo(ctx, width - 280, height - 280);
+  try {
+    const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+    const logo = await loadImage(logoPath);
+    const logoSize = 140;
+    ctx.drawImage(logo, width - 240, height - 240, logoSize, logoSize);
+  } catch (error) {
+    console.error('Failed to load logo:', error);
+    drawGeometricGLogo(ctx, width - 280, height - 280);
+  }
 
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 34px sans-serif';
