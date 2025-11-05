@@ -1101,6 +1101,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Post to X (Twitter) for claims of 0.01 SOL or more
+      const MIN_CLAIM_FOR_POST = 0.01;
+      if (solRecovered >= MIN_CLAIM_FOR_POST) {
+        try {
+          const tweetContent = `🔥 Hot drop! ${solRecovered.toFixed(4)} SOL just got claimed. #UnclaimedSOL #ClaimSOL #Solana #DeFi #sol
+
+Claimer: ${walletAddress}`;
+          
+          console.log(`📢 Posting claim alert to X for ${solRecovered} SOL...`);
+          await xApiService.postTweet({ 
+            content: tweetContent, 
+            postType: 'claim_alert' 
+          });
+        } catch (xError) {
+          // Don't fail the whole request if X post fails
+          console.error('Failed to post claim alert to X:', xError);
+        }
+      }
+
       res.json({
         success: true,
         transactionRecord,
