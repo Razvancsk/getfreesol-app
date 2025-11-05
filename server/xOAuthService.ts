@@ -47,9 +47,8 @@ export class XOAuthService {
   async getRequestToken(callbackUrl: string): Promise<{ authUrl: string; oauthToken: string }> {
     try {
       const requestData = {
-        url: 'https://api.twitter.com/oauth/request_token',
+        url: 'https://api.twitter.com/oauth/request_token?oauth_callback=' + encodeURIComponent(callbackUrl),
         method: 'POST' as const,
-        data: { oauth_callback: callbackUrl },
       };
 
       const authHeader = this.oauth.toHeader(this.oauth.authorize(requestData));
@@ -58,13 +57,10 @@ export class XOAuthService {
 
       const response = await axios.post(
         requestData.url,
-        {},
+        null,
         {
           headers: {
             ...authHeader,
-          },
-          params: {
-            oauth_callback: callbackUrl,
           },
         }
       );
@@ -100,7 +96,7 @@ export class XOAuthService {
       }
 
       const requestData = {
-        url: 'https://api.twitter.com/oauth/access_token',
+        url: `https://api.twitter.com/oauth/access_token?oauth_verifier=${oauthVerifier}`,
         method: 'POST' as const,
       };
 
@@ -115,14 +111,10 @@ export class XOAuthService {
 
       const response = await axios.post(
         requestData.url,
-        {},
+        null,
         {
           headers: {
             ...authHeader,
-          },
-          params: {
-            oauth_token: oauthToken,
-            oauth_verifier: oauthVerifier,
           },
         }
       );
