@@ -1102,8 +1102,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Post to X (Twitter) for ALL claims (testing mode)
-      const MIN_CLAIM_FOR_POST = 0; // Changed from 0.01 for testing
+      // Post to X (Twitter) for claims >= 0.01 SOL
+      const MIN_CLAIM_FOR_POST = 0.01;
       let xPostId: string | null = null;
       if (solRecovered >= MIN_CLAIM_FOR_POST) {
         try {
