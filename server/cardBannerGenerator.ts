@@ -47,60 +47,15 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
 }
 
 function drawGeometricGLogo(ctx: any, x: number, y: number) {
-  const size = 160;
+  const width = 90;
+  const height = 80;
   
-  ctx.fillStyle = '#c4b5fd';
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + size * 0.7, y);
-  ctx.lineTo(x + size * 0.7, y + size * 0.35);
-  ctx.lineTo(x, y + size * 0.35);
-  ctx.closePath();
-  ctx.fill();
-
   ctx.fillStyle = '#a78bfa';
-  ctx.beginPath();
-  ctx.moveTo(x + size * 0.7, y);
-  ctx.lineTo(x + size, y);
-  ctx.lineTo(x + size, y + size * 0.35);
-  ctx.lineTo(x + size * 0.7, y + size * 0.35);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#8b5cf6';
-  ctx.beginPath();
-  ctx.moveTo(x + size * 0.7, y + size * 0.35);
-  ctx.lineTo(x + size, y + size * 0.35);
-  ctx.lineTo(x + size, y + size * 0.65);
-  ctx.lineTo(x + size * 0.7, y + size * 0.65);
-  ctx.closePath();
+  roundRect(ctx, x, y, width, height * 0.45, 4);
   ctx.fill();
 
   ctx.fillStyle = '#7c3aed';
-  ctx.beginPath();
-  ctx.moveTo(x, y + size * 0.35);
-  ctx.lineTo(x + size * 0.7, y + size * 0.35);
-  ctx.lineTo(x + size * 0.7, y + size * 0.65);
-  ctx.lineTo(x, y + size * 0.65);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#6d28d9';
-  ctx.beginPath();
-  ctx.moveTo(x, y + size * 0.65);
-  ctx.lineTo(x + size * 0.35, y + size * 0.65);
-  ctx.lineTo(x + size * 0.35, y + size);
-  ctx.lineTo(x, y + size);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#5b21b6';
-  ctx.beginPath();
-  ctx.moveTo(x + size * 0.35, y + size * 0.65);
-  ctx.lineTo(x + size * 0.7, y + size * 0.65);
-  ctx.lineTo(x + size * 0.7, y + size);
-  ctx.lineTo(x + size * 0.35, y + size);
-  ctx.closePath();
+  roundRect(ctx, x, y + height * 0.55, width, height * 0.45, 4);
   ctx.fill();
 }
 
