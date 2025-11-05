@@ -70,6 +70,18 @@ export async function initializeDiscordBot() {
 
           console.log(`✅ Discord: Scan complete for ${validatedAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
 
+          // Send webhook alert to Discord channel
+          try {
+            const { sendWalletCheckAlert } = await import('./discordWebhookService.js');
+            await sendWalletCheckAlert({
+              walletAddress: validatedAddress,
+              emptyAccountsFound: scanResult.emptyAccounts,
+              estimatedSOL: parseFloat(scanResult.totalReclaimable)
+            });
+          } catch (webhookError) {
+            console.error('Failed to send Discord webhook alert:', webhookError);
+          }
+
         } catch (error) {
           console.error('❌ Discord: Error scanning wallet:', error);
           
