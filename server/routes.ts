@@ -1106,7 +1106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const MIN_CLAIM_FOR_POST = 0; // Changed from 0.01 for testing
       if (solRecovered >= MIN_CLAIM_FOR_POST) {
         try {
-          // Tiered messaging based on claim amount
+          // Tiered messaging based on claim amount (only the beginning varies)
           let claimMessages: string[];
           if (solRecovered >= 4) {
             // 🔥 Massive Claims (4 SOL and up)
