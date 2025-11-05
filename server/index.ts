@@ -196,6 +196,15 @@ function getStaticAssetsPath() {
     const server = await registerRoutes(app);
     log(`Routes registered successfully`);
 
+    // Initialize Discord bot for wallet scanning
+    try {
+      const { initializeDiscordBot } = await import('./discordBot.js');
+      await initializeDiscordBot();
+    } catch (discordError) {
+      log(`Discord bot initialization failed: ${discordError instanceof Error ? discordError.message : String(discordError)}`);
+      log(`Server will continue without Discord bot functionality`);
+    }
+
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
