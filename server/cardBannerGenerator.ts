@@ -14,82 +14,93 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   const { solAmount, walletAddress } = options;
   
   const width = 1200;
-  const height = 628;
+  const height = 630;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#0a0a0a';
-  ctx.fillRect(0, 0, width, height);
+  const borderRadius = 30;
+  ctx.fillStyle = '#000000';
+  roundRect(ctx, 0, 0, width, height, borderRadius);
+  ctx.fill();
 
-  const cornerSize = 150;
+  const cornerSize = 120;
   ctx.fillStyle = '#14F195';
   ctx.beginPath();
-  ctx.moveTo(0, 0);
+  ctx.moveTo(0, borderRadius);
+  ctx.lineTo(0, 0);
+  ctx.lineTo(borderRadius, 0);
   ctx.lineTo(cornerSize, 0);
   ctx.lineTo(0, cornerSize);
+  ctx.lineTo(0, borderRadius);
   ctx.closePath();
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(width, height);
+  ctx.moveTo(width, height - borderRadius);
+  ctx.lineTo(width, height);
+  ctx.lineTo(width - borderRadius, height);
   ctx.lineTo(width - cornerSize, height);
   ctx.lineTo(width, height - cornerSize);
+  ctx.lineTo(width, height - borderRadius);
   ctx.closePath();
   ctx.fill();
 
-  const hexagonSize = 15;
-  const hexagonSpacing = 20;
-  ctx.strokeStyle = '#14F19530';
-  ctx.lineWidth = 2;
+  const hexagonSize = 8;
+  const hexagonSpacing = 16;
+  ctx.strokeStyle = '#14F19540';
+  ctx.lineWidth = 1.5;
   
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 6; col++) {
-      const x = 80 + col * hexagonSpacing * 1.5;
-      const y = 180 + row * hexagonSpacing + (col % 2) * (hexagonSpacing / 2);
+  for (let row = 0; row < 12; row++) {
+    for (let col = 0; col < 8; col++) {
+      const x = 60 + col * hexagonSpacing * 1.5;
+      const y = 100 + row * hexagonSpacing + (col % 2) * (hexagonSpacing / 2);
       
       drawHexagon(ctx, x, y, hexagonSize);
     }
   }
 
   ctx.fillStyle = '#14F195';
-  ctx.font = 'bold 48px sans-serif';
+  ctx.font = 'bold 56px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('CLAIMED', width / 2, 180);
+  ctx.fillText('CLAIMED', width / 2, 220);
 
   const solText = `${parseFloat(solAmount).toFixed(4)} SOL`;
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 120px sans-serif';
+  ctx.font = 'bold 140px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(solText, width / 2, 320);
+  ctx.fillText(solText, width / 2, 370);
 
-  const gradient = ctx.createLinearGradient(0, 350, width, 350);
-  gradient.addColorStop(0, '#9945FF');
-  gradient.addColorStop(0.5, '#14F195');
-  gradient.addColorStop(1, '#19D9E0');
-  
-  ctx.strokeStyle = gradient;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(200, 350);
-  ctx.lineTo(width - 200, 350);
-  ctx.stroke();
-
-  ctx.fillStyle = '#888888';
-  ctx.font = '24px sans-serif';
+  ctx.fillStyle = '#999999';
+  ctx.font = '28px sans-serif';
   ctx.textAlign = 'center';
   const shortWallet = `${walletAddress.slice(0, 8)}...${walletAddress.slice(-8)}`;
-  ctx.fillText(`Claimer: ${shortWallet}`, width / 2, 420);
+  ctx.fillText(`Claimer: ${shortWallet}`, width / 2, 460);
 
   ctx.fillStyle = '#14F195';
-  ctx.font = 'bold 32px sans-serif';
+  ctx.font = 'bold 38px sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('GetFreeSol', width - 60, height - 50);
+  ctx.fillText('GetFreeSol', width - 80, height - 60);
 
-  ctx.strokeStyle = '#14F19550';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(30, 30, width - 60, height - 60);
+  ctx.strokeStyle = '#14F19560';
+  ctx.lineWidth = 4;
+  roundRect(ctx, 20, 20, width - 40, height - 40, borderRadius - 10);
+  ctx.stroke();
 
   return canvas.toBuffer('image/png');
+}
+
+function roundRect(ctx: any, x: number, y: number, width: number, height: number, radius: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
 }
 
 function drawHexagon(ctx: any, x: number, y: number, size: number) {
