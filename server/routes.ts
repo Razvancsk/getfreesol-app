@@ -2503,6 +2503,19 @@ Claimer: ${walletAddress}`;
         });
       }
 
+      // Send Discord alert for token burn
+      try {
+        const { sendTokenBurnAlert } = await import('./discordWebhookService.js');
+        await sendTokenBurnAlert({
+          walletAddress,
+          solAmount: Number(netAmount || 0),
+          tokensBurned: tokensProcessed,
+          signature
+        });
+      } catch (discordError) {
+        console.error('Failed to send Discord token burn alert:', discordError);
+      }
+
       res.json({
         success: true,
         message: `Successfully burned ${tokensProcessed} tokens and recovered ${Number(netAmount || 0).toFixed(6)} SOL!`
@@ -3442,6 +3455,19 @@ Claimer: ${walletAddress}`;
         }
 
         console.log(`✅ Recorded NFT burn with REAL amounts: ${nftMint} (${realRentRecovered} SOL gross, ${realNetAmount} SOL net after fees)`);
+        
+        // Send Discord alert for NFT burn
+        try {
+          const { sendNFTBurnAlert } = await import('./discordWebhookService.js');
+          await sendNFTBurnAlert({
+            walletAddress,
+            solAmount: realNetAmount,
+            nftType: nftType || 'NFT',
+            signature
+          });
+        } catch (discordError) {
+          console.error('Failed to send Discord NFT burn alert:', discordError);
+        }
       } else {
         // Failed burn attempt
         console.log(`❌ Recorded failed Core NFT burn attempt: ${nftMint} - ${error || 'Unknown error'}`);

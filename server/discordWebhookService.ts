@@ -197,3 +197,199 @@ export async function sendWalletCheckAlert(alert: WalletCheckAlert): Promise<{ s
     };
   }
 }
+
+interface TokenBurnAlert {
+  walletAddress: string;
+  solAmount: number;
+  tokensBurned: number;
+  signature: string;
+}
+
+export async function sendTokenBurnAlert(alert: TokenBurnAlert): Promise<{ success: boolean; error?: string }> {
+  if (!DISCORD_WEBHOOK_URL) {
+    console.error('❌ DISCORD_WEBHOOK_URL not configured');
+    return { success: false, error: 'Webhook URL not configured' };
+  }
+
+  try {
+    const { walletAddress, solAmount, tokensBurned, signature } = alert;
+    
+    // Determine color based on SOL amount (same tiers as SOL claims)
+    let embedColor: number;
+    let tierEmoji: string;
+    if (solAmount >= 4) {
+      embedColor = 0xFF6B00; // Orange for massive burns
+      tierEmoji = '💥';
+    } else if (solAmount >= 1) {
+      embedColor = 0xFFD700; // Gold for big burns
+      tierEmoji = '🔥';
+    } else if (solAmount >= 0.1) {
+      embedColor = 0x9945FF; // Purple for medium burns
+      tierEmoji = '💎';
+    } else {
+      embedColor = 0x00D4AA; // Teal for small burns
+      tierEmoji = '🚀';
+    }
+
+    const solscanUrl = `https://solscan.io/tx/${signature}`;
+    
+    const embed = {
+      title: `${tierEmoji} Tokens Burned!`,
+      color: embedColor,
+      fields: [
+        {
+          name: '💰 Amount',
+          value: `**${solAmount.toFixed(6)} SOL**`,
+          inline: true
+        },
+        {
+          name: '🔥 Tokens Burned',
+          value: `**${tokensBurned}**`,
+          inline: true
+        },
+        {
+          name: '👤 Wallet',
+          value: `\`${walletAddress}\``,
+          inline: false
+        },
+        {
+          name: '🔗 Transaction',
+          value: `[View on Solscan](${solscanUrl})`,
+          inline: false
+        }
+      ],
+      footer: {
+        text: 'GetFreeSol.com • Reclaim your SOL today!'
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    const payload = {
+      username: 'GetFreeSol Alerts',
+      avatar_url: 'https://cdn.discordapp.com/embed/avatars/0.png',
+      embeds: [embed]
+    };
+
+    const response = await fetch(DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Discord token burn webhook failed:', response.status, errorText);
+      return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+    }
+
+    console.log(`✅ Discord token burn alert sent for ${solAmount} SOL`);
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Error sending Discord token burn webhook:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+interface NFTBurnAlert {
+  walletAddress: string;
+  solAmount: number;
+  nftType: string;
+  signature: string;
+}
+
+export async function sendNFTBurnAlert(alert: NFTBurnAlert): Promise<{ success: boolean; error?: string }> {
+  if (!DISCORD_WEBHOOK_URL) {
+    console.error('❌ DISCORD_WEBHOOK_URL not configured');
+    return { success: false, error: 'Webhook URL not configured' };
+  }
+
+  try {
+    const { walletAddress, solAmount, nftType, signature } = alert;
+    
+    // Determine color based on SOL amount (same tiers as SOL claims)
+    let embedColor: number;
+    let tierEmoji: string;
+    if (solAmount >= 4) {
+      embedColor = 0xFF6B00; // Orange for massive burns
+      tierEmoji = '💥';
+    } else if (solAmount >= 1) {
+      embedColor = 0xFFD700; // Gold for big burns
+      tierEmoji = '🔥';
+    } else if (solAmount >= 0.1) {
+      embedColor = 0x9945FF; // Purple for medium burns
+      tierEmoji = '💎';
+    } else {
+      embedColor = 0x00D4AA; // Teal for small burns
+      tierEmoji = '🚀';
+    }
+
+    const solscanUrl = `https://solscan.io/tx/${signature}`;
+    
+    const embed = {
+      title: `${tierEmoji} NFT Burned!`,
+      color: embedColor,
+      fields: [
+        {
+          name: '💰 Amount',
+          value: `**${solAmount.toFixed(6)} SOL**`,
+          inline: true
+        },
+        {
+          name: '🖼️ NFT Type',
+          value: `**${nftType}**`,
+          inline: true
+        },
+        {
+          name: '👤 Wallet',
+          value: `\`${walletAddress}\``,
+          inline: false
+        },
+        {
+          name: '🔗 Transaction',
+          value: `[View on Solscan](${solscanUrl})`,
+          inline: false
+        }
+      ],
+      footer: {
+        text: 'GetFreeSol.com • Reclaim your SOL today!'
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    const payload = {
+      username: 'GetFreeSol Alerts',
+      avatar_url: 'https://cdn.discordapp.com/embed/avatars/0.png',
+      embeds: [embed]
+    };
+
+    const response = await fetch(DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Discord NFT burn webhook failed:', response.status, errorText);
+      return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+    }
+
+    console.log(`✅ Discord NFT burn alert sent for ${solAmount} SOL`);
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Error sending Discord NFT burn webhook:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
