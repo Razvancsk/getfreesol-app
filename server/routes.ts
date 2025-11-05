@@ -5596,6 +5596,27 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Preview card banner (GET)
+  app.get("/api/x/preview-card", async (req, res) => {
+    try {
+      const solAmount = req.query.solAmount as string || "0.0208";
+      const walletAddress = req.query.walletAddress as string || "58AzpFr9...c6ByezPf8";
+
+      const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
+      const cardImage = await generateClaimCardBanner({
+        solAmount,
+        walletAddress
+      });
+
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(cardImage);
+    } catch (error: any) {
+      console.error('Preview card generation error:', error);
+      res.status(500).json({ error: error.message || 'Failed to generate preview' });
+    }
+  });
+
   // Test post to X (manual trigger)
   app.post("/api/x/test-post", async (req, res) => {
     try {
