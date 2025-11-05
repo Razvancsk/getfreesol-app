@@ -165,7 +165,7 @@ export default function XAdmin() {
                     <div className="flex items-start gap-2">
                       <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                       <p className="text-sm">
-                        Includes hashtags: #UnclaimedSOL #ClaimSOL #Solana #DeFi #sol
+                        Includes hashtags: #GetFreeSol #ClaimSOL #Solana #DeFi #sol
                       </p>
                     </div>
                     <div className="flex items-start gap-2">
@@ -347,7 +347,7 @@ export default function XAdmin() {
         <div className="mt-6 p-4 bg-secondary/30 dark:bg-secondary/20 rounded-lg">
           <h3 className="font-semibold text-sm mb-2">Example Post</h3>
           <div className="bg-background p-4 rounded border border-border/50 font-mono text-sm">
-            <p>🔥 Hot drop! 1.0975 SOL just got claimed. #UnclaimedSOL #ClaimSOL #Solana #DeFi #sol</p>
+            <p>🔥 Hot drop! 1.0975 SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol</p>
             <p className="mt-2 text-muted-foreground">Claimer: qJJkZxfc...7BotCwz6</p>
           </div>
         </div>

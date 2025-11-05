@@ -1106,7 +1106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const MIN_CLAIM_FOR_POST = 0.01;
       if (solRecovered >= MIN_CLAIM_FOR_POST) {
         try {
-          const tweetContent = `🔥 Hot drop! ${solRecovered.toFixed(4)} SOL just got claimed. #UnclaimedSOL #ClaimSOL #Solana #DeFi #sol
+          const tweetContent = `🔥 Hot drop! ${solRecovered.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
 
 Claimer: ${walletAddress}`;
           
