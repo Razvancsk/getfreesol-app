@@ -50,19 +50,11 @@ class BackpackApiService {
 
   async getBorrowLendMarkets(): Promise<any> {
     try {
-      // Get account balances which can be used for lending
-      const timestamp = Date.now();
-      const window = 5000;
-      const signature = this.generateSignature('balanceQuery', {}, timestamp, window);
-
-      const response = await fetch(`${this.config.baseUrl}/wapi/v1/capital`, {
+      // Public endpoint - no authentication needed
+      const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend/markets`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-Timestamp': timestamp.toString(),
-          'X-Window': window.toString(),
-          'X-API-Key': this.config.publicKey,
-          'X-Signature': signature,
         },
       });
 
@@ -71,23 +63,24 @@ class BackpackApiService {
         throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log('📊 Backpack capital data:', JSON.stringify(data, null, 2));
+      const markets = await response.json();
+      console.log(`📊 Backpack returned ${markets.length} borrow/lend markets`);
       
-      // Transform capital data to markets format
-      const balances = data.balances || {};
-      const markets = Object.entries(balances).map(([asset, balance]: [string, any]) => ({
-        asset,
-        lendApy: 0.05, // Default 5% APY (would need separate API call for real rates)
-        borrowApy: 0.08, // Default 8% APY
-        totalLiquidity: balance.available || '0',
-        availableLiquidity: balance.available || '0',
-        utilizationRate: 0,
+      // Transform to our format
+      return markets.map((market: any) => ({
+        asset: market.symbol,
+        symbol: market.symbol,
+        lendApy: parseFloat(market.lendInterestRate || 0),
+        borrowApy: parseFloat(market.borrowInterestRate || 0),
+        totalLiquidity: market.lentQuantity || '0',
+        availableLiquidity: (parseFloat(market.lentQuantity || 0) - parseFloat(market.borrowedQuantity || 0)).toString(),
+        utilizationRate: parseFloat(market.utilization || 0),
         decimals: 9,
-        price: '0'
+        price: market.assetMarkPrice || '0',
+        utilization: parseFloat(market.utilization || 0),
+        lentQuantity: market.lentQuantity || '0',
+        borrowedQuantity: market.borrowedQuantity || '0',
       }));
-
-      return markets;
     } catch (error) {
       console.error('Failed to fetch borrow/lend markets:', error);
       throw error;
