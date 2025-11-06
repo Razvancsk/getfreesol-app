@@ -13,6 +13,7 @@ import ApiDocs from "@/pages/api-docs";
 import DeveloperDashboard from "@/pages/developer-dashboard";
 import AdminMigrate from "@/pages/admin-migrate";
 import NotFound from "@/pages/not-found";
+import { BackpackNotifications } from "@/components/BackpackNotifications";
 
 function Router() {
   return (
@@ -40,6 +41,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <BackpackNotifications />
         </TooltipProvider>
       </SolanaProvider>
     </QueryClientProvider>

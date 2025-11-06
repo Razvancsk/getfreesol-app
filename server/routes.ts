@@ -25,6 +25,7 @@ import { xApiService } from './xApiService';
 import { xOAuthService } from './xOAuthService';
 import cron from 'node-cron';
 import { backpackApiService } from './backpackApiService';
+import { backpackWebSocketService } from './backpackWebSocketService';
 
 // Extend global for temporary OAuth token storage
 declare global {
@@ -5498,6 +5499,189 @@ Claimer: ${walletAddress}`;
         });
       }
       res.status(500).json({ error: error.message || 'Failed to fetch collateral' });
+    }
+  });
+
+  // ============================================
+  // BACKPACK WEBSOCKET ENDPOINTS
+  // ============================================
+
+  // Get WebSocket connection status
+  app.get("/api/backpack/ws/status", async (req, res) => {
+    try {
+      res.json({ 
+        connected: backpackWebSocketService.isConnected(),
+        subscriptions: backpackWebSocketService.getSubscriptions()
+      });
+    } catch (error: any) {
+      console.error('WebSocket status error:', error);
+      res.status(500).json({ error: error.message || 'Failed to get WebSocket status' });
+    }
+  });
+
+  // Server-Sent Events for order updates
+  app.get("/api/backpack/ws/orders", async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const { symbol } = req.query;
+    const stream = symbol ? `account.orderUpdate.${symbol}` : 'account.orderUpdate';
+
+    try {
+      // Connect and wait for it to be ready
+      if (!backpackWebSocketService.isConnected()) {
+        await backpackWebSocketService.connect();
+        // Give it time to fully establish connection
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      await backpackWebSocketService.subscribe(stream);
+
+      const orderHandler = (data: any) => {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      };
+
+      backpackWebSocketService.on('orderUpdate', orderHandler);
+
+      req.on('close', () => {
+        backpackWebSocketService.off('orderUpdate', orderHandler);
+        backpackWebSocketService.unsubscribe(stream);
+      });
+
+    } catch (error: any) {
+      console.error('Order stream error:', error);
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
+    }
+  });
+
+  // Server-Sent Events for position updates
+  app.get("/api/backpack/ws/positions", async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const { symbol } = req.query;
+    const stream = symbol ? `account.positionUpdate.${symbol}` : 'account.positionUpdate';
+
+    try {
+      // Connect and wait for it to be ready
+      if (!backpackWebSocketService.isConnected()) {
+        await backpackWebSocketService.connect();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      await backpackWebSocketService.subscribe(stream);
+
+      const positionHandler = (data: any) => {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      };
+
+      backpackWebSocketService.on('positionUpdate', positionHandler);
+
+      req.on('close', () => {
+        backpackWebSocketService.off('positionUpdate', positionHandler);
+        backpackWebSocketService.unsubscribe(stream);
+      });
+
+    } catch (error: any) {
+      console.error('Position stream error:', error);
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
+    }
+  });
+
+  // Server-Sent Events for RFQ updates
+  app.get("/api/backpack/ws/rfq", async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const { symbol } = req.query;
+    const stream = symbol ? `account.rfqUpdate.${symbol}` : 'account.rfqUpdate';
+
+    try {
+      await backpackWebSocketService.connect();
+      await backpackWebSocketService.subscribe(stream);
+
+      const rfqHandler = (data: any) => {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      };
+
+      backpackWebSocketService.on('rfqUpdate', rfqHandler);
+
+      req.on('close', () => {
+        backpackWebSocketService.off('rfqUpdate', rfqHandler);
+        backpackWebSocketService.unsubscribe(stream);
+      });
+
+    } catch (error: any) {
+      console.error('RFQ stream error:', error);
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
+    }
+  });
+
+  // Server-Sent Events for market depth updates
+  app.get("/api/backpack/ws/depth/:symbol", async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const { symbol } = req.params;
+    const stream = `depth.${symbol}`;
+
+    try {
+      await backpackWebSocketService.connect();
+      await backpackWebSocketService.subscribe(stream);
+
+      const depthHandler = (data: any) => {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      };
+
+      backpackWebSocketService.on('depth', depthHandler);
+
+      req.on('close', () => {
+        backpackWebSocketService.off('depth', depthHandler);
+        backpackWebSocketService.unsubscribe(stream);
+      });
+
+    } catch (error: any) {
+      console.error('Depth stream error:', error);
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
+    }
+  });
+
+  // Server-Sent Events for ticker updates
+  app.get("/api/backpack/ws/ticker/:symbol", async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const { symbol } = req.params;
+    const stream = `ticker.${symbol}`;
+
+    try {
+      await backpackWebSocketService.connect();
+      await backpackWebSocketService.subscribe(stream);
+
+      const tickerHandler = (data: any) => {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      };
+
+      backpackWebSocketService.on('ticker', tickerHandler);
+
+      req.on('close', () => {
+        backpackWebSocketService.off('ticker', tickerHandler);
+        backpackWebSocketService.unsubscribe(stream);
+      });
+
+    } catch (error: any) {
+      console.error('Ticker stream error:', error);
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
     }
   });
 
