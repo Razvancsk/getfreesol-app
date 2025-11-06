@@ -73,7 +73,7 @@ export function BackpackNotifications() {
   }, [positionData, toast]);
 
   const unreadCount = notifications.filter(n => 
-    Date.now() - n.timestamp / 1000 < 60000
+    Date.now() - (n.timestamp / 1000) < 60000 // timestamp is in microseconds, convert to milliseconds
   ).length;
 
   return (
@@ -238,7 +238,7 @@ function getNotificationIcon(notification: Notification) {
 }
 
 function formatTimestamp(microseconds: number): string {
-  const date = new Date(microseconds / 1000);
+  const date = new Date(microseconds / 1000); // Convert microseconds to milliseconds
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   

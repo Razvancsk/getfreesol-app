@@ -5528,31 +5528,47 @@ Claimer: ${walletAddress}`;
     const { symbol } = req.query;
     const stream = symbol ? `account.orderUpdate.${symbol}` : 'account.orderUpdate';
 
+    // Keep connection alive with heartbeat
+    const heartbeat = setInterval(() => {
+      res.write(`:heartbeat\n\n`);
+    }, 15000);
+
     try {
       // Connect and wait for it to be ready
       if (!backpackWebSocketService.isConnected()) {
         await backpackWebSocketService.connect();
-        // Give it time to fully establish connection
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
       await backpackWebSocketService.subscribe(stream);
+      
+      // Send initial connection success message
+      res.write(`data: ${JSON.stringify({ type: 'connected', stream })}\n\n`);
 
       const orderHandler = (data: any) => {
-        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'update', data })}\n\n`);
+      };
+
+      const errorHandler = (msg: any) => {
+        if (msg.error) {
+          res.write(`data: ${JSON.stringify({ type: 'error', error: msg.error })}\n\n`);
+        }
       };
 
       backpackWebSocketService.on('orderUpdate', orderHandler);
+      backpackWebSocketService.on('message', errorHandler);
 
       req.on('close', () => {
+        clearInterval(heartbeat);
         backpackWebSocketService.off('orderUpdate', orderHandler);
+        backpackWebSocketService.off('message', errorHandler);
         backpackWebSocketService.unsubscribe(stream);
       });
 
     } catch (error: any) {
       console.error('Order stream error:', error);
-      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-      res.end();
+      clearInterval(heartbeat);
+      res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
     }
   });
 
@@ -5565,6 +5581,11 @@ Claimer: ${walletAddress}`;
     const { symbol } = req.query;
     const stream = symbol ? `account.positionUpdate.${symbol}` : 'account.positionUpdate';
 
+    // Keep connection alive with heartbeat
+    const heartbeat = setInterval(() => {
+      res.write(`:heartbeat\n\n`);
+    }, 15000);
+
     try {
       // Connect and wait for it to be ready
       if (!backpackWebSocketService.isConnected()) {
@@ -5573,22 +5594,34 @@ Claimer: ${walletAddress}`;
       }
       
       await backpackWebSocketService.subscribe(stream);
+      
+      // Send initial connection success message
+      res.write(`data: ${JSON.stringify({ type: 'connected', stream })}\n\n`);
 
       const positionHandler = (data: any) => {
-        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'update', data })}\n\n`);
+      };
+
+      const errorHandler = (msg: any) => {
+        if (msg.error) {
+          res.write(`data: ${JSON.stringify({ type: 'error', error: msg.error })}\n\n`);
+        }
       };
 
       backpackWebSocketService.on('positionUpdate', positionHandler);
+      backpackWebSocketService.on('message', errorHandler);
 
       req.on('close', () => {
+        clearInterval(heartbeat);
         backpackWebSocketService.off('positionUpdate', positionHandler);
+        backpackWebSocketService.off('message', errorHandler);
         backpackWebSocketService.unsubscribe(stream);
       });
 
     } catch (error: any) {
       console.error('Position stream error:', error);
-      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-      res.end();
+      clearInterval(heartbeat);
+      res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
     }
   });
 

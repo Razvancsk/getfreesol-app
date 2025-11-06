@@ -36,6 +36,30 @@ export function useBackpackStream<T = any>(
         try {
           const parsedData = JSON.parse(event.data);
           
+          // Handle different message types
+          if (parsedData.type === 'connected') {
+            console.log(`✅ Stream connected: ${parsedData.stream}`);
+            setIsConnected(true);
+            setError(null);
+            return;
+          }
+          
+          if (parsedData.type === 'error') {
+            console.warn(`⚠️ Stream error:`, parsedData.error);
+            const err = new Error(parsedData.error.message || 'Stream error');
+            setError(err);
+            onError?.(err);
+            // Don't return - keep connection alive
+            return;
+          }
+          
+          if (parsedData.type === 'update') {
+            setData(parsedData.data);
+            onMessage?.(parsedData.data);
+            return;
+          }
+
+          // Backward compatibility - handle direct data
           if (parsedData.error) {
             const err = new Error(parsedData.error);
             setError(err);
