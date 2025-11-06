@@ -5182,7 +5182,7 @@ Claimer: ${walletAddress}`;
       console.log('🎒 Fetching Backpack borrow/lend markets...');
 
       // Fetch markets from Backpack API (public endpoint, no auth required)
-      const response = await fetch('https://api.backpack.exchange/api/v1/markets/borrow-lend');
+      const response = await fetch('https://api.backpack.exchange/api/v1/borrow-lend/markets');
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -5191,6 +5191,7 @@ Claimer: ${walletAddress}`;
 
       const markets = await response.json();
       console.log(`✅ Found ${markets.length} Backpack borrow/lend markets`);
+      console.log('📊 Sample market data:', JSON.stringify(markets[0], null, 2));
 
       // Transform the data to match our frontend format
       const reserves = markets.map((market: any) => {
