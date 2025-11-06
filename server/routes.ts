@@ -5222,10 +5222,20 @@ Claimer: ${walletAddress}`;
       const lendingMarkets = reserves.filter((r: any) => r.hasLending);
       console.log(`📊 Showing ${reserves.length} total markets (${lendingMarkets.length} with lending)`);
 
+      // Sort reserves: lending markets first, then by highest APY
+      const sortedReserves = reserves.sort((a: any, b: any) => {
+        // Lending markets come first
+        if (a.hasLending && !b.hasLending) return -1;
+        if (!a.hasLending && b.hasLending) return 1;
+        
+        // Within each group, sort by deposit APY (highest first)
+        return b.depositAPY - a.depositAPY;
+      });
+
       res.json({
         success: true,
         programId: 'backpack-exchange',
-        reserves,
+        reserves: sortedReserves,
         totalPools: markets.length,
         lendingPools: lendingMarkets.length
       });
