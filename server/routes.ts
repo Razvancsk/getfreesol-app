@@ -5194,7 +5194,7 @@ Claimer: ${walletAddress}`;
       const reserves = markets.map((market: any) => {
         const symbol = market.asset || market.symbol || 'Unknown';
         
-        // Convert APY rates from decimal to percentage (e.g., 0.05 -> 5%)
+        // Convert APY rates from decimal to percentage (e.g., 0.0005 -> 0.05%)
         const lendAPY = parseFloat(market.lendApy || 0) * 100;
         const borrowAPY = parseFloat(market.borrowApy || 0) * 100;
         
@@ -5212,17 +5212,22 @@ Claimer: ${walletAddress}`;
           decimals: market.decimals || 9,
           utilization: parseFloat(market.utilizationRate || 0) * 100,
           available: market.availableLiquidity || '0',
-          price: market.price || '0'
+          price: market.price || '0',
+          hasLending: market.hasLending || false,
+          marketType: market.marketType || 'SPOT',
+          orderBookState: market.orderBookState || 'Open'
         };
       });
 
-      console.log(`Sample market: ${reserves[0]?.symbol} - Lend APY: ${reserves[0]?.depositAPY}%`);
+      const lendingMarkets = reserves.filter((r: any) => r.hasLending);
+      console.log(`📊 Showing ${reserves.length} total markets (${lendingMarkets.length} with lending)`);
 
       res.json({
         success: true,
         programId: 'backpack-exchange',
         reserves,
-        totalPools: markets.length
+        totalPools: markets.length,
+        lendingPools: lendingMarkets.length
       });
     } catch (error: any) {
       console.error("Backpack borrow/lend markets error:", error);

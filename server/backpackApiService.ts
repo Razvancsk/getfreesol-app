@@ -77,37 +77,73 @@ class BackpackApiService {
 
   async getBorrowLendMarkets(): Promise<any> {
     try {
-      // Public endpoint - no authentication needed
-      const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend/markets`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Fetch both spot markets and lending markets
+      const [marketsResponse, lendMarketsResponse] = await Promise.all([
+        fetch(`${this.config.baseUrl}/api/v1/markets`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        fetch(`${this.config.baseUrl}/api/v1/borrowLend/markets`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ]);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
+      if (!marketsResponse.ok) {
+        const errorText = await marketsResponse.text();
+        throw new Error(`Backpack markets API error: ${marketsResponse.status} - ${errorText}`);
       }
 
-      const markets = await response.json();
-      console.log(`📊 Backpack returned ${markets.length} borrow/lend markets`);
+      const spotMarkets = await marketsResponse.json();
+      const lendMarkets = lendMarketsResponse.ok ? await lendMarketsResponse.json() : [];
       
+      // Create a map of lending data by symbol
+      const lendingDataMap = new Map();
+      lendMarkets.forEach((market: any) => {
+        lendingDataMap.set(market.symbol, {
+          lendApy: parseFloat(market.lendInterestRate || 0),
+          borrowApy: parseFloat(market.borrowInterestRate || 0),
+          totalLiquidity: market.lentQuantity || '0',
+          availableLiquidity: (parseFloat(market.lentQuantity || 0) - parseFloat(market.borrowedQuantity || 0)).toString(),
+          utilization: parseFloat(market.utilization || 0),
+          price: market.assetMarkPrice || '0',
+        });
+      });
+
+      console.log(`📊 Backpack: ${spotMarkets.length} total markets, ${lendMarkets.length} with lending`);
+      
+      // Extract unique base symbols from spot markets
+      const uniqueAssets = new Map();
+      spotMarkets.forEach((market: any) => {
+        const baseSymbol = market.baseSymbol;
+        if (baseSymbol && !uniqueAssets.has(baseSymbol)) {
+          uniqueAssets.set(baseSymbol, market);
+        }
+      });
+
       // Transform to our format
-      return markets.map((market: any) => ({
-        asset: market.symbol,
-        symbol: market.symbol,
-        lendApy: parseFloat(market.lendInterestRate || 0),
-        borrowApy: parseFloat(market.borrowInterestRate || 0),
-        totalLiquidity: market.lentQuantity || '0',
-        availableLiquidity: (parseFloat(market.lentQuantity || 0) - parseFloat(market.borrowedQuantity || 0)).toString(),
-        utilizationRate: parseFloat(market.utilization || 0),
-        decimals: 9,
-        price: market.assetMarkPrice || '0',
-        utilization: parseFloat(market.utilization || 0),
-        lentQuantity: market.lentQuantity || '0',
-        borrowedQuantity: market.borrowedQuantity || '0',
-      }));
+      return Array.from(uniqueAssets.values()).map((market: any) => {
+        const symbol = market.baseSymbol;
+        const lendingData = lendingDataMap.get(symbol);
+        
+        return {
+          asset: symbol,
+          symbol: symbol,
+          lendApy: lendingData ? lendingData.lendApy : 0,
+          borrowApy: lendingData ? lendingData.borrowApy : 0,
+          totalLiquidity: lendingData ? lendingData.totalLiquidity : '0',
+          availableLiquidity: lendingData ? lendingData.availableLiquidity : '0',
+          utilizationRate: lendingData ? lendingData.utilization : 0,
+          decimals: 9,
+          price: lendingData ? lendingData.price : '0',
+          utilization: lendingData ? lendingData.utilization : 0,
+          lentQuantity: lendingData ? lendingData.totalLiquidity : '0',
+          borrowedQuantity: '0',
+          hasLending: !!lendingData,
+          marketType: market.marketType,
+          orderBookState: market.orderBookState,
+        };
+      });
     } catch (error) {
       console.error('Failed to fetch borrow/lend markets:', error);
       throw error;
