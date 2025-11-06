@@ -100,9 +100,13 @@ class BackpackApiService {
       // Create a map of lending data by symbol
       const lendingDataMap = new Map();
       lendMarkets.forEach((market: any) => {
+        // Convert decimal rates to percentage (e.g., 0.0211 -> 2.11%)
+        const lendRate = parseFloat(market.lendInterestRate || 0) * 100;
+        const borrowRate = parseFloat(market.borrowInterestRate || 0) * 100;
+        
         lendingDataMap.set(market.symbol, {
-          lendApy: parseFloat(market.lendInterestRate || 0),
-          borrowApy: parseFloat(market.borrowInterestRate || 0),
+          lendApy: isNaN(lendRate) ? 0 : lendRate,
+          borrowApy: isNaN(borrowRate) ? 0 : borrowRate,
           totalLiquidity: market.lentQuantity || '0',
           availableLiquidity: (parseFloat(market.lentQuantity || 0) - parseFloat(market.borrowedQuantity || 0)).toString(),
           utilization: parseFloat(market.utilization || 0),
@@ -111,6 +115,13 @@ class BackpackApiService {
       });
 
       console.log(`📊 Backpack: ${spotMarkets.length} total markets, ${lendMarkets.length} with lending`);
+      
+      // Log sample market for verification
+      if (lendMarkets.length > 0) {
+        const sample = lendMarkets[0];
+        const sampleData = lendingDataMap.get(sample.symbol);
+        console.log(`   Sample: ${sample.symbol} - Lend APY: ${sampleData?.lendApy.toFixed(2)}%, Borrow APY: ${sampleData?.borrowApy.toFixed(2)}%`);
+      }
       
       // Extract unique base symbols from spot markets
       const uniqueAssets = new Map();

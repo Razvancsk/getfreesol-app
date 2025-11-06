@@ -5194,9 +5194,9 @@ Claimer: ${walletAddress}`;
       const reserves = markets.map((market: any) => {
         const symbol = market.asset || market.symbol || 'Unknown';
         
-        // Convert APY rates from decimal to percentage (e.g., 0.0005 -> 0.05%)
-        const lendAPY = parseFloat(market.lendApy || 0) * 100;
-        const borrowAPY = parseFloat(market.borrowApy || 0) * 100;
+        // APY rates are already converted to percentage in the service
+        const lendAPY = parseFloat(market.lendApy || 0);
+        const borrowAPY = parseFloat(market.borrowApy || 0);
         
         return {
           address: symbol,
