@@ -161,11 +161,71 @@ class BackpackApiService {
     }
   }
 
+  async getBalances(): Promise<any> {
+    try {
+      const timestamp = Date.now();
+      const window = 5000;
+      const instruction = 'balanceQuery';
+      const signature = this.generateSignature(instruction, {}, timestamp, window);
+
+      const response = await fetch(`${this.config.baseUrl}/api/v1/capital`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Timestamp': timestamp.toString(),
+          'X-Window': window.toString(),
+          'X-API-Key': this.config.publicKey,
+          'X-Signature': signature,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch balances:', error);
+      throw error;
+    }
+  }
+
+  async getCollateral(): Promise<any> {
+    try {
+      const timestamp = Date.now();
+      const window = 5000;
+      const instruction = 'collateralQuery';
+      const signature = this.generateSignature(instruction, {}, timestamp, window);
+
+      const response = await fetch(`${this.config.baseUrl}/api/v1/capital/collateral`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Timestamp': timestamp.toString(),
+          'X-Window': window.toString(),
+          'X-API-Key': this.config.publicKey,
+          'X-Signature': signature,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch collateral:', error);
+      throw error;
+    }
+  }
+
   async getBorrowLendPositions(): Promise<any> {
     try {
       const timestamp = Date.now();
       const window = 5000;
-      const instruction = 'borrowLendPositions';
+      const instruction = 'borrowLendPositionQuery';
       const signature = this.generateSignature(instruction, {}, timestamp, window);
 
       const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend/positions`, {
@@ -191,13 +251,15 @@ class BackpackApiService {
       return (positions || []).map((position: any) => ({
         asset: position.symbol,
         symbol: position.symbol,
-        amount: position.lent || position.borrowed || '0',
-        shares: position.lent || position.borrowed || '0',
+        amount: position.netQuantity || '0',
+        shares: position.netQuantity || '0',
         decimals: 9,
-        amountUSD: '0',
-        apy: parseFloat(position.lendInterestRate || position.borrowInterestRate || 0) * 100,
+        amountUSD: position.netExposureNotional || '0',
+        apy: 0,
         jlTokenAddress: position.symbol,
-        side: position.lent ? 'lend' : 'borrow'
+        side: parseFloat(position.netQuantity || 0) > 0 ? 'lend' : 'borrow',
+        cumulativeInterest: position.cumulativeInterest || '0',
+        markPrice: position.markPrice || '0'
       }));
     } catch (error) {
       console.error('Failed to fetch borrow/lend positions:', error);
@@ -215,7 +277,7 @@ class BackpackApiService {
       const window = 5000;
       const signature = this.generateSignature('borrowLendExecute', params, timestamp, window);
 
-      const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend/execute`, {
+      const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

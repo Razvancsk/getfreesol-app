@@ -31,11 +31,15 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
     setIsRefreshing(false);
   };
   
-  // Use Backpack reserves
+  // Use Backpack reserves - only enable lending for markets that support it
   const allReserves = (jupiterLendData?.reserves || []).map((r: any) => ({ 
     ...r, 
     platform: 'Backpack', 
-    capabilities: { canDeposit: false, canWithdraw: false, comingSoon: true } 
+    capabilities: { 
+      canDeposit: r.hasLending, 
+      canWithdraw: r.hasLending, 
+      comingSoon: !r.hasLending 
+    } 
   }));
 
   const formatTVL = (value: number, symbol: string) => {

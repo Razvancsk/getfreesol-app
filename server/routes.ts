@@ -5461,6 +5461,28 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Backpack Capital - Get balances (authenticated)
+  app.get("/api/backpack/balances", async (req, res) => {
+    try {
+      const balances = await backpackApiService.getBalances();
+      res.json({ success: true, balances });
+    } catch (error: any) {
+      console.error('Backpack balances error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch balances' });
+    }
+  });
+
+  // Backpack Capital - Get collateral (authenticated)
+  app.get("/api/backpack/collateral", async (req, res) => {
+    try {
+      const collateral = await backpackApiService.getCollateral();
+      res.json({ success: true, collateral });
+    } catch (error: any) {
+      console.error('Backpack collateral error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch collateral' });
+    }
+  });
+
   // ============================================
   // X (TWITTER) OAUTH ENDPOINTS
   // ============================================
