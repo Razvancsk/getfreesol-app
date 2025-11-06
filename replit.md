@@ -29,7 +29,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Wallet Scanner**: Scans Solana wallets for empty token accounts.
 - **Claim Interface**: Facilitates SOL reclamation from empty accounts.
 - **Mass Transfer**: Sends multiple tokens to a single destination wallet in one transaction.
-- **Jupiter Lend Integration**: Allows users to earn yield by depositing tokens into Jupiter Lend pools.
+- **Backpack Exchange Borrow/Lend**: Displays borrow/lend markets from Backpack Exchange (view-only, requires Backpack account for deposits).
 - **Auto-Claim Feature**: Permit-based automated SOL reclamation from empty accounts, supporting both standard SPL and Token-2022 programs.
 - **Developer API Platform**: Jupiter-style developer platform with PDA-based referral fee collection. Developers create referral accounts via wallet signature, receive deterministic PDA addresses derived from [project_pda, developer_wallet] for secure fee collection without private key management. Supports multiple token mints (SOL, USDC, USDT, BONK, JUP, etc.) with separate token account tracking. Developers earn 80% of collected fees. API documentation is gated - requires account creation first.
 - **X (Twitter) Bot**: Automated social media marketing system for platform wallet with PIN-based OAuth 1.0a authentication (Desktop app flow), scheduled posting, and auto-engagement. Posts automatically when SOL claims >= 0.01 SOL occur.
@@ -67,7 +67,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Jupiter Ultra Swap API**: Advanced DEX aggregator with Juno Liquidity Engine.
 - **Jupiter Ultra Holdings API**: Token balance aggregation endpoint.
 - **Jupiter Token List V2 API**: Token metadata provider.
-- **Jupiter Lend API**: Provides earn pools and lending functionalities.
+- **Backpack Exchange API**: Public API for viewing borrow/lend markets and rates.
 - **X (Twitter) API**: OAuth 1.0a flow for account connection and automated social media interactions.
 - **Multi-Wallet Support**: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
 - **Ledger Hardware Wallet**: Secure cold storage wallet integration with WebHID support.

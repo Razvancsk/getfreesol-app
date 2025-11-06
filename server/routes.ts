@@ -5176,68 +5176,63 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Jupiter Lend - Get earn pools with APY rates
+  // Backpack Borrow/Lend - Get markets with rates
   app.get("/api/jupiter-lend/earn-pools", async (req, res) => {
     try {
-      console.log('🪐 Fetching Jupiter Lend earn tokens from API...');
+      console.log('🎒 Fetching Backpack borrow/lend markets...');
 
-      // Fetch earn tokens data from Jupiter Lend API
-      const response = await fetch('https://lite-api.jup.ag/lend/v1/earn/tokens');
+      // Fetch markets from Backpack API (public endpoint, no auth required)
+      const response = await fetch('https://api.backpack.exchange/api/v1/markets/borrow-lend');
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Jupiter API returned ${response.status}: ${errorText}`);
+        throw new Error(`Backpack API returned ${response.status}: ${errorText}`);
       }
 
-      const earnPools = await response.json();
-      console.log(`✅ Found ${earnPools.length} Jupiter Lend earn tokens`);
+      const markets = await response.json();
+      console.log(`✅ Found ${markets.length} Backpack borrow/lend markets`);
 
       // Transform the data to match our frontend format
-      const reserves = earnPools.map((pool: any) => {
-        // Extract the underlying asset address (the mint to deposit)
-        const assetMint = pool.assetAddress || pool.asset?.address || '';
-        const rawSymbol = pool.asset?.symbol || pool.symbol || 'Unknown';
-        // Display "SOL" instead of "WSOL" for better UX
-        const assetSymbol = rawSymbol === 'WSOL' ? 'SOL' : rawSymbol;
-        const assetDecimals = pool.asset?.decimals || pool.decimals || 9;
-        const logoUrl = pool.asset?.logoUrl || '';
+      const reserves = markets.map((market: any) => {
+        const symbol = market.symbol || market.asset || 'Unknown';
         
-        // Convert rates from basis points to percentage (e.g., 430 -> 4.30%)
-        const supplyAPY = parseFloat(pool.totalRate || pool.supplyRate || 0) / 100;
+        // Convert APY rates (they should already be in percentage format)
+        const lendAPY = parseFloat(market.lendApy || market.supplyApy || 0);
+        const borrowAPY = parseFloat(market.borrowApy || 0);
         
         return {
-          address: pool.address, // jlToken address
-          symbol: assetSymbol,
-          name: pool.asset?.name || pool.name || assetSymbol,
-          mint: assetMint, // Underlying asset mint address for deposits
-          logoUrl: logoUrl, // Token logo image URL
-          depositAPY: supplyAPY,
-          borrowAPY: 0,
-          tvl: (parseFloat(pool.totalAssets || 0) / Math.pow(10, assetDecimals)).toFixed(2),
+          address: market.symbol, // Use symbol as address for Backpack
+          symbol: symbol,
+          name: symbol,
+          mint: symbol, // Backpack uses symbols, not Solana mints
+          logoUrl: '', // Backpack doesn't provide logo URLs in API
+          depositAPY: lendAPY,
+          borrowAPY: borrowAPY,
+          tvl: market.totalLiquidity || '0',
           deposited: '0.00',
           earnings: '0.00',
-          decimals: assetDecimals,
-          utilization: 0,
-          available: pool.totalAssets || '0',
-          price: pool.asset?.price || '0' // Token price in USD
+          decimals: 9, // Default to 9 decimals
+          utilization: parseFloat(market.utilization || 0),
+          available: market.availableLiquidity || '0',
+          price: market.price || '0'
         };
       });
 
-      console.log(`Sample reserve: ${reserves[0]?.symbol} - Mint: ${reserves[0]?.mint}`);
+      console.log(`Sample market: ${reserves[0]?.symbol} - Lend APY: ${reserves[0]?.depositAPY}%`);
 
       res.json({
         success: true,
-        programId: 'jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9',
+        programId: 'backpack-exchange',
         reserves,
-        totalPools: earnPools.length
+        totalPools: markets.length
       });
     } catch (error: any) {
-      console.error("Jupiter Lend earn pools error:", error);
-      res.status(500).json({ error: "Failed to load Jupiter Lend earn pools", details: error.message });
+      console.error("Backpack borrow/lend markets error:", error);
+      res.status(500).json({ error: "Failed to load Backpack borrow/lend markets", details: error.message });
     }
   });
 
-  // Jupiter Lend - Get user positions
+  // Backpack Borrow/Lend - Get user positions (requires Backpack account)
   app.get("/api/jupiter-lend/user-positions/:walletAddress", async (req, res) => {
     try {
       const { walletAddress } = req.params;
@@ -5246,17 +5241,13 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'Wallet address is required' });
       }
 
-      console.log(`📊 Loading Jupiter Lend positions for wallet: ${walletAddress}`);
+      console.log(`📊 Backpack positions require account authentication`);
 
-      // Fetch user positions from Jupiter Lend API
-      const response = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?users=${walletAddress}`);
-      
-      if (!response.ok) {
-        throw new Error(`Jupiter API returned ${response.status}`);
-      }
-
-      const positionsData = await response.json();
-      console.log('📊 Raw Jupiter Lend positions data:', JSON.stringify(positionsData, null, 2));
+      // Backpack requires authenticated API calls to get positions
+      // Users need to connect their Backpack account via API keys
+      // For now, return empty positions - will need user authentication
+      const positionsData: any[] = [];
+      console.log('📊 Backpack positions require user API authentication');
 
       if (!positionsData || positionsData.length === 0) {
         console.log('⚠️ No positions found for wallet');
@@ -5344,350 +5335,37 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Jupiter Lend - Build deposit transaction using SDK (exact documentation implementation)
+  // Backpack Borrow/Lend - Disabled (requires Backpack Exchange account)
+  // Users must create a Backpack Exchange account and manage lending there
   app.post("/api/jupiter-lend/build-deposit", async (req, res) => {
-    try {
-      const { walletAddress, asset, amount } = req.body;
-
-      if (!walletAddress || !asset || !amount) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      // CRITICAL: CASH is ONLY available on Kamino, NOT Jupiter
-      const CASH_MINT = 'CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH';
-      if (asset === CASH_MINT) {
-        return res.status(400).json({ 
-          error: 'CASH token is only available on Kamino, not Jupiter',
-          hint: 'Use /api/kamino-lend/build-deposit instead',
-          platform: 'Kamino'
-        });
-      }
-
-      console.log(`🏦 Building Jupiter Lend deposit transaction`);
-      console.log(`   Asset: ${asset}`);
-      console.log(`   Amount: ${amount}`);
-      console.log(`   Wallet: ${walletAddress}`);
-
-      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcEndpoint);
-
-      const walletPubkey = new PublicKey(walletAddress);
-      const assetPubkey = new PublicKey(asset);
-      const isSOL = asset === 'So11111111111111111111111111111111111111112';
-
-      const instructions: TransactionInstruction[] = [];
-
-      // For SOL deposits, add wrapping instructions
-      if (isSOL) {
-        console.log('💫 Adding WSOL wrapping instructions for SOL deposit');
-        
-        // Get user's WSOL ATA
-        const wsolATA = await getAssociatedTokenAddress(
-          NATIVE_MINT,
-          walletPubkey
-        );
-
-        // Check if WSOL ATA exists
-        let wsolAccountExists = false;
-        try {
-          await getAccount(connection, wsolATA);
-          wsolAccountExists = true;
-          console.log('✅ WSOL ATA exists:', wsolATA.toBase58());
-        } catch {
-          console.log('📝 WSOL ATA does not exist, will create');
-        }
-
-        // Create WSOL ATA if it doesn't exist
-        if (!wsolAccountExists) {
-          instructions.push(
-            createAssociatedTokenAccountInstruction(
-              walletPubkey,
-              wsolATA,
-              walletPubkey,
-              NATIVE_MINT
-            )
-          );
-        }
-
-        // Transfer SOL to WSOL account (amount + rent for account)
-        const rentExemption = await connection.getMinimumBalanceForRentExemption(165);
-        instructions.push(
-          SystemProgram.transfer({
-            fromPubkey: walletPubkey,
-            toPubkey: wsolATA,
-            lamports: BigInt(amount) + BigInt(rentExemption),
-          })
-        );
-
-        // Sync native to recognize wrapped SOL
-        instructions.push(
-          createSyncNativeInstruction(wsolATA)
-        );
-      }
-
-      // Get deposit instruction exactly as documentation shows
-      const depositIx = await getDepositIx({
-        amount: new BN(amount),
-        asset: assetPubkey,
-        signer: walletPubkey,
-        connection,
-        cluster: "mainnet",
-      });
-
-      // Convert the raw instruction to TransactionInstruction
-      const depositInstruction = new TransactionInstruction({
-        programId: new PublicKey(depositIx.programId),
-        keys: depositIx.keys.map((key) => ({
-          pubkey: new PublicKey(key.pubkey),
-          isSigner: key.isSigner,
-          isWritable: key.isWritable,
-        })),
-        data: Buffer.from(depositIx.data),
-      });
-
-      instructions.push(depositInstruction);
-
-      // Build versioned transaction
-      const latestBlockhash = await connection.getLatestBlockhash();
-      const messageV0 = new TransactionMessage({
-        payerKey: walletPubkey,
-        recentBlockhash: latestBlockhash.blockhash,
-        instructions,
-      }).compileToV0Message();
-
-      const transaction = new VersionedTransaction(messageV0);
-      
-      // Serialize transaction to base64
-      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
-
-      console.log(`✅ Deposit transaction built successfully`);
-
-      res.json({
-        success: true,
-        transaction: serializedTransaction,
-        message: 'Transaction ready to sign'
-      });
-
-    } catch (error: any) {
-      console.error("Build deposit transaction error:", error);
-      res.status(500).json({ error: "Failed to build deposit transaction", details: error.message });
-    }
+    res.status(501).json({ 
+      error: "Backpack lending requires a Backpack Exchange account",
+      message: "Please visit https://backpack.exchange to create an account and manage your lending positions."
+    });
   });
 
-  // Jupiter Lend - Build withdraw transaction using SDK (exact documentation implementation)
   app.post("/api/jupiter-lend/build-withdraw", async (req, res) => {
-    try {
-      const { walletAddress, asset, amount } = req.body;
-
-      if (!walletAddress || !asset || !amount) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      console.log(`💸 Building Jupiter Lend withdraw transaction`);
-      console.log(`   Asset: ${asset}`);
-      console.log(`   Amount: ${amount}`);
-      console.log(`   Wallet: ${walletAddress}`);
-
-      const rpcEndpoint = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcEndpoint);
-
-      // Get withdraw instruction exactly as documentation shows
-      const withdrawIx = await getWithdrawIx({
-        amount: new BN(amount),
-        asset: new PublicKey(asset),
-        signer: new PublicKey(walletAddress),
-        connection,
-        cluster: "mainnet",
-      });
-
-      // Convert the raw instruction to TransactionInstruction
-      const instruction = new TransactionInstruction({
-        programId: new PublicKey(withdrawIx.programId),
-        keys: withdrawIx.keys.map((key) => ({
-          pubkey: new PublicKey(key.pubkey),
-          isSigner: key.isSigner,
-          isWritable: key.isWritable,
-        })),
-        data: Buffer.from(withdrawIx.data),
-      });
-
-      // Build versioned transaction
-      const latestBlockhash = await connection.getLatestBlockhash();
-      const messageV0 = new TransactionMessage({
-        payerKey: new PublicKey(walletAddress),
-        recentBlockhash: latestBlockhash.blockhash,
-        instructions: [instruction],
-      }).compileToV0Message();
-
-      const transaction = new VersionedTransaction(messageV0);
-      
-      // Simulate transaction to catch errors before sending to wallet
-      try {
-        const simulation = await connection.simulateTransaction(transaction, {
-          commitment: 'confirmed',
-        });
-        
-        if (simulation.value.err) {
-          console.error('❌ Transaction simulation failed:', simulation.value.err);
-          console.error('Logs:', simulation.value.logs);
-          throw new Error(`Transaction would fail: ${JSON.stringify(simulation.value.err)}`);
-        }
-        
-        console.log('✅ Transaction simulation successful');
-        console.log('Logs:', simulation.value.logs?.slice(0, 5));
-      } catch (simError: any) {
-        console.error('❌ Simulation error:', simError.message);
-        throw new Error(`Transaction simulation failed: ${simError.message}`);
-      }
-      
-      // Serialize transaction to base64
-      const serializedTransaction = Buffer.from(transaction.serialize()).toString('base64');
-
-      console.log(`✅ Withdraw transaction built successfully`);
-
-      res.json({
-        success: true,
-        transaction: serializedTransaction,
-        message: 'Transaction ready to sign'
-      });
-
-    } catch (error: any) {
-      console.error("Build withdraw transaction error:", error);
-      res.status(500).json({ error: "Failed to build withdraw transaction", details: error.message });
-    }
+    res.status(501).json({ 
+      error: "Backpack lending requires a Backpack Exchange account",
+      message: "Please visit https://backpack.exchange to create an account and manage your lending positions."
+    });
   });
 
-  // Record Jupiter Lend deposit for analytics
   app.post("/api/jupiter-lend/record-deposit", async (req, res) => {
-    try {
-      const { signature, walletAddress, tokenMint, tokenSymbol, amountDeposited, usdValueAtDeposit, apyAtDeposit } = req.body;
-
-      if (!signature || !walletAddress || !tokenMint || !tokenSymbol || !amountDeposited || !usdValueAtDeposit || !apyAtDeposit) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      await db.insert(jupiterLendDeposits).values({
-        signature,
-        walletAddress,
-        tokenMint,
-        tokenSymbol,
-        amountDeposited,
-        usdValueAtDeposit,
-        apyAtDeposit,
-      });
-
-      console.log(`✅ Recorded Jupiter Lend deposit: ${walletAddress} - ${amountDeposited} ${tokenSymbol}`);
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Record deposit error:", error);
-      res.status(500).json({ error: "Failed to record deposit", details: error.message });
-    }
+    res.status(501).json({ 
+      error: "Backpack lending analytics not available",
+      message: "Backpack manages lending positions directly on their platform."
+    });
   });
 
-  // Get Jupiter Lend statistics - Real-time data from Jupiter API for ALL users
+  // Get Backpack Lend statistics (placeholder)
   app.get("/api/jupiter-lend/statistics", async (req, res) => {
-    try {
-      // Get all unique wallets that have deposited
-      const deposits = await db.select({ walletAddress: jupiterLendDeposits.walletAddress })
-        .from(jupiterLendDeposits)
-        .groupBy(jupiterLendDeposits.walletAddress);
-
-      console.log(`📊 Fetching statistics for ${deposits.length} wallets:`, deposits.map(d => d.walletAddress));
-
-      let totalDepositsUsd = 0;
-      let totalEarningsUsd = 0;
-
-      // Fetch real-time positions for each wallet from Jupiter API
-      for (const { walletAddress } of deposits) {
-        try {
-          console.log(`🔍 Fetching positions for wallet: ${walletAddress}`);
-          const response = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?users=${walletAddress}`);
-          if (!response.ok) {
-            console.log(`❌ Failed to fetch positions for ${walletAddress}: ${response.status}`);
-            continue;
-          }
-
-          const positions = await response.json();
-          console.log(`📈 Found ${positions.length} positions for ${walletAddress}`);
-          
-          for (const position of positions) {
-            if (!position.shares || position.shares === "0") {
-              console.log(`⏭️ Skipping ${position.token.symbol} - no shares`);
-              continue;
-            }
-
-            const underlyingAssets = parseFloat(position.underlyingAssets);
-            const decimals = position.token.decimals || 6;
-            const tokenPrice = parseFloat(position.token.asset.price || '0');
-            
-            // Calculate USD value of deposit
-            const depositAmount = underlyingAssets / Math.pow(10, decimals);
-            const depositUsd = depositAmount * tokenPrice;
-            console.log(`💰 ${position.token.symbol}: ${depositAmount.toFixed(6)} × $${tokenPrice} = $${depositUsd.toFixed(10)}`);
-            totalDepositsUsd += depositUsd;
-          }
-        } catch (walletError) {
-          console.error(`Failed to fetch positions for ${walletAddress}:`, walletError);
-        }
-      }
-
-      // Fetch earnings from Jupiter Earnings API for all wallets with deposits
-      for (const { walletAddress } of deposits) {
-        try {
-          // First, get positions to find jlToken addresses
-          const positionsResponse = await fetch(`https://lite-api.jup.ag/lend/v1/earn/positions?users=${walletAddress}`);
-          if (!positionsResponse.ok) continue;
-
-          const positions = await positionsResponse.json();
-          const jlTokens = positions
-            .filter((p: any) => p.shares && p.shares !== "0")
-            .map((p: any) => p.token.address)
-            .join(',');
-
-          if (!jlTokens) continue;
-
-          // Fetch earnings for this wallet's jlTokens
-          const earningsResponse = await fetch(`https://lite-api.jup.ag/lend/v1/earn/earnings?user=${walletAddress}&positions=${jlTokens}`);
-          if (!earningsResponse.ok) continue;
-
-          const earningsData = await earningsResponse.json();
-
-          for (const earning of earningsData) {
-            const position = positions.find((p: any) => p.token.address === earning.address);
-            if (!position) continue;
-
-            const rawEarnings = parseFloat(earning.earnings || '0');
-            const decimals = position.token.decimals || 6;
-            const tokenPrice = parseFloat(position.token.asset.price || '0');
-
-            const earningsAmount = rawEarnings / Math.pow(10, decimals);
-            const earningsUsd = earningsAmount * tokenPrice;
-            totalEarningsUsd += earningsUsd;
-          }
-        } catch (earningsError) {
-          console.error(`Failed to fetch earnings for ${walletAddress}:`, earningsError);
-        }
-      }
-
-      // Format USD values with proper decimal precision
-      const formatUsdValue = (value: number): string => {
-        if (value === 0) return '0.00';
-        if (value >= 0.01) return value.toFixed(2);
-        // For very small amounts, show up to 10 decimal places
-        return value.toFixed(10);
-      };
-
-      res.json({
-        success: true,
-        totalDepositsUsd: formatUsdValue(totalDepositsUsd),
-        totalEarningsUsd: formatUsdValue(totalEarningsUsd),
-        totalDeposits: deposits.length,
-      });
-    } catch (error: any) {
-      console.error("Get statistics error:", error);
-      res.status(500).json({ error: "Failed to get statistics", details: error.message });
-    }
+    res.json({
+      success: true,
+      totalDepositsUsd: '0.00',
+      totalEarningsUsd: '0.00',
+      totalDeposits: 0,
+    });
   });
 
   // ============================================

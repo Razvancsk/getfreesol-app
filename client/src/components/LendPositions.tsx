@@ -31,11 +31,11 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
     setIsRefreshing(false);
   };
   
-  // Use only Jupiter reserves
+  // Use Backpack reserves
   const allReserves = (jupiterLendData?.reserves || []).map((r: any) => ({ 
     ...r, 
-    platform: 'Jupiter', 
-    capabilities: { canDeposit: true, canWithdraw: true, comingSoon: false } 
+    platform: 'Backpack', 
+    capabilities: { canDeposit: false, canWithdraw: false, comingSoon: true } 
   }));
 
   const formatTVL = (value: number, symbol: string) => {
@@ -116,10 +116,10 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-white">
-              💰 Lending Vaults
+              💰 Lending Markets
             </CardTitle>
             <CardDescription className="text-purple-200">
-              Earn passive income by lending your assets - Powered by Jupiter Lend
+              Earn passive income by lending your assets - Powered by Backpack Exchange
             </CardDescription>
           </div>
           <Button
@@ -195,7 +195,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
                     {/* Platform Column */}
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Badge variant={reserve.platform === 'Jupiter' ? 'default' : 'secondary'} className={reserve.platform === 'Jupiter' ? 'bg-purple-600 text-white' : 'bg-orange-600 text-white'}>
+                        <Badge variant={reserve.platform === 'Backpack' ? 'default' : 'secondary'} className={reserve.platform === 'Backpack' ? 'bg-blue-600 text-white' : 'bg-orange-600 text-white'}>
                           {reserve.platform}
                         </Badge>
                         {reserve.capabilities?.comingSoon && (
@@ -322,7 +322,7 @@ export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPo
                       <div className="text-white font-medium text-sm">{displaySymbol}</div>
                     </div>
                     <div className="flex items-center gap-1.5 pl-10">
-                      <Badge variant={reserve.platform === 'Jupiter' ? 'default' : 'secondary'} className={`text-xs ${reserve.platform === 'Jupiter' ? 'bg-purple-600 text-white' : 'bg-orange-600 text-white'}`}>
+                      <Badge variant={reserve.platform === 'Backpack' ? 'default' : 'secondary'} className={`text-xs ${reserve.platform === 'Backpack' ? 'bg-blue-600 text-white' : 'bg-orange-600 text-white'}`}>
                         {reserve.platform}
                       </Badge>
                       {reserve.capabilities?.comingSoon && (
