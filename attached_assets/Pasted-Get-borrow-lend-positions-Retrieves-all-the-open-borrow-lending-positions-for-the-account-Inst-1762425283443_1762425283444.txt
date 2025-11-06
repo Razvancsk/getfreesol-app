@@ -1,0 +1,619 @@
+Get borrow lend positions.
+Retrieves all the open borrow lending positions for the account.
+
+Instruction: borrowLendPositionQuery
+
+header Parameters
+X-API-KEY	
+string
+API key
+
+X-SIGNATURE	
+string
+Signature of the request
+
+X-TIMESTAMP	
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+Responses
+200 Success.
+400 Bad request.
+500 Internal server error.
+
+get
+/api/v1/borrowLend/positions
+https://api.backpack.exchange/api/v1/borrowLend/positions
+Response samples
+200400500
+Content type
+application/json; charset=utf-8
+
+Copy
+Expand allCollapse all
+[
+{
+"cumulativeInterest": "string",
+"id": "string",
+"imf": "string",
+"imfFunction": {},
+"netQuantity": "string",
+"markPrice": "string",
+"mmf": "string",
+"mmfFunction": {},
+"netExposureQuantity": "string",
+"netExposureNotional": "string",
+"symbol": "BTC"
+}
+]
+Execute borrow lend.
+Instruction: borrowLendExecute
+
+header Parameters
+X-API-KEY
+required
+string
+API key
+
+X-SIGNATURE
+required
+string
+Signature of the request
+
+X-TIMESTAMP
+required
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+Request Body schema: application/json; charset=utf-8
+required
+quantity
+required
+string <decimal>
+The quantity of the asset to repay.
+
+side
+required
+string
+Enum: "Borrow" "Lend"
+Side of the borrow lend.
+
+symbol
+required
+string
+Enum: "BTC" "ETH" "SOL" "USDC" "USDT" "PYTH" "JTO" "BONK" "HNT" "MOBILE" "WIF" "JUP" "RENDER" "WEN" "W" "TNSR" "PRCL" "SHARK" "KMNO" "MEW" "BOME" "RAY" "HONEY" "SHFL" "BODEN" "IO" "DRIFT" "PEPE" "SHIB" "LINK" "UNI" "ONDO" "FTM" "MATIC" "STRK" "BLUR" "WLD" "GALA" "NYAN" "HLG" "MON" "ZKJ" "MANEKI" "HABIBI" "UNA" "ZRO" "ZEX" "AAVE" "LDO" "MOTHER" "CLOUD" "MAX" "POL" "TRUMPWIN" "HARRISWIN" "MOODENG" "DBR" "GOAT" "ACT" "DOGE" "BCH" "LTC" "APE" "ENA" "ME" "EIGEN" "CHILLGUY" "PENGU" "EUR" "SONIC" "J" "TRUMP" "MELANIA" "ANIME" "XRP" "SUI" "VINE" "ADA" "MOVE" "BERA" "IP" "HYPE" "BNB" "KAITO" "kPEPE" "kBONK" "kSHIB" "AVAX" "S" "POINTS" "ROAM" "AI16Z" "LAYER" "FARTCOIN" "NEAR" "PNUT" "ARB" "DOT" "APT" "OP" "PYUSD" "HUMA" "WAL" "DEEP" "CETUS" "SEND" "BLUE" "NS" "HAEDAL" "JPY" "TAO" "VIRTUAL" "TIA" "TRX" "FRAG" "PUMP" "WCT" "ES" "SEI" "CRV" "TON" "HBAR" "XLM" "ZORA" "WLFI" "BPEUR" "SWTCH" "LINEA" "XPL" "BARD" "FLOCK" "AVNT" "PENDLE" "AERO" "ASTER" "GLXY" "0G" "2Z" "FORD" "ZEUS" "APEX" "EDEN" "FF" "ORDER" "MNT" "ZEC" "PAXG" "MORPHO" "ATH" "KGEN" "XAUT" "FOGO" "SPX" "ETHFI" "APR" "PIPE" "MET"
+The asset to repay.
+
+Responses
+200 Success.
+400 Bad request.
+500 Internal server error.
+503 System under maintenance.
+
+post
+/api/v1/borrowLend
+Request samples
+Payload
+Content type
+application/json; charset=utf-8
+
+Copy
+{
+"quantity": "string",
+"side": "Borrow",
+"symbol": "BTC"
+}
+Response samples
+400500503
+Content type
+application/json; charset=utf-8
+
+Copy
+{
+"code": "ACCOUNT_LIQUIDATING",
+"message": "string"
+}
+Get an estimated liquidation price for potential borrow lend position.
+Retrieves the estimated liquidation price for a potential borrow lend position.
+
+query Parameters
+subaccountId	
+integer <uint16>
+Optional subaccount.
+
+borrow
+required
+string
+Standard base64 encoded json of [BorrowLendExecutePayload]
+
+Responses
+200 Success.
+400 Bad request.
+401 Unauthorized.
+500 Internal server error.
+
+get
+/api/v1/borrowLend/position/liquidationPrice
+Response samples
+200400401500
+Content type
+application/json; charset=utf-8
+
+Copy
+{
+"liquidationPrice": "string",
+"markPrice": "string"
+}
+Capital
+Capital management.
+
+Get balances.
+Retrieves account balances and the state of the balances (locked or available).
+
+Locked assets are those that are currently in an open order.
+
+Instruction: balanceQuery
+
+header Parameters
+X-API-KEY	
+string
+API key
+
+X-SIGNATURE	
+string
+Signature of the request
+
+X-TIMESTAMP	
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+Responses
+200 Success.
+400 Bad request.
+500 Internal server error.
+
+get
+/api/v1/capital
+Response samples
+200400500
+Content type
+application/json; charset=utf-8
+
+Copy
+Expand allCollapse all
+{
+"property1": {
+"available": "string",
+"locked": "string",
+"staked": "string"
+},
+"property2": {
+"available": "string",
+"locked": "string",
+"staked": "string"
+}
+}
+Get collateral.
+Retrieves collateral information for an account.
+
+Instruction: collateralQuery
+
+query Parameters
+subaccountId	
+integer <uint16>
+header Parameters
+X-API-KEY	
+string
+API key
+
+X-SIGNATURE	
+string
+Signature of the request
+
+X-TIMESTAMP	
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+Responses
+200 Success.
+400 Bad request.
+500 Internal server error.
+
+get
+/api/v1/capital/collateral
+Response samples
+200400500
+Content type
+application/json; charset=utf-8
+
+Copy
+Expand allCollapse all
+{
+"assetsValue": "string",
+"borrowLiability": "string",
+"collateral": [
+{}
+],
+"imf": "string",
+"unsettledEquity": "string",
+"liabilitiesValue": "string",
+"marginFraction": "string",
+"mmf": "string",
+"netEquity": "string",
+"netEquityAvailable": "string",
+"netEquityLocked": "string",
+"netExposureFutures": "string",
+"pnlUnrealized": "string"
+}
+Get deposits.
+Retrieves deposit history.
+
+Instruction: depositQueryAll
+
+query Parameters
+from	
+integer <int64>
+Filter to minimum time (milliseconds).
+
+to	
+integer <int64>
+Filter to maximum time (milliseconds).
+
+limit	
+integer <uint64>
+Maximum number to return. Default 100, maximum 1000.
+
+offset	
+integer <uint64>
+Offset. Default 0.
+
+header Parameters
+X-API-KEY	
+string
+API key
+
+X-SIGNATURE	
+string
+Signature of the request
+
+X-TIMESTAMP	
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+Responses
+200 Success.
+400 Bad request.
+401 Unauthorized.
+500 Internal server error.
+
+get
+/wapi/v1/capital/deposits
+Response samples
+200400401500
+Content type
+application/json; charset=utf-8
+
+Copy
+Expand allCollapse all
+[
+{
+"id": 0,
+"toAddress": "string",
+"fromAddress": "string",
+"source": "administrator",
+"status": "cancelled",
+"transactionHash": "string",
+"symbol": "BTC",
+"quantity": "string",
+"createdAt": "string",
+"fiatAmount": 0.1,
+"fiatCurrency": "AED",
+"institutionBic": "string",
+"platformMemo": "string"
+}
+]
+Get deposit address.
+Retrieves the user specific deposit address if the user were to deposit on the specified blockchain.
+
+Instruction: depositAddressQuery
+
+query Parameters
+blockchain
+required
+string (Blockchain)
+Enum: "0G" "Aptos" "Arbitrum" "Avalanche" "Base" "Berachain" "Bitcoin" "BitcoinCash" "Bsc" "Cardano" "Dogecoin" "Eclipse" "EqualsMoney" "Ethereum" "HyperEVM" "Hyperliquid" "Linea" "Litecoin" "Optimism" "Plasma" "Polygon" "Sei" "Sui" "Solana" "Story" "Tron" "XRP" "Zcash"
+Blockchain symbol to get a deposit address for.
+
+header Parameters
+X-API-KEY	
+string
+API key
+
+X-SIGNATURE	
+string
+Signature of the request
+
+X-TIMESTAMP	
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+Responses
+200 Success.
+400 Bad request.
+401 Unauthorized.
+409 Conflict
+500 Internal server error.
+
+get
+/wapi/v1/capital/deposit/address
+Response samples
+200400401409500
+Content type
+application/json; charset=utf-8
+
+Copy
+{
+"address": "string"
+}
+Get withdrawals.
+Retrieves withdrawal history.
+
+Instruction: withdrawalQueryAll
+
+query Parameters
+from	
+integer <int64>
+Filter to minimum time (milliseconds).
+
+to	
+integer <int64>
+Filter to maximum time (milliseconds).
+
+limit	
+integer <uint64>
+Maximum number to return. Default 100, maximum 1000.
+
+offset	
+integer <uint64>
+Offset. Default 0.
+
+header Parameters
+X-API-KEY	
+string
+API key
+
+X-SIGNATURE	
+string
+Signature of the request
+
+X-TIMESTAMP	
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+Responses
+200 Success.
+400 Bad request.
+401 Unauthorized.
+500 Internal Server Error.
+
+get
+/wapi/v1/capital/withdrawals
+Response samples
+200400401500
+Content type
+application/json; charset=utf-8
+
+Copy
+Expand allCollapse all
+[
+{
+"id": 0,
+"blockchain": "0G",
+"clientId": "string",
+"identifier": "string",
+"quantity": "string",
+"fee": "string",
+"fiatFee": "string",
+"fiatState": "initialized",
+"fiatSymbol": "AED",
+"providerId": "string",
+"symbol": "BTC",
+"status": "confirmed",
+"subaccountId": 0,
+"toAddress": "string",
+"transactionHash": "string",
+"createdAt": "string",
+"isInternal": true,
+"bankName": "string",
+"bankIdentifier": "string",
+"accountIdentifier": "string",
+"triggerAt": "string"
+}
+]
+Request withdrawal.
+Requests a withdrawal from the exchange.
+
+The twoFactorToken field is required if the withdrawal address is not an address that is configured in the address book to not require 2FA.
+
+To configure a 2FA exempt address, please add an address to the address book and toggle the Two Factor Authentication Required option.
+
+Instruction: withdraw
+
+header Parameters
+X-API-KEY
+required
+string
+API key
+
+X-TIMESTAMP
+required
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
+X-SIGNATURE
+required
+string
+Signature of the request
+
+Request Body schema: application/json; charset=utf-8
+required
+address
+required
+string
+Address to withdraw to.
+
+blockchain
+required
+string
+Enum: "0G" "Aptos" "Arbitrum" "Avalanche" "Base" "Berachain" "Bitcoin" "BitcoinCash" "Bsc" "Cardano" "Dogecoin" "Eclipse" "EqualsMoney" "Ethereum" "HyperEVM" "Hyperliquid" "Linea" "Litecoin" "Optimism" "Plasma" "Polygon" "Sei" "Sui" "Solana" "Story" "Tron" "XRP" "Zcash"
+Blockchain to withdraw on.
+
+clientId	
+string <= 255 characters
+Custom client id.
+
+quantity
+required
+string <decimal>
+Quantity to withdraw.
+
+symbol
+required
+string
+Enum: "BTC" "ETH" "SOL" "USDC" "USDT" "PYTH" "JTO" "BONK" "HNT" "MOBILE" "WIF" "JUP" "RENDER" "WEN" "W" "TNSR" "PRCL" "SHARK" "KMNO" "MEW" "BOME" "RAY" "HONEY" "SHFL" "BODEN" "IO" "DRIFT" "PEPE" "SHIB" "LINK" "UNI" "ONDO" "FTM" "MATIC" "STRK" "BLUR" "WLD" "GALA" "NYAN" "HLG" "MON" "ZKJ" "MANEKI" "HABIBI" "UNA" "ZRO" "ZEX" "AAVE" "LDO" "MOTHER" "CLOUD" "MAX" "POL" "TRUMPWIN" "HARRISWIN" "MOODENG" "DBR" "GOAT" "ACT" "DOGE" "BCH" "LTC" "APE" "ENA" "ME" "EIGEN" "CHILLGUY" "PENGU" "EUR" "SONIC" "J" "TRUMP" "MELANIA" "ANIME" "XRP" "SUI" "VINE" "ADA" "MOVE" "BERA" "IP" "HYPE" "BNB" "KAITO" "kPEPE" "kBONK" "kSHIB" "AVAX" "S" "POINTS" "ROAM" "AI16Z" "LAYER" "FARTCOIN" "NEAR" "PNUT" "ARB" "DOT" "APT" "OP" "PYUSD" "HUMA" "WAL" "DEEP" "CETUS" "SEND" "BLUE" "NS" "HAEDAL" "JPY" "TAO" "VIRTUAL" "TIA" "TRX" "FRAG" "PUMP" "WCT" "ES" "SEI" "CRV" "TON" "HBAR" "XLM" "ZORA" "WLFI" "BPEUR" "SWTCH" "LINEA" "XPL" "BARD" "FLOCK" "AVNT" "PENDLE" "AERO" "ASTER" "GLXY" "0G" "2Z" "FORD" "ZEUS" "APEX" "EDEN" "FF" "ORDER" "MNT" "ZEC" "PAXG" "MORPHO" "ATH" "KGEN" "XAUT" "FOGO" "SPX" "ETHFI" "APR" "PIPE" "MET"
+Symbol of the asset to withdraw.
+
+twoFactorToken	
+string
+Issued two factor token.
+
+autoBorrow	
+boolean
+Auto borrow to withdraw if required.
+
+autoLendRedeem	
+boolean
+Auto redeem a lend if required.
+
+recipientInformation	
+object (WithdrawalRecipientInformation)
+Default: null
+Responses
+200 Success.
+400 Bad request.
+401 Unauthorized.
+403 Forbidden.
+429 Too many requests.
+500 Internal server error.
+503 System under maintenance.
+
+post
+/wapi/v1/capital/withdrawals
+Request samples
+Payload
+Content type
+application/json; charset=utf-8
+
+Copy
+{
+"address": "string",
+"blockchain": "0G",
+"clientId": "string",
+"quantity": "string",
+"symbol": "BTC",
+"twoFactorToken": "string",
+"autoBorrow": true,
+"autoLendRedeem": true,
+"recipientInformation": null
+}
+Response samples
+200400401403429500503
+Content type
+application/json; charset=utf-8
+
+Copy
+{
+"id": 0,
+"blockchain": "0G",
+"clientId": "string",
+"identifier": "string",
+"quantity": "string",
+"fee": "string",
+"fiatFee": "string",
+"fiatState": "initialized",
+"fiatSymbol": "AED",
+"providerId": "string",
+"symbol": "BTC",
+"status": "confirmed",
+"subaccountId": 0,
+"toAddress": "string",
+"transactionHash": "string",
+"createdAt": "string",
+"isInternal": true,
+"bankName": "string",
+"bankIdentifier": "string",
+"accountIdentifier": "string",
+"triggerAt": "string"
+}
+Futures
+Futures data.
+
+Get open positions.
+Retrieves account position summary.
+
+Instruction: positionQuery
+
+query Parameters
+symbol	
+string
+Filter for a single position by symbol.
+
+header Parameters
+X-API-KEY	
+string
+API key
+
+X-SIGNATURE	
+string
+Signature of the request
+
+X-TIMESTAMP	
+integer <int64>
+Timestamp of the request in milliseconds
+
+X-WINDOW	
+integer <uint64>
+Time the request is valid for in milliseconds (default 5000, maximum 60000)
+
