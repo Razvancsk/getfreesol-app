@@ -39,9 +39,11 @@ class BackpackApiService {
     const queryString = new URLSearchParams(sortedParams).toString();
     const signaturePayload = `instruction=${instruction}&${queryString}&timestamp=${timestamp}&window=${window}`;
 
-    const privateKeyBytes = Buffer.from(this.config.privateKey, 'base64');
+    // Backpack private key is the seed (32 bytes)
+    const seedBytes = Buffer.from(this.config.privateKey, 'base64');
+    const keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
     const messageBytes = new TextEncoder().encode(signaturePayload);
-    const signature = nacl.sign.detached(messageBytes, privateKeyBytes);
+    const signature = nacl.sign.detached(messageBytes, keyPair.secretKey);
 
     return Buffer.from(signature).toString('base64');
   }
