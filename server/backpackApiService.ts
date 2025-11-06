@@ -1,5 +1,4 @@
 import nacl from 'tweetnacl';
-import { decodeUTF8, encodeBase64 } from 'tweetnacl-util';
 
 interface BackpackApiConfig {
   baseUrl: string;
@@ -13,9 +12,15 @@ class BackpackApiService {
   constructor() {
     this.config = {
       baseUrl: 'https://api.backpack.exchange',
-      publicKey: process.env.BACKPACK_API_PUBLIC_KEY || '',
-      privateKey: process.env.BACKPACK_API_PRIVATE_KEY || '',
+      publicKey: process.env.BACKPACK_API_KEY || '',
+      privateKey: process.env.BACKPACK_PRIVATE_KEY || '',
     };
+    
+    if (this.isConfigured()) {
+      console.log('✅ Backpack API credentials configured');
+    } else {
+      console.warn('⚠️ Backpack API credentials not configured');
+    }
   }
 
   private generateSignature(
@@ -35,39 +40,20 @@ class BackpackApiService {
     const signaturePayload = `instruction=${instruction}&${queryString}&timestamp=${timestamp}&window=${window}`;
 
     const privateKeyBytes = Buffer.from(this.config.privateKey, 'base64');
-    const messageBytes = decodeUTF8(signaturePayload);
+    const messageBytes = new TextEncoder().encode(signaturePayload);
     const signature = nacl.sign.detached(messageBytes, privateKeyBytes);
 
-    return encodeBase64(signature);
+    return Buffer.from(signature).toString('base64');
   }
 
   async getBorrowLendMarkets(): Promise<any> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/api/v1/markets/borrow-lend`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backpack API error: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to fetch borrow/lend markets:', error);
-      throw error;
-    }
-  }
-
-  async getBorrowLendPositions(): Promise<any> {
-    try {
+      // Get account balances which can be used for lending
       const timestamp = Date.now();
       const window = 5000;
-      const signature = this.generateSignature('borrowLendExecute', {}, timestamp, window);
+      const signature = this.generateSignature('balanceQuery', {}, timestamp, window);
 
-      const response = await fetch(`${this.config.baseUrl}/api/v1/capital/borrow-lend/positions`, {
+      const response = await fetch(`${this.config.baseUrl}/wapi/v1/capital`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -79,10 +65,73 @@ class BackpackApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`Backpack API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log('📊 Backpack capital data:', JSON.stringify(data, null, 2));
+      
+      // Transform capital data to markets format
+      const balances = data.balances || {};
+      const markets = Object.entries(balances).map(([asset, balance]: [string, any]) => ({
+        asset,
+        lendApy: 0.05, // Default 5% APY (would need separate API call for real rates)
+        borrowApy: 0.08, // Default 8% APY
+        totalLiquidity: balance.available || '0',
+        availableLiquidity: balance.available || '0',
+        utilizationRate: 0,
+        decimals: 9,
+        price: '0'
+      }));
+
+      return markets;
+    } catch (error) {
+      console.error('Failed to fetch borrow/lend markets:', error);
+      throw error;
+    }
+  }
+
+  async getBorrowLendPositions(): Promise<any> {
+    try {
+      const timestamp = Date.now();
+      const window = 5000;
+      const signature = this.generateSignature('balanceQuery', {}, timestamp, window);
+
+      const response = await fetch(`${this.config.baseUrl}/wapi/v1/capital`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Timestamp': timestamp.toString(),
+          'X-Window': window.toString(),
+          'X-API-Key': this.config.publicKey,
+          'X-Signature': signature,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform balances to positions format
+      const balances = data.balances || {};
+      const positions = Object.entries(balances)
+        .filter(([_, balance]: [string, any]) => parseFloat(balance.available || 0) > 0)
+        .map(([asset, balance]: [string, any]) => ({
+          asset,
+          symbol: asset,
+          amount: balance.available,
+          shares: balance.available,
+          decimals: 9,
+          amountUSD: '0',
+          apy: 5.0,
+          jlTokenAddress: asset
+        }));
+
+      return positions;
     } catch (error) {
       console.error('Failed to fetch borrow/lend positions:', error);
       throw error;

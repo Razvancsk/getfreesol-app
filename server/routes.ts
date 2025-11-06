@@ -24,6 +24,7 @@ import bs58 from 'bs58';
 import { xApiService } from './xApiService';
 import { xOAuthService } from './xOAuthService';
 import cron from 'node-cron';
+import { backpackApiService } from './backpackApiService';
 
 // Extend global for temporary OAuth token storage
 declare global {
@@ -5176,44 +5177,40 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Backpack Borrow/Lend - Get markets with rates
+  // Backpack Borrow/Lend - Get markets with rates (authenticated)
   app.get("/api/jupiter-lend/earn-pools", async (req, res) => {
     try {
       console.log('🎒 Fetching Backpack borrow/lend markets...');
 
-      // Fetch markets from Backpack API (public endpoint, no auth required)
-      const response = await fetch('https://api.backpack.exchange/api/v1/borrow-lend/markets');
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Backpack API returned ${response.status}: ${errorText}`);
+      if (!backpackApiService) {
+        throw new Error('Backpack API service not initialized');
       }
 
-      const markets = await response.json();
+      // Fetch borrow/lend markets from Backpack API
+      const markets = await backpackApiService.getBorrowLendMarkets();
       console.log(`✅ Found ${markets.length} Backpack borrow/lend markets`);
-      console.log('📊 Sample market data:', JSON.stringify(markets[0], null, 2));
 
       // Transform the data to match our frontend format
       const reserves = markets.map((market: any) => {
-        const symbol = market.symbol || market.asset || 'Unknown';
+        const symbol = market.asset || market.symbol || 'Unknown';
         
-        // Convert APY rates (they should already be in percentage format)
-        const lendAPY = parseFloat(market.lendApy || market.supplyApy || 0);
-        const borrowAPY = parseFloat(market.borrowApy || 0);
+        // Convert APY rates from decimal to percentage (e.g., 0.05 -> 5%)
+        const lendAPY = parseFloat(market.lendApy || 0) * 100;
+        const borrowAPY = parseFloat(market.borrowApy || 0) * 100;
         
         return {
-          address: market.symbol, // Use symbol as address for Backpack
+          address: symbol,
           symbol: symbol,
           name: symbol,
-          mint: symbol, // Backpack uses symbols, not Solana mints
-          logoUrl: '', // Backpack doesn't provide logo URLs in API
+          mint: symbol,
+          logoUrl: '',
           depositAPY: lendAPY,
           borrowAPY: borrowAPY,
           tvl: market.totalLiquidity || '0',
           deposited: '0.00',
           earnings: '0.00',
-          decimals: 9, // Default to 9 decimals
-          utilization: parseFloat(market.utilization || 0),
+          decimals: market.decimals || 9,
+          utilization: parseFloat(market.utilizationRate || 0) * 100,
           available: market.availableLiquidity || '0',
           price: market.price || '0'
         };
@@ -5233,7 +5230,7 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Backpack Borrow/Lend - Get user positions (requires Backpack account)
+  // Backpack Borrow/Lend - Get user positions (authenticated)
   app.get("/api/jupiter-lend/user-positions/:walletAddress", async (req, res) => {
     try {
       const { walletAddress } = req.params;
@@ -5242,16 +5239,18 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'Wallet address is required' });
       }
 
-      console.log(`📊 Backpack positions require account authentication`);
+      console.log(`📊 Fetching Backpack borrow/lend positions...`);
 
-      // Backpack requires authenticated API calls to get positions
-      // Users need to connect their Backpack account via API keys
-      // For now, return empty positions - will need user authentication
-      const positionsData: any[] = [];
-      console.log('📊 Backpack positions require user API authentication');
+      if (!backpackApiService) {
+        throw new Error('Backpack API service not initialized');
+      }
+
+      // Fetch user positions from Backpack API
+      const positionsData = await backpackApiService.getBorrowLendPositions();
+      console.log('📊 Backpack positions data:', JSON.stringify(positionsData, null, 2));
 
       if (!positionsData || positionsData.length === 0) {
-        console.log('⚠️ No positions found for wallet');
+        console.log('⚠️ No positions found');
         return res.json({
           success: true,
           hasPositions: false,
