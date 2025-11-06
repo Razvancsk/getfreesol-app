@@ -5368,6 +5368,84 @@ Claimer: ${walletAddress}`;
     });
   });
 
+  // Backpack Borrow/Lend - Get borrow history (authenticated)
+  app.get("/api/backpack/borrow-history", async (req, res) => {
+    try {
+      const { symbol } = req.query;
+      const history = await backpackApiService.getBorrowHistory(
+        symbol ? { symbol: symbol as string } : undefined
+      );
+      res.json({ success: true, history });
+    } catch (error: any) {
+      console.error('Backpack borrow history error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch borrow history' });
+    }
+  });
+
+  // Backpack Borrow/Lend - Get interest history (authenticated)
+  app.get("/api/backpack/interest-history", async (req, res) => {
+    try {
+      const { symbol } = req.query;
+      const history = await backpackApiService.getInterestHistory(
+        symbol ? { symbol: symbol as string } : undefined
+      );
+      res.json({ success: true, history });
+    } catch (error: any) {
+      console.error('Backpack interest history error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch interest history' });
+    }
+  });
+
+  // Backpack Borrow/Lend - Get market history (public)
+  app.get("/api/backpack/market-history", async (req, res) => {
+    try {
+      const { symbol } = req.query;
+      const history = await backpackApiService.getMarketHistory(symbol as string | undefined);
+      res.json({ success: true, history });
+    } catch (error: any) {
+      console.error('Backpack market history error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch market history' });
+    }
+  });
+
+  // Backpack Borrow/Lend - Execute borrow/lend transaction (authenticated)
+  app.post("/api/backpack/execute", async (req, res) => {
+    try {
+      const { symbol, side, quantity } = req.body;
+      
+      if (!symbol || !side || !quantity) {
+        return res.status(400).json({ error: 'Missing required parameters: symbol, side, quantity' });
+      }
+
+      const result = await backpackApiService.executeBorrowLend({ symbol, side, quantity });
+      res.json({ success: true, result });
+    } catch (error: any) {
+      console.error('Backpack execute error:', error);
+      res.status(500).json({ error: error.message || 'Failed to execute transaction' });
+    }
+  });
+
+  // Backpack Borrow/Lend - Get estimated liquidation price (authenticated)
+  app.get("/api/backpack/liquidation-price", async (req, res) => {
+    try {
+      const { symbol, side, quantity } = req.query;
+      
+      if (!symbol || !side || !quantity) {
+        return res.status(400).json({ error: 'Missing required parameters: symbol, side, quantity' });
+      }
+
+      const result = await backpackApiService.getEstimatedLiquidationPrice({
+        symbol: symbol as string,
+        side: side as 'Lend' | 'Borrow',
+        quantity: quantity as string
+      });
+      res.json({ success: true, liquidationPrice: result });
+    } catch (error: any) {
+      console.error('Backpack liquidation price error:', error);
+      res.status(500).json({ error: error.message || 'Failed to get liquidation price' });
+    }
+  });
+
   // ============================================
   // X (TWITTER) OAUTH ENDPOINTS
   // ============================================

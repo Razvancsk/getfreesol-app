@@ -8,12 +8,30 @@ interface BackpackApiConfig {
 
 class BackpackApiService {
   private config: BackpackApiConfig;
+  private keyPair: nacl.SignKeyPair | null = null;
 
   constructor() {
+    // BACKPACK_PRIVATE_KEY should be the base64-encoded 32-byte seed
+    // BACKPACK_API_KEY is optional - we can derive the public key from the private key
+    const privateKey = process.env.BACKPACK_PRIVATE_KEY || '';
+    let publicKey = process.env.BACKPACK_API_KEY || '';
+    
+    // If we have a private key but no public key, derive it
+    if (privateKey && !publicKey) {
+      try {
+        const seedBytes = Buffer.from(privateKey, 'base64');
+        this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
+        publicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
+        console.log('✅ Derived Backpack public key from private key');
+      } catch (error) {
+        console.error('❌ Failed to derive public key:', error);
+      }
+    }
+    
     this.config = {
       baseUrl: 'https://api.backpack.exchange',
-      publicKey: process.env.BACKPACK_API_KEY || '',
-      privateKey: process.env.BACKPACK_PRIVATE_KEY || '',
+      publicKey,
+      privateKey,
     };
     
     if (this.isConfigured()) {
@@ -37,13 +55,22 @@ class BackpackApiService {
       }, {} as Record<string, any>);
 
     const queryString = new URLSearchParams(sortedParams).toString();
-    const signaturePayload = `instruction=${instruction}&${queryString}&timestamp=${timestamp}&window=${window}`;
+    
+    // Build signature payload correctly - don't add extra & when no params
+    let signaturePayload = `instruction=${instruction}`;
+    if (queryString) {
+      signaturePayload += `&${queryString}`;
+    }
+    signaturePayload += `&timestamp=${timestamp}&window=${window}`;
 
     // Backpack private key is the seed (32 bytes)
-    const seedBytes = Buffer.from(this.config.privateKey, 'base64');
-    const keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
+    if (!this.keyPair) {
+      const seedBytes = Buffer.from(this.config.privateKey, 'base64');
+      this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
+    }
+    
     const messageBytes = new TextEncoder().encode(signaturePayload);
-    const signature = nacl.sign.detached(messageBytes, keyPair.secretKey);
+    const signature = nacl.sign.detached(messageBytes, this.keyPair.secretKey);
 
     return Buffer.from(signature).toString('base64');
   }
@@ -91,9 +118,10 @@ class BackpackApiService {
     try {
       const timestamp = Date.now();
       const window = 5000;
-      const signature = this.generateSignature('balanceQuery', {}, timestamp, window);
+      const instruction = 'borrowLendPositions';
+      const signature = this.generateSignature(instruction, {}, timestamp, window);
 
-      const response = await fetch(`${this.config.baseUrl}/wapi/v1/capital`, {
+      const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend/positions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -109,24 +137,21 @@ class BackpackApiService {
         throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const positions = await response.json();
+      console.log(`📊 Backpack returned ${positions.length || 0} borrow/lend positions`);
       
-      // Transform balances to positions format
-      const balances = data.balances || {};
-      const positions = Object.entries(balances)
-        .filter(([_, balance]: [string, any]) => parseFloat(balance.available || 0) > 0)
-        .map(([asset, balance]: [string, any]) => ({
-          asset,
-          symbol: asset,
-          amount: balance.available,
-          shares: balance.available,
-          decimals: 9,
-          amountUSD: '0',
-          apy: 5.0,
-          jlTokenAddress: asset
-        }));
-
-      return positions;
+      // Transform Backpack positions to our format
+      return (positions || []).map((position: any) => ({
+        asset: position.symbol,
+        symbol: position.symbol,
+        amount: position.lent || position.borrowed || '0',
+        shares: position.lent || position.borrowed || '0',
+        decimals: 9,
+        amountUSD: '0',
+        apy: parseFloat(position.lendInterestRate || position.borrowInterestRate || 0) * 100,
+        jlTokenAddress: position.symbol,
+        side: position.lent ? 'lend' : 'borrow'
+      }));
     } catch (error) {
       console.error('Failed to fetch borrow/lend positions:', error);
       throw error;
@@ -134,8 +159,8 @@ class BackpackApiService {
   }
 
   async executeBorrowLend(params: {
-    asset: string;
-    side: 'lend' | 'borrow';
+    symbol: string;
+    side: 'Lend' | 'Borrow' | 'Repay' | 'Withdraw';
     quantity: string;
   }): Promise<any> {
     try {
@@ -143,7 +168,7 @@ class BackpackApiService {
       const window = 5000;
       const signature = this.generateSignature('borrowLendExecute', params, timestamp, window);
 
-      const response = await fetch(`${this.config.baseUrl}/api/v1/capital/borrow-lend`, {
+      const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend/execute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +181,8 @@ class BackpackApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`Backpack API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
       }
 
       return await response.json();
@@ -167,14 +193,114 @@ class BackpackApiService {
   }
 
   async getEstimatedLiquidationPrice(params: {
-    asset: string;
-    side: 'lend' | 'borrow';
+    symbol: string;
+    side: 'Lend' | 'Borrow';
     quantity: string;
   }): Promise<any> {
     try {
+      const timestamp = Date.now();
+      const window = 5000;
+      const signature = this.generateSignature('borrowLendLiquidationPrice', params, timestamp, window);
+      
       const queryParams = new URLSearchParams(params as any).toString();
       const response = await fetch(
-        `${this.config.baseUrl}/api/v1/capital/borrow-lend/position/estimatedLiquidationPrice?${queryParams}`,
+        `${this.config.baseUrl}/api/v1/borrowLend/liquidationPrice?${queryParams}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Timestamp': timestamp.toString(),
+            'X-Window': window.toString(),
+            'X-API-Key': this.config.publicKey,
+            'X-Signature': signature,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get estimated liquidation price:', error);
+      throw error;
+    }
+  }
+
+  async getBorrowHistory(params?: { symbol?: string }): Promise<any> {
+    try {
+      const timestamp = Date.now();
+      const window = 5000;
+      const signature = this.generateSignature('borrowHistoryQueryAll', params || {}, timestamp, window);
+      
+      const queryParams = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+      const response = await fetch(
+        `${this.config.baseUrl}/history/borrowLend${queryParams}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Timestamp': timestamp.toString(),
+            'X-Window': window.toString(),
+            'X-API-Key': this.config.publicKey,
+            'X-Signature': signature,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch borrow history:', error);
+      throw error;
+    }
+  }
+
+  async getInterestHistory(params?: { symbol?: string }): Promise<any> {
+    try {
+      const timestamp = Date.now();
+      const window = 5000;
+      const signature = this.generateSignature('interestHistoryQueryAll', params || {}, timestamp, window);
+      
+      const queryParams = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+      const response = await fetch(
+        `${this.config.baseUrl}/history/interest${queryParams}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Timestamp': timestamp.toString(),
+            'X-Window': window.toString(),
+            'X-API-Key': this.config.publicKey,
+            'X-Signature': signature,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch interest history:', error);
+      throw error;
+    }
+  }
+
+  async getMarketHistory(symbol?: string): Promise<any> {
+    try {
+      // Public endpoint - no authentication needed
+      const queryParams = symbol ? `?symbol=${symbol}` : '';
+      const response = await fetch(
+        `${this.config.baseUrl}/api/v1/borrowLend/marketHistory${queryParams}`,
         {
           method: 'GET',
           headers: {
@@ -184,12 +310,13 @@ class BackpackApiService {
       );
 
       if (!response.ok) {
-        throw new Error(`Backpack API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Backpack API error: ${response.status} - ${errorText}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Failed to get estimated liquidation price:', error);
+      console.error('Failed to fetch market history:', error);
       throw error;
     }
   }
