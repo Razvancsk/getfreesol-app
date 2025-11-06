@@ -5436,6 +5436,12 @@ Claimer: ${walletAddress}`;
       res.json({ success: true, result });
     } catch (error: any) {
       console.error('Backpack execute error:', error);
+      if (error.message?.includes('Invalid X-API-Key') || error.message?.includes('INVALID_CLIENT_REQUEST')) {
+        return res.status(401).json({ 
+          error: 'Backpack API authentication failed. Please configure valid API credentials to use lending features.',
+          requiresAuth: true 
+        });
+      }
       res.status(500).json({ error: error.message || 'Failed to execute transaction' });
     }
   });
@@ -5468,6 +5474,12 @@ Claimer: ${walletAddress}`;
       res.json({ success: true, balances });
     } catch (error: any) {
       console.error('Backpack balances error:', error);
+      if (error.message?.includes('Invalid X-API-Key') || error.message?.includes('INVALID_CLIENT_REQUEST')) {
+        return res.status(401).json({ 
+          error: 'Backpack API authentication failed. Please configure valid API credentials.',
+          requiresAuth: true 
+        });
+      }
       res.status(500).json({ error: error.message || 'Failed to fetch balances' });
     }
   });
@@ -5479,6 +5491,12 @@ Claimer: ${walletAddress}`;
       res.json({ success: true, collateral });
     } catch (error: any) {
       console.error('Backpack collateral error:', error);
+      if (error.message?.includes('Invalid X-API-Key') || error.message?.includes('INVALID_CLIENT_REQUEST')) {
+        return res.status(401).json({ 
+          error: 'Backpack API authentication failed. Please configure valid API credentials.',
+          requiresAuth: true 
+        });
+      }
       res.status(500).json({ error: error.message || 'Failed to fetch collateral' });
     }
   });

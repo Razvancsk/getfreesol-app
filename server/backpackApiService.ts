@@ -140,7 +140,7 @@ class BackpackApiService {
         return {
           asset: symbol,
           symbol: symbol,
-          lendApy: lendingData ? lendingData.lendApy : 0,
+          depositAPY: lendingData ? lendingData.lendApy : 0,
           borrowApy: lendingData ? lendingData.borrowApy : 0,
           totalLiquidity: lendingData ? lendingData.totalLiquidity : '0',
           availableLiquidity: lendingData ? lendingData.availableLiquidity : '0',
