@@ -16,10 +16,12 @@ interface LendPositionsProps {
 export function LendPositions({ publicKey, onVaultClick, userPositions }: LendPositionsProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Query for Jupiter Lend earn pools
+  // Query for Backpack earn pools (SOL only)
   const { data: jupiterLendData, isLoading: loadingMarket } = useQuery<{ success: boolean; programId: string; reserves: any[] }>({
     queryKey: ['/api/jupiter-lend/earn-pools'],
     retry: false,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const handleRefresh = async () => {
