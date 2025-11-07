@@ -55,10 +55,18 @@ export async function initializeDiscordBot() {
     }
   });
 
-  // Handle ALL messages with AI (acts like a moderator)
+  // Handle messages with AI - ONLY when mentioned or DM
   client.on('messageCreate', async (message: Message) => {
     // Ignore bot messages
     if (message.author.bot) return;
+
+    // Only respond if mentioned or in DM
+    const isDM = message.channel.isDMBased();
+    const isMentioned = message.mentions.has(client.user!.id);
+    
+    if (!isDM && !isMentioned) {
+      return; // Ignore messages that don't mention the bot
+    }
 
     // Prevent duplicate responses using message ID
     if (processedMessages.has(message.id)) {
@@ -78,7 +86,7 @@ export async function initializeDiscordBot() {
 
     // Get user message (remove mention if present)
     let userMessage = message.content;
-    if (message.mentions.has(client.user!.id)) {
+    if (isMentioned) {
       userMessage = userMessage.replace(`<@${client.user!.id}>`, '').trim();
     }
 
