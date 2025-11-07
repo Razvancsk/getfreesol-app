@@ -391,6 +391,7 @@ Important Rules:
 - Use Discord markdown: **bold**, [text](url)
 - Never ask for private keys or seed phrases
 - When mentioning the website, use format: "getfreesol.xyz" (simple, no https://)
+- NEVER put a period directly after the domain (WRONG: "getfreesol.xyz." CORRECT: "visit getfreesol.xyz" or "Check out getfreesol.xyz!")
 `
         },
         {
