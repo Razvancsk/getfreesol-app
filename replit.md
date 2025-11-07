@@ -32,7 +32,11 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Backpack Exchange Borrow/Lend**: Displays borrow/lend markets from Backpack Exchange (view-only, requires Backpack account for deposits).
 - **Auto-Claim Feature**: Permit-based automated SOL reclamation from empty accounts, supporting both standard SPL and Token-2022 programs.
 - **Developer API Platform**: Jupiter-style developer platform with PDA-based referral fee collection. Developers create referral accounts via wallet signature, receive deterministic PDA addresses derived from [project_pda, developer_wallet] for secure fee collection without private key management. Supports multiple token mints (SOL, USDC, USDT, BONK, JUP, etc.) with separate token account tracking. Developers earn 80% of collected fees. API documentation is gated - requires account creation first.
-- **X (Twitter) Bot**: Automated social media marketing system for platform wallet with PIN-based OAuth 1.0a authentication (Desktop app flow), scheduled posting, and auto-engagement. Posts automatically when SOL claims >= 0.01 SOL occur.
+- **X (Twitter) Bot**: Automated social media marketing system for platform wallet with PIN-based OAuth 1.0a authentication (Desktop app flow), scheduled posting, and auto-engagement. Posts automatically when NET SOL claims >= 0.01 SOL occur (after 15% platform fee).
+- **Discord Bot**: Multi-functional Discord integration with three key features:
+  - **Wallet Scanning**: `/scan <wallet_address>` slash command for checking claimable SOL without connecting wallet
+  - **Claim Alerts**: Webhook notifications to Discord channel when users claim SOL
+  - **AI Support Chat**: OpenAI-powered chatbot that answers questions via DMs or @mentions, providing help with platform features, troubleshooting, and general support
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
@@ -69,6 +73,8 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Jupiter Token List V2 API**: Token metadata provider.
 - **Backpack Exchange API**: Public API for viewing borrow/lend markets and rates.
 - **X (Twitter) API**: OAuth 1.0a flow for account connection and automated social media interactions.
+- **Discord API**: Bot integration for wallet scanning, claim alerts, and AI-powered support chat.
+- **OpenAI API**: GPT-4o-mini model for Discord AI chat support.
 - **Multi-Wallet Support**: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
 - **Ledger Hardware Wallet**: Secure cold storage wallet integration with WebHID support.
 - **PostgreSQL**: Primary database.
