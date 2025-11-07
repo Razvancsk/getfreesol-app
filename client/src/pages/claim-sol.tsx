@@ -303,6 +303,13 @@ export default function SolRefund() {
   // Check if platform wallet
   const isPlatformWallet = publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
+  // Redirect from lend tab if not platform wallet
+  useEffect(() => {
+    if (activeTab === 'lend' && !isPlatformWallet) {
+      setActiveTab('reclaim');
+    }
+  }, [activeTab, isPlatformWallet]);
+
   // Query to get referral transactions
   const { data: referralTransactions } = useQuery({
     queryKey: ['/api/referrals', (userReferrals as any)?.referralCode?.id, 'transactions'],
@@ -2669,17 +2676,20 @@ export default function SolRefund() {
                   <Users className="h-4 w-4 mr-2" />
                   Referrals
                 </Button>
-                <Button
-                  onClick={() => setActiveTab('lend')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
-                    activeTab === 'lend' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-lend"
-                >
-                  🌱 Earn
-                </Button>
+                {/* Earn button - only visible to platform wallet */}
+                {isPlatformWallet && (
+                  <Button
+                    onClick={() => setActiveTab('lend')}
+                    className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                      activeTab === 'lend' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                    }`}
+                    data-testid="button-lend"
+                  >
+                    🌱 Earn
+                  </Button>
+                )}
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
@@ -3624,7 +3634,6 @@ export default function SolRefund() {
                   publicKey={publicKey}
                   userPositions={userPositions}
                   onVaultClick={async (reserve: any) => {
-                    console.log('🎯 Vault clicked, reserve:', reserve);
                     if (!publicKey) {
                       toast({
                         title: "Wallet Not Connected",
@@ -3638,9 +3647,7 @@ export default function SolRefund() {
                     setLendMode('deposit');
                     setDepositDialogOpen(true);
                     // Fetch wallet balance for this token
-                    console.log('📞 About to call fetchTokenBalance with mint:', reserve.mint);
                     await fetchTokenBalance(reserve.mint);
-                    console.log('✅ fetchTokenBalance completed');
                   }}
                 />
 
