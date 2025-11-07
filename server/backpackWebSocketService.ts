@@ -92,22 +92,25 @@ class BackpackWebSocketService extends EventEmitter {
     super();
     
     const privateKey = process.env.BACKPACK_PRIVATE_KEY || '';
-    let publicKey = process.env.BACKPACK_API_KEY || '';
+    const publicKey = process.env.BACKPACK_API_KEY || '';
     
-    // Always derive the correct public key from the private key
+    // Initialize keypair and derive public key from private key
+    let derivedPublicKey = '';
     if (privateKey) {
       try {
         const seedBytes = Buffer.from(privateKey, 'base64');
         this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
-        publicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
+        derivedPublicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
+        console.log('✅ WebSocket: Keypair initialized, using derived public key');
       } catch (error) {
-        console.error('❌ Failed to derive public key for WebSocket:', error);
+        console.error('❌ WebSocket: Failed to initialize keypair:', error);
       }
     }
     
+    // Always use derived public key (must match the private key for signature validation)
     this.config = {
       wsUrl: 'wss://ws.backpack.exchange',
-      publicKey,
+      publicKey: derivedPublicKey,
       privateKey,
     };
   }
@@ -120,14 +123,8 @@ class BackpackWebSocketService extends EventEmitter {
     const signaturePayload = `instruction=subscribe&timestamp=${timestamp}&window=${window}`;
     const messageBytes = new TextEncoder().encode(signaturePayload);
     const signature = nacl.sign.detached(messageBytes, this.keyPair.secretKey);
-    const encodedSignature = Buffer.from(signature).toString('base64');
 
-    console.log('🔐 WebSocket Signature Debug:');
-    console.log(`   Payload: ${signaturePayload}`);
-    console.log(`   Public Key (first 20): ${this.config.publicKey.substring(0, 20)}...`);
-    console.log(`   Signature (first 20): ${encodedSignature.substring(0, 20)}...`);
-
-    return encodedSignature;
+    return Buffer.from(signature).toString('base64');
   }
 
   connect(): Promise<void> {
@@ -288,6 +285,14 @@ class BackpackWebSocketService extends EventEmitter {
         timestamp.toString(),
         window.toString(),
       ];
+      
+      console.log('🔐 WebSocket Subscribe Debug:');
+      console.log(`   Stream: ${stream}`);
+      console.log(`   Timestamp: ${timestamp}`);
+      console.log(`   Window: ${window}`);
+      console.log(`   Public Key (len): ${this.config.publicKey.length} chars`);
+      console.log(`   Signature (len): ${signature.length} chars`);
+      console.log(`   Request: ${JSON.stringify(request).substring(0, 200)}...`);
     }
 
     this.ws!.send(JSON.stringify(request));

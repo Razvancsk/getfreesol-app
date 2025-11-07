@@ -16,25 +16,6 @@ class BackpackApiService {
     const privateKey = process.env.BACKPACK_PRIVATE_KEY || '';
     let publicKey = process.env.BACKPACK_API_KEY || '';
     
-    // Debug: Check key formats
-    if (privateKey) {
-      try {
-        const decodedPrivate = Buffer.from(privateKey, 'base64');
-        console.log(`🔑 Backpack private key length: ${decodedPrivate.length} bytes`);
-      } catch (error) {
-        console.error('❌ Failed to decode private key:', error);
-      }
-    }
-    
-    if (publicKey) {
-      try {
-        const decodedPublic = Buffer.from(publicKey, 'base64');
-        console.log(`🔑 Backpack public key length: ${decodedPublic.length} bytes`);
-      } catch (error) {
-        console.error('❌ Failed to decode public key:', error);
-      }
-    }
-    
     // If we have a private key but no public key, derive it
     if (privateKey && !publicKey) {
       try {
@@ -54,11 +35,6 @@ class BackpackApiService {
         this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
         const derivedPublicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
         
-        if (publicKey && derivedPublicKey !== publicKey) {
-          console.warn('⚠️ Provided public key does NOT match derived key - using derived key');
-          console.log(`   Provided: ${publicKey.substring(0, 20)}... (${Buffer.from(publicKey, 'base64').length} bytes)`);
-          console.log(`   Derived:  ${derivedPublicKey.substring(0, 20)}... (${this.keyPair.publicKey.length} bytes)`);
-        }
         
         // Always use the derived public key for correctness
         publicKey = derivedPublicKey;
@@ -111,15 +87,8 @@ class BackpackApiService {
     
     const messageBytes = new TextEncoder().encode(signaturePayload);
     const signature = nacl.sign.detached(messageBytes, this.keyPair.secretKey);
-    const encodedSignature = Buffer.from(signature).toString('base64');
 
-    console.log('🔐 REST API Signature Debug:');
-    console.log(`   Instruction: ${instruction}`);
-    console.log(`   Payload: ${signaturePayload}`);
-    console.log(`   Public Key (first 20): ${this.config.publicKey.substring(0, 20)}...`);
-    console.log(`   Signature (first 20): ${encodedSignature.substring(0, 20)}...`);
-
-    return encodedSignature;
+    return Buffer.from(signature).toString('base64');
   }
 
   async getBorrowLendMarkets(): Promise<any> {
