@@ -37,15 +37,20 @@ export async function initializeDiscordBot() {
     // Ignore bot messages
     if (message.author.bot) return;
 
-    // Only respond to DMs or mentions
+    // Check if this is a DM or mention
     const isDM = message.channel.isDMBased();
     const isMentioned = message.mentions.has(client.user!.id);
-
-    if (!isDM && !isMentioned) return;
+    
+    // In channels, detect if it's a question or help request
+    const isQuestion = message.content.includes('?') || 
+                       /\b(how|what|why|when|where|can|is|does|help|support|issue|problem|error|fail)\b/i.test(message.content);
+    
+    // Only respond to: DMs, mentions, or questions in channels
+    if (!isDM && !isMentioned && !isQuestion) return;
 
     // Check if OpenAI is configured
     if (!OPENAI_API_KEY) {
-      if (isDM) {
+      if (isDM || isMentioned) {
         await message.reply('❌ AI assistant is currently unavailable. Please use `/scan <wallet>` command or visit https://getfreesol.com');
       }
       return;
@@ -58,7 +63,9 @@ export async function initializeDiscordBot() {
     }
 
     if (!question || question.length < 3) {
-      await message.reply('👋 Hi! I can help you with GetFreeSol. Ask me anything about:\n• How to reclaim SOL\n• Token burning\n• Referral program\n• Troubleshooting issues');
+      if (isDM || isMentioned) {
+        await message.reply('👋 Hi! I can help you with GetFreeSol. Ask me anything about:\n• How to reclaim SOL\n• Token burning\n• Referral program\n• Troubleshooting issues');
+      }
       return;
     }
 
