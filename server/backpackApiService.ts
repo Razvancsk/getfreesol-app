@@ -11,29 +11,27 @@ class BackpackApiService {
   private keyPair: nacl.SignKeyPair | null = null;
 
   constructor() {
-    // Backpack_api_secret should be the base64-encoded 32-byte seed
-    // Backpack_api_key is optional - we can derive the public key from the private key
     const privateKey = process.env.Backpack_api_secret || '';
-    let publicKey = process.env.Backpack_api_key || '';
-    
-    // If we have a private key but no public key, derive it
-    if (privateKey && !publicKey) {
-      try {
-        const seedBytes = Buffer.from(privateKey, 'base64');
-        this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
-        publicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
-        console.log('✅ Derived Backpack public key from private key');
-      } catch (error) {
-        console.error('❌ Failed to derive public key:', error);
-      }
-    }
+    const publicKey = process.env.Backpack_api_key || '';
     
     // Initialize keypair from private key
     if (privateKey) {
       try {
-        const seedBytes = Buffer.from(privateKey, 'base64');
-        this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
-        console.log('✅ REST API: Keypair initialized from private key');
+        const keyBytes = Buffer.from(privateKey, 'base64');
+        
+        // Try as 32-byte seed first
+        if (keyBytes.length === 32) {
+          this.keyPair = nacl.sign.keyPair.fromSeed(keyBytes);
+          console.log('✅ REST API: Keypair initialized from 32-byte seed');
+        }
+        // Try as 64-byte secret key
+        else if (keyBytes.length === 64) {
+          this.keyPair = nacl.sign.keyPair.fromSecretKey(keyBytes);
+          console.log('✅ REST API: Keypair initialized from 64-byte secret key');
+        }
+        else {
+          console.error(`❌ REST API: Invalid key length: ${keyBytes.length} bytes (expected 32 or 64)`);
+        }
       } catch (error) {
         console.error('❌ REST API: Failed to initialize keypair:', error);
       }
