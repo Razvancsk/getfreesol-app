@@ -1175,10 +1175,17 @@ Claimer: ${walletAddress}`;
             console.log(`✅ Posted to X successfully! Post ID: ${xPostId}`);
             // Update the transaction ledger to mark as posted
             await storage.markTransactionPostedToX(signature, xPostId);
+          } else {
+            console.error(`❌ X post failed for ${netAmount} SOL claim:`, {
+              success: postResult.success,
+              error: postResult.error,
+              postId: postResult.postId,
+              signature
+            });
           }
         } catch (xError) {
           // Don't fail the whole request if X post fails
-          console.error('Failed to post claim alert to X:', xError);
+          console.error('Failed to post claim alert to X (exception):', xError);
         }
       }
 
