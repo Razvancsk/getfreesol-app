@@ -132,29 +132,31 @@ class BackpackApiService {
         }
       });
 
-      // Transform to our format
-      return Array.from(uniqueAssets.values()).map((market: any) => {
-        const symbol = market.baseSymbol;
-        const lendingData = lendingDataMap.get(symbol);
-        
-        return {
-          asset: symbol,
-          symbol: symbol,
-          depositAPY: lendingData ? lendingData.lendApy : 0,
-          borrowApy: lendingData ? lendingData.borrowApy : 0,
-          totalLiquidity: lendingData ? lendingData.totalLiquidity : '0',
-          availableLiquidity: lendingData ? lendingData.availableLiquidity : '0',
-          utilizationRate: lendingData ? lendingData.utilization : 0,
-          decimals: 9,
-          price: lendingData ? lendingData.price : '0',
-          utilization: lendingData ? lendingData.utilization : 0,
-          lentQuantity: lendingData ? lendingData.totalLiquidity : '0',
-          borrowedQuantity: '0',
-          hasLending: !!lendingData,
-          marketType: market.marketType,
-          orderBookState: market.orderBookState,
-        };
-      });
+      // Transform to our format and filter for SOL only
+      return Array.from(uniqueAssets.values())
+        .map((market: any) => {
+          const symbol = market.baseSymbol;
+          const lendingData = lendingDataMap.get(symbol);
+          
+          return {
+            asset: symbol,
+            symbol: symbol,
+            depositAPY: lendingData ? lendingData.lendApy : 0,
+            borrowApy: lendingData ? lendingData.borrowApy : 0,
+            totalLiquidity: lendingData ? lendingData.totalLiquidity : '0',
+            availableLiquidity: lendingData ? lendingData.availableLiquidity : '0',
+            utilizationRate: lendingData ? lendingData.utilization : 0,
+            decimals: 9,
+            price: lendingData ? lendingData.price : '0',
+            utilization: lendingData ? lendingData.utilization : 0,
+            lentQuantity: lendingData ? lendingData.totalLiquidity : '0',
+            borrowedQuantity: '0',
+            hasLending: !!lendingData,
+            marketType: market.marketType,
+            orderBookState: market.orderBookState,
+          };
+        })
+        .filter((market: any) => market.symbol === 'SOL');
     } catch (error) {
       console.error('Failed to fetch borrow/lend markets:', error);
       throw error;
