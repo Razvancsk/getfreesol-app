@@ -11,12 +11,26 @@ const processedMessages = new Set<string>();
 
 // Global client instance - ensures only one bot runs at a time
 let globalClient: Client | null = null;
+let isInitializing = false;
 
 export async function initializeDiscordBot() {
   if (!DISCORD_BOT_TOKEN) {
     console.log('⚠️  DISCORD_BOT_TOKEN not configured - Discord bot disabled');
     return;
   }
+
+  // Prevent multiple simultaneous initializations
+  if (isInitializing) {
+    console.log('⚠️  Discord bot is already initializing, skipping...');
+    return;
+  }
+
+  if (globalClient) {
+    console.log('⚠️  Discord bot is already running, skipping initialization');
+    return;
+  }
+
+  isInitializing = true;
 
   // Destroy existing client if it exists
   if (globalClient) {
@@ -206,7 +220,10 @@ export async function initializeDiscordBot() {
     }
   });
 
-  client.login(DISCORD_BOT_TOKEN);
+  await client.login(DISCORD_BOT_TOKEN);
+  
+  isInitializing = false;
+  console.log('✅ Discord bot initialization complete');
 
   // Handle shutdown gracefully
   process.on('SIGINT', async () => {
@@ -214,6 +231,7 @@ export async function initializeDiscordBot() {
     if (globalClient) {
       await globalClient.destroy();
       globalClient = null;
+      isInitializing = false;
     }
   });
 
@@ -222,6 +240,7 @@ export async function initializeDiscordBot() {
     if (globalClient) {
       await globalClient.destroy();
       globalClient = null;
+      isInitializing = false;
     }
   });
 }
