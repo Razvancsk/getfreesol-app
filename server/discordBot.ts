@@ -87,7 +87,7 @@ export async function initializeDiscordBot() {
       return;
     }
 
-    console.log(`💬 Discord AI: Message from ${message.author.tag}: "${userMessage}"`);
+    console.log(`💬 Discord AI: Processing message ID ${message.id} from ${message.author.tag}: "${userMessage}"`);
 
     try {
       // Show typing indicator (check if method exists)
@@ -96,14 +96,19 @@ export async function initializeDiscordBot() {
       }
 
       // Get AI response
+      console.log(`🤖 Calling OpenAI for message ${message.id}...`);
       const response = await getAIResponse(userMessage);
+      console.log(`✅ OpenAI responded for message ${message.id}, length: ${response.length}`);
 
       // Send response (split if too long)
+      console.log(`📤 Sending reply for message ${message.id}...`);
       if (response.length <= 2000) {
         await message.reply(response);
+        console.log(`✅ Reply sent for message ${message.id}`);
       } else {
         // Split into chunks
         const chunks = response.match(/[\s\S]{1,1900}/g) || [];
+        console.log(`📝 Split response into ${chunks.length} chunks for message ${message.id}`);
         for (let i = 0; i < chunks.length; i++) {
           if (i === 0) {
             await message.reply(chunks[i]);
@@ -111,9 +116,10 @@ export async function initializeDiscordBot() {
             await message.channel.send(chunks[i]);
           }
         }
+        console.log(`✅ All ${chunks.length} chunks sent for message ${message.id}`);
       }
 
-      console.log(`✅ Discord AI: Responded to ${message.author.tag}`);
+      console.log(`✅ Discord AI: Fully responded to ${message.author.tag} for message ${message.id}`);
     } catch (error) {
       console.error('❌ Discord AI error:', error);
       await message.reply('❌ Sorry, I encountered an error. Please try again or visit https://getfreesol.xyz for help.');
