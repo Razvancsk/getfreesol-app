@@ -1,8 +1,10 @@
-import { Client, GatewayIntentBits, EmbedBuilder, SlashCommandBuilder, REST, Routes } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder, SlashCommandBuilder, REST, Routes, Message } from 'discord.js';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
+import OpenAI from 'openai';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 export async function initializeDiscordBot() {
   if (!DISCORD_BOT_TOKEN) {
@@ -23,6 +25,74 @@ export async function initializeDiscordBot() {
 
   client.once('ready', () => {
     console.log(`🤖 Discord bot is online as ${client.user?.tag}`);
+    if (OPENAI_API_KEY) {
+      console.log('🤖 AI chat assistant enabled');
+    } else {
+      console.log('⚠️  OpenAI API key not configured - AI chat disabled');
+    }
+  });
+
+  // Handle direct messages and mentions with AI
+  client.on('messageCreate', async (message: Message) => {
+    // Ignore bot messages
+    if (message.author.bot) return;
+
+    // Only respond to DMs or mentions
+    const isDM = message.channel.isDMBased();
+    const isMentioned = message.mentions.has(client.user!.id);
+
+    if (!isDM && !isMentioned) return;
+
+    // Check if OpenAI is configured
+    if (!OPENAI_API_KEY) {
+      if (isDM) {
+        await message.reply('❌ AI assistant is currently unavailable. Please use `/scan <wallet>` command or visit https://getfreesol.com');
+      }
+      return;
+    }
+
+    // Get user question (remove mention if present)
+    let question = message.content;
+    if (isMentioned) {
+      question = question.replace(`<@${client.user!.id}>`, '').trim();
+    }
+
+    if (!question || question.length < 3) {
+      await message.reply('👋 Hi! I can help you with GetFreeSol. Ask me anything about:\n• How to reclaim SOL\n• Token burning\n• Referral program\n• Troubleshooting issues');
+      return;
+    }
+
+    console.log(`💬 Discord AI: Question from ${message.author.tag}: "${question}"`);
+
+    try {
+      // Show typing indicator (check if method exists)
+      if ('sendTyping' in message.channel) {
+        await message.channel.sendTyping();
+      }
+
+      // Get AI response
+      const response = await getAIResponse(question);
+
+      // Send response (split if too long)
+      if (response.length <= 2000) {
+        await message.reply(response);
+      } else {
+        // Split into chunks
+        const chunks = response.match(/[\s\S]{1,1900}/g) || [];
+        for (let i = 0; i < chunks.length; i++) {
+          if (i === 0) {
+            await message.reply(chunks[i]);
+          } else {
+            await message.channel.send(chunks[i]);
+          }
+        }
+      }
+
+      console.log(`✅ Discord AI: Responded to ${message.author.tag}`);
+    } catch (error) {
+      console.error('❌ Discord AI error:', error);
+      await message.reply('❌ Sorry, I encountered an error. Please try again or visit https://getfreesol.com for help.');
+    }
   });
 
   // Handle slash command interactions
@@ -210,4 +280,59 @@ async function scanWallet(walletAddress: string): Promise<{
     emptyAccounts: emptyAccountsCount,
     totalReclaimable: totalReclaimable.toFixed(6)
   };
+}
+
+// AI Chat Response Function
+async function getAIResponse(question: string): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  const { GETFREESOL_KNOWLEDGE } = await import('./getfreesol-knowledge.js');
+
+  const openai = new OpenAI({
+    apiKey: OPENAI_API_KEY
+  });
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a helpful customer support assistant for GetFreeSol, a platform that helps Solana users reclaim SOL from empty token accounts. 
+
+Your role:
+- Answer questions clearly and concisely
+- Be friendly and helpful
+- Guide users through using the platform
+- Help troubleshoot issues
+- Use simple, non-technical language when possible
+- If you don't know something, direct users to visit https://getfreesol.com or ask in the Discord
+
+Knowledge Base:
+${GETFREESOL_KNOWLEDGE}
+
+Important:
+- Always be accurate based on the knowledge base
+- Don't make up features that don't exist
+- Keep responses under 2000 characters when possible
+- Use Discord markdown formatting (bold with **, links with [text](url))
+- Never ask for private keys or seed phrases
+`
+        },
+        {
+          role: 'user',
+          content: question
+        }
+      ],
+      max_tokens: 800,
+      temperature: 0.7
+    });
+
+    return completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+  } catch (error: any) {
+    console.error('❌ OpenAI API error:', error.message);
+    throw new Error('Failed to get AI response');
+  }
 }
