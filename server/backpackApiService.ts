@@ -28,19 +28,14 @@ class BackpackApiService {
       }
     }
     
-    // Initialize keypair and derive the correct public key from private key
+    // Initialize keypair from private key
     if (privateKey) {
       try {
         const seedBytes = Buffer.from(privateKey, 'base64');
         this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
-        const derivedPublicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
-        
-        
-        // Always use the derived public key for correctness
-        publicKey = derivedPublicKey;
-        console.log('✅ Using derived public key from private key');
+        console.log('✅ REST API: Keypair initialized from private key');
       } catch (error) {
-        console.error('❌ Failed to derive keypair:', error);
+        console.error('❌ REST API: Failed to initialize keypair:', error);
       }
     }
     

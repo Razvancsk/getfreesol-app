@@ -94,23 +94,21 @@ class BackpackWebSocketService extends EventEmitter {
     const privateKey = process.env.BACKPACK_PRIVATE_KEY || '';
     const publicKey = process.env.BACKPACK_API_KEY || '';
     
-    // Initialize keypair and derive public key from private key
-    let derivedPublicKey = '';
+    // Initialize keypair from private key
     if (privateKey) {
       try {
         const seedBytes = Buffer.from(privateKey, 'base64');
         this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
-        derivedPublicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
-        console.log('✅ WebSocket: Keypair initialized, using derived public key');
+        console.log('✅ WebSocket: Keypair initialized from private key');
       } catch (error) {
         console.error('❌ WebSocket: Failed to initialize keypair:', error);
       }
     }
     
-    // Always use derived public key (must match the private key for signature validation)
+    // Use the exact public key provided by Backpack
     this.config = {
       wsUrl: 'wss://ws.backpack.exchange',
-      publicKey: derivedPublicKey,
+      publicKey: publicKey,
       privateKey,
     };
   }
