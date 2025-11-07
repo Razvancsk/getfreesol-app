@@ -94,7 +94,8 @@ class BackpackWebSocketService extends EventEmitter {
     const privateKey = process.env.BACKPACK_PRIVATE_KEY || '';
     let publicKey = process.env.BACKPACK_API_KEY || '';
     
-    if (privateKey && !publicKey) {
+    // Always derive the correct public key from the private key
+    if (privateKey) {
       try {
         const seedBytes = Buffer.from(privateKey, 'base64');
         this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
@@ -109,11 +110,6 @@ class BackpackWebSocketService extends EventEmitter {
       publicKey,
       privateKey,
     };
-    
-    if (!this.keyPair && privateKey) {
-      const seedBytes = Buffer.from(privateKey, 'base64');
-      this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
-    }
   }
 
   private generateSignature(timestamp: number, window: number = 5000): string {
@@ -124,8 +120,14 @@ class BackpackWebSocketService extends EventEmitter {
     const signaturePayload = `instruction=subscribe&timestamp=${timestamp}&window=${window}`;
     const messageBytes = new TextEncoder().encode(signaturePayload);
     const signature = nacl.sign.detached(messageBytes, this.keyPair.secretKey);
+    const encodedSignature = Buffer.from(signature).toString('base64');
 
-    return Buffer.from(signature).toString('base64');
+    console.log('🔐 WebSocket Signature Debug:');
+    console.log(`   Payload: ${signaturePayload}`);
+    console.log(`   Public Key (first 20): ${this.config.publicKey.substring(0, 20)}...`);
+    console.log(`   Signature (first 20): ${encodedSignature.substring(0, 20)}...`);
+
+    return encodedSignature;
   }
 
   connect(): Promise<void> {
