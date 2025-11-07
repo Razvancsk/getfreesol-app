@@ -3624,6 +3624,7 @@ export default function SolRefund() {
                   publicKey={publicKey}
                   userPositions={userPositions}
                   onVaultClick={async (reserve: any) => {
+                    console.log('🎯 Vault clicked, reserve:', reserve);
                     if (!publicKey) {
                       toast({
                         title: "Wallet Not Connected",
@@ -3637,7 +3638,9 @@ export default function SolRefund() {
                     setLendMode('deposit');
                     setDepositDialogOpen(true);
                     // Fetch wallet balance for this token
+                    console.log('📞 About to call fetchTokenBalance with mint:', reserve.mint);
                     await fetchTokenBalance(reserve.mint);
+                    console.log('✅ fetchTokenBalance completed');
                   }}
                 />
 

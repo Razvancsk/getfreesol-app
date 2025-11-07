@@ -5203,7 +5203,7 @@ Claimer: ${walletAddress}`;
           address: symbol,
           symbol: symbol,
           name: symbol,
-          mint: symbol,
+          mint: market.mint || symbol,
           logoUrl: '',
           depositAPY: lendAPY,
           borrowAPY: borrowAPY,
