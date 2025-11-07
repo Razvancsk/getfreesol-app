@@ -132,15 +132,22 @@ class BackpackApiService {
         }
       });
 
+      // Map symbols to mint addresses
+      const symbolToMint: Record<string, string> = {
+        'SOL': 'So11111111111111111111111111111111111111112',
+      };
+      
       // Transform to our format and filter for SOL only
       const allMarkets = Array.from(uniqueAssets.values())
         .map((market: any) => {
           const symbol = market.baseSymbol;
           const lendingData = lendingDataMap.get(symbol);
+          const mintAddress = symbolToMint[symbol] || symbol;
           
           return {
             asset: symbol,
             symbol: symbol,
+            mint: mintAddress,
             depositAPY: lendingData ? lendingData.lendApy : 0,
             borrowApy: lendingData ? lendingData.borrowApy : 0,
             totalLiquidity: lendingData ? lendingData.totalLiquidity : '0',
