@@ -6,6 +6,9 @@ import OpenAI from 'openai';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
+// Track recently processed messages to prevent duplicates
+const processedMessages = new Set<string>();
+
 export async function initializeDiscordBot() {
   if (!DISCORD_BOT_TOKEN) {
     console.log('⚠️  DISCORD_BOT_TOKEN not configured - Discord bot disabled');
@@ -36,6 +39,17 @@ export async function initializeDiscordBot() {
   client.on('messageCreate', async (message: Message) => {
     // Ignore bot messages
     if (message.author.bot) return;
+
+    // Prevent duplicate responses using message ID
+    if (processedMessages.has(message.id)) {
+      return;
+    }
+    processedMessages.add(message.id);
+    
+    // Clean up old message IDs after 1 minute
+    setTimeout(() => {
+      processedMessages.delete(message.id);
+    }, 60000);
 
     // Check if OpenAI is configured
     if (!OPENAI_API_KEY) {
@@ -82,7 +96,7 @@ export async function initializeDiscordBot() {
       console.log(`✅ Discord AI: Responded to ${message.author.tag}`);
     } catch (error) {
       console.error('❌ Discord AI error:', error);
-      await message.reply('❌ Sorry, I encountered an error. Please try again or visit https://getfreesol.com for help.');
+      await message.reply('❌ Sorry, I encountered an error. Please try again or visit https://getfreesol.xyz for help.');
     }
   });
 
@@ -116,13 +130,13 @@ export async function initializeDiscordBot() {
               { name: '🗑️ Empty Accounts', value: `**${scanResult.emptyAccounts}**`, inline: true },
               { name: '💰 Claimable SOL', value: `**~${scanResult.totalReclaimable} SOL**`, inline: true }
             )
-            .setFooter({ text: 'GetFreeSol.com • Claim your SOL today!' })
+            .setFooter({ text: 'GetFreeSol.xyz • Claim your SOL today!' })
             .setTimestamp();
 
           if (scanResult.emptyAccounts > 0) {
             embed.addFields({
               name: '🚀 Claim Now',
-              value: `Visit [GetFreeSol.com](https://getfreesol.com) to claim your rent!`,
+              value: `Visit [GetFreeSol.xyz](https://getfreesol.xyz) to claim your rent!`,
               inline: false
             });
           }
