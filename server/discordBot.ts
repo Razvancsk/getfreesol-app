@@ -32,20 +32,6 @@ export async function initializeDiscordBot() {
 
   isInitializing = true;
 
-  // Destroy existing client if it exists
-  if (globalClient) {
-    console.log('🔄 Destroying previous Discord bot instance...');
-    try {
-      await globalClient.destroy();
-      globalClient = null;
-      console.log('✅ Previous bot instance destroyed');
-    } catch (error) {
-      console.error('❌ Error destroying previous bot:', error);
-    }
-    // Wait a bit for cleanup
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-
   // Register slash commands
   await registerSlashCommands();
 
@@ -124,10 +110,13 @@ export async function initializeDiscordBot() {
         const chunks = response.match(/[\s\S]{1,1900}/g) || [];
         console.log(`📝 Split response into ${chunks.length} chunks for message ${message.id}`);
         for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
+          if (!chunk) continue;
+          
           if (i === 0) {
-            await message.reply(chunks[i]);
-          } else {
-            await message.channel.send(chunks[i]);
+            await message.reply(chunk);
+          } else if ('send' in message.channel) {
+            await message.channel.send(chunk);
           }
         }
         console.log(`✅ All ${chunks.length} chunks sent for message ${message.id}`);
@@ -390,8 +379,9 @@ Important Rules:
 - Only provide detailed answers if specifically asked
 - Use Discord markdown: **bold**, [text](url)
 - Never ask for private keys or seed phrases
-- When mentioning the website, use format: "getfreesol.xyz" (simple, no https://)
-- NEVER put a period directly after the domain (WRONG: "getfreesol.xyz." CORRECT: "visit getfreesol.xyz" or "Check out getfreesol.xyz!")
+- When mentioning the website, ALWAYS use clickable link format: [getfreesol.xyz](https://getfreesol.xyz) or just https://getfreesol.xyz
+- NEVER use plain text "getfreesol.xyz" - always make it clickable
+- NEVER put a period directly after links
 `
         },
         {
