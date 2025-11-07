@@ -9,10 +9,27 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 // Track recently processed messages to prevent duplicates
 const processedMessages = new Set<string>();
 
+// Global client instance - ensures only one bot runs at a time
+let globalClient: Client | null = null;
+
 export async function initializeDiscordBot() {
   if (!DISCORD_BOT_TOKEN) {
     console.log('⚠️  DISCORD_BOT_TOKEN not configured - Discord bot disabled');
     return;
+  }
+
+  // Destroy existing client if it exists
+  if (globalClient) {
+    console.log('🔄 Destroying previous Discord bot instance...');
+    try {
+      await globalClient.destroy();
+      globalClient = null;
+      console.log('✅ Previous bot instance destroyed');
+    } catch (error) {
+      console.error('❌ Error destroying previous bot:', error);
+    }
+    // Wait a bit for cleanup
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   // Register slash commands
@@ -25,6 +42,9 @@ export async function initializeDiscordBot() {
       GatewayIntentBits.MessageContent
     ]
   });
+
+  // Store as global instance
+  globalClient = client;
 
   client.once('ready', () => {
     console.log(`🤖 Discord bot is online as ${client.user?.tag}`);
@@ -181,6 +201,23 @@ export async function initializeDiscordBot() {
   });
 
   client.login(DISCORD_BOT_TOKEN);
+
+  // Handle shutdown gracefully
+  process.on('SIGINT', async () => {
+    console.log('🛑 Shutting down Discord bot...');
+    if (globalClient) {
+      await globalClient.destroy();
+      globalClient = null;
+    }
+  });
+
+  process.on('SIGTERM', async () => {
+    console.log('🛑 Shutting down Discord bot...');
+    if (globalClient) {
+      await globalClient.destroy();
+      globalClient = null;
+    }
+  });
 }
 
 async function registerSlashCommands() {
