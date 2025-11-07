@@ -11,10 +11,10 @@ class BackpackApiService {
   private keyPair: nacl.SignKeyPair | null = null;
 
   constructor() {
-    // BACKPACK_PRIVATE_KEY should be the base64-encoded 32-byte seed
-    // BACKPACK_API_KEY is optional - we can derive the public key from the private key
-    const privateKey = process.env.BACKPACK_PRIVATE_KEY || '';
-    let publicKey = process.env.BACKPACK_API_KEY || '';
+    // Backpack_api_secret should be the base64-encoded 32-byte seed
+    // Backpack_api_key is optional - we can derive the public key from the private key
+    const privateKey = process.env.Backpack_api_secret || '';
+    let publicKey = process.env.Backpack_api_key || '';
     
     // If we have a private key but no public key, derive it
     if (privateKey && !publicKey) {

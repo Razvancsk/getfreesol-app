@@ -91,8 +91,8 @@ class BackpackWebSocketService extends EventEmitter {
   constructor() {
     super();
     
-    const privateKey = process.env.BACKPACK_PRIVATE_KEY || '';
-    const publicKey = process.env.BACKPACK_API_KEY || '';
+    const privateKey = process.env.Backpack_api_secret || '';
+    const publicKey = process.env.Backpack_api_key || '';
     
     // Initialize keypair from private key
     if (privateKey) {
