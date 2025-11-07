@@ -99,7 +99,11 @@ class BackpackWebSocketService extends EventEmitter {
       try {
         const seedBytes = Buffer.from(privateKey, 'base64');
         this.keyPair = nacl.sign.keyPair.fromSeed(seedBytes);
+        const derivedPublicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
         console.log('✅ WebSocket: Keypair initialized from private key');
+        console.log(`🔑 WebSocket: Provided API Key: ${publicKey}`);
+        console.log(`🔑 WebSocket: Derived Public Key: ${derivedPublicKey}`);
+        console.log(`🔑 WebSocket: Keys match: ${derivedPublicKey === publicKey}`);
       } catch (error) {
         console.error('❌ WebSocket: Failed to initialize keypair:', error);
       }

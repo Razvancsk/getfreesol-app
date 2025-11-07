@@ -239,6 +239,13 @@ class BackpackApiService {
       const instruction = 'borrowLendPositionQuery';
       const signature = this.generateSignature(instruction, {}, timestamp, window);
 
+      console.log(`🔐 REST API Debug:
+   Endpoint: /api/v1/borrowLend/positions
+   Instruction: ${instruction}
+   Timestamp: ${timestamp}
+   Public Key: ${this.config.publicKey}
+   Signature (first 20 chars): ${signature.substring(0, 20)}...`);
+
       const response = await fetch(`${this.config.baseUrl}/api/v1/borrowLend/positions`, {
         method: 'GET',
         headers: {
