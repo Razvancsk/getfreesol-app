@@ -133,7 +133,7 @@ class BackpackApiService {
       });
 
       // Transform to our format and filter for SOL only
-      return Array.from(uniqueAssets.values())
+      const allMarkets = Array.from(uniqueAssets.values())
         .map((market: any) => {
           const symbol = market.baseSymbol;
           const lendingData = lendingDataMap.get(symbol);
@@ -155,8 +155,12 @@ class BackpackApiService {
             marketType: market.marketType,
             orderBookState: market.orderBookState,
           };
-        })
-        .filter((market: any) => market.symbol === 'SOL');
+        });
+      
+      const filteredMarkets = allMarkets.filter((market: any) => market.symbol === 'SOL');
+      console.log(`🔍 Filter: ${allMarkets.length} markets → ${filteredMarkets.length} SOL markets`);
+      
+      return filteredMarkets;
     } catch (error) {
       console.error('Failed to fetch borrow/lend markets:', error);
       throw error;
