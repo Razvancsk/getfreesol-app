@@ -1,0 +1,124 @@
+Here's a simple guide to connect to Backpack's WebSocket in your app. I'll show you the key parts:
+
+1. Basic Connection (Public Streams)
+import WebSocket from 'ws';
+// Connect to Backpack WebSocket
+const ws = new WebSocket('wss://ws.backpack.exchange');
+ws.on('open', () => {
+  console.log('Connected to Backpack!');
+  
+  // Subscribe to a ticker stream
+  ws.send(JSON.stringify({
+    method: 'SUBSCRIBE',
+    params: ['ticker.SOL_USDC']
+  }));
+});
+ws.on('message', (data) => {
+  const message = JSON.parse(data.toString());
+  console.log('Received:', message);
+});
+ws.on('error', (error) => {
+  console.error('Error:', error);
+});
+
+2. Available Public Streams
+You can subscribe to these without authentication:
+
+// Price ticker
+params: ['ticker.SOL_USDC']
+// Orderbook depth  
+params: ['depth.SOL_USDC']
+// Recent trades
+params: ['trades.SOL_USDC']
+// Kline/candlestick data (1m, 3m, 5m, 15m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1month)
+params: ['kline.SOL_USDC.1m']
+// Mark price for futures
+params: ['markprice.SOL_PERP']
+
+3. Private Streams (Requires API Key)
+For account data, you need to sign your subscription:
+
+import nacl from 'tweetnacl';
+// Your Backpack API secret (base64 encoded)
+const secretKey = 'YOUR_SECRET_KEY_BASE64';
+const secretKeyBytes = Buffer.from(secretKey, 'base64');
+// Generate keypair
+const keypair = nacl.sign.keyPair.fromSeed(secretKeyBytes);
+// Sign the subscription request
+const timestamp = Date.now();
+const window = 5000;
+const signingMessage = `instruction=subscribe&timestamp=${timestamp}&window=${window}`;
+const messageBytes = Buffer.from(signingMessage, 'utf8');
+const signature = nacl.sign.detached(messageBytes, keypair.secretKey);
+// Create subscription message with signature
+const apiKey = Buffer.from(keypair.publicKey).toString('base64');
+const signatureBase64 = Buffer.from(signature).toString('base64');
+ws.send(JSON.stringify({
+  method: 'SUBSCRIBE',
+  params: ['account.orderUpdate'],  // or 'account.fillUpdate'
+  signature: [apiKey, signatureBase64, timestamp.toString(), window.toString()]
+}));
+
+4. Keep Connection Alive
+Backpack requires ping/pong to keep connection active:
+
+// Send ping every 30 seconds
+setInterval(() => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.ping();
+  }
+}, 30000);
+// Handle pong from server
+ws.on('ping', () => {
+  ws.pong();
+});
+
+5. Complete Example
+Here's a full working example:
+
+import WebSocket from 'ws';
+const ws = new WebSocket('wss://ws.backpack.exchange');
+ws.on('open', () => {
+  console.log('✅ Connected!');
+  
+  // Subscribe to SOL ticker
+  ws.send(JSON.stringify({
+    method: 'SUBSCRIBE',
+    params: ['ticker.SOL_USDC']
+  }));
+  
+  // Keep alive
+  setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 30000);
+});
+ws.on('message', (data) => {
+  const msg = JSON.parse(data.toString());
+  
+  if (msg.stream === 'ticker.SOL_USDC') {
+    console.log('SOL Price:', msg.data.lastPrice);
+  }
+});
+ws.on('close', () => {
+  console.log('Disconnected');
+});
+ws.on('error', (error) => {
+  console.error('Error:', error.message);
+});
+
+Common Issues & Solutions
+Connection closes immediately
+
+Make sure you're sending ping/pong messages
+Server closes if no pong within 120 seconds
+"Unauthorized" for private streams
+
+Check your API key is correct (base64 encoded)
+Verify signature generation matches example above
+Make sure timestamp is current (Date.now())
+No messages received
+
+Check the stream name is correct (e.g., ticker.SOL_USDC not SOL-USDC)
+Make sure you sent SUBSCRIBE message after connection opened

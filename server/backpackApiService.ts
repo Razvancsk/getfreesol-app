@@ -14,24 +14,15 @@ class BackpackApiService {
     const privateKey = process.env.Backpack_api_secret || '';
     const publicKey = process.env.Backpack_api_key || '';
     
-    // Initialize keypair from private key
+    // Initialize keypair from private key and derive public key (as per Backpack guide)
+    let derivedPublicKey = '';
     if (privateKey) {
       try {
-        const keyBytes = Buffer.from(privateKey, 'base64');
-        
-        // Try as 32-byte seed first
-        if (keyBytes.length === 32) {
-          this.keyPair = nacl.sign.keyPair.fromSeed(keyBytes);
-          console.log('✅ REST API: Keypair initialized from 32-byte seed');
-        }
-        // Try as 64-byte secret key
-        else if (keyBytes.length === 64) {
-          this.keyPair = nacl.sign.keyPair.fromSecretKey(keyBytes);
-          console.log('✅ REST API: Keypair initialized from 64-byte secret key');
-        }
-        else {
-          console.error(`❌ REST API: Invalid key length: ${keyBytes.length} bytes (expected 32 or 64)`);
-        }
+        const secretKeyBytes = Buffer.from(privateKey, 'base64');
+        this.keyPair = nacl.sign.keyPair.fromSeed(secretKeyBytes);
+        derivedPublicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
+        console.log('✅ REST API: Keypair initialized from seed');
+        console.log(`🔑 REST API: Derived public key for authentication`);
       } catch (error) {
         console.error('❌ REST API: Failed to initialize keypair:', error);
       }
@@ -39,7 +30,7 @@ class BackpackApiService {
     
     this.config = {
       baseUrl: 'https://api.backpack.exchange',
-      publicKey,
+      publicKey: derivedPublicKey,
       privateKey,
     };
     

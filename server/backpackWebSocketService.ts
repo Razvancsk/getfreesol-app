@@ -94,33 +94,24 @@ class BackpackWebSocketService extends EventEmitter {
     const privateKey = process.env.Backpack_api_secret || '';
     const publicKey = process.env.Backpack_api_key || '';
     
-    // Initialize keypair from private key
+    // Initialize keypair from private key and derive public key (as per Backpack guide)
+    let derivedPublicKey = '';
     if (privateKey) {
       try {
-        const keyBytes = Buffer.from(privateKey, 'base64');
-        
-        // Try as 32-byte seed first
-        if (keyBytes.length === 32) {
-          this.keyPair = nacl.sign.keyPair.fromSeed(keyBytes);
-          console.log('✅ WebSocket: Keypair initialized from 32-byte seed');
-        }
-        // Try as 64-byte secret key
-        else if (keyBytes.length === 64) {
-          this.keyPair = nacl.sign.keyPair.fromSecretKey(keyBytes);
-          console.log('✅ WebSocket: Keypair initialized from 64-byte secret key');
-        }
-        else {
-          console.error(`❌ WebSocket: Invalid key length: ${keyBytes.length} bytes (expected 32 or 64)`);
-        }
+        const secretKeyBytes = Buffer.from(privateKey, 'base64');
+        this.keyPair = nacl.sign.keyPair.fromSeed(secretKeyBytes);
+        derivedPublicKey = Buffer.from(this.keyPair.publicKey).toString('base64');
+        console.log('✅ WebSocket: Keypair initialized from seed');
+        console.log(`🔑 WebSocket: Derived public key for authentication`);
       } catch (error) {
         console.error('❌ WebSocket: Failed to initialize keypair:', error);
       }
     }
     
-    // Use exact API key provided by user
+    // Use derived public key from seed (as per Backpack documentation)
     this.config = {
       wsUrl: 'wss://ws.backpack.exchange',
-      publicKey: publicKey,
+      publicKey: derivedPublicKey,
       privateKey,
     };
   }
