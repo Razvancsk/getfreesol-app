@@ -32,44 +32,28 @@ export async function initializeDiscordBot() {
     }
   });
 
-  // Handle direct messages and mentions with AI
+  // Handle ALL messages with AI (acts like a moderator)
   client.on('messageCreate', async (message: Message) => {
     // Ignore bot messages
     if (message.author.bot) return;
 
-    // Check if this is a DM or mention
-    const isDM = message.channel.isDMBased();
-    const isMentioned = message.mentions.has(client.user!.id);
-    
-    // In channels, detect if it's a question or help request
-    const isQuestion = message.content.includes('?') || 
-                       /\b(how|what|why|when|where|can|is|does|help|support|issue|problem|error|fail)\b/i.test(message.content);
-    
-    // Only respond to: DMs, mentions, or questions in channels
-    if (!isDM && !isMentioned && !isQuestion) return;
-
     // Check if OpenAI is configured
     if (!OPENAI_API_KEY) {
-      if (isDM || isMentioned) {
-        await message.reply('❌ AI assistant is currently unavailable. Please use `/scan <wallet>` command or visit https://getfreesol.com');
-      }
       return;
     }
 
-    // Get user question (remove mention if present)
-    let question = message.content;
-    if (isMentioned) {
-      question = question.replace(`<@${client.user!.id}>`, '').trim();
+    // Get user message (remove mention if present)
+    let userMessage = message.content;
+    if (message.mentions.has(client.user!.id)) {
+      userMessage = userMessage.replace(`<@${client.user!.id}>`, '').trim();
     }
 
-    if (!question || question.length < 3) {
-      if (isDM || isMentioned) {
-        await message.reply('👋 Hi! I can help you with GetFreeSol. Ask me anything about:\n• How to reclaim SOL\n• Token burning\n• Referral program\n• Troubleshooting issues');
-      }
+    // Ignore very short messages
+    if (!userMessage || userMessage.length < 2) {
       return;
     }
 
-    console.log(`💬 Discord AI: Question from ${message.author.tag}: "${question}"`);
+    console.log(`💬 Discord AI: Message from ${message.author.tag}: "${userMessage}"`);
 
     try {
       // Show typing indicator (check if method exists)
@@ -78,7 +62,7 @@ export async function initializeDiscordBot() {
       }
 
       // Get AI response
-      const response = await getAIResponse(question);
+      const response = await getAIResponse(userMessage);
 
       // Send response (split if too long)
       if (response.length <= 2000) {
