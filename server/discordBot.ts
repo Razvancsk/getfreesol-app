@@ -123,9 +123,20 @@ export async function initializeDiscordBot() {
       }
 
       console.log(`✅ Discord AI: Fully responded to ${message.author.tag} for message ${message.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Discord AI error:', error);
-      await message.reply('❌ Sorry, I encountered an error. Please try again or visit https://getfreesol.xyz for help.');
+      
+      // Handle permission errors gracefully
+      if (error.code === 50001 || error.code === 50013) {
+        console.log('⚠️  Bot lacks permissions in this channel, skipping response');
+        return;
+      }
+      
+      try {
+        await message.reply('❌ Sorry, I encountered an error. Please try again or visit https://getfreesol.xyz for help.');
+      } catch (replyError) {
+        console.error('❌ Failed to send error message:', replyError);
+      }
     }
   });
 
@@ -192,19 +203,27 @@ export async function initializeDiscordBot() {
           const errorEmbed = new EmbedBuilder()
             .setTitle('❌ Scan Failed')
             .setColor(0xFF0000)
-            .setDescription('Sorry, there was an error scanning this wallet. Please try again later or visit GetFreeSol.com')
-            .setFooter({ text: 'GetFreeSol.com' })
+            .setDescription('Sorry, there was an error scanning this wallet. Please try again later or visit [GetFreeSol.xyz](https://getfreesol.xyz)')
+            .setFooter({ text: 'GetFreeSol.xyz • Claim your SOL today!' })
             .setTimestamp();
 
-          await interaction.editReply({ embeds: [errorEmbed] });
+          try {
+            await interaction.editReply({ embeds: [errorEmbed] });
+          } catch (replyError) {
+            console.error('❌ Discord: Failed to send error message:', replyError);
+          }
         }
 
       } catch (error) {
         // Invalid Solana address
-        await interaction.reply({
-          content: '❌ Invalid Solana wallet address. Please check and try again.',
-          ephemeral: true
-        });
+        try {
+          await interaction.reply({
+            content: '❌ Invalid Solana wallet address. Please check and try again.',
+            ephemeral: true
+          });
+        } catch (replyError) {
+          console.error('❌ Failed to send invalid address error:', replyError);
+        }
       }
     }
   });
