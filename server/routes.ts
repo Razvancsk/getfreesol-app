@@ -1121,20 +1121,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send Discord alert:', discordError);
       }
 
-      // Post to X (Twitter) for claims >= 0.01 SOL
+      // Post to X (Twitter) for claims >= 0.01 SOL (NET amount - what user actually received)
       const MIN_CLAIM_FOR_POST = 0.01;
       let xPostId: string | null = null;
-      if (solRecovered >= MIN_CLAIM_FOR_POST) {
+      if (netAmount >= MIN_CLAIM_FOR_POST) {
         try {
-          // Tiered messaging based on claim amount (only the beginning varies)
+          // Tiered messaging based on NET claim amount (only the beginning varies)
           let claimMessages: string[];
-          if (solRecovered >= 4) {
+          if (netAmount >= 4) {
             // 🔥 Massive Claims (4 SOL and up)
             claimMessages = ["💥 JACKPOT!", "🏆 Unreal", "⚡ Legendary drop"];
-          } else if (solRecovered >= 1) {
+          } else if (netAmount >= 1) {
             // 🟡 Big Claims (1 – 3.99 SOL)
             claimMessages = ["🔥 Hot drop!", "🚨 Big claim", "🏆 On-chain win"];
-          } else if (solRecovered >= 0.1) {
+          } else if (netAmount >= 0.1) {
             // 🔵 Medium-High Claims (0.1 – 0.999 SOL)
             claimMessages = ["💎 Nice one!", "🪙 That's a sweet claim", "🎯 Boom! 🎯 Hot claim"];
           } else {
@@ -1145,15 +1145,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Randomly select a message from the tier
           const randomMessage = claimMessages[Math.floor(Math.random() * claimMessages.length)];
           
-          const tweetContent = `${randomMessage} ${solRecovered.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
+          const tweetContent = `${randomMessage} ${netAmount.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
 
 Claimer: ${walletAddress}`;
           
-          console.log(`📢 Posting claim alert to X for ${solRecovered} SOL...`);
+          console.log(`📢 Posting claim alert to X for ${netAmount} SOL (NET)...`);
           
           const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
           const cardImage = await generateClaimCardBanner({
-            solAmount: solRecovered.toString(),
+            solAmount: netAmount.toString(),
             walletAddress
           });
           
