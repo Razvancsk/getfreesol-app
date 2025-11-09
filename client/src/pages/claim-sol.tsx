@@ -4339,7 +4339,7 @@ export default function SolRefund() {
               {/* Total Accounts Closed */}
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                 <div className="text-3xl font-bold text-white mb-2">
-                  {stats ? stats.totalAccountsClaimed : 0}
+                  {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
                 </div>
                 <div className="text-sm text-purple-200 uppercase tracking-wider">
                   TOTAL ACCOUNTS CLOSED
