@@ -25,22 +25,17 @@ Your app is now partially prepared for Solana Mobile dApp Store submission! Here
 
 Solana Mobile requires high-quality visual assets. You'll need to create:
 
-#### 1. App Icon - 512×512px PNG
-**Requirements:**
-- Size: Exactly 512×512 pixels
+#### 1. App Icon - 512×512px PNG ✅ COMPLETED
+**Status:** ✅ Created and saved at `public/icon-512.png`
+- Size: 512×512 pixels
 - Format: PNG with transparency
-- Content: Your purple gradient logo
-- Follow: [Google Play Icon Design Spec](https://developer.android.com/google-play/resources/icon-design-specifications)
+- Content: Purple gradient "G" logo
 
-**Where to save:** `public/icon-512.png`
-
-#### 2. App Icon (Small) - 192×192px PNG
-**Requirements:**
-- Size: Exactly 192×192 pixels  
+#### 2. App Icon (Small) - 192×192px PNG ✅ COMPLETED
+**Status:** ✅ Created and saved at `public/icon-192.png`
+- Size: 192×192 pixels
 - Format: PNG with transparency
-- Content: Same as 512×512, just resized
-
-**Where to save:** `public/icon-192.png`
+- Content: Resized from 512×512 version
 
 #### 3. Banner Graphic - 1200×600px PNG
 **Requirements:**
@@ -137,8 +132,8 @@ Follow the complete guide in `SOLANA_MOBILE_SETUP.md` starting from "Step 6: Ins
 
 ## Quick Checklist
 
-- [ ] Create 512×512 app icon → `public/icon-512.png`
-- [ ] Create 192×192 app icon → `public/icon-192.png`
+- [x] Create 512×512 app icon → `public/icon-512.png` ✅
+- [x] Create 192×192 app icon → `public/icon-192.png` ✅
 - [ ] Create 1200×600 banner → `public/banner-1200x600.png`
 - [ ] Create 4+ screenshots → `public/screenshots/screenshot-*.png`
 - [ ] Install Bubblewrap CLI
