@@ -37,14 +37,11 @@ Solana Mobile requires high-quality visual assets. You'll need to create:
 - Format: PNG with transparency
 - Content: Resized from 512×512 version
 
-#### 3. Banner Graphic - 1200×600px PNG
-**Requirements:**
-- Size: Exactly 1200×600 pixels
-- Format: PNG
-- Content: Your app name + tagline with purple gradient background
-- Example text: "Get Your SOL Back! | Reclaim SOL from Empty Token Accounts"
-
-**Where to save:** `public/banner-1200x600.png`
+#### 3. Banner Graphic - 1200×600px PNG ✅ COMPLETED
+**Status:** ✅ Created and saved at `public/banner-1200x600.png`
+- Size: 1200×600 pixels
+- Format: PNG (514KB)
+- Content: "Get Your SOL Back!" with purple gradient background
 
 #### 4. Screenshots - Minimum 4 at 1920×1080px
 **Requirements:**
@@ -134,8 +131,8 @@ Follow the complete guide in `SOLANA_MOBILE_SETUP.md` starting from "Step 6: Ins
 
 - [x] Create 512×512 app icon → `public/icon-512.png` ✅
 - [x] Create 192×192 app icon → `public/icon-192.png` ✅
-- [ ] Create 1200×600 banner → `public/banner-1200x600.png`
-- [ ] Create 4+ screenshots → `public/screenshots/screenshot-*.png`
+- [x] Create 1200×600 banner → `public/banner-1200x600.png` ✅
+- [ ] Create 4+ screenshots → `public/screenshots/screenshot-*.png` ⚠️ LAST ASSET NEEDED
 - [ ] Install Bubblewrap CLI
 - [ ] Build Android APK
 - [ ] Generate and save signing key securely
