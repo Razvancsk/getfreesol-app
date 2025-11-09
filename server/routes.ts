@@ -263,11 +263,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
-      // Ultra Swap Referral Configuration - FREE SWAPS (no platform fee)
+      // Ultra Swap Referral Configuration
       // Referral account: 5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB
       // Token account for fees: 6F75HBoQ64GRXnUXAxeWMcJVax5dUgeBnY96sWSNzXdD
       const referralAccount = "5fiaP6GJBixn5N1pZT5dUer1MUkdAiKMg7tBMPbFyZdB";
-      const referralFee = 0; // FREE SWAPS - 0% platform fee
+      const referralFee = 50; // 0.50% (50 bps)
 
       // Build order URL with referral params
       const orderUrl = new URL('https://api.jup.ag/ultra/v1/order');
