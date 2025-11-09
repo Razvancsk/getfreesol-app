@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
+import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement, transactionLedger } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction } from "@solana/spl-token";
@@ -6376,6 +6376,148 @@ Claimer: ${walletAddress}`;
     } catch (error: any) {
       console.error("Post tweet error:", error);
       res.status(500).json({ error: "Failed to post tweet", details: error.message });
+    }
+  });
+  
+  // Retroactively post all missed transactions >= 0.01 SOL to X
+  app.post("/api/x-bot/post-missed-transactions", async (req, res) => {
+    try {
+      const { limit = 50 } = req.body; // Default to 50 most recent transactions
+      
+      console.log('🔄 Starting retroactive posting of missed transactions...');
+      console.log(`  Limit: ${limit === 'all' ? 'ALL' : limit} transactions`);
+      
+      // Get transactions >= 0.01 SOL that haven't been posted (most recent first)
+      let query = db.select()
+        .from(transactionLedger)
+        .where(sql`${transactionLedger.netAmount} >= 0.01 AND ${transactionLedger.postedToX} = false`)
+        .orderBy(sql`${transactionLedger.processedAt} DESC`);
+      
+      // Apply limit if not 'all'
+      if (limit !== 'all') {
+        const limitNum = parseInt(limit.toString(), 10);
+        query = query.limit(limitNum) as any;
+      }
+      
+      const missedTransactions = await query;
+      
+      console.log(`📊 Found ${missedTransactions.length} missed transactions to post`);
+      
+      if (missedTransactions.length === 0) {
+        return res.json({
+          success: true,
+          message: 'No missed transactions to post',
+          posted: 0,
+          failed: 0
+        });
+      }
+      
+      let posted = 0;
+      let failed = 0;
+      const results: any[] = [];
+      
+      // Import card generator
+      const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
+      
+      for (const tx of missedTransactions) {
+        const netAmount = parseFloat(tx.netAmount.toString());
+        const walletAddress = tx.walletAddress;
+        const signature = tx.signature;
+        
+        try {
+          // Generate tiered message
+          let claimMessages: string[];
+          if (netAmount >= 4) {
+            claimMessages = ["💥 JACKPOT!", "🏆 Unreal", "⚡ Legendary drop"];
+          } else if (netAmount >= 1) {
+            claimMessages = ["🔥 Hot drop!", "🚨 Big claim", "🏆 On-chain win"];
+          } else if (netAmount >= 0.1) {
+            claimMessages = ["💎 Nice one!", "🪙 That's a sweet claim", "🎯 Boom! 🎯 Hot claim"];
+          } else {
+            claimMessages = ["🚀 Claimed", "🎉 Free SOL claimed", "💥 Another smooth claim"];
+          }
+          
+          const randomMessage = claimMessages[Math.floor(Math.random() * claimMessages.length)];
+          const tweetContent = `${randomMessage} ${netAmount.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
+
+Claimer: ${walletAddress}`;
+          
+          console.log(`📢 Posting ${netAmount} SOL claim from ${tx.processedAt.toISOString().split('T')[0]}...`);
+          
+          // Generate card banner
+          const cardImage = await generateClaimCardBanner({
+            solAmount: netAmount.toString(),
+            walletAddress
+          });
+          
+          // Upload media
+          const uploadResult = await xApiService.uploadMedia(cardImage);
+          let mediaIds: string[] = [];
+          if (uploadResult.success && uploadResult.mediaId) {
+            mediaIds = [uploadResult.mediaId];
+          }
+          
+          // Post tweet
+          const postResult = await xApiService.postTweet({ 
+            content: tweetContent, 
+            postType: 'claim_alert',
+            mediaIds 
+          });
+          
+          if (postResult.success && postResult.tweetId) {
+            // Update database
+            await storage.markTransactionPostedToX(signature, postResult.tweetId);
+            posted++;
+            results.push({
+              signature,
+              amount: netAmount,
+              tweetId: postResult.tweetId,
+              status: 'success'
+            });
+            console.log(`  ✅ Posted! Tweet ID: ${postResult.tweetId}`);
+          } else {
+            failed++;
+            results.push({
+              signature,
+              amount: netAmount,
+              error: postResult.error,
+              status: 'failed'
+            });
+            console.log(`  ❌ Failed: ${postResult.error}`);
+          }
+          
+          // Rate limiting: Wait 2 seconds between posts to avoid spam detection
+          if (missedTransactions.indexOf(tx) < missedTransactions.length - 1) {
+            console.log('  ⏳ Waiting 2 seconds before next post...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+          
+        } catch (error: any) {
+          failed++;
+          results.push({
+            signature,
+            amount: netAmount,
+            error: error.message,
+            status: 'error'
+          });
+          console.error(`  ❌ Error posting ${signature}:`, error.message);
+        }
+      }
+      
+      console.log(`✅ Retroactive posting complete: ${posted} posted, ${failed} failed`);
+      
+      res.json({
+        success: true,
+        message: `Posted ${posted} of ${missedTransactions.length} transactions`,
+        posted,
+        failed,
+        total: missedTransactions.length,
+        results
+      });
+      
+    } catch (error: any) {
+      console.error("Retroactive posting error:", error);
+      res.status(500).json({ error: "Failed to post missed transactions", details: error.message });
     }
   });
   
