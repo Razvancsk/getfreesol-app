@@ -68,8 +68,8 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.
 - **Helius API**: Enhanced RPC provider.
-- **Jupiter Ultra Swap API**: Advanced DEX aggregator with Juno Liquidity Engine.
-- **Jupiter Ultra Holdings API**: Token balance aggregation endpoint.
+- **Jupiter Ultra Swap API**: Advanced DEX aggregator with Juno Liquidity Engine. Uses official api.jup.ag endpoint with API key authentication for dynamic rate limits (50+ req/10s baseline, scales automatically with trading volume).
+- **Jupiter Ultra Holdings API**: Token balance aggregation endpoint via api.jup.ag with authenticated requests.
 - **Jupiter Token List V2 API**: Token metadata provider.
 - **Backpack Exchange API**: Public API for viewing borrow/lend markets and rates.
 - **X (Twitter) API**: OAuth 1.0a flow for account connection and automated social media interactions.

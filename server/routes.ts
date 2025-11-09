@@ -252,6 +252,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Jupiter Ultra Swap - Get Order endpoint (replaces quote + swap)
   app.get("/api/jupiter/ultra/order", async (req, res) => {
     try {
+      if (!process.env.JUPITER_API_KEY) {
+        console.error('❌ JUPITER_API_KEY not configured');
+        return res.status(500).json({ error: 'Jupiter API key not configured' });
+      }
+
       const { inputMint, outputMint, amount, taker } = req.query;
       
       if (!inputMint || !outputMint || !amount) {
@@ -265,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const referralFee = 50; // 0.50% (50 bps)
 
       // Build order URL with referral params
-      const orderUrl = new URL('https://lite-api.jup.ag/ultra/v1/order');
+      const orderUrl = new URL('https://api.jup.ag/ultra/v1/order');
       orderUrl.searchParams.append('inputMint', inputMint as string);
       orderUrl.searchParams.append('outputMint', outputMint as string);
       orderUrl.searchParams.append('amount', amount as string);
@@ -278,7 +283,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🚀 Ultra Swap Order URL:', orderUrl.toString());
       
       const response = await fetch(orderUrl.toString(), {
-        headers: { 'Accept': 'application/json' }
+        headers: { 
+          'Accept': 'application/json',
+          'x-api-key': process.env.JUPITER_API_KEY || ''
+        }
       });
       
       if (!response.ok) {
@@ -354,6 +362,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Jupiter Ultra Swap - Execute Order endpoint (replaces send-transaction)
   app.post("/api/jupiter/ultra/execute", async (req, res) => {
     try {
+      if (!process.env.JUPITER_API_KEY) {
+        console.error('❌ JUPITER_API_KEY not configured');
+        return res.status(500).json({ error: 'Jupiter API key not configured' });
+      }
+
       const { signedTransaction, requestId } = req.body;
       
       if (!signedTransaction || !requestId) {
@@ -362,11 +375,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🚀 Executing Ultra Swap with requestId:', requestId);
 
-      const response = await fetch('https://lite-api.jup.ag/ultra/v1/execute', {
+      const response = await fetch('https://api.jup.ag/ultra/v1/execute', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'x-api-key': process.env.JUPITER_API_KEY || ''
         },
         body: JSON.stringify({
           signedTransaction,
@@ -407,6 +421,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all wallet token accounts with metadata using Jupiter Holdings API
   app.get("/api/wallet/all-tokens", async (req, res) => {
     try {
+      if (!process.env.JUPITER_API_KEY) {
+        console.error('❌ JUPITER_API_KEY not configured');
+        return res.status(500).json({ error: 'Jupiter API key not configured' });
+      }
+
       const { address } = req.query;
       
       if (!address || typeof address !== 'string') {
@@ -414,7 +433,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use Jupiter Ultra Holdings API - returns ALL tokens (standard + Token-2022)
-      const holdingsResponse = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${address}`);
+      const holdingsResponse = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, {
+        headers: {
+          'x-api-key': process.env.JUPITER_API_KEY
+        }
+      });
       
       if (!holdingsResponse.ok) {
         const errorText = await holdingsResponse.text();

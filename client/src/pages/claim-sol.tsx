@@ -239,8 +239,8 @@ export default function SolRefund() {
         return;
       }
       
-      // For other tokens, use Jupiter API
-      const response = await fetch(`https://lite-api.jup.ag/ultra/v1/holdings/${publicKey.toBase58()}`);
+      // For other tokens, use backend proxy with Jupiter API key
+      const response = await fetch(`/api/wallet/all-tokens?address=${publicKey.toBase58()}`);
       
       if (!response.ok) {
         setWalletTokenBalance(0);
@@ -249,12 +249,13 @@ export default function SolRefund() {
       
       const data = await response.json();
       
-      if (data.tokens && data.tokens[tokenMint]) {
-        const tokenAccounts = data.tokens[tokenMint];
-        const totalBalance = tokenAccounts.reduce((sum: number, account: any) => {
-          return sum + (account.uiAmount || 0);
-        }, 0);
-        setWalletTokenBalance(totalBalance);
+      if (data.success && data.tokens) {
+        const matchingToken = data.tokens.find((t: any) => t.address === tokenMint);
+        if (matchingToken) {
+          setWalletTokenBalance(matchingToken.balance);
+        } else {
+          setWalletTokenBalance(0);
+        }
       } else {
         setWalletTokenBalance(0);
       }
