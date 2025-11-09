@@ -1193,8 +1193,8 @@ Claimer: ${walletAddress}`;
             mediaIds 
           });
 
-          if (postResult.success && postResult.postId) {
-            xPostId = postResult.postId;
+          if (postResult.success && postResult.tweetId) {
+            xPostId = postResult.tweetId;
             console.log(`✅ Posted to X successfully! Post ID: ${xPostId}`);
             // Update the transaction ledger to mark as posted
             await storage.markTransactionPostedToX(signature, xPostId);
@@ -1202,7 +1202,7 @@ Claimer: ${walletAddress}`;
             console.error(`❌ X post failed for ${netAmount} SOL claim:`, {
               success: postResult.success,
               error: postResult.error,
-              postId: postResult.postId,
+              tweetId: postResult.tweetId,
               signature
             });
           }
@@ -2582,9 +2582,9 @@ Claimer: ${walletAddress}`;
             mediaIds 
           });
 
-          if (postResult.success && postResult.postId) {
-            console.log(`✅ Posted token burn to X! Post ID: ${postResult.postId}`);
-            await storage.markTransactionPostedToX(signature, postResult.postId);
+          if (postResult.success && postResult.tweetId) {
+            console.log(`✅ Posted token burn to X! Post ID: ${postResult.tweetId}`);
+            await storage.markTransactionPostedToX(signature, postResult.tweetId);
           }
         } catch (xError) {
           console.error('Failed to post token burn to X:', xError);
@@ -3587,9 +3587,9 @@ Claimer: ${walletAddress}`;
               mediaIds 
             });
 
-            if (postResult.success && postResult.postId) {
-              console.log(`✅ Posted NFT burn to X! Post ID: ${postResult.postId}`);
-              await storage.markTransactionPostedToX(signature, postResult.postId);
+            if (postResult.success && postResult.tweetId) {
+              console.log(`✅ Posted NFT burn to X! Post ID: ${postResult.tweetId}`);
+              await storage.markTransactionPostedToX(signature, postResult.tweetId);
             }
           } catch (xError) {
             console.error('Failed to post NFT burn to X:', xError);
