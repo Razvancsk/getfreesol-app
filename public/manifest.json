@@ -28,31 +28,31 @@
   "screenshots": [
     {
       "src": "/screenshots/screenshot-1.png",
-      "sizes": "1920x1080",
+      "sizes": "1080x1920",
       "type": "image/png",
-      "form_factor": "wide",
-      "label": "Scan wallet for empty token accounts"
+      "form_factor": "narrow",
+      "label": "Clean wallet with no empty accounts"
     },
     {
       "src": "/screenshots/screenshot-2.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Reclaim SOL from empty accounts"
+      "label": "Empty token account found - ready to claim"
     },
     {
       "src": "/screenshots/screenshot-3.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Swap tokens with Jupiter"
+      "label": "Confirm transaction to reclaim SOL"
     },
     {
       "src": "/screenshots/screenshot-4.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "View transaction history and stats"
+      "label": "Success! SOL claimed with referral rewards"
     }
   ],
   "shortcuts": [
