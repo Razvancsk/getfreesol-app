@@ -4507,12 +4507,18 @@ export default function SolRefund() {
               </div>
             </div>
             <div className="flex items-center space-x-4 text-xs text-purple-300">
-              <Link href="/privacy-policy">
-                <a className="hover:text-purple-200 hover:underline transition-colors">Privacy Policy</a>
+              <Link 
+                href="/privacy-policy"
+                className="hover:text-purple-200 hover:underline transition-colors"
+              >
+                Privacy Policy
               </Link>
               <span className="text-purple-500">•</span>
-              <Link href="/terms-of-service">
-                <a className="hover:text-purple-200 hover:underline transition-colors">Terms of Service</a>
+              <Link 
+                href="/terms-of-service"
+                className="hover:text-purple-200 hover:underline transition-colors"
+              >
+                Terms of Service
               </Link>
             </div>
           </div>
