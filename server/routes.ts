@@ -6379,6 +6379,92 @@ Claimer: ${walletAddress}`;
     }
   });
   
+  // Post a specific transaction to X by signature
+  app.post("/api/x-bot/post-transaction", async (req, res) => {
+    try {
+      const { signature } = req.body;
+      
+      if (!signature) {
+        return res.status(400).json({ error: 'Transaction signature required' });
+      }
+      
+      // Get transaction from ledger
+      const tx = await db.select()
+        .from(transactionLedger)
+        .where(sql`${transactionLedger.signature} = ${signature}`)
+        .limit(1);
+      
+      if (tx.length === 0) {
+        return res.status(404).json({ error: 'Transaction not found' });
+      }
+      
+      const transaction = tx[0];
+      const netAmount = parseFloat(transaction.netAmount.toString());
+      const walletAddress = transaction.walletAddress;
+      
+      // Generate tiered message
+      let claimMessages: string[];
+      if (netAmount >= 4) {
+        claimMessages = ["💥 JACKPOT!", "🏆 Unreal", "⚡ Legendary drop"];
+      } else if (netAmount >= 1) {
+        claimMessages = ["🔥 Hot drop!", "🚨 Big claim", "🏆 On-chain win"];
+      } else if (netAmount >= 0.1) {
+        claimMessages = ["💎 Nice one!", "🪙 That's a sweet claim", "🎯 Boom! 🎯 Hot claim"];
+      } else {
+        claimMessages = ["🚀 Claimed", "🎉 Free SOL claimed", "💥 Another smooth claim"];
+      }
+      
+      const randomMessage = claimMessages[Math.floor(Math.random() * claimMessages.length)];
+      const tweetContent = `${randomMessage} ${netAmount.toFixed(4)} SOL just got claimed. #GetFreeSol #ClaimSOL #Solana #DeFi #sol
+
+Claimer: ${walletAddress}`;
+      
+      console.log(`📢 Posting ${netAmount} SOL claim...`);
+      
+      // Generate card banner
+      const { generateClaimCardBanner } = await import('./cardBannerGenerator.js');
+      const cardImage = await generateClaimCardBanner({
+        solAmount: netAmount.toString(),
+        walletAddress
+      });
+      
+      // Upload media
+      const uploadResult = await xApiService.uploadMedia(cardImage);
+      let mediaIds: string[] = [];
+      if (uploadResult.success && uploadResult.mediaId) {
+        mediaIds = [uploadResult.mediaId];
+      }
+      
+      // Post tweet
+      const postResult = await xApiService.postTweet({ 
+        content: tweetContent, 
+        postType: 'claim_alert',
+        mediaIds 
+      });
+      
+      if (postResult.success && postResult.tweetId) {
+        // Update database
+        await storage.markTransactionPostedToX(signature, postResult.tweetId);
+        console.log(`✅ Posted! Tweet ID: ${postResult.tweetId}`);
+        
+        res.json({
+          success: true,
+          tweetId: postResult.tweetId,
+          message: `Posted ${netAmount} SOL claim to X`
+        });
+      } else {
+        res.status(500).json({ 
+          success: false,
+          error: postResult.error || 'Failed to post tweet' 
+        });
+      }
+      
+    } catch (error: any) {
+      console.error("Post transaction error:", error);
+      res.status(500).json({ error: "Failed to post transaction", details: error.message });
+    }
+  });
+  
   // Retroactively post all missed transactions >= 0.01 SOL to X
   app.post("/api/x-bot/post-missed-transactions", async (req, res) => {
     try {
