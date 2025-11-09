@@ -4494,32 +4494,15 @@ export default function SolRefund() {
       {/* Footer */}
       <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <div className="flex flex-col items-center justify-center space-y-3">
-            <div className="flex items-center space-x-3">
-              <img 
-                src={logoImage}
-                alt="Get Free Sol"
-                className="h-8 w-8"
-              />
-              <div className="text-center">
-                <div className="text-white font-semibold text-lg">Get Free Sol</div>
-                <div className="text-purple-300 text-sm">2025 All rights reserved</div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4 text-xs text-purple-300">
-              <Link 
-                href="/privacy-policy"
-                className="hover:text-purple-200 hover:underline transition-colors"
-              >
-                Privacy Policy
-              </Link>
-              <span className="text-purple-500">•</span>
-              <Link 
-                href="/terms-of-service"
-                className="hover:text-purple-200 hover:underline transition-colors"
-              >
-                Terms of Service
-              </Link>
+          <div className="flex items-center justify-center space-x-3">
+            <img 
+              src={logoImage}
+              alt="Get Free Sol"
+              className="h-8 w-8"
+            />
+            <div className="text-center">
+              <div className="text-white font-semibold text-lg">Get Free Sol</div>
+              <div className="text-purple-300 text-sm">2025 All rights reserved</div>
             </div>
           </div>
         </div>
