@@ -2216,18 +2216,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Transfer tokens to platform wallet
+          // Convert display balance to raw balance (multiply by 10^decimals)
+          const rawBalance = BigInt(Math.floor(token.balance * Math.pow(10, token.decimals)));
+          
           const transferInstruction = createTransferCheckedInstruction(
             token.account,           // source
             mintPublicKey,           // mint
             platformTokenAccount,     // destination (platform wallet)
             ownerPublicKey,          // owner
-            token.balance,           // amount
+            rawBalance,              // amount (raw balance in smallest units)
             token.decimals,          // decimals
             [],                      // signers
             token.programId          // program ID
           );
           transaction.add(transferInstruction);
-          console.log(`Added TransferChecked instruction for ${token.mint} to platform escrow`);
+          console.log(`Added TransferChecked instruction for ${token.mint} to platform escrow (${rawBalance.toString()} raw units)`);
         }
         
         // Step 2: Close the now-empty account to reclaim SOL immediately
