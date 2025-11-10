@@ -844,6 +844,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid accounts to close - all selected accounts are already closed or don't exist" });
       }
 
+      // Check transaction size limit - Solana has a 1232 byte limit
+      // Each close instruction is ~40 bytes, plus fee transfers ~70 bytes each
+      // Safe limit is 20 accounts per transaction to reliably stay under 1232 bytes
+      const MAX_ACCOUNTS_PER_TX = 20;
+      if (accountsToClose.length > MAX_ACCOUNTS_PER_TX) {
+        return res.status(400).json({ 
+          error: `Too many accounts in a single transaction. The limit is ${MAX_ACCOUNTS_PER_TX} accounts per transaction to stay within Solana's size limits. Please process accounts in smaller batches.`,
+          maxAccounts: MAX_ACCOUNTS_PER_TX,
+          selectedAccounts: accountsToClose.length,
+          suggestion: `Split your ${accountsToClose.length} accounts into ${Math.ceil(accountsToClose.length / MAX_ACCOUNTS_PER_TX)} batches of ${MAX_ACCOUNTS_PER_TX} accounts each.`
+        });
+      }
+
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
@@ -1055,7 +1068,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Prepare transaction error:", error);
-      res.status(500).json({ error: "Failed to prepare transaction" });
+      const errorMessage = error instanceof Error ? error.message : "Failed to prepare transaction";
+      res.status(500).json({ 
+        error: "Failed to prepare transaction",
+        details: errorMessage 
+      });
     }
   });
 

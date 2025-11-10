@@ -120,6 +120,12 @@ export default function SolRefund() {
   // Share modal state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
+  
+  // Batch processing state
+  const [isBatching, setIsBatching] = useState(false);
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const [totalBatches, setTotalBatches] = useState(0);
+  const [batchResults, setBatchResults] = useState<{totalSol: number; totalAccounts: number}>({ totalSol: 0, totalAccounts: 0 });
 
   // Statistics queries for time-filtered data (SOL recovered)
   const { data: stats24h } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
@@ -2373,6 +2379,96 @@ export default function SolRefund() {
 
 
 
+  // Helper to chunk accounts into batches
+  const chunkAccounts = <T,>(array: T[], size: number): T[][] => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  // Process refunds in batches
+  const processRefundBatches = async (allAccounts: string[]) => {
+    const BATCH_SIZE = 20;
+    const batches = chunkAccounts(allAccounts, BATCH_SIZE);
+    
+    setTotalBatches(batches.length);
+    setIsBatching(true);
+    setBatchResults({ totalSol: 0, totalAccounts: 0 });
+    
+    let totalSolRecovered = 0;
+    let totalAccountsClosed = 0;
+    const failedBatches: number[] = [];
+    
+    for (let i = 0; i < batches.length; i++) {
+      setCurrentBatch(i + 1);
+      
+      try {
+        console.log(`Processing batch ${i + 1} of ${batches.length} (${batches[i].length} accounts)`);
+        
+        const result = await refundMutation.mutateAsync({
+          walletAddress: publicKey?.toString() || "",
+          selectedAccounts: batches[i],
+          donationPercentage,
+          referralCode: referralCode || undefined,
+        });
+        
+        // Accumulate results
+        totalSolRecovered += result.totalReceived || 0;
+        totalAccountsClosed += batches[i].length;
+        setBatchResults({ totalSol: totalSolRecovered, totalAccounts: totalAccountsClosed });
+        
+      } catch (error) {
+        console.error(`Batch ${i + 1} failed:`, error);
+        failedBatches.push(i + 1);
+        
+        // Show error for this batch but continue processing
+        toast({
+          title: `Batch ${i + 1} Failed`,
+          description: error instanceof Error ? error.message : "Failed to process this batch",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    // Reset batching state
+    setIsBatching(false);
+    setCurrentBatch(0);
+    setTotalBatches(0);
+    
+    // Show final summary
+    if (failedBatches.length === 0) {
+      toast({
+        title: "All Batches Completed!",
+        description: `Successfully closed ${totalAccountsClosed} accounts and recovered ${totalSolRecovered.toFixed(6)} SOL!`,
+      });
+      
+      // Show share modal with total results
+      setShareData({ solClaimed: totalSolRecovered });
+      setIsShareModalOpen(true);
+      
+      // Reset scan and refresh data
+      setScanResult(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+      queryClient.refetchQueries({ queryKey: ['/api/sol-refund/stats'] });
+      
+      if (publicKey) {
+        queryClient.invalidateQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
+        queryClient.refetchQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/leaderboard'] });
+      queryClient.refetchQueries({ queryKey: ['/api/leaderboard'] });
+    } else {
+      toast({
+        title: "Batching Completed with Errors",
+        description: `Closed ${totalAccountsClosed} accounts (${failedBatches.length} batches failed). Recovered ${totalSolRecovered.toFixed(6)} SOL.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleProcessAllRefunds = () => {
     if (!scanResult || scanResult.accounts.length === 0) {
       toast({
@@ -2383,15 +2479,22 @@ export default function SolRefund() {
       return;
     }
 
-    // Process all found empty accounts
+    // Get all account addresses
     const allAccountAddresses = scanResult.accounts.map(acc => acc.accountAddress);
-
-    refundMutation.mutate({
-      walletAddress: publicKey?.toString() || "",
-      selectedAccounts: allAccountAddresses,
-      donationPercentage,
-      referralCode: referralCode || undefined,
-    });
+    
+    // Check if batching is needed
+    if (allAccountAddresses.length > 20) {
+      // Use batching for large account sets
+      processRefundBatches(allAccountAddresses);
+    } else {
+      // Single transaction for 20 or fewer accounts
+      refundMutation.mutate({
+        walletAddress: publicKey?.toString() || "",
+        selectedAccounts: allAccountAddresses,
+        donationPercentage,
+        referralCode: referralCode || undefined,
+      });
+    }
   };
 
   const handleBurnToken = (tokenMint: string) => {
@@ -2820,19 +2923,40 @@ export default function SolRefund() {
 
 
 
+                  {/* Batch Processing Progress */}
+                  {isBatching && (
+                    <div className="bg-gradient-to-br from-blue-800/20 to-blue-900/30 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between text-white">
+                        <span className="font-semibold">Processing Batches</span>
+                        <span className="text-sm">Batch {currentBatch} of {totalBatches}</span>
+                      </div>
+                      <Progress value={(currentBatch / totalBatches) * 100} className="h-2" />
+                      <div className="text-sm text-blue-200">
+                        <div>Closed: {batchResults.totalAccounts} accounts</div>
+                        <div>Recovered: {batchResults.totalSol.toFixed(6)} SOL</div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Process Button */}
                   <Button 
                     onClick={handleProcessAllRefunds}
-                    disabled={refundMutation.isPending}
+                    disabled={refundMutation.isPending || isBatching}
                     size="lg"
                     className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                    data-testid="button-claim-all"
                   >
-                    {refundMutation.isPending ? (
-                      <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                    {(refundMutation.isPending || isBatching) ? (
+                      <>
+                        <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                        {isBatching ? `Processing Batch ${currentBatch}/${totalBatches}...` : 'Processing...'}
+                      </>
                     ) : (
-                      <CheckCircle className="h-5 w-5 mr-2" />
+                      <>
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        CLAIM ALL
+                      </>
                     )}
-                    CLAIM ALL
                   </Button>
                 </div>
               ) : (
