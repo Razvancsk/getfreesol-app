@@ -860,35 +860,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction to close token accounts
       const transaction = new Transaction();
       
-      // Add close account instructions for each empty account
-      const { createCloseAccountInstruction } = await import('@solana/spl-token');
+      // Add close account instructions for each empty account with validation
+      const { createCloseAccountInstruction, AccountLayout } = await import('@solana/spl-token');
+      
+      const validAccountsForTx = [];
+      const skippedAccounts = [];
       
       for (const account of accountsToClose) {
         const accountPublicKey = new PublicKey(account.accountAddress);
         const ownerPublicKey = new PublicKey(walletAddress);
         
-        // Detect if account is Token-2022 or standard Token Program
-        let programId = TOKEN_PROGRAM_ID;
         try {
+          // Get account info and validate it can be closed
           const accountInfo = await connection.getAccountInfo(accountPublicKey);
-          if (accountInfo && accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
-            programId = TOKEN_2022_PROGRAM_ID;
-            console.log(`Account ${account.accountAddress} uses Token-2022`);
+          
+          if (!accountInfo) {
+            console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - account no longer exists`);
+            skippedAccounts.push({ address: account.accountAddress, reason: 'Account does not exist' });
+            continue;
           }
+          
+          // Detect program ID
+          let programId = TOKEN_PROGRAM_ID;
+          if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+            programId = TOKEN_2022_PROGRAM_ID;
+            console.log(`Account ${account.accountAddress.substring(0, 8)}... uses Token-2022`);
+          } else if (!accountInfo.owner.equals(TOKEN_PROGRAM_ID)) {
+            console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - not a token account (owner: ${accountInfo.owner.toString()})`);
+            skippedAccounts.push({ address: account.accountAddress, reason: 'Not a token account' });
+            continue;
+          }
+          
+          // Parse token account data to validate ownership and balance
+          try {
+            const tokenAccountData = AccountLayout.decode(accountInfo.data);
+            const accountOwner = new PublicKey(tokenAccountData.owner);
+            const tokenBalance = Number(tokenAccountData.amount);
+            
+            // Verify the account owner matches the wallet
+            if (!accountOwner.equals(ownerPublicKey)) {
+              console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - owner mismatch (expected ${walletAddress.substring(0, 8)}..., got ${accountOwner.toString().substring(0, 8)}...)`);
+              skippedAccounts.push({ address: account.accountAddress, reason: 'Account owner does not match wallet' });
+              continue;
+            }
+            
+            // Verify balance is actually 0
+            if (tokenBalance !== 0) {
+              console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - balance is not 0 (has ${tokenBalance} tokens)`);
+              skippedAccounts.push({ address: account.accountAddress, reason: `Has ${tokenBalance} tokens, not empty` });
+              continue;
+            }
+            
+            console.log(`✅ Validated ${account.accountAddress.substring(0, 8)}... - can be closed`);
+          } catch (parseError) {
+            console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - could not parse account data:`, parseError);
+            skippedAccounts.push({ address: account.accountAddress, reason: 'Invalid account data structure' });
+            continue;
+          }
+          
+          // Account is valid, add close instruction
+          const closeInstruction = createCloseAccountInstruction(
+            accountPublicKey,
+            ownerPublicKey, // destination (user receives SOL)
+            ownerPublicKey, // owner
+            [],             // no multisig
+            programId       // correct program ID
+          );
+          
+          transaction.add(closeInstruction);
+          validAccountsForTx.push(account);
+          
         } catch (error) {
-          console.log(`Could not detect program for ${account.accountAddress}, using default`);
+          console.log(`⚠️ Error validating ${account.accountAddress.substring(0, 8)}...:`, error);
+          skippedAccounts.push({ address: account.accountAddress, reason: `Validation error: ${error.message}` });
         }
-        
-        const closeInstruction = createCloseAccountInstruction(
-          accountPublicKey,
-          ownerPublicKey, // destination (user receives SOL)
-          ownerPublicKey, // owner
-          [],             // no multisig
-          programId       // correct program ID
-        );
-        
-        transaction.add(closeInstruction);
       }
+      
+      console.log(`📊 Transaction will close ${validAccountsForTx.length} accounts, skipped ${skippedAccounts.length} problematic accounts`);
+      
+      if (validAccountsForTx.length === 0) {
+        return res.status(400).json({ 
+          error: "None of the selected accounts can be closed",
+          skippedAccounts,
+          details: "All accounts were skipped due to validation errors. They may already be closed, have the wrong owner, or contain tokens."
+        });
+      }
+
+      // IMPORTANT: Recalculate totalRecoveredLamports based only on VALID accounts
+      // If some accounts were skipped, we need to update the total
+      let actualRecoveredLamports = 0;
+      for (const accountInfo of accountInfos) {
+        // Check if this account is in the validAccountsForTx list
+        if (validAccountsForTx.some(va => va.accountAddress === accountInfo.accountAddress)) {
+          actualRecoveredLamports += accountInfo.lamports;
+        }
+      }
+      
+      console.log(`💰 Actual SOL to recover: ${actualRecoveredLamports} lamports (originally ${totalRecoveredLamports} from all selected accounts)`);
 
       // Get recent blockhash for fee estimation
       const { blockhash } = await connection.getLatestBlockhash();
@@ -925,14 +993,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Calculate fees in lamports - use partner's fee or default to 15%
+      // Calculate fees in lamports based on ACTUAL recovered amount (not original total)
+      // Use partner's fee or default to 15%
       const PLATFORM_FEE_PERCENTAGE = feePercentage || donationPercentage || 15; // Partner's fee or fallback to 15%
-      const totalFeeLamports = Math.floor(totalRecoveredLamports * (PLATFORM_FEE_PERCENTAGE / 100));
+      const totalFeeLamports = Math.floor(actualRecoveredLamports * (PLATFORM_FEE_PERCENTAGE / 100));
       
       let referralFeeLamports = 0;
       let platformFeeLamports = totalFeeLamports;
       
-      console.log(`Fee calculation: recovered=${totalRecoveredLamports} lamports, total fee=${totalFeeLamports} lamports (${PLATFORM_FEE_PERCENTAGE}%)`);
+      console.log(`Fee calculation: actualRecovered=${actualRecoveredLamports} lamports (originally ${totalRecoveredLamports}), total fee=${totalFeeLamports} lamports (${PLATFORM_FEE_PERCENTAGE}%)`);
       
       // Check referral/developer fee wallet BEFORE calculating final fees
       let referralWalletExists = false;
@@ -989,8 +1058,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Calculate net amount after platform fees only
-      const netLamports = Math.max(0, totalRecoveredLamports - totalFeeLamports);
+      // Calculate net amount after platform fees (using actual recovered lamports)
+      const netLamports = Math.max(0, actualRecoveredLamports - totalFeeLamports);
       
       // Add fee transfer instructions AFTER close instructions
       // Fees are paid from SOL recovered by closing accounts
@@ -1040,8 +1109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
       const transactionBase64 = serializedTransaction.toString('base64');
 
-      // Convert lamports to SOL for response
-      const totalSolReclaimed = totalRecoveredLamports / 1e9;
+      // Convert lamports to SOL for response (use ACTUAL recovered amount from valid accounts)
+      const totalSolReclaimed = actualRecoveredLamports / 1e9;
       const totalFeeAmount = totalFeeLamports / 1e9;
       const platformFeeAmount = platformFeeLamports / 1e9;
       const referralFeeAmount = referralFeeLamports / 1e9;
@@ -1050,13 +1119,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         transaction: transactionBase64,
-        message: `Prepared transaction to close ${accountsToClose.length} accounts`,
+        message: `Prepared transaction to close ${validAccountsForTx.length} accounts` + 
+                 (skippedAccounts.length > 0 ? ` (${skippedAccounts.length} accounts skipped due to validation errors)` : ''),
         totalSolReclaimed: totalSolReclaimed,
         feeAmount: totalFeeAmount,
         platformFeeAmount: platformFeeAmount,
         referralFeeAmount: referralFeeAmount,
         netAmount: netAmount,
         referralCodeUsed: referralCode || null,
+        accountsProcessed: validAccountsForTx.length,
+        accountsSkipped: skippedAccounts.length,
+        skippedAccounts: skippedAccounts.length > 0 ? skippedAccounts : undefined,
         feeInfo: {
           feePercentage: PLATFORM_FEE_PERCENTAGE,
           totalFeeLamports: totalFeeLamports,
