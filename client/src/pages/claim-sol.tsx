@@ -81,6 +81,27 @@ interface RefundStats {
   recentTransactions: TransactionRecord[];
 }
 
+interface PendingTokenBurn {
+  id: string;
+  walletAddress: string;
+  tokenMint: string;
+  tokenSymbol: string | null;
+  tokenName: string | null;
+  tokenLogo: string | null;
+  amount: string;
+  decimals: number;
+  rentSolReclaimed: string;
+  platformFee: string;
+  referralFee: string;
+  netAmount: string;
+  gracePeriodMinutes: number;
+  status: string;
+  initialBurnSignature: string;
+  createdAt: string;
+  expiresAt?: string;
+  timeRemainingMs?: number;
+}
+
 export default function SolRefund() {
   const queryClient = useQueryClient();
   const wallet = useWallet();
@@ -858,16 +879,19 @@ export default function SolRefund() {
     },
     onSuccess: (result) => {
       toast({
-        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''} and recovered ${result.netAmount} SOL!`,
-        description: `Transaction: ${result.signature.substring(0, 8)}...`,
-        className: "bg-green-600 text-white border-green-600",
+        title: `Tokens in Escrow! 2-Minute Grace Period Active`,
+        description: `${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''} transferred to escrow. You have 2 minutes to claim back if needed.`,
+        className: "bg-amber-600 text-white border-amber-600",
       });
       // Clear selections and refresh
       setSelectedTokens(new Set());
       if (publicKey) {
         scanTokensMutation.mutate(publicKey.toString());
       }
-      // Refresh stats to show updated totals
+      // Refresh pending burns and stats
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0]?.toString().startsWith('/api/tokens/pending-burns/') ?? false
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
     },
     onError: (error) => {
@@ -875,6 +899,89 @@ export default function SolRefund() {
       toast({
         title: "Error",
         description: "Failed to burn tokens. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Pending Burns Query (Grace Period)
+  const { data: pendingBurnsData } = useQuery<{ success: boolean; pendingBurns: PendingTokenBurn[] }>({
+    queryKey: [`/api/tokens/pending-burns/${publicKey?.toString()}`],
+    enabled: !!publicKey && activeTab === 'burnTokens',
+    refetchInterval: 1000, // Refresh every second for countdown
+  });
+
+  const pendingBurns = pendingBurnsData?.pendingBurns || [];
+
+  // Claim Back Mutation (recover tokens during grace period)
+  const claimBackMutation = useMutation({
+    mutationFn: async (pendingBurnId: string) => {
+      const response = await fetch('/api/tokens/claim-back', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pendingBurnId,
+          walletAddress: publicKey?.toString()
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to prepare claim-back transaction');
+      }
+
+      const { transaction, rentCost } = await response.json();
+
+      // Sign and send transaction
+      const { Connection, Transaction } = await import('@solana/web3.js');
+
+      const heliusResponse = await fetch('/api/helius-config');
+      const rpcConfig = await heliusResponse.json();
+
+      const connection = new Connection(
+        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
+        'confirmed'
+      );
+
+      const txBuffer = Buffer.from(transaction, 'base64');
+      const tx = Transaction.from(txBuffer);
+
+      const signedTx = await signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+
+      await connection.confirmTransaction(signature, 'confirmed');
+
+      // Record the claim-back
+      const recordResponse = await fetch('/api/tokens/record-claim-back', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signature,
+          pendingBurnId
+        })
+      });
+
+      if (!recordResponse.ok) {
+        console.error('Failed to record claim-back:', await recordResponse.text());
+      }
+
+      return { signature, rentCost };
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Tokens Claimed Back!",
+        description: `Successfully recovered your tokens. Paid ${result.rentCost} SOL rent.`,
+        className: "bg-green-600 text-white border-green-600",
+      });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0]?.toString().startsWith('/api/tokens/pending-burns/') ?? false
+      });
+    },
+    onError: (error) => {
+      console.error('Error claiming back tokens:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to claim back tokens",
         variant: "destructive",
       });
     },
@@ -2970,6 +3077,109 @@ export default function SolRefund() {
               )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* Pending Token Burns (Grace Period) */}
+          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && pendingBurns.length > 0 && (
+            <div className="bg-gradient-to-br from-amber-800/30 to-orange-900/40 backdrop-blur-sm rounded-xl border-2 border-amber-500/40 p-6 mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <RefreshCw className="h-5 w-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-white">Grace Period Active</h3>
+                  <p className="text-sm text-amber-200">You have {pendingBurns.length} token{pendingBurns.length > 1 ? 's' : ''} in escrow. Claim back within 2 minutes!</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {pendingBurns.map((burn) => {
+                  const timeRemaining = burn.timeRemainingMs || 0;
+                  const seconds = Math.floor(timeRemaining / 1000);
+                  const isExpiring = seconds < 30;
+                  
+                  return (
+                    <div 
+                      key={burn.id}
+                      className={`relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                        isExpiring 
+                          ? 'bg-red-900/40 border-red-500 animate-pulse' 
+                          : 'bg-amber-900/20 border-amber-500/30'
+                      }`}
+                    >
+                      {/* Token Icon */}
+                      <div className="flex-shrink-0">
+                        {burn.tokenLogo ? (
+                          <img 
+                            src={burn.tokenLogo} 
+                            alt={burn.tokenSymbol || 'Token'} 
+                            className="w-12 h-12 rounded-full"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-amber-600/30 flex items-center justify-center">
+                            <Coins className="h-6 w-6 text-amber-300" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Token Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-lg font-semibold text-white truncate">
+                          {burn.tokenSymbol || burn.tokenName || 'Unknown Token'}
+                        </div>
+                        <div className="text-sm text-amber-200">
+                          Amount: {(parseFloat(burn.amount) / Math.pow(10, burn.decimals)).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-amber-300 font-mono truncate">
+                          {burn.tokenMint.slice(0, 8)}...{burn.tokenMint.slice(-8)}
+                        </div>
+                      </div>
+
+                      {/* Countdown Timer */}
+                      <div className="flex-shrink-0 text-center min-w-[100px]">
+                        <div className={`text-2xl font-bold ${isExpiring ? 'text-red-400' : 'text-amber-400'}`}>
+                          {seconds > 0 ? `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}` : '0:00'}
+                        </div>
+                        <div className="text-xs text-amber-300">
+                          {seconds > 0 ? 'remaining' : 'EXPIRED'}
+                        </div>
+                      </div>
+
+                      {/* Claim Back Button */}
+                      <div className="flex-shrink-0">
+                        <Button
+                          onClick={() => claimBackMutation.mutate(burn.id)}
+                          disabled={seconds <= 0 || claimBackMutation.isPending}
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          data-testid={`button-claim-back-${burn.id}`}
+                        >
+                          {claimBackMutation.isPending ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                              Claiming...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4" />
+                              Claim Back
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 p-3 bg-amber-900/20 rounded-lg border border-amber-500/20">
+                <p className="text-sm text-amber-200">
+                  <strong className="text-amber-400">Note:</strong> Claiming back requires paying the rent ({pendingBurns[0]?.rentSolReclaimed || '~0.002'} SOL) to recreate the token account. After the grace period expires, tokens will be permanently burned.
+                </p>
+              </div>
             </div>
           )}
 

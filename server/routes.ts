@@ -2660,6 +2660,329 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pending token burns for a wallet (grace period)
+  app.get("/api/tokens/pending-burns/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const pendingBurns = await storage.getPendingTokenBurnsByWallet(walletAddress);
+      
+      res.json({
+        success: true,
+        pendingBurns: pendingBurns.map(burn => ({
+          ...burn,
+          expiresAt: new Date(new Date(burn.createdAt).getTime() + burn.gracePeriodMinutes * 60 * 1000),
+          timeRemainingMs: Math.max(0, new Date(burn.createdAt).getTime() + burn.gracePeriodMinutes * 60 * 1000 - Date.now())
+        }))
+      });
+    } catch (error) {
+      console.error("Error fetching pending burns:", error);
+      res.status(500).json({ error: "Failed to fetch pending burns" });
+    }
+  });
+
+  // Claim back tokens during grace period
+  app.post("/api/tokens/claim-back", async (req, res) => {
+    try {
+      const { pendingBurnId, walletAddress } = req.body;
+      
+      if (!pendingBurnId || !walletAddress) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // Get the pending burn record
+      const pendingBurn = await storage.getPendingTokenBurnById(pendingBurnId);
+      
+      if (!pendingBurn) {
+        return res.status(404).json({ error: "Pending burn not found" });
+      }
+      
+      if (pendingBurn.walletAddress !== walletAddress) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      
+      if (pendingBurn.status !== 'pending') {
+        return res.status(400).json({ error: `Cannot claim back - status is ${pendingBurn.status}` });
+      }
+      
+      // Check if grace period has expired
+      const expiresAt = new Date(pendingBurn.createdAt).getTime() + pendingBurn.gracePeriodMinutes * 60 * 1000;
+      if (Date.now() > expiresAt) {
+        return res.status(400).json({ error: "Grace period has expired" });
+      }
+      
+      // Use Helius RPC
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      // Load platform wallet keypair from private key
+      const platformPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
+      if (!platformPrivateKey) {
+        return res.status(500).json({ error: "Platform wallet not configured" });
+      }
+      
+      const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const platformKeypair = Keypair.fromSecretKey(
+        Buffer.from(platformPrivateKey, 'base64')
+      );
+      
+      // Verify the keypair matches the expected platform wallet
+      if (platformKeypair.publicKey.toBase58() !== PLATFORM_WALLET) {
+        console.error('Platform keypair mismatch!', platformKeypair.publicKey.toBase58(), 'vs', PLATFORM_WALLET);
+        return res.status(500).json({ error: "Platform wallet configuration error" });
+      }
+      
+      const userPublicKey = new PublicKey(walletAddress);
+      const mintPublicKey = new PublicKey(pendingBurn.tokenMint);
+      
+      // Determine if this is Token-2022 or standard Token Program
+      const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
+      const programId = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+      
+      // Get platform's token account (holds the escrowed tokens)
+      const platformTokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        platformKeypair.publicKey,
+        false,
+        programId
+      );
+      
+      // Create transaction
+      const transaction = new Transaction();
+      
+      // Add priority fee
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: 10000
+        })
+      );
+      
+      // Create user's token account (they need to pay rent to get tokens back)
+      const userTokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        userPublicKey,
+        false,
+        programId
+      );
+      
+      // Check if user's token account exists
+      const userAccountInfo = await connection.getAccountInfo(userTokenAccount);
+      if (!userAccountInfo) {
+        // User needs to create the account (pays rent)
+        transaction.add(
+          createAssociatedTokenAccountInstruction(
+            userPublicKey,           // payer (user pays rent)
+            userTokenAccount,         // account to create
+            userPublicKey,            // owner
+            mintPublicKey,            // mint
+            programId                 // program ID
+          )
+        );
+        console.log(`Added create ATA instruction for user ${walletAddress}`);
+      }
+      
+      // Transfer tokens from platform wallet back to user
+      transaction.add(
+        createTransferCheckedInstruction(
+          platformTokenAccount,      // source (platform wallet)
+          mintPublicKey,             // mint
+          userTokenAccount,          // destination (user)
+          platformKeypair.publicKey, // owner (platform wallet)
+          BigInt(pendingBurn.amount), // amount
+          pendingBurn.decimals,      // decimals
+          [],                        // signers
+          programId                  // program ID
+        )
+      );
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = userPublicKey;
+      
+      // Platform wallet signs the transaction (to authorize token transfer)
+      transaction.partialSign(platformKeypair);
+      
+      // Serialize transaction for user to sign
+      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+      const transactionBase64 = serializedTransaction.toString('base64');
+      
+      res.json({
+        success: true,
+        transaction: transactionBase64,
+        message: `Ready to claim back ${pendingBurn.tokenSymbol}. You'll pay the rent (${pendingBurn.rentSolReclaimed} SOL) to recreate the account.`,
+        rentCost: pendingBurn.rentSolReclaimed
+      });
+      
+    } catch (error) {
+      console.error("Error creating claim-back transaction:", error);
+      res.status(500).json({ error: "Failed to create claim-back transaction" });
+    }
+  });
+
+  // Record successful claim-back transaction
+  app.post("/api/tokens/record-claim-back", async (req, res) => {
+    try {
+      const { signature, pendingBurnId } = req.body;
+      
+      if (!signature || !pendingBurnId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // Update pending burn status
+      await storage.updatePendingBurnStatus(pendingBurnId, 'claimed_back', signature);
+      
+      res.json({
+        success: true,
+        message: "Tokens successfully claimed back!"
+      });
+    } catch (error) {
+      console.error("Error recording claim-back:", error);
+      res.status(500).json({ error: "Failed to record claim-back" });
+    }
+  });
+
+  // Execute permanent burn after grace period
+  app.post("/api/tokens/execute-burn", async (req, res) => {
+    try {
+      const { pendingBurnId } = req.body;
+      
+      if (!pendingBurnId) {
+        return res.status(400).json({ error: "Missing pending burn ID" });
+      }
+      
+      // Get the pending burn record
+      const pendingBurn = await storage.getPendingTokenBurnById(pendingBurnId);
+      
+      if (!pendingBurn) {
+        return res.status(404).json({ error: "Pending burn not found" });
+      }
+      
+      if (pendingBurn.status !== 'pending') {
+        return res.status(400).json({ error: `Cannot execute - status is ${pendingBurn.status}` });
+      }
+      
+      // Check if grace period has expired
+      const expiresAt = new Date(pendingBurn.createdAt).getTime() + pendingBurn.gracePeriodMinutes * 60 * 1000;
+      if (Date.now() <= expiresAt) {
+        return res.status(400).json({ error: "Grace period has not expired yet" });
+      }
+      
+      // Use Helius RPC
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      // Load platform wallet keypair
+      const platformPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
+      if (!platformPrivateKey) {
+        return res.status(500).json({ error: "Platform wallet not configured" });
+      }
+      
+      const platformKeypair = Keypair.fromSecretKey(
+        Buffer.from(platformPrivateKey, 'base64')
+      );
+      
+      const mintPublicKey = new PublicKey(pendingBurn.tokenMint);
+      
+      // Determine program ID
+      const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
+      const programId = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+      
+      // Get platform's token account
+      const platformTokenAccount = await getAssociatedTokenAddress(
+        mintPublicKey,
+        platformKeypair.publicKey,
+        false,
+        programId
+      );
+      
+      // Create transaction to burn tokens from platform wallet
+      const transaction = new Transaction();
+      
+      // Add priority fee
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: 10000
+        })
+      );
+      
+      // Burn tokens
+      const isToken2022 = programId.equals(TOKEN_2022_PROGRAM_ID);
+      const burnInstruction = isToken2022
+        ? createBurnCheckedInstruction(
+            platformTokenAccount,
+            mintPublicKey,
+            platformKeypair.publicKey,
+            BigInt(pendingBurn.amount),
+            pendingBurn.decimals,
+            [],
+            TOKEN_2022_PROGRAM_ID
+          )
+        : createBurnInstruction(
+            platformTokenAccount,
+            mintPublicKey,
+            platformKeypair.publicKey,
+            BigInt(pendingBurn.amount)
+          );
+      
+      transaction.add(burnInstruction);
+      
+      // Close the platform's token account
+      transaction.add(
+        createCloseAccountInstruction(
+          platformTokenAccount,
+          platformKeypair.publicKey, // SOL goes to platform wallet
+          platformKeypair.publicKey,
+          [],
+          programId
+        )
+      );
+      
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = platformKeypair.publicKey;
+      
+      // Sign and send transaction
+      transaction.sign(platformKeypair);
+      
+      const signature = await connection.sendRawTransaction(transaction.serialize());
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      // Update pending burn status
+      await storage.updatePendingBurnStatus(pendingBurnId, 'executed', signature);
+      
+      // Create final token burn record
+      await storage.createTokenBurnRecord({
+        signature,
+        walletAddress: pendingBurn.walletAddress,
+        tokenMint: pendingBurn.tokenMint,
+        tokenSymbol: pendingBurn.tokenSymbol || 'UNKNOWN',
+        tokenName: pendingBurn.tokenName || 'Unknown Token',
+        amountBurned: pendingBurn.amount,
+        solRecovered: pendingBurn.rentSolReclaimed
+      });
+      
+      res.json({
+        success: true,
+        signature,
+        message: "Tokens permanently burned after grace period expired"
+      });
+      
+    } catch (error) {
+      console.error("Error executing burn:", error);
+      res.status(500).json({ error: "Failed to execute burn" });
+    }
+  });
+
   // Scan wallet for NFTs
   app.get("/api/nfts/scan/:address", async (req, res) => {
     try {
