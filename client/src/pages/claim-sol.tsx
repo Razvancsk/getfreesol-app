@@ -43,8 +43,6 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountIn
 import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
-import { BurnConfirmationModal } from '@/components/BurnConfirmationModal';
-import { useBurnConfirmation } from '@/hooks/useBurnConfirmation';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 
@@ -208,24 +206,6 @@ export default function SolRefund() {
   }, [tokenList]);
 
   const { toast } = useToast();
-
-  // Burn confirmation hooks for tokens and NFTs
-  const tokenBurnConfirmation = useBurnConfirmation({
-    type: 'token',
-    onConfirm: () => {
-      // Actually perform the burn after confirmation
-      bulkBurnTokensMutation.mutate(Array.from(selectedTokens));
-    },
-  });
-
-  const nftBurnConfirmation = useBurnConfirmation({
-    type: 'nft',
-    onConfirm: () => {
-      // Actually perform the NFT burn after confirmation
-      const selectedIds = Array.from(selectedNfts);
-      burnNftsMutation.mutate(selectedIds);
-    },
-  });
   const [location] = useLocation();
 
   // Wallet adapter state - Move this early so publicKey is available
@@ -3124,23 +3104,7 @@ export default function SolRefund() {
 
                 {/* Burn Button */}
                 <Button
-                  onClick={() => {
-                    // Prepare asset data for confirmation modal
-                    const selectedTokenData = tokenList.filter(token => selectedTokens.has(token.mint));
-                    const burnAssets = selectedTokenData.map(token => ({
-                      name: token.name || token.symbol || 'Unknown Token',
-                      symbol: token.symbol,
-                      amount: token.balance?.toLocaleString(),
-                      solValue: 0.002, // Rent recovery per account (fixed)
-                      usdValue: token.usdValue || 0, // Market value of tokens being burned
-                      mint: token.mint,
-                    }));
-                    const totalSol = selectedTokens.size * 0.002 * 0.85; // Net rent recovery after 15% fee
-                    const totalUsd = selectedTokenData.reduce((sum: number, token: any) => sum + (token.usdValue || 0), 0);
-                    
-                    // Show confirmation modal with actual values
-                    tokenBurnConfirmation.requestConfirmation(burnAssets, totalSol, totalUsd);
-                  }}
+                  onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
                   disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   data-testid="button-burn-selected-tokens"
@@ -3386,16 +3350,17 @@ export default function SolRefund() {
                           selectedIds.includes(nft.mint || nft.id || nft.assetId)
                         );
                         
-                        // Prepare asset data for confirmation modal
-                        const burnAssets = selectedNftData.map((nft: any) => ({
-                          name: nft.name || 'Unknown NFT',
-                          solValue: nft.type === 'core' ? 0.004 : (nft.type === 'pnft' || nft.type === 'programmable') ? 0.01 : 0.002,
-                          mint: nft.mint || nft.id || nft.assetId,
-                        }));
-                        const totalSol = burnAssets.reduce((sum: number, asset: any) => sum + (asset.solValue || 0), 0) * 0.85; // Net after 15% fee
-                        
-                        // Show confirmation modal
-                        nftBurnConfirmation.requestConfirmation(burnAssets, totalSol, 0);
+                        // Group by type and burn
+                        const nftsByType: { [key: string]: any[] } = {};
+                        selectedNftData.forEach((nft: any) => {
+                          if (!nftsByType[nft.type]) {
+                            nftsByType[nft.type] = [];
+                          }
+                          nftsByType[nft.type].push(nft);
+                        });
+
+                        // Call burn mutation with selected NFT IDs
+                        burnNftsMutation.mutate(selectedIds);
                       }}
                       disabled={selectedNfts.size === 0 || burnNftsMutation.isPending || !publicKey}
                       className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -4681,26 +4646,6 @@ export default function SolRefund() {
           referralCode={userReferralCode}
         />
       )}
-
-      {/* Burn Confirmation Modals */}
-      <BurnConfirmationModal
-        isOpen={tokenBurnConfirmation.isOpen}
-        onClose={tokenBurnConfirmation.handleClose}
-        onConfirm={tokenBurnConfirmation.handleConfirm}
-        assets={tokenBurnConfirmation.assets}
-        type={tokenBurnConfirmation.type}
-        totalSolValue={tokenBurnConfirmation.totalSolValue}
-        totalUsdValue={tokenBurnConfirmation.totalUsdValue}
-      />
-      <BurnConfirmationModal
-        isOpen={nftBurnConfirmation.isOpen}
-        onClose={nftBurnConfirmation.handleClose}
-        onConfirm={nftBurnConfirmation.handleConfirm}
-        assets={nftBurnConfirmation.assets}
-        type={nftBurnConfirmation.type}
-        totalSolValue={nftBurnConfirmation.totalSolValue}
-        totalUsdValue={nftBurnConfirmation.totalUsdValue}
-      />
 
       {/* Floating Swap Toggle Button */}
       <button
