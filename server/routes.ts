@@ -5126,6 +5126,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limitNum = parseInt(limit as string, 10) || 10;
       const leaderboard = await storage.getLeaderboard(sinceTimestamp, limitNum);
 
+      // Prevent caching to ensure fresh data for each time period
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
       res.json({
         success: true,
         period,

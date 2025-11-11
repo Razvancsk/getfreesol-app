@@ -530,6 +530,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLeaderboard(sinceTimestamp: Date | null, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>> {
+    console.log('📊 getLeaderboard called with:', {
+      sinceTimestamp: sinceTimestamp?.toISOString(),
+      limit,
+      hoursAgo: sinceTimestamp ? (Date.now() - sinceTimestamp.getTime()) / (1000 * 60 * 60) : null
+    });
+    
     let query = db
       .select({
         walletAddress: transactionLedger.walletAddress,
@@ -545,6 +551,11 @@ export class DatabaseStorage implements IStorage {
       .groupBy(transactionLedger.walletAddress)
       .orderBy(sql`sum(${transactionLedger.solRecovered}) desc`)
       .limit(limit);
+    
+    console.log(`📊 Leaderboard result: ${result.length} addresses found`);
+    if (result.length > 0) {
+      console.log('📊 Top address:', result[0]);
+    }
     
     return result.map(row => ({
       walletAddress: row.walletAddress,
