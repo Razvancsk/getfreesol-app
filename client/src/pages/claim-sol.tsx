@@ -93,7 +93,7 @@ export default function SolRefund() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'lend'>('reclaim');
-  const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly'>('24h');
+  const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -3698,10 +3698,20 @@ export default function SolRefund() {
                         >
                           Monthly
                         </Button>
+                        <Button
+                          data-testid="leaderboard-filter-all"
+                          size="sm"
+                          onClick={() => setSelectedLeaderboardPeriod('all')}
+                          className={selectedLeaderboardPeriod === 'all' 
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
+                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
+                        >
+                          All Time
+                        </Button>
                       </div>
                     </div>
                     <CardDescription className="text-purple-200">
-                      Addresses that recovered the most rent ({selectedLeaderboardPeriod === '24h' ? 'last 24 hours' : selectedLeaderboardPeriod === 'weekly' ? 'last 7 days' : 'last 30 days'})
+                      Addresses that recovered the most rent ({selectedLeaderboardPeriod === '24h' ? 'last 24 hours' : selectedLeaderboardPeriod === 'weekly' ? 'last 7 days' : selectedLeaderboardPeriod === 'monthly' ? 'last 30 days' : 'all time'})
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
