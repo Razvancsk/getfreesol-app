@@ -3183,7 +3183,14 @@ export default function SolRefund() {
                           {burn.tokenSymbol || burn.tokenName || 'Unknown Token'}
                         </div>
                         <div className="text-sm text-amber-200">
-                          Amount: {parseFloat(burn.amount).toLocaleString()} {burn.tokenSymbol || ''}
+                          Amount: {(() => {
+                            const amt = parseFloat(burn.amount);
+                            // Format with up to 6 decimals, removing trailing zeros
+                            return amt.toLocaleString(undefined, { 
+                              minimumFractionDigits: 0, 
+                              maximumFractionDigits: 6 
+                            });
+                          })()} {burn.tokenSymbol || ''}
                         </div>
                         <div className="text-xs text-amber-300 font-mono truncate">
                           {burn.tokenMint.slice(0, 8)}...{burn.tokenMint.slice(-8)}
