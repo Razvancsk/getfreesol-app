@@ -743,6 +743,27 @@ export default function SolRefund() {
       }
       console.log('Transaction confirmed successfully!');
 
+      // Build tokenDetails from tokenList metadata
+      const tokenData = tokenList.find(t => t.mint === tokenMint);
+      const tokenDetails = tokenData ? [{
+        symbol: tokenData.symbol || 'UNKNOWN',
+        name: tokenData.name || 'Unknown Token',
+        logo: tokenData.logo || null,
+        amount: (() => {
+          const decimals = tokenData.decimals || 0;
+          const rawBalance = typeof tokenData.balance === 'string' ? parseFloat(tokenData.balance) : (tokenData.balance || 0);
+          const actualAmount = decimals > 0 ? rawBalance / Math.pow(10, decimals) : rawBalance;
+          return actualAmount.toString();
+        })(),
+        decimals: tokenData.decimals || 0
+      }] : [{
+        symbol: 'UNKNOWN',
+        name: 'Unknown Token',
+        logo: null,
+        amount: '1.0',
+        decimals: 0
+      }];
+
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
         method: 'POST',
@@ -754,7 +775,8 @@ export default function SolRefund() {
           tokensProcessed: 1,
           solRecovered: parseFloat(solRecovered),
           netAmount: parseFloat(solRecovered) * 0.85, // 15% fee
-          feeAmount: parseFloat(solRecovered) * 0.15
+          feeAmount: parseFloat(solRecovered) * 0.15,
+          tokenDetails
         })
       });
 
@@ -866,12 +888,17 @@ export default function SolRefund() {
             decimals: 0
           };
         }
+        // Calculate actual amount from raw balance and decimals (safely convert string/number)
+        const decimals = tokenData.decimals || 0;
+        const rawBalance = typeof tokenData.balance === 'string' ? parseFloat(tokenData.balance) : (tokenData.balance || 0);
+        const actualAmount = decimals > 0 ? rawBalance / Math.pow(10, decimals) : rawBalance;
+        
         return {
           symbol: tokenData.symbol || 'UNKNOWN',
           name: tokenData.name || 'Unknown Token',
           logo: tokenData.logo || null,
-          amount: tokenData.amount || '1.0',
-          decimals: tokenData.decimals || 0
+          amount: actualAmount.toString(),
+          decimals: decimals
         };
       });
 
