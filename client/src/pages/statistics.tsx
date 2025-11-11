@@ -132,7 +132,7 @@ export default function Statistics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <Trophy className="w-6 h-6 text-yellow-400" />
-              Top Addresses Leaderboard
+              🔥 UPDATED: Top Addresses Leaderboard 🔥
             </CardTitle>
             <CardDescription className="text-purple-200">
               Addresses that recovered the most rent {getPeriodLabel(selectedPeriod).toLowerCase()}
