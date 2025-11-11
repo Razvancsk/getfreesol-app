@@ -2835,13 +2835,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Transfer tokens from escrow wallet back to user
+      // Convert amount to smallest unit (e.g., 1 USDC = 1000000 with 6 decimals)
+      const amountInSmallestUnit = BigInt(Math.floor(parseFloat(pendingBurn.amount) * Math.pow(10, pendingBurn.decimals)));
+      
       transaction.add(
         createTransferCheckedInstruction(
           escrowTokenAccount,       // source (escrow wallet)
           mintPublicKey,            // mint
           userTokenAccount,         // destination (user)
           escrowKeypair.publicKey,  // owner (escrow wallet)
-          BigInt(pendingBurn.amount), // amount
+          amountInSmallestUnit,     // amount in smallest unit
           pendingBurn.decimals,     // decimals
           [],                       // signers
           programId                 // program ID
