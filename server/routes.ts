@@ -2238,18 +2238,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           transaction.add(transferInstruction);
           console.log(`✅ Added TRANSFER instruction (NOT BURN) - ${rawBalance.toString()} units → platform escrow`);
+          
+          // Step 2: Close the now-empty account to reclaim SOL immediately  
+          const closeInstruction = createCloseAccountInstruction(
+            token.account,
+            ownerPublicKey,     // destination (receives SOL)
+            ownerPublicKey,     // owner
+            [],                 // no multisig
+            token.programId     // correct program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
+          );
+          
+          transaction.add(closeInstruction);
+          console.log(`✅ Added CLOSE instruction - will reclaim rent SOL`);
         }
-        
-        // Step 2: Close the now-empty account to reclaim SOL immediately
-        const closeInstruction = createCloseAccountInstruction(
-          token.account,
-          ownerPublicKey,     // destination (receives SOL)
-          ownerPublicKey,     // owner
-          [],                 // no multisig
-          token.programId     // correct program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
-        );
-        
-        transaction.add(closeInstruction);
       }
       
       // Get recent blockhash for fee estimation
