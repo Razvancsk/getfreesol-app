@@ -159,66 +159,53 @@ export default function Statistics() {
         <Separator className="bg-purple-600 mb-8" />
 
         {/* Leaderboard */}
-        <Card className="bg-gradient-to-br from-purple-800/50 to-purple-900/40 border-purple-500/30 backdrop-blur-sm shadow-xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-white text-2xl">
-              <Trophy className="w-7 h-7 text-yellow-400" />
-              Top Addresses Leaderboard
-            </CardTitle>
-            <CardDescription className="text-purple-200 text-base mt-2">
-              Addresses that recovered the most rent (all time)
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="space-y-4">
-            {/* Filter Buttons */}
-            <div className="flex items-center gap-3 p-4 bg-purple-900/40 rounded-lg border border-purple-500/20">
-              <span className="text-purple-200 font-medium text-sm">Filter by:</span>
+        <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <TrendingUp className="w-6 h-6 text-yellow-400" />
+                  Top Addresses Leaderboard
+                </CardTitle>
+                <CardDescription className="text-purple-200 mt-1">
+                  Addresses that recovered the most rent (all time)
+                </CardDescription>
+              </div>
+              
+              {/* Filter Buttons - Compact */}
               <div className="flex gap-2">
                 <Button
                   onClick={() => setSelectedPeriod('24h')}
                   variant={selectedPeriod === '24h' ? 'default' : 'outline'}
                   size="sm"
-                  className={`transition-all ${
-                    selectedPeriod === '24h' 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
-                      : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
-                  }`}
+                  className={selectedPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
                   data-testid="filter-daily"
                 >
-                  📅 Daily
+                  Daily
                 </Button>
                 <Button
                   onClick={() => setSelectedPeriod('weekly')}
                   variant={selectedPeriod === 'weekly' ? 'default' : 'outline'}
                   size="sm"
-                  className={`transition-all ${
-                    selectedPeriod === 'weekly' 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
-                      : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
-                  }`}
+                  className={selectedPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
                   data-testid="filter-weekly"
                 >
-                  📊 Weekly
+                  Weekly
                 </Button>
                 <Button
                   onClick={() => setSelectedPeriod('monthly')}
                   variant={selectedPeriod === 'monthly' ? 'default' : 'outline'}
                   size="sm"
-                  className={`transition-all ${
-                    selectedPeriod === 'monthly' 
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
-                      : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
-                  }`}
+                  className={selectedPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
                   data-testid="filter-monthly"
                 >
-                  📈 Monthly
+                  Monthly
                 </Button>
               </div>
-              <div className="ml-auto text-sm text-purple-300 font-medium">
-                {getPeriodLabel(selectedPeriod)}
-              </div>
             </div>
+          </CardHeader>
+          
+          <CardContent>
 
             {/* Table */}
             {leaderboardLoading ? (
