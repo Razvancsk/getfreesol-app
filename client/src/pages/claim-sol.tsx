@@ -853,6 +853,28 @@ export default function SolRefund() {
       }
       console.log('✅ Transaction confirmed successfully!');
 
+      // Build tokenDetails array from tokenList metadata
+      const tokenDetails = tokenMints.map(mint => {
+        const tokenData = tokenList.find(t => t.mint === mint);
+        if (!tokenData) {
+          console.warn(`Token metadata not found for ${mint}`);
+          return {
+            symbol: 'UNKNOWN',
+            name: 'Unknown Token',
+            logo: null,
+            amount: '1.0',
+            decimals: 0
+          };
+        }
+        return {
+          symbol: tokenData.symbol || 'UNKNOWN',
+          name: tokenData.name || 'Unknown Token',
+          logo: tokenData.logo || null,
+          amount: tokenData.amount || '1.0',
+          decimals: tokenData.decimals || 0
+        };
+      });
+
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
         method: 'POST',
@@ -867,7 +889,8 @@ export default function SolRefund() {
           feeAmount,
           referralCodeUsed: referralCodeUsed || null,
           platformFeeAmount: platformFeeAmount || 0,
-          referralFeeAmount: referralFeeAmount || 0
+          referralFeeAmount: referralFeeAmount || 0,
+          tokenDetails
         })
       });
 
