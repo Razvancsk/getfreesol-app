@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Twitter, CheckCircle2, XCircle, Loader2, ExternalLink, ArrowLeft } from "lucide-react";
+import { Twitter, CheckCircle2, XCircle, Loader2, ExternalLink, ArrowLeft, Send } from "lucide-react";
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 
@@ -21,6 +21,8 @@ export default function XAdmin() {
   const [oauthToken, setOauthToken] = useState('');
   const [pin, setPin] = useState('');
   const [authUrl, setAuthUrl] = useState('');
+  const [manualSolAmount, setManualSolAmount] = useState('');
+  const [manualWalletAddress, setManualWalletAddress] = useState('');
 
   const { data: status, isLoading } = useQuery<XConnectionStatus>({
     queryKey: ['/api/x/oauth/status'],
@@ -133,6 +135,31 @@ export default function XAdmin() {
     },
   });
 
+  const manualPostMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/x/test-post', {
+        solAmount: manualSolAmount,
+        walletAddress: manualWalletAddress
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Posted Successfully!",
+        description: "Check your X account to see the post",
+      });
+      setManualSolAmount('');
+      setManualWalletAddress('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Post Failed",
+        description: error.message || "Failed to post to X",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 dark:from-background dark:to-secondary/10">
       <div className="container max-w-4xl mx-auto px-4 py-16">
@@ -196,6 +223,67 @@ export default function XAdmin() {
                       className="w-full rounded-lg border border-border/50"
                       data-testid="img-card-preview"
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    Manual Post
+                  </h3>
+                  <div className="bg-secondary/30 dark:bg-secondary/20 p-4 rounded-lg space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Create a custom claim post with any claimer address and SOL amount
+                    </p>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="manual-wallet" className="text-sm font-medium">
+                          Claimer Wallet Address
+                        </Label>
+                        <Input
+                          id="manual-wallet"
+                          type="text"
+                          placeholder="DCkHDfBLL3FEJmnkeHtjteMQdCRVoe0jjRSganfvV9Ko"
+                          value={manualWalletAddress}
+                          onChange={(e) => setManualWalletAddress(e.target.value)}
+                          disabled={manualPostMutation.isPending}
+                          data-testid="input-manual-wallet"
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="manual-sol" className="text-sm font-medium">
+                          SOL Amount
+                        </Label>
+                        <Input
+                          id="manual-sol"
+                          type="text"
+                          placeholder="0.0208"
+                          value={manualSolAmount}
+                          onChange={(e) => setManualSolAmount(e.target.value)}
+                          disabled={manualPostMutation.isPending}
+                          data-testid="input-manual-sol"
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <Button
+                        onClick={() => manualPostMutation.mutate()}
+                        disabled={manualPostMutation.isPending || !manualSolAmount.trim() || !manualWalletAddress.trim()}
+                        data-testid="button-manual-post"
+                        className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                      >
+                        {manualPostMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Posting...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Post to X
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
