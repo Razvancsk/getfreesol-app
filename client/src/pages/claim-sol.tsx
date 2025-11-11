@@ -927,45 +927,11 @@ export default function SolRefund() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to prepare claim-back transaction');
+        throw new Error(error.error || 'Failed to claim back tokens');
       }
 
-      const { transaction, rentCost } = await response.json();
-
-      // Sign and send transaction
-      const { Connection, Transaction } = await import('@solana/web3.js');
-
-      const heliusResponse = await fetch('/api/helius-config');
-      const rpcConfig = await heliusResponse.json();
-
-      const connection = new Connection(
-        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-        'confirmed'
-      );
-
-      const txBuffer = Buffer.from(transaction, 'base64');
-      const tx = Transaction.from(txBuffer);
-
-      const signedTx = await signTransaction(tx);
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-
-      await connection.confirmTransaction(signature, 'confirmed');
-
-      // Record the claim-back
-      const recordResponse = await fetch('/api/tokens/record-claim-back', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signature,
-          pendingBurnId
-        })
-      });
-
-      if (!recordResponse.ok) {
-        console.error('Failed to record claim-back:', await recordResponse.text());
-      }
-
-      return { signature, rentCost };
+      const data = await response.json();
+      return data; // Returns { success: true, signature, message }
     },
     onSuccess: (result) => {
       toast({

@@ -2859,20 +2859,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
-      transaction.feePayer = userPublicKey;
+      transaction.feePayer = escrowKeypair.publicKey; // Escrow wallet pays for everything
       
-      // Escrow wallet signs the transaction (to authorize token transfer)
-      transaction.partialSign(escrowKeypair);
+      // Escrow wallet signs and sends the transaction
+      transaction.sign(escrowKeypair);
       
-      // Serialize transaction for user to sign
-      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
-      const transactionBase64 = serializedTransaction.toString('base64');
+      console.log('Sending claim-back transaction...');
+      const signature = await connection.sendRawTransaction(transaction.serialize());
+      console.log('Claim-back transaction sent:', signature);
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+      console.log('✅ Claim-back transaction confirmed:', signature);
+      
+      // Update pending burn status
+      await storage.updatePendingBurnStatus(pendingBurnId, 'claimed_back', signature);
       
       res.json({
         success: true,
-        transaction: transactionBase64,
-        message: `Ready to claim back ${pendingBurn.tokenSymbol}. You'll pay the rent (${pendingBurn.rentSolReclaimed} SOL) to recreate the account.`,
-        rentCost: pendingBurn.rentSolReclaimed
+        signature,
+        message: `Successfully claimed back ${pendingBurn.amount} ${pendingBurn.tokenSymbol}!`
       });
       
     } catch (error) {
