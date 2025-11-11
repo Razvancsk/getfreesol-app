@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Twitter, CheckCircle2, XCircle, Loader2, ExternalLink, ArrowLeft, Send } from "lucide-react";
+import { Twitter, CheckCircle2, XCircle, Loader2, ExternalLink, ArrowLeft, Send, Download } from "lucide-react";
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 
@@ -228,11 +228,11 @@ export default function XAdmin() {
 
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Manual Post
+                    Custom Card Banner Generator
                   </h3>
                   <div className="bg-secondary/30 dark:bg-secondary/20 p-4 rounded-lg space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      Create a custom claim post with any claimer address and SOL amount
+                      Generate a custom card banner with any claimer address and SOL amount. Right-click the preview to save the image.
                     </p>
                     <div className="space-y-3">
                       <div className="space-y-2">
@@ -245,7 +245,6 @@ export default function XAdmin() {
                           placeholder="DCkHDfBLL3FEJmnkeHtjteMQdCRVoe0jjRSganfvV9Ko"
                           value={manualWalletAddress}
                           onChange={(e) => setManualWalletAddress(e.target.value)}
-                          disabled={manualPostMutation.isPending}
                           data-testid="input-manual-wallet"
                           className="font-mono text-sm"
                         />
@@ -260,29 +259,28 @@ export default function XAdmin() {
                           placeholder="0.0208"
                           value={manualSolAmount}
                           onChange={(e) => setManualSolAmount(e.target.value)}
-                          disabled={manualPostMutation.isPending}
                           data-testid="input-manual-sol"
                           className="font-mono text-sm"
                         />
                       </div>
-                      <Button
-                        onClick={() => manualPostMutation.mutate()}
-                        disabled={manualPostMutation.isPending || !manualSolAmount.trim() || !manualWalletAddress.trim()}
-                        data-testid="button-manual-post"
-                        className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                      >
-                        {manualPostMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Posting...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="mr-2 h-4 w-4" />
-                            Post to X
-                          </>
-                        )}
-                      </Button>
+                      
+                      {/* Live Preview */}
+                      {manualSolAmount && manualWalletAddress && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Live Preview</Label>
+                          <div className="bg-background p-3 rounded-lg border border-border/50">
+                            <img 
+                              src={`/api/x/preview-card?solAmount=${encodeURIComponent(manualSolAmount)}&walletAddress=${encodeURIComponent(manualWalletAddress)}`}
+                              alt="Custom card banner preview"
+                              className="w-full rounded-lg border border-border/50"
+                              data-testid="img-custom-preview"
+                            />
+                            <p className="text-xs text-muted-foreground mt-2 text-center">
+                              Right-click the image above and select "Save image as..." to download
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
