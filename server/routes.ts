@@ -2195,6 +2195,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const currentParsed = currentAccountInfo?.value?.data as any;
         const currentBalance = currentParsed?.parsed?.info?.tokenAmount?.amount || '0';
         
+        console.log(`🔍 Token ${token.mint} balance check:`);
+        console.log(`   - Original balance from scan: ${token.balance}`);
+        console.log(`   - Current balance from fresh query: ${currentBalance}`);
+        console.log(`   - Account data:`, JSON.stringify(currentParsed?.parsed?.info?.tokenAmount, null, 2));
+        
         if (currentBalance !== '0') {
           // Get or create associated token account for platform wallet
           const platformTokenAccount = await getAssociatedTokenAddress(
