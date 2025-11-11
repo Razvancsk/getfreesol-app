@@ -3673,7 +3673,7 @@ export default function SolRefund() {
                           size="sm"
                           variant={selectedLeaderboardPeriod === '24h' ? 'default' : 'outline'}
                           onClick={() => setSelectedLeaderboardPeriod('24h')}
-                          className={selectedLeaderboardPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                          className={selectedLeaderboardPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-400 text-white hover:bg-purple-800'}
                         >
                           Daily
                         </Button>
@@ -3682,7 +3682,7 @@ export default function SolRefund() {
                           size="sm"
                           variant={selectedLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
                           onClick={() => setSelectedLeaderboardPeriod('weekly')}
-                          className={selectedLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                          className={selectedLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-400 text-white hover:bg-purple-800'}
                         >
                           Weekly
                         </Button>
@@ -3691,7 +3691,7 @@ export default function SolRefund() {
                           size="sm"
                           variant={selectedLeaderboardPeriod === 'monthly' ? 'default' : 'outline'}
                           onClick={() => setSelectedLeaderboardPeriod('monthly')}
-                          className={selectedLeaderboardPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                          className={selectedLeaderboardPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-400 text-white hover:bg-purple-800'}
                         >
                           Monthly
                         </Button>
