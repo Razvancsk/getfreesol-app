@@ -127,6 +127,9 @@ export default function SolRefund() {
   const [totalBatches, setTotalBatches] = useState(0);
   const [batchResults, setBatchResults] = useState<{totalSol: number; totalAccounts: number}>({ totalSol: 0, totalAccounts: 0 });
 
+  // Leaderboard filter state
+  const [statsLeaderboardPeriod, setStatsLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly'>('24h');
+
   // Statistics queries for time-filtered data (SOL recovered)
   const { data: stats24h } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
     queryKey: ['/api/statistics/overview', '24h'],
@@ -170,9 +173,9 @@ export default function SolRefund() {
   });
 
   const { data: leaderboardData } = useQuery<{ success: boolean; period: string; leaderboard: Array<{ walletAddress: string; totalSolRecovered: string }> }>({
-    queryKey: ['/api/statistics/leaderboard', 'all'],
+    queryKey: ['/api/statistics/leaderboard', statsLeaderboardPeriod],
     queryFn: async () => {
-      const response = await fetch('/api/statistics/leaderboard?period=all&limit=10');
+      const response = await fetch(`/api/statistics/leaderboard?period=${statsLeaderboardPeriod}&limit=10`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -3658,63 +3661,115 @@ export default function SolRefund() {
                 </div>
 
                 {/* Leaderboard */}
-                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <TrendingUp className="w-6 h-6 text-yellow-400" />
+                <Card className="bg-gradient-to-br from-purple-800/50 to-purple-900/40 border-purple-500/30 backdrop-blur-sm shadow-xl">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-white text-2xl">
+                      <TrendingUp className="w-7 h-7 text-yellow-400" />
                       Top Addresses Leaderboard
                     </CardTitle>
-                    <CardDescription className="text-purple-200">
+                    <CardDescription className="text-purple-200 text-base mt-2">
                       Addresses that recovered the most rent (all time)
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Filter Buttons */}
+                    <div className="flex items-center gap-3 p-4 bg-purple-900/40 rounded-lg border border-purple-500/20">
+                      <span className="text-purple-200 font-medium text-sm">Filter by:</span>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => setStatsLeaderboardPeriod('24h')}
+                          variant={statsLeaderboardPeriod === '24h' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`transition-all ${
+                            statsLeaderboardPeriod === '24h' 
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
+                              : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
+                          }`}
+                          data-testid="filter-daily"
+                        >
+                          📅 Daily
+                        </Button>
+                        <Button
+                          onClick={() => setStatsLeaderboardPeriod('weekly')}
+                          variant={statsLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`transition-all ${
+                            statsLeaderboardPeriod === 'weekly' 
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
+                              : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
+                          }`}
+                          data-testid="filter-weekly"
+                        >
+                          📊 Weekly
+                        </Button>
+                        <Button
+                          onClick={() => setStatsLeaderboardPeriod('monthly')}
+                          variant={statsLeaderboardPeriod === 'monthly' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`transition-all ${
+                            statsLeaderboardPeriod === 'monthly' 
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
+                              : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
+                          }`}
+                          data-testid="filter-monthly"
+                        >
+                          📈 Monthly
+                        </Button>
+                      </div>
+                      <div className="ml-auto text-sm text-purple-300 font-medium">
+                        {statsLeaderboardPeriod === '24h' ? 'Last 24 hours' : statsLeaderboardPeriod === 'weekly' ? 'Last 7 days' : 'Last 30 days'}
+                      </div>
+                    </div>
+
+                    {/* Leaderboard List */}
                     {leaderboardData && leaderboardData.leaderboard.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {leaderboardData.leaderboard.map((entry, index) => (
                           <div 
                             key={entry.walletAddress} 
-                            className="flex items-center justify-between p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg hover:bg-purple-700/30 transition-colors"
+                            className="flex items-center justify-between p-4 bg-purple-900/30 border border-purple-500/20 rounded-lg hover:bg-purple-700/30 transition-all hover:border-purple-400/40"
                             data-testid={`leaderboard-row-${index}`}
                           >
                             <div className="flex items-center gap-4">
                               {index === 0 && (
-                                <Badge className="bg-yellow-500 text-black hover:bg-yellow-600">
+                                <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-600 shadow-md px-3 py-1.5">
                                   🥇 1st
                                 </Badge>
                               )}
                               {index === 1 && (
-                                <Badge className="bg-gray-400 text-black hover:bg-gray-500">
+                                <Badge className="bg-gradient-to-r from-gray-300 to-gray-400 text-black hover:from-gray-400 hover:to-gray-500 shadow-md px-3 py-1.5">
                                   🥈 2nd
                                 </Badge>
                               )}
                               {index === 2 && (
-                                <Badge className="bg-orange-600 text-white hover:bg-orange-700">
+                                <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-md px-3 py-1.5">
                                   🥉 3rd
                                 </Badge>
                               )}
                               {index > 2 && (
-                                <span className="text-purple-200 font-medium ml-2">#{index + 1}</span>
+                                <span className="text-purple-200 font-semibold ml-2 text-base">#{index + 1}</span>
                               )}
                               <a
                                 href={`https://solscan.io/account/${entry.walletAddress}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-purple-300 hover:text-purple-100 underline font-mono text-sm"
+                                className="text-purple-300 hover:text-purple-100 underline font-mono text-sm transition-colors"
                                 data-testid={`address-${index}`}
                               >
                                 {truncateAddress(entry.walletAddress)}
                               </a>
                             </div>
-                            <div className="text-right font-bold text-green-400" data-testid={`amount-${index}`}>
+                            <div className="text-right font-bold text-green-400 text-base" data-testid={`amount-${index}`}>
                               {formatSol(entry.totalSolRecovered)} SOL
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-purple-300">
-                        No data available for this time period
+                      <div className="text-center py-12 text-purple-300 bg-purple-900/20 rounded-lg border border-purple-500/20">
+                        <TrendingUp className="w-16 h-16 text-purple-400/50 mx-auto mb-3" />
+                        <div className="text-lg">No data available for this time period</div>
                       </div>
                     )}
                   </CardContent>
