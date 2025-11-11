@@ -2721,21 +2721,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const connection = new Connection(rpcUrl, 'confirmed');
       
-      // Load platform wallet keypair from private key
-      const platformPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
-      if (!platformPrivateKey) {
-        return res.status(500).json({ error: "Platform wallet not configured" });
+      // Load escrow wallet keypair from private key
+      const escrowPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
+      if (!escrowPrivateKey) {
+        return res.status(500).json({ error: "Escrow wallet not configured" });
       }
       
-      const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
-      const platformKeypair = Keypair.fromSecretKey(
-        Buffer.from(platformPrivateKey, 'base64')
+      const ESCROW_WALLET = 'BURNRcHCvRZQTTyBgTdUpdyRFJ42zTAEz9X7BiqWnZGf';
+      const escrowKeypair = Keypair.fromSecretKey(
+        Buffer.from(escrowPrivateKey, 'base64')
       );
       
-      // Verify the keypair matches the expected platform wallet
-      if (platformKeypair.publicKey.toBase58() !== PLATFORM_WALLET) {
-        console.error('Platform keypair mismatch!', platformKeypair.publicKey.toBase58(), 'vs', PLATFORM_WALLET);
-        return res.status(500).json({ error: "Platform wallet configuration error" });
+      // Verify the keypair matches the expected escrow wallet
+      if (escrowKeypair.publicKey.toBase58() !== ESCROW_WALLET) {
+        console.error('Escrow keypair mismatch!', escrowKeypair.publicKey.toBase58(), 'vs', ESCROW_WALLET);
+        return res.status(500).json({ error: "Escrow wallet configuration error" });
       }
       
       const userPublicKey = new PublicKey(walletAddress);
@@ -2745,10 +2745,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
       const programId = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
       
-      // Get platform's token account (holds the escrowed tokens)
-      const platformTokenAccount = await getAssociatedTokenAddress(
+      // Get escrow wallet's token account (holds the escrowed tokens)
+      const escrowTokenAccount = await getAssociatedTokenAddress(
         mintPublicKey,
-        platformKeypair.publicKey,
+        escrowKeypair.publicKey,
         false,
         programId
       );
@@ -2787,17 +2787,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Added create ATA instruction for user ${walletAddress}`);
       }
       
-      // Transfer tokens from platform wallet back to user
+      // Transfer tokens from escrow wallet back to user
       transaction.add(
         createTransferCheckedInstruction(
-          platformTokenAccount,      // source (platform wallet)
-          mintPublicKey,             // mint
-          userTokenAccount,          // destination (user)
-          platformKeypair.publicKey, // owner (platform wallet)
+          escrowTokenAccount,       // source (escrow wallet)
+          mintPublicKey,            // mint
+          userTokenAccount,         // destination (user)
+          escrowKeypair.publicKey,  // owner (escrow wallet)
           BigInt(pendingBurn.amount), // amount
-          pendingBurn.decimals,      // decimals
-          [],                        // signers
-          programId                  // program ID
+          pendingBurn.decimals,     // decimals
+          [],                       // signers
+          programId                 // program ID
         )
       );
       
@@ -2806,8 +2806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = userPublicKey;
       
-      // Platform wallet signs the transaction (to authorize token transfer)
-      transaction.partialSign(platformKeypair);
+      // Escrow wallet signs the transaction (to authorize token transfer)
+      transaction.partialSign(escrowKeypair);
       
       // Serialize transaction for user to sign
       const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
