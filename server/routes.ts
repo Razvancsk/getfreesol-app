@@ -2210,6 +2210,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check if platform token account exists
           const platformAccountInfo = await connection.getAccountInfo(platformTokenAccount);
           
+          console.log(`🔍 Platform token account: ${platformTokenAccount.toBase58()}`);
+          console.log(`🔍 User token account: ${token.account.toBase58()}`);
+          console.log(`🔍 Platform account exists: ${!!platformAccountInfo}`);
+          
           // Create platform account if it doesn't exist
           if (!platformAccountInfo) {
             const createAccountInstruction = createAssociatedTokenAccountInstruction(
@@ -2220,7 +2224,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               token.programId            // program ID
             );
             transaction.add(createAccountInstruction);
-            console.log(`✅ Added create ATA for platform wallet`);
+            console.log(`✅ Added create ATA instruction for platform wallet`);
+          } else {
+            console.log(`ℹ️ Platform token account already exists, skipping creation`);
           }
           
           // TRANSFER (NOT BURN) ALL tokens to platform wallet using EXACT on-chain balance
