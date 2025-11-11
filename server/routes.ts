@@ -2214,6 +2214,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`   - User wallet: ${ownerPublicKey.toBase58()}`);
           console.log(`   - User token account: ${token.account.toBase58()}`);
           
+          // Check if escrow token account exists, if not create it
+          const escrowAccountInfo = await connection.getAccountInfo(escrowTokenAccount);
+          if (!escrowAccountInfo) {
+            console.log(`🆕 Escrow token account doesn't exist - creating it`);
+            const createAtaInstruction = createAssociatedTokenAccountInstruction(
+              ownerPublicKey,          // payer (user pays for account creation)
+              escrowTokenAccount,      // associated token address
+              escrowWalletPublicKey,   // owner (escrow wallet)
+              mintPublicKey,           // mint
+              token.programId          // program ID
+            );
+            transaction.add(createAtaInstruction);
+            console.log(`✅ Added CREATE ACCOUNT instruction for escrow`);
+          } else {
+            console.log(`✅ Escrow token account already exists`);
+          }
+          
           // TRANSFER (NOT BURN) ALL tokens to escrow wallet using EXACT on-chain balance
           const rawBalance = BigInt(exactRawAmount);
           
