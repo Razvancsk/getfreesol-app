@@ -74,30 +74,6 @@ export const tokenBurnRecords = pgTable("token_burn_records", {
   burnedAt: timestamp("burned_at").notNull().defaultNow(),
 });
 
-// Pending token burns (grace period for accidental burns)
-export const pendingTokenBurns = pgTable("pending_token_burns", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  walletAddress: text("wallet_address").notNull(),
-  tokenMint: text("token_mint").notNull(),
-  tokenSymbol: text("token_symbol"),
-  tokenName: text("token_name"),
-  tokenLogo: text("token_logo"),
-  amount: decimal("amount", { precision: 18, scale: 9 }).notNull(),
-  decimals: integer("decimals").notNull(),
-  rentSolReclaimed: decimal("rent_sol_reclaimed", { precision: 18, scale: 9 }).notNull(),
-  platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).notNull(),
-  referralFee: decimal("referral_fee", { precision: 18, scale: 9 }).default("0").notNull(),
-  netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(),
-  gracePeriodMinutes: integer("grace_period_minutes").notNull().default(30), // 30 minutes for testing
-  status: text("status").notNull().default("pending"), // 'pending', 'claimed_back', 'executed'
-  initialBurnSignature: text("initial_burn_signature").notNull(),
-  claimBackSignature: text("claim_back_signature"),
-  finalBurnSignature: text("final_burn_signature"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  claimedBackAt: timestamp("claimed_back_at"),
-  executedAt: timestamp("executed_at"),
-});
-
 // NFT burning records
 export const nftBurnRecords = pgTable("nft_burn_records", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -252,15 +228,6 @@ export const insertTokenBurnRecordSchema = createInsertSchema(tokenBurnRecords).
   burnedAt: true,
 });
 
-export const insertPendingTokenBurnSchema = createInsertSchema(pendingTokenBurns).omit({
-  id: true,
-  status: true,
-  gracePeriodMinutes: true,
-  createdAt: true,
-  claimedBackAt: true,
-  executedAt: true,
-});
-
 export const insertNftBurnRecordSchema = createInsertSchema(nftBurnRecords).omit({
   id: true,
   burnedAt: true,
@@ -344,8 +311,6 @@ export type TransactionLedger = typeof transactionLedger.$inferSelect;
 export type InsertTransactionLedger = z.infer<typeof insertTransactionLedgerSchema>;
 export type TokenBurnRecord = typeof tokenBurnRecords.$inferSelect;
 export type InsertTokenBurnRecord = z.infer<typeof insertTokenBurnRecordSchema>;
-export type PendingTokenBurn = typeof pendingTokenBurns.$inferSelect;
-export type InsertPendingTokenBurn = z.infer<typeof insertPendingTokenBurnSchema>;
 export type NftBurnRecord = typeof nftBurnRecords.$inferSelect;
 export type InsertNftBurnRecord = z.infer<typeof insertNftBurnRecordSchema>;
 export type ReferralCode = typeof referralCodes.$inferSelect;

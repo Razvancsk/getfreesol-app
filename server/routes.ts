@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction, createTransferCheckedInstruction, getMint } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
 // Metaplex Core burning - server-side UMI implementation
@@ -2181,84 +2181,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       console.log('⚡ Added priority fee instruction: 0.00001 SOL (10,000 microlamports) for faster transaction confirmation');
       
-      // Platform escrow wallet for holding tokens during grace period
-      const ESCROW_WALLET = 'BURNRcHCvRZQTTyBgTdUpdyRFJ42zTAEz9X7BiqWnZGf';
-      const escrowWalletPublicKey = new PublicKey(ESCROW_WALLET);
-      
       for (const token of validTokens) {
         const mintPublicKey = new PublicKey(token.mint);
         const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
         
-        // Step 1: Get EXACT on-chain balance and TRANSFER ALL tokens to platform wallet (escrow - NO BURNING)
-        // Use getTokenAccountBalance to get the authoritative raw amount (no rounding/float conversion)
-        const exactBalance = await connection.getTokenAccountBalance(token.account);
-        const exactRawAmount = exactBalance.value.amount; // This is the exact string from blockchain
-        
-        console.log(`📊 TRANSFER (NOT BURN) - Token ${token.mint}:`);
-        console.log(`   - Exact on-chain balance: ${exactRawAmount} raw units`);
-        console.log(`   - Will TRANSFER to platform wallet (escrow)`);
-        
-        if (exactRawAmount !== '0') {
-          // Get escrow wallet's token account 
-          const escrowTokenAccount = await getAssociatedTokenAddress(
-            mintPublicKey,
-            escrowWalletPublicKey,
-            false,
-            token.programId
-          );
-          
-          console.log(`🔍 TRANSFER DESTINATION:`);
-          console.log(`   - Escrow wallet: ${ESCROW_WALLET}`);
-          console.log(`   - Escrow token account (ATA): ${escrowTokenAccount.toBase58()}`);
-          console.log(`🔍 TRANSFER SOURCE:`);
-          console.log(`   - User wallet: ${ownerPublicKey.toBase58()}`);
-          console.log(`   - User token account: ${token.account.toBase58()}`);
-          
-          // Check if escrow token account exists, if not create it
-          const escrowAccountInfo = await connection.getAccountInfo(escrowTokenAccount);
-          if (!escrowAccountInfo) {
-            console.log(`🆕 Escrow token account doesn't exist - creating it`);
-            const createAtaInstruction = createAssociatedTokenAccountInstruction(
-              ownerPublicKey,          // payer (user pays for account creation)
-              escrowTokenAccount,      // associated token address
-              escrowWalletPublicKey,   // owner (escrow wallet)
-              mintPublicKey,           // mint
-              token.programId          // program ID
-            );
-            transaction.add(createAtaInstruction);
-            console.log(`✅ Added CREATE ACCOUNT instruction for escrow`);
-          } else {
-            console.log(`✅ Escrow token account already exists`);
-          }
-          
-          // TRANSFER (NOT BURN) ALL tokens to escrow wallet using EXACT on-chain balance
-          const rawBalance = BigInt(exactRawAmount);
-          
-          const transferInstruction = createTransferCheckedInstruction(
-            token.account,           // source
-            mintPublicKey,           // mint
-            escrowTokenAccount,      // destination (escrow wallet)
-            ownerPublicKey,          // owner
-            rawBalance,              // EXACT amount from blockchain (no rounding)
-            token.decimals,          // decimals
-            [],                      // signers
-            token.programId          // program ID
-          );
-          transaction.add(transferInstruction);
-          console.log(`✅ Added TRANSFER instruction - ${rawBalance.toString()} units → ${escrowTokenAccount.toBase58()}`);
-          
-          // Step 2: Close the now-empty account to reclaim SOL immediately  
-          const closeInstruction = createCloseAccountInstruction(
-            token.account,
-            ownerPublicKey,     // destination (receives SOL)
-            ownerPublicKey,     // owner
-            [],                 // no multisig
-            token.programId     // correct program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
-          );
-          
-          transaction.add(closeInstruction);
-          console.log(`✅ Added CLOSE instruction - will reclaim rent SOL`);
+        // Step 1: Burn tokens (if balance > 0)
+        if (token.balance > 0) {
+          // Use BurnChecked for Token-2022 (required for extensions like transfer fees)
+          const burnInstruction = isToken2022
+            ? createBurnCheckedInstruction(
+                token.account,      // Token account to burn from
+                mintPublicKey,      // Token mint
+                ownerPublicKey,     // Owner
+                token.balance,      // Amount to burn (full balance)
+                token.decimals,     // Decimals (required for checked instruction)
+                [],                 // Additional signers
+                TOKEN_2022_PROGRAM_ID  // Token-2022 program
+              )
+            : createBurnInstruction(
+                token.account,    // Token account to burn from
+                mintPublicKey,    // Token mint
+                ownerPublicKey,   // Owner
+                token.balance     // Amount to burn (full balance)
+              );
+          transaction.add(burnInstruction);
+          console.log(`Added ${isToken2022 ? 'BurnChecked' : 'Burn'} instruction for ${token.mint}`);
         }
+        
+        // Step 2: Close the now-empty account to reclaim SOL
+        const closeInstruction = createCloseAccountInstruction(
+          token.account,
+          ownerPublicKey,     // destination (receives SOL)
+          ownerPublicKey,     // owner
+          [],                 // no multisig
+          token.programId     // correct program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
+        );
+        
+        transaction.add(closeInstruction);
       }
       
       // Get recent blockhash for fee estimation
@@ -2373,17 +2332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralFeeAmount: referralFeeAmount.toFixed(8),
         netAmount: netAmount.toFixed(8),
         referralCodeUsed: referralCode || null,
-        message: `Tokens transferred to escrow. You have 2 minutes to claim them back. After that, they will be permanently burned.`,
-        gracePeriod: {
-          enabled: true,
-          durationMinutes: 2,
-          message: "Tokens are held in platform escrow. Claim back within 2 minutes to recover them."
-        },
-        tokens: validTokens.map(t => ({
-          mint: t.mint,
-          balance: t.balance,
-          decimals: t.decimals
-        })),
+        message: `Bulk burn transaction prepared for ${validTokens.length} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`,
         feeCapInfo: {
           requestedFeeLamports,
           maxAllowedFeeLamports,
@@ -2485,48 +2434,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction
       const transaction = new Transaction();
       
-      const ESCROW_WALLET = 'BURNRcHCvRZQTTyBgTdUpdyRFJ42zTAEz9X7BiqWnZGf';
-      const escrowPublicKey = new PublicKey(ESCROW_WALLET);
-      
-      // Step 1: Transfer all tokens to escrow wallet (if balance > 0)
+      // Step 1: Burn all tokens (if balance > 0)
       if (balance > 0) {
-        // Get escrow's ATA for this token
-        const escrowTokenAccount = await getAssociatedTokenAddress(
-          mintPublicKey,
-          escrowPublicKey,
-          false,
-          programId
-        );
-        
-        // Check if escrow's ATA exists, if not create it (user pays)
-        const escrowAccountInfo = await connection.getAccountInfo(escrowTokenAccount);
-        if (!escrowAccountInfo) {
-          transaction.add(
-            createAssociatedTokenAccountInstruction(
-              ownerPublicKey,       // payer (user pays for escrow's ATA)
-              escrowTokenAccount,   // account to create
-              escrowPublicKey,      // owner (escrow wallet)
-              mintPublicKey,        // mint
-              programId             // program ID
+        // Use BurnChecked for Token-2022 (required for extensions like transfer fees)
+        const burnInstruction = isToken2022
+          ? createBurnCheckedInstruction(
+              tokenAccount,           // Token account to burn from
+              mintPublicKey,          // Token mint
+              ownerPublicKey,         // Owner
+              balance,                // Amount to burn (full balance)
+              decimals,               // Decimals (required for checked instruction)
+              [],                     // Additional signers
+              TOKEN_2022_PROGRAM_ID   // Token-2022 program
             )
-          );
-          console.log(`Added create ATA instruction for escrow wallet`);
-        }
-        
-        // Transfer tokens to escrow wallet
-        const transferInstruction = createTransferCheckedInstruction(
-          tokenAccount,           // source (user's token account)
-          mintPublicKey,          // mint
-          escrowTokenAccount,     // destination (escrow's token account)
-          ownerPublicKey,         // owner (user)
-          balance,                // amount (full balance)
-          decimals,               // decimals
-          [],                     // signers
-          programId               // program ID
-        );
-        
-        transaction.add(transferInstruction);
-        console.log(`Added TransferChecked instruction to escrow for ${tokenMint}`);
+          : createBurnInstruction(
+              tokenAccount,     // Token account to burn from
+              mintPublicKey,    // Token mint
+              ownerPublicKey,   // Owner
+              balance           // Amount to burn (full balance)
+            );
+        transaction.add(burnInstruction);
+        console.log(`Added ${isToken2022 ? 'BurnChecked' : 'Burn'} instruction for ${tokenMint}`);
       }
       
       // Step 2: Close the now-empty account to reclaim SOL
@@ -2627,34 +2555,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create pending token burn records (grace period feature)
-      // Tokens are now held in platform escrow - user has 2 minutes to claim back
-      const rentPerToken = tokensProcessed > 0 ? solRecovered / tokensProcessed : 0;
-      const platformFeePerToken = tokensProcessed > 0 ? (platformFeeAmount || 0) / tokensProcessed : 0;
-      const referralFeePerToken = tokensProcessed > 0 ? (referralFeeAmount || 0) / tokensProcessed : 0;
-      const netPerToken = tokensProcessed > 0 ? netAmount / tokensProcessed : 0;
-      
-      for (let i = 0; i < tokenMints.length; i++) {
-        const tokenMint = tokenMints[i];
-        
-        // Extract token info from the transaction if available (from frontend)
-        const tokenInfo = req.body.tokenDetails?.[i] || {};
-        
-        await storage.createPendingTokenBurn({
+      // Record individual token burn records
+      for (const tokenMint of tokenMints) {
+        await storage.createTokenBurnRecord({
+          signature,
           walletAddress,
           tokenMint,
-          tokenSymbol: tokenInfo.symbol || 'UNKNOWN',
-          tokenName: tokenInfo.name || 'Unknown Token',
-          tokenLogo: tokenInfo.logo || null,
-          amount: tokenInfo.amount || '1.0',
-          decimals: tokenInfo.decimals || 0,
-          rentSolReclaimed: rentPerToken.toString(),
-          platformFee: platformFeePerToken.toString(),
-          referralFee: referralFeePerToken.toString(),
-          netAmount: netPerToken.toString(),
-          initialBurnSignature: signature,
-          claimBackSignature: null,
-          finalBurnSignature: null
+          tokenSymbol: 'TOKEN',
+          tokenName: 'Unknown Token',
+          amountBurned: '1.0',
+          solRecovered: tokensProcessed > 0 ? (solRecovered / tokensProcessed).toString() : '0'
         });
       }
 
@@ -2697,391 +2607,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Record token burn success error:", error);
       res.status(500).json({ error: "Failed to record token burn transaction" });
-    }
-  });
-
-  // Get pending token burns for a wallet (grace period)
-  app.get("/api/tokens/pending-burns/:walletAddress", async (req, res) => {
-    try {
-      const { walletAddress } = req.params;
-      
-      const pendingBurns = await storage.getPendingTokenBurnsByWallet(walletAddress);
-      
-      res.json({
-        success: true,
-        pendingBurns: pendingBurns.map(burn => ({
-          ...burn,
-          expiresAt: new Date(new Date(burn.createdAt).getTime() + burn.gracePeriodMinutes * 60 * 1000),
-          timeRemainingMs: Math.max(0, new Date(burn.createdAt).getTime() + burn.gracePeriodMinutes * 60 * 1000 - Date.now())
-        }))
-      });
-    } catch (error) {
-      console.error("Error fetching pending burns:", error);
-      res.status(500).json({ error: "Failed to fetch pending burns" });
-    }
-  });
-
-  // Claim back tokens during grace period
-  app.post("/api/tokens/claim-back", async (req, res) => {
-    try {
-      const { pendingBurnId, walletAddress } = req.body;
-      
-      if (!pendingBurnId || !walletAddress) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-      
-      // Get the pending burn record
-      const pendingBurn = await storage.getPendingTokenBurnById(pendingBurnId);
-      
-      if (!pendingBurn) {
-        return res.status(404).json({ error: "Pending burn not found" });
-      }
-      
-      if (pendingBurn.walletAddress !== walletAddress) {
-        return res.status(403).json({ error: "Unauthorized" });
-      }
-      
-      if (pendingBurn.status !== 'pending') {
-        return res.status(400).json({ error: `Cannot claim back - status is ${pendingBurn.status}` });
-      }
-      
-      // Check if grace period has expired
-      const expiresAt = new Date(pendingBurn.createdAt).getTime() + pendingBurn.gracePeriodMinutes * 60 * 1000;
-      if (Date.now() > expiresAt) {
-        return res.status(400).json({ error: "Grace period has expired" });
-      }
-      
-      // Use Helius RPC
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      const rpcUrl = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
-      
-      const connection = new Connection(rpcUrl, 'confirmed');
-      
-      // Load escrow wallet keypair from private key (handle any format)
-      const escrowPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
-      if (!escrowPrivateKey) {
-        return res.status(500).json({ error: "Escrow wallet not configured" });
-      }
-      
-      const ESCROW_WALLET = 'BURNRcHCvRZQTTyBgTdUpdyRFJ42zTAEz9X7BiqWnZGf';
-      
-      let escrowKeypair: Keypair;
-      try {
-        // Try different formats
-        let secretKeyBytes: Uint8Array;
-        
-        // Try as JSON array
-        if (escrowPrivateKey.startsWith('[')) {
-          const arr = JSON.parse(escrowPrivateKey);
-          secretKeyBytes = new Uint8Array(arr);
-          console.log('Parsed as JSON array, length:', secretKeyBytes.length);
-        }
-        // Try as base58 (most common Solana wallet export format)
-        else if (escrowPrivateKey.length > 60 && !escrowPrivateKey.includes(',') && !/^[0-9a-fA-F]+$/.test(escrowPrivateKey)) {
-          secretKeyBytes = bs58.decode(escrowPrivateKey);
-          console.log('Parsed as base58, length:', secretKeyBytes.length);
-        }
-        // Try as base64
-        else if (escrowPrivateKey.length > 60 && !escrowPrivateKey.includes(',')) {
-          secretKeyBytes = new Uint8Array(Buffer.from(escrowPrivateKey, 'base64'));
-          console.log('Parsed as base64, length:', secretKeyBytes.length);
-        }
-        // Try as hex
-        else if (/^[0-9a-fA-F]+$/.test(escrowPrivateKey)) {
-          secretKeyBytes = new Uint8Array(Buffer.from(escrowPrivateKey, 'hex'));
-          console.log('Parsed as hex, length:', secretKeyBytes.length);
-        }
-        // Try as comma-separated numbers
-        else if (escrowPrivateKey.includes(',')) {
-          const arr = escrowPrivateKey.split(',').map(n => parseInt(n.trim()));
-          secretKeyBytes = new Uint8Array(arr);
-          console.log('Parsed as comma-separated, length:', secretKeyBytes.length);
-        }
-        else {
-          console.error('Unknown private key format. First 20 chars:', escrowPrivateKey.substring(0, 20));
-          throw new Error('Unknown private key format');
-        }
-        
-        // Verify we have exactly 64 bytes
-        if (secretKeyBytes.length !== 64) {
-          throw new Error(`Bad secret key size: expected 64, got ${secretKeyBytes.length}`);
-        }
-        
-        escrowKeypair = Keypair.fromSecretKey(secretKeyBytes);
-        
-        // Verify the keypair matches the expected escrow wallet
-        if (escrowKeypair.publicKey.toBase58() !== ESCROW_WALLET) {
-          console.error('Escrow keypair mismatch!', escrowKeypair.publicKey.toBase58(), 'vs', ESCROW_WALLET);
-          return res.status(500).json({ error: "Escrow wallet configuration error" });
-        }
-        
-        console.log('✅ Escrow keypair loaded successfully');
-      } catch (error) {
-        console.error('Failed to parse escrow private key:', error);
-        return res.status(500).json({ error: "Invalid escrow private key format" });
-      }
-      
-      const userPublicKey = new PublicKey(walletAddress);
-      const mintPublicKey = new PublicKey(pendingBurn.tokenMint);
-      
-      // Determine if this is Token-2022 or standard Token Program
-      const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
-      const programId = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
-      
-      // Fetch the actual mint data to get correct decimals
-      const mintData = await getMint(connection, mintPublicKey, 'confirmed', programId);
-      const actualDecimals = mintData.decimals;
-      console.log(`Mint decimals from blockchain: ${actualDecimals}, stored in DB: ${pendingBurn.decimals}`);
-      
-      // Get escrow wallet's token account (holds the escrowed tokens)
-      const escrowTokenAccount = await getAssociatedTokenAddress(
-        mintPublicKey,
-        escrowKeypair.publicKey,
-        false,
-        programId
-      );
-      
-      // Create transaction
-      const transaction = new Transaction();
-      
-      // Add priority fee
-      transaction.add(
-        ComputeBudgetProgram.setComputeUnitPrice({
-          microLamports: 10000
-        })
-      );
-      
-      // Create user's token account (they need to pay rent to get tokens back)
-      const userTokenAccount = await getAssociatedTokenAddress(
-        mintPublicKey,
-        userPublicKey,
-        false,
-        programId
-      );
-      
-      // Check if user's token account exists
-      const userAccountInfo = await connection.getAccountInfo(userTokenAccount);
-      if (!userAccountInfo) {
-        // User pays for creating their own token account
-        transaction.add(
-          createAssociatedTokenAccountInstruction(
-            userPublicKey,    // payer (user pays rent)
-            userTokenAccount, // account to create
-            userPublicKey,    // owner
-            mintPublicKey,    // mint
-            programId         // program ID
-          )
-        );
-        console.log(`Added create ATA instruction - user will pay rent to receive tokens`);
-      }
-      
-      // Transfer tokens from escrow wallet back to user
-      // Convert amount to smallest unit using ACTUAL decimals from mint (e.g., 1 USDC = 1000000 with 6 decimals)
-      const amountInSmallestUnit = BigInt(Math.floor(parseFloat(pendingBurn.amount) * Math.pow(10, actualDecimals)));
-      
-      transaction.add(
-        createTransferCheckedInstruction(
-          escrowTokenAccount,       // source (escrow wallet)
-          mintPublicKey,            // mint
-          userTokenAccount,         // destination (user)
-          escrowKeypair.publicKey,  // owner (escrow wallet)
-          amountInSmallestUnit,     // amount in smallest unit
-          actualDecimals,           // decimals from mint (not from database!)
-          [],                       // signers
-          programId                 // program ID
-        )
-      );
-      
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = userPublicKey; // USER pays the fee (not escrow)
-      
-      // Escrow wallet partially signs the transaction (authorizes token transfer)
-      transaction.partialSign(escrowKeypair);
-      
-      console.log('✅ Created claim-back transaction, escrow wallet signed');
-      console.log(`   User (${walletAddress}) will sign and submit`);
-      
-      // Serialize the partially signed transaction
-      const serialized = transaction.serialize({
-        requireAllSignatures: false, // Allow partial signatures
-        verifySignatures: false      // Don't verify yet (user hasn't signed)
-      }).toString('base64');
-      
-      res.json({
-        success: true,
-        transaction: serialized,
-        pendingBurnId,
-        amount: pendingBurn.amount,
-        symbol: pendingBurn.tokenSymbol,
-        message: `Transaction ready - please sign to claim ${pendingBurn.amount} ${pendingBurn.tokenSymbol}`
-      });
-      
-    } catch (error) {
-      console.error("Error creating claim-back transaction:", error);
-      res.status(500).json({ error: "Failed to create claim-back transaction" });
-    }
-  });
-
-  // Record successful claim-back transaction
-  app.post("/api/tokens/record-claim-back", async (req, res) => {
-    try {
-      const { signature, pendingBurnId } = req.body;
-      
-      if (!signature || !pendingBurnId) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-      
-      // Update pending burn status
-      await storage.updatePendingBurnStatus(pendingBurnId, 'claimed_back', signature);
-      
-      res.json({
-        success: true,
-        message: "Tokens successfully claimed back!"
-      });
-    } catch (error) {
-      console.error("Error recording claim-back:", error);
-      res.status(500).json({ error: "Failed to record claim-back" });
-    }
-  });
-
-  // Execute permanent burn after grace period
-  app.post("/api/tokens/execute-burn", async (req, res) => {
-    try {
-      const { pendingBurnId } = req.body;
-      
-      if (!pendingBurnId) {
-        return res.status(400).json({ error: "Missing pending burn ID" });
-      }
-      
-      // Get the pending burn record
-      const pendingBurn = await storage.getPendingTokenBurnById(pendingBurnId);
-      
-      if (!pendingBurn) {
-        return res.status(404).json({ error: "Pending burn not found" });
-      }
-      
-      if (pendingBurn.status !== 'pending') {
-        return res.status(400).json({ error: `Cannot execute - status is ${pendingBurn.status}` });
-      }
-      
-      // Check if grace period has expired
-      const expiresAt = new Date(pendingBurn.createdAt).getTime() + pendingBurn.gracePeriodMinutes * 60 * 1000;
-      if (Date.now() <= expiresAt) {
-        return res.status(400).json({ error: "Grace period has not expired yet" });
-      }
-      
-      // Use Helius RPC
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      const rpcUrl = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
-      
-      const connection = new Connection(rpcUrl, 'confirmed');
-      
-      // Load platform wallet keypair
-      const platformPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
-      if (!platformPrivateKey) {
-        return res.status(500).json({ error: "Platform wallet not configured" });
-      }
-      
-      const platformKeypair = Keypair.fromSecretKey(
-        Buffer.from(platformPrivateKey, 'base64')
-      );
-      
-      const mintPublicKey = new PublicKey(pendingBurn.tokenMint);
-      
-      // Determine program ID
-      const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
-      const programId = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
-      
-      // Get platform's token account
-      const platformTokenAccount = await getAssociatedTokenAddress(
-        mintPublicKey,
-        platformKeypair.publicKey,
-        false,
-        programId
-      );
-      
-      // Create transaction to burn tokens from platform wallet
-      const transaction = new Transaction();
-      
-      // Add priority fee
-      transaction.add(
-        ComputeBudgetProgram.setComputeUnitPrice({
-          microLamports: 10000
-        })
-      );
-      
-      // Burn tokens
-      const isToken2022 = programId.equals(TOKEN_2022_PROGRAM_ID);
-      const burnInstruction = isToken2022
-        ? createBurnCheckedInstruction(
-            platformTokenAccount,
-            mintPublicKey,
-            platformKeypair.publicKey,
-            BigInt(pendingBurn.amount),
-            pendingBurn.decimals,
-            [],
-            TOKEN_2022_PROGRAM_ID
-          )
-        : createBurnInstruction(
-            platformTokenAccount,
-            mintPublicKey,
-            platformKeypair.publicKey,
-            BigInt(pendingBurn.amount)
-          );
-      
-      transaction.add(burnInstruction);
-      
-      // Close the platform's token account
-      transaction.add(
-        createCloseAccountInstruction(
-          platformTokenAccount,
-          platformKeypair.publicKey, // SOL goes to platform wallet
-          platformKeypair.publicKey,
-          [],
-          programId
-        )
-      );
-      
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = platformKeypair.publicKey;
-      
-      // Sign and send transaction
-      transaction.sign(platformKeypair);
-      
-      const signature = await connection.sendRawTransaction(transaction.serialize());
-      await connection.confirmTransaction(signature, 'confirmed');
-      
-      // Update pending burn status
-      await storage.updatePendingBurnStatus(pendingBurnId, 'executed', signature);
-      
-      // Create final token burn record
-      await storage.createTokenBurnRecord({
-        signature,
-        walletAddress: pendingBurn.walletAddress,
-        tokenMint: pendingBurn.tokenMint,
-        tokenSymbol: pendingBurn.tokenSymbol || 'UNKNOWN',
-        tokenName: pendingBurn.tokenName || 'Unknown Token',
-        amountBurned: pendingBurn.amount,
-        solRecovered: pendingBurn.rentSolReclaimed
-      });
-      
-      res.json({
-        success: true,
-        signature,
-        message: "Tokens permanently burned after grace period expired"
-      });
-      
-    } catch (error) {
-      console.error("Error executing burn:", error);
-      res.status(500).json({ error: "Failed to execute burn" });
     }
   });
 

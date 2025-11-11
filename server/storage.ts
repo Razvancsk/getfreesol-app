@@ -47,15 +47,12 @@ import {
   type InsertReferralFeeTransaction,
   type ReferralClaim,
   type InsertReferralClaim,
-  type PendingTokenBurn,
-  type InsertPendingTokenBurn,
   users,
   transactionRecords,
   emptyTokenAccounts,
   scanResults,
   transactionLedger,
   tokenBurnRecords,
-  pendingTokenBurns,
   nftBurnRecords,
   referralCodes,
   referralTransactions,
@@ -107,12 +104,6 @@ export interface IStorage {
   getNftBurnRecords(limit?: number): Promise<NftBurnRecord[]>;
   getNftBurnRecordsByWallet(walletAddress: string, limit?: number): Promise<NftBurnRecord[]>;
   
-  // Pending Token Burns (Grace Period)
-  createPendingTokenBurn(burn: InsertPendingTokenBurn): Promise<PendingTokenBurn>;
-  getPendingTokenBurnsByWallet(walletAddress: string): Promise<PendingTokenBurn[]>;
-  getPendingTokenBurnById(id: string): Promise<PendingTokenBurn | undefined>;
-  updatePendingBurnStatus(id: string, status: string, signature?: string): Promise<void>;
-  getExpiredPendingBurns(): Promise<PendingTokenBurn[]>;
   
   // Empty Token Accounts
   createEmptyTokenAccount(account: InsertEmptyTokenAccount): Promise<EmptyTokenAccount>;
@@ -397,62 +388,6 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  // Pending Token Burns (Grace Period)
-  async createPendingTokenBurn(burn: InsertPendingTokenBurn): Promise<PendingTokenBurn> {
-    const [created] = await db.insert(pendingTokenBurns).values(burn).returning();
-    return created;
-  }
-
-  async getPendingTokenBurnsByWallet(walletAddress: string): Promise<PendingTokenBurn[]> {
-    return await db
-      .select()
-      .from(pendingTokenBurns)
-      .where(
-        and(
-          eq(pendingTokenBurns.walletAddress, walletAddress),
-          eq(pendingTokenBurns.status, 'pending')
-        )
-      )
-      .orderBy(desc(pendingTokenBurns.createdAt));
-  }
-
-  async getPendingTokenBurnById(id: string): Promise<PendingTokenBurn | undefined> {
-    const result = await db
-      .select()
-      .from(pendingTokenBurns)
-      .where(eq(pendingTokenBurns.id, id))
-      .limit(1);
-    return result[0];
-  }
-
-  async updatePendingBurnStatus(id: string, status: string, signature?: string): Promise<void> {
-    const updateData: any = { status };
-    
-    if (status === 'claimed_back') {
-      updateData.claimBackSignature = signature;
-      updateData.claimedBackAt = new Date();
-    } else if (status === 'executed') {
-      updateData.finalBurnSignature = signature;
-      updateData.executedAt = new Date();
-    }
-    
-    await db.update(pendingTokenBurns)
-      .set(updateData)
-      .where(eq(pendingTokenBurns.id, id));
-  }
-
-  async getExpiredPendingBurns(): Promise<PendingTokenBurn[]> {
-    const now = new Date();
-    return await db
-      .select()
-      .from(pendingTokenBurns)
-      .where(
-        and(
-          eq(pendingTokenBurns.status, 'pending'),
-          sql`${pendingTokenBurns.createdAt} + (${pendingTokenBurns.gracePeriodMinutes} || ' minutes')::interval < ${now}`
-        )
-      );
-  }
 
   // Empty Token Accounts
   async createEmptyTokenAccount(account: InsertEmptyTokenAccount): Promise<EmptyTokenAccount> {
