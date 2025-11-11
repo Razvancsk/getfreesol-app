@@ -2189,8 +2189,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const mintPublicKey = new PublicKey(token.mint);
         const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
         
-        // Step 1: Transfer tokens to platform wallet (escrow for grace period)
-        if (token.balance > 0) {
+        // Step 1: Query CURRENT balance and transfer ALL tokens to platform wallet (escrow for grace period)
+        // Query fresh balance to ensure we transfer 100% of tokens
+        const currentAccountInfo = await connection.getParsedAccountInfo(token.account);
+        const currentParsed = currentAccountInfo?.value?.data as any;
+        const currentBalance = currentParsed?.parsed?.info?.tokenAmount?.amount || '0';
+        
+        if (currentBalance !== '0') {
           // Get or create associated token account for platform wallet
           const platformTokenAccount = await getAssociatedTokenAddress(
             mintPublicKey,
@@ -2215,22 +2220,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Added create ATA instruction for platform wallet for ${token.mint}`);
           }
           
-          // Transfer tokens to platform wallet
-          // Note: token.balance is already in raw units (e.g., 334263 for 0.334263 USDC)
-          const rawBalance = BigInt(token.balance);
+          // Transfer ALL tokens to platform wallet using CURRENT balance
+          const rawBalance = BigInt(currentBalance);
           
           const transferInstruction = createTransferCheckedInstruction(
             token.account,           // source
             mintPublicKey,           // mint
             platformTokenAccount,     // destination (platform wallet)
             ownerPublicKey,          // owner
-            rawBalance,              // amount (raw balance in smallest units)
+            rawBalance,              // amount (ALL tokens in raw units)
             token.decimals,          // decimals
             [],                      // signers
             token.programId          // program ID
           );
           transaction.add(transferInstruction);
-          console.log(`Added TransferChecked instruction for ${token.mint} to platform escrow (${rawBalance.toString()} raw units)`);
+          console.log(`Added TransferChecked instruction for ${token.mint} to platform escrow (${rawBalance.toString()} raw units = 100% of balance)`);
         }
         
         // Step 2: Close the now-empty account to reclaim SOL immediately
