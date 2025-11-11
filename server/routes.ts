@@ -2826,17 +2826,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user's token account exists
       const userAccountInfo = await connection.getAccountInfo(userTokenAccount);
       if (!userAccountInfo) {
-        // User needs to create the account (pays rent)
+        // Escrow wallet pays for creating the account (user doesn't pay to claim back)
         transaction.add(
           createAssociatedTokenAccountInstruction(
-            userPublicKey,           // payer (user pays rent)
+            escrowKeypair.publicKey, // payer (escrow wallet pays rent)
             userTokenAccount,         // account to create
             userPublicKey,            // owner
             mintPublicKey,            // mint
             programId                 // program ID
           )
         );
-        console.log(`Added create ATA instruction for user ${walletAddress}`);
+        console.log(`Added create ATA instruction - escrow wallet will pay rent for ${walletAddress}`);
       }
       
       // Transfer tokens from escrow wallet back to user
