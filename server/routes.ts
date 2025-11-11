@@ -2207,8 +2207,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             token.programId
           );
           
-          console.log(`🔍 Escrow destination: ${escrowTokenAccount.toBase58()}`);
-          console.log(`🔍 User source: ${token.account.toBase58()}`);
+          console.log(`🔍 TRANSFER DESTINATION:`);
+          console.log(`   - Escrow wallet: ${ESCROW_WALLET}`);
+          console.log(`   - Escrow token account (ATA): ${escrowTokenAccount.toBase58()}`);
+          console.log(`🔍 TRANSFER SOURCE:`);
+          console.log(`   - User wallet: ${ownerPublicKey.toBase58()}`);
+          console.log(`   - User token account: ${token.account.toBase58()}`);
           
           // TRANSFER (NOT BURN) ALL tokens to escrow wallet using EXACT on-chain balance
           const rawBalance = BigInt(exactRawAmount);
