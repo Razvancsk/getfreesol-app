@@ -168,7 +168,7 @@ export default function Statistics() {
                   Top Addresses Leaderboard
                 </CardTitle>
                 <CardDescription className="text-purple-200 mt-1">
-                  Addresses that recovered the most rent (all time)
+                  Addresses that recovered the most rent ({getPeriodLabel(selectedPeriod).toLowerCase()})
                 </CardDescription>
               </div>
               
