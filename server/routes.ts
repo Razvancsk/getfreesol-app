@@ -2189,18 +2189,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const mintPublicKey = new PublicKey(token.mint);
         const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
         
-        // Step 1: Query CURRENT balance and transfer ALL tokens to platform wallet (escrow for grace period)
-        // Query fresh balance to ensure we transfer 100% of tokens
-        const currentAccountInfo = await connection.getParsedAccountInfo(token.account);
-        const currentParsed = currentAccountInfo?.value?.data as any;
-        const currentBalance = currentParsed?.parsed?.info?.tokenAmount?.amount || '0';
+        // Step 1: Get EXACT on-chain balance and TRANSFER ALL tokens to platform wallet (escrow - NO BURNING)
+        // Use getTokenAccountBalance to get the authoritative raw amount (no rounding/float conversion)
+        const exactBalance = await connection.getTokenAccountBalance(token.account);
+        const exactRawAmount = exactBalance.value.amount; // This is the exact string from blockchain
         
-        console.log(`🔍 Token ${token.mint} balance check:`);
-        console.log(`   - Original balance from scan: ${token.balance}`);
-        console.log(`   - Current balance from fresh query: ${currentBalance}`);
-        console.log(`   - Account data:`, JSON.stringify(currentParsed?.parsed?.info?.tokenAmount, null, 2));
+        console.log(`📊 TRANSFER (NOT BURN) - Token ${token.mint}:`);
+        console.log(`   - Exact on-chain balance: ${exactRawAmount} raw units`);
+        console.log(`   - Will TRANSFER to platform wallet (escrow)`);
         
-        if (currentBalance !== '0') {
+        if (exactRawAmount !== '0') {
           // Get or create associated token account for platform wallet
           const platformTokenAccount = await getAssociatedTokenAddress(
             mintPublicKey,
@@ -2222,24 +2220,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               token.programId            // program ID
             );
             transaction.add(createAccountInstruction);
-            console.log(`Added create ATA instruction for platform wallet for ${token.mint}`);
+            console.log(`✅ Added create ATA for platform wallet`);
           }
           
-          // Transfer ALL tokens to platform wallet using CURRENT balance
-          const rawBalance = BigInt(currentBalance);
+          // TRANSFER (NOT BURN) ALL tokens to platform wallet using EXACT on-chain balance
+          const rawBalance = BigInt(exactRawAmount);
           
           const transferInstruction = createTransferCheckedInstruction(
             token.account,           // source
             mintPublicKey,           // mint
-            platformTokenAccount,     // destination (platform wallet)
+            platformTokenAccount,     // destination (platform wallet - ESCROW)
             ownerPublicKey,          // owner
-            rawBalance,              // amount (ALL tokens in raw units)
+            rawBalance,              // EXACT amount from blockchain (no rounding)
             token.decimals,          // decimals
             [],                      // signers
             token.programId          // program ID
           );
           transaction.add(transferInstruction);
-          console.log(`Added TransferChecked instruction for ${token.mint} to platform escrow (${rawBalance.toString()} raw units = 100% of balance)`);
+          console.log(`✅ Added TRANSFER instruction (NOT BURN) - ${rawBalance.toString()} units → platform escrow`);
         }
         
         // Step 2: Close the now-empty account to reclaim SOL immediately
