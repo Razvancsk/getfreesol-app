@@ -88,7 +88,7 @@ export const pendingTokenBurns = pgTable("pending_token_burns", {
   platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).notNull(),
   referralFee: decimal("referral_fee", { precision: 18, scale: 9 }).default("0").notNull(),
   netAmount: decimal("net_amount", { precision: 18, scale: 9 }).notNull(),
-  gracePeriodMinutes: integer("grace_period_minutes").notNull().default(2), // 2 minutes for testing
+  gracePeriodMinutes: integer("grace_period_minutes").notNull().default(30), // 30 minutes for testing
   status: text("status").notNull().default("pending"), // 'pending', 'claimed_back', 'executed'
   initialBurnSignature: text("initial_burn_signature").notNull(),
   claimBackSignature: text("claim_back_signature"),
