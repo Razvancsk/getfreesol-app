@@ -93,6 +93,7 @@ export default function SolRefund() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'lend'>('reclaim');
+  const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -170,9 +171,9 @@ export default function SolRefund() {
   });
 
   const { data: leaderboardData } = useQuery<{ success: boolean; period: string; leaderboard: Array<{ walletAddress: string; totalSolRecovered: string }> }>({
-    queryKey: ['/api/statistics/leaderboard', 'all'],
+    queryKey: ['/api/statistics/leaderboard', selectedLeaderboardPeriod],
     queryFn: async () => {
-      const response = await fetch('/api/statistics/leaderboard?period=all&limit=10');
+      const response = await fetch(`/api/statistics/leaderboard?period=${selectedLeaderboardPeriod}&limit=10`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -3660,12 +3661,44 @@ export default function SolRefund() {
                 {/* Leaderboard */}
                 <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <TrendingUp className="w-6 h-6 text-yellow-400" />
-                      Top Addresses Leaderboard
-                    </CardTitle>
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <TrendingUp className="w-6 h-6 text-yellow-400" />
+                        Top Addresses Leaderboard
+                      </CardTitle>
+                      {/* Filter buttons inside card */}
+                      <div className="flex gap-2">
+                        <Button
+                          data-testid="leaderboard-filter-24h"
+                          size="sm"
+                          variant={selectedLeaderboardPeriod === '24h' ? 'default' : 'outline'}
+                          onClick={() => setSelectedLeaderboardPeriod('24h')}
+                          className={selectedLeaderboardPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                        >
+                          Daily
+                        </Button>
+                        <Button
+                          data-testid="leaderboard-filter-weekly"
+                          size="sm"
+                          variant={selectedLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
+                          onClick={() => setSelectedLeaderboardPeriod('weekly')}
+                          className={selectedLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                        >
+                          Weekly
+                        </Button>
+                        <Button
+                          data-testid="leaderboard-filter-monthly"
+                          size="sm"
+                          variant={selectedLeaderboardPeriod === 'monthly' ? 'default' : 'outline'}
+                          onClick={() => setSelectedLeaderboardPeriod('monthly')}
+                          className={selectedLeaderboardPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                        >
+                          Monthly
+                        </Button>
+                      </div>
+                    </div>
                     <CardDescription className="text-purple-200">
-                      Addresses that recovered the most rent (all time)
+                      Addresses that recovered the most rent ({selectedLeaderboardPeriod === '24h' ? 'last 24 hours' : selectedLeaderboardPeriod === 'weekly' ? 'last 7 days' : 'last 30 days'})
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
