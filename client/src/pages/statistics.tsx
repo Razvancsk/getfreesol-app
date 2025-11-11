@@ -161,13 +161,37 @@ export default function Statistics() {
         {/* Leaderboard */}
         <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Trophy className="w-6 h-6 text-yellow-400" />
-              Top Addresses Leaderboard
-            </CardTitle>
-            <CardDescription className="text-purple-200">
-              Addresses that recovered the most rent {getPeriodLabel(selectedPeriod).toLowerCase()}
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-white mb-2">
+                  <Trophy className="w-6 h-6 text-yellow-400" />
+                  Top Addresses Leaderboard
+                </CardTitle>
+                <CardDescription className="text-purple-200">
+                  Addresses that recovered the most rent {getPeriodLabel(selectedPeriod).toLowerCase()}
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setSelectedPeriod('24h')}
+                  variant={selectedPeriod === '24h' ? 'default' : 'outline'}
+                  size="sm"
+                  className={selectedPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  data-testid="filter-daily"
+                >
+                  Daily
+                </Button>
+                <Button
+                  onClick={() => setSelectedPeriod('weekly')}
+                  variant={selectedPeriod === 'weekly' ? 'default' : 'outline'}
+                  size="sm"
+                  className={selectedPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  data-testid="filter-weekly"
+                >
+                  Weekly
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {leaderboardLoading ? (
