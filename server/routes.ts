@@ -2721,21 +2721,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const connection = new Connection(rpcUrl, 'confirmed');
       
-      // Load escrow wallet keypair from private key
+      // Load escrow wallet keypair from private key (handle any format)
       const escrowPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
       if (!escrowPrivateKey) {
         return res.status(500).json({ error: "Escrow wallet not configured" });
       }
       
       const ESCROW_WALLET = 'BURNRcHCvRZQTTyBgTdUpdyRFJ42zTAEz9X7BiqWnZGf';
-      const escrowKeypair = Keypair.fromSecretKey(
-        Buffer.from(escrowPrivateKey, 'base64')
-      );
       
-      // Verify the keypair matches the expected escrow wallet
-      if (escrowKeypair.publicKey.toBase58() !== ESCROW_WALLET) {
-        console.error('Escrow keypair mismatch!', escrowKeypair.publicKey.toBase58(), 'vs', ESCROW_WALLET);
-        return res.status(500).json({ error: "Escrow wallet configuration error" });
+      let escrowKeypair: Keypair;
+      try {
+        // Try different formats
+        let secretKeyBytes: Uint8Array;
+        
+        // Try as JSON array
+        if (escrowPrivateKey.startsWith('[')) {
+          const arr = JSON.parse(escrowPrivateKey);
+          secretKeyBytes = new Uint8Array(arr);
+        }
+        // Try as base64
+        else if (escrowPrivateKey.length > 60 && !escrowPrivateKey.includes(',')) {
+          secretKeyBytes = new Uint8Array(Buffer.from(escrowPrivateKey, 'base64'));
+        }
+        // Try as hex
+        else if (/^[0-9a-fA-F]+$/.test(escrowPrivateKey)) {
+          secretKeyBytes = new Uint8Array(Buffer.from(escrowPrivateKey, 'hex'));
+        }
+        // Try as comma-separated numbers
+        else if (escrowPrivateKey.includes(',')) {
+          const arr = escrowPrivateKey.split(',').map(n => parseInt(n.trim()));
+          secretKeyBytes = new Uint8Array(arr);
+        }
+        else {
+          throw new Error('Unknown private key format');
+        }
+        
+        escrowKeypair = Keypair.fromSecretKey(secretKeyBytes);
+        
+        // Verify the keypair matches the expected escrow wallet
+        if (escrowKeypair.publicKey.toBase58() !== ESCROW_WALLET) {
+          console.error('Escrow keypair mismatch!', escrowKeypair.publicKey.toBase58(), 'vs', ESCROW_WALLET);
+          return res.status(500).json({ error: "Escrow wallet configuration error" });
+        }
+      } catch (error) {
+        console.error('Failed to parse escrow private key:', error);
+        return res.status(500).json({ error: "Invalid escrow private key format" });
       }
       
       const userPublicKey = new PublicKey(walletAddress);
