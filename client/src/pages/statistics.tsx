@@ -159,7 +159,7 @@ export default function Statistics() {
         <Separator className="bg-purple-600 mb-8" />
 
         {/* Leaderboard */}
-        <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+        <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" style={{ backgroundColor: 'rgba(88, 28, 135, 0.5)' }}>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-white text-2xl">
               <TrendingUp className="w-7 h-7 text-yellow-400" />
@@ -172,7 +172,7 @@ export default function Statistics() {
           
           <CardContent className="space-y-4">
             {/* Filter Buttons */}
-            <div className="flex items-center gap-3 p-4 bg-purple-900/40 rounded-lg border border-purple-500/20">
+            <div className="flex items-center gap-3 p-4 bg-purple-900/40 rounded-lg border border-purple-500/20" style={{ backgroundColor: 'rgba(76, 29, 149, 0.4)' }}>
               <span className="text-purple-200 font-medium text-sm">Filter by:</span>
               <div className="flex gap-2">
                 <Button
@@ -232,6 +232,7 @@ export default function Statistics() {
                   <div 
                     key={entry.walletAddress} 
                     className="flex items-center justify-between p-4 bg-purple-900/30 border border-purple-500/20 rounded-lg hover:bg-purple-700/30 transition-all hover:border-purple-400/40"
+                    style={{ backgroundColor: 'rgba(76, 29, 149, 0.3)' }}
                     data-testid={`leaderboard-row-${index}`}
                   >
                     <div className="flex items-center gap-4">
