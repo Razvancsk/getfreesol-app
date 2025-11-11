@@ -3671,27 +3671,30 @@ export default function SolRefund() {
                         <Button
                           data-testid="leaderboard-filter-24h"
                           size="sm"
-                          variant={selectedLeaderboardPeriod === '24h' ? 'default' : 'outline'}
                           onClick={() => setSelectedLeaderboardPeriod('24h')}
-                          className={selectedLeaderboardPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-400 text-white hover:bg-purple-800'}
+                          className={selectedLeaderboardPeriod === '24h' 
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
+                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
                         >
                           Daily
                         </Button>
                         <Button
                           data-testid="leaderboard-filter-weekly"
                           size="sm"
-                          variant={selectedLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
                           onClick={() => setSelectedLeaderboardPeriod('weekly')}
-                          className={selectedLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-400 text-white hover:bg-purple-800'}
+                          className={selectedLeaderboardPeriod === 'weekly' 
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
+                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
                         >
                           Weekly
                         </Button>
                         <Button
                           data-testid="leaderboard-filter-monthly"
                           size="sm"
-                          variant={selectedLeaderboardPeriod === 'monthly' ? 'default' : 'outline'}
                           onClick={() => setSelectedLeaderboardPeriod('monthly')}
-                          className={selectedLeaderboardPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-400 text-white hover:bg-purple-800'}
+                          className={selectedLeaderboardPeriod === 'monthly' 
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
+                            : 'bg-transparent border border-purple-400 text-white hover:bg-purple-800/50'}
                         >
                           Monthly
                         </Button>
