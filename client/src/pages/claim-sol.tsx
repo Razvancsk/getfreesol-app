@@ -3135,7 +3135,14 @@ export default function SolRefund() {
                       <li>• Burning permanently destroys the tokens</li>
                       <li>• Most tokens return ~0.002 SOL per account closed</li>
                     </ul>
-                    <p className="mt-3 text-sm text-purple-200 font-semibold">
+                  </div>
+                </div>
+                
+                {/* Warning Disclaimer */}
+                <div className="mt-3 bg-yellow-900/20 border-l-4 border-yellow-500 p-3 rounded">
+                  <div className="flex items-start space-x-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-yellow-200 font-semibold">
                       Burning tokens can't be undone. By using GetFreeSOL, you agree it's on you — we're not responsible for mistakes or accidental burns.
                     </p>
                   </div>
@@ -3418,7 +3425,14 @@ export default function SolRefund() {
                       <li>• Burning permanently destroys the NFT and its metadata</li>
                       <li>• Burning NFTs usually returns 0.01 SOL, while most tokens and some scam NFTs give only 0.002 SOL. Magic Eden OCP NFTs return 0.004 SOL, and compressed NFTs return nothing.</li>
                     </ul>
-                    <p className="mt-3 text-sm text-purple-200 font-semibold">
+                  </div>
+                </div>
+                
+                {/* Warning Disclaimer */}
+                <div className="mt-3 bg-yellow-900/20 border-l-4 border-yellow-500 p-3 rounded">
+                  <div className="flex items-start space-x-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-yellow-200 font-semibold">
                       Burning tokens can't be undone. By using GetFreeSOL, you agree it's on you — we're not responsible for mistakes or accidental burns.
                     </p>
                   </div>
