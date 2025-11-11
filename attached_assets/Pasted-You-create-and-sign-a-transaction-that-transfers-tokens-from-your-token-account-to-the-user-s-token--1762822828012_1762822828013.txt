@@ -1,0 +1,128 @@
+You create and sign a transaction that transfers tokens from your token account to the user’s token account.
+You send it directly to Solana RPC (no user action required).
+
+JavaScript Example:
+
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  clusterApiUrl
+} from "@solana/web3.js";
+import {
+  getOrCreateAssociatedTokenAccount,
+  createTransferCheckedInstruction,
+  TOKEN_PROGRAM_ID
+} from "@solana/spl-token";
+import bs58 from "bs58";
+
+const connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
+
+// your wallet (sender)
+const sender = Keypair.fromSecretKey(bs58.decode("YOUR_PRIVATE_KEY_BASE58"));
+const mint = new PublicKey("YOUR_TOKEN_MINT_ADDRESS"); // SPL token mint
+const recipient = new PublicKey("USER_WALLET_ADDRESS");
+const decimals = 9; // token decimals
+const amount = 5 * 10 ** decimals; // e.g. 5 tokens
+
+(async () => {
+  // ensure recipient ATA exists
+  const recipientATA = await getOrCreateAssociatedTokenAccount(
+    connection,
+    sender,
+    mint,
+    recipient
+  );
+
+  // find sender ATA
+  const senderATA = await getOrCreateAssociatedTokenAccount(
+    connection,
+    sender,
+    mint,
+    sender.publicKey
+  );
+
+  // create transfer instruction
+  const tx = new Transaction().add(
+    createTransferCheckedInstruction(
+      senderATA.address,
+      mint,
+      recipientATA.address,
+      sender.publicKey,
+      amount,
+      decimals,
+      [],
+      TOKEN_PROGRAM_ID
+    )
+  );
+
+  const signature = await connection.sendTransaction(tx, [sender]);
+  console.log("✅ Claim transfer sent:", signature);
+})();
+
+
+✅ Best if you’re sending claims automatically (backend service, reward bot, etc.).
+User doesn’t need to interact — they just receive tokens.
+
+🧩 Option 2 — User clicks “Claim” and you prebuild the transaction
+
+If you want the user to click Claim and pay the network fee (like a self-claim):
+
+You build a transaction that transfers tokens from your wallet to theirs.
+
+You partially sign it with your key.
+
+You send that unsigned/half-signed transaction to the user (Base64).
+
+The user signs & submits it via their wallet (Phantom, Backpack, etc.).
+
+That’s called a “claim transaction” — both parties sign:
+
+You: authorize sending your tokens.
+
+User: pays for the transaction fee and confirms receipt.
+
+This is the same flow used by Jupiter and Bonk claim portals.
+
+You can create it with @solana/web3.js and serve it via your backend API:
+
+const tx = new Transaction().add(
+  createTransferCheckedInstruction(
+    senderATA.address,
+    mint,
+    recipientATA.address,
+    sender.publicKey,
+    amount,
+    decimals
+  )
+);
+tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+tx.feePayer = recipient; // user pays fee
+tx.partialSign(sender);  // your wallet signs
+const serialized = tx.serialize({ requireAllSignatures: false }).toString("base64");
+return serialized;
+
+
+Then, in your frontend:
+
+const recoveredTx = Transaction.from(Buffer.from(serialized, "base64"));
+const signature = await window.solana.signAndSendTransaction(recoveredTx);
+
+
+✅ The user clicks “Claim,” approves it in Phantom, and receives the tokens.
+✅ Your wallet doesn’t need to pay SOL fees.
+
+🔒 Security Notes
+
+Never expose your private key in frontend code — sign transactions only from your backend or a secure server.
+
+If you handle many claims, build a simple API endpoint like /claim?wallet=ADDRESS that:
+
+Verifies eligibility (backend check).
+
+Generates and signs the transaction.
+
+Returns the Base64 transaction for the user to execute.
+
+Use airdrop limits or nonces if users can only claim once.

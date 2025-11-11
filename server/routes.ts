@@ -2847,17 +2847,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user's token account exists
       const userAccountInfo = await connection.getAccountInfo(userTokenAccount);
       if (!userAccountInfo) {
-        // Escrow wallet pays for creating the account (user doesn't pay to claim back)
+        // User pays for creating their own token account
         transaction.add(
           createAssociatedTokenAccountInstruction(
-            escrowKeypair.publicKey, // payer (escrow wallet pays rent)
-            userTokenAccount,         // account to create
-            userPublicKey,            // owner
-            mintPublicKey,            // mint
-            programId                 // program ID
+            userPublicKey,    // payer (user pays rent)
+            userTokenAccount, // account to create
+            userPublicKey,    // owner
+            mintPublicKey,    // mint
+            programId         // program ID
           )
         );
-        console.log(`Added create ATA instruction - escrow wallet will pay rent for ${walletAddress}`);
+        console.log(`Added create ATA instruction - user will pay rent to receive tokens`);
       }
       
       // Transfer tokens from escrow wallet back to user
@@ -2880,26 +2880,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recent blockhash
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
-      transaction.feePayer = escrowKeypair.publicKey; // Escrow wallet pays for everything
+      transaction.feePayer = userPublicKey; // USER pays the fee (not escrow)
       
-      // Escrow wallet signs and sends the transaction
-      transaction.sign(escrowKeypair);
+      // Escrow wallet partially signs the transaction (authorizes token transfer)
+      transaction.partialSign(escrowKeypair);
       
-      console.log('Sending claim-back transaction...');
-      const signature = await connection.sendRawTransaction(transaction.serialize());
-      console.log('Claim-back transaction sent:', signature);
+      console.log('✅ Created claim-back transaction, escrow wallet signed');
+      console.log(`   User (${walletAddress}) will sign and submit`);
       
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
-      console.log('✅ Claim-back transaction confirmed:', signature);
-      
-      // Update pending burn status
-      await storage.updatePendingBurnStatus(pendingBurnId, 'claimed_back', signature);
+      // Serialize the partially signed transaction
+      const serialized = transaction.serialize({
+        requireAllSignatures: false, // Allow partial signatures
+        verifySignatures: false      // Don't verify yet (user hasn't signed)
+      }).toString('base64');
       
       res.json({
         success: true,
-        signature,
-        message: `Successfully claimed back ${pendingBurn.amount} ${pendingBurn.tokenSymbol}!`
+        transaction: serialized,
+        pendingBurnId,
+        amount: pendingBurn.amount,
+        symbol: pendingBurn.tokenSymbol,
+        message: `Transaction ready - please sign to claim ${pendingBurn.amount} ${pendingBurn.tokenSymbol}`
       });
       
     } catch (error) {

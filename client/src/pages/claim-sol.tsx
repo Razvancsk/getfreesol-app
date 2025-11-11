@@ -916,27 +916,62 @@ export default function SolRefund() {
   // Claim Back Mutation (recover tokens during grace period)
   const claimBackMutation = useMutation({
     mutationFn: async (pendingBurnId: string) => {
+      if (!isConnected || !publicKey || !signTransaction) {
+        throw new Error('Wallet not connected');
+      }
+
+      // Get partially-signed transaction from backend
       const response = await fetch('/api/tokens/claim-back', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pendingBurnId,
-          walletAddress: publicKey?.toString()
+          walletAddress: publicKey.toString()
         })
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to claim back tokens');
+        throw new Error(error.error || 'Failed to create claim transaction');
       }
 
       const data = await response.json();
-      return data; // Returns { success: true, signature, message }
+      
+      // Deserialize the partially-signed transaction
+      const transaction = Transaction.from(Buffer.from(data.transaction, 'base64'));
+      
+      // User signs the transaction (to approve receiving tokens and pay fee)
+      const signedTx = await signTransaction(transaction);
+      
+      // Submit to blockchain
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      console.log('Claim-back transaction submitted:', signature);
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+      
+      // Record the successful claim-back
+      await fetch('/api/tokens/record-claim-back', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signature,
+          pendingBurnId
+        })
+      });
+      
+      return { 
+        success: true, 
+        signature,
+        amount: data.amount,
+        symbol: data.symbol,
+        message: data.message 
+      };
     },
     onSuccess: (result) => {
       toast({
         title: "Tokens Claimed Back!",
-        description: `Successfully recovered your tokens. Paid ${result.rentCost} SOL rent.`,
+        description: `Successfully recovered ${result.amount} ${result.symbol}!`,
         className: "bg-green-600 text-white border-green-600",
       });
       queryClient.invalidateQueries({ 
