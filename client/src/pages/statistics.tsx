@@ -159,7 +159,7 @@ export default function Statistics() {
         <Separator className="bg-purple-600 mb-8" />
 
         {/* Leaderboard */}
-        <Card className="!bg-purple-800/50 border-purple-600 backdrop-blur">
+        <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-white text-2xl">
               <TrendingUp className="w-7 h-7 text-yellow-400" />
