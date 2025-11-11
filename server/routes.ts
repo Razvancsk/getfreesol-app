@@ -2738,22 +2738,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (escrowPrivateKey.startsWith('[')) {
           const arr = JSON.parse(escrowPrivateKey);
           secretKeyBytes = new Uint8Array(arr);
+          console.log('Parsed as JSON array, length:', secretKeyBytes.length);
         }
         // Try as base64
         else if (escrowPrivateKey.length > 60 && !escrowPrivateKey.includes(',')) {
           secretKeyBytes = new Uint8Array(Buffer.from(escrowPrivateKey, 'base64'));
+          console.log('Parsed as base64, length:', secretKeyBytes.length);
         }
         // Try as hex
         else if (/^[0-9a-fA-F]+$/.test(escrowPrivateKey)) {
           secretKeyBytes = new Uint8Array(Buffer.from(escrowPrivateKey, 'hex'));
+          console.log('Parsed as hex, length:', secretKeyBytes.length);
         }
         // Try as comma-separated numbers
         else if (escrowPrivateKey.includes(',')) {
           const arr = escrowPrivateKey.split(',').map(n => parseInt(n.trim()));
           secretKeyBytes = new Uint8Array(arr);
+          console.log('Parsed as comma-separated, length:', secretKeyBytes.length);
         }
         else {
+          console.error('Unknown private key format. First 20 chars:', escrowPrivateKey.substring(0, 20));
           throw new Error('Unknown private key format');
+        }
+        
+        // Verify we have exactly 64 bytes
+        if (secretKeyBytes.length !== 64) {
+          throw new Error(`Bad secret key size: expected 64, got ${secretKeyBytes.length}`);
         }
         
         escrowKeypair = Keypair.fromSecretKey(secretKeyBytes);
@@ -2763,6 +2773,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Escrow keypair mismatch!', escrowKeypair.publicKey.toBase58(), 'vs', ESCROW_WALLET);
           return res.status(500).json({ error: "Escrow wallet configuration error" });
         }
+        
+        console.log('✅ Escrow keypair loaded successfully');
       } catch (error) {
         console.error('Failed to parse escrow private key:', error);
         return res.status(500).json({ error: "Invalid escrow private key format" });
