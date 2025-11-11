@@ -159,115 +159,115 @@ export default function Statistics() {
         <Separator className="bg-purple-600 mb-8" />
 
         {/* Leaderboard */}
-        <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-          <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <TrendingUp className="w-6 h-6 text-yellow-400" />
-                  Top Addresses Leaderboard
-                </CardTitle>
-                <CardDescription className="text-purple-200 mt-1">
-                  Addresses that recovered the most rent ({getPeriodLabel(selectedPeriod).toLowerCase()})
-                </CardDescription>
-              </div>
-              
-              {/* Filter Buttons - Compact */}
+        <Card className="bg-gradient-to-br from-purple-800/50 to-purple-900/40 border-purple-500/30 backdrop-blur-sm shadow-xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-white text-2xl">
+              <TrendingUp className="w-7 h-7 text-yellow-400" />
+              Top Addresses Leaderboard
+            </CardTitle>
+            <CardDescription className="text-purple-200 text-base mt-2">
+              Addresses that recovered the most rent (all time)
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            {/* Filter Buttons */}
+            <div className="flex items-center gap-3 p-4 bg-purple-900/40 rounded-lg border border-purple-500/20">
+              <span className="text-purple-200 font-medium text-sm">Filter by:</span>
               <div className="flex gap-2">
                 <Button
                   onClick={() => setSelectedPeriod('24h')}
                   variant={selectedPeriod === '24h' ? 'default' : 'outline'}
                   size="sm"
-                  className={selectedPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  className={`transition-all ${
+                    selectedPeriod === '24h' 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
+                      : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
+                  }`}
                   data-testid="filter-daily"
                 >
-                  Daily
+                  📅 Daily
                 </Button>
                 <Button
                   onClick={() => setSelectedPeriod('weekly')}
                   variant={selectedPeriod === 'weekly' ? 'default' : 'outline'}
                   size="sm"
-                  className={selectedPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  className={`transition-all ${
+                    selectedPeriod === 'weekly' 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
+                      : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
+                  }`}
                   data-testid="filter-weekly"
                 >
-                  Weekly
+                  📊 Weekly
                 </Button>
                 <Button
                   onClick={() => setSelectedPeriod('monthly')}
                   variant={selectedPeriod === 'monthly' ? 'default' : 'outline'}
                   size="sm"
-                  className={selectedPeriod === 'monthly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+                  className={`transition-all ${
+                    selectedPeriod === 'monthly' 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md' 
+                      : 'border-purple-400/50 text-purple-200 hover:bg-purple-700/50 hover:border-purple-400'
+                  }`}
                   data-testid="filter-monthly"
                 >
-                  Monthly
+                  📈 Monthly
                 </Button>
               </div>
+              <div className="ml-auto text-sm text-purple-300 font-medium">
+                {selectedPeriod === '24h' ? 'Last 24 hours' : selectedPeriod === 'weekly' ? 'Last 7 days' : 'Last 30 days'}
+              </div>
             </div>
-          </CardHeader>
-          
-          <CardContent>
 
-            {/* Table */}
+            {/* Leaderboard List */}
             {leaderboardLoading ? (
               <div className="text-center py-12 text-purple-300">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mb-3"></div>
                 <div>Loading leaderboard...</div>
               </div>
             ) : leaderboardData && leaderboardData.leaderboard.length > 0 ? (
-              <div className="rounded-lg border border-purple-500/20 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-purple-500/30 bg-purple-900/50 hover:bg-purple-900/50">
-                      <TableHead className="text-purple-200 font-bold text-base w-[100px]">Rank</TableHead>
-                      <TableHead className="text-purple-200 font-bold text-base">Wallet Address</TableHead>
-                      <TableHead className="text-purple-200 font-bold text-base text-right">SOL Recovered</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leaderboardData.leaderboard.map((entry, index) => (
-                      <TableRow 
-                        key={entry.walletAddress} 
-                        className="border-purple-500/20 hover:bg-purple-700/30 transition-colors"
-                        data-testid={`leaderboard-row-${index}`}
+              <div className="space-y-2">
+                {leaderboardData.leaderboard.map((entry, index) => (
+                  <div 
+                    key={entry.walletAddress} 
+                    className="flex items-center justify-between p-4 bg-purple-900/30 border border-purple-500/20 rounded-lg hover:bg-purple-700/30 transition-all hover:border-purple-400/40"
+                    data-testid={`leaderboard-row-${index}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {index === 0 && (
+                        <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-600 shadow-md px-3 py-1.5">
+                          🥇 1st
+                        </Badge>
+                      )}
+                      {index === 1 && (
+                        <Badge className="bg-gradient-to-r from-gray-300 to-gray-400 text-black hover:from-gray-400 hover:to-gray-500 shadow-md px-3 py-1.5">
+                          🥈 2nd
+                        </Badge>
+                      )}
+                      {index === 2 && (
+                        <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-md px-3 py-1.5">
+                          🥉 3rd
+                        </Badge>
+                      )}
+                      {index > 2 && (
+                        <span className="text-purple-200 font-semibold ml-2 text-base">#{index + 1}</span>
+                      )}
+                      <a
+                        href={`https://solscan.io/account/${entry.walletAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-300 hover:text-purple-100 underline font-mono text-sm transition-colors"
+                        data-testid={`address-${index}`}
                       >
-                        <TableCell className="font-medium py-4">
-                          {index === 0 && (
-                            <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-600 shadow-md px-3 py-1">
-                              🥇 1st
-                            </Badge>
-                          )}
-                          {index === 1 && (
-                            <Badge className="bg-gradient-to-r from-gray-300 to-gray-400 text-black hover:from-gray-400 hover:to-gray-500 shadow-md px-3 py-1">
-                              🥈 2nd
-                            </Badge>
-                          )}
-                          {index === 2 && (
-                            <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-md px-3 py-1">
-                              🥉 3rd
-                            </Badge>
-                          )}
-                          {index > 2 && (
-                            <span className="text-purple-200 ml-2 font-semibold text-base">#{index + 1}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <a
-                            href={`https://solscan.io/account/${entry.walletAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-purple-300 hover:text-purple-100 underline font-mono transition-colors"
-                            data-testid={`address-${index}`}
-                          >
-                            {truncateAddress(entry.walletAddress)}
-                          </a>
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-green-400 text-lg py-4" data-testid={`amount-${index}`}>
-                          {formatSol(entry.totalSolRecovered)} SOL
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        {truncateAddress(entry.walletAddress)}
+                      </a>
+                    </div>
+                    <div className="text-right font-bold text-green-400 text-base" data-testid={`amount-${index}`}>
+                      {formatSol(entry.totalSolRecovered)} SOL
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-12 text-purple-300 bg-purple-900/20 rounded-lg border border-purple-500/20">
