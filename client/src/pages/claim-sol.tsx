@@ -3739,7 +3739,7 @@ export default function SolRefund() {
                                 className="text-purple-300 hover:text-purple-100 underline font-mono text-sm"
                                 data-testid={`address-${index}`}
                               >
-                                {truncateAddress(entry.walletAddress)}
+                                {entry.walletAddress}
                               </a>
                             </div>
                             <div className="text-right font-bold text-green-400" data-testid={`amount-${index}`}>
