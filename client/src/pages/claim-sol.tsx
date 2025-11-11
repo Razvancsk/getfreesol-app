@@ -3781,7 +3781,7 @@ export default function SolRefund() {
                                 href={`https://solscan.io/account/${entry.walletAddress}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-purple-300 hover:text-purple-100 underline font-mono text-sm"
+                                className="text-white hover:text-gray-200 underline font-mono text-sm"
                                 data-testid={`address-${index}`}
                               >
                                 {entry.walletAddress}
