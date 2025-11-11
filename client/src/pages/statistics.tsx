@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,11 @@ interface LeaderboardEntry {
 
 export default function Statistics() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('24h');
+
+  // Reset to 24h on mount to clear any cached state
+  useEffect(() => {
+    setSelectedPeriod('24h');
+  }, []);
 
   // Fetch overview statistics
   const { data: overviewData, isLoading: overviewLoading } = useQuery<{ success: boolean; period: string; stats: StatisticsOverview }>({
@@ -69,34 +74,6 @@ export default function Statistics() {
             Platform Statistics
           </h1>
           <p className="text-purple-200">Track rent recovery metrics and top performers</p>
-        </div>
-
-        {/* Time Period Filter */}
-        <div className="flex justify-center gap-2 mb-8">
-          <Button
-            data-testid="filter-24h"
-            variant={selectedPeriod === '24h' ? 'default' : 'outline'}
-            onClick={() => setSelectedPeriod('24h')}
-            className={selectedPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
-          >
-            24 Hours
-          </Button>
-          <Button
-            data-testid="filter-weekly"
-            variant={selectedPeriod === 'weekly' ? 'default' : 'outline'}
-            onClick={() => setSelectedPeriod('weekly')}
-            className={selectedPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
-          >
-            Weekly
-          </Button>
-          <Button
-            data-testid="filter-all-time"
-            variant={selectedPeriod === 'all' ? 'default' : 'outline'}
-            onClick={() => setSelectedPeriod('all')}
-            className={selectedPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
-          >
-            All Time
-          </Button>
         </div>
 
         {/* Overview Metrics */}
@@ -160,6 +137,36 @@ export default function Statistics() {
             <CardDescription className="text-purple-200">
               Addresses that recovered the most rent {getPeriodLabel(selectedPeriod).toLowerCase()}
             </CardDescription>
+            {/* Period Filter Buttons */}
+            <div className="flex gap-2 mt-4">
+              <Button
+                data-testid="leaderboard-filter-24h"
+                size="sm"
+                variant={selectedPeriod === '24h' ? 'default' : 'outline'}
+                onClick={() => setSelectedPeriod('24h')}
+                className={selectedPeriod === '24h' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+              >
+                Daily
+              </Button>
+              <Button
+                data-testid="leaderboard-filter-weekly"
+                size="sm"
+                variant={selectedPeriod === 'weekly' ? 'default' : 'outline'}
+                onClick={() => setSelectedPeriod('weekly')}
+                className={selectedPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+              >
+                Weekly
+              </Button>
+              <Button
+                data-testid="leaderboard-filter-all-time"
+                size="sm"
+                variant={selectedPeriod === 'all' ? 'default' : 'outline'}
+                onClick={() => setSelectedPeriod('all')}
+                className={selectedPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-400 text-white hover:bg-purple-800'}
+              >
+                All Time
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {leaderboardLoading ? (
