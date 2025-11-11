@@ -2740,6 +2740,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           secretKeyBytes = new Uint8Array(arr);
           console.log('Parsed as JSON array, length:', secretKeyBytes.length);
         }
+        // Try as base58 (most common Solana wallet export format)
+        else if (escrowPrivateKey.length > 60 && !escrowPrivateKey.includes(',') && !/^[0-9a-fA-F]+$/.test(escrowPrivateKey)) {
+          secretKeyBytes = bs58.decode(escrowPrivateKey);
+          console.log('Parsed as base58, length:', secretKeyBytes.length);
+        }
         // Try as base64
         else if (escrowPrivateKey.length > 60 && !escrowPrivateKey.includes(',')) {
           secretKeyBytes = new Uint8Array(Buffer.from(escrowPrivateKey, 'base64'));
