@@ -3123,6 +3123,24 @@ export default function SolRefund() {
                   )}
                 </Button>
               </div>
+
+              {/* Burn Instructions */}
+              <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4 mt-4">
+                <div className="flex items-start space-x-3">
+                  <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-purple-200">
+                    <p className="font-medium mb-2">About Token Burning:</p>
+                    <ul className="space-y-1 text-purple-300">
+                      <li>• Burn unwanted tokens and recover SOL rent deposits</li>
+                      <li>• Burning permanently destroys the tokens</li>
+                      <li>• Most tokens return ~0.002 SOL per account closed</li>
+                    </ul>
+                    <p className="mt-3 text-xs text-purple-300/80 italic">
+                      Burning tokens can't be undone. By using GetFreeSOL, you agree it's on you — we're not responsible for mistakes or accidental burns.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -3400,6 +3418,9 @@ export default function SolRefund() {
                       <li>• Burning permanently destroys the NFT and its metadata</li>
                       <li>• Burning NFTs usually returns 0.01 SOL, while most tokens and some scam NFTs give only 0.002 SOL. Magic Eden OCP NFTs return 0.004 SOL, and compressed NFTs return nothing.</li>
                     </ul>
+                    <p className="mt-3 text-xs text-purple-300/80 italic">
+                      Burning tokens can't be undone. By using GetFreeSOL, you agree it's on you — we're not responsible for mistakes or accidental burns.
+                    </p>
                   </div>
                 </div>
               </div>
