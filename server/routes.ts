@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction, createTransferCheckedInstruction } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction, createTransferCheckedInstruction, getMint } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
 // Metaplex Core burning - server-side UMI implementation
@@ -2792,6 +2792,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mintAccountInfo = await connection.getAccountInfo(mintPublicKey);
       const programId = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
       
+      // Fetch the actual mint data to get correct decimals
+      const mintData = await getMint(connection, mintPublicKey, 'confirmed', programId);
+      const actualDecimals = mintData.decimals;
+      console.log(`Mint decimals from blockchain: ${actualDecimals}, stored in DB: ${pendingBurn.decimals}`);
+      
       // Get escrow wallet's token account (holds the escrowed tokens)
       const escrowTokenAccount = await getAssociatedTokenAddress(
         mintPublicKey,
@@ -2835,8 +2840,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Transfer tokens from escrow wallet back to user
-      // Convert amount to smallest unit (e.g., 1 USDC = 1000000 with 6 decimals)
-      const amountInSmallestUnit = BigInt(Math.floor(parseFloat(pendingBurn.amount) * Math.pow(10, pendingBurn.decimals)));
+      // Convert amount to smallest unit using ACTUAL decimals from mint (e.g., 1 USDC = 1000000 with 6 decimals)
+      const amountInSmallestUnit = BigInt(Math.floor(parseFloat(pendingBurn.amount) * Math.pow(10, actualDecimals)));
       
       transaction.add(
         createTransferCheckedInstruction(
@@ -2845,7 +2850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userTokenAccount,         // destination (user)
           escrowKeypair.publicKey,  // owner (escrow wallet)
           amountInSmallestUnit,     // amount in smallest unit
-          pendingBurn.decimals,     // decimals
+          actualDecimals,           // decimals from mint (not from database!)
           [],                       // signers
           programId                 // program ID
         )
