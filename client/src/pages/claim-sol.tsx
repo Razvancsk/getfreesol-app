@@ -10,6 +10,7 @@ import { Link, useLocation } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
@@ -104,6 +105,18 @@ export default function SolRefund() {
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+  const [maxTokenValueIndex, setMaxTokenValueIndex] = useState<number>(4); // 0=$1, 1=$10, 2=$30, 3=$100, 4=All
+  
+  // Token value filter logic
+  const VALUE_PRESETS = [1, 10, 30, 100, null]; // null = show all
+  const currentMaxTokenValue = VALUE_PRESETS[maxTokenValueIndex];
+  const filteredTokenList = useMemo(() => {
+    if (currentMaxTokenValue === null) return tokenList;
+    return tokenList.filter(token => {
+      const tokenValue = token.usdValue || 0;
+      return tokenValue <= currentMaxTokenValue;
+    });
+  }, [tokenList, currentMaxTokenValue]);
   
   // Jupiter Lend states
   const [depositDialogOpen, setDepositDialogOpen] = useState(false);
@@ -3000,9 +3013,52 @@ export default function SolRefund() {
                 </button>
               </div>
 
+              {/* Value Filter Slider */}
+              <div className="mb-6 p-4 bg-purple-900/30 border border-purple-500/30 rounded-lg space-y-3">
+                <p className="text-sm text-green-400 font-medium">
+                  {currentMaxTokenValue === null 
+                    ? 'All tokens being displayed.'
+                    : `Showing tokens worth up to $${currentMaxTokenValue}.`}
+                </p>
+                
+                <div className="space-y-4">
+                  <Slider
+                    value={[maxTokenValueIndex]}
+                    onValueChange={(value) => {
+                      const index = Math.round(value[0]);
+                      setMaxTokenValueIndex(index);
+                    }}
+                    max={4}
+                    step={1}
+                    className="w-full"
+                    data-testid="slider-token-value"
+                  />
+                  
+                  <div className="flex justify-between text-xs text-purple-300">
+                    <span>$1</span>
+                    <span>$10</span>
+                    <span>$30</span>
+                    <span>$100</span>
+                    <span>All</span>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-yellow-400 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>This slider cannot be 100% accurate. Always double check the items you're about to burn.</span>
+                </p>
+              </div>
+
+              {/* Token Count */}
+              {filteredTokenList.length < tokenList.length && (
+                <p className="text-sm text-purple-300 mb-3">
+                  Showing {filteredTokenList.length} of {tokenList.length} tokens
+                </p>
+              )}
+
               {/* Token List */}
               <div className="max-h-96 overflow-y-auto space-y-3 mb-6">
-                {tokenList.map((token, index) => (
+                {filteredTokenList.map((token, index) => (
                   <div 
                     key={index} 
                     className={`relative flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${
