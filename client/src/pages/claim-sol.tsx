@@ -874,7 +874,7 @@ export default function SolRefund() {
     },
     onSuccess: (result) => {
       toast({
-        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''} and recovered ${result.netAmount} SOL!`,
+        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''}`,
         description: `Transaction: ${result.signature.substring(0, 8)}...`,
         className: "bg-green-600 text-white border-green-600",
         action: <ToastAction altText="View transaction on Solscan" onClick={() => window.open(`https://solscan.io/tx/${result.signature}`, '_blank')}>View on Solscan</ToastAction>
@@ -1105,8 +1105,8 @@ export default function SolRefund() {
             // Show success message with green styling and transaction signature
             const firstSignature = allBatchResults[0]?.signature || '';
             toast({
-              title: `Successfully burned ${totalBurned} Core NFT${totalBurned > 1 ? 's' : ''} in ${prepareResponse.totalBatches} batch${prepareResponse.totalBatches > 1 ? 'es' : ''}`,
-              description: `${totalRentRecovered.toFixed(6)} SOL reclaimed | First tx: ${firstSignature.substring(0, 8)}...`,
+              title: `Successfully burned ${totalBurned} Core NFT${totalBurned > 1 ? 's' : ''}`,
+              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
               action: <ToastAction altText="View transaction on Solscan" onClick={() => window.open(`https://solscan.io/tx/${firstSignature}`, '_blank')}>View on Solscan</ToastAction>
             });
