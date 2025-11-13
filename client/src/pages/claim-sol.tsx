@@ -2156,24 +2156,8 @@ export default function SolRefund() {
     onSuccess: (results) => {
       if (!results) return;
       
-      const totalBurned = results.reduce((sum, r) => sum + (r.count || 0), 0);
-      const totalSolRecovered = results.reduce((sum, r) => sum + (r.solRecovered || 0), 0);
-      const totalNetAmount = results.reduce((sum, r) => sum + (r.netAmount || 0), 0);
-
-      const hasRentRecovery = totalSolRecovered > 0;
-
-      // Generate Solscan links for each transaction
-      const transactionLinks = results.map(result => 
-        `${result.type.toUpperCase()}: https://solscan.io/tx/${result.signature}`
-      ).join('\n');
-
-      toast({
-        title: hasRentRecovery ? "NFTs Burned Successfully!" : "Burn Requests Recorded",
-        description: hasRentRecovery 
-          ? `Burned ${totalBurned} NFTs and recovered ${totalNetAmount.toFixed(6)} SOL (after 15% fee)\n\nView on Solscan:\n${transactionLinks}`
-          : `Recorded burn requests for ${totalBurned} NFTs (compressed NFTs cannot be burned via this interface yet)\n\nView transaction on Solscan:\n${transactionLinks}`,
-        className: "bg-green-600 text-white border-green-600",
-      });
+      // Don't show final summary toast - each NFT type handler already shows its own success message
+      // This prevents duplicate notifications
 
       // Clear selection but don't refresh immediately - let optimistic update handle UI state
       setSelectedNfts(new Set());
