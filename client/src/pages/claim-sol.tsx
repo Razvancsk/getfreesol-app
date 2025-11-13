@@ -1625,12 +1625,12 @@ export default function SolRefund() {
             // Clear selection
             setSelectedNfts(new Set());
 
-            // Show success message with warning about no SOL recovery
+            // Show success message
             const firstSignature = allBatchResults[0]?.signature || '';
             toast({
-              title: `Burned ${totalBurned} Compressed NFT${totalBurned > 1 ? 's' : ''}`,
-              description: `⚠️ No SOL recovered (cNFTs have no rent) • ${firstSignature.substring(0, 8)}...`,
-              className: "bg-orange-600 text-white border-orange-600",
+              title: `Successfully burned ${totalBurned} Compressed NFT${totalBurned > 1 ? 's' : ''}`,
+              description: `Transaction: ${firstSignature.substring(0, 8)}...`,
+              className: "bg-green-600 text-white border-green-600",
             });
 
             continue; // Continue to next NFT type
