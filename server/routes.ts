@@ -2702,15 +2702,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // Skip compressed NFTs 
-        if (compression?.compressed) {
-          continue;
-        }
-        
         let nftType: string;
+        let isCompressed = false;
         
+        // Check if it's a compressed NFT
+        if (compression?.compressed) {
+          nftType = 'cnft';
+          isCompressed = true;
+          console.log(`📦 Found Compressed NFT: ${asset.content?.metadata?.name || asset.id}`);
+        }
         // Identify NFT type based on interface and ownership
-        if (assetInterface === 'MplCoreAsset') {
+        else if (assetInterface === 'MplCoreAsset') {
           nftType = 'core';
         } else if (assetInterface === 'ProgrammableNFT' || 
                    (asset.ownership?.owner && PROGRAMMABLE_NFT_PROGRAM_IDS.includes(asset.ownership.owner)) ||
@@ -2846,14 +2848,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`❄️ FROZEN NFT detected: ${nftName} (${mintAddress})`);
         }
 
-        const nftInfo = {
+        const nftInfo: any = {
           mint: mintAddress,
           id: identifier, 
           assetId: assetId,
           name: nftName,
           symbol: asset.content?.metadata?.symbol || '',
-          image: nftImage, // Use the enhanced image from metadata fetch
-          description: nftDescription, // Use the enhanced description from metadata fetch
+          image: nftImage,
+          description: nftDescription,
           type: nftType,
           interface: assetInterface,
           tokenStandard: asset.token_info?.token_standard || '',
@@ -2863,6 +2865,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attributes: asset.content?.metadata?.attributes || [],
           isFrozen: isFrozen || false
         };
+
+        // Add compression data for cNFTs (needed for burning)
+        if (isCompressed && compression) {
+          nftInfo.compression = {
+            eligible: compression.eligible || false,
+            compressed: compression.compressed || false,
+            data_hash: compression.data_hash || '',
+            creator_hash: compression.creator_hash || '',
+            asset_hash: compression.asset_hash || '',
+            tree: compression.tree || '',
+            seq: compression.seq || 0,
+            leaf_id: compression.leaf_id || 0
+          };
+        }
 
         nfts.push(nftInfo);
       }
@@ -4124,6 +4140,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error preparing Programmable NFT burn transactions:', error);
       res.status(500).json({ 
         error: "Failed to prepare Programmable NFT burn transactions",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Prepare Compressed NFT burn transactions (cNFTs using Bubblegum)
+  app.post("/api/cnfts/prepare-burn", async (req, res) => {
+    try {
+      // Validate request body
+      const prepareBurnSchema = z.object({
+        cnftIds: z.array(z.string().min(1, "cNFT asset ID is required")),
+        walletAddress: z.string().min(1, "Wallet address is required")
+      });
+
+      const { cnftIds, walletAddress } = prepareBurnSchema.parse(req.body);
+
+      console.log(`🔥 Preparing burn for ${cnftIds.length} compressed NFTs (cNFTs)`);
+      console.log(`⚠️ Note: cNFTs do NOT recover SOL - this is for cleanup/burning only`);
+
+      // Initialize UMI with DAS API
+      const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
+      const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
+      const { getAssetWithProof, burn } = await import('@metaplex-foundation/mpl-bubblegum');
+      const { publicKey: umiPublicKey, TransactionBuilder } = await import('@metaplex-foundation/umi');
+      const { setComputeUnitPrice } = await import('@metaplex-foundation/mpl-toolbox');
+      const { dasApi } = await import('@metaplex-foundation/digital-asset-standard-api');
+      
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      
+      const umi = createUmi(rpcUrl).use(dasApi());
+
+      // Create a dummy signer for building transactions (wallet will sign client-side)
+      const dummyKeypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(64));
+      umi.use(walletAdapterIdentity({
+        publicKey: new Uint8Array(32),
+        signMessage: async () => new Uint8Array(64),
+        signTransaction: async () => new Uint8Array(64),
+        signAllTransactions: async () => []
+      } as any));
+
+      const allBatchTransactions = [];
+      const failedNfts = [];
+
+      // Process each cNFT individually (can't batch due to unique Merkle proofs)
+      for (const assetId of cnftIds) {
+        try {
+          console.log(`📦 Fetching proof for cNFT: ${assetId}`);
+          
+          // Fetch asset with Merkle proof using Helius DAS API
+          const assetWithProof = await getAssetWithProof(umi, umiPublicKey(assetId), {
+            truncateCanopy: true // Reduces transaction size
+          });
+
+          console.log(`✅ Got proof for cNFT ${assetId}`);
+          console.log(`   Tree: ${assetWithProof.merkleTree}`);
+          console.log(`   Leaf Owner: ${assetWithProof.leafOwner}`);
+
+          // Build burn transaction
+          let transaction = new TransactionBuilder()
+            .add(setComputeUnitPrice(umi, { microLamports: 10000 })); // Small compute budget
+
+          const burnInstruction = burn(umi, {
+            ...assetWithProof,
+            leafOwner: umiPublicKey(walletAddress)
+          });
+
+          transaction = transaction.add(burnInstruction);
+
+          // Build and serialize the transaction
+          const builtTx = await transaction.buildWithLatestBlockhash(umi);
+          const serializedTx = umi.transactions.serialize(builtTx);
+          const base64Tx = Buffer.from(serializedTx).toString('base64');
+
+          allBatchTransactions.push({
+            transaction: base64Tx,
+            nftIds: [assetId],
+            expectedRentSol: 0, // cNFTs don't have rent deposits
+            warning: 'Compressed NFTs do not recover SOL'
+          });
+
+          console.log(`✅ Built burn transaction for cNFT ${assetId}`);
+
+        } catch (error) {
+          console.error(`❌ Failed to prepare cNFT ${assetId}:`, error);
+          failedNfts.push({
+            assetId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      const responseData = {
+        success: true,
+        totalNfts: cnftIds.length,
+        totalBatches: allBatchTransactions.length,
+        batches: allBatchTransactions,
+        totalExpectedRentSOL: 0, // cNFTs never recover SOL
+        failedNfts,
+        message: `Prepared ${allBatchTransactions.length} burn transactions for compressed NFTs (NO SOL RECOVERY)`,
+        warning: 'Compressed NFTs do not have rent deposits and will NOT recover any SOL'
+      };
+
+      res.json(responseData);
+
+    } catch (error) {
+      console.error('Error preparing compressed NFT burn transactions:', error);
+      res.status(500).json({
+        error: "Failed to prepare compressed NFT burn transactions",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
