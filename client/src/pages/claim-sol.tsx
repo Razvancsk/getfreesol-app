@@ -1557,7 +1557,7 @@ export default function SolRefund() {
               console.warn('⚠️ cNFT Warning:', prepareResponse.warning);
             }
 
-            const allBatchResults = [];
+            const allBatchResults: any[] = [];
             let totalBurned = 0;
 
             // Process each cNFT transaction sequentially (one per cNFT due to unique Merkle proofs)
