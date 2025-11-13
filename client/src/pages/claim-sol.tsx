@@ -3419,20 +3419,41 @@ export default function SolRefund() {
                   <p className="text-purple-200">Scanning for NFTs...</p>
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
+                (() => {
+                  // Filter NFTs based on selected tab
+                  const filteredNfts = nftData.nfts.filter((nft: any) => {
+                    if (nftTabView === 'cnfts') {
+                      return nft.type === 'cnft';
+                    } else {
+                      return nft.type !== 'cnft'; // Show regular NFTs (core, pnft, standard)
+                    }
+                  });
+
+                  // Show empty state if no NFTs in current tab
+                  if (filteredNfts.length === 0) {
+                    return (
+                      <div className="text-center py-12">
+                        <div className="inline-block bg-purple-900/30 rounded-full p-4 mb-4">
+                          <Image className="h-12 w-12 text-purple-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                          No {nftTabView === 'cnfts' ? 'Compressed NFTs' : 'NFTs'} Found
+                        </h3>
+                        <p className="text-purple-200 max-w-md mx-auto">
+                          {nftTabView === 'cnfts' 
+                            ? 'No compressed NFTs detected in your wallet. Try switching to the NFTs tab.'
+                            : 'No regular NFTs detected in your wallet. Try switching to the cNFTs tab or scan again.'}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
                 <div className="space-y-4">
                   {/* NFT Grid */}
                   <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-track-purple-900/20 scrollbar-thumb-purple-500/50 mb-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {nftData.nfts
-                      .filter((nft: any) => {
-                        // Filter based on selected tab
-                        if (nftTabView === 'cnfts') {
-                          return nft.type === 'cnft';
-                        } else {
-                          return nft.type !== 'cnft'; // Show regular NFTs (core, pnft, standard)
-                        }
-                      })
-                      .map((nft: any) => {
+                    {filteredNfts.map((nft: any) => {
                       // Use a stable identifier that works for all NFT types
                       const nftId = nft.mint || nft.id || nft.assetId;
                       const isSelected = selectedNfts.has(nftId);
@@ -3644,6 +3665,8 @@ export default function SolRefund() {
                     </Button>
                   </div>
                 </div>
+                  )
+                })()
               ) : !scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
                   <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
