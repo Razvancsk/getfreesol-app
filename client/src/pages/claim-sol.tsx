@@ -3014,33 +3014,31 @@ export default function SolRefund() {
               </div>
 
               {/* Value Filter Slider */}
-              <div className="mb-6 p-4 bg-purple-900/30 border border-purple-500/30 rounded-lg space-y-3">
+              <div className="mb-6 space-y-3">
                 <p className="text-sm text-green-400 font-medium">
                   {currentMaxTokenValue === null 
                     ? 'All tokens being displayed.'
                     : `Showing tokens worth up to $${currentMaxTokenValue}.`}
                 </p>
                 
-                <div className="space-y-4">
-                  <Slider
-                    value={[maxTokenValueIndex]}
-                    onValueChange={(value) => {
-                      const index = Math.round(value[0]);
-                      setMaxTokenValueIndex(index);
-                    }}
-                    max={4}
-                    step={1}
-                    className="w-full"
-                    data-testid="slider-token-value"
-                  />
-                  
-                  <div className="flex justify-between text-xs text-purple-300">
-                    <span>$1</span>
-                    <span>$10</span>
-                    <span>$30</span>
-                    <span>$100</span>
-                    <span>All</span>
-                  </div>
+                <Slider
+                  value={[maxTokenValueIndex]}
+                  onValueChange={(value) => {
+                    const index = Math.round(value[0]);
+                    setMaxTokenValueIndex(index);
+                  }}
+                  max={4}
+                  step={1}
+                  className="w-full"
+                  data-testid="slider-token-value"
+                />
+                
+                <div className="flex justify-between text-xs text-purple-300">
+                  <span>$1</span>
+                  <span>$10</span>
+                  <span>$30</span>
+                  <span>$100</span>
+                  <span>All</span>
                 </div>
                 
                 <p className="text-xs text-yellow-400 flex items-start gap-2">
