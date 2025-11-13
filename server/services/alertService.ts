@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { alertConfigs, alertHistory, notificationPreferences, emptyTokenAccounts } from "../../shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
+import { z } from "zod";
 
 // Alert types supported by the system
 export type AlertType = 
@@ -29,6 +30,60 @@ export interface TransactionConfirmedCondition {
 }
 
 /**
+ * Parse boolean strings correctly
+ * Handles "true"/"false" (case-insensitive), empty strings, and nulls
+ */
+function parseBoolean(value: any): boolean | undefined {
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const lower = value.trim().toLowerCase();
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
+    return undefined; // Invalid string
+  }
+  return undefined;
+}
+
+/**
+ * Preprocess JSON to convert empty strings and nulls to undefined
+ * and properly parse boolean strings
+ */
+function preprocessConditions(raw: any): any {
+  const cleaned: any = {};
+  for (const [key, value] of Object.entries(raw)) {
+    // Handle boolean fields with custom parsing
+    if (key === 'enabled') {
+      cleaned[key] = parseBoolean(value);
+    }
+    // Convert empty strings and nulls to undefined for other fields
+    else if (value === '' || value === null) {
+      cleaned[key] = undefined;
+    } else {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
+
+// Validation schemas for alert conditions and channels
+// Use z.coerce for numbers, custom parsing for booleans
+// Preprocessing ensures empty strings/nulls don't become 0/false
+const conditionsSchema = z.object({
+  threshold: z.coerce.number().optional(),
+  percentageChange: z.coerce.number().optional(),
+  timeWindow: z.coerce.number().optional(),
+  enabled: z.boolean().optional(), // No coerce - handled by preprocessing
+  minAmount: z.coerce.number().optional(),
+}).passthrough(); // Allow additional properties
+
+const channelsSchema = z.array(z.string());
+
+/**
  * Check all enabled alerts for a specific wallet
  */
 export async function checkAlertsForWallet(walletAddress: string): Promise<void> {
@@ -44,22 +99,47 @@ export async function checkAlertsForWallet(walletAddress: string): Promise<void>
       );
 
     for (const alert of alerts) {
-      const conditions = JSON.parse(alert.conditions);
-      const channels = JSON.parse(alert.notificationChannels);
+      try {
+        // Validate and parse conditions and channels with Zod
+        const conditionsRaw = JSON.parse(alert.conditions);
+        const channelsRaw = JSON.parse(alert.notificationChannels);
+        
+        // Preprocess to convert empty strings/nulls to undefined
+        const conditionsPreprocessed = preprocessConditions(conditionsRaw);
+        
+        const conditionsResult = conditionsSchema.safeParse(conditionsPreprocessed);
+        const channelsResult = channelsSchema.safeParse(channelsRaw);
+        
+        if (!conditionsResult.success) {
+          console.error(`Invalid conditions for alert ${alert.id}:`, conditionsResult.error);
+          continue; // Skip this alert
+        }
+        
+        if (!channelsResult.success) {
+          console.error(`Invalid channels for alert ${alert.id}:`, channelsResult.error);
+          continue; // Skip this alert
+        }
+        
+        const conditions = conditionsResult.data;
+        const channels = channelsResult.data;
 
-      switch (alert.alertType) {
-        case 'claimable_sol_threshold':
-          await checkClaimableSOLThreshold(walletAddress, conditions, channels, alert.id);
-          break;
-        case 'portfolio_value_change':
-          await checkPortfolioValueChange(walletAddress, conditions, channels, alert.id);
-          break;
-        case 'new_nft':
-          await checkNewNFT(walletAddress, conditions, channels, alert.id);
-          break;
-        case 'transaction_confirmed':
-          await checkTransactionConfirmed(walletAddress, conditions, channels, alert.id);
-          break;
+        switch (alert.alertType) {
+          case 'claimable_sol_threshold':
+            await checkClaimableSOLThreshold(walletAddress, conditions, channels, alert.id);
+            break;
+          case 'portfolio_value_change':
+            await checkPortfolioValueChange(walletAddress, conditions, channels, alert.id);
+            break;
+          case 'new_nft':
+            await checkNewNFT(walletAddress, conditions, channels, alert.id);
+            break;
+          case 'transaction_confirmed':
+            await checkTransactionConfirmed(walletAddress, conditions, channels, alert.id);
+            break;
+        }
+      } catch (parseError) {
+        console.error(`Failed to process alert ${alert.id}:`, parseError);
+        continue; // Skip malformed alert and continue with others
       }
     }
   } catch (error) {
@@ -165,6 +245,7 @@ export async function triggerAlert(
 ): Promise<void> {
   try {
     // Check if this alert was already triggered recently (avoid spam)
+    // FIXED: Order by triggeredAt DESC to get the most recent alert first
     const recentAlerts = await db.select()
       .from(alertHistory)
       .where(
@@ -173,8 +254,8 @@ export async function triggerAlert(
           eq(alertHistory.walletAddress, walletAddress)
         )
       )
-      .limit(1)
-      .orderBy(alertHistory.triggeredAt);
+      .orderBy(desc(alertHistory.triggeredAt))
+      .limit(1);
 
     // Don't trigger if same alert was sent in last hour
     if (recentAlerts.length > 0) {
@@ -244,6 +325,47 @@ async function sendNotifications(
 }
 
 /**
+ * Validate Discord webhook URL to prevent SSRF attacks
+ */
+function isValidDiscordWebhookUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    
+    // Only allow Discord webhook URLs (HTTPS required)
+    if (parsed.protocol !== 'https:') {
+      return false;
+    }
+    
+    // Discord webhook domains
+    const allowedHosts = [
+      'discord.com',
+      'discordapp.com',
+      'ptb.discord.com',
+      'canary.discord.com'
+    ];
+    
+    // Check if hostname matches allowed Discord domains
+    const hostname = parsed.hostname.toLowerCase();
+    const isAllowed = allowedHosts.some(host => 
+      hostname === host || hostname.endsWith(`.${host}`)
+    );
+    
+    if (!isAllowed) {
+      return false;
+    }
+    
+    // Webhook URLs should contain /api/webhooks/
+    if (!parsed.pathname.includes('/api/webhooks/')) {
+      return false;
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Send Discord webhook notification
  */
 async function sendDiscordNotification(
@@ -252,6 +374,12 @@ async function sendDiscordNotification(
   metadata: any
 ): Promise<void> {
   try {
+    // Validate webhook URL to prevent SSRF attacks
+    if (!isValidDiscordWebhookUrl(webhookUrl)) {
+      console.error('Invalid or unsafe Discord webhook URL, notification blocked');
+      return;
+    }
+    
     const axios = (await import('axios')).default;
     
     await axios.post(webhookUrl, {
