@@ -3440,9 +3440,7 @@ export default function SolRefund() {
                           No NFTs Found
                         </h3>
                         <p className="text-purple-200 max-w-md mx-auto">
-                          {nftTabView === 'cnfts' 
-                            ? 'Try switching to the NFTs tab.'
-                            : 'Scan your wallet to find NFTs in your collection.'}
+                          Ensure you have the correct wallet selected.
                         </p>
                       </div>
                     );
