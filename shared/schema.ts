@@ -665,3 +665,65 @@ export type ReferralFeeTransaction = typeof referralFeeTransactions.$inferSelect
 export type InsertReferralFeeTransaction = z.infer<typeof insertReferralFeeTransactionSchema>;
 export type ReferralClaim = typeof referralClaims.$inferSelect;
 export type InsertReferralClaim = z.infer<typeof insertReferralClaimSchema>;
+
+// Alert system tables
+export const alertConfigs = pgTable("alert_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  alertType: text("alert_type").notNull(), // 'claimable_sol_threshold', 'portfolio_value_change', 'new_nft', 'transaction_confirmed'
+  enabled: boolean("enabled").notNull().default(true),
+  conditions: text("conditions").notNull(), // JSON string with alert-specific conditions
+  notificationChannels: text("notification_channels").notNull(), // JSON array: ['in_app', 'discord', 'push']
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const alertHistory = pgTable("alert_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  alertConfigId: varchar("alert_config_id").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  alertType: text("alert_type").notNull(),
+  message: text("message").notNull(),
+  metadata: text("metadata"), // JSON string with event details
+  triggeredAt: timestamp("triggered_at").notNull().defaultNow(),
+  dismissed: boolean("dismissed").notNull().default(false),
+});
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull().unique(),
+  inAppEnabled: boolean("in_app_enabled").notNull().default(true),
+  discordWebhookUrl: text("discord_webhook_url"),
+  discordEnabled: boolean("discord_enabled").notNull().default(false),
+  pushEnabled: boolean("push_enabled").notNull().default(false),
+  pushSubscription: text("push_subscription"), // JSON string with Web Push subscription
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Insert schemas for alert tables
+export const insertAlertConfigSchema = createInsertSchema(alertConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAlertHistorySchema = createInsertSchema(alertHistory).omit({
+  id: true,
+  triggeredAt: true,
+  dismissed: true,
+});
+
+export const insertNotificationPreferenceSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Types for alert tables
+export type AlertConfig = typeof alertConfigs.$inferSelect;
+export type InsertAlertConfig = z.infer<typeof insertAlertConfigSchema>;
+export type AlertHistory = typeof alertHistory.$inferSelect;
+export type InsertAlertHistory = z.infer<typeof insertAlertHistorySchema>;
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreference = z.infer<typeof insertNotificationPreferenceSchema>;
