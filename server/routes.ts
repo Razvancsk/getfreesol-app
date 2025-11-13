@@ -3669,9 +3669,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`✅ Core asset validated: ${asset.publicKey}`);
 
           // Check if wallet is asset authority (owner or update authority)
-          const walletPubkey = umiPublicKey(walletAddress);
-          const isOwner = asset.owner === walletPubkey;
-          const isUpdateAuthority = asset.updateAuthority?.type === 'Address' && asset.updateAuthority.address === walletPubkey;
+          // UMI public keys are strings, so we can use direct === comparison
+          const isOwner = String(asset.owner) === walletAddress;
+          
+          let isUpdateAuthority = false;
+          if (asset.updateAuthority?.type === 'Address') {
+            isUpdateAuthority = String(asset.updateAuthority.address) === walletAddress;
+          }
           
           if (!isOwner && !isUpdateAuthority) {
             throw new Error(`Wallet ${walletAddress} is not authorized to burn Core NFT ${nftId}. Owner: ${asset.owner}, Update Authority: ${asset.updateAuthority?.type === 'Address' ? asset.updateAuthority.address : 'N/A'}`);
