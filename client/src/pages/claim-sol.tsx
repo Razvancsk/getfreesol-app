@@ -3437,12 +3437,12 @@ export default function SolRefund() {
                           <Image className="h-12 w-12 text-purple-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-white mb-2">
-                          No {nftTabView === 'cnfts' ? 'Compressed NFTs' : 'NFTs'} Found
+                          No NFTs Found
                         </h3>
                         <p className="text-purple-200 max-w-md mx-auto">
                           {nftTabView === 'cnfts' 
-                            ? 'No compressed NFTs detected in your wallet. Try switching to the NFTs tab.'
-                            : 'No regular NFTs detected in your wallet. Try switching to the cNFTs tab or scan again.'}
+                            ? 'Try switching to the NFTs tab.'
+                            : 'Try switching to the cNFTs tab or scan again.'}
                         </p>
                       </div>
                     );
