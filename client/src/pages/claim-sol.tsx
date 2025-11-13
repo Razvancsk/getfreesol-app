@@ -1117,7 +1117,7 @@ export default function SolRefund() {
               batchCount: prepareResponse.totalBatches
             });
 
-            return;
+            continue; // Continue to next NFT type
 
           } catch (coreError: any) {
             console.error('❌ Core NFT burning failed:', {
@@ -1306,7 +1306,7 @@ export default function SolRefund() {
             // Don't invalidate immediately - let optimistic update handle UI state
             // We'll rely on the next manual refresh or page load to sync with server
 
-            return;
+            continue; // Continue to next NFT type
 
           } catch (pnftError: any) {
             console.error('❌ Programmable NFT burning failed:', {
@@ -1505,7 +1505,7 @@ export default function SolRefund() {
             // Don't invalidate immediately - let optimistic update handle UI state
             // We'll rely on the next manual refresh or page load to sync with server
 
-            return;
+            continue; // Continue to next NFT type
 
           } catch (standardError: any) {
             console.error('❌ Traditional NFT burning failed:', {
@@ -1633,7 +1633,7 @@ export default function SolRefund() {
               className: "bg-orange-600 text-white border-orange-600",
             });
 
-            return;
+            continue; // Continue to next NFT type
 
           } catch (cnftError: any) {
             console.error('❌ Compressed NFT burning failed:', cnftError);
@@ -3548,38 +3548,49 @@ export default function SolRefund() {
 
                   {/* Bottom Actions */}
                   <div className="space-y-4">
-                    {/* Select All / Clear Selection Buttons */}
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={() => {
-                          const allNfts = nftData.nfts;
-                          // Only select non-frozen NFTs from the currently visible tab
-                          const selectableNfts = allNfts
-                            .filter((nft: any) => {
-                              // Filter by current tab
-                              if (nftTabView === 'cnfts') {
-                                return nft.type === 'cnft' && !nft.isFrozen;
-                              } else {
-                                return nft.type !== 'cnft' && !nft.isFrozen;
-                              }
-                            })
-                            .map((nft: any) => nft.mint || nft.id || nft.assetId)
-                            .filter(Boolean);
-                          setSelectedNfts(new Set(selectableNfts));
-                        }}
-                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
-                        data-testid="button-select-all-nfts"
-                      >
-                        Select All {nftTabView === 'cnfts' ? 'cNFTs' : 'NFTs'}
-                      </Button>
-                      <Button
-                        onClick={() => setSelectedNfts(new Set())}
-                        className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
-                        data-testid="button-clear-selection-nfts"
-                      >
-                        Clear
-                      </Button>
-                    </div>
+                    {/* Select All / Clear Selection Buttons - Only show if there are NFTs in current tab */}
+                    {(() => {
+                      const visibleNfts = nftData.nfts.filter((nft: any) => {
+                        if (nftTabView === 'cnfts') {
+                          return nft.type === 'cnft';
+                        } else {
+                          return nft.type !== 'cnft';
+                        }
+                      });
+                      return visibleNfts.length > 0 ? (
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={() => {
+                              const allNfts = nftData.nfts;
+                              // Only select non-frozen NFTs from the currently visible tab
+                              const selectableNfts = allNfts
+                                .filter((nft: any) => {
+                                  // Filter by current tab
+                                  if (nftTabView === 'cnfts') {
+                                    return nft.type === 'cnft' && !nft.isFrozen;
+                                  } else {
+                                    return nft.type !== 'cnft' && !nft.isFrozen;
+                                  }
+                                })
+                                .map((nft: any) => nft.mint || nft.id || nft.assetId)
+                                .filter(Boolean);
+                              setSelectedNfts(new Set(selectableNfts));
+                            }}
+                            className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
+                            data-testid="button-select-all-nfts"
+                          >
+                            Select All {nftTabView === 'cnfts' ? 'cNFTs' : 'NFTs'}
+                          </Button>
+                          <Button
+                            onClick={() => setSelectedNfts(new Set())}
+                            className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
+                            data-testid="button-clear-selection-nfts"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      ) : null;
+                    })()}
 
                     {/* Total Selected */}
                     <div className="text-center">
