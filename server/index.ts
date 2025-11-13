@@ -6,6 +6,8 @@ import { sql } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { getShareMessage, getShareTitle, lamportsToSol } from "../shared/shareMessages";
+import cron from "node-cron";
+import { checkAllWalletAlerts } from "./services/alertService";
 
 const app = express();
 app.use(express.json());
@@ -326,6 +328,50 @@ function getStaticAssetsPath() {
       }
       log(`Server started successfully on port ${port}`);
       log(`Environment: ${process.env.NODE_ENV}`);
+      
+      // Start alert monitoring cron job
+      let isAlertJobRunning = false;
+      const alertCronSchedule = process.env.ALERT_CRON || '*/5 * * * *'; // Default: every 5 minutes
+      
+      const alertTask = cron.schedule(alertCronSchedule, async () => {
+        if (isAlertJobRunning) {
+          log('⏭️ Alert check already running, skipping this interval');
+          return;
+        }
+        
+        isAlertJobRunning = true;
+        const startTime = Date.now();
+        
+        try {
+          await checkAllWalletAlerts();
+          const duration = Date.now() - startTime;
+          log(`✅ Alert check completed in ${duration}ms`);
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          log(`❌ Alert check failed after ${duration}ms: ${error instanceof Error ? error.message : String(error)}`);
+          console.error('Alert check error details:', error);
+        } finally {
+          isAlertJobRunning = false;
+        }
+      }, {
+        scheduled: false,
+        timezone: "UTC"
+      });
+      
+      // Run initial alert check on startup
+      log(`🔔 Starting alert monitoring system (schedule: ${alertCronSchedule})`);
+      (async () => {
+        try {
+          log('🔔 Running initial alert check...');
+          await checkAllWalletAlerts();
+          log('✅ Initial alert check complete, starting scheduled checks');
+          alertTask.start();
+        } catch (error) {
+          log(`⚠️ Initial alert check failed: ${error instanceof Error ? error.message : String(error)}`);
+          log('Starting scheduled checks anyway');
+          alertTask.start();
+        }
+      })();
     });
 
   } catch (error) {

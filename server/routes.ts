@@ -7663,7 +7663,7 @@ Claimer: ${walletAddress}`;
     try {
       const { walletAddress } = req.params;
       const { eq } = await import('drizzle-orm');
-      const { alertConfigs } = await import('@db/schema');
+      const { alertConfigs } = await import('@shared/schema');
       
       const alerts = await db.select()
         .from(alertConfigs)
@@ -7680,7 +7680,7 @@ Claimer: ${walletAddress}`;
   app.post("/api/alerts", async (req, res) => {
     try {
       const { walletAddress, alertType, enabled, conditions, notificationChannels } = req.body;
-      const { alertConfigs } = await import('@db/schema');
+      const { alertConfigs } = await import('@shared/schema');
       
       const newAlert = await db.insert(alertConfigs).values({
         walletAddress,
@@ -7703,7 +7703,7 @@ Claimer: ${walletAddress}`;
       const { id } = req.params;
       const { enabled, conditions, notificationChannels } = req.body;
       const { eq, sql } = await import('drizzle-orm');
-      const { alertConfigs } = await import('@db/schema');
+      const { alertConfigs } = await import('@shared/schema');
       
       const updateData: any = { updatedAt: sql`CURRENT_TIMESTAMP` };
       if (enabled !== undefined) updateData.enabled = enabled;
@@ -7727,7 +7727,7 @@ Claimer: ${walletAddress}`;
     try {
       const { id } = req.params;
       const { eq } = await import('drizzle-orm');
-      const { alertConfigs } = await import('@db/schema');
+      const { alertConfigs } = await import('@shared/schema');
       
       await db.delete(alertConfigs).where(eq(alertConfigs.id, id));
       
@@ -7744,7 +7744,7 @@ Claimer: ${walletAddress}`;
       const { walletAddress } = req.params;
       const { dismissed } = req.query;
       const { eq, and, desc } = await import('drizzle-orm');
-      const { alertHistory } = await import('@db/schema');
+      const { alertHistory } = await import('@shared/schema');
       
       let query = db.select().from(alertHistory).where(eq(alertHistory.walletAddress, walletAddress));
       
@@ -7771,7 +7771,7 @@ Claimer: ${walletAddress}`;
     try {
       const { id } = req.params;
       const { eq } = await import('drizzle-orm');
-      const { alertHistory } = await import('@db/schema');
+      const { alertHistory } = await import('@shared/schema');
       
       await db.update(alertHistory)
         .set({ dismissed: true })
@@ -7789,7 +7789,7 @@ Claimer: ${walletAddress}`;
     try {
       const { walletAddress } = req.params;
       const { eq } = await import('drizzle-orm');
-      const { notificationPreferences } = await import('@db/schema');
+      const { notificationPreferences } = await import('@shared/schema');
       
       const prefs = await db.select()
         .from(notificationPreferences)
@@ -7821,7 +7821,7 @@ Claimer: ${walletAddress}`;
     try {
       const { walletAddress, inAppEnabled, discordWebhookUrl, discordEnabled, pushEnabled, pushSubscription } = req.body;
       const { eq, sql } = await import('drizzle-orm');
-      const { notificationPreferences } = await import('@db/schema');
+      const { notificationPreferences } = await import('@shared/schema');
       
       // Check if preferences exist
       const existing = await db.select()
