@@ -107,7 +107,7 @@ export default function SolRefund() {
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
-  const [maxTokenValueIndex, setMaxTokenValueIndex] = useState<number>(4); // 0=$1, 1=$10, 2=$30, 3=$100, 4=All
+  const [maxTokenValueIndex, setMaxTokenValueIndex] = useState<number>(0); // 0=$1, 1=$10, 2=$30, 3=$100, 4=All (Start at minimum)
   
   // Token value filter logic
   const VALUE_PRESETS = [1, 10, 30, 100, null]; // null = show all
