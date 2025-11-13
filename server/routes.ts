@@ -4161,9 +4161,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Initialize UMI with DAS API
       const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-      const { walletAdapterIdentity } = await import('@metaplex-foundation/umi-signer-wallet-adapters');
       const { getAssetWithProof, burn } = await import('@metaplex-foundation/mpl-bubblegum');
-      const { publicKey: umiPublicKey, TransactionBuilder } = await import('@metaplex-foundation/umi');
+      const { publicKey: umiPublicKey, TransactionBuilder, createNoopSigner } = await import('@metaplex-foundation/umi');
       const { setComputeUnitPrice } = await import('@metaplex-foundation/mpl-toolbox');
       const { dasApi } = await import('@metaplex-foundation/digital-asset-standard-api');
       
@@ -4172,14 +4171,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const umi = createUmi(rpcUrl).use(dasApi());
 
-      // Create a dummy signer for building transactions (wallet will sign client-side)
-      const dummyKeypair = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(64));
-      umi.use(walletAdapterIdentity({
-        publicKey: new Uint8Array(32),
-        signMessage: async () => new Uint8Array(64),
-        signTransaction: async () => new Uint8Array(64),
-        signAllTransactions: async () => []
-      } as any));
+      // Create a noop signer with the user's actual wallet address
+      const ownerSigner = createNoopSigner(umiPublicKey(walletAddress));
+      umi.use({ install: (umi) => { umi.payer = ownerSigner; umi.identity = ownerSigner; } });
 
       const allBatchTransactions = [];
       const failedNfts = [];
@@ -4240,7 +4234,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalExpectedRentSOL: 0, // cNFTs never recover SOL
         failedNfts,
         message: `Prepared ${allBatchTransactions.length} burn transactions for compressed NFTs (NO SOL RECOVERY)`,
-        warning: 'Compressed NFTs do not have rent deposits and will NOT recover any SOL'
+        warning: {
+          severity: 'high',
+          message: 'Compressed NFTs do not have rent deposits and will NOT recover any SOL',
+          reason: 'cNFTs store data in Merkle trees with no on-chain rent - burning is for cleanup only'
+        }
       };
 
       res.json(responseData);

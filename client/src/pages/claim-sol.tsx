@@ -100,6 +100,7 @@ export default function SolRefund() {
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [nftData, setNftData] = useState<any>(null);
   const [selectedNfts, setSelectedNfts] = useState<Set<string>>(new Set());
+  const [nftTabView, setNftTabView] = useState<'nfts' | 'cnfts'>('nfts'); // Tab for NFTs vs cNFTs
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
 
@@ -916,13 +917,9 @@ export default function SolRefund() {
         throw new Error('No valid NFTs selected');
       }
 
-      // Group NFTs by type (only excluding cNFTs - Core NFTs are now supported)
+      // Group NFTs by type (all types supported including cNFTs)
       const nftsByType: { [key: string]: any[] } = {};
       selectedNfts.forEach((nft: any) => {
-        // Skip cNFTs only (Core NFTs are now supported with official Metaplex integration)
-        if (nft.type === 'cnft') {
-          return;
-        }
         if (!nftsByType[nft.type]) {
           nftsByType[nft.type] = [];
         }
@@ -1525,6 +1522,129 @@ export default function SolRefund() {
             });
             
             throw standardError;
+          }
+        }
+
+        // Handle Compressed NFTs (cNFTs) with Bubblegum
+        if (nftType === 'cnft') {
+          try {
+            console.log('🔥 Starting Compressed NFT burning with Bubblegum...');
+            console.log('⚠️ WARNING: cNFTs do NOT recover SOL - this is for cleanup only');
+            
+            if (!wallet.publicKey) {
+              throw new Error('Wallet not connected');
+            }
+
+            // Prepare cNFT asset IDs
+            const cnftIds = nfts.map(nft => nft.assetId || nft.id);
+            console.log(`📦 Preparing burn transactions for ${cnftIds.length} Compressed NFTs...`);
+
+            // Call server to prepare cNFT burn transactions
+            const prepareResponseRaw = await apiRequest('POST', '/api/cnfts/prepare-burn', {
+              cnftIds,
+              walletAddress: wallet.publicKey.toString()
+            });
+            const prepareResponse = await prepareResponseRaw.json();
+
+            console.log('🔧 Server prepared cNFT burn transactions:', prepareResponse);
+
+            if (!prepareResponse.batches || prepareResponse.batches.length === 0) {
+              throw new Error('No cNFT burn transactions prepared by server');
+            }
+
+            // Show warning about no SOL recovery
+            if (prepareResponse.warning) {
+              console.warn('⚠️ cNFT Warning:', prepareResponse.warning);
+            }
+
+            const allBatchResults = [];
+            let totalBurned = 0;
+
+            // Process each cNFT transaction sequentially (one per cNFT due to unique Merkle proofs)
+            for (let i = 0; i < prepareResponse.batches.length; i++) {
+              const batch = prepareResponse.batches[i];
+              console.log(`🔐 Signing cNFT transaction ${i + 1}/${prepareResponse.batches.length}...`);
+
+              if (!batch.transaction) {
+                throw new Error(`No transaction in cNFT batch ${i + 1}`);
+              }
+
+              // Deserialize the transaction from base64
+              const transactionBuffer = Buffer.from(batch.transaction, 'base64');
+              const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+              // Sign the transaction
+              const signedTransaction = await signTransaction(transaction);
+              console.log(`✅ cNFT transaction ${i + 1} signed!`);
+
+              // Submit the signed transaction via server relay
+              console.log(`📡 Submitting cNFT transaction ${i + 1}...`);
+              const relayResponseRaw = await apiRequest('POST', '/api/tx/relay', {
+                signedTxBase64: Buffer.from(signedTransaction.serialize()).toString('base64'),
+                description: `cNFT burn ${i + 1}: ${batch.nftIds.join(', ')}`,
+                skipPreflight: true
+              });
+              const relayResponse = await relayResponseRaw.json();
+
+              if (!relayResponse.success) {
+                throw new Error(relayResponse.error || 'Failed to submit cNFT burn transaction');
+              }
+
+              const signature = relayResponse.signature;
+              console.log(`✅ cNFT burn transaction ${i + 1} confirmed: ${signature}`);
+
+              allBatchResults.push({
+                signature,
+                nftIds: batch.nftIds,
+                success: true,
+                solRecovered: 0 // cNFTs never recover SOL
+              });
+
+              totalBurned += batch.nftIds.length;
+            }
+
+            console.log(`🎉 Successfully burned ${totalBurned} Compressed NFTs!`);
+            console.log(`⚠️ Note: 0 SOL recovered (cNFTs have no rent deposits)`);
+
+            // Remove burned cNFTs from UI
+            setNftData((prev: any) => {
+              if (!prev) return prev;
+              
+              const burnedAssetIds = allBatchResults.flatMap(r => r.nftIds);
+              const remainingNfts = prev.nfts.filter((nft: any) => 
+                !burnedAssetIds.includes(nft.assetId || nft.id)
+              );
+              
+              return {
+                ...prev,
+                nfts: remainingNfts,
+                totalNfts: remainingNfts.length
+              };
+            });
+
+            // Clear selection
+            setSelectedNfts(new Set());
+
+            // Show success message with warning about no SOL recovery
+            const firstSignature = allBatchResults[0]?.signature || '';
+            toast({
+              title: `Burned ${totalBurned} Compressed NFT${totalBurned > 1 ? 's' : ''}`,
+              description: `⚠️ No SOL recovered (cNFTs have no rent) • ${firstSignature.substring(0, 8)}...`,
+              className: "bg-orange-600 text-white border-orange-600",
+            });
+
+            return;
+
+          } catch (cnftError: any) {
+            console.error('❌ Compressed NFT burning failed:', cnftError);
+            
+            toast({
+              title: "Compressed NFT Burning Failed",
+              description: cnftError.message || 'An unexpected error occurred',
+              variant: "destructive",
+            });
+            
+            throw cnftError;
           }
         }
         
