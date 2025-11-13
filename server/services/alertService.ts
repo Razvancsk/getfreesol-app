@@ -1,5 +1,5 @@
-import { db } from "@db";
-import { alertConfigs, alertHistory, notificationPreferences, emptyTokenAccounts } from "@shared/schema";
+import { db } from "../db";
+import { alertConfigs, alertHistory, notificationPreferences, emptyTokenAccounts } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 
 // Alert types supported by the system

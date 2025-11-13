@@ -876,6 +876,10 @@ export default function SolRefund() {
         title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''} and recovered ${result.netAmount} SOL!`,
         description: `Transaction: ${result.signature.substring(0, 8)}...`,
         className: "bg-green-600 text-white border-green-600",
+        action: {
+          label: "View on Solscan",
+          onClick: () => window.open(`https://solscan.io/tx/${result.signature}`, '_blank')
+        }
       });
       // Clear selections and refresh
       setSelectedTokens(new Set());
@@ -1106,6 +1110,10 @@ export default function SolRefund() {
               title: `Successfully burned ${totalBurned} Core NFT${totalBurned > 1 ? 's' : ''} in ${prepareResponse.totalBatches} batch${prepareResponse.totalBatches > 1 ? 'es' : ''}`,
               description: `${totalRentRecovered.toFixed(6)} SOL reclaimed | First tx: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
+              action: {
+                label: "View on Solscan",
+                onClick: () => window.open(`https://solscan.io/tx/${firstSignature}`, '_blank')
+              }
             });
 
             // Add results to main results array
@@ -1301,6 +1309,10 @@ export default function SolRefund() {
               title: `Successfully burned ${totalBurned} Programmable NFT${totalBurned > 1 ? 's' : ''}`,
               description: `Transaction: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
+              action: {
+                label: "View on Solscan",
+                onClick: () => window.open(`https://solscan.io/tx/${firstSignature}`, '_blank')
+              }
             });
 
             // Don't invalidate immediately - let optimistic update handle UI state
@@ -1500,6 +1512,10 @@ export default function SolRefund() {
               title: `Successfully burned ${totalBurned} Traditional NFT${totalBurned > 1 ? 's' : ''}`,
               description: `Transaction: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
+              action: {
+                label: "View on Solscan",
+                onClick: () => window.open(`https://solscan.io/tx/${firstSignature}`, '_blank')
+              }
             });
 
             // Don't invalidate immediately - let optimistic update handle UI state
@@ -1631,6 +1647,10 @@ export default function SolRefund() {
               title: `Successfully burned ${totalBurned} Compressed NFT${totalBurned > 1 ? 's' : ''}`,
               description: `Transaction: ${firstSignature.substring(0, 8)}...`,
               className: "bg-green-600 text-white border-green-600",
+              action: {
+                label: "View on Solscan",
+                onClick: () => window.open(`https://solscan.io/tx/${firstSignature}`, '_blank')
+              }
             });
 
             continue; // Continue to next NFT type
