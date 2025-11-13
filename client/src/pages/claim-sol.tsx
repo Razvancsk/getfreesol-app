@@ -2457,16 +2457,7 @@ export default function SolRefund() {
       }
     },
     onSuccess: (result: any) => {
-      // Use points message from backend if available, otherwise show default
-      const title = result.pointsMessage || `Successfully closed ${result.accountsClosed} accounts and claimed ${result.totalReceived.toFixed(6)} SOL`;
-
-      toast({
-        title: title,
-        description: `Transaction: ${result.signature.substring(0, 8)}...`,
-        className: "bg-green-600 text-white border-green-600",
-      });
-
-      // Show share modal with the claimed amount
+      // Show share modal with the claimed amount (toast removed since share dialog shows the info)
       setShareData({ solClaimed: result.totalReceived });
       setIsShareModalOpen(true);
 
