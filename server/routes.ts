@@ -7656,6 +7656,212 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // ===== ALERT SYSTEM ROUTES =====
+
+  // Get all alerts for a wallet
+  app.get("/api/alerts/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const { eq } = await import('drizzle-orm');
+      const { alertConfigs } = await import('@db/schema');
+      
+      const alerts = await db.select()
+        .from(alertConfigs)
+        .where(eq(alertConfigs.walletAddress, walletAddress));
+      
+      res.json({ success: true, alerts });
+    } catch (error: any) {
+      console.error('Error fetching alerts:', error);
+      res.status(500).json({ error: 'Failed to fetch alerts' });
+    }
+  });
+
+  // Create a new alert
+  app.post("/api/alerts", async (req, res) => {
+    try {
+      const { walletAddress, alertType, enabled, conditions, notificationChannels } = req.body;
+      const { alertConfigs } = await import('@db/schema');
+      
+      const newAlert = await db.insert(alertConfigs).values({
+        walletAddress,
+        alertType,
+        enabled,
+        conditions: JSON.stringify(conditions),
+        notificationChannels: JSON.stringify(notificationChannels),
+      }).returning();
+      
+      res.json({ success: true, alert: newAlert[0] });
+    } catch (error: any) {
+      console.error('Error creating alert:', error);
+      res.status(500).json({ error: 'Failed to create alert' });
+    }
+  });
+
+  // Update an alert
+  app.patch("/api/alerts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { enabled, conditions, notificationChannels } = req.body;
+      const { eq, sql } = await import('drizzle-orm');
+      const { alertConfigs } = await import('@db/schema');
+      
+      const updateData: any = { updatedAt: sql`CURRENT_TIMESTAMP` };
+      if (enabled !== undefined) updateData.enabled = enabled;
+      if (conditions) updateData.conditions = JSON.stringify(conditions);
+      if (notificationChannels) updateData.notificationChannels = JSON.stringify(notificationChannels);
+      
+      const updatedAlert = await db.update(alertConfigs)
+        .set(updateData)
+        .where(eq(alertConfigs.id, id))
+        .returning();
+      
+      res.json({ success: true, alert: updatedAlert[0] });
+    } catch (error: any) {
+      console.error('Error updating alert:', error);
+      res.status(500).json({ error: 'Failed to update alert' });
+    }
+  });
+
+  // Delete an alert
+  app.delete("/api/alerts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { eq } = await import('drizzle-orm');
+      const { alertConfigs } = await import('@db/schema');
+      
+      await db.delete(alertConfigs).where(eq(alertConfigs.id, id));
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting alert:', error);
+      res.status(500).json({ error: 'Failed to delete alert' });
+    }
+  });
+
+  // Get alert history
+  app.get("/api/alerts/history/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const { dismissed } = req.query;
+      const { eq, and, desc } = await import('drizzle-orm');
+      const { alertHistory } = await import('@db/schema');
+      
+      let query = db.select().from(alertHistory).where(eq(alertHistory.walletAddress, walletAddress));
+      
+      if (dismissed === 'false') {
+        query = db.select().from(alertHistory).where(
+          and(
+            eq(alertHistory.walletAddress, walletAddress),
+            eq(alertHistory.dismissed, false)
+          )
+        );
+      }
+      
+      const history = await query.orderBy(desc(alertHistory.triggeredAt)).limit(100);
+      
+      res.json({ success: true, history });
+    } catch (error: any) {
+      console.error('Error fetching alert history:', error);
+      res.status(500).json({ error: 'Failed to fetch alert history' });
+    }
+  });
+
+  // Dismiss an alert notification
+  app.post("/api/alerts/history/:id/dismiss", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { eq } = await import('drizzle-orm');
+      const { alertHistory } = await import('@db/schema');
+      
+      await db.update(alertHistory)
+        .set({ dismissed: true })
+        .where(eq(alertHistory.id, id));
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error dismissing alert:', error);
+      res.status(500).json({ error: 'Failed to dismiss alert' });
+    }
+  });
+
+  // Get notification preferences
+  app.get("/api/alerts/preferences/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const { eq } = await import('drizzle-orm');
+      const { notificationPreferences } = await import('@db/schema');
+      
+      const prefs = await db.select()
+        .from(notificationPreferences)
+        .where(eq(notificationPreferences.walletAddress, walletAddress))
+        .limit(1);
+      
+      if (prefs.length === 0) {
+        // Return default preferences
+        res.json({
+          success: true,
+          preferences: {
+            walletAddress,
+            inAppEnabled: true,
+            discordEnabled: false,
+            pushEnabled: false,
+          }
+        });
+      } else {
+        res.json({ success: true, preferences: prefs[0] });
+      }
+    } catch (error: any) {
+      console.error('Error fetching preferences:', error);
+      res.status(500).json({ error: 'Failed to fetch preferences' });
+    }
+  });
+
+  // Update notification preferences
+  app.put("/api/alerts/preferences", async (req, res) => {
+    try {
+      const { walletAddress, inAppEnabled, discordWebhookUrl, discordEnabled, pushEnabled, pushSubscription } = req.body;
+      const { eq, sql } = await import('drizzle-orm');
+      const { notificationPreferences } = await import('@db/schema');
+      
+      // Check if preferences exist
+      const existing = await db.select()
+        .from(notificationPreferences)
+        .where(eq(notificationPreferences.walletAddress, walletAddress))
+        .limit(1);
+      
+      let result;
+      if (existing.length === 0) {
+        // Create new preferences
+        result = await db.insert(notificationPreferences).values({
+          walletAddress,
+          inAppEnabled: inAppEnabled ?? true,
+          discordWebhookUrl,
+          discordEnabled: discordEnabled ?? false,
+          pushEnabled: pushEnabled ?? false,
+          pushSubscription: pushSubscription ? JSON.stringify(pushSubscription) : null,
+        }).returning();
+      } else {
+        // Update existing preferences
+        const updateData: any = { updatedAt: sql`CURRENT_TIMESTAMP` };
+        if (inAppEnabled !== undefined) updateData.inAppEnabled = inAppEnabled;
+        if (discordWebhookUrl !== undefined) updateData.discordWebhookUrl = discordWebhookUrl;
+        if (discordEnabled !== undefined) updateData.discordEnabled = discordEnabled;
+        if (pushEnabled !== undefined) updateData.pushEnabled = pushEnabled;
+        if (pushSubscription) updateData.pushSubscription = JSON.stringify(pushSubscription);
+        
+        result = await db.update(notificationPreferences)
+          .set(updateData)
+          .where(eq(notificationPreferences.walletAddress, walletAddress))
+          .returning();
+      }
+      
+      res.json({ success: true, preferences: result[0] });
+    } catch (error: any) {
+      console.error('Error updating preferences:', error);
+      res.status(500).json({ error: 'Failed to update preferences' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
