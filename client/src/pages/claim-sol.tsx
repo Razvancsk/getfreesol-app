@@ -3436,17 +3436,12 @@ export default function SolRefund() {
                       return (
                         <div
                           key={nftId}
-                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all ${
-                            isFrozen 
-                              ? 'cursor-not-allowed opacity-75' 
-                              : 'cursor-pointer'
-                          } ${
+                          className={`relative bg-gradient-to-br from-purple-700/20 to-purple-800/30 backdrop-blur-sm border rounded-lg p-3 transition-all cursor-pointer ${
                             isSelected 
                               ? 'border-green-400/50 bg-green-900/20' 
                               : 'border-purple-500/30 hover:border-purple-400/50'
                           }`}
                           onClick={() => {
-                            if (isFrozen) return; // Prevent selection of frozen NFTs
                             setSelectedNfts(prev => {
                               const newSet = new Set(prev);
                               if (isSelected) {
@@ -3462,13 +3457,11 @@ export default function SolRefund() {
                           {/* Selection Checkbox */}
                           <div className="absolute top-2 left-2 z-10">
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              isFrozen 
-                                ? 'bg-gray-600/50 border-gray-500 cursor-not-allowed' 
-                                : isSelected 
-                                  ? 'bg-green-500 border-green-500' 
-                                  : 'bg-purple-900/50 border-purple-400'
+                              isSelected 
+                                ? 'bg-green-500 border-green-500' 
+                                : 'bg-purple-900/50 border-purple-400'
                             }`}>
-                              {isSelected && !isFrozen && <Check className="h-3 w-3 text-white" />}
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
                             </div>
                           </div>
 
@@ -3491,15 +3484,17 @@ export default function SolRefund() {
                               <Image className="h-8 w-8 text-purple-400" />
                             </div>
                             
-                            {/* FROZEN overlay for frozen NFTs */}
+                            {/* FROZEN badge for frozen NFTs (top-right corner) */}
                             {isFrozen && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-blue-400/30 backdrop-blur-sm z-20">
-                                <span className="text-4xl font-bold text-white drop-shadow-2xl tracking-wider">FROZEN</span>
+                              <div className="absolute top-2 right-2 z-10">
+                                <Badge className="text-[10px] px-2 py-0.5 bg-blue-500/90 border-blue-400 flex items-center gap-1">
+                                  ❄️ FROZEN
+                                </Badge>
                               </div>
                             )}
                             
                             {/* Big Flame Icon Overlay for Selected NFTs */}
-                            {isSelected && !isFrozen && (
+                            {isSelected && (
                               <div className="absolute inset-0 flex items-center justify-center z-20">
                                 <span className="text-9xl drop-shadow-2xl animate-pulse">🔥</span>
                               </div>
@@ -3557,14 +3552,14 @@ export default function SolRefund() {
                           <Button
                             onClick={() => {
                               const allNfts = nftData.nfts;
-                              // Only select non-frozen NFTs from the currently visible tab
+                              // Select all NFTs from the currently visible tab (including frozen)
                               const selectableNfts = allNfts
                                 .filter((nft: any) => {
-                                  // Filter by current tab
+                                  // Filter by current tab only
                                   if (nftTabView === 'cnfts') {
-                                    return nft.type === 'cnft' && !nft.isFrozen;
+                                    return nft.type === 'cnft';
                                   } else {
-                                    return nft.type !== 'cnft' && !nft.isFrozen;
+                                    return nft.type !== 'cnft';
                                   }
                                 })
                                 .map((nft: any) => nft.mint || nft.id || nft.assetId)
