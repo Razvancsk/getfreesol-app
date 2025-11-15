@@ -3920,7 +3920,12 @@ export default function SolRefund() {
                           </div>
                           <div className="text-center">
                             <div className="text-sm text-purple-300 mb-1">SOL Claimed</div>
-                            <div className="text-4xl font-bold text-green-400" data-testid="text-user-sol">
+                            <div className="text-4xl font-bold text-green-400 flex items-center justify-center gap-2" data-testid="text-user-sol">
+                              <svg className="h-8 w-8" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                                <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                                <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                                <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                              </svg>
                               {userPoints?.totalSolClaimed ? parseFloat(userPoints.totalSolClaimed).toFixed(4) : '0.0000'}
                             </div>
                           </div>
@@ -3989,7 +3994,14 @@ export default function SolRefund() {
                                   {entry.accountsClosed.toLocaleString()}
                                 </TableCell>
                                 <TableCell className="text-right text-green-400 font-semibold" data-testid={`text-sol-${entry.rank}`}>
-                                  {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'} SOL
+                                  <div className="flex items-center justify-end gap-1">
+                                    <svg className="h-4 w-4" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                                    </svg>
+                                    {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))}
