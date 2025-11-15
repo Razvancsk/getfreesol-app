@@ -3982,7 +3982,8 @@ export default function SolRefund() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="font-mono text-purple-100 text-xs py-2">
-                                  {truncateAddress(entry.walletAddress)}
+                                  <span className="md:hidden">{truncateAddress(entry.walletAddress)}</span>
+                                  <span className="hidden md:inline">{entry.walletAddress}</span>
                                   {entry.walletAddress === walletAddress && (
                                     <Badge className="ml-1 bg-green-600 text-white text-xs px-1">You</Badge>
                                   )}
