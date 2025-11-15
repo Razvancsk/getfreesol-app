@@ -1200,6 +1200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
+      // Award points (20 points per account closed)
+      await storage.awardPoints(walletAddress, accountsClosed);
+      
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
       if (permanentAssociation && referralFeeAmount > 0) {
@@ -2535,6 +2538,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
+      // Award points (20 points per token account closed)
+      await storage.awardPoints(walletAddress, tokensProcessed);
+      
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
       if (permanentAssociation && referralFeeAmount > 0) {
@@ -3524,6 +3530,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if transaction already exists (to avoid duplicate key error)
         try {
           await storage.createTransactionLedgerEntry(transactionData);
+          // Award points (20 points per NFT account closed)
+          await storage.awardPoints(walletAddress, 1);
         } catch (insertError: any) {
           // If it's a duplicate key error, update the existing record with real amounts
           if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
