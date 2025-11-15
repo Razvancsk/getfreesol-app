@@ -3846,6 +3846,8 @@ export default function SolRefund() {
 
           {/* Points Tab Content */}
           {activeTab === 'points' && (() => {
+            const walletAddress = publicKey?.toBase58();
+            
             const { data: userPoints, isLoading: userLoading } = useQuery({
               queryKey: ['/api/points', walletAddress],
               queryFn: async () => {
