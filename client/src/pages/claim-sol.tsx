@@ -4011,11 +4011,6 @@ export default function SolRefund() {
                     )}
                   </CardContent>
                 </Card>
-
-                  <div className="text-center text-purple-200 text-sm">
-                    <p>💡 Earn points by closing empty token accounts, burning tokens, or burning NFTs</p>
-                    <p className="mt-2">Each account closed = 20 points</p>
-                  </div>
                 </div>
               </div>
             );
