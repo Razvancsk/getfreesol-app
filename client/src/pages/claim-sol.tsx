@@ -3932,7 +3932,7 @@ export default function SolRefund() {
                           </div>
                           <div className="text-center">
                             <div className="text-sm text-purple-300 mb-1">Your Rank</div>
-                            <div className="text-4xl font-bold text-purple-300" data-testid="text-user-rank">
+                            <div className="text-4xl font-bold text-white" data-testid="text-user-rank">
                               {getUserRank() ? `#${getUserRank()}` : '-'}
                             </div>
                           </div>
