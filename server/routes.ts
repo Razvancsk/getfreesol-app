@@ -4687,6 +4687,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user points by wallet address
+  app.get("/api/points/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      const points = await storage.getUserPoints(walletAddress);
+      
+      if (!points) {
+        return res.json({
+          success: true,
+          points: 0,
+          accountsClosed: 0,
+          walletAddress
+        });
+      }
+      
+      res.json({
+        success: true,
+        points: points.points,
+        accountsClosed: points.accountsClosed,
+        walletAddress: points.walletAddress,
+        lastUpdated: points.lastUpdated
+      });
+    } catch (error) {
+      console.error("Get user points error:", error);
+      res.status(500).json({ error: "Failed to get user points" });
+    }
+  });
+
+  // Get points leaderboard
+  app.get("/api/points/leaderboard", async (req, res) => {
+    try {
+      const { limit } = req.query;
+      const leaderboardLimit = limit ? parseInt(limit as string) : 100;
+      
+      const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit);
+      
+      res.json({
+        success: true,
+        leaderboard: leaderboard.map((entry, index) => ({
+          rank: index + 1,
+          walletAddress: entry.walletAddress,
+          points: entry.points,
+          accountsClosed: entry.accountsClosed,
+          lastUpdated: entry.lastUpdated
+        })),
+        total: leaderboard.length
+      });
+    } catch (error) {
+      console.error("Get points leaderboard error:", error);
+      res.status(500).json({ error: "Failed to get points leaderboard" });
+    }
+  });
+
   // Transaction Relay - Submit signed transactions via server to bypass domain restrictions
   app.post("/api/tx/relay", async (req, res) => {
     try {
