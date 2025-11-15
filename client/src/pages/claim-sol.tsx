@@ -3900,7 +3900,7 @@ export default function SolRefund() {
                           Help boost the future of $GFS Points by voting for us on Whales Market. Your support matters!
                         </p>
                         <a
-                          href="https://discord.gg/ndZJQXXck4"
+                          href="https://discord.gg/nWtveZhnra"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-700 rounded-lg font-bold hover:bg-purple-100 transition-colors shadow-lg"
