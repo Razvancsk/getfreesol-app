@@ -41,6 +41,12 @@ export default function Points() {
   // Fetch user's points
   const { data: userPoints, isLoading: userLoading } = useQuery<UserPoints>({
     queryKey: ['/api/points', walletAddress],
+    queryFn: async () => {
+      if (!walletAddress) throw new Error('Wallet address required');
+      const response = await fetch(`/api/points/${walletAddress}`);
+      if (!response.ok) throw new Error('Failed to fetch user points');
+      return response.json();
+    },
     enabled: !!walletAddress,
   });
 
