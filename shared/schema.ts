@@ -701,6 +701,15 @@ export const notificationPreferences = pgTable("notification_preferences", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// User points tracking
+export const userPoints = pgTable("user_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull().unique(),
+  points: integer("points").notNull().default(0),
+  accountsClosed: integer("accounts_closed").notNull().default(0),
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
+});
+
 // Insert schemas for alert tables
 export const insertAlertConfigSchema = createInsertSchema(alertConfigs).omit({
   id: true,
@@ -727,3 +736,13 @@ export type AlertHistory = typeof alertHistory.$inferSelect;
 export type InsertAlertHistory = z.infer<typeof insertAlertHistorySchema>;
 export type NotificationPreference = typeof notificationPreferences.$inferSelect;
 export type InsertNotificationPreference = z.infer<typeof insertNotificationPreferenceSchema>;
+
+// Insert schemas for user points
+export const insertUserPointsSchema = createInsertSchema(userPoints).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+// Types for user points
+export type UserPoints = typeof userPoints.$inferSelect;
+export type InsertUserPoints = z.infer<typeof insertUserPointsSchema>;

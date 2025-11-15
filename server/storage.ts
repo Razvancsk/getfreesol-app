@@ -47,6 +47,8 @@ import {
   type InsertReferralFeeTransaction,
   type ReferralClaim,
   type InsertReferralClaim,
+  type UserPoints,
+  type InsertUserPoints,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -70,7 +72,8 @@ import {
   referralAccounts,
   referralTokenAccounts,
   referralFeeTransactions,
-  referralClaims
+  referralClaims,
+  userPoints
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -211,6 +214,11 @@ export interface IStorage {
   getFeeAccountsByDeveloperId(developerId: string): Promise<FeeAccount[]>;
   updateDeveloper(id: string, updates: Partial<Developer>): Promise<void>;
   updateFeeBalance(developerId: string, updates: Partial<FeeBalance>): Promise<void>;
+  
+  // User Points System
+  getUserPoints(walletAddress: string): Promise<UserPoints | undefined>;
+  awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
+  getPointsLeaderboard(limit?: number): Promise<UserPoints[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1194,6 +1202,51 @@ export class DatabaseStorage implements IStorage {
       .from(referralClaims)
       .where(eq(referralClaims.referralAccountId, referralAccountId))
       .orderBy(desc(referralClaims.claimedAt))
+      .limit(limit);
+  }
+
+  // User Points System Implementation
+  async getUserPoints(walletAddress: string): Promise<UserPoints | undefined> {
+    const [points] = await db
+      .select()
+      .from(userPoints)
+      .where(eq(userPoints.walletAddress, walletAddress));
+    return points || undefined;
+  }
+
+  async awardPoints(walletAddress: string, accountsClosed: number): Promise<void> {
+    const pointsToAward = accountsClosed * 20; // 20 points per account
+    
+    // Check if user already has points
+    const existing = await this.getUserPoints(walletAddress);
+    
+    if (existing) {
+      // Update existing points
+      await db
+        .update(userPoints)
+        .set({
+          points: sql`${userPoints.points} + ${pointsToAward}`,
+          accountsClosed: sql`${userPoints.accountsClosed} + ${accountsClosed}`,
+          lastUpdated: new Date()
+        })
+        .where(eq(userPoints.walletAddress, walletAddress));
+    } else {
+      // Create new points entry
+      await db
+        .insert(userPoints)
+        .values({
+          walletAddress,
+          points: pointsToAward,
+          accountsClosed
+        });
+    }
+  }
+
+  async getPointsLeaderboard(limit: number = 100): Promise<UserPoints[]> {
+    return await db
+      .select()
+      .from(userPoints)
+      .orderBy(desc(userPoints.points))
       .limit(limit);
   }
 }
