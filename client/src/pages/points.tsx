@@ -72,7 +72,7 @@ export default function Points() {
   };
 
   const getUserRank = () => {
-    if (!walletAddress || !leaderboard) return null;
+    if (!walletAddress || !leaderboard?.leaderboard) return null;
     const entry = leaderboard.leaderboard.find(e => e.walletAddress === walletAddress);
     return entry?.rank || null;
   };
@@ -146,7 +146,7 @@ export default function Points() {
           <CardContent>
             {leaderboardLoading ? (
               <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
-            ) : leaderboard && leaderboard.leaderboard.length > 0 ? (
+            ) : leaderboard?.leaderboard && leaderboard.leaderboard.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
