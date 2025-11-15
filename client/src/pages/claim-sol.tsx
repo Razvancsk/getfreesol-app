@@ -2674,6 +2674,15 @@ export default function SolRefund() {
                     <Code className="h-4 w-4 text-white" />
                     <span className="text-white text-xs font-medium">API</span>
                   </Link>
+                  <Link 
+                    href="/points"
+                    data-testid="button-points"
+                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    title="Points & Leaderboard"
+                  >
+                    <TrendingUp className="h-4 w-4 text-white" />
+                    <span className="text-white text-xs font-medium">Points</span>
+                  </Link>
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
@@ -2766,6 +2775,15 @@ export default function SolRefund() {
                 >
                   <Code className="h-4 w-4 text-white" />
                   <span className="text-white text-xs font-medium">API</span>
+                </Link>
+                <Link 
+                  href="/points"
+                  data-testid="button-points-desktop"
+                  className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  title="Points & Leaderboard"
+                >
+                  <TrendingUp className="h-4 w-4 text-white" />
+                  <span className="text-white text-xs font-medium">Points</span>
                 </Link>
                 <a
                   href="https://x.com/getfreesol_xyz"
