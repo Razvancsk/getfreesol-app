@@ -4687,6 +4687,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get points leaderboard (must come before :walletAddress route)
+  app.get("/api/points/leaderboard", async (req, res) => {
+    try {
+      const { limit } = req.query;
+      const leaderboardLimit = limit ? parseInt(limit as string) : 100;
+      
+      const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit);
+      
+      res.json({
+        success: true,
+        leaderboard: leaderboard.map((entry, index) => ({
+          rank: index + 1,
+          walletAddress: entry.walletAddress,
+          points: entry.points,
+          accountsClosed: entry.accountsClosed,
+          lastUpdated: entry.lastUpdated
+        })),
+        total: leaderboard.length
+      });
+    } catch (error) {
+      console.error("Get points leaderboard error:", error);
+      res.status(500).json({ error: "Failed to get points leaderboard" });
+    }
+  });
+
   // Get user points by wallet address
   app.get("/api/points/:walletAddress", async (req, res) => {
     try {
@@ -4713,31 +4738,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user points error:", error);
       res.status(500).json({ error: "Failed to get user points" });
-    }
-  });
-
-  // Get points leaderboard
-  app.get("/api/points/leaderboard", async (req, res) => {
-    try {
-      const { limit } = req.query;
-      const leaderboardLimit = limit ? parseInt(limit as string) : 100;
-      
-      const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit);
-      
-      res.json({
-        success: true,
-        leaderboard: leaderboard.map((entry, index) => ({
-          rank: index + 1,
-          walletAddress: entry.walletAddress,
-          points: entry.points,
-          accountsClosed: entry.accountsClosed,
-          lastUpdated: entry.lastUpdated
-        })),
-        total: leaderboard.length
-      });
-    } catch (error) {
-      console.error("Get points leaderboard error:", error);
-      res.status(500).json({ error: "Failed to get points leaderboard" });
     }
   });
 

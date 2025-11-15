@@ -3935,10 +3935,10 @@ export default function SolRefund() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white">
                       <Trophy className="w-5 h-5 text-yellow-400" />
-                      Top Performers
+                      Top 10 Leaders
                     </CardTitle>
                     <CardDescription className="text-purple-200">
-                      All-time leaderboard of users with the most points
+                      Top 10 users with the most points
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -3956,7 +3956,7 @@ export default function SolRefund() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {pointsLeaderboard.leaderboard.slice(0, 50).map((entry: any) => (
+                            {pointsLeaderboard.leaderboard.slice(0, 10).map((entry: any) => (
                               <TableRow 
                                 key={entry.walletAddress}
                                 className={`border-purple-600 hover:bg-purple-700/50 ${
