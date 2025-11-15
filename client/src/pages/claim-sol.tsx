@@ -3888,10 +3888,11 @@ export default function SolRefund() {
             };
 
             return (
-              <div className="space-y-8 md:space-y-6">
-                {/* User Points Card */}
-                {walletAddress && (
-                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+              <div className="-mx-4 md:mx-0">
+                <div className="space-y-8 md:space-y-6 px-4 md:px-0">
+                  {/* User Points Card */}
+                  {walletAddress && (
+                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-white">
                         <Star className="w-5 h-5 text-yellow-400" />
@@ -4016,9 +4017,10 @@ export default function SolRefund() {
                   </CardContent>
                 </Card>
 
-                <div className="text-center text-purple-200 text-sm">
-                  <p>💡 Earn points by closing empty token accounts, burning tokens, or burning NFTs</p>
-                  <p className="mt-2">Each account closed = 20 points</p>
+                  <div className="text-center text-purple-200 text-sm">
+                    <p>💡 Earn points by closing empty token accounts, burning tokens, or burning NFTs</p>
+                    <p className="mt-2">Each account closed = 20 points</p>
+                  </div>
                 </div>
               </div>
             );
