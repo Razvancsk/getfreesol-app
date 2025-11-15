@@ -244,7 +244,29 @@ export default function SolRefund() {
     select
   } = useWalletAdapter();
 
+  // Points queries - need to be after publicKey is defined
+  const pointsWalletAddress = publicKey?.toBase58();
+  
+  const { data: userPoints, isLoading: userPointsLoading } = useQuery({
+    queryKey: ['/api/points', pointsWalletAddress],
+    queryFn: async () => {
+      if (!pointsWalletAddress) throw new Error('Wallet address required');
+      const response = await fetch(`/api/points/${pointsWalletAddress}`);
+      if (!response.ok) throw new Error('Failed to fetch user points');
+      return response.json();
+    },
+    enabled: activeTab === 'points' && !!pointsWalletAddress,
+  });
 
+  const { data: pointsLeaderboard, isLoading: pointsLeaderboardLoading } = useQuery({
+    queryKey: ['/api/points/leaderboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/points/leaderboard?limit=100');
+      if (!response.ok) throw new Error('Failed to fetch leaderboard');
+      return response.json();
+    },
+    enabled: activeTab === 'points',
+  });
 
   // Function to fetch wallet balance for a specific token (for Lend deposit dialog)
   const fetchTokenBalance = async (tokenMint: string) => {
@@ -3846,28 +3868,8 @@ export default function SolRefund() {
 
           {/* Points Tab Content */}
           {activeTab === 'points' && (() => {
-            const walletAddress = publicKey?.toBase58();
+            const walletAddress = pointsWalletAddress;
             
-            const { data: userPoints, isLoading: userLoading } = useQuery({
-              queryKey: ['/api/points', walletAddress],
-              queryFn: async () => {
-                if (!walletAddress) throw new Error('Wallet address required');
-                const response = await fetch(`/api/points/${walletAddress}`);
-                if (!response.ok) throw new Error('Failed to fetch user points');
-                return response.json();
-              },
-              enabled: !!walletAddress,
-            });
-
-            const { data: leaderboard, isLoading: leaderboardLoading } = useQuery({
-              queryKey: ['/api/points/leaderboard'],
-              queryFn: async () => {
-                const response = await fetch('/api/points/leaderboard?limit=100');
-                if (!response.ok) throw new Error('Failed to fetch leaderboard');
-                return response.json();
-              }
-            });
-
             const truncateAddress = (address: string) => {
               return `${address.slice(0, 4)}...${address.slice(-4)}`;
             };
@@ -3880,8 +3882,8 @@ export default function SolRefund() {
             };
 
             const getUserRank = () => {
-              if (!walletAddress || !leaderboard?.leaderboard) return null;
-              const entry = leaderboard.leaderboard.find((e: any) => e.walletAddress === walletAddress);
+              if (!walletAddress || !pointsLeaderboard?.leaderboard) return null;
+              const entry = pointsLeaderboard.leaderboard.find((e: any) => e.walletAddress === walletAddress);
               return entry?.rank || null;
             };
 
@@ -3900,7 +3902,7 @@ export default function SolRefund() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {userLoading ? (
+                      {userPointsLoading ? (
                         <div className="text-center py-4 text-purple-300">Loading your points...</div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -3940,9 +3942,9 @@ export default function SolRefund() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {leaderboardLoading ? (
+                    {pointsLeaderboardLoading ? (
                       <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
-                    ) : leaderboard?.leaderboard && leaderboard.leaderboard.length > 0 ? (
+                    ) : pointsLeaderboard?.leaderboard && pointsLeaderboard.leaderboard.length > 0 ? (
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
@@ -3954,7 +3956,7 @@ export default function SolRefund() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {leaderboard.leaderboard.slice(0, 50).map((entry: any) => (
+                            {pointsLeaderboard.leaderboard.slice(0, 50).map((entry: any) => (
                               <TableRow 
                                 key={entry.walletAddress}
                                 className={`border-purple-600 hover:bg-purple-700/50 ${
