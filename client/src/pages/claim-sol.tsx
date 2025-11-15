@@ -2889,8 +2889,8 @@ export default function SolRefund() {
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                   </svg>
-                  <span className="hidden sm:inline">Reclaim SOL</span>
-                  <span className="sm:hidden">Reclaim</span>
+                  <span className="hidden sm:inline">Claim SOL</span>
+                  <span className="sm:hidden">Claim</span>
                 </Button>
                 <Button
                   onClick={() => setActiveTab('burnTokens')}
