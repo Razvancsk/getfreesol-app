@@ -3964,7 +3964,6 @@ export default function SolRefund() {
                               <TableHead className="text-purple-200">Rank</TableHead>
                               <TableHead className="text-purple-200">Wallet</TableHead>
                               <TableHead className="text-purple-200 text-right">Points</TableHead>
-                              <TableHead className="text-purple-200 text-right">Accounts</TableHead>
                               <TableHead className="text-purple-200 text-right">SOL Claimed</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -3990,9 +3989,6 @@ export default function SolRefund() {
                                 </TableCell>
                                 <TableCell className="text-right font-bold text-yellow-400" data-testid={`text-points-${entry.rank}`}>
                                   {entry.points.toLocaleString()}
-                                </TableCell>
-                                <TableCell className="text-right text-purple-100" data-testid={`text-accounts-${entry.rank}`}>
-                                  {entry.accountsClosed.toLocaleString()}
                                 </TableCell>
                                 <TableCell className="text-right text-green-400 font-semibold" data-testid={`text-sol-${entry.rank}`}>
                                   <div className="flex items-center justify-end gap-1">
