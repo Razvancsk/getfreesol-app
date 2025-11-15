@@ -2894,7 +2894,7 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => setActiveTab('burnTokens')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`px-2 sm:px-3 py-2 text-sm font-medium rounded transition-all ${
                     activeTab === 'burnTokens' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
@@ -2904,32 +2904,32 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => setActiveTab('referrals')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`px-2 sm:px-3 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
                     activeTab === 'referrals' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                 >
-                  <Users className="h-4 w-4 mr-2" />
+                  <Users className="h-4 w-4" />
                   Referrals
                 </Button>
                 <Button
                   onClick={() => setActiveTab('points')}
-                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                  className={`px-2 sm:px-3 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
                     activeTab === 'points' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-points-tab"
                 >
-                  <Trophy className="h-4 w-4 mr-2" />
+                  <Trophy className="h-4 w-4" />
                   Points
                 </Button>
                 {/* Earn button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
                     onClick={() => setActiveTab('lend')}
-                    className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                    className={`px-2 sm:px-3 py-2 text-sm font-medium rounded transition-all ${
                       activeTab === 'lend' 
                         ? 'bg-purple-600 text-white' 
                         : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
@@ -2943,14 +2943,14 @@ export default function SolRefund() {
                 {isPlatformWallet && (
                   <Button
                     onClick={() => setActiveTab('statistics')}
-                    className={`hidden md:inline-flex px-4 py-2 text-sm font-medium rounded transition-all ${
+                    className={`hidden md:inline-flex px-2 sm:px-3 py-2 text-sm font-medium rounded transition-all items-center gap-1 ${
                       activeTab === 'statistics' 
                         ? 'bg-purple-600 text-white' 
                         : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                     }`}
                     data-testid="button-statistics"
                   >
-                    <TrendingUp className="h-4 w-4 mr-2" />
+                    <TrendingUp className="h-4 w-4" />
                     Statistics
                   </Button>
                 )}
