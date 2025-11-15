@@ -3882,9 +3882,7 @@ export default function SolRefund() {
             };
 
             const getUserRank = () => {
-              if (!walletAddress || !pointsLeaderboard?.leaderboard) return null;
-              const entry = pointsLeaderboard.leaderboard.find((e: any) => e.walletAddress === walletAddress);
-              return entry?.rank || null;
+              return userPoints?.rank || null;
             };
 
             return (

@@ -4729,13 +4729,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Calculate user's rank
+      const leaderboard = await storage.getPointsLeaderboard(10000);
+      const rank = leaderboard.findIndex(entry => entry.walletAddress === walletAddress) + 1;
+      
       res.json({
         success: true,
         points: points.points,
         accountsClosed: points.accountsClosed,
         totalSolClaimed: points.totalSolClaimed,
         walletAddress: points.walletAddress,
-        lastUpdated: points.lastUpdated
+        lastUpdated: points.lastUpdated,
+        rank: rank > 0 ? rank : null
       });
     } catch (error) {
       console.error("Get user points error:", error);
