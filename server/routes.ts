@@ -4702,6 +4702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           walletAddress: entry.walletAddress,
           points: entry.points,
           accountsClosed: entry.accountsClosed,
+          totalSolClaimed: entry.totalSolClaimed,
           lastUpdated: entry.lastUpdated
         })),
         total: leaderboard.length
@@ -4732,6 +4733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         points: points.points,
         accountsClosed: points.accountsClosed,
+        totalSolClaimed: points.totalSolClaimed,
         walletAddress: points.walletAddress,
         lastUpdated: points.lastUpdated
       });

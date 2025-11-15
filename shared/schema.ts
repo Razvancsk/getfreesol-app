@@ -707,6 +707,7 @@ export const userPoints = pgTable("user_points", {
   walletAddress: text("wallet_address").notNull().unique(),
   points: integer("points").notNull().default(0),
   accountsClosed: integer("accounts_closed").notNull().default(0),
+  totalSolClaimed: decimal("total_sol_claimed", { precision: 18, scale: 9 }).notNull().default("0"),
   lastUpdated: timestamp("last_updated").notNull().defaultNow(),
 });
 

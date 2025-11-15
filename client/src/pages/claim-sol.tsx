@@ -3905,7 +3905,7 @@ export default function SolRefund() {
                       {userPointsLoading ? (
                         <div className="text-center py-4 text-purple-300">Loading your points...</div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                           <div className="text-center">
                             <div className="text-sm text-purple-300 mb-1">Total Points</div>
                             <div className="text-4xl font-bold text-yellow-400" data-testid="text-user-points">
@@ -3916,6 +3916,12 @@ export default function SolRefund() {
                             <div className="text-sm text-purple-300 mb-1">Accounts Closed</div>
                             <div className="text-4xl font-bold text-white" data-testid="text-user-accounts">
                               {userPoints?.accountsClosed || 0}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-purple-300 mb-1">SOL Claimed</div>
+                            <div className="text-4xl font-bold text-green-400" data-testid="text-user-sol">
+                              {userPoints?.totalSolClaimed ? parseFloat(userPoints.totalSolClaimed).toFixed(4) : '0.0000'}
                             </div>
                           </div>
                           <div className="text-center">
@@ -3953,6 +3959,7 @@ export default function SolRefund() {
                               <TableHead className="text-purple-200">Wallet</TableHead>
                               <TableHead className="text-purple-200 text-right">Points</TableHead>
                               <TableHead className="text-purple-200 text-right">Accounts</TableHead>
+                              <TableHead className="text-purple-200 text-right">SOL Claimed</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -3980,6 +3987,9 @@ export default function SolRefund() {
                                 </TableCell>
                                 <TableCell className="text-right text-purple-100" data-testid={`text-accounts-${entry.rank}`}>
                                   {entry.accountsClosed.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right text-green-400 font-semibold" data-testid={`text-sol-${entry.rank}`}>
+                                  {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'} ◎
                                 </TableCell>
                               </TableRow>
                             ))}
