@@ -48,7 +48,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
-import whalesMarketLogo from '@assets/image_1763212846879.png';
+import whalesMarketLogo from '@assets/image_1763213026376.png';
 
 interface EmptyTokenAccount {
   id: number;
