@@ -3977,7 +3977,7 @@ export default function SolRefund() {
                                 data-testid={`row-leaderboard-${entry.rank}`}
                               >
                                 <TableCell className="py-2">
-                                  <Badge className={`${getRankBadgeColor(entry.rank)} text-xs px-2`}>
+                                  <Badge className={`${getRankBadgeColor(entry.rank)} text-sm md:text-xs px-2.5 md:px-2 font-bold`}>
                                     #{entry.rank}
                                   </Badge>
                                 </TableCell>
