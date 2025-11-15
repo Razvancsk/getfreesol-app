@@ -3906,17 +3906,11 @@ export default function SolRefund() {
                       {userPointsLoading ? (
                         <div className="text-center py-4 text-purple-300">Loading your points...</div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                           <div className="text-center">
                             <div className="text-sm text-purple-300 mb-1">Total Points</div>
                             <div className="text-4xl font-bold text-yellow-400" data-testid="text-user-points">
                               {userPoints?.points || 0}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">Accounts Closed</div>
-                            <div className="text-4xl font-bold text-white" data-testid="text-user-accounts">
-                              {userPoints?.accountsClosed || 0}
                             </div>
                           </div>
                           <div className="text-center">
@@ -3928,6 +3922,12 @@ export default function SolRefund() {
                                 <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                               </svg>
                               {userPoints?.totalSolClaimed ? parseFloat(userPoints.totalSolClaimed).toFixed(4) : '0.0000'}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-purple-300 mb-1">Accounts Closed</div>
+                            <div className="text-4xl font-bold text-white" data-testid="text-user-accounts">
+                              {userPoints?.accountsClosed || 0}
                             </div>
                           </div>
                           <div className="text-center">
