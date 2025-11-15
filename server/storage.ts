@@ -541,17 +541,18 @@ export class DatabaseStorage implements IStorage {
     let query = db
       .select({
         walletAddress: transactionLedger.walletAddress,
-        totalSolRecovered: sql<string>`sum(${transactionLedger.solRecovered})`
+        totalSolRecovered: sql<string>`sum(${transactionLedger.netAmount})`
       })
-      .from(transactionLedger);
+      .from(transactionLedger)
+      .where(eq(transactionLedger.transactionType, 'sol_reclaim'));
     
     if (sinceTimestamp) {
-      query = query.where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp}`) as typeof query;
+      query = query.where(sql`${transactionLedger.processedAt} >= ${sinceTimestamp} AND ${transactionLedger.transactionType} = 'sol_reclaim'`) as typeof query;
     }
     
     const result = await query
       .groupBy(transactionLedger.walletAddress)
-      .orderBy(sql`sum(${transactionLedger.solRecovered}) desc`)
+      .orderBy(sql`sum(${transactionLedger.netAmount}) desc`)
       .limit(limit);
     
     return result.map(row => ({
