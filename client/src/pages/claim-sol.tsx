@@ -3989,7 +3989,7 @@ export default function SolRefund() {
                                   {entry.accountsClosed.toLocaleString()}
                                 </TableCell>
                                 <TableCell className="text-right text-green-400 font-semibold" data-testid={`text-sol-${entry.rank}`}>
-                                  {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'} ◎
+                                  {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'} SOL
                                 </TableCell>
                               </TableRow>
                             ))}
