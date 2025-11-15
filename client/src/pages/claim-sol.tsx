@@ -45,7 +45,6 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountIn
 import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
-import { PointsModal } from '@/components/PointsModal';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 
@@ -95,7 +94,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'lend'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'lend' | 'points'>('reclaim');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -137,9 +136,6 @@ export default function SolRefund() {
   // Share modal state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
-  
-  // Points modal state
-  const [isPointsModalOpen, setIsPointsModalOpen] = useState(false);
   
   // Batch processing state
   const [isBatching, setIsBatching] = useState(false);
@@ -2678,15 +2674,6 @@ export default function SolRefund() {
                     <Code className="h-4 w-4 text-white" />
                     <span className="text-white text-xs font-medium">API</span>
                   </Link>
-                  <button
-                    onClick={() => setIsPointsModalOpen(true)}
-                    data-testid="button-points"
-                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30 cursor-pointer"
-                    title="Points & Leaderboard"
-                  >
-                    <TrendingUp className="h-4 w-4 text-white" />
-                    <span className="text-white text-xs font-medium">Points</span>
-                  </button>
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
@@ -2780,15 +2767,6 @@ export default function SolRefund() {
                   <Code className="h-4 w-4 text-white" />
                   <span className="text-white text-xs font-medium">API</span>
                 </Link>
-                <button
-                  onClick={() => setIsPointsModalOpen(true)}
-                  data-testid="button-points-desktop"
-                  className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30 cursor-pointer"
-                  title="Points & Leaderboard"
-                >
-                  <TrendingUp className="h-4 w-4 text-white" />
-                  <span className="text-white text-xs font-medium">Points</span>
-                </button>
                 <a
                   href="https://x.com/getfreesol_xyz"
                   target="_blank"
@@ -2912,6 +2890,18 @@ export default function SolRefund() {
                   <Users className="h-4 w-4 mr-2" />
                   Referrals
                 </Button>
+                <Button
+                  onClick={() => setActiveTab('points')}
+                  className={`px-3 sm:px-4 py-2 sm:py-2 text-sm sm:text-sm font-medium rounded transition-all ${
+                    activeTab === 'points' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-points-tab"
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Points
+                </Button>
                 {/* Earn button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
@@ -2948,7 +2938,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'lend' ? 'Earn passive income on your Solana assets' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'lend' ? 'Earn passive income on your Solana assets' : activeTab === 'points' ? 'Earn 20 points for every account you close!' : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -3852,6 +3842,160 @@ export default function SolRefund() {
               </div>
             </div>
           )}
+
+          {/* Points Tab Content */}
+          {activeTab === 'points' && (() => {
+            const { data: userPoints, isLoading: userLoading } = useQuery({
+              queryKey: ['/api/points', walletAddress],
+              queryFn: async () => {
+                if (!walletAddress) throw new Error('Wallet address required');
+                const response = await fetch(`/api/points/${walletAddress}`);
+                if (!response.ok) throw new Error('Failed to fetch user points');
+                return response.json();
+              },
+              enabled: !!walletAddress,
+            });
+
+            const { data: leaderboard, isLoading: leaderboardLoading } = useQuery({
+              queryKey: ['/api/points/leaderboard'],
+              queryFn: async () => {
+                const response = await fetch('/api/points/leaderboard?limit=100');
+                if (!response.ok) throw new Error('Failed to fetch leaderboard');
+                return response.json();
+              }
+            });
+
+            const truncateAddress = (address: string) => {
+              return `${address.slice(0, 4)}...${address.slice(-4)}`;
+            };
+
+            const getRankBadgeColor = (rank: number) => {
+              if (rank === 1) return "bg-yellow-500 text-black";
+              if (rank === 2) return "bg-gray-300 text-black";
+              if (rank === 3) return "bg-orange-600 text-white";
+              return "bg-purple-600 text-white";
+            };
+
+            const getUserRank = () => {
+              if (!walletAddress || !leaderboard?.leaderboard) return null;
+              const entry = leaderboard.leaderboard.find((e: any) => e.walletAddress === walletAddress);
+              return entry?.rank || null;
+            };
+
+            return (
+              <div className="space-y-6">
+                {/* User Points Card */}
+                {walletAddress && (
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <Star className="w-5 h-5 text-yellow-400" />
+                        Your Points
+                      </CardTitle>
+                      <CardDescription className="text-purple-200">
+                        Your current ranking and statistics
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {userLoading ? (
+                        <div className="text-center py-4 text-purple-300">Loading your points...</div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="text-center">
+                            <div className="text-sm text-purple-300 mb-1">Total Points</div>
+                            <div className="text-4xl font-bold text-yellow-400" data-testid="text-user-points">
+                              {userPoints?.points || 0}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-purple-300 mb-1">Accounts Closed</div>
+                            <div className="text-4xl font-bold text-white" data-testid="text-user-accounts">
+                              {userPoints?.accountsClosed || 0}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-purple-300 mb-1">Your Rank</div>
+                            <div className="text-4xl font-bold text-purple-300" data-testid="text-user-rank">
+                              {getUserRank() ? `#${getUserRank()}` : '-'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Leaderboard Card */}
+                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Trophy className="w-5 h-5 text-yellow-400" />
+                      Top Performers
+                    </CardTitle>
+                    <CardDescription className="text-purple-200">
+                      All-time leaderboard of users with the most points
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {leaderboardLoading ? (
+                      <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
+                    ) : leaderboard?.leaderboard && leaderboard.leaderboard.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-purple-600 hover:bg-purple-700/50">
+                              <TableHead className="text-purple-200">Rank</TableHead>
+                              <TableHead className="text-purple-200">Wallet</TableHead>
+                              <TableHead className="text-purple-200 text-right">Points</TableHead>
+                              <TableHead className="text-purple-200 text-right">Accounts</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {leaderboard.leaderboard.slice(0, 50).map((entry: any) => (
+                              <TableRow 
+                                key={entry.walletAddress}
+                                className={`border-purple-600 hover:bg-purple-700/50 ${
+                                  entry.walletAddress === walletAddress ? 'bg-purple-700/70' : ''
+                                }`}
+                                data-testid={`row-leaderboard-${entry.rank}`}
+                              >
+                                <TableCell>
+                                  <Badge className={getRankBadgeColor(entry.rank)}>
+                                    #{entry.rank}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-mono text-purple-100">
+                                  {truncateAddress(entry.walletAddress)}
+                                  {entry.walletAddress === walletAddress && (
+                                    <Badge className="ml-2 bg-green-600 text-white">You</Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right font-bold text-yellow-400" data-testid={`text-points-${entry.rank}`}>
+                                  {entry.points.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right text-purple-100" data-testid={`text-accounts-${entry.rank}`}>
+                                  {entry.accountsClosed.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-purple-300">
+                        No leaderboard data available yet. Be the first to earn points!
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="text-center text-purple-200 text-sm">
+                  <p>💡 Earn points by closing empty token accounts, burning tokens, or burning NFTs</p>
+                  <p className="mt-2">Each account closed = 20 points</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Statistics Tab Content */}
           {activeTab === 'statistics' && (() => {
@@ -4979,9 +5123,6 @@ export default function SolRefund() {
           referralCode={userReferralCode}
         />
       )}
-
-      {/* Points Modal */}
-      <PointsModal open={isPointsModalOpen} onOpenChange={setIsPointsModalOpen} />
 
       {/* Floating Swap Toggle Button */}
       <button
