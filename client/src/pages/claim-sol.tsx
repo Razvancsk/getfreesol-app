@@ -45,6 +45,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountIn
 import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
+import { PointsModal } from '@/components/PointsModal';
 import logoImage from '@assets/image_1757882056840.png';
 import swapButtonImage from '@assets/image_1760235318056.png';
 
@@ -136,6 +137,9 @@ export default function SolRefund() {
   // Share modal state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
+  
+  // Points modal state
+  const [isPointsModalOpen, setIsPointsModalOpen] = useState(false);
   
   // Batch processing state
   const [isBatching, setIsBatching] = useState(false);
@@ -2674,15 +2678,15 @@ export default function SolRefund() {
                     <Code className="h-4 w-4 text-white" />
                     <span className="text-white text-xs font-medium">API</span>
                   </Link>
-                  <Link 
-                    href="/points"
+                  <button
+                    onClick={() => setIsPointsModalOpen(true)}
                     data-testid="button-points"
-                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30 cursor-pointer"
                     title="Points & Leaderboard"
                   >
                     <TrendingUp className="h-4 w-4 text-white" />
                     <span className="text-white text-xs font-medium">Points</span>
-                  </Link>
+                  </button>
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
@@ -2776,15 +2780,15 @@ export default function SolRefund() {
                   <Code className="h-4 w-4 text-white" />
                   <span className="text-white text-xs font-medium">API</span>
                 </Link>
-                <Link 
-                  href="/points"
+                <button
+                  onClick={() => setIsPointsModalOpen(true)}
                   data-testid="button-points-desktop"
-                  className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30 cursor-pointer"
                   title="Points & Leaderboard"
                 >
                   <TrendingUp className="h-4 w-4 text-white" />
                   <span className="text-white text-xs font-medium">Points</span>
-                </Link>
+                </button>
                 <a
                   href="https://x.com/getfreesol_xyz"
                   target="_blank"
@@ -4975,6 +4979,9 @@ export default function SolRefund() {
           referralCode={userReferralCode}
         />
       )}
+
+      {/* Points Modal */}
+      <PointsModal open={isPointsModalOpen} onOpenChange={setIsPointsModalOpen} />
 
       {/* Floating Swap Toggle Button */}
       <button

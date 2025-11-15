@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/SolanaProvider";
 import ClaimSol from "@/pages/claim-sol";
 import Referrals from "@/pages/referrals";
-import Points from "@/pages/points";
 import AdminSettings from "@/pages/admin-settings";
 import XBotAdmin from "@/pages/x-bot-admin";
 import XAdmin from "@/pages/x-admin";
@@ -21,7 +20,6 @@ function Router() {
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
       <Route path="/referrals" component={Referrals} />
-      <Route path="/points" component={Points} />
       <Route path="/developer" component={DeveloperDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/x-bot" component={XBotAdmin} />
