@@ -3888,7 +3888,7 @@ export default function SolRefund() {
             };
 
             return (
-              <div className="space-y-6">
+              <div className="space-y-8 md:space-y-6">
                 {/* User Points Card */}
                 {walletAddress && (
                   <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
