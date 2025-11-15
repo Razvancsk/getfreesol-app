@@ -3892,7 +3892,11 @@ export default function SolRefund() {
                   <Card className="bg-gradient-to-r from-purple-600 to-pink-600 border-pink-500 backdrop-blur shadow-lg">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="text-3xl">🐋</div>
+                        <img 
+                          src="/attached_assets/image_1763210960219.png" 
+                          alt="Whales Market" 
+                          className="w-16 h-16 object-contain"
+                        />
                         <h3 className="text-2xl font-bold text-white">
                           Vote for GetFreeSol on Whales Market!
                         </h3>
