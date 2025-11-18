@@ -3904,6 +3904,14 @@ export default function SolRefund() {
                         <p className="text-white/90 max-w-2xl">
                           Help boost the future of $GFS Points by voting for us on Whales Market. Your support matters!
                         </p>
+                        <div className="bg-white/10 rounded-lg p-4 max-w-2xl">
+                          <p className="text-white text-sm font-semibold mb-2">How to Vote:</p>
+                          <ol className="text-white/90 text-sm space-y-1 list-decimal list-inside">
+                            <li>Join our Discord server</li>
+                            <li>Mention $GFS in relevant conversations (no spamming!)</li>
+                            <li>Every authentic mention counts as a vote</li>
+                          </ol>
+                        </div>
                         <a
                           href="https://discord.gg/nWtveZhnra"
                           target="_blank"
