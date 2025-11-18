@@ -3908,7 +3908,7 @@ export default function SolRefund() {
                           <p className="text-white text-sm font-semibold mb-2">How to Vote:</p>
                           <ol className="text-white/90 text-sm space-y-1 list-decimal list-inside">
                             <li>Join our Discord server</li>
-                            <li>Mention $GFS in relevant conversations (no spamming!)</li>
+                            <li>Mention "GetFreeSol" and "@GetFreeSol_" in conversations (no spamming!)</li>
                             <li>Every authentic mention counts as a vote</li>
                           </ol>
                         </div>
