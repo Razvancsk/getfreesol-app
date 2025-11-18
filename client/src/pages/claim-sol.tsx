@@ -3906,7 +3906,7 @@ export default function SolRefund() {
                         </p>
                         <div className="bg-white/10 rounded-lg p-4 max-w-2xl">
                           <p className="text-white text-sm">
-                            Mention "GetFreeSol" and "@GetFreeSol_" in conversations (no spamming!)
+                            Mention "GetFreeSol" and "@getfreesol_xyz" in conversations (no spamming!)
                           </p>
                         </div>
                         <a
