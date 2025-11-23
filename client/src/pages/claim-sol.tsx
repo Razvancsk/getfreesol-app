@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -2678,19 +2678,39 @@ export default function SolRefund() {
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            {/* Top row: Logo and Wallet Connection (mobile) */}
-            <div className="flex items-center justify-between">
-              {/* Logo */}
-              <div className="flex items-center">
-                <img 
-                  src={logoImage}
-                  alt="Get your SOL back!"
-                  className="h-[100px] w-[100px]"
-                />
+            {activeTab === 'docs' ? (
+              /* Docs Mode Header - Back button and Logo only */
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    onClick={() => setActiveTab('reclaim')}
+                    className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg p-2 border border-purple-500/30"
+                    data-testid="button-back-from-docs"
+                  >
+                    <ArrowLeft className="h-5 w-5 text-white" />
+                  </Button>
+                  <img 
+                    src={logoImage}
+                    alt="Get your SOL back!"
+                    className="h-[80px] w-[80px]"
+                  />
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Top row: Logo and Wallet Connection (mobile) */}
+                <div className="flex items-center justify-between">
+                  {/* Logo */}
+                  <div className="flex items-center">
+                    <img 
+                      src={logoImage}
+                      alt="Get your SOL back!"
+                      className="h-[100px] w-[100px]"
+                    />
+                  </div>
 
-              {/* Mobile Wallet Connection */}
-              <div className="lg:hidden flex items-center space-x-2">
+                  {/* Mobile Wallet Connection */}
+                  <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
                   <Button
@@ -2873,6 +2893,8 @@ export default function SolRefund() {
                 </div>
               )}
             </div>
+              </>
+            )}
           </div>
 
           {/* Center Navigation Buttons */}
