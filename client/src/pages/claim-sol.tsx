@@ -4589,13 +4589,7 @@ export default function SolRefund() {
                                 <span>Confirm the transaction in your wallet</span>
                               </li>
                             </ul>
-                            <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 mb-6">
-                              <p className="text-sm text-yellow-200 flex items-start gap-2">
-                                <span className="text-xl">⚠️</span>
-                                <span><strong className="text-white">Warning:</strong> The value slider cannot be 100% accurate. Always double-check the tokens you're about to burn before confirming the transaction. Burning is permanent and cannot be undone!</span>
-                              </p>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                               <div className="space-y-2">
                                 <img 
                                   src={new URL('@assets/image_1763874192116.png', import.meta.url).href}
