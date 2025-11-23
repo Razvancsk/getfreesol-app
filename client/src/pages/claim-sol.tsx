@@ -98,7 +98,7 @@ export default function SolRefund() {
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
-  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
+  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -4311,18 +4311,14 @@ export default function SolRefund() {
                       <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
                         Developers
                       </div>
-                      <button
-                        onClick={() => setActiveDocSection('developer-api')}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          activeDocSection === 'developer-api' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
-                        }`}
+                      <Link
+                        href="/docs"
+                        className="w-full text-left px-3 py-2 rounded-lg transition-colors text-purple-200 hover:bg-purple-700/30 flex items-center"
                         data-testid="docs-nav-api"
                       >
                         <Code className="w-4 h-4 inline mr-2" />
                         Developer API
-                      </button>
+                      </Link>
                     </CardContent>
                   </Card>
                 </div>
@@ -4783,94 +4779,6 @@ export default function SolRefund() {
                       </CardContent>
                     </Card>
                   )}
-
-                  {activeDocSection === 'developer-api' && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-white text-2xl">
-                          <Code className="w-6 h-6" />
-                          Developer API
-                        </CardTitle>
-                        <CardDescription className="text-purple-200">
-                          Integrate SOL rent recovery and token burning directly into your application
-                        </CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
-                        <div className="space-y-6">
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">🚀 Getting Started</h3>
-                            <p className="text-purple-200 mb-4">
-                              Integrate GetFreeSol's powerful SOL recovery and token burning features directly into your application. 
-                              Build your own UI while leveraging our backend infrastructure.
-                            </p>
-                            <div className="space-y-3">
-                              <p className="text-white font-semibold">How It Works:</p>
-                              <ol className="list-decimal list-inside space-y-2 text-purple-200 ml-4">
-                                <li>Build your own UI in your application</li>
-                                <li>Call our API endpoints from your backend or frontend</li>
-                                <li>Pass your <code className="bg-purple-800 px-2 py-1 rounded text-sm">feeReceiverAddress</code> (your PDA) to collect fees</li>
-                                <li>Display results in your app with your branding</li>
-                                <li>Earn 80% of fees collected - claim anytime!</li>
-                              </ol>
-                            </div>
-                          </div>
-
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">🔗 Base URL</h3>
-                            <code className="block bg-purple-950 text-green-400 p-4 rounded font-mono text-sm break-all">
-                              {window.location.origin}/api
-                            </code>
-                          </div>
-
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">📋 Key Endpoints</h3>
-                            <div className="space-y-4 text-sm">
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">GET /api/sol-refund/scan/:address</code>
-                                <p className="text-purple-200 mt-2">Scan a wallet for empty token accounts</p>
-                              </div>
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">POST /api/sol-refund/prepare-transaction</code>
-                                <p className="text-purple-200 mt-2">Build transaction to close empty accounts</p>
-                              </div>
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">POST /api/tokens/burn</code>
-                                <p className="text-purple-200 mt-2">Create token burn transaction</p>
-                              </div>
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">POST /api/nfts/burn/build</code>
-                                <p className="text-purple-200 mt-2">Build NFT burn transaction (all types)</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">📦 Response Format</h3>
-                            <p className="text-purple-200 mb-3">
-                              All endpoints return JSON with a <code className="bg-purple-800 px-2 py-1 rounded text-sm">success</code> field
-                            </p>
-                            <pre className="bg-purple-950 p-4 rounded text-sm overflow-x-auto">
-                              <code className="text-green-400">{`{
-  "success": true,
-  "transaction": "base64_encoded_transaction",
-  "message": "Transaction prepared successfully"
-}`}</code>
-                            </pre>
-                          </div>
-
-                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-                            <p className="text-purple-200">
-                              💡 <strong className="text-white">Getting Your PDA:</strong> Visit the Referrals tab to create your developer account 
-                              and get your deterministic PDA address for fee collection. Full API documentation available at{' '}
-                              <a href="/openapi.yaml" className="text-blue-400 hover:text-blue-300 underline">openapi.yaml</a>
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
                 </div>
               </div>
           )}
