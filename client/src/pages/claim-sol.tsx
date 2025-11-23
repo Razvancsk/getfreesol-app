@@ -4544,7 +4544,7 @@ export default function SolRefund() {
                     </Card>
                   )}
 
-                  {activeDocSection === 'burnTokens' && (
+                  {activeDocSection === 'burn-tokens' && (
                     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                       <CardHeader>
                         <CardTitle className="text-white text-2xl">How to Burn Tokens</CardTitle>
