@@ -4473,6 +4473,32 @@ export default function SolRefund() {
                                 <strong className="text-white">💡 Note:</strong> If you have more than 20 empty accounts, the app will process them in batches. Just approve each transaction until all accounts are closed.
                               </p>
                             </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763873130866.png', import.meta.url).href}
+                                  alt="Scan results showing empty accounts - Click Claim All button" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 1: Click "CLAIM ALL"</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763873149659.png', import.meta.url).href}
+                                  alt="Transaction confirmation modal in wallet" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 2: Confirm transaction</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763873161776.png', import.meta.url).href}
+                                  alt="Success message showing SOL claimed" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 3: SOL claimed! 🎉</p>
+                              </div>
+                            </div>
                           </div>
 
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
