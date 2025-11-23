@@ -4696,7 +4696,7 @@ export default function SolRefund() {
                               </div>
                               <div className="space-y-2">
                                 <img 
-                                  src={new URL('@assets/image_1763874898966.png', import.meta.url).href}
+                                  src={new URL('@assets/image_1763875199940.png', import.meta.url).href}
                                   alt="Recent referral transactions showing earnings" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
