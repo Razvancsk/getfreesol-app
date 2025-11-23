@@ -4357,58 +4357,58 @@ export default function SolRefund() {
                       </CardHeader>
                       <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
-                          <div>
-                            <h3 className="text-xl font-semibold text-white mb-3">Step 1: Connect Your Wallet</h3>
-                            <p className="text-purple-200 mb-4">
-                              Click the "Connect Wallet" button in the top right corner and select your Solana wallet. 
-                              We support Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="text-2xl">1️⃣</span> Connect Your Wallet
+                            </h3>
+                            <p className="text-purple-200 leading-relaxed">
+                              Click the <strong className="text-white">"Connect Wallet"</strong> button in the top right corner and select your Solana wallet. 
+                              We support <strong className="text-white">8 different wallets</strong>: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
                             </p>
-                            <div className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4">
-                              <div className="aspect-video bg-gradient-to-br from-purple-900/40 to-blue-900/40 rounded flex items-center justify-center text-purple-400">
-                                📸 Screenshot: Connect Wallet Button
-                              </div>
-                              <p className="text-sm text-purple-300 mt-2 italic">Click "Connect Wallet" in the top right corner</p>
-                            </div>
                           </div>
                           
-                          <div>
-                            <h3 className="text-xl font-semibold text-white mb-3">Step 2: Scan for Claimable SOL</h3>
-                            <p className="text-purple-200 mb-4">
-                              Navigate to the "Vacant Accounts" tab and click "Scan Wallet" to discover empty token accounts. 
-                              The scanner will identify all token accounts with zero balance that can be closed to recover rent deposits.
-                            </p>
-                            <div className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4 mb-4">
-                              <div className="aspect-video bg-gradient-to-br from-purple-900/40 to-blue-900/40 rounded flex items-center justify-center text-purple-400">
-                                📸 Screenshot: Vacant Accounts Tab
-                              </div>
-                              <p className="text-sm text-purple-300 mt-2 italic">Navigate to "Vacant Accounts" tab</p>
-                            </div>
-                            <div className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4">
-                              <div className="aspect-video bg-gradient-to-br from-purple-900/40 to-blue-900/40 rounded flex items-center justify-center text-purple-400">
-                                📸 Screenshot: Scan Wallet Button
-                              </div>
-                              <p className="text-sm text-purple-300 mt-2 italic">Click "Scan Wallet" to discover empty accounts</p>
-                            </div>
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="text-2xl">2️⃣</span> Scan for Claimable SOL
+                            </h3>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Navigate to the <strong className="text-white">"Vacant Accounts"</strong> tab</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Click <strong className="text-white">"Scan Wallet"</strong> to discover empty token accounts</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>The scanner will identify all token accounts with zero balance that can be closed to recover rent deposits (~0.00203928 SOL each)</span>
+                              </li>
+                            </ul>
                           </div>
                           
-                          <div>
-                            <h3 className="text-xl font-semibold text-white mb-3">Step 3: Claim Your SOL</h3>
-                            <p className="text-purple-200 mb-4">
-                              Select the accounts you want to close and click "Claim SOL" to recover rent deposits. 
-                              Each closed account recovers ~0.00203928 SOL.
-                            </p>
-                            <div className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4 mb-4">
-                              <div className="aspect-video bg-gradient-to-br from-purple-900/40 to-blue-900/40 rounded flex items-center justify-center text-purple-400">
-                                📸 Screenshot: Select Accounts
-                              </div>
-                              <p className="text-sm text-purple-300 mt-2 italic">Select the empty accounts you want to close</p>
-                            </div>
-                            <div className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4">
-                              <div className="aspect-video bg-gradient-to-br from-purple-900/40 to-blue-900/40 rounded flex items-center justify-center text-purple-400">
-                                📸 Screenshot: Claim SOL Button
-                              </div>
-                              <p className="text-sm text-purple-300 mt-2 italic">Click "Claim SOL" to recover rent deposits</p>
-                            </div>
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="text-2xl">3️⃣</span> Claim Your SOL
+                            </h3>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">▸</span>
+                                <span>Select the empty accounts you want to close</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">▸</span>
+                                <span>Click <strong className="text-white">"Claim SOL"</strong> to build the transaction</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">▸</span>
+                                <span>Approve the transaction in your wallet</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">▸</span>
+                                <span>Receive your reclaimed SOL instantly! 🎉</span>
+                              </li>
+                            </ul>
                           </div>
 
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
