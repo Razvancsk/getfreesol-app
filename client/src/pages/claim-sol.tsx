@@ -96,7 +96,8 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'lend' | 'points'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
+  const [showDeveloper, setShowDeveloper] = useState(false);
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -328,7 +329,7 @@ export default function SolRefund() {
 
   // Fetch lend statistics for platform wallet
   useEffect(() => {
-    if (activeTab === 'lend' && publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
+    if (activeTab === 'docs' && showDeveloper && publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6') {
       fetch('/api/jupiter-lend/statistics')
         .then(res => res.json())
         .then(data => {
@@ -352,10 +353,11 @@ export default function SolRefund() {
 
   // Redirect from lend tab if not platform wallet
   useEffect(() => {
-    if (activeTab === 'lend' && !isPlatformWallet) {
-      setActiveTab('reclaim');
+    // Reset showDeveloper when switching tabs
+    if (activeTab !== 'docs') {
+      setShowDeveloper(false);
     }
-  }, [activeTab, isPlatformWallet]);
+  }, [activeTab]);
 
   // Query to get referral transactions
   const { data: referralTransactions } = useQuery({
@@ -377,7 +379,7 @@ export default function SolRefund() {
       console.log('User positions data:', data);
       return data;
     },
-    enabled: activeTab === 'lend' && !!publicKey,
+    enabled: activeTab === 'docs' && showDeveloper && !!publicKey,
     retry: false,
   });
 
@@ -2926,20 +2928,18 @@ export default function SolRefund() {
                   <Trophy className="h-4 w-4" />
                   Points
                 </Button>
-                {/* Earn button - only visible to platform wallet */}
-                {isPlatformWallet && (
-                  <Button
-                    onClick={() => setActiveTab('lend')}
-                    className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all ${
-                      activeTab === 'lend' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                    }`}
-                    data-testid="button-lend"
-                  >
-                    🌱 Earn
-                  </Button>
-                )}
+                <Button
+                  onClick={() => setActiveTab('docs')}
+                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
+                    activeTab === 'docs' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-docs"
+                >
+                  <Info className="h-4 w-4" />
+                  Docs
+                </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
@@ -2962,7 +2962,7 @@ export default function SolRefund() {
           {/* Description */}
           <div className="text-center space-y-4 py-4">
             <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'lend' ? 'Earn passive income on your Solana assets' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'docs' ? 'Learn how to use GetFreeSol' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
             </p>
           </div>
 
@@ -4257,8 +4257,55 @@ export default function SolRefund() {
           })()}
 
 
-          {/* Lend Tab Content */}
-          {activeTab === 'lend' && (
+          {/* Docs Tab Content */}
+          {activeTab === 'docs' && !showDeveloper && (
+              <div className="space-y-6">
+                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                  <CardHeader>
+                    <CardTitle className="text-white text-2xl">How to Use GetFreeSol</CardTitle>
+                    <CardDescription className="text-purple-200">
+                      Complete guide to reclaiming your SOL
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 text-white">
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-semibold">Step 1: Connect Your Wallet</h3>
+                      <p className="text-purple-200">Click the "Connect Wallet" button in the top right corner and select your Solana wallet.</p>
+                      
+                      <h3 className="text-xl font-semibold mt-6">Step 2: Scan for Claimable SOL</h3>
+                      <p className="text-purple-200">Navigate to "Vacant Accounts" tab and click "Scan Wallet" to discover empty token accounts.</p>
+                      
+                      <h3 className="text-xl font-semibold mt-6">Step 3: Claim Your SOL</h3>
+                      <p className="text-purple-200">Select accounts you want to close and click "Claim SOL" to recover rent deposits.</p>
+                      
+                      <h3 className="text-xl font-semibold mt-6">Additional Features</h3>
+                      <ul className="list-disc list-inside space-y-2 text-purple-200">
+                        <li><strong>Burn Tokens:</strong> Remove unwanted tokens from your wallet</li>
+                        <li><strong>Burn NFTs:</strong> Burn NFTs including compressed and frozen NFTs</li>
+                        <li><strong>Referrals:</strong> Earn 50% commission from referrals</li>
+                        <li><strong>Points:</strong> Earn 20 points for every account closed</li>
+                      </ul>
+                    </div>
+
+                    {isPlatformWallet && (
+                      <div className="mt-8 pt-6 border-t border-purple-500/30">
+                        <Button
+                          onClick={() => setShowDeveloper(true)}
+                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-semibold rounded-lg"
+                          data-testid="button-developer"
+                        >
+                          <Code className="w-5 h-5 mr-2" />
+                          Developer (APY)
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+          )}
+
+          {/* Developer/APY Content - Only visible when showDeveloper is true */}
+          {activeTab === 'docs' && showDeveloper && (
               <div className="space-y-6">
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
                 {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
