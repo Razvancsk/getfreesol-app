@@ -98,7 +98,7 @@ export default function SolRefund() {
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
-  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api' | 'developer-x'>('overview');
+  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -4321,21 +4321,7 @@ export default function SolRefund() {
                         data-testid="docs-nav-api"
                       >
                         <Code className="w-4 h-4 inline mr-2" />
-                        API
-                      </button>
-                      <button
-                        onClick={() => setActiveDocSection('developer-x')}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          activeDocSection === 'developer-x' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
-                        }`}
-                        data-testid="docs-nav-x"
-                      >
-                        <svg className="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        X (Twitter)
+                        Developer API
                       </button>
                     </CardContent>
                   </Card>
@@ -4885,90 +4871,6 @@ export default function SolRefund() {
                     </Card>
                   )}
 
-                  {activeDocSection === 'developer-x' && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-white text-2xl">
-                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                          </svg>
-                          X (Twitter) Integration
-                        </CardTitle>
-                        <CardDescription className="text-purple-200">
-                          Automated social media marketing for the platform
-                        </CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
-                        <div className="space-y-6">
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">🐦 X (Twitter) Integration</h3>
-                            <p className="text-purple-200 mb-4">
-                              The platform automatically posts to X (Twitter) when users claim SOL, burn tokens, or burn NFTs. 
-                              All transactions are announced with custom purple gradient card banners for maximum engagement.
-                            </p>
-                            <div className="space-y-3">
-                              <p className="text-white font-semibold">Auto-Posting Features:</p>
-                              <ul className="list-disc list-inside space-y-2 text-purple-200 ml-4">
-                                <li>Automatic posts when NET SOL ≥ 0.01 SOL</li>
-                                <li>Custom purple gradient card banners with transaction details</li>
-                                <li>Posts for SOL reclaims, token burns, and NFT burns</li>
-                                <li>OAuth 1.0a authentication (Desktop app flow)</li>
-                                <li>Scheduled posting and auto-engagement</li>
-                              </ul>
-                            </div>
-                          </div>
-
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">🔧 Technical Details</h3>
-                            <div className="space-y-3 text-sm">
-                              <div>
-                                <p className="text-white font-semibold mb-1">Authentication:</p>
-                                <p className="text-purple-200">PIN-based OAuth 1.0a flow with secure token storage</p>
-                              </div>
-                              <div>
-                                <p className="text-white font-semibold mb-1">Posting Logic:</p>
-                                <p className="text-purple-200">Centralized <code className="bg-purple-800 px-2 py-1 rounded">announceTransactionOnX()</code> helper with defensive type coercion</p>
-                              </div>
-                              <div>
-                                <p className="text-white font-semibold mb-1">Card Generation:</p>
-                                <p className="text-purple-200">Custom purple gradient banners with transaction metadata</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">📊 Database Tables</h3>
-                            <div className="space-y-2 text-sm">
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">x_auth_tokens</code>
-                                <p className="text-purple-200 mt-1">Stores X (Twitter) authentication tokens</p>
-                              </div>
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">x_posts</code>
-                                <p className="text-purple-200 mt-1">Records of posts made by the bot</p>
-                              </div>
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">x_schedules</code>
-                                <p className="text-purple-200 mt-1">Manages posting schedules</p>
-                              </div>
-                              <div>
-                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">x_engagement</code>
-                                <p className="text-purple-200 mt-1">Tracks engagement activities</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-                            <p className="text-purple-200">
-                              💡 <strong className="text-white">Note:</strong> X integration is automated and requires platform wallet authentication. 
-                              Posts are made automatically when transactions meet the minimum SOL threshold.
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
               </div>
           )}
