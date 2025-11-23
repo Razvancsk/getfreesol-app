@@ -47,6 +47,7 @@ import { SwapModal } from '@/components/SwapModal';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
+import ApiDocs from './api-docs';
 import swapButtonImage from '@assets/image_1760235318056.png';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -98,7 +99,7 @@ export default function SolRefund() {
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
-  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points'>('overview');
+  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -4311,14 +4312,18 @@ export default function SolRefund() {
                       <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
                         Developers
                       </div>
-                      <Link
-                        href="/docs"
-                        className="w-full text-left px-3 py-2 rounded-lg transition-colors text-purple-200 hover:bg-purple-700/30 flex items-center"
+                      <button
+                        onClick={() => setActiveDocSection('developer-api')}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          activeDocSection === 'developer-api' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
                         data-testid="docs-nav-api"
                       >
                         <Code className="w-4 h-4 inline mr-2" />
                         Developer API
-                      </Link>
+                      </button>
                     </CardContent>
                   </Card>
                 </div>
@@ -4778,6 +4783,12 @@ export default function SolRefund() {
                         </div>
                       </CardContent>
                     </Card>
+                  )}
+
+                  {activeDocSection === 'developer-api' && (
+                    <div>
+                      <ApiDocs />
+                    </div>
                   )}
                 </div>
               </div>
