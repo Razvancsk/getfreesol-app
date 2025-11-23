@@ -4305,7 +4305,7 @@ export default function SolRefund() {
                           className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg"
                           data-testid="button-apy"
                         >
-                          🌱 APY / Lend
+                          🌱 Earn
                         </Button>
                       </div>
                     )}
