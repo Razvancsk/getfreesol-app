@@ -4269,7 +4269,7 @@ export default function SolRefund() {
                     <CardHeader className="pb-3 space-y-3">
                       <Button
                         onClick={() => setActiveTab('reclaim')}
-                        className="w-full bg-purple-700/50 hover:bg-purple-600 text-white border-purple-500/30 flex items-center justify-center gap-2"
+                        className="bg-purple-700/50 hover:bg-purple-600 text-white border-purple-500/30 flex items-center gap-2 px-4 py-2"
                         data-testid="button-back-from-docs"
                       >
                         <ArrowLeft className="h-4 w-4" />
