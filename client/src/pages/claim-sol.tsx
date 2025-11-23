@@ -4360,14 +4360,14 @@ export default function SolRefund() {
                 {/* Right Content Area */}
                 <div className="flex-1">
                   {activeDocSection === 'overview' && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                      <CardHeader>
-                        <CardTitle className="text-white text-2xl">How to Claim SOL</CardTitle>
-                        <CardDescription className="text-purple-200">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <h2 className="text-white text-2xl font-semibold">How to Claim SOL</h2>
+                        <p className="text-purple-200">
                           Complete guide to reclaiming your SOL from empty token accounts
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        </p>
+                      </div>
+                      <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
@@ -4552,19 +4552,19 @@ export default function SolRefund() {
                             </ul>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   )}
 
                   {activeDocSection === 'burn-tokens' && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                      <CardHeader>
-                        <CardTitle className="text-white text-2xl">How to Burn Tokens</CardTitle>
-                        <CardDescription className="text-purple-200">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <h2 className="text-white text-2xl font-semibold">How to Burn Tokens</h2>
+                        <p className="text-purple-200">
                           Remove unwanted tokens from your wallet and recover SOL from token accounts
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        </p>
+                      </div>
+                      <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-4">What is Token Burning?</h3>
@@ -4631,19 +4631,19 @@ export default function SolRefund() {
                             </ul>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   )}
 
                   {activeDocSection === 'referrals' && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                      <CardHeader>
-                        <CardTitle className="text-white text-2xl">Referral System</CardTitle>
-                        <CardDescription className="text-purple-200">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <h2 className="text-white text-2xl font-semibold">Referral System</h2>
+                        <p className="text-purple-200">
                           Earn 50% commission from your referrals - the highest rate in the market!
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        </p>
+                      </div>
+                      <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-4">How the Referral System Works</h3>
@@ -4727,19 +4727,19 @@ export default function SolRefund() {
                             </ul>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   )}
 
                   {activeDocSection === 'points' && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                      <CardHeader>
-                        <CardTitle className="text-white text-2xl">Points System</CardTitle>
-                        <CardDescription className="text-purple-200">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <h2 className="text-white text-2xl font-semibold">Points System</h2>
+                        <p className="text-purple-200">
                           Earn points for every account you close and compete on the leaderboard!
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        </p>
+                      </div>
+                      <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-4">How the Points System Works</h3>
@@ -4810,8 +4810,8 @@ export default function SolRefund() {
                             </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   )}
 
                   {activeDocSection === 'developer-api' && (
