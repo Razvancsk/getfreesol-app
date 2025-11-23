@@ -4448,26 +4448,31 @@ export default function SolRefund() {
                               <span className="text-2xl">2️⃣</span> Claim Your SOL
                             </h3>
                             <p className="text-purple-200 leading-relaxed mb-4">
-                              After connecting your wallet, the app will <strong className="text-white">automatically scan</strong> for empty token accounts. Once the scan is complete:
+                              After connecting your wallet, the app will <strong className="text-white">automatically scan and close all empty accounts</strong>. The process is fully automated:
                             </p>
                             <ul className="space-y-3 text-purple-200 leading-relaxed">
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">▸</span>
-                                <span>Select the empty accounts you want to close</span>
+                                <span>The app automatically detects all empty token accounts</span>
                               </li>
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">▸</span>
-                                <span>Click <strong className="text-white">"Claim SOL"</strong> to build the transaction</span>
+                                <span>Up to <strong className="text-white">20 accounts per transaction</strong> will be closed automatically</span>
                               </li>
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">▸</span>
-                                <span>Approve the transaction in your wallet</span>
+                                <span>Simply <strong className="text-white">approve the transaction</strong> in your wallet</span>
                               </li>
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">▸</span>
                                 <span>Receive your reclaimed SOL instantly! 🎉</span>
                               </li>
                             </ul>
+                            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mt-4">
+                              <p className="text-sm text-purple-200">
+                                <strong className="text-white">💡 Note:</strong> If you have more than 20 empty accounts, the app will process them in batches. Just approve each transaction until all accounts are closed.
+                              </p>
+                            </div>
                           </div>
 
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
