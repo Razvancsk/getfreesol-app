@@ -4369,7 +4369,7 @@ export default function SolRefund() {
                       </div>
                       <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">0️⃣</span> Find Our App
                             </h3>
@@ -4414,7 +4414,7 @@ export default function SolRefund() {
                             </div>
                           </div>
 
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">1️⃣</span> Connect Your Wallet
                             </h3>
@@ -4455,7 +4455,7 @@ export default function SolRefund() {
                             </div>
                           </div>
                           
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">2️⃣</span> Claim Your SOL
                             </h3>
@@ -4513,7 +4513,7 @@ export default function SolRefund() {
                             </div>
                           </div>
 
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">Additional Features</h3>
                             <ul className="space-y-3 text-purple-200">
                               <li className="flex items-start gap-3">
@@ -4543,7 +4543,7 @@ export default function SolRefund() {
                             </ul>
                           </div>
 
-                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
                             <ul className="space-y-2 text-purple-200 list-disc list-inside">
                               <li>Use the Auto-Claim feature to automatically recover SOL from new empty accounts</li>
@@ -4566,7 +4566,7 @@ export default function SolRefund() {
                       </div>
                       <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">What is Token Burning?</h3>
                             <p className="text-purple-200 leading-relaxed">
                               Token burning allows you to <strong className="text-white">permanently destroy unwanted tokens</strong> from your wallet 
@@ -4575,7 +4575,7 @@ export default function SolRefund() {
                             </p>
                           </div>
 
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">🔥</span> How to Burn Tokens
                             </h3>
@@ -4621,7 +4621,7 @@ export default function SolRefund() {
                             </div>
                           </div>
 
-                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
                             <ul className="space-y-2 text-purple-200 list-disc list-inside">
                               <li>Start with low-value tokens to test the feature before burning higher-value tokens</li>
@@ -4645,7 +4645,7 @@ export default function SolRefund() {
                       </div>
                       <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">How the Referral System Works</h3>
                             <p className="text-purple-200 leading-relaxed mb-4">
                               Share your unique referral link with friends and earn <strong className="text-white">50% commission</strong> on all fees 
@@ -4671,7 +4671,7 @@ export default function SolRefund() {
                             </ul>
                           </div>
 
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">💰</span> How to Get Started
                             </h3>
@@ -4717,7 +4717,7 @@ export default function SolRefund() {
                             </div>
                           </div>
 
-                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
                             <ul className="space-y-2 text-purple-200 list-disc list-inside">
                               <li>Share your referral link in crypto communities, Discord servers, and social media</li>
@@ -4741,7 +4741,7 @@ export default function SolRefund() {
                       </div>
                       <div className="space-y-6 text-white prose prose-invert max-w-none">
                         <div className="space-y-8">
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">How the Points System Works</h3>
                             <p className="text-purple-200 leading-relaxed mb-4">
                               Every time you close an empty token account, you earn <strong className="text-white">20 points</strong>. 
@@ -4768,7 +4768,7 @@ export default function SolRefund() {
                             </ul>
                           </div>
 
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                          <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">🏆</span> Your Stats & Leaderboard
                             </h3>
