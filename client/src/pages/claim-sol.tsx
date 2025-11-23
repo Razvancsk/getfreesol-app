@@ -98,6 +98,7 @@ export default function SolRefund() {
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
+  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -4268,9 +4269,9 @@ export default function SolRefund() {
                     </CardHeader>
                     <CardContent className="space-y-1">
                       <button
-                        onClick={() => setShowDeveloper(false)}
+                        onClick={() => setActiveDocSection('overview')}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          !showDeveloper 
+                          activeDocSection === 'overview' 
                             ? 'bg-purple-600 text-white' 
                             : 'text-purple-200 hover:bg-purple-700/30'
                         }`}
@@ -4278,40 +4279,49 @@ export default function SolRefund() {
                       >
                         📖 Overview
                       </button>
-                      <button
-                        onClick={() => setShowDeveloper(false)}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          !showDeveloper 
-                            ? 'text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
-                        }`}
-                        data-testid="docs-nav-how-to"
-                      >
-                        🚀 How to Claim SOL
-                      </button>
                       <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
                         Features
                       </div>
                       <button
-                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        onClick={() => setActiveDocSection('burn-tokens')}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          activeDocSection === 'burn-tokens' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
                         data-testid="docs-nav-tokens"
                       >
                         🔥 Burn Tokens
                       </button>
                       <button
-                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        onClick={() => setActiveDocSection('burn-nfts')}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          activeDocSection === 'burn-nfts' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
                         data-testid="docs-nav-nfts"
                       >
                         🎨 Burn NFTs
                       </button>
                       <button
-                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        onClick={() => setActiveDocSection('referrals')}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          activeDocSection === 'referrals' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
                         data-testid="docs-nav-referrals"
                       >
                         💰 Referral System
                       </button>
                       <button
-                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        onClick={() => setActiveDocSection('points')}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          activeDocSection === 'points' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
                         data-testid="docs-nav-points"
                       >
                         ⭐ Points System
@@ -4320,9 +4330,9 @@ export default function SolRefund() {
                         Developers
                       </div>
                       <button
-                        onClick={() => setShowDeveloper(true)}
+                        onClick={() => setActiveDocSection('developer')}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          showDeveloper 
+                          activeDocSection === 'developer' 
                             ? 'bg-purple-600 text-white' 
                             : 'text-purple-200 hover:bg-purple-700/30'
                         }`}
@@ -4337,7 +4347,7 @@ export default function SolRefund() {
 
                 {/* Right Content Area */}
                 <div className="flex-1">
-                  {!showDeveloper ? (
+                  {activeDocSection === 'overview' && (
                     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                       <CardHeader>
                         <CardTitle className="text-white text-2xl">How to Claim SOL</CardTitle>
@@ -4442,7 +4452,9 @@ export default function SolRefund() {
                         </div>
                       </CardContent>
                     </Card>
-                  ) : (
+                  )}
+
+                  {activeDocSection === 'developer' && (
                     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-white text-2xl">
