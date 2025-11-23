@@ -1,4 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Code, ArrowLeft, Copy, Check, Info, ExternalLink, RefreshCw } from 'lucide-react';
@@ -185,23 +184,25 @@ export default function ApiDocs() {
 
         {/* Show account creation form if no account exists */}
         {!publicKey ? (
-          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur max-w-2xl mx-auto mt-12">
-            <CardHeader>
-              <CardTitle className="text-white text-center">Connect Wallet to Continue</CardTitle>
-              <CardDescription className="text-purple-200 text-center">
-                Connect your wallet to create a developer account and access API documentation
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center text-purple-100">
-              <p>Please connect your Solana wallet using the button in the top right corner to get started.</p>
-            </CardContent>
-          </Card>
+          <div className="max-w-2xl mx-auto mt-12">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-white text-2xl font-semibold text-center">Connect Wallet to Continue</h2>
+                <p className="text-purple-200 text-center">
+                  Connect your wallet to create a developer account and access API documentation
+                </p>
+              </div>
+              <div className="text-center text-purple-100">
+                <p>Please connect your Solana wallet using the button in the top right corner to get started.</p>
+              </div>
+            </div>
+          </div>
         ) : !hasAccount ? (
-          <Card className="bg-black/50 border-purple-500 backdrop-blur max-w-md mx-auto mt-12">
-            <CardHeader>
-              <CardTitle className="text-white text-2xl">Create API Account</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="max-w-md mx-auto mt-12">
+            <div className="space-y-4">
+              <h2 className="text-white text-2xl font-semibold">Create API Account</h2>
+            </div>
+            <div className="space-y-4 mt-6">
               <div className="space-y-2">
                 <Label htmlFor="project-name" className="text-white">Project Name</Label>
                 <Input
@@ -233,19 +234,19 @@ export default function ApiDocs() {
                   "Create Account"
                 )}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : (
           <div className="space-y-6">
             {/* Introduction */}
-            <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-              <CardHeader>
-                <CardTitle className="text-white">🚀 Getting Started</CardTitle>
-                <CardDescription className="text-purple-200">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-white text-2xl font-semibold">🚀 Getting Started</h2>
+                <p className="text-purple-200">
                   Integrate SOL rent recovery and token burning directly into your application
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-purple-100 space-y-4">
+                </p>
+              </div>
+              <div className="text-purple-100 space-y-4">
                 <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/50">
                   <p className="text-blue-100 font-semibold mb-2">🎯 How It Works:</p>
                   <ol className="text-sm text-blue-200 space-y-2 list-decimal list-inside">
@@ -267,13 +268,12 @@ export default function ApiDocs() {
                     <p className="text-sm text-purple-200">All endpoints return JSON with <code className="bg-purple-900/50 px-2 py-1 rounded text-purple-200 text-xs">success</code> field</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
           {/* Balance Card - Only show for developers */}
           {developer && (
-            <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-              <CardContent className="pt-6">
+            <div className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -309,15 +309,14 @@ export default function ApiDocs() {
                     )}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+            </div>
           )}
 
           {/* Configuration */}
-          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-white">⚙️ Configure Your Integration</CardTitle>
-              <CardDescription className="text-purple-100">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-white text-2xl font-semibold">⚙️ Configure Your Integration</h2>
+              <p className="text-purple-100">
                 {developer ? (
                   <span className="flex items-center gap-2">
                     ✅ Auto-populated from your developer account: <strong>{developer.projectName}</strong>
@@ -325,9 +324,9 @@ export default function ApiDocs() {
                 ) : (
                   "Set your wallet address and fee percentage to see customized examples"
                 )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+              </p>
+            </div>
+            <div className="space-y-6">
               {!developer && walletAddress && (
                 <div className="p-3 bg-blue-500/20 border border-blue-400/30 rounded-lg space-y-2">
                   <p className="text-sm text-blue-100 font-semibold">No Developer Account</p>
@@ -471,18 +470,18 @@ export default function ApiDocs() {
               <p className="text-sm text-purple-200 italic">
                 💡 The examples below will update based on your settings
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Step 1: Integration Code */}
-          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-white">1️⃣ Recovery Function</CardTitle>
-              <CardDescription className="text-purple-200">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-white text-2xl font-semibold">1️⃣ Recovery Function</h2>
+              <p className="text-purple-200">
                 Copy this function to your project
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </p>
+            </div>
+            <div className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
                 <div className="flex items-center justify-end mb-2">
                   <Button
@@ -618,18 +617,18 @@ export async function recoverSOLRent(
 }`}
                 </pre>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Step 2: Backend Proxy */}
-          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-white">2️⃣ Backend Proxy (Required to avoid CORS errors)</CardTitle>
-              <CardDescription className="text-purple-200">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-white text-2xl font-semibold">2️⃣ Backend Proxy (Required to avoid CORS errors)</h2>
+              <p className="text-purple-200">
                 Add these routes to your backend server (Node.js/Express)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </p>
+            </div>
+            <div className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
                 <div className="flex items-center justify-end mb-2">
                   <Button
@@ -687,18 +686,18 @@ app.post("/api/sol-refund/record-success", async (req, res) => {
 });`}
                 </pre>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Step 3: Usage Example */}
-          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-white">3️⃣ Usage Example</CardTitle>
-              <CardDescription className="text-purple-200">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-white text-2xl font-semibold">3️⃣ Usage Example</h2>
+              <p className="text-purple-200">
                 How to call the recovery function in your app
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </p>
+            </div>
+            <div className="space-y-4">
               <div className="bg-slate-900/50 p-4 rounded-lg">
                 <div className="flex items-center justify-end mb-2">
                   <Button
@@ -744,15 +743,15 @@ const signature = await recoverSOLRent(wallet.publicKey, wallet, 5);
 console.log('Success! Transaction:', signature);`}
                 </pre>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Support */}
-          <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="text-white">📞 Support</CardTitle>
-            </CardHeader>
-            <CardContent className="text-purple-200 space-y-2">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-white text-2xl font-semibold">📞 Support</h2>
+            </div>
+            <div className="text-purple-200 space-y-2">
               <p>Need help? Join our community:</p>
               <div className="flex gap-3">
                 <a
@@ -772,8 +771,8 @@ console.log('Success! Transaction:', signature);`}
                   X (Twitter)
                 </a>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
           </div>
         )}
       </div>
