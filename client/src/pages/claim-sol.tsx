@@ -4307,6 +4307,17 @@ export default function SolRefund() {
           {/* Developer/APY Content - Only visible when showDeveloper is true */}
           {activeTab === 'docs' && showDeveloper && (
               <div className="space-y-6">
+                {/* Back to Docs Button */}
+                <div className="flex justify-start mb-4">
+                  <Button
+                    onClick={() => setShowDeveloper(false)}
+                    variant="outline"
+                    className="bg-purple-800/40 text-purple-300 border-purple-600 hover:bg-purple-600/60"
+                  >
+                    ← Back to Docs
+                  </Button>
+                </div>
+                
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
                 {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                   <div className="px-2 md:px-0">
