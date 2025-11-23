@@ -4262,10 +4262,10 @@ export default function SolRefund() {
 
           {/* Docs Tab Content - Sidebar Layout */}
           {activeTab === 'docs' && (
-              <div className="flex gap-6 h-full px-4">
+              <div className="flex flex-col lg:flex-row gap-6 h-full px-4">
                 {/* Left Sidebar Navigation */}
-                <div className="w-64 flex-shrink-0 pl-0">
-                  <div className="sticky top-4 space-y-4">
+                <div className="w-full lg:w-64 flex-shrink-0 pl-0">
+                  <div className="lg:sticky top-4 space-y-4">
                     <div className="flex flex-col gap-3">
                       <button
                         onClick={() => setActiveTab('reclaim')}
