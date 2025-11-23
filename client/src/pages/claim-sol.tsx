@@ -4623,6 +4623,102 @@ export default function SolRefund() {
                     </Card>
                   )}
 
+                  {activeDocSection === 'referrals' && (
+                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                      <CardHeader>
+                        <CardTitle className="text-white text-2xl">Referral System</CardTitle>
+                        <CardDescription className="text-purple-200">
+                          Earn 50% commission from your referrals - the highest rate in the market!
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        <div className="space-y-8">
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4">How the Referral System Works</h3>
+                            <p className="text-purple-200 leading-relaxed mb-4">
+                              Share your unique referral link with friends and earn <strong className="text-white">50% commission</strong> on all fees 
+                              collected from users who sign up through your link. This is the <strong className="text-white">highest commission rate in the market</strong>!
+                            </p>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span><strong className="text-white">50% commission</strong> on all fees from your referrals</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span>Automatic tracking of all referral transactions</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span>Real-time earnings dashboard</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span>No minimum payout - earn from the first transaction</span>
+                              </li>
+                            </ul>
+                          </div>
+
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="text-2xl">💰</span> How to Get Started
+                            </h3>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Navigate to the <strong className="text-white">"Referrals"</strong> tab</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Your unique referral link is automatically generated</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Click the <strong className="text-white">copy button</strong> to copy your referral link</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Share your link with friends via social media, Discord, Twitter, or anywhere else</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Track your earnings in real-time on the Referrals page</span>
+                              </li>
+                            </ul>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763874886453.png', import.meta.url).href}
+                                  alt="Referral dashboard showing total earnings and referral link" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Your referral stats and link</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763874898966.png', import.meta.url).href}
+                                  alt="Recent referral transactions showing earnings" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Track your referral earnings</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
+                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                              <li>Share your referral link in crypto communities, Discord servers, and social media</li>
+                              <li>Explain the benefits of GetFreeSol to maximize conversions</li>
+                              <li>Your commission is automatically tracked - no manual claiming needed</li>
+                              <li>The more your referrals use the platform, the more you earn!</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {activeDocSection === 'developer' && (
                     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                       <CardHeader>
