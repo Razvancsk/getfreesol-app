@@ -4372,6 +4372,18 @@ export default function SolRefund() {
 
                 {/* Right Content Area */}
                 <div className="flex-1">
+                  {/* Mobile Back Button - Only visible on mobile */}
+                  <div className="block lg:hidden mb-4">
+                    <button
+                      onClick={() => setActiveTab('reclaim')}
+                      className="bg-purple-700/50 hover:bg-purple-600 text-white border border-purple-500/30 inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                      data-testid="button-back-mobile"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back
+                    </button>
+                  </div>
+
                   {activeDocSection === 'overview' && (
                     <div className="space-y-6">
                       <div className="space-y-2">
