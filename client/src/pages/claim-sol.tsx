@@ -4798,7 +4798,7 @@ export default function SolRefund() {
                     </Card>
                   )}
 
-                  {activeDocSection === 'developer' && (
+                  {activeDocSection === 'developer-api' && (
                     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-white text-2xl">
@@ -4810,39 +4810,8 @@ export default function SolRefund() {
                         </CardDescription>
                       </CardHeader>
                       
-                      {/* Sub-navigation for API and X */}
-                      <div className="px-6 pb-4 flex gap-2">
-                        <button
-                          onClick={() => setDeveloperSubTab('api')}
-                          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                            developerSubTab === 'api'
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-purple-900/30 text-purple-300 hover:bg-purple-700/30'
-                          }`}
-                          data-testid="dev-tab-api"
-                        >
-                          <Code className="w-4 h-4" />
-                          API
-                        </button>
-                        <button
-                          onClick={() => setDeveloperSubTab('x')}
-                          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                            developerSubTab === 'x'
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-purple-900/30 text-purple-300 hover:bg-purple-700/30'
-                          }`}
-                          data-testid="dev-tab-x"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                          </svg>
-                          X
-                        </button>
-                      </div>
-
                       <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
-                        {developerSubTab === 'api' && (
-                          <div className="space-y-6">
+                        <div className="space-y-6">
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-3">🚀 Getting Started</h3>
                             <p className="text-purple-200 mb-4">
@@ -4911,11 +4880,27 @@ export default function SolRefund() {
                               <a href="/openapi.yaml" className="text-blue-400 hover:text-blue-300 underline">openapi.yaml</a>
                             </p>
                           </div>
-                          </div>
-                        )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
-                        {developerSubTab === 'x' && (
-                          <div className="space-y-6">
+                  {activeDocSection === 'developer-x' && (
+                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-white text-2xl">
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                          </svg>
+                          X (Twitter) Integration
+                        </CardTitle>
+                        <CardDescription className="text-purple-200">
+                          Automated social media marketing for the platform
+                        </CardDescription>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        <div className="space-y-6">
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-3">🐦 X (Twitter) Integration</h3>
                             <p className="text-purple-200 mb-4">
@@ -4980,8 +4965,7 @@ export default function SolRefund() {
                               Posts are made automatically when transactions meet the minimum SOL threshold.
                             </p>
                           </div>
-                          </div>
-                        )}
+                        </div>
                       </CardContent>
                     </Card>
                   )}
