@@ -4426,7 +4426,7 @@ export default function SolRefund() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <img 
-                                  src={new URL('@assets/image_1763872621275.png', import.meta.url).href}
+                                  src={new URL('@assets/image_1763872863603.png', import.meta.url).href}
                                   alt="GetFreeSol main page - Click Connect button" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
