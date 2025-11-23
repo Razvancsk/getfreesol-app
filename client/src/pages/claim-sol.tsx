@@ -4781,7 +4781,7 @@ export default function SolRefund() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                               <div className="space-y-2">
                                 <img 
-                                  src={new URL('@assets/image_1763875393582.png', import.meta.url).href}
+                                  src={new URL('@assets/image_1763875662978.png', import.meta.url).href}
                                   alt="Points dashboard showing total points, SOL claimed, and rank" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
