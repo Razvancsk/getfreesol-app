@@ -2876,7 +2876,7 @@ export default function SolRefund() {
           </div>
 
           {/* Center Navigation Buttons */}
-          {isConnected && (
+          {isConnected && activeTab !== 'docs' && (
             <div className="flex justify-center py-2 px-2">
               <div className="flex items-center space-x-1.5 sm:space-x-2">
                 <Button
@@ -2948,11 +2948,13 @@ export default function SolRefund() {
           )}
 
           {/* Description */}
-          <div className="text-center space-y-4 py-4">
-            <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'docs' ? 'Learn how to use GetFreeSol' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
-            </p>
-          </div>
+          {activeTab !== 'docs' && (
+            <div className="text-center space-y-4 py-4">
+              <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+              </p>
+            </div>
+          )}
 
           {/* Burn Sub-Tabs */}
           {activeTab === 'burnTokens' && (
