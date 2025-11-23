@@ -4257,116 +4257,247 @@ export default function SolRefund() {
           })()}
 
 
-          {/* Docs Tab Content */}
-          {activeTab === 'docs' && !showDeveloper && (
-              <div className="space-y-6">
-                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="text-white text-2xl">How to Use GetFreeSol</CardTitle>
-                    <CardDescription className="text-purple-200">
-                      Complete guide to reclaiming your SOL
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6 text-white">
-                    <div className="space-y-4">
-                      <h3 className="text-xl font-semibold">Step 1: Connect Your Wallet</h3>
-                      <p className="text-purple-200">Click the "Connect Wallet" button in the top right corner and select your Solana wallet.</p>
-                      
-                      <h3 className="text-xl font-semibold mt-6">Step 2: Scan for Claimable SOL</h3>
-                      <p className="text-purple-200">Navigate to "Vacant Accounts" tab and click "Scan Wallet" to discover empty token accounts.</p>
-                      
-                      <h3 className="text-xl font-semibold mt-6">Step 3: Claim Your SOL</h3>
-                      <p className="text-purple-200">Select accounts you want to close and click "Claim SOL" to recover rent deposits.</p>
-                      
-                      <h3 className="text-xl font-semibold mt-6">Additional Features</h3>
-                      <ul className="list-disc list-inside space-y-2 text-purple-200">
-                        <li><strong>Burn Tokens:</strong> Remove unwanted tokens from your wallet</li>
-                        <li><strong>Burn NFTs:</strong> Burn NFTs including compressed and frozen NFTs</li>
-                        <li><strong>Referrals:</strong> Earn 50% commission from referrals</li>
-                        <li><strong>Points:</strong> Earn 20 points for every account closed</li>
-                      </ul>
-                    </div>
-
-                    <div className="mt-8 pt-6 border-t border-purple-500/30">
-                      <Button
-                        onClick={() => setShowDeveloper(true)}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-semibold rounded-lg"
-                        data-testid="button-developer"
+          {/* Docs Tab Content - Sidebar Layout */}
+          {activeTab === 'docs' && (
+              <div className="flex gap-6 h-full">
+                {/* Left Sidebar Navigation */}
+                <div className="w-64 flex-shrink-0">
+                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur sticky top-4">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-white text-lg">Documentation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1">
+                      <button
+                        onClick={() => setShowDeveloper(false)}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          !showDeveloper 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
+                        data-testid="docs-nav-overview"
                       >
-                        <Code className="w-5 h-5 mr-2" />
+                        📖 Overview
+                      </button>
+                      <button
+                        onClick={() => setShowDeveloper(false)}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          !showDeveloper 
+                            ? 'text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
+                        data-testid="docs-nav-how-to"
+                      >
+                        🚀 How to Claim SOL
+                      </button>
+                      <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
+                        Features
+                      </div>
+                      <button
+                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        data-testid="docs-nav-tokens"
+                      >
+                        🔥 Burn Tokens
+                      </button>
+                      <button
+                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        data-testid="docs-nav-nfts"
+                      >
+                        🎨 Burn NFTs
+                      </button>
+                      <button
+                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        data-testid="docs-nav-referrals"
+                      >
+                        💰 Referral System
+                      </button>
+                      <button
+                        className="w-full text-left px-3 py-2 rounded-lg text-purple-200 hover:bg-purple-700/30 transition-colors"
+                        data-testid="docs-nav-points"
+                      >
+                        ⭐ Points System
+                      </button>
+                      <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
+                        Developers
+                      </div>
+                      <button
+                        onClick={() => setShowDeveloper(true)}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          showDeveloper 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
+                        data-testid="docs-nav-api"
+                      >
+                        <Code className="w-4 h-4 inline mr-2" />
                         Developer API
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-          )}
-
-          {/* Developer API Content - Only visible when showDeveloper is true */}
-          {activeTab === 'docs' && showDeveloper && (
-              <div className="space-y-6">
-                {/* Back to Docs Button */}
-                <div className="flex justify-start mb-4">
-                  <Button
-                    onClick={() => setShowDeveloper(false)}
-                    variant="outline"
-                    className="bg-purple-800/40 text-purple-300 border-purple-600 hover:bg-purple-600/60"
-                  >
-                    ← Back to Docs
-                  </Button>
+                      </button>
+                    </CardContent>
+                  </Card>
                 </div>
-                
-                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white text-2xl">
-                      <Code className="w-6 h-6" />
-                      Developer API
-                    </CardTitle>
-                    <CardDescription className="text-purple-200">
-                      Integrate SOL rent recovery and token burning directly into your application
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6 text-white">
-                    <div className="space-y-4">
-                      <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                        <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
-                          🚀 Getting Started
-                        </h3>
-                        <p className="text-purple-200 mb-4">
-                          Integrate SOL rent recovery and token burning directly into your application
-                        </p>
-                        <div className="space-y-2 text-purple-200">
-                          <p><strong>📝 How It Works:</strong></p>
-                          <ol className="list-decimal list-inside space-y-1 ml-4">
-                            <li>Build your own UI in your application</li>
-                            <li>Call our API endpoints from your backend/frontend</li>
-                            <li>Pass your <code className="bg-purple-800 px-2 py-1 rounded">feeReceiverAddress</code> (your PDA) to collect fees</li>
-                            <li>Display results in your app with your branding</li>
-                            <li>Earn 80% of fees collected - claim anytime!</li>
-                          </ol>
+
+                {/* Right Content Area */}
+                <div className="flex-1">
+                  {!showDeveloper ? (
+                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                      <CardHeader>
+                        <CardTitle className="text-white text-2xl">How to Claim SOL</CardTitle>
+                        <CardDescription className="text-purple-200">
+                          Complete guide to reclaiming your SOL from empty token accounts
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="text-xl font-semibold text-white mb-3">Step 1: Connect Your Wallet</h3>
+                            <p className="text-purple-200">
+                              Click the "Connect Wallet" button in the top right corner and select your Solana wallet. 
+                              We support Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-xl font-semibold text-white mb-3">Step 2: Scan for Claimable SOL</h3>
+                            <p className="text-purple-200">
+                              Navigate to the "Vacant Accounts" tab and click "Scan Wallet" to discover empty token accounts. 
+                              The scanner will identify all token accounts with zero balance that can be closed to recover rent deposits.
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-xl font-semibold text-white mb-3">Step 3: Claim Your SOL</h3>
+                            <p className="text-purple-200">
+                              Select the accounts you want to close and click "Claim SOL" to recover rent deposits. 
+                              Each closed account recovers ~0.00203928 SOL.
+                            </p>
+                          </div>
+
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">Additional Features</h3>
+                            <ul className="space-y-3 text-purple-200">
+                              <li className="flex items-start gap-3">
+                                <span className="text-2xl">🔥</span>
+                                <div>
+                                  <strong className="text-white">Burn Tokens:</strong> Remove unwanted tokens from your wallet and recover SOL from the token accounts
+                                </div>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-2xl">🎨</span>
+                                <div>
+                                  <strong className="text-white">Burn NFTs:</strong> Burn NFTs including compressed NFTs (cNFTs), programmable NFTs (pNFTs), and even frozen NFTs
+                                </div>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-2xl">💰</span>
+                                <div>
+                                  <strong className="text-white">Referrals:</strong> Share your referral code and earn 50% commission from fees collected through your referrals
+                                </div>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-2xl">⭐</span>
+                                <div>
+                                  <strong className="text-white">Points:</strong> Earn 20 points for every account closed. Compete on the leaderboard for top rankings!
+                                </div>
+                              </li>
+                            </ul>
+                          </div>
+
+                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
+                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                              <li>Use the Auto-Claim feature to automatically recover SOL from new empty accounts</li>
+                              <li>Check the Statistics tab to see total SOL recovered across the platform</li>
+                              <li>Enable notifications to get alerts when new claimable SOL is detected</li>
+                            </ul>
+                          </div>
                         </div>
-                      </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-white text-2xl">
+                          <Code className="w-6 h-6" />
+                          Developer API
+                        </CardTitle>
+                        <CardDescription className="text-purple-200">
+                          Integrate SOL rent recovery and token burning directly into your application
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        <div className="space-y-6">
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">🚀 Getting Started</h3>
+                            <p className="text-purple-200 mb-4">
+                              Integrate GetFreeSol's powerful SOL recovery and token burning features directly into your application. 
+                              Build your own UI while leveraging our backend infrastructure.
+                            </p>
+                            <div className="space-y-3">
+                              <p className="text-white font-semibold">How It Works:</p>
+                              <ol className="list-decimal list-inside space-y-2 text-purple-200 ml-4">
+                                <li>Build your own UI in your application</li>
+                                <li>Call our API endpoints from your backend or frontend</li>
+                                <li>Pass your <code className="bg-purple-800 px-2 py-1 rounded text-sm">feeReceiverAddress</code> (your PDA) to collect fees</li>
+                                <li>Display results in your app with your branding</li>
+                                <li>Earn 80% of fees collected - claim anytime!</li>
+                              </ol>
+                            </div>
+                          </div>
 
-                      <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                        <h3 className="text-xl font-semibold mb-3">Base URL</h3>
-                        <code className="block bg-purple-950 text-green-400 p-3 rounded font-mono text-sm break-all">
-                          {window.location.origin}/api
-                        </code>
-                      </div>
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">🔗 Base URL</h3>
+                            <code className="block bg-purple-950 text-green-400 p-4 rounded font-mono text-sm break-all">
+                              {window.location.origin}/api
+                            </code>
+                          </div>
 
-                      <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                        <h3 className="text-xl font-semibold mb-3">Response Format</h3>
-                        <p className="text-purple-200">
-                          All endpoints return JSON with <code className="bg-purple-800 px-2 py-1 rounded">success</code> field
-                        </p>
-                      </div>
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">📋 Key Endpoints</h3>
+                            <div className="space-y-4 text-sm">
+                              <div>
+                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">GET /api/sol-refund/scan/:address</code>
+                                <p className="text-purple-200 mt-2">Scan a wallet for empty token accounts</p>
+                              </div>
+                              <div>
+                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">POST /api/sol-refund/prepare-transaction</code>
+                                <p className="text-purple-200 mt-2">Build transaction to close empty accounts</p>
+                              </div>
+                              <div>
+                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">POST /api/tokens/burn</code>
+                                <p className="text-purple-200 mt-2">Create token burn transaction</p>
+                              </div>
+                              <div>
+                                <code className="bg-purple-950 text-green-400 px-3 py-1 rounded">POST /api/nfts/burn/build</code>
+                                <p className="text-purple-200 mt-2">Build NFT burn transaction (all types)</p>
+                              </div>
+                            </div>
+                          </div>
 
-                      <div className="text-sm text-purple-300 mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                        💡 <strong>Tip:</strong> Visit the Referrals tab to create your developer account and get your PDA address for fee collection.
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">📦 Response Format</h3>
+                            <p className="text-purple-200 mb-3">
+                              All endpoints return JSON with a <code className="bg-purple-800 px-2 py-1 rounded text-sm">success</code> field
+                            </p>
+                            <pre className="bg-purple-950 p-4 rounded text-sm overflow-x-auto">
+                              <code className="text-green-400">{`{
+  "success": true,
+  "transaction": "base64_encoded_transaction",
+  "message": "Transaction prepared successfully"
+}`}</code>
+                            </pre>
+                          </div>
+
+                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                            <p className="text-purple-200">
+                              💡 <strong className="text-white">Getting Your PDA:</strong> Visit the Referrals tab to create your developer account 
+                              and get your deterministic PDA address for fee collection. Full API documentation available at{' '}
+                              <a href="/openapi.yaml" className="text-blue-400 hover:text-blue-300 underline">openapi.yaml</a>
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </div>
           )}
 
