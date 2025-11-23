@@ -4287,15 +4287,25 @@ export default function SolRefund() {
                       </ul>
                     </div>
 
+                    <div className="mt-8 pt-6 border-t border-purple-500/30">
+                      <Button
+                        onClick={() => setActiveTab('referrals')}
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-semibold rounded-lg"
+                        data-testid="button-developer"
+                      >
+                        <Code className="w-5 h-5 mr-2" />
+                        Developer API
+                      </Button>
+                    </div>
+                    
                     {isPlatformWallet && (
-                      <div className="mt-8 pt-6 border-t border-purple-500/30">
+                      <div className="mt-4">
                         <Button
                           onClick={() => setShowDeveloper(true)}
-                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-semibold rounded-lg"
-                          data-testid="button-developer"
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg"
+                          data-testid="button-apy"
                         >
-                          <Code className="w-5 h-5 mr-2" />
-                          Developer (APY)
+                          🌱 APY / Lend
                         </Button>
                       </div>
                     )}
