@@ -2928,18 +2928,6 @@ export default function SolRefund() {
                   <Trophy className="h-4 w-4" />
                   Points
                 </Button>
-                <Button
-                  onClick={() => setActiveTab('docs')}
-                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
-                    activeTab === 'docs' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-docs"
-                >
-                  <Info className="h-4 w-4" />
-                  Docs
-                </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
