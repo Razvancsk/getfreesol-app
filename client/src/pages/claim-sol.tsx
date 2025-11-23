@@ -4406,10 +4406,41 @@ export default function SolRefund() {
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">1️⃣</span> Connect Your Wallet
                             </h3>
-                            <p className="text-purple-200 leading-relaxed">
-                              Click the <strong className="text-white">"Connect Wallet"</strong> button in the top right corner and select your Solana wallet. 
+                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Click the <strong className="text-white">"Connect"</strong> button in the top right corner</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Select your Solana wallet from the list</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Approve the connection in your wallet</span>
+                              </li>
+                            </ul>
+                            <p className="text-purple-200 leading-relaxed mb-6">
                               We support <strong className="text-white">8 different wallets</strong>: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
                             </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763872621275.png', import.meta.url).href}
+                                  alt="GetFreeSol main page - Click Connect button" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 1: Click "Connect" button</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763872748597.png', import.meta.url).href}
+                                  alt="Wallet selection modal - Choose your wallet" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 2: Select your wallet</p>
+                              </div>
+                            </div>
                           </div>
                           
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
