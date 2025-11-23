@@ -4261,10 +4261,25 @@ export default function SolRefund() {
 
 
           {/* Docs Tab Content - Sidebar Layout */}
-          {activeTab === 'docs' && (
+          {activeTab === 'docs' && (() => {
+            // Define section order and titles for pagination
+            const sections = [
+              { id: 'overview', title: 'How to Claim SOL' },
+              { id: 'burn-tokens', title: 'Burn Tokens' },
+              { id: 'burn-nfts', title: 'Burn NFTs' },
+              { id: 'referrals', title: 'Referral System' },
+              { id: 'points', title: 'Points System' },
+              { id: 'developer-api', title: 'Developer API' }
+            ];
+            
+            const currentIndex = sections.findIndex(s => s.id === activeDocSection);
+            const previousSection = currentIndex > 0 ? sections[currentIndex - 1] : null;
+            const nextSection = currentIndex < sections.length - 1 ? sections[currentIndex + 1] : null;
+            
+            return (
               <div className="flex flex-col lg:flex-row gap-6 h-full px-4">
-                {/* Left Sidebar Navigation */}
-                <div className="w-full lg:w-64 flex-shrink-0 pl-0">
+                {/* Left Sidebar Navigation - Hidden on Mobile */}
+                <div className="hidden lg:block lg:w-64 flex-shrink-0 pl-0">
                   <div className="lg:sticky top-4 space-y-4">
                     <div className="flex flex-col gap-3">
                       <button
@@ -4817,9 +4832,34 @@ export default function SolRefund() {
                       <ApiDocs />
                     </div>
                   )}
+
+                  {/* Mobile Pagination - Only visible on mobile */}
+                  <div className="block lg:hidden mt-12 pt-6 border-t border-purple-700/50 space-y-3">
+                    {previousSection && (
+                      <button
+                        onClick={() => setActiveDocSection(previousSection.id as any)}
+                        className="w-full text-left bg-purple-800/30 hover:bg-purple-700/50 border border-purple-600/50 rounded-lg p-4 transition-colors"
+                        data-testid="button-prev-section"
+                      >
+                        <div className="text-xs text-purple-300 mb-1">Previous</div>
+                        <div className="text-white font-medium">{previousSection.title}</div>
+                      </button>
+                    )}
+                    {nextSection && (
+                      <button
+                        onClick={() => setActiveDocSection(nextSection.id as any)}
+                        className="w-full text-left bg-purple-800/30 hover:bg-purple-700/50 border border-purple-600/50 rounded-lg p-4 transition-colors"
+                        data-testid="button-next-section"
+                      >
+                        <div className="text-xs text-purple-300 mb-1">Next</div>
+                        <div className="text-white font-medium">{nextSection.title}</div>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-          )}
+            );
+          })()}
 
           {/* Old Lend Content - REMOVED */}
           {activeTab === 'docs' && showDeveloper && false && (
