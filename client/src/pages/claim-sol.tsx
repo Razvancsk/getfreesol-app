@@ -4369,7 +4369,7 @@ export default function SolRefund() {
                         <div className="space-y-8">
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">
-                              Find Our App
+                              1. Find Our App
                             </h3>
                             <p className="text-purple-200 leading-relaxed mb-4">
                               Open your <strong className="text-white">Phantom Wallet</strong> and use the Discovery feature to find GetFreeSol:
@@ -4414,7 +4414,7 @@ export default function SolRefund() {
 
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">
-                              Connect Your Wallet
+                              2. Connect Your Wallet
                             </h3>
                             <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
                               <li className="flex items-start gap-3">
@@ -4455,7 +4455,7 @@ export default function SolRefund() {
                           
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">
-                              Claim Your SOL
+                              3. Claim Your SOL
                             </h3>
                             <p className="text-purple-200 leading-relaxed mb-4">
                               After connecting your wallet, the app will <strong className="text-white">automatically scan and close all empty accounts</strong>. The process is fully automated:
