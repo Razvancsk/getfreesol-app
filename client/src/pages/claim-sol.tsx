@@ -5880,10 +5880,8 @@ export default function SolRefund() {
               alt="Get Free Sol"
               className="h-8 w-8"
             />
-            <div className="text-center">
-              <div className="text-white font-semibold text-lg">Get Free Sol</div>
-              <div className="text-purple-300 text-sm">2025 All rights reserved</div>
-            </div>
+            <div className="text-white font-semibold text-lg">Get Free Sol</div>
+            <div className="text-purple-300 text-sm">• 2025 All rights reserved</div>
           </div>
         </div>
       </div>
