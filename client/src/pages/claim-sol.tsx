@@ -4731,7 +4731,7 @@ export default function SolRefund() {
                               </div>
                               <div className="space-y-2">
                                 <img 
-                                  src={new URL('@assets/image_1763880909476.png', import.meta.url).href}
+                                  src={new URL('@assets/image_1763881281359.png', import.meta.url).href}
                                   alt="Transaction confirmation showing SOL recovered" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
