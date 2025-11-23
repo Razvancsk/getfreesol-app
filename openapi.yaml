@@ -1,0 +1,1279 @@
+openapi: 3.0.3
+info:
+  title: GetFreeSol API
+  description: |
+    GetFreeSol API allows developers to integrate SOL rent recovery, token burning, and NFT burning directly into their applications.
+    
+    ## Features
+    - Scan wallets for empty token accounts
+    - Recover SOL from closed accounts
+    - Burn tokens and NFTs (including compressed and frozen NFTs)
+    - Jupiter swap integration
+    - Referral system with 80% fee share
+    - Points and leaderboard system
+    - Auto-claim permits for automated recovery
+    
+    ## Base URL
+    Production: `https://get-free-sol.replit.app/api`
+    
+    ## Authentication
+    Most endpoints require wallet signature verification for write operations.
+    
+  version: 1.0.0
+  contact:
+    name: GetFreeSol Support
+    url: https://get-free-sol.replit.app
+  license:
+    name: MIT
+
+servers:
+  - url: https://get-free-sol.replit.app/api
+    description: Production server
+
+tags:
+  - name: Tokens
+    description: Token management, search, and burning
+  - name: NFTs
+    description: NFT scanning and burning (Core, pNFT, cNFT, Standard)
+  - name: SOL Recovery
+    description: Scan and recover SOL from empty token accounts
+  - name: Jupiter
+    description: Jupiter swap and lend integration
+  - name: Referrals
+    description: Referral system and fee collection
+  - name: Developer API
+    description: PDA-based developer fee collection system
+  - name: Points
+    description: Points tracking and leaderboard
+  - name: Auto-Claim
+    description: Automated SOL recovery permits
+  - name: Statistics
+    description: Platform statistics and metrics
+  - name: Mass Transfer
+    description: Multi-token transfer functionality
+  - name: X (Twitter)
+    description: X/Twitter bot integration
+  - name: Backpack
+    description: Backpack Exchange integration
+  - name: Alerts
+    description: User notification preferences
+
+paths:
+  # ============= TOKENS =============
+  /tokens/search:
+    get:
+      tags: [Tokens]
+      summary: Search for tokens
+      description: Search tokens using Jupiter token list API
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query (symbol or name)
+        - name: limit
+          in: query
+          schema:
+            type: string
+            default: "50"
+          description: Maximum number of results
+      responses:
+        '200':
+          description: List of matching tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Token'
+
+  /tokens/holdings/{walletAddress}:
+    get:
+      tags: [Tokens]
+      summary: Get wallet token holdings
+      description: Fetch all token holdings for a wallet (SPL + Token-2022)
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana wallet address
+      responses:
+        '200':
+          description: Token holdings with metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  holdings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TokenHolding'
+
+  /tokens/scan/{address}:
+    get:
+      tags: [Tokens]
+      summary: Scan wallet for burnable tokens
+      description: Identify tokens that can be burned to recover SOL
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Solana wallet address
+      responses:
+        '200':
+          description: List of burnable tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BurnableToken'
+
+  /tokens/burn:
+    post:
+      tags: [Tokens]
+      summary: Burn a single token
+      description: Create transaction to burn tokens and close account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, mint, amount, decimals]
+              properties:
+                walletAddress:
+                  type: string
+                mint:
+                  type: string
+                amount:
+                  type: string
+                decimals:
+                  type: number
+                feeReceiverAddress:
+                  type: string
+                  description: Developer PDA for fee collection (optional)
+      responses:
+        '200':
+          description: Serialized transaction to sign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /tokens/bulk-burn:
+    post:
+      tags: [Tokens]
+      summary: Burn multiple tokens
+      description: Create transaction to burn multiple tokens in one transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, tokens]
+              properties:
+                walletAddress:
+                  type: string
+                tokens:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      mint:
+                        type: string
+                      amount:
+                        type: string
+                      decimals:
+                        type: number
+                feeReceiverAddress:
+                  type: string
+      responses:
+        '200':
+          description: Serialized transaction to sign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /tokens/record-burn-success:
+    post:
+      tags: [Tokens]
+      summary: Record successful token burn
+      description: Save burn transaction to database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BurnRecord'
+      responses:
+        '200':
+          description: Record saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  # ============= NFTs =============
+  /nfts/scan/{address}:
+    get:
+      tags: [NFTs]
+      summary: Scan wallet for NFTs
+      description: Identify all burnable NFTs (Core, pNFT, cNFT, Standard)
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of burnable NFTs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nfts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NFT'
+
+  /nfts/burn/build:
+    post:
+      tags: [NFTs]
+      summary: Build NFT burn transaction
+      description: Create burn transaction for any NFT type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, mint, nftType]
+              properties:
+                walletAddress:
+                  type: string
+                mint:
+                  type: string
+                nftType:
+                  type: string
+                  enum: [core, pNFT, cNFT, standard]
+                feeReceiverAddress:
+                  type: string
+      responses:
+        '200':
+          description: Transaction data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /core-nfts/prepare-burn:
+    post:
+      tags: [NFTs]
+      summary: Prepare Core NFT burn
+      description: Build burn transaction for Metaplex Core NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, assetId]
+              properties:
+                walletAddress:
+                  type: string
+                assetId:
+                  type: string
+                feeReceiverAddress:
+                  type: string
+      responses:
+        '200':
+          description: Serialized transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /pnfts/prepare-burn:
+    post:
+      tags: [NFTs]
+      summary: Prepare pNFT burn
+      description: Build burn transaction for programmable NFT (supports frozen NFTs)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, mint]
+              properties:
+                walletAddress:
+                  type: string
+                mint:
+                  type: string
+                feeReceiverAddress:
+                  type: string
+      responses:
+        '200':
+          description: Serialized transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /cnfts/prepare-burn:
+    post:
+      tags: [NFTs]
+      summary: Prepare cNFT burn
+      description: Build burn transaction for compressed NFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, assetId]
+              properties:
+                walletAddress:
+                  type: string
+                assetId:
+                  type: string
+                feeReceiverAddress:
+                  type: string
+      responses:
+        '200':
+          description: Serialized transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # ============= SOL RECOVERY =============
+  /sol-refund/scan/{address}:
+    get:
+      tags: [SOL Recovery]
+      summary: Scan for claimable SOL
+      description: Find empty token accounts to close and recover rent
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Wallet address to scan
+      responses:
+        '200':
+          description: Empty accounts found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  emptyAccounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmptyAccount'
+                  totalClaimable:
+                    type: number
+
+  /sol-refund/prepare-transaction:
+    post:
+      tags: [SOL Recovery]
+      summary: Prepare SOL recovery transaction
+      description: Build transaction to close empty accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, accounts]
+              properties:
+                walletAddress:
+                  type: string
+                accounts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      address:
+                        type: string
+                      mint:
+                        type: string
+                feeReceiverAddress:
+                  type: string
+      responses:
+        '200':
+          description: Transaction ready to sign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  /sol-refund/record-success:
+    post:
+      tags: [SOL Recovery]
+      summary: Record successful recovery
+      description: Save recovery transaction to database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryRecord'
+      responses:
+        '200':
+          description: Record saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /sol-refund/stats:
+    get:
+      tags: [SOL Recovery]
+      summary: Get recovery statistics
+      description: Platform-wide SOL recovery statistics
+      responses:
+        '200':
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryStats'
+
+  # ============= JUPITER =============
+  /jupiter/ultra/order:
+    get:
+      tags: [Jupiter]
+      summary: Get Jupiter swap quote
+      description: Get optimal swap route using Jupiter Ultra API
+      parameters:
+        - name: inputMint
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: outputMint
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: slippageBps
+          in: query
+          schema:
+            type: string
+            default: "50"
+      responses:
+        '200':
+          description: Swap quote
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /jupiter/ultra/execute:
+    post:
+      tags: [Jupiter]
+      summary: Execute Jupiter swap
+      description: Build swap transaction with referral fee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, quoteResponse]
+              properties:
+                walletAddress:
+                  type: string
+                quoteResponse:
+                  type: object
+                feeReceiverAddress:
+                  type: string
+      responses:
+        '200':
+          description: Transaction to sign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # ============= DEVELOPER API =============
+  /developer/create-account:
+    post:
+      tags: [Developer API]
+      summary: Create developer account
+      description: Register as a developer and get PDA for fee collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, signature, message]
+              properties:
+                walletAddress:
+                  type: string
+                signature:
+                  type: string
+                  description: Base58 encoded wallet signature
+                message:
+                  type: string
+                  description: Message that was signed
+      responses:
+        '200':
+          description: Developer account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  pdaAddress:
+                    type: string
+                    description: Your deterministic PDA for fee collection
+
+  /developer/account/{walletAddress}:
+    get:
+      tags: [Developer API]
+      summary: Get developer account
+      description: Retrieve developer PDA and statistics
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Developer account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeveloperAccount'
+
+  /developer/transactions/{walletAddress}:
+    get:
+      tags: [Developer API]
+      summary: Get fee transactions
+      description: List all fees collected through your PDA
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fee transaction history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FeeTransaction'
+
+  /developer/claim:
+    post:
+      tags: [Developer API]
+      summary: Claim accumulated fees
+      description: Withdraw 80% of collected fees to your wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, signature, message]
+              properties:
+                walletAddress:
+                  type: string
+                signature:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Claim transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # ============= REFERRALS =============
+  /referral/create-account:
+    post:
+      tags: [Referrals]
+      summary: Create referral account
+      description: Create PDA-based referral account for multi-token fee collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, signature, message]
+              properties:
+                walletAddress:
+                  type: string
+                signature:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Referral account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  pdaAddress:
+                    type: string
+
+  /referral/account/{walletAddress}:
+    get:
+      tags: [Referrals]
+      summary: Get referral account
+      description: Retrieve referral PDA and statistics
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Referral account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralAccount'
+
+  /referral/token-accounts/{walletAddress}:
+    get:
+      tags: [Referrals]
+      summary: Get token accounts
+      description: List all token accounts for fee collection (SOL, USDC, etc.)
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TokenAccount'
+
+  /referral/claim:
+    post:
+      tags: [Referrals]
+      summary: Claim referral fees
+      description: Withdraw collected fees from referral account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, tokenMint, signature, message]
+              properties:
+                walletAddress:
+                  type: string
+                tokenMint:
+                  type: string
+                signature:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Claim transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+
+  # ============= POINTS =============
+  /points/{walletAddress}:
+    get:
+      tags: [Points]
+      summary: Get user points
+      description: Retrieve points balance for a wallet
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Points data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Points'
+
+  /points/leaderboard:
+    get:
+      tags: [Points]
+      summary: Get points leaderboard
+      description: Top users by points with time filter
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [all, week, month]
+            default: all
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leaderboard:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeaderboardEntry'
+
+  # ============= AUTO-CLAIM =============
+  /auto-claim/permit/create:
+    post:
+      tags: [Auto-Claim]
+      summary: Create auto-claim permit
+      description: Grant permission for automated SOL recovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, signature, message]
+              properties:
+                walletAddress:
+                  type: string
+                signature:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Permit created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /auto-claim/permit/status/{walletAddress}:
+    get:
+      tags: [Auto-Claim]
+      summary: Check permit status
+      description: Check if auto-claim is enabled
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Permit status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasPermit:
+                    type: boolean
+                  permit:
+                    $ref: '#/components/schemas/AutoClaimPermit'
+
+  /auto-claim/permit/revoke:
+    post:
+      tags: [Auto-Claim]
+      summary: Revoke auto-claim permit
+      description: Disable automated SOL recovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [walletAddress, signature, message]
+              properties:
+                walletAddress:
+                  type: string
+                signature:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Permit revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /auto-claim/jobs/{walletAddress}:
+    get:
+      tags: [Auto-Claim]
+      summary: Get auto-claim jobs
+      description: List all automated recovery jobs
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AutoClaimJob'
+
+  # ============= STATISTICS =============
+  /statistics/overview:
+    get:
+      tags: [Statistics]
+      summary: Platform statistics
+      description: Global platform metrics
+      responses:
+        '200':
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
+
+  /transactions/history:
+    get:
+      tags: [Statistics]
+      summary: Transaction history
+      description: Recent platform transactions
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+
+  # ============= ALERTS =============
+  /alerts/{walletAddress}:
+    get:
+      tags: [Alerts]
+      summary: Get user alerts
+      description: Retrieve notification preferences
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Alert settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+
+  /alerts:
+    post:
+      tags: [Alerts]
+      summary: Create alert
+      description: Set up notification rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertCreate'
+      responses:
+        '200':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  alertId:
+                    type: string
+
+components:
+  schemas:
+    Token:
+      type: object
+      properties:
+        address:
+          type: string
+        symbol:
+          type: string
+        name:
+          type: string
+        decimals:
+          type: integer
+        logoURI:
+          type: string
+
+    TokenHolding:
+      type: object
+      properties:
+        mint:
+          type: string
+        balance:
+          type: number
+        decimals:
+          type: integer
+        symbol:
+          type: string
+        name:
+          type: string
+        logoURI:
+          type: string
+        accounts:
+          type: array
+          items:
+            type: object
+
+    BurnableToken:
+      type: object
+      properties:
+        mint:
+          type: string
+        balance:
+          type: string
+        decimals:
+          type: integer
+        symbol:
+          type: string
+        name:
+          type: string
+        uiAmount:
+          type: number
+        estimatedValue:
+          type: number
+
+    NFT:
+      type: object
+      properties:
+        mint:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+        nftType:
+          type: string
+          enum: [core, pNFT, cNFT, standard]
+        collection:
+          type: string
+        isFrozen:
+          type: boolean
+
+    EmptyAccount:
+      type: object
+      properties:
+        address:
+          type: string
+        mint:
+          type: string
+        rentEpochs:
+          type: integer
+        lamports:
+          type: integer
+
+    TransactionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        transaction:
+          type: string
+          description: Base64 encoded serialized transaction
+        message:
+          type: string
+
+    BurnRecord:
+      type: object
+      required: [walletAddress, mint, amount, signature]
+      properties:
+        walletAddress:
+          type: string
+        mint:
+          type: string
+        amount:
+          type: string
+        decimals:
+          type: integer
+        signature:
+          type: string
+        solRecovered:
+          type: number
+
+    RecoveryRecord:
+      type: object
+      required: [walletAddress, signature, accountsClosed, solRecovered]
+      properties:
+        walletAddress:
+          type: string
+        signature:
+          type: string
+        accountsClosed:
+          type: integer
+        solRecovered:
+          type: number
+
+    RecoveryStats:
+      type: object
+      properties:
+        totalSolRecovered:
+          type: number
+        totalAccountsClosed:
+          type: integer
+        totalUsers:
+          type: integer
+
+    DeveloperAccount:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+        pdaAddress:
+          type: string
+        totalFeesCollected:
+          type: number
+        totalFeesClaimed:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+
+    ReferralAccount:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+        pdaAddress:
+          type: string
+        totalFeesCollected:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    TokenAccount:
+      type: object
+      properties:
+        mint:
+          type: string
+        symbol:
+          type: string
+        balance:
+          type: string
+        tokenAccountAddress:
+          type: string
+
+    FeeTransaction:
+      type: object
+      properties:
+        signature:
+          type: string
+        amount:
+          type: number
+        transactionType:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    Points:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+        totalPoints:
+          type: integer
+        accountsClosed:
+          type: integer
+        solClaimed:
+          type: number
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        walletAddress:
+          type: string
+        points:
+          type: integer
+        solClaimed:
+          type: number
+
+    AutoClaimPermit:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    AutoClaimJob:
+      type: object
+      properties:
+        jobId:
+          type: string
+        walletAddress:
+          type: string
+        accountsClosed:
+          type: integer
+        solRecovered:
+          type: number
+        status:
+          type: string
+        executedAt:
+          type: string
+          format: date-time
+
+    Statistics:
+      type: object
+      properties:
+        totalSolRecovered:
+          type: number
+        totalAccountsClosed:
+          type: integer
+        totalTokensBurned:
+          type: integer
+        totalNftsBurned:
+          type: integer
+        totalUsers:
+          type: integer
+
+    Transaction:
+      type: object
+      properties:
+        signature:
+          type: string
+        walletAddress:
+          type: string
+        type:
+          type: string
+        amount:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        walletAddress:
+          type: string
+        type:
+          type: string
+        enabled:
+          type: boolean
+        threshold:
+          type: number
+
+    AlertCreate:
+      type: object
+      required: [walletAddress, type]
+      properties:
+        walletAddress:
+          type: string
+        type:
+          type: string
+        enabled:
+          type: boolean
+        threshold:
+          type: number
