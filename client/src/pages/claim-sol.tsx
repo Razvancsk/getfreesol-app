@@ -4797,16 +4797,6 @@ export default function SolRefund() {
                               </div>
                             </div>
                           </div>
-
-                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
-                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
-                              <li>The more accounts you close, the higher your rank on the leaderboard</li>
-                              <li>Check back regularly to see if you've moved up in the rankings</li>
-                              <li>Use the Auto-Claim feature to automatically close new empty accounts and earn points</li>
-                              <li>Share the app with friends - they can use your referral link to join!</li>
-                            </ul>
-                          </div>
                         </div>
                       </CardContent>
                     </Card>
