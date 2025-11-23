@@ -4267,15 +4267,15 @@ export default function SolRefund() {
                 <div className="w-64 flex-shrink-0">
                   <Card className="bg-purple-800/50 border-purple-600 backdrop-blur sticky top-4">
                     <CardHeader className="pb-3 space-y-3">
-                      <CardTitle className="text-white text-lg">Documentation</CardTitle>
                       <Button
                         onClick={() => setActiveTab('reclaim')}
-                        className="w-full bg-purple-700/50 hover:bg-purple-600 text-white border-purple-500/30 flex items-center gap-2"
+                        className="w-full bg-purple-700/50 hover:bg-purple-600 text-white border-purple-500/30 flex items-center justify-center gap-2"
                         data-testid="button-back-from-docs"
                       >
                         <ArrowLeft className="h-4 w-4" />
                         Back
                       </Button>
+                      <CardTitle className="text-white text-lg">Documentation</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-1">
                       <button
