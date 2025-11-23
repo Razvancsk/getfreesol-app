@@ -4445,28 +4445,11 @@ export default function SolRefund() {
                           
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                              <span className="text-2xl">2️⃣</span> Scan for Claimable SOL
+                              <span className="text-2xl">2️⃣</span> Claim Your SOL
                             </h3>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed">
-                              <li className="flex items-start gap-3">
-                                <span className="text-blue-400 mt-1">▸</span>
-                                <span>Navigate to the <strong className="text-white">"Vacant Accounts"</strong> tab</span>
-                              </li>
-                              <li className="flex items-start gap-3">
-                                <span className="text-blue-400 mt-1">▸</span>
-                                <span>Click <strong className="text-white">"Scan Wallet"</strong> to discover empty token accounts</span>
-                              </li>
-                              <li className="flex items-start gap-3">
-                                <span className="text-blue-400 mt-1">▸</span>
-                                <span>The scanner will identify all token accounts with zero balance that can be closed to recover rent deposits (~0.00203928 SOL each)</span>
-                              </li>
-                            </ul>
-                          </div>
-                          
-                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
-                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                              <span className="text-2xl">3️⃣</span> Claim Your SOL
-                            </h3>
+                            <p className="text-purple-200 leading-relaxed mb-4">
+                              After connecting your wallet, the app will <strong className="text-white">automatically scan</strong> for empty token accounts. Once the scan is complete:
+                            </p>
                             <ul className="space-y-3 text-purple-200 leading-relaxed">
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">▸</span>
