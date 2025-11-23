@@ -4719,6 +4719,99 @@ export default function SolRefund() {
                     </Card>
                   )}
 
+                  {activeDocSection === 'points' && (
+                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                      <CardHeader>
+                        <CardTitle className="text-white text-2xl">Points System</CardTitle>
+                        <CardDescription className="text-purple-200">
+                          Earn points for every account you close and compete on the leaderboard!
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        <div className="space-y-8">
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4">How the Points System Works</h3>
+                            <p className="text-purple-200 leading-relaxed mb-4">
+                              Every time you close an empty token account, you earn <strong className="text-white">20 points</strong>. 
+                              Points are tracked automatically and displayed on your profile. Compete with other users on the 
+                              <strong className="text-white"> Top 10 Leaderboard</strong> to see who's recovering the most SOL!
+                            </p>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                              <li className="flex items-start gap-3">
+                                <span className="text-yellow-400 mt-1">⭐</span>
+                                <span><strong className="text-white">20 points</strong> for every account closed</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-yellow-400 mt-1">⭐</span>
+                                <span>Track your total points, SOL claimed, and global rank</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-yellow-400 mt-1">⭐</span>
+                                <span>Compete on the Top 10 Leaderboard</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-yellow-400 mt-1">⭐</span>
+                                <span>See how much SOL the top users have recovered</span>
+                              </li>
+                            </ul>
+                          </div>
+
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="text-2xl">🏆</span> Your Stats & Leaderboard
+                            </h3>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Navigate to the <strong className="text-white">"Points"</strong> tab</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>View your <strong className="text-white">Total Points</strong>, <strong className="text-white">SOL Claimed</strong>, and <strong className="text-white">Global Rank</strong></span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Check the <strong className="text-white">Top 10 Leaderboard</strong> to see the highest-ranking users</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-blue-400 mt-1">▸</span>
+                                <span>Close more accounts to climb the leaderboard!</span>
+                              </li>
+                            </ul>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763875393582.png', import.meta.url).href}
+                                  alt="Points dashboard showing total points, SOL claimed, and rank" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Your points and ranking</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763875412373.png', import.meta.url).href}
+                                  alt="Top 10 leaderboard showing highest-ranking users" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Top 10 leaderboard</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
+                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                              <li>The more accounts you close, the higher your rank on the leaderboard</li>
+                              <li>Check back regularly to see if you've moved up in the rankings</li>
+                              <li>Use the Auto-Claim feature to automatically close new empty accounts and earn points</li>
+                              <li>Share the app with friends - they can use your referral link to join!</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {activeDocSection === 'developer' && (
                     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                       <CardHeader>
