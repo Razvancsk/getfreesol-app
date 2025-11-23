@@ -4544,6 +4544,91 @@ export default function SolRefund() {
                     </Card>
                   )}
 
+                  {activeDocSection === 'burnTokens' && (
+                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                      <CardHeader>
+                        <CardTitle className="text-white text-2xl">How to Burn Tokens</CardTitle>
+                        <CardDescription className="text-purple-200">
+                          Remove unwanted tokens from your wallet and recover SOL from token accounts
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6 text-white prose prose-invert max-w-none">
+                        <div className="space-y-8">
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4">What is Token Burning?</h3>
+                            <p className="text-purple-200 leading-relaxed">
+                              Token burning allows you to <strong className="text-white">permanently destroy unwanted tokens</strong> from your wallet 
+                              and <strong className="text-white">recover SOL</strong> from the token accounts. This helps clean up your wallet and 
+                              reclaim rent deposits.
+                            </p>
+                          </div>
+
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="text-2xl">🔥</span> How to Burn Tokens
+                            </h3>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                              <li className="flex items-start gap-3">
+                                <span className="text-orange-400 mt-1">▸</span>
+                                <span>Navigate to the <strong className="text-white">"Burn Tokens"</strong> tab</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-orange-400 mt-1">▸</span>
+                                <span>Use the <strong className="text-white">value slider</strong> to filter tokens by worth (up to $1, $10, $30, $100, or All)</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-orange-400 mt-1">▸</span>
+                                <span>Select the tokens you want to burn (or click <strong className="text-white">"Select All"</strong>)</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-orange-400 mt-1">▸</span>
+                                <span>Click <strong className="text-white">"BURN"</strong> to create the transaction</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-orange-400 mt-1">▸</span>
+                                <span>Confirm the transaction in your wallet</span>
+                              </li>
+                            </ul>
+                            <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                              <p className="text-sm text-yellow-200 flex items-start gap-2">
+                                <span className="text-xl">⚠️</span>
+                                <span><strong className="text-white">Warning:</strong> The value slider cannot be 100% accurate. Always double-check the tokens you're about to burn before confirming the transaction. Burning is permanent and cannot be undone!</span>
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763874192116.png', import.meta.url).href}
+                                  alt="Token burning interface with value slider and token selection" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 1: Select tokens and click "BURN"</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763874201656.png', import.meta.url).href}
+                                  alt="Transaction confirmation showing token burn" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 2: Confirm the burn transaction</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
+                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                              <li>Start with low-value tokens to test the feature before burning higher-value tokens</li>
+                              <li>The value slider helps you quickly filter out spam tokens worth almost nothing</li>
+                              <li>Burning tokens is permanent - make sure you really don't want them!</li>
+                              <li>You recover ~0.00203928 SOL per token account closed</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {activeDocSection === 'developer' && (
                     <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                       <CardHeader>
