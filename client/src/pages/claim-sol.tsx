@@ -4265,21 +4265,19 @@ export default function SolRefund() {
               <div className="flex gap-6 h-full px-4">
                 {/* Left Sidebar Navigation */}
                 <div className="w-64 flex-shrink-0 pl-0">
-                  <Card className="bg-purple-800/50 border-purple-600 backdrop-blur sticky top-4">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-col gap-3">
-                        <button
-                          onClick={() => setActiveTab('reclaim')}
-                          className="bg-purple-700/50 hover:bg-purple-600 text-white border border-purple-500/30 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors w-fit"
-                          data-testid="button-back-from-docs"
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                          Back
-                        </button>
-                        <CardTitle className="text-white text-lg">Documentation</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
+                  <div className="sticky top-4 space-y-4">
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={() => setActiveTab('reclaim')}
+                        className="bg-purple-700/50 hover:bg-purple-600 text-white border border-purple-500/30 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors w-fit"
+                        data-testid="button-back-from-docs"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                      </button>
+                      <h2 className="text-white text-lg font-semibold">Documentation</h2>
+                    </div>
+                    <div className="space-y-1">
                       <button
                         onClick={() => setActiveDocSection('overview')}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
@@ -4353,8 +4351,8 @@ export default function SolRefund() {
                         <Code className="w-4 h-4 inline mr-2" />
                         Developer API
                       </button>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Right Content Area */}
