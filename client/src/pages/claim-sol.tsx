@@ -4289,7 +4289,7 @@ export default function SolRefund() {
 
                     <div className="mt-8 pt-6 border-t border-purple-500/30">
                       <Button
-                        onClick={() => setActiveTab('referrals')}
+                        onClick={() => setShowDeveloper(true)}
                         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-semibold rounded-lg"
                         data-testid="button-developer"
                       >
@@ -4297,24 +4297,12 @@ export default function SolRefund() {
                         Developer API
                       </Button>
                     </div>
-                    
-                    {isPlatformWallet && (
-                      <div className="mt-4">
-                        <Button
-                          onClick={() => setShowDeveloper(true)}
-                          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg"
-                          data-testid="button-apy"
-                        >
-                          🌱 Earn
-                        </Button>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </div>
           )}
 
-          {/* Developer/APY Content - Only visible when showDeveloper is true */}
+          {/* Developer API Content - Only visible when showDeveloper is true */}
           {activeTab === 'docs' && showDeveloper && (
               <div className="space-y-6">
                 {/* Back to Docs Button */}
@@ -4328,6 +4316,63 @@ export default function SolRefund() {
                   </Button>
                 </div>
                 
+                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white text-2xl">
+                      <Code className="w-6 h-6" />
+                      Developer API
+                    </CardTitle>
+                    <CardDescription className="text-purple-200">
+                      Integrate SOL rent recovery and token burning directly into your application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 text-white">
+                    <div className="space-y-4">
+                      <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                        <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                          🚀 Getting Started
+                        </h3>
+                        <p className="text-purple-200 mb-4">
+                          Integrate SOL rent recovery and token burning directly into your application
+                        </p>
+                        <div className="space-y-2 text-purple-200">
+                          <p><strong>📝 How It Works:</strong></p>
+                          <ol className="list-decimal list-inside space-y-1 ml-4">
+                            <li>Build your own UI in your application</li>
+                            <li>Call our API endpoints from your backend/frontend</li>
+                            <li>Pass your <code className="bg-purple-800 px-2 py-1 rounded">feeReceiverAddress</code> (your PDA) to collect fees</li>
+                            <li>Display results in your app with your branding</li>
+                            <li>Earn 80% of fees collected - claim anytime!</li>
+                          </ol>
+                        </div>
+                      </div>
+
+                      <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                        <h3 className="text-xl font-semibold mb-3">Base URL</h3>
+                        <code className="block bg-purple-950 text-green-400 p-3 rounded font-mono text-sm break-all">
+                          {window.location.origin}/api
+                        </code>
+                      </div>
+
+                      <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                        <h3 className="text-xl font-semibold mb-3">Response Format</h3>
+                        <p className="text-purple-200">
+                          All endpoints return JSON with <code className="bg-purple-800 px-2 py-1 rounded">success</code> field
+                        </p>
+                      </div>
+
+                      <div className="text-sm text-purple-300 mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                        💡 <strong>Tip:</strong> Visit the Referrals tab to create your developer account and get your PDA address for fee collection.
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+          )}
+
+          {/* Old Lend Content - REMOVED */}
+          {activeTab === 'docs' && showDeveloper && false && (
+              <div className="space-y-6">
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
                 {publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6' && (
                   <div className="px-2 md:px-0">
