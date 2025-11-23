@@ -2692,15 +2692,6 @@ export default function SolRefund() {
               <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
                 <div className="flex items-center space-x-1">
-                  <Link 
-                    href="/docs"
-                    data-testid="button-social-docs"
-                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                    title="API Documentation"
-                  >
-                    <Code className="h-4 w-4 text-white" />
-                    <span className="text-white text-xs font-medium">API</span>
-                  </Link>
                   <a
                     href="https://x.com/getfreesol_xyz"
                     target="_blank"
@@ -2785,15 +2776,6 @@ export default function SolRefund() {
             <div className="hidden lg:flex items-center space-x-3">
               {/* Social Media Buttons */}
               <div className="flex items-center space-x-1">
-                <Link 
-                  href="/docs"
-                  data-testid="button-social-docs-desktop"
-                  className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  title="API Documentation"
-                >
-                  <Code className="h-4 w-4 text-white" />
-                  <span className="text-white text-xs font-medium">API</span>
-                </Link>
                 <a
                   href="https://x.com/getfreesol_xyz"
                   target="_blank"
