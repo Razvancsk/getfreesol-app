@@ -4476,7 +4476,7 @@ export default function SolRefund() {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                               <div className="space-y-2">
                                 <img 
-                                  src={new URL('@assets/image_1763873130866.png', import.meta.url).href}
+                                  src={new URL('@assets/image_1763873482444.png', import.meta.url).href}
                                   alt="Scan results showing empty accounts - Click Claim All button" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
@@ -4484,7 +4484,7 @@ export default function SolRefund() {
                               </div>
                               <div className="space-y-2">
                                 <img 
-                                  src={new URL('@assets/image_1763873149659.png', import.meta.url).href}
+                                  src={new URL('@assets/image_1763873493603.png', import.meta.url).href}
                                   alt="Transaction confirmation modal in wallet" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
@@ -4492,7 +4492,7 @@ export default function SolRefund() {
                               </div>
                               <div className="space-y-2">
                                 <img 
-                                  src={new URL('@assets/image_1763873161776.png', import.meta.url).href}
+                                  src={new URL('@assets/image_1763873559520.png', import.meta.url).href}
                                   alt="Success message showing SOL claimed" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
