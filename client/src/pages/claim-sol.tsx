@@ -98,8 +98,7 @@ export default function SolRefund() {
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
-  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer'>('overview');
-  const [developerSubTab, setDeveloperSubTab] = useState<'api' | 'x'>('api');
+  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api' | 'developer-x'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -4331,16 +4330,30 @@ export default function SolRefund() {
                         Developers
                       </div>
                       <button
-                        onClick={() => setActiveDocSection('developer')}
+                        onClick={() => setActiveDocSection('developer-api')}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          activeDocSection === 'developer' 
+                          activeDocSection === 'developer-api' 
                             ? 'bg-purple-600 text-white' 
                             : 'text-purple-200 hover:bg-purple-700/30'
                         }`}
                         data-testid="docs-nav-api"
                       >
                         <Code className="w-4 h-4 inline mr-2" />
-                        Developer API
+                        API
+                      </button>
+                      <button
+                        onClick={() => setActiveDocSection('developer-x')}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          activeDocSection === 'developer-x' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'text-purple-200 hover:bg-purple-700/30'
+                        }`}
+                        data-testid="docs-nav-x"
+                      >
+                        <svg className="w-4 h-4 inline mr-2" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                        X (Twitter)
                       </button>
                     </CardContent>
                   </Card>
