@@ -4359,6 +4359,51 @@ export default function SolRefund() {
                         <div className="space-y-8">
                           <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                              <span className="text-2xl">0️⃣</span> Find Our App
+                            </h3>
+                            <p className="text-purple-200 leading-relaxed mb-4">
+                              Open your <strong className="text-white">Phantom Wallet</strong> and use the Discovery feature to find GetFreeSol:
+                            </p>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                              <li className="flex items-start gap-3">
+                                <span className="text-purple-400 mt-1">▸</span>
+                                <span>Tap the <strong className="text-white">Discovery (search)</strong> icon in Phantom</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-purple-400 mt-1">▸</span>
+                                <span>Type <strong className="text-white">"Get Free Sol"</strong> in the search bar</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-purple-400 mt-1">▸</span>
+                                <span>Select <strong className="text-white">"Get Free Sol"</strong> from the results (Tools category)</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-purple-400 mt-1">▸</span>
+                                <span>Tap <strong className="text-white">"Open"</strong> to launch the app</span>
+                              </li>
+                            </ul>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763869158638.png', import.meta.url).href}
+                                  alt="Phantom Discovery Search - Type 'Get Free Sol'" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 1: Search for "Get Free Sol"</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763869243474.png', import.meta.url).href}
+                                  alt="Get Free Sol App Page - Tap Open" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 2: Tap "Open" to launch</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">1️⃣</span> Connect Your Wallet
                             </h3>
                             <p className="text-purple-200 leading-relaxed">
