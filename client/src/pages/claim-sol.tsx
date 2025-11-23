@@ -4648,6 +4648,113 @@ export default function SolRefund() {
                     </div>
                   )}
 
+                  {activeDocSection === 'burn-nfts' && (
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <h2 className="text-white text-2xl font-semibold">How to Burn NFTs</h2>
+                        <p className="text-purple-200">
+                          Burn unwanted NFTs (including compressed NFTs and frozen NFTs) and recover SOL
+                        </p>
+                      </div>
+                      <div className="space-y-6 text-white prose prose-invert max-w-none">
+                        <div className="space-y-8">
+                          <div className="space-y-4">
+                            <h3 className="text-xl font-semibold text-white mb-4">What is NFT Burning?</h3>
+                            <p className="text-purple-200 leading-relaxed">
+                              NFT burning allows you to <strong className="text-white">permanently destroy unwanted NFTs</strong> from your wallet 
+                              and <strong className="text-white">recover SOL</strong> from the NFT accounts. Our platform supports:
+                            </p>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span><strong className="text-white">Regular NFTs:</strong> Standard Metaplex NFTs</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span><strong className="text-white">Compressed NFTs (cNFTs):</strong> Cost-efficient NFTs using Merkle trees</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span><strong className="text-white">Programmable NFTs (pNFTs):</strong> NFTs with royalty enforcement</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-green-400 mt-1">✓</span>
+                                <span><strong className="text-white">Frozen NFTs:</strong> Even NFTs with frozen accounts can be burned</span>
+                              </li>
+                            </ul>
+                          </div>
+
+                          <div className="space-y-4">
+                            <h3 className="text-xl font-semibold text-white mb-4">How to Burn NFTs</h3>
+                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                              <li className="flex items-start gap-3">
+                                <span className="text-pink-400 mt-1">▸</span>
+                                <span>Navigate to the <strong className="text-white">"Burn NFT"</strong> tab</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-pink-400 mt-1">▸</span>
+                                <span>Choose between <strong className="text-white">"NFTs"</strong> or <strong className="text-white">"cNFTs"</strong> (compressed NFTs) tabs</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-pink-400 mt-1">▸</span>
+                                <span>Browse your NFT collection and select the ones you want to burn</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-pink-400 mt-1">▸</span>
+                                <span>Click the <strong className="text-white">checkbox</strong> on each NFT you want to burn</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-pink-400 mt-1">▸</span>
+                                <span>Click <strong className="text-white">"BURN"</strong> button at the bottom</span>
+                              </li>
+                              <li className="flex items-start gap-3">
+                                <span className="text-pink-400 mt-1">▸</span>
+                                <span>Confirm the transaction in your wallet - you'll see the SOL you'll recover!</span>
+                              </li>
+                            </ul>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763880886408.png', import.meta.url).href}
+                                  alt="NFT burning interface showing available NFTs" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 1: Browse your NFTs</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763880899559.png', import.meta.url).href}
+                                  alt="Selected NFT ready to burn" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 2: Select NFT and click "BURN"</p>
+                              </div>
+                              <div className="space-y-2">
+                                <img 
+                                  src={new URL('@assets/image_1763880909476.png', import.meta.url).href}
+                                  alt="Transaction confirmation showing SOL recovered" 
+                                  className="rounded-lg border border-purple-500/50 w-full"
+                                />
+                                <p className="text-sm text-purple-300 text-center italic">Step 3: Confirm and recover SOL! 🎉</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
+                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                              <li>Check both NFTs and cNFTs tabs - you might have compressed NFTs you weren't aware of</li>
+                              <li>The platform shows you exactly how much SOL you'll recover before you confirm</li>
+                              <li>You can use "Select All NFTs" to quickly select all unwanted NFTs at once</li>
+                              <li>Burning NFTs is permanent and cannot be undone - make absolutely sure you want to burn them!</li>
+                              <li>Even frozen or locked NFTs can be burned using our advanced burn mechanism</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {activeDocSection === 'referrals' && (
                     <div className="space-y-6">
                       <div className="space-y-2">
