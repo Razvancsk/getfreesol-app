@@ -13,11 +13,10 @@ import { Coin98WalletAdapter } from "@solana/wallet-adapter-coin98";
 import { BackpackWalletAdapter } from "@solana/wallet-adapter-backpack";
 import { CoinbaseWalletAdapter } from "@solana/wallet-adapter-coinbase";
 import { LedgerWalletAdapter } from "@solana/wallet-adapter-ledger";
-// Removed BitKeepWalletAdapter - using custom Bitget integration instead
+import { TrustWalletAdapter } from "@solana/wallet-adapter-trust";
 
 import { clusterApiUrl } from "@solana/web3.js";
 import { MagicEdenWalletAdapter } from "@/lib/magicEdenAdapter";
-import { startTrustWalletHiding } from "@/utils/hideTrustWallet";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 interface SolanaProviderProps {
@@ -25,11 +24,6 @@ interface SolanaProviderProps {
 }
 
 export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
-  // Start Trust Wallet hiding utility
-  React.useEffect(() => {
-    startTrustWalletHiding();
-  }, []);
-
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Mainnet;
   
@@ -43,7 +37,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     return clusterApiUrl(network);
   }, [network]);
 
-  // Configure wallets - reliable wallets only (removed Trust Wallet due to frame restrictions)
+  // Configure wallets
   // Note: Bitget wallet handled by custom hook, not standard adapter
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
@@ -53,7 +47,7 @@ export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
     new SolflareWalletAdapter(),
     new Coin98WalletAdapter(),
     new LedgerWalletAdapter(),
-    // BitKeepWalletAdapter removed - using custom Bitget integration in useBitgetWallet.ts
+    new TrustWalletAdapter(),
   ], []);
 
   // Handle wallet errors
