@@ -359,59 +359,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter Ultra Swap - Execute Order endpoint (replaces send-transaction)
+  // Jupiter Ultra Swap - Execute Order endpoint with Helius Backrun Rebates
+  // Sends transaction to Helius RPC with rebate-address parameter for MEV rebates
   app.post("/api/jupiter/ultra/execute", async (req, res) => {
     try {
-      if (!process.env.JUPITER_API_KEY) {
-        console.error('❌ JUPITER_API_KEY not configured');
-        return res.status(500).json({ error: 'Jupiter API key not configured' });
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        console.error('❌ HELIUS_API_KEY not configured');
+        return res.status(500).json({ error: 'Helius API key not configured' });
       }
 
-      const { signedTransaction, requestId } = req.body;
+      const { signedTransaction, requestId, rebateAddress } = req.body;
       
-      if (!signedTransaction || !requestId) {
-        return res.status(400).json({ error: 'Missing required parameters: signedTransaction, requestId' });
+      if (!signedTransaction) {
+        return res.status(400).json({ error: 'Missing required parameter: signedTransaction' });
       }
 
-      console.log('🚀 Executing Ultra Swap with requestId:', requestId);
+      console.log('🚀 Executing swap via Helius RPC with backrun rebates...');
+      if (rebateAddress) {
+        console.log('💰 Rebates will be sent to:', rebateAddress);
+      }
 
-      const response = await fetch('https://api.jup.ag/ultra/v1/execute', {
+      // Build Helius RPC URL with rebate-address parameter for MEV rebates
+      let heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+      if (rebateAddress) {
+        heliusUrl += `&rebate-address=${rebateAddress}`;
+      }
+
+      // Send transaction to Helius RPC using sendTransaction JSON-RPC method
+      const response = await fetch(heliusUrl, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'x-api-key': process.env.JUPITER_API_KEY || ''
         },
         body: JSON.stringify({
-          signedTransaction,
-          requestId
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'sendTransaction',
+          params: [
+            signedTransaction,
+            {
+              skipPreflight: true,
+              preflightCommitment: 'processed',
+              encoding: 'base64',
+              maxRetries: 3
+            }
+          ]
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Jupiter Ultra execute error:', response.status, errorText);
-        return res.status(response.status).json({ error: errorText || 'Failed to execute order' });
+        console.error('Helius RPC error:', response.status, errorText);
+        return res.status(response.status).json({ error: errorText || 'Failed to send transaction' });
       }
 
-      const executeData = await response.json();
+      const rpcResult = await response.json();
       
-      if (executeData.status === "Success") {
-        console.log('✅ Ultra Swap successful:', JSON.stringify(executeData, null, 2));
-        console.log(`   https://solscan.io/tx/${executeData.signature}`);
-      } else {
-        console.error('❌ Ultra Swap failed:', JSON.stringify(executeData, null, 2));
-        if (executeData.signature) {
-          console.log(`   View failed tx: https://solscan.io/tx/${executeData.signature}`);
+      if (rpcResult.error) {
+        console.error('❌ Helius RPC error:', JSON.stringify(rpcResult.error, null, 2));
+        return res.status(400).json({ 
+          status: "Failed",
+          error: rpcResult.error.message || JSON.stringify(rpcResult.error),
+          code: rpcResult.error.code
+        });
+      }
+
+      const signature = rpcResult.result;
+      
+      if (signature) {
+        console.log('✅ Transaction sent successfully via Helius!');
+        console.log(`   Signature: ${signature}`);
+        console.log(`   https://solscan.io/tx/${signature}`);
+        if (rebateAddress) {
+          console.log(`   💰 Backrun rebates (if any) will be sent to: ${rebateAddress}`);
         }
-        console.log('   Note: You can retry with same signedTransaction + requestId for up to 2 minutes to poll status');
+        
+        res.json({
+          status: "Success",
+          signature: signature,
+          rebateAddress: rebateAddress || null
+        });
+      } else {
+        console.error('❌ No signature in response:', JSON.stringify(rpcResult, null, 2));
+        res.status(500).json({ 
+          status: "Failed",
+          error: 'No signature returned from RPC'
+        });
       }
       
-      res.json(executeData);
-      
     } catch (error: any) {
-      console.error('❌ Ultra execute error:', error);
+      console.error('❌ Helius execute error:', error);
       res.status(500).json({ 
+        status: "Failed",
         error: 'Failed to execute swap',
         details: error?.message || 'Unknown error'
       });
