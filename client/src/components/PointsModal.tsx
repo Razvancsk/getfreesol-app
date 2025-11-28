@@ -161,7 +161,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                     <thead>
                       <tr 
                         style={{ 
-                          background: 'linear-gradient(90deg, rgba(88, 60, 140, 0.8) 0%, rgba(60, 40, 100, 0.8) 100%)'
+                          background: 'linear-gradient(90deg, rgba(75, 45, 130, 0.9) 0%, rgba(50, 30, 90, 0.9) 100%)'
                         }}
                       >
                         <th className="text-left py-3 px-4 text-[10px] text-purple-200 uppercase tracking-wider font-medium">Ranking</th>
