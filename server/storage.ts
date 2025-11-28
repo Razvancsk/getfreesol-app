@@ -217,7 +217,7 @@ export interface IStorage {
   
   // User Points System
   getUserPoints(walletAddress: string): Promise<UserPoints | undefined>;
-  awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
+  awardPoints(walletAddress: string, accountsClosed: number, solClaimed?: number): Promise<void>;
   getPointsLeaderboard(limit?: number): Promise<UserPoints[]>;
 }
 
@@ -1215,7 +1215,7 @@ export class DatabaseStorage implements IStorage {
     return points || undefined;
   }
 
-  async awardPoints(walletAddress: string, accountsClosed: number): Promise<void> {
+  async awardPoints(walletAddress: string, accountsClosed: number, solClaimed: number = 0): Promise<void> {
     const pointsToAward = accountsClosed * 20; // 20 points per account
     
     // Check if user already has points
@@ -1228,6 +1228,7 @@ export class DatabaseStorage implements IStorage {
         .set({
           points: sql`${userPoints.points} + ${pointsToAward}`,
           accountsClosed: sql`${userPoints.accountsClosed} + ${accountsClosed}`,
+          totalSolClaimed: sql`${userPoints.totalSolClaimed} + ${solClaimed}`,
           lastUpdated: new Date()
         })
         .where(eq(userPoints.walletAddress, walletAddress));
@@ -1238,7 +1239,8 @@ export class DatabaseStorage implements IStorage {
         .values({
           walletAddress,
           points: pointsToAward,
-          accountsClosed
+          accountsClosed,
+          totalSolClaimed: solClaimed.toString()
         });
     }
   }
