@@ -82,13 +82,7 @@ export default function Points() {
               {userLoading ? (
                 <div className="text-center py-4 text-purple-300">Loading your stats...</div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Account Address</div>
-                    <div className="text-xl font-semibold text-white" data-testid="text-user-address">
-                      {truncateAddress(walletAddress)}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-3 gap-6">
                   <div>
                     <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Total Points</div>
                     <div className="text-xl font-semibold text-white" data-testid="text-user-points">
