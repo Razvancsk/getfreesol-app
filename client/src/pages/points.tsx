@@ -83,28 +83,28 @@ export default function Points() {
                 <div className="text-center py-4 text-purple-300">Loading your stats...</div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="text-center">
+                  <div>
+                    <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Account Address</div>
+                    <div className="text-xl font-semibold text-white" data-testid="text-user-address">
+                      {truncateAddress(walletAddress)}
+                    </div>
+                  </div>
+                  <div>
                     <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Total Points</div>
-                    <div className="text-2xl font-bold text-white" data-testid="text-user-points">
+                    <div className="text-xl font-semibold text-white" data-testid="text-user-points">
                       {(userPoints?.points || 0).toLocaleString()}
                     </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">SOL Claimed</div>
-                    <div className="text-2xl font-bold text-white" data-testid="text-user-sol">
-                      0.0000
+                  <div>
+                    <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">7-Days Points</div>
+                    <div className="text-xl font-semibold text-white" data-testid="text-user-7day-points">
+                      0
                     </div>
                   </div>
-                  <div className="text-center">
+                  <div>
                     <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Accounts Closed</div>
-                    <div className="text-2xl font-bold text-white" data-testid="text-user-accounts">
+                    <div className="text-xl font-semibold text-white" data-testid="text-user-accounts">
                       {(userPoints?.accountsClosed || 0).toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Your Rank</div>
-                    <div className="text-2xl font-bold text-white" data-testid="text-user-rank">
-                      {getUserRank() ? `#${getUserRank()}` : '-'}
                     </div>
                   </div>
                 </div>

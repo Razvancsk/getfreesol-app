@@ -3943,28 +3943,33 @@ export default function SolRefund() {
                           <div className="text-center py-4 text-purple-300">Loading your stats...</div>
                         ) : (
                           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="text-center">
+                            <div>
+                              <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Account Address</div>
+                              <div className="text-xl font-semibold text-white" data-testid="text-user-address">
+                                {walletAddress.slice(0, 6)}.{walletAddress.slice(-3)}
+                              </div>
+                            </div>
+                            <div>
                               <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Total Points</div>
-                              <div className="text-2xl font-bold text-white" data-testid="text-user-points">
+                              <div className="text-xl font-semibold text-white" data-testid="text-user-points">
                                 {(userPoints?.points || 0).toLocaleString()}
                               </div>
                             </div>
-                            <div className="text-center">
+                            <div>
                               <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">SOL Claimed</div>
-                              <div className="text-2xl font-bold text-white" data-testid="text-user-sol">
+                              <div className="text-xl font-semibold text-white flex items-center gap-2" data-testid="text-user-sol">
+                                <svg className="h-5 w-5" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                                  <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                                  <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                                  <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                                </svg>
                                 {userPoints?.totalSolClaimed ? parseFloat(userPoints.totalSolClaimed).toFixed(4) : '0.0000'}
                               </div>
                             </div>
-                            <div className="text-center">
+                            <div>
                               <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Accounts Closed</div>
-                              <div className="text-2xl font-bold text-white" data-testid="text-user-accounts">
+                              <div className="text-xl font-semibold text-white" data-testid="text-user-accounts">
                                 {(userPoints?.accountsClosed || 0).toLocaleString()}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Your Rank</div>
-                              <div className="text-2xl font-bold text-white" data-testid="text-user-rank">
-                                {getUserRank() ? `#${getUserRank()}` : '-'}
                               </div>
                             </div>
                           </div>

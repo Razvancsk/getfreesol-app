@@ -105,28 +105,26 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                     <div className="text-center py-4 text-purple-300">Loading your stats...</div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center">
+                      <div>
+                        <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Account Address</div>
+                        <div className="text-base font-semibold text-white" data-testid="text-user-address">
+                          {truncateAddress(walletAddress)}
+                        </div>
+                      </div>
+                      <div>
                         <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Total Points</div>
-                        <div className="text-lg font-bold text-white" data-testid="text-user-points">
+                        <div className="text-base font-semibold text-white" data-testid="text-user-points">
                           {(userPoints?.points || 0).toLocaleString()}
                         </div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">SOL Claimed</div>
-                        <div className="text-lg font-bold text-white" data-testid="text-user-sol">
-                          0.0000
-                        </div>
+                      <div>
+                        <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">7-Days Points</div>
+                        <div className="text-base font-semibold text-white">0</div>
                       </div>
-                      <div className="text-center">
+                      <div>
                         <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Accounts Closed</div>
-                        <div className="text-lg font-bold text-white" data-testid="text-user-accounts">
+                        <div className="text-base font-semibold text-white" data-testid="text-user-accounts">
                           {(userPoints?.accountsClosed || 0).toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Your Rank</div>
-                        <div className="text-lg font-bold text-white" data-testid="text-user-rank">
-                          {getUserRank() ? `#${getUserRank()}` : '-'}
                         </div>
                       </div>
                     </div>
