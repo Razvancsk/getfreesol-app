@@ -106,12 +106,6 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Rank</div>
-                        <div className="text-base font-semibold text-white" data-testid="text-user-rank">
-                          {getUserRank() ? `#${getUserRank()}` : '-'}
-                        </div>
-                      </div>
-                      <div>
                         <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Total Points</div>
                         <div className="text-base font-semibold text-white" data-testid="text-user-points">
                           {(userPoints?.points || 0).toLocaleString()}
@@ -125,6 +119,12 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                         <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Accounts Closed</div>
                         <div className="text-base font-semibold text-white" data-testid="text-user-accounts">
                           {(userPoints?.accountsClosed || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Rank</div>
+                        <div className="text-base font-semibold text-white" data-testid="text-user-rank">
+                          {getUserRank() ? `#${getUserRank()}` : '-'}
                         </div>
                       </div>
                     </div>

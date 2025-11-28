@@ -84,12 +84,6 @@ export default function Points() {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div>
-                    <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Rank</div>
-                    <div className="text-xl font-semibold text-white" data-testid="text-user-rank">
-                      {getUserRank() ? `#${getUserRank()}` : '-'}
-                    </div>
-                  </div>
-                  <div>
                     <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Total Points</div>
                     <div className="text-xl font-semibold text-white" data-testid="text-user-points">
                       {(userPoints?.points || 0).toLocaleString()}
@@ -105,6 +99,12 @@ export default function Points() {
                     <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Accounts Closed</div>
                     <div className="text-xl font-semibold text-white" data-testid="text-user-accounts">
                       {(userPoints?.accountsClosed || 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Rank</div>
+                    <div className="text-xl font-semibold text-white" data-testid="text-user-rank">
+                      {getUserRank() ? `#${getUserRank()}` : '-'}
                     </div>
                   </div>
                 </div>
