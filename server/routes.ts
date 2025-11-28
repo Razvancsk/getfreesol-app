@@ -694,41 +694,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC endpoint with fallbacks
+      // Get RPC endpoint - prioritize Helius for speed
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcEndpoints = [
-        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
-        'https://api.mainnet-beta.solana.com',
-        'https://solana-api.projectserum.com',
-        'https://rpc.ankr.com/solana'
-      ].filter(Boolean);
-
-      let connection: Connection | null = null;
-      let workingEndpoint = '';
-
-      // Try each endpoint until one works
-      for (const endpoint of rpcEndpoints) {
-        try {
-          const testConnection = new Connection(endpoint as string, 'confirmed');
-          await testConnection.getLatestBlockhash();
-          connection = testConnection;
-          workingEndpoint = endpoint as string;
-          break;
-        } catch (error) {
-          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
-        }
+      
+      if (!heliusApiKey) {
+        return res.status(503).json({ error: "Helius API key not configured" });
       }
-
-      if (!connection) {
-        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
-      }
-
-      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
+      
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+      
+      // Use faster connection settings
+      const connection = new Connection(rpcUrl, {
+        commitment: 'confirmed',
+        confirmTransactionInitialTimeout: 30000
+      });
+      
+      console.log(`Using RPC: Helius (${Date.now() - startTime}ms)`);
 
       const walletPublicKey = new PublicKey(address);
       
       // Get all token accounts for the wallet - BOTH standard Token Program AND Token-2022
-      const [tokenAccounts, token2022Accounts] = await Promise.all([
+      // Use Promise.allSettled to handle partial failures
+      const [tokenResult, token2022Result] = await Promise.allSettled([
         connection.getParsedTokenAccountsByOwner(walletPublicKey, {
           programId: TOKEN_PROGRAM_ID,
         }),
@@ -737,13 +724,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       ]);
 
+      // Extract successful results
+      const tokenAccounts = tokenResult.status === 'fulfilled' ? tokenResult.value.value : [];
+      const token2022Accounts = token2022Result.status === 'fulfilled' ? token2022Result.value.value : [];
+
       // Combine both standard and Token-2022 accounts
       const allTokenAccounts = [
-        ...tokenAccounts.value,
-        ...token2022Accounts.value
+        ...tokenAccounts,
+        ...token2022Accounts
       ];
 
-      console.log(`📊 Found ${tokenAccounts.value.length} standard token accounts + ${token2022Accounts.value.length} Token-2022 accounts (${Date.now() - startTime}ms)`);
+      console.log(`📊 Found ${tokenAccounts.length} standard + ${token2022Accounts.length} Token-2022 accounts (${Date.now() - startTime}ms)`);
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
@@ -797,10 +788,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scannedAt: scanResult.scannedAt.toISOString()
       };
 
+      console.log(`✅ Scan complete: ${emptyAccounts.length} empty accounts, ${totalReclaimable.toFixed(4)} SOL reclaimable (${Date.now() - startTime}ms)`);
       res.json(response);
-    } catch (error) {
-      console.error("Scan error:", error);
-      res.status(500).json({ error: "Failed to scan wallet for empty accounts" });
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ Scan error after ${duration}ms:`, error?.message || error);
+      res.status(500).json({ error: error?.message || "Failed to scan wallet for empty accounts" });
     }
   });
 
