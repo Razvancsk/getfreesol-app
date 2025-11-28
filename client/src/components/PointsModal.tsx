@@ -104,7 +104,13 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                   {userLoading ? (
                     <div className="text-center py-4 text-purple-300">Loading your stats...</div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Rank</div>
+                        <div className="text-base font-semibold text-white" data-testid="text-user-rank">
+                          {getUserRank() ? `#${getUserRank()}` : '-'}
+                        </div>
+                      </div>
                       <div>
                         <div className="text-[10px] text-purple-300 uppercase tracking-wider mb-1">Total Points</div>
                         <div className="text-base font-semibold text-white" data-testid="text-user-points">
