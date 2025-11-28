@@ -359,99 +359,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter Ultra Swap - Execute Order endpoint with Helius Backrun Rebates
-  // Sends transaction to Helius RPC with rebate-address parameter for MEV rebates
+  // Jupiter Ultra Swap - Execute Order endpoint (replaces send-transaction)
   app.post("/api/jupiter/ultra/execute", async (req, res) => {
     try {
-      const heliusApiKey = process.env.HELIUS_API_KEY;
-      if (!heliusApiKey) {
-        console.error('❌ HELIUS_API_KEY not configured');
-        return res.status(500).json({ error: 'Helius API key not configured' });
+      if (!process.env.JUPITER_API_KEY) {
+        console.error('❌ JUPITER_API_KEY not configured');
+        return res.status(500).json({ error: 'Jupiter API key not configured' });
       }
 
-      const { signedTransaction, requestId, rebateAddress } = req.body;
+      const { signedTransaction, requestId } = req.body;
       
-      if (!signedTransaction) {
-        return res.status(400).json({ error: 'Missing required parameter: signedTransaction' });
+      if (!signedTransaction || !requestId) {
+        return res.status(400).json({ error: 'Missing required parameters: signedTransaction, requestId' });
       }
 
-      console.log('🚀 Executing swap via Helius RPC with backrun rebates...');
-      if (rebateAddress) {
-        console.log('💰 Rebates will be sent to:', rebateAddress);
-      }
+      console.log('🚀 Executing Ultra Swap with requestId:', requestId);
 
-      // Build Helius RPC URL with rebate-address parameter for MEV rebates
-      let heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-      if (rebateAddress) {
-        heliusUrl += `&rebate-address=${rebateAddress}`;
-      }
-
-      // Send transaction to Helius RPC using sendTransaction JSON-RPC method
-      const response = await fetch(heliusUrl, {
+      const response = await fetch('https://api.jup.ag/ultra/v1/execute', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-api-key': process.env.JUPITER_API_KEY || ''
         },
         body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'sendTransaction',
-          params: [
-            signedTransaction,
-            {
-              skipPreflight: true,
-              preflightCommitment: 'processed',
-              encoding: 'base64',
-              maxRetries: 3
-            }
-          ]
+          signedTransaction,
+          requestId
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Helius RPC error:', response.status, errorText);
-        return res.status(response.status).json({ error: errorText || 'Failed to send transaction' });
+        console.error('Jupiter Ultra execute error:', response.status, errorText);
+        return res.status(response.status).json({ error: errorText || 'Failed to execute order' });
       }
 
-      const rpcResult = await response.json();
+      const executeData = await response.json();
       
-      if (rpcResult.error) {
-        console.error('❌ Helius RPC error:', JSON.stringify(rpcResult.error, null, 2));
-        return res.status(400).json({ 
-          status: "Failed",
-          error: rpcResult.error.message || JSON.stringify(rpcResult.error),
-          code: rpcResult.error.code
-        });
-      }
-
-      const signature = rpcResult.result;
-      
-      if (signature) {
-        console.log('✅ Transaction sent successfully via Helius!');
-        console.log(`   Signature: ${signature}`);
-        console.log(`   https://solscan.io/tx/${signature}`);
-        if (rebateAddress) {
-          console.log(`   💰 Backrun rebates (if any) will be sent to: ${rebateAddress}`);
-        }
-        
-        res.json({
-          status: "Success",
-          signature: signature,
-          rebateAddress: rebateAddress || null
-        });
+      if (executeData.status === "Success") {
+        console.log('✅ Ultra Swap successful:', JSON.stringify(executeData, null, 2));
+        console.log(`   https://solscan.io/tx/${executeData.signature}`);
       } else {
-        console.error('❌ No signature in response:', JSON.stringify(rpcResult, null, 2));
-        res.status(500).json({ 
-          status: "Failed",
-          error: 'No signature returned from RPC'
-        });
+        console.error('❌ Ultra Swap failed:', JSON.stringify(executeData, null, 2));
+        if (executeData.signature) {
+          console.log(`   View failed tx: https://solscan.io/tx/${executeData.signature}`);
+        }
+        console.log('   Note: You can retry with same signedTransaction + requestId for up to 2 minutes to poll status');
       }
+      
+      res.json(executeData);
       
     } catch (error: any) {
-      console.error('❌ Helius execute error:', error);
+      console.error('❌ Ultra execute error:', error);
       res.status(500).json({ 
-        status: "Failed",
         error: 'Failed to execute swap',
         details: error?.message || 'Unknown error'
       });
@@ -679,7 +639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Scan wallet for empty token accounts - OPTIMIZED for speed
+  // Scan wallet for empty token accounts
   app.get("/api/sol-refund/scan/:address", async (req, res) => {
     try {
       const { address } = req.params;
@@ -691,48 +651,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC endpoint - prioritize public Solana RPC to avoid Helius rate limits
-      // Helius is kept as final fallback in case public RPCs fail
+      // Get RPC endpoint with fallbacks
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcEndpoints = [
+        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
         'https://api.mainnet-beta.solana.com',
-        'https://rpc.ankr.com/solana',
-        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null
-      ].filter(Boolean) as string[];
+        'https://solana-api.projectserum.com',
+        'https://rpc.ankr.com/solana'
+      ].filter(Boolean);
 
-      // Create connection with shorter commitment for faster response
-      // and disable retry logic to avoid slow 429 backoffs
-      const connectionConfig = {
-        commitment: 'confirmed' as const,
-        disableRetryOnRateLimit: true, // Don't retry on 429 - fail fast
-      };
-      
       let connection: Connection | null = null;
       let workingEndpoint = '';
 
-      // Race endpoints - use Promise.any for true first-success short-circuit
-      const racePromises = rpcEndpoints.map(async (endpoint) => {
-        const testConnection = new Connection(endpoint, connectionConfig);
-        // Quick health check with timeout
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 2500)
-        );
-        await Promise.race([testConnection.getSlot(), timeoutPromise]);
-        return { connection: testConnection, endpoint };
-      });
-
-      try {
-        // Promise.any returns as soon as ANY promise resolves (true racing)
-        const winner = await Promise.any(racePromises);
-        connection = winner.connection;
-        workingEndpoint = winner.endpoint;
-      } catch {
-        // All endpoints failed - use fallback without testing
-        connection = new Connection('https://api.mainnet-beta.solana.com', connectionConfig);
-        workingEndpoint = 'https://api.mainnet-beta.solana.com (fallback)';
+      // Try each endpoint until one works
+      for (const endpoint of rpcEndpoints) {
+        try {
+          const testConnection = new Connection(endpoint as string, 'confirmed');
+          await testConnection.getLatestBlockhash();
+          connection = testConnection;
+          workingEndpoint = endpoint as string;
+          break;
+        } catch (error) {
+          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
+        }
       }
 
-      console.log(`⚡ Using RPC: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, 'api-key=****') : workingEndpoint}`);
+      if (!connection) {
+        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
+      }
+
+      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
 
       const walletPublicKey = new PublicKey(address);
       
@@ -780,20 +728,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Store scan result (non-blocking - don't wait for DB)
-      const scanResultPromise = storage.createScanResult({
+      // Store scan result
+      const scanResult = await storage.createScanResult({
         walletAddress: address,
         totalAccounts: allTokenAccounts.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toString()
       });
 
-      // Store empty accounts in parallel (non-blocking)
-      const storeAccountsPromise = Promise.all(
-        emptyAccounts.map(account => storage.createEmptyTokenAccount(account).catch(() => null))
-      );
+      // Store empty accounts
+      for (const account of emptyAccounts) {
+        await storage.createEmptyTokenAccount(account);
+      }
 
-      // Return response immediately, let DB operations complete in background
+      // Note: Wallet check Discord alerts are only sent from the Discord bot /scan command
+      // NOT from website scans to avoid spam
+
       const response = {
         success: true,
         walletAddress: address,
@@ -801,18 +751,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toFixed(9),
         accounts: emptyAccounts,
-        scannedAt: new Date().toISOString()
+        scannedAt: scanResult.scannedAt.toISOString()
       };
 
       res.json(response);
-      
-      // Wait for DB operations to complete after response is sent, log any failures
-      const dbResults = await Promise.allSettled([scanResultPromise, storeAccountsPromise]);
-      for (const result of dbResults) {
-        if (result.status === 'rejected') {
-          console.error('⚠️ Background DB operation failed:', result.reason);
-        }
-      }
     } catch (error) {
       console.error("Scan error:", error);
       res.status(500).json({ error: "Failed to scan wallet for empty accounts" });
@@ -1801,7 +1743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Scan wallet for tokens (for burning) - OPTIMIZED for speed
+  // Scan wallet for tokens (for burning)
   app.get("/api/tokens/scan/:address", async (req, res) => {
     try {
       const { address } = req.params;
@@ -1813,172 +1755,235 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC connection - prioritize public RPC to avoid Helius rate limits
+      // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcEndpoints = [
+        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
         'https://api.mainnet-beta.solana.com',
+        'https://solana-api.projectserum.com',
         'https://rpc.ankr.com/solana'
-      ];
+      ].filter(Boolean);
 
-      const connectionConfig = {
-        commitment: 'confirmed' as const,
-        disableRetryOnRateLimit: true,
-      };
-
-      let connection: Connection;
+      let connection: Connection | null = null;
       let workingEndpoint = '';
 
-      // Race endpoints - use Promise.any for true first-success
-      const racePromises = rpcEndpoints.map(async (endpoint) => {
-        const testConnection = new Connection(endpoint, connectionConfig);
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 2500)
-        );
-        await Promise.race([testConnection.getSlot(), timeoutPromise]);
-        return { connection: testConnection, endpoint };
-      });
-
-      try {
-        const winner = await Promise.any(racePromises);
-        connection = winner.connection;
-        workingEndpoint = winner.endpoint;
-      } catch {
-        connection = new Connection('https://api.mainnet-beta.solana.com', connectionConfig);
-        workingEndpoint = 'https://api.mainnet-beta.solana.com (fallback)';
+      for (const endpoint of rpcEndpoints) {
+        try {
+          const testConnection = new Connection(endpoint as string, 'confirmed');
+          await testConnection.getLatestBlockhash();
+          connection = testConnection;
+          workingEndpoint = endpoint as string;
+          break;
+        } catch (error) {
+          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
+        }
       }
 
-      console.log(`⚡ Token scan using RPC: ${workingEndpoint}`);
+      if (!connection) {
+        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
+      }
+
+      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
 
       const walletPublicKey = new PublicKey(address);
 
-      // Use Jupiter Ultra Holdings API for token data with metadata
+      // Use Helius DAS API to get all assets with metadata
       let tokens: any[] = [];
-      const jupiterApiKey = process.env.JUPITER_API_KEY;
-      
-      if (!jupiterApiKey) {
-        return res.status(500).json({ error: "Jupiter API key is required for token scanning" });
+      if (!heliusApiKey) {
+        return res.status(500).json({ error: "Helius API key is required for token scanning" });
       }
 
       try {
-        // Fetch tokens using Jupiter Ultra Holdings API
-        console.log(`🪐 Fetching tokens from Jupiter Ultra Holdings API...`);
-        const holdingsResponse = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, {
-          headers: {
-            'x-api-key': jupiterApiKey
-          }
+        const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+        const rpcUrl = heliusRpcUrl; // Make rpcUrl available in scope
+        const heliusResponse = await fetch(heliusRpcUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 'token-scan',
+            method: 'getAssetsByOwner',
+            params: {
+              ownerAddress: address,
+              page: 1,
+              limit: 1000,
+              displayOptions: {
+                showFungible: true,
+                showNativeBalance: false
+              }
+            }
+          })
         });
         
-        if (!holdingsResponse.ok) {
-          const errorText = await holdingsResponse.text();
-          console.error('Jupiter Holdings API error:', holdingsResponse.status, errorText);
-          return res.status(holdingsResponse.status).json({ error: 'Failed to fetch token holdings from Jupiter' });
-        }
-
-        const holdings = await holdingsResponse.json();
-        console.log(`📊 Jupiter Holdings found ${Object.keys(holdings.tokens || {}).length} tokens`);
-
-        if (holdings.tokens) {
-          const { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
-          const ownerPublicKey = new PublicKey(address);
-
-          // Process all tokens from Jupiter Holdings
-          const tokenEntries = Object.entries(holdings.tokens);
+        if (heliusResponse.ok) {
+          const heliusData = await heliusResponse.json();
+          console.log(`Found ${heliusData.result?.items?.length || 0} assets from Helius DAS`);
           
-          // Check tokens in parallel batches
-          const processToken = async ([mintAddress, tokenAccounts]: [string, any]) => {
-            try {
-              // Sum all token accounts for this mint
-              const accounts = tokenAccounts as any[];
-              const totalBalance = accounts.reduce((sum: number, acc: any) => 
-                sum + parseFloat(acc.uiAmount || '0'), 0
-              );
-              const firstAccount = accounts[0];
-              const decimals = firstAccount?.decimals || 0;
-              
-              // Check if token is frozen using RPC
-              const mintPublicKey = new PublicKey(mintAddress);
-              let isFrozen = false;
-              let programType = 'TOKEN_PROGRAM';
-              
-              try {
-                let tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey, false, TOKEN_PROGRAM_ID);
-                let accountInfo = await connection.getParsedAccountInfo(tokenAccount);
+          if (heliusData.result?.items) {
+            // Filter for fungible tokens with meaningful balances only
+            const fungibleTokens = heliusData.result.items
+              .filter((asset: any) => 
+                asset.interface === 'FungibleToken' || 
+                asset.interface === 'FungibleAsset'
+              )
+              .filter((asset: any) => {
+                const balance = asset.token_info?.balance || 0;
+                const decimals = asset.token_info?.decimals || 0;
+                const displayBalance = balance / Math.pow(10, decimals);
                 
-                if (!accountInfo?.value) {
-                  tokenAccount = await getAssociatedTokenAddress(mintPublicKey, ownerPublicKey, false, TOKEN_2022_PROGRAM_ID);
+                // Only show tokens with meaningful balances (> 0.001) or empty accounts that can be closed
+                return displayBalance > 0.001 || balance === 0;
+              });
+
+            console.log(`Found ${fungibleTokens.length} fungible tokens with meaningful balances`);
+
+            // Use Solana RPC to check if tokens are actually burnable
+            const { Connection, PublicKey } = await import('@solana/web3.js');
+            const { getAssociatedTokenAddress, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = await import('@solana/spl-token');
+            
+            const connection = new Connection(rpcUrl, 'confirmed');
+            const ownerPublicKey = new PublicKey(address);
+            
+            const burnableTokens = [];
+            
+            for (const asset of fungibleTokens) {
+              try {
+                const mintPublicKey = new PublicKey(asset.id);
+                
+                // Try both Token Program and Token-2022 Program
+                let tokenAccount = null;
+                let accountInfo = null;
+                let programType = 'TOKEN_PROGRAM';
+                
+                // First try standard Token Program
+                try {
+                  tokenAccount = await getAssociatedTokenAddress(
+                    mintPublicKey,
+                    ownerPublicKey,
+                    false,
+                    TOKEN_PROGRAM_ID
+                  );
                   accountInfo = await connection.getParsedAccountInfo(tokenAccount);
-                  if (accountInfo?.value) programType = 'TOKEN_2022_PROGRAM';
+                } catch (error) {
+                  // Silent fail, will try Token-2022 next
                 }
                 
-                if (accountInfo?.value?.data) {
-                  const parsedInfo = (accountInfo.value.data as any)?.parsed?.info;
-                  if (parsedInfo?.state === 'frozen') {
-                    isFrozen = true;
+                // If not found, try Token-2022 Program
+                if (!accountInfo?.value) {
+                  try {
+                    tokenAccount = await getAssociatedTokenAddress(
+                      mintPublicKey,
+                      ownerPublicKey,
+                      false,
+                      TOKEN_2022_PROGRAM_ID
+                    );
+                    accountInfo = await connection.getParsedAccountInfo(tokenAccount);
+                    if (accountInfo?.value) {
+                      programType = 'TOKEN_2022_PROGRAM';
+                      console.log(`✨ Found Token-2022: ${asset.content?.metadata?.symbol || 'Unknown'}`);
+                    }
+                  } catch (error) {
+                    // Both failed
                   }
                 }
-              } catch {
-                // Ignore RPC errors
+                
+                // Check if the token account actually exists and is accessible
+                if (accountInfo?.value && accountInfo.value.data) {
+                  const parsedInfo = accountInfo.value.data as any;
+                  if (parsedInfo.parsed && parsedInfo.parsed.info) {
+                    const tokenState = parsedInfo.parsed.info.state;
+                    
+                    // Only include tokens that are not frozen
+                    if (tokenState !== 'frozen') {
+                      burnableTokens.push({
+                        ...asset,
+                        programType // Store which program this token uses
+                      });
+                      console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: BURNABLE (state=${tokenState}, program=${programType})`);
+                    } else {
+                      console.log(`Token ${asset.content?.metadata?.symbol || 'Unknown'}: FROZEN - excluded`);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.log(`Error checking token ${asset.content?.metadata?.symbol || 'Unknown'}:`, error instanceof Error ? error.message : String(error));
               }
+            }
 
-              // Fetch metadata from Jupiter API
-              let name = 'Unknown Token';
-              let symbol = 'TOKEN';
-              let logo = null;
-              
+            // Helper function to fetch logo from Jupiter API V2 search endpoint
+            async function fetchJupiterLogo(mintAddress: string): Promise<string | null> {
               try {
-                const metadataResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`);
-                if (metadataResponse.ok) {
-                  const searchResults = await metadataResponse.json();
-                  const metadata = Array.isArray(searchResults) 
-                    ? searchResults.find((t: any) => t.id === mintAddress)
-                    : null;
+                const searchUrl = `https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`;
+                console.log(`🔍 Fetching Jupiter metadata for ${mintAddress}...`);
+                const response = await fetch(searchUrl);
+                
+                if (response.ok) {
+                  const data = await response.json();
+                  // Jupiter API V2 returns an array directly, not wrapped in {tokens: [...]}
+                  const tokens = Array.isArray(data) ? data : [];
                   
-                  if (metadata) {
-                    name = metadata.name || name;
-                    symbol = metadata.symbol || symbol;
-                    logo = metadata.icon || null;
+                  console.log(`📊 Jupiter API response for ${mintAddress}:`, {
+                    tokensCount: tokens.length,
+                    tokens: tokens.map((t: any) => ({ id: t.id, symbol: t.symbol, hasIcon: !!t.icon }))
+                  });
+                  
+                  // The API returns an array of matching tokens
+                  if (tokens.length > 0) {
+                    // Find exact match by id (not address)
+                    const exactMatch = tokens.find((t: any) => t.id === mintAddress);
+                    if (exactMatch?.icon) {
+                      console.log(`✅ Jupiter API V2 found logo for ${mintAddress}: ${exactMatch.icon}`);
+                      return exactMatch.icon;
+                    } else {
+                      console.log(`⚠️  Jupiter found token ${mintAddress} but no icon available`);
+                    }
+                  } else {
+                    console.log(`ℹ️  Token ${mintAddress} not found in Jupiter registry`);
                   }
+                } else {
+                  console.log(`❌ Jupiter API error for ${mintAddress}: ${response.status} ${response.statusText}`);
                 }
-              } catch {
-                // Use defaults on error
+              } catch (error) {
+                console.log(`⚠️ Failed to fetch Jupiter logo for ${mintAddress}:`, error);
               }
-
-              const isEmpty = totalBalance === 0;
-              
-              return {
-                mint: mintAddress,
-                balance: totalBalance,
-                decimals: decimals,
-                name: name,
-                symbol: symbol,
-                logo: logo,
-                isFrozen: isFrozen,
-                isEmpty: isEmpty,
-                status: isFrozen ? 'Frozen' : (isEmpty ? 'Empty' : 'Active'),
-                programType: programType
-              };
-            } catch (error) {
-              console.error(`Error processing token ${mintAddress}:`, error);
               return null;
             }
-          };
 
-          // Process in parallel batches of 10 for speed
-          const BATCH_SIZE = 10;
-          for (let i = 0; i < tokenEntries.length; i += BATCH_SIZE) {
-            const batch = tokenEntries.slice(i, i + BATCH_SIZE);
-            const results = await Promise.all(batch.map(processToken));
-            tokens.push(...results.filter(Boolean));
+            // Process tokens and fetch logos from Jupiter API ONLY
+            const tokenPromises = burnableTokens.map(async (asset: any) => {
+              const balance = (asset.token_info?.balance || 0) / Math.pow(10, asset.token_info?.decimals || 0);
+              const isEmpty = balance === 0;
+              
+              // Fetch logo from Jupiter API V2 ONLY
+              const logo = await fetchJupiterLogo(asset.id);
+              
+              console.log(`🖼️ Token ${asset.content?.metadata?.symbol || 'Unknown'}:`, {
+                mint: asset.id,
+                logo: logo,
+                source: logo ? 'Jupiter API V2' : 'No logo found'
+              });
+              
+              return {
+                mint: asset.id,
+                balance: balance,
+                decimals: asset.token_info?.decimals || 0,
+                name: asset.content?.metadata?.name || 'Unknown Token',
+                symbol: asset.content?.metadata?.symbol || 'TOKEN',
+                logo: logo,
+                isFrozen: false,
+                isEmpty: isEmpty,
+                status: isEmpty ? 'Empty' : 'Active'
+              };
+            });
+
+            tokens = await Promise.all(tokenPromises);
+            
+            console.log(`Processed ${tokens.length} truly burnable tokens (excluded ${fungibleTokens.length - tokens.length} frozen/inaccessible tokens)`);
           }
-
-          // Filter: only tokens with balance > 0.001 or empty accounts
-          tokens = tokens.filter(t => t.balance > 0.001 || t.isEmpty);
-          
-          console.log(`✅ Processed ${tokens.length} tokens from Jupiter`);
         }
       } catch (error) {
-        console.log(`Failed to fetch from Jupiter Holdings:`, error instanceof Error ? error.message : String(error));
-        return res.status(500).json({ error: "Failed to fetch tokens from Jupiter API" });
+        console.log(`Failed to fetch assets from Helius DAS:`, error instanceof Error ? error.message : String(error));
+        return res.status(500).json({ error: "Failed to fetch tokens from Helius API" });
       }
 
       // Fetch USD prices for all tokens

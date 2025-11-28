@@ -414,15 +414,13 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
 
       console.log('✅ Transaction signed, executing with requestId:', quote.requestId);
       
-      // Execute via Helius RPC with backrun rebates
-      // User's wallet receives any MEV rebates from arbitrage opportunities
+      // Execute via Ultra Swap API (Jupiter handles transaction sending)
       const executeResponse = await fetch('/api/jupiter/ultra/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           signedTransaction: signedBase64,
-          requestId: quote.requestId,
-          rebateAddress: publicKey.toString() // Helius backrun rebates go to user's wallet
+          requestId: quote.requestId
         })
       });
 
@@ -448,17 +446,13 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
       
       if (executeData.status === "Success") {
         const signature = executeData.signature;
-        console.log('✅ Swap successful via Helius:', signature);
-        if (executeData.rebateAddress) {
-          console.log('💰 Backrun rebates enabled for:', executeData.rebateAddress);
-        }
+        console.log('✅ Ultra Swap successful:', signature);
         
         toast({
           title: 'Swap Successful!',
           description: (
             <div className="space-y-2">
               <p>Transaction confirmed on Solana blockchain</p>
-              <p className="text-xs opacity-80">Any MEV rebates will be sent to your wallet</p>
               <a 
                 href={`https://solscan.io/tx/${signature}`}
                 target="_blank"

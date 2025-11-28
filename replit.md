@@ -40,7 +40,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
-- **Jupiter Ultra Swap Integration**: Advanced token swapping using Jupiter Ultra API with referral fee collection and Helius backrun rebates (users earn 50% of MEV from arbitrage their trades create).
+- **Jupiter Ultra Swap Integration**: Advanced token swapping using Jupiter Ultra API with referral fee collection.
 - **Solana Integration**: Handles RPC interactions for account discovery and transaction submission.
 - **Server-Side Open Graph**: Dynamic social media link previews for sharing.
 
@@ -67,7 +67,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.
-- **Helius API**: Enhanced RPC provider with backrun rebates for MEV earnings on swaps.
+- **Helius API**: Enhanced RPC provider.
 - **Jupiter Ultra Swap API**: Advanced DEX aggregator with Juno Liquidity Engine. Uses official api.jup.ag endpoint with API key authentication for dynamic rate limits (50+ req/10s baseline, scales automatically with trading volume).
 - **Jupiter Ultra Holdings API**: Token balance aggregation endpoint via api.jup.ag with authenticated requests.
 - **Jupiter Token List V2 API**: Token metadata provider.
