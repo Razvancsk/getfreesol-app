@@ -694,28 +694,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC endpoint - prioritize Helius for speed
+      // Get RPC endpoint - use Helius
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcUrl = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
       
-      if (!heliusApiKey) {
-        return res.status(503).json({ error: "Helius API key not configured" });
-      }
-      
-      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-      
-      // Use faster connection settings
       const connection = new Connection(rpcUrl, {
         commitment: 'confirmed',
-        confirmTransactionInitialTimeout: 30000
+        confirmTransactionInitialTimeout: 60000
       });
       
-      console.log(`Using RPC: Helius (${Date.now() - startTime}ms)`);
+      console.log(`Using RPC: ${heliusApiKey ? 'Helius' : 'Public Solana'} (${Date.now() - startTime}ms)`);
 
       const walletPublicKey = new PublicKey(address);
       
       // Get all token accounts for the wallet - BOTH standard Token Program AND Token-2022
-      // Use Promise.allSettled to handle partial failures
-      const [tokenResult, token2022Result] = await Promise.allSettled([
+      const [tokenAccounts, token2022Accounts] = await Promise.all([
         connection.getParsedTokenAccountsByOwner(walletPublicKey, {
           programId: TOKEN_PROGRAM_ID,
         }),
@@ -724,17 +719,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       ]);
 
-      // Extract successful results
-      const tokenAccounts = tokenResult.status === 'fulfilled' ? tokenResult.value.value : [];
-      const token2022Accounts = token2022Result.status === 'fulfilled' ? token2022Result.value.value : [];
-
       // Combine both standard and Token-2022 accounts
       const allTokenAccounts = [
-        ...tokenAccounts,
-        ...token2022Accounts
+        ...tokenAccounts.value,
+        ...token2022Accounts.value
       ];
 
-      console.log(`📊 Found ${tokenAccounts.length} standard + ${token2022Accounts.length} Token-2022 accounts (${Date.now() - startTime}ms)`);
+      console.log(`📊 Found ${tokenAccounts.value.length} standard + ${token2022Accounts.value.length} Token-2022 accounts (${Date.now() - startTime}ms)`);
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
@@ -788,12 +779,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scannedAt: scanResult.scannedAt.toISOString()
       };
 
-      console.log(`✅ Scan complete: ${emptyAccounts.length} empty accounts, ${totalReclaimable.toFixed(4)} SOL reclaimable (${Date.now() - startTime}ms)`);
+      console.log(`✅ Scan complete: ${emptyAccounts.length} empty accounts, ${totalReclaimable.toFixed(4)} SOL (${Date.now() - startTime}ms)`);
       res.json(response);
-    } catch (error: any) {
-      const duration = Date.now() - startTime;
-      console.error(`❌ Scan error after ${duration}ms:`, error?.message || error);
-      res.status(500).json({ error: error?.message || "Failed to scan wallet for empty accounts" });
+    } catch (error) {
+      console.error("Scan error:", error);
+      res.status(500).json({ error: "Failed to scan wallet for empty accounts" });
     }
   });
 
