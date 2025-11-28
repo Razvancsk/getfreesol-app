@@ -110,6 +110,7 @@ export interface IStorage {
   
   // Empty Token Accounts
   createEmptyTokenAccount(account: InsertEmptyTokenAccount): Promise<EmptyTokenAccount>;
+  createEmptyTokenAccountsBulk(accounts: InsertEmptyTokenAccount[]): Promise<void>;
   getEmptyTokenAccountsByWallet(walletAddress: string): Promise<EmptyTokenAccount[]>;
   markAccountsAsClaimed(accountAddresses: string[]): Promise<void>;
   
@@ -418,6 +419,22 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return emptyTokenAccount;
+  }
+
+  async createEmptyTokenAccountsBulk(accounts: InsertEmptyTokenAccount[]): Promise<void> {
+    if (accounts.length === 0) return;
+    
+    // Use batch insert with conflict handling for better performance
+    await db
+      .insert(emptyTokenAccounts)
+      .values(accounts)
+      .onConflictDoUpdate({
+        target: emptyTokenAccounts.accountAddress,
+        set: {
+          scannedAt: sql`NOW()`,
+          claimed: false
+        }
+      });
   }
 
   async getEmptyTokenAccountsByWallet(walletAddress: string): Promise<EmptyTokenAccount[]> {

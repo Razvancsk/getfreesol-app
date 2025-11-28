@@ -776,9 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReclaimable: totalReclaimable.toString()
       });
 
-      // Store empty accounts
-      for (const account of emptyAccounts) {
-        await storage.createEmptyTokenAccount(account);
+      // Store empty accounts in bulk for better performance
+      if (emptyAccounts.length > 0) {
+        await storage.createEmptyTokenAccountsBulk(emptyAccounts);
       }
 
       // Note: Wallet check Discord alerts are only sent from the Discord bot /scan command

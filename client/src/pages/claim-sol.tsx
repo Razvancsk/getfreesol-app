@@ -648,11 +648,25 @@ export default function SolRefund() {
   // Scan wallet for empty token accounts
   const scanMutation = useMutation({
     mutationFn: async (address: string) => {
-      const response = await fetch(`/api/sol-refund/scan/${address}`);
-      if (!response.ok) {
-        throw new Error('Failed to scan wallet');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
+      try {
+        const response = await fetch(`/api/sol-refund/scan/${address}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error('Failed to scan wallet');
+        }
+        return response.json();
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Scan timed out. Please try again.');
+        }
+        throw error;
       }
-      return response.json();
     },
     onSuccess: (data: ScanResult) => {
       setScanResult(data);
@@ -670,11 +684,25 @@ export default function SolRefund() {
   // Scan tokens for burning
   const scanTokensMutation = useMutation({
     mutationFn: async (address: string) => {
-      const response = await fetch(`/api/tokens/scan/${address}`);
-      if (!response.ok) {
-        throw new Error('Failed to scan tokens');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
+      try {
+        const response = await fetch(`/api/tokens/scan/${address}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error('Failed to scan tokens');
+        }
+        return response.json();
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Token scan timed out. Please try again.');
+        }
+        throw error;
       }
-      return response.json();
     },
     onSuccess: (data: any[]) => {
       setTokenList(data);
@@ -692,11 +720,25 @@ export default function SolRefund() {
 
   const scanNftsMutation = useMutation({
     mutationFn: async (address: string) => {
-      const response = await fetch(`/api/nfts/scan/${address}`);
-      if (!response.ok) {
-        throw new Error('Failed to scan NFTs');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for NFTs (larger data)
+      
+      try {
+        const response = await fetch(`/api/nfts/scan/${address}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error('Failed to scan NFTs');
+        }
+        return response.json();
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('NFT scan timed out. Please try again.');
+        }
+        throw error;
       }
-      return response.json();
     },
     onSuccess: (data: any) => {
       setNftData(data);
