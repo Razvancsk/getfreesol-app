@@ -679,7 +679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Scan wallet for empty token accounts
+  // Scan wallet for empty token accounts - OPTIMIZED for speed
   app.get("/api/sol-refund/scan/:address", async (req, res) => {
     try {
       const { address } = req.params;
@@ -691,36 +691,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC endpoint with fallbacks
+      // Get RPC endpoint - prioritize public Solana RPC to avoid Helius rate limits
+      // Helius is kept as final fallback in case public RPCs fail
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcEndpoints = [
-        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
         'https://api.mainnet-beta.solana.com',
-        'https://solana-api.projectserum.com',
-        'https://rpc.ankr.com/solana'
-      ].filter(Boolean);
+        'https://rpc.ankr.com/solana',
+        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null
+      ].filter(Boolean) as string[];
 
+      // Create connection with shorter commitment for faster response
+      // and disable retry logic to avoid slow 429 backoffs
+      const connectionConfig = {
+        commitment: 'confirmed' as const,
+        disableRetryOnRateLimit: true, // Don't retry on 429 - fail fast
+      };
+      
       let connection: Connection | null = null;
       let workingEndpoint = '';
 
-      // Try each endpoint until one works
-      for (const endpoint of rpcEndpoints) {
-        try {
-          const testConnection = new Connection(endpoint as string, 'confirmed');
-          await testConnection.getLatestBlockhash();
-          connection = testConnection;
-          workingEndpoint = endpoint as string;
-          break;
-        } catch (error) {
-          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
-        }
+      // Race endpoints - use Promise.any for true first-success short-circuit
+      const racePromises = rpcEndpoints.map(async (endpoint) => {
+        const testConnection = new Connection(endpoint, connectionConfig);
+        // Quick health check with timeout
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 2500)
+        );
+        await Promise.race([testConnection.getSlot(), timeoutPromise]);
+        return { connection: testConnection, endpoint };
+      });
+
+      try {
+        // Promise.any returns as soon as ANY promise resolves (true racing)
+        const winner = await Promise.any(racePromises);
+        connection = winner.connection;
+        workingEndpoint = winner.endpoint;
+      } catch {
+        // All endpoints failed - use fallback without testing
+        connection = new Connection('https://api.mainnet-beta.solana.com', connectionConfig);
+        workingEndpoint = 'https://api.mainnet-beta.solana.com (fallback)';
       }
 
-      if (!connection) {
-        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
-      }
-
-      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
+      console.log(`⚡ Using RPC: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, 'api-key=****') : workingEndpoint}`);
 
       const walletPublicKey = new PublicKey(address);
       
@@ -768,22 +780,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Store scan result
-      const scanResult = await storage.createScanResult({
+      // Store scan result (non-blocking - don't wait for DB)
+      const scanResultPromise = storage.createScanResult({
         walletAddress: address,
         totalAccounts: allTokenAccounts.length,
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toString()
       });
 
-      // Store empty accounts
-      for (const account of emptyAccounts) {
-        await storage.createEmptyTokenAccount(account);
-      }
+      // Store empty accounts in parallel (non-blocking)
+      const storeAccountsPromise = Promise.all(
+        emptyAccounts.map(account => storage.createEmptyTokenAccount(account).catch(() => null))
+      );
 
-      // Note: Wallet check Discord alerts are only sent from the Discord bot /scan command
-      // NOT from website scans to avoid spam
-
+      // Return response immediately, let DB operations complete in background
       const response = {
         success: true,
         walletAddress: address,
@@ -791,10 +801,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toFixed(9),
         accounts: emptyAccounts,
-        scannedAt: scanResult.scannedAt.toISOString()
+        scannedAt: new Date().toISOString()
       };
 
       res.json(response);
+      
+      // Wait for DB operations to complete after response is sent, log any failures
+      const dbResults = await Promise.allSettled([scanResultPromise, storeAccountsPromise]);
+      for (const result of dbResults) {
+        if (result.status === 'rejected') {
+          console.error('⚠️ Background DB operation failed:', result.reason);
+        }
+      }
     } catch (error) {
       console.error("Scan error:", error);
       res.status(500).json({ error: "Failed to scan wallet for empty accounts" });
