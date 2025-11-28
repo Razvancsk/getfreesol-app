@@ -694,18 +694,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC endpoint - use Helius
+      // REQUIRE Helius RPC - no fallbacks
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      
+      if (!heliusApiKey) {
+        console.error('❌ HELIUS_API_KEY not configured');
+        return res.status(503).json({ 
+          error: "RPC service not configured. Please contact support.",
+          details: "HELIUS_API_KEY missing"
+        });
+      }
+      
+      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
       
       const connection = new Connection(rpcUrl, {
         commitment: 'confirmed',
-        confirmTransactionInitialTimeout: 60000
+        confirmTransactionInitialTimeout: 90000
       });
       
-      console.log(`Using RPC: ${heliusApiKey ? 'Helius' : 'Public Solana'} (${Date.now() - startTime}ms)`);
+      console.log(`Using Helius RPC (${Date.now() - startTime}ms)`);
 
       const walletPublicKey = new PublicKey(address);
       
@@ -781,9 +788,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`✅ Scan complete: ${emptyAccounts.length} empty accounts, ${totalReclaimable.toFixed(4)} SOL (${Date.now() - startTime}ms)`);
       res.json(response);
-    } catch (error) {
-      console.error("Scan error:", error);
-      res.status(500).json({ error: "Failed to scan wallet for empty accounts" });
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ Scan failed after ${duration}ms:`, error?.message || error);
+      
+      // Provide specific error messages
+      let errorMessage = "Failed to scan wallet for empty accounts";
+      if (error?.message?.includes('403') || error?.message?.includes('401')) {
+        errorMessage = "RPC authentication failed. Please try again.";
+      } else if (error?.message?.includes('429')) {
+        errorMessage = "Too many requests. Please wait a moment and try again.";
+      } else if (error?.message?.includes('timeout') || error?.message?.includes('ETIMEDOUT')) {
+        errorMessage = "Scan timed out. Please try again.";
+      }
+      
+      res.status(500).json({ error: errorMessage });
     }
   });
 
