@@ -649,7 +649,7 @@ export default function SolRefund() {
   const scanMutation = useMutation({
     mutationFn: async (address: string) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout (2 minutes)
       
       try {
         const response = await fetch(`/api/sol-refund/scan/${address}`, {
@@ -657,7 +657,8 @@ export default function SolRefund() {
         });
         clearTimeout(timeoutId);
         if (!response.ok) {
-          throw new Error('Failed to scan wallet');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to scan wallet');
         }
         return response.json();
       } catch (error: any) {
@@ -685,7 +686,7 @@ export default function SolRefund() {
   const scanTokensMutation = useMutation({
     mutationFn: async (address: string) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout (2 minutes)
       
       try {
         const response = await fetch(`/api/tokens/scan/${address}`, {
@@ -693,7 +694,8 @@ export default function SolRefund() {
         });
         clearTimeout(timeoutId);
         if (!response.ok) {
-          throw new Error('Failed to scan tokens');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to scan tokens');
         }
         return response.json();
       } catch (error: any) {
@@ -721,7 +723,7 @@ export default function SolRefund() {
   const scanNftsMutation = useMutation({
     mutationFn: async (address: string) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for NFTs (larger data)
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 180 second timeout for NFTs (3 minutes - larger data)
       
       try {
         const response = await fetch(`/api/nfts/scan/${address}`, {
@@ -729,7 +731,8 @@ export default function SolRefund() {
         });
         clearTimeout(timeoutId);
         if (!response.ok) {
-          throw new Error('Failed to scan NFTs');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to scan NFTs');
         }
         return response.json();
       } catch (error: any) {

@@ -681,6 +681,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Scan wallet for empty token accounts
   app.get("/api/sol-refund/scan/:address", async (req, res) => {
+    const startTime = Date.now();
+    console.log(`🔍 Starting wallet scan for ${req.params.address?.substring(0, 8)}...`);
+    
     try {
       const { address } = req.params;
       
@@ -740,7 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...token2022Accounts.value
       ];
 
-      console.log(`📊 Found ${tokenAccounts.value.length} standard token accounts + ${token2022Accounts.value.length} Token-2022 accounts`);
+      console.log(`📊 Found ${tokenAccounts.value.length} standard token accounts + ${token2022Accounts.value.length} Token-2022 accounts (${Date.now() - startTime}ms)`);
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
