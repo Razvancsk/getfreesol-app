@@ -681,9 +681,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Scan wallet for empty token accounts
   app.get("/api/sol-refund/scan/:address", async (req, res) => {
-    const startTime = Date.now();
-    console.log(`🔍 Starting wallet scan for ${req.params.address?.substring(0, 8)}...`);
-    
     try {
       const { address } = req.params;
       
@@ -694,25 +691,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // REQUIRE Helius RPC - no fallbacks
+      // Get RPC endpoint with fallbacks
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      
-      if (!heliusApiKey) {
-        console.error('❌ HELIUS_API_KEY not configured');
-        return res.status(503).json({ 
-          error: "RPC service not configured. Please contact support.",
-          details: "HELIUS_API_KEY missing"
-        });
+      const rpcEndpoints = [
+        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-api.projectserum.com',
+        'https://rpc.ankr.com/solana'
+      ].filter(Boolean);
+
+      let connection: Connection | null = null;
+      let workingEndpoint = '';
+
+      // Try each endpoint until one works
+      for (const endpoint of rpcEndpoints) {
+        try {
+          const testConnection = new Connection(endpoint as string, 'confirmed');
+          await testConnection.getLatestBlockhash();
+          connection = testConnection;
+          workingEndpoint = endpoint as string;
+          break;
+        } catch (error) {
+          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
+        }
       }
-      
-      const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-      
-      const connection = new Connection(rpcUrl, {
-        commitment: 'confirmed',
-        confirmTransactionInitialTimeout: 90000
-      });
-      
-      console.log(`Using Helius RPC (${Date.now() - startTime}ms)`);
+
+      if (!connection) {
+        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
+      }
+
+      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
 
       const walletPublicKey = new PublicKey(address);
       
@@ -732,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...token2022Accounts.value
       ];
 
-      console.log(`📊 Found ${tokenAccounts.value.length} standard + ${token2022Accounts.value.length} Token-2022 accounts (${Date.now() - startTime}ms)`);
+      console.log(`📊 Found ${tokenAccounts.value.length} standard token accounts + ${token2022Accounts.value.length} Token-2022 accounts`);
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
@@ -768,9 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReclaimable: totalReclaimable.toString()
       });
 
-      // Store empty accounts in bulk for better performance
-      if (emptyAccounts.length > 0) {
-        await storage.createEmptyTokenAccountsBulk(emptyAccounts);
+      // Store empty accounts
+      for (const account of emptyAccounts) {
+        await storage.createEmptyTokenAccount(account);
       }
 
       // Note: Wallet check Discord alerts are only sent from the Discord bot /scan command
@@ -786,23 +794,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scannedAt: scanResult.scannedAt.toISOString()
       };
 
-      console.log(`✅ Scan complete: ${emptyAccounts.length} empty accounts, ${totalReclaimable.toFixed(4)} SOL (${Date.now() - startTime}ms)`);
       res.json(response);
-    } catch (error: any) {
-      const duration = Date.now() - startTime;
-      console.error(`❌ Scan failed after ${duration}ms:`, error?.message || error);
-      
-      // Provide specific error messages
-      let errorMessage = "Failed to scan wallet for empty accounts";
-      if (error?.message?.includes('403') || error?.message?.includes('401')) {
-        errorMessage = "RPC authentication failed. Please try again.";
-      } else if (error?.message?.includes('429')) {
-        errorMessage = "Too many requests. Please wait a moment and try again.";
-      } else if (error?.message?.includes('timeout') || error?.message?.includes('ETIMEDOUT')) {
-        errorMessage = "Scan timed out. Please try again.";
-      }
-      
-      res.status(500).json({ error: errorMessage });
+    } catch (error) {
+      console.error("Scan error:", error);
+      res.status(500).json({ error: "Failed to scan wallet for empty accounts" });
     }
   });
 
@@ -1245,8 +1240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Award points (20 points per account closed) and track SOL claimed
-      await storage.awardPoints(walletAddress, accountsClosed, netAmount);
+      // Award points (20 points per account closed)
+      await storage.awardPoints(walletAddress, accountsClosed);
       
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
@@ -2583,8 +2578,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Award points (20 points per token account closed) and track SOL claimed
-      await storage.awardPoints(walletAddress, tokensProcessed, netAmount);
+      // Award points (20 points per token account closed)
+      await storage.awardPoints(walletAddress, tokensProcessed);
       
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
@@ -3575,8 +3570,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if transaction already exists (to avoid duplicate key error)
         try {
           await storage.createTransactionLedgerEntry(transactionData);
-          // Award points (20 points per NFT account closed) and track SOL claimed
-          await storage.awardPoints(walletAddress, 1, realNetAmount);
+          // Award points (20 points per NFT account closed)
+          await storage.awardPoints(walletAddress, 1);
         } catch (insertError: any) {
           // If it's a duplicate key error, update the existing record with real amounts
           if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
