@@ -3928,129 +3928,134 @@ export default function SolRefund() {
                     </CardContent>
                   </Card>
 
-                  {/* User Points Card */}
+                  {/* User Points Section */}
                   {walletAddress && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <Star className="w-5 h-5 text-yellow-400" />
-                        Your Points
-                      </CardTitle>
-                      <CardDescription className="text-purple-200">
-                        Your current ranking and statistics
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {userPointsLoading ? (
-                        <div className="text-center py-4 text-purple-300">Loading your points...</div>
-                      ) : (
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">Total Points</div>
-                            <div className="text-4xl font-bold text-yellow-400" data-testid="text-user-points">
-                              {userPoints?.points || 0}
+                    <div>
+                      <h2 className="text-white font-bold text-lg tracking-wide mb-4">YOUR STATS</h2>
+                      <div 
+                        className="rounded-lg p-6"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(88, 60, 140, 0.4) 0%, rgba(45, 31, 94, 0.6) 100%)',
+                          border: '1px solid rgba(139, 92, 246, 0.3)'
+                        }}
+                      >
+                        {userPointsLoading ? (
+                          <div className="text-center py-4 text-purple-300">Loading your stats...</div>
+                        ) : (
+                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div>
+                              <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Account Address</div>
+                              <div className="text-xl font-semibold text-white" data-testid="text-user-address">
+                                {walletAddress.slice(0, 6)}.{walletAddress.slice(-3)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Total Points</div>
+                              <div className="text-xl font-semibold text-white" data-testid="text-user-points">
+                                {(userPoints?.points || 0).toLocaleString()}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">SOL Claimed</div>
+                              <div className="text-xl font-semibold text-white flex items-center gap-2" data-testid="text-user-sol">
+                                <svg className="h-5 w-5" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                                  <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                                  <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                                  <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                                </svg>
+                                {userPoints?.totalSolClaimed ? parseFloat(userPoints.totalSolClaimed).toFixed(4) : '0.0000'}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-purple-300 uppercase tracking-wider mb-2">Accounts Closed</div>
+                              <div className="text-xl font-semibold text-white" data-testid="text-user-accounts">
+                                {(userPoints?.accountsClosed || 0).toLocaleString()}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">SOL Claimed</div>
-                            <div className="text-4xl font-bold text-green-400 flex items-center justify-center gap-2" data-testid="text-user-sol">
-                              <svg className="h-8 w-8" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
-                                <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                                <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                                <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                              </svg>
-                              {userPoints?.totalSolClaimed ? parseFloat(userPoints.totalSolClaimed).toFixed(4) : '0.0000'}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">Accounts Closed</div>
-                            <div className="text-4xl font-bold text-white" data-testid="text-user-accounts">
-                              {userPoints?.accountsClosed || 0}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">Your Rank</div>
-                            <div className="text-4xl font-bold text-white" data-testid="text-user-rank">
-                              {getUserRank() ? `#${getUserRank()}` : '-'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                {/* Leaderboard Card */}
-                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
-                      Top 10 Leaders
-                    </CardTitle>
-                    <CardDescription className="text-purple-200">
-                      Top 10 users with the most points
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {pointsLeaderboardLoading ? (
-                      <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
-                    ) : pointsLeaderboard?.leaderboard && pointsLeaderboard.leaderboard.length > 0 ? (
-                      <div>
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="border-purple-600 hover:bg-purple-700/50">
-                              <TableHead className="text-purple-200 w-16">Rank</TableHead>
-                              <TableHead className="text-purple-200">Wallet</TableHead>
-                              <TableHead className="text-purple-200 text-right">Points</TableHead>
-                              <TableHead className="text-purple-200 text-right">SOL</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {pointsLeaderboard.leaderboard.slice(0, 10).map((entry: any) => (
-                              <TableRow 
-                                key={entry.walletAddress}
-                                className={`border-purple-600 hover:bg-purple-700/50 ${
-                                  entry.walletAddress === walletAddress ? 'bg-purple-700/70' : ''
-                                }`}
-                                data-testid={`row-leaderboard-${entry.rank}`}
-                              >
-                                <TableCell className="py-2">
-                                  <Badge className={`${getRankBadgeColor(entry.rank)} text-sm md:text-xs px-2.5 md:px-2 font-bold`}>
-                                    #{entry.rank}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="font-mono text-purple-100 text-xs py-2">
-                                  <span className="md:hidden">{truncateAddress(entry.walletAddress)}</span>
-                                  <span className="hidden md:inline">{entry.walletAddress}</span>
+                {/* Weekly Leaderboard Section */}
+                <div>
+                  <h2 className="text-white font-bold text-lg tracking-wide mb-4">Weekly Leaderboard</h2>
+                  
+                  {pointsLeaderboardLoading ? (
+                    <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
+                  ) : pointsLeaderboard?.leaderboard && pointsLeaderboard.leaderboard.length > 0 ? (
+                    <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                      <table className="w-full">
+                        <thead>
+                          <tr 
+                            style={{ 
+                              background: 'linear-gradient(90deg, rgba(88, 60, 140, 0.8) 0%, rgba(60, 40, 100, 0.8) 100%)'
+                            }}
+                          >
+                            <th className="text-left py-4 px-6 text-xs text-purple-200 uppercase tracking-wider font-medium">Ranking</th>
+                            <th className="text-left py-4 px-6 text-xs text-purple-200 uppercase tracking-wider font-medium">Wallet</th>
+                            <th className="text-left py-4 px-6 text-xs text-purple-200 uppercase tracking-wider font-medium">Total Points</th>
+                            <th className="text-left py-4 px-6 text-xs text-purple-200 uppercase tracking-wider font-medium">SOL Claimed</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pointsLeaderboard.leaderboard.slice(0, 10).map((entry: any, index: number) => (
+                            <tr 
+                              key={entry.walletAddress}
+                              className={`border-b border-purple-800/30 transition-colors ${
+                                entry.walletAddress === walletAddress 
+                                  ? 'bg-purple-700/40' 
+                                  : index % 2 === 0 
+                                    ? 'bg-purple-900/20' 
+                                    : 'bg-transparent'
+                              } hover:bg-purple-700/30`}
+                              data-testid={`row-leaderboard-${entry.rank}`}
+                            >
+                              <td className="py-4 px-6">
+                                <div className="flex items-center gap-2">
+                                  {entry.rank === 1 ? <span className="text-2xl">🥇</span> :
+                                   entry.rank === 2 ? <span className="text-2xl">🥈</span> :
+                                   entry.rank === 3 ? <span className="text-2xl">🥉</span> :
+                                   <span className="text-gray-300 font-medium">{entry.rank}</span>}
                                   {entry.walletAddress === walletAddress && (
-                                    <Badge className="ml-1 bg-green-600 text-white text-xs px-1">You</Badge>
+                                    <span className="text-xs bg-green-600 px-2 py-0.5 rounded text-white">You</span>
                                   )}
-                                </TableCell>
-                                <TableCell className="text-right font-bold text-yellow-400 text-sm py-2" data-testid={`text-points-${entry.rank}`}>
-                                  {entry.points.toLocaleString()}
-                                </TableCell>
-                                <TableCell className="text-right text-green-400 font-semibold text-sm" data-testid={`text-sol-${entry.rank}`}>
-                                  <div className="flex items-center justify-end gap-0.5">
-                                    <svg className="h-3 w-3" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
-                                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                                    </svg>
-                                    {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-purple-300">
-                        No leaderboard data available yet. Be the first to earn points!
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                                </div>
+                              </td>
+                              <td className="py-4 px-6 font-mono text-purple-100" data-testid={`text-wallet-${entry.rank}`}>
+                                {entry.walletAddress.slice(0, 6)}.{entry.walletAddress.slice(-3)}
+                              </td>
+                              <td className="py-4 px-6 text-purple-100" data-testid={`text-points-${entry.rank}`}>
+                                {entry.points.toLocaleString()}
+                              </td>
+                              <td className="py-4 px-6 text-purple-100" data-testid={`text-sol-${entry.rank}`}>
+                                <div className="flex items-center gap-1">
+                                  <svg className="h-4 w-4" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                                    <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                                    <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                                    <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                                  </svg>
+                                  {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div 
+                      className="rounded-lg p-8 text-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(88, 60, 140, 0.4) 0%, rgba(45, 31, 94, 0.6) 100%)',
+                        border: '1px solid rgba(139, 92, 246, 0.3)'
+                      }}
+                    >
+                      <p className="text-purple-300">No leaderboard data available yet. Be the first to earn points!</p>
+                    </div>
+                  )}
+                </div>
                 </div>
               </div>
             );
