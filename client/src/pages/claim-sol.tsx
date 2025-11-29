@@ -764,8 +764,23 @@ export default function SolRefund() {
       
       const signature = sendResult.signature;
       console.log('Transaction confirmed successfully!');
-      if (sendResult.rebatesEnabled) {
-        console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+      
+      // Check for MEV rebates earned
+      let rebateAmount = 0;
+      if (sendResult.rebatesEnabled && publicKey) {
+        console.log('💰 MEV rebates enabled - checking for earnings...');
+        try {
+          // Wait a moment for transaction to be indexed
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const rebateResponse = await fetch(`/api/rpc/check-rebates/${signature}/${publicKey.toString()}`);
+          const rebateData = await rebateResponse.json();
+          if (rebateData.rebateAmount > 0) {
+            rebateAmount = rebateData.rebateAmount;
+            console.log(`💰 MEV rebate earned: ${rebateAmount} SOL`);
+          }
+        } catch (e) {
+          console.log('Could not check rebates:', e);
+        }
       }
 
       // Record the successful transaction
@@ -787,12 +802,13 @@ export default function SolRefund() {
         console.error('Failed to record burn success:', await recordResponse.text());
       }
 
-      return { signature, solRecovered };
+      return { signature, solRecovered, rebateAmount };
     },
     onSuccess: (data) => {
+      const rebateText = data.rebateAmount > 0 ? ` + ${data.rebateAmount.toFixed(6)} SOL MEV rebate!` : '';
       toast({
         title: "Success!",
-        description: `Token burned successfully! Recovered ${data.solRecovered} SOL`,
+        description: `Token burned successfully! Recovered ${data.solRecovered} SOL${rebateText}`,
       });
       // Refresh token list
       if (publicKey) {
@@ -875,8 +891,22 @@ export default function SolRefund() {
       const signature = sendResult.signature;
       console.log('📡 Transaction sent to network:', signature);
       console.log('✅ Transaction confirmed successfully!');
-      if (sendResult.rebatesEnabled) {
-        console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+      
+      // Check for MEV rebates earned
+      let rebateAmount = 0;
+      if (sendResult.rebatesEnabled && publicKey) {
+        console.log('💰 MEV rebates enabled - checking for earnings...');
+        try {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const rebateResponse = await fetch(`/api/rpc/check-rebates/${signature}/${publicKey.toString()}`);
+          const rebateData = await rebateResponse.json();
+          if (rebateData.rebateAmount > 0) {
+            rebateAmount = rebateData.rebateAmount;
+            console.log(`💰 MEV rebate earned: ${rebateAmount} SOL`);
+          }
+        } catch (e) {
+          console.log('Could not check rebates:', e);
+        }
       }
 
       // Record the successful transaction
@@ -901,11 +931,12 @@ export default function SolRefund() {
         console.error('Failed to record burn success:', await recordResponse.text());
       }
 
-      return { tokensProcessed, solRecovered, netAmount, feeAmount, signature };
+      return { tokensProcessed, solRecovered, netAmount, feeAmount, signature, rebateAmount };
     },
     onSuccess: (result) => {
+      const rebateText = result.rebateAmount > 0 ? ` + ${result.rebateAmount.toFixed(6)} SOL MEV rebate!` : '';
       toast({
-        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''}`,
+        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''}${rebateText}`,
         className: "bg-green-600 text-white border-green-600",
         action: <ToastAction altText="View transaction on Solscan" onClick={() => window.open(`https://solscan.io/tx/${result.signature}`, '_blank')}>View on Solscan</ToastAction>
       });
@@ -2171,8 +2202,22 @@ export default function SolRefund() {
         
         const signature = sendResult.signature;
         console.log(`${nftType} NFT burn transaction confirmed:`, signature);
-        if (sendResult.rebatesEnabled) {
-          console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+        
+        // Check for MEV rebates earned
+        let rebateAmount = 0;
+        if (sendResult.rebatesEnabled && publicKey) {
+          console.log('💰 MEV rebates enabled - checking for earnings...');
+          try {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const rebateResponse = await fetch(`/api/rpc/check-rebates/${signature}/${publicKey.toString()}`);
+            const rebateData = await rebateResponse.json();
+            if (rebateData.rebateAmount > 0) {
+              rebateAmount = rebateData.rebateAmount;
+              console.log(`💰 MEV rebate earned: ${rebateAmount} SOL`);
+            }
+          } catch (e) {
+            console.log('Could not check rebates:', e);
+          }
         }
 
         results.push({
@@ -2181,7 +2226,8 @@ export default function SolRefund() {
           signature,
           solRecovered: parseFloat(solRecovered || '0'),
           netAmount: parseFloat(netAmount || '0'),
-          feeAmount: parseFloat(feeAmount || '0')
+          feeAmount: parseFloat(feeAmount || '0'),
+          rebateAmount
         });
       }
 
@@ -2190,8 +2236,17 @@ export default function SolRefund() {
     onSuccess: (results) => {
       if (!results) return;
       
-      // Don't show final summary toast - each NFT type handler already shows its own success message
-      // This prevents duplicate notifications
+      // Calculate total rebates earned
+      const totalRebate = results.reduce((sum, r) => sum + (r.rebateAmount || 0), 0);
+      const rebateText = totalRebate > 0 ? ` + ${totalRebate.toFixed(6)} SOL MEV rebate!` : '';
+      
+      if (results.length > 0) {
+        const totalNfts = results.reduce((sum, r) => sum + r.count, 0);
+        toast({
+          title: `Successfully burned ${totalNfts} NFT${totalNfts > 1 ? 's' : ''}${rebateText}`,
+          className: "bg-green-600 text-white border-green-600",
+        });
+      }
 
       // Clear selection but don't refresh immediately - let optimistic update handle UI state
       setSelectedNfts(new Set());
@@ -2321,8 +2376,22 @@ export default function SolRefund() {
         
         const signature = sendResult.signature;
         console.log('Transaction confirmed successfully!');
-        if (sendResult.rebatesEnabled) {
-          console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+        
+        // Check for MEV rebates earned
+        let rebateAmount = 0;
+        if (sendResult.rebatesEnabled && publicKey) {
+          console.log('💰 MEV rebates enabled - checking for earnings...');
+          try {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const rebateResponse = await fetch(`/api/rpc/check-rebates/${signature}/${publicKey.toString()}`);
+            const rebateData = await rebateResponse.json();
+            if (rebateData.rebateAmount > 0) {
+              rebateAmount = rebateData.rebateAmount;
+              console.log(`💰 MEV rebate earned: ${rebateAmount} SOL`);
+            }
+          } catch (e) {
+            console.log('Could not check rebates:', e);
+          }
         }
 
         // Save successful transaction to database and get points message (with retries)
@@ -2381,6 +2450,7 @@ export default function SolRefund() {
           totalReceived: netAmount,
           feeAmount: feeAmount,
           pointsMessage: pointsMessage,
+          rebateAmount: rebateAmount,
           message: `Transaction sent successfully! Check: https://solscan.io/tx/${signature}`
         };
       } catch (walletError: any) {
@@ -2401,9 +2471,19 @@ export default function SolRefund() {
       }
     },
     onSuccess: (result: any) => {
-      // Show share modal with the claimed amount (toast removed since share dialog shows the info)
-      setShareData({ solClaimed: result.totalReceived });
+      // Show share modal with the claimed amount including any rebates
+      const totalWithRebate = result.totalReceived + (result.rebateAmount || 0);
+      setShareData({ solClaimed: totalWithRebate });
       setIsShareModalOpen(true);
+      
+      // Show toast if there was a rebate
+      if (result.rebateAmount > 0) {
+        toast({
+          title: "💰 MEV Rebate Earned!",
+          description: `You earned an extra ${result.rebateAmount.toFixed(6)} SOL from MEV rebates!`,
+          className: "bg-green-600 text-white border-green-600",
+        });
+      }
 
       // Reset form and immediately refresh statistics and transaction history
       setScanResult(null);

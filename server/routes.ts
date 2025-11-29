@@ -762,6 +762,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check for MEV rebates in a transaction (Helius Backrun Rebates)
+  app.get("/api/rpc/check-rebates/:signature/:walletAddress", async (req, res) => {
+    try {
+      const { signature, walletAddress } = req.params;
+      
+      if (!signature || !walletAddress) {
+        return res.status(400).json({ error: "Missing signature or wallet address" });
+      }
+
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      if (!heliusApiKey) {
+        return res.json({ success: true, rebateAmount: 0, message: "Helius not configured" });
+      }
+
+      // Fetch parsed transaction to find rebate transfers
+      const heliusUrl = `https://api.helius.xyz/v0/transactions/?api-key=${heliusApiKey}`;
+      
+      const response = await fetch(heliusUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactions: [signature]
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Helius transaction parse failed:', response.status);
+        return res.json({ success: true, rebateAmount: 0 });
+      }
+
+      const transactions = await response.json();
+      
+      if (!transactions || transactions.length === 0) {
+        return res.json({ success: true, rebateAmount: 0 });
+      }
+
+      const tx = transactions[0];
+      
+      // Look for SOL transfers TO the wallet that are rebates
+      // Rebates come from Helius's MEV arbitrage bots
+      let rebateAmount = 0;
+      
+      if (tx.nativeTransfers && Array.isArray(tx.nativeTransfers)) {
+        for (const transfer of tx.nativeTransfers) {
+          // Rebates are transfers TO the user's wallet
+          // that are NOT from the user themselves (not refunds)
+          if (transfer.toUserAccount === walletAddress && 
+              transfer.fromUserAccount !== walletAddress) {
+            // Check if this looks like a rebate (small amount, from MEV bot)
+            const amount = transfer.amount / LAMPORTS_PER_SOL;
+            // Rebates are typically small (0.0001 - 0.01 SOL range)
+            if (amount > 0 && amount < 0.1) {
+              rebateAmount += amount;
+              console.log(`💰 Detected MEV rebate: ${amount} SOL from ${transfer.fromUserAccount}`);
+            }
+          }
+        }
+      }
+
+      if (rebateAmount > 0) {
+        console.log(`✅ Total MEV rebate for ${signature}: ${rebateAmount} SOL`);
+      }
+
+      res.json({ 
+        success: true, 
+        rebateAmount,
+        rebateAmountLamports: Math.floor(rebateAmount * LAMPORTS_PER_SOL)
+      });
+
+    } catch (error: any) {
+      console.error('Check rebates error:', error);
+      res.json({ success: true, rebateAmount: 0 });
+    }
+  });
+
   // Scan wallet for empty token accounts
   app.get("/api/sol-refund/scan/:address", async (req, res) => {
     try {
