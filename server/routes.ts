@@ -631,6 +631,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Send signed transaction via backend (keeps Helius key secure)
+  app.post("/api/rpc/send-transaction", async (req, res) => {
+    try {
+      const { signedTransaction } = req.body;
+      
+      if (!signedTransaction) {
+        return res.status(400).json({ error: "Missing signed transaction" });
+      }
+
+      // Get RPC connection with Helius (server-side only)
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcEndpoints = [
+        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-api.projectserum.com'
+      ].filter(Boolean);
+
+      let connection: Connection | null = null;
+      let workingEndpoint = '';
+
+      for (const endpoint of rpcEndpoints) {
+        try {
+          const testConnection = new Connection(endpoint as string, 'confirmed');
+          await testConnection.getLatestBlockhash();
+          connection = testConnection;
+          workingEndpoint = endpoint as string;
+          console.log(`Using RPC: ${workingEndpoint.includes('helius') ? 'Helius' : 'Public'}`);
+          break;
+        } catch (error) {
+          continue;
+        }
+      }
+
+      if (!connection) {
+        return res.status(503).json({ error: "All RPC endpoints failed" });
+      }
+
+      // Send the signed transaction
+      const txBuffer = Buffer.from(signedTransaction, 'base64');
+      const signature = await connection.sendRawTransaction(txBuffer, {
+        skipPreflight: true,
+        maxRetries: 3
+      });
+
+      // Wait for confirmation
+      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+      
+      if (confirmation.value.err) {
+        return res.status(400).json({ 
+          error: "Transaction failed on blockchain",
+          details: confirmation.value.err,
+          signature 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        signature,
+        confirmed: true 
+      });
+
+    } catch (error: any) {
+      console.error('Send transaction error:', error);
+      res.status(500).json({ error: error.message || 'Failed to send transaction' });
+    }
+  });
+
   // Scan wallet for empty token accounts
   app.get("/api/sol-refund/scan/:address", async (req, res) => {
     try {

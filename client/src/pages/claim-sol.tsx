@@ -738,31 +738,29 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      const { Connection, Transaction } = await import('@solana/web3.js');
-
-      // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
-      const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
-      const rpcUrl = heliusKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : 'https://api.mainnet-beta.solana.com';
-
-      const connection = new Connection(rpcUrl, 'confirmed');
+      const { Transaction } = await import('@solana/web3.js');
 
       // Deserialize and sign transaction with connected wallet
       const txBuffer = Buffer.from(transaction, 'base64');
       const tx = Transaction.from(txBuffer);
 
       const signedTx = await signTransaction(tx);
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-
-      // Wait for confirmation and verify SUCCESS
-      await connection.confirmTransaction(signature, 'confirmed');
       
-      // Check if transaction actually succeeded
-      const txStatus = await connection.getSignatureStatus(signature);
-      if (txStatus.value?.err) {
-        throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
+      // Send via backend (keeps Helius key secure)
+      const sendResponse = await fetch('/api/rpc/send-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signedTransaction: Buffer.from(signedTx.serialize()).toString('base64')
+        })
+      });
+
+      const sendResult = await sendResponse.json();
+      if (!sendResponse.ok || !sendResult.success) {
+        throw new Error(sendResult.error || 'Transaction failed');
       }
+      
+      const signature = sendResult.signature;
       console.log('Transaction confirmed successfully!');
 
       // Record the successful transaction
@@ -845,15 +843,7 @@ export default function SolRefund() {
       // Sign and send transaction using the connected wallet
       console.log('🔐 About to sign bulk burn transaction with:', walletName || 'unknown wallet');
 
-      const { Connection, Transaction } = await import('@solana/web3.js');
-
-      // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
-      const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
-      const rpcUrl = heliusKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : 'https://api.mainnet-beta.solana.com';
-
-      const connection = new Connection(rpcUrl, 'confirmed');
+      const { Transaction } = await import('@solana/web3.js');
 
       const txBuffer = Buffer.from(transaction, 'base64');
       const tx = Transaction.from(txBuffer);
@@ -862,17 +852,22 @@ export default function SolRefund() {
       const signedTx = await signTransaction(tx);
       console.log('✅ Transaction signed successfully with:', walletName);
 
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-      console.log('📡 Transaction sent to network:', signature);
+      // Send via backend (keeps Helius key secure)
+      const sendResponse = await fetch('/api/rpc/send-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signedTransaction: Buffer.from(signedTx.serialize()).toString('base64')
+        })
+      });
 
-      // Wait for confirmation and verify SUCCESS
-      await connection.confirmTransaction(signature, 'confirmed');
-      
-      // Check if transaction actually succeeded
-      const txStatus = await connection.getSignatureStatus(signature);
-      if (txStatus.value?.err) {
-        throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
+      const sendResult = await sendResponse.json();
+      if (!sendResponse.ok || !sendResult.success) {
+        throw new Error(sendResult.error || 'Transaction failed');
       }
+      
+      const signature = sendResult.signature;
+      console.log('📡 Transaction sent to network:', signature);
       console.log('✅ Transaction confirmed successfully!');
 
       // Record the successful transaction
@@ -2143,30 +2138,28 @@ export default function SolRefund() {
         const { transaction, nftsProcessed, solRecovered, netAmount, feeAmount } = await response.json();
 
         // Sign and send transaction using connected wallet
-        const { Connection, Transaction } = await import('@solana/web3.js');
-
-        // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
-        const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
-        const rpcUrl = heliusKey 
-          ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-          : 'https://api.mainnet-beta.solana.com';
-
-        const connection = new Connection(rpcUrl, 'confirmed');
+        const { Transaction } = await import('@solana/web3.js');
 
         const txBuffer = Buffer.from(transaction, 'base64');
         const tx = Transaction.from(txBuffer);
 
         const signedTx = await signTransaction(tx);
-        const signature = await connection.sendRawTransaction(signedTx.serialize());
-
-        // Wait for confirmation and verify SUCCESS
-        await connection.confirmTransaction(signature, 'confirmed');
         
-        // Check if transaction actually succeeded
-        const txStatus = await connection.getSignatureStatus(signature);
-        if (txStatus.value?.err) {
-          throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txStatus.value.err)}`);
+        // Send via backend (keeps Helius key secure)
+        const sendResponse = await fetch('/api/rpc/send-transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signedTransaction: Buffer.from(signedTx.serialize()).toString('base64')
+          })
+        });
+
+        const sendResult = await sendResponse.json();
+        if (!sendResponse.ok || !sendResult.success) {
+          throw new Error(sendResult.error || 'Transaction failed');
         }
+        
+        const signature = sendResult.signature;
         console.log(`${nftType} NFT burn transaction confirmed:`, signature);
 
         results.push({
@@ -2271,75 +2264,21 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      const { Connection } = await import('@solana/web3.js');
-
-      // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
-      const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
-      const heliusUrl = heliusKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : null;
-
-      // Build fallback endpoint list (public endpoints that work reliably)
-      const fallbackEndpoints = [
-        'https://api.mainnet-beta.solana.com',
-        'https://solana-api.projectserum.com',
-        'https://rpc.ankr.com/solana'
-      ];
-
-      // Try Helius first if available, then fallback to public endpoints
-      let connection: any;
-      let endpointUsed: string = '';
-      let connectionWorking = false;
-
-      // Try Helius if we have the key
-      if (heliusUrl) {
-        try {
-          connection = new Connection(heliusUrl, 'confirmed');
-          await connection.getLatestBlockhash();
-          endpointUsed = 'Helius RPC';
-          connectionWorking = true;
-          console.log('Using verified Helius RPC for transaction sending...');
-        } catch (heliusError) {
-          console.log('Helius RPC failed, trying fallback endpoints...');
-        }
-      }
-
-      // If Helius failed or not available, try fallback endpoints
-      if (!connectionWorking) {
-        for (const endpoint of fallbackEndpoints) {
-          try {
-            connection = new Connection(endpoint, 'confirmed');
-            await connection.getLatestBlockhash();
-            endpointUsed = endpoint.includes('mainnet-beta') ? 'Solana Public RPC' : 'Alternative RPC';
-            connectionWorking = true;
-            console.log(`Using working ${endpointUsed}: ${endpoint}`);
-            break;
-          } catch (error) {
-            console.log(`RPC ${endpoint} failed, trying next...`);
-          }
-        }
-      }
-
-      if (!connectionWorking) {
-        throw new Error('All RPC endpoints failed. Please try again later.');
-      }
-
       // Execute transaction (15% service fee)
       try {
         setProcessing(true);
-        console.log('Starting DIRECT transaction processing - NO SIMULATION...');
+        console.log('Starting transaction processing...');
 
-        // Wrap all async operations to prevent unhandled rejections
-        let transactionBuffer, deserializedTransaction, signedTransaction;
-
+        // Prepare and sign transaction
+        let signedTransaction;
         try {
           const { Transaction, ComputeBudgetProgram } = await import('@solana/web3.js');
-          transactionBuffer = Buffer.from(transaction, 'base64');
-          deserializedTransaction = Transaction.from(transactionBuffer);
+          const transactionBuffer = Buffer.from(transaction, 'base64');
+          const deserializedTransaction = Transaction.from(transactionBuffer);
 
           // Add FIXED priority fee for everyone (0.00001 SOL = 10,000 lamports)
           const priorityFeeInstruction = ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: 10000, // Fixed priority fee - same for all users
+            microLamports: 10000,
           });
           deserializedTransaction.add(priorityFeeInstruction);
 
@@ -2350,58 +2289,23 @@ export default function SolRefund() {
           throw new Error(`Transaction preparation failed: ${prepError.message}`);
         }
 
-        console.log(`Transaction signed, sending via ${endpointUsed} - SKIP ALL SIMULATION...`);
+        console.log('Transaction signed, sending via backend...');
 
-        // Send with complete error handling to prevent unhandled rejections
-        let signature;
-        try {
-          signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
-            skipPreflight: true,  // SKIP SIMULATION - This prevents Jupiter injection
-            preflightCommitment: 'confirmed',
-            maxRetries: 3
-          }).catch((sendError: any) => {
-            console.log('Transaction send error caught:', sendError.message);
-            throw new Error(`Transaction failed: ${sendError.message}`);
-          });
-        } catch (wrappedError: any) {
-          console.log('Send transaction wrapper error:', wrappedError.message);
-          throw wrappedError;
-        }
+        // Send via backend (keeps Helius key secure)
+        const sendResponse = await fetch('/api/rpc/send-transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signedTransaction: Buffer.from(signedTransaction.serialize()).toString('base64')
+          })
+        });
 
-        console.log(`Transaction sent, signature: ${signature}, confirming...`);
-
-        // Verify transaction SUCCESS with 45-second timeout using fast polling
-        console.log('Waiting for fast confirmation with high priority fee...');
-        const startTime = Date.now();
-        const timeout = 45000; // 45 seconds
-        let confirmed = false;
-        let txError = null;
-
-        while (Date.now() - startTime < timeout) {
-          const statusResponse = await connection.getSignatureStatus(signature);
-          
-          if (statusResponse.value?.confirmationStatus === 'confirmed' || statusResponse.value?.confirmationStatus === 'finalized') {
-            if (statusResponse.value.err) {
-              txError = statusResponse.value.err;
-              break;
-            }
-            confirmed = true;
-            break;
-          }
-          
-          // Wait only 200ms before checking again for faster feedback
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-
-        if (txError) {
-          throw new Error(`Transaction failed on blockchain: ${JSON.stringify(txError)}`);
-        }
-
-        if (!confirmed) {
-          // Transaction timed out - provide helpful message with signature
-          throw new Error(`Transaction was not confirmed in 45 seconds. It may still succeed. Check status at: https://solscan.io/tx/${signature}`);
+        const sendResult = await sendResponse.json();
+        if (!sendResponse.ok || !sendResult.success) {
+          throw new Error(sendResult.error || 'Transaction failed');
         }
         
+        const signature = sendResult.signature;
         console.log('Transaction confirmed successfully!');
 
         // Save successful transaction to database and get points message (with retries)
