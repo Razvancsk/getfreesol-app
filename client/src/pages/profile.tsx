@@ -222,8 +222,11 @@ export default function ProfilePage() {
                           </span>
                         </td>
                         <td className="py-3 px-2">
-                          <span className="text-white font-mono text-sm">
+                          <span className="text-white font-mono text-sm hidden sm:inline">
                             {entry.walletAddress}
+                          </span>
+                          <span className="text-white font-mono text-sm sm:hidden">
+                            {truncateWallet(entry.walletAddress)}
                           </span>
                         </td>
                         <td className="py-3 px-2 text-right">
