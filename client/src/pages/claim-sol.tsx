@@ -2902,16 +2902,16 @@ export default function SolRefund() {
           {/* Center Navigation Buttons */}
           {isConnected && activeTab !== 'docs' && (
             <div className="flex justify-center py-2 px-2">
-              <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <div className="flex items-center space-x-2 sm:space-x-2">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
+                  className={`px-5 sm:px-4 md:px-3 py-3 sm:py-2 text-base sm:text-sm font-medium rounded-lg sm:rounded transition-all flex items-center gap-1.5 sm:gap-1 ${
                     activeTab === 'reclaim' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                 >
-                  <svg className="h-4 w-4" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                  <svg className="h-5 w-5 sm:h-4 sm:w-4" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
@@ -2921,24 +2921,24 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => setActiveTab('burnTokens')}
-                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all ${
+                  className={`px-5 sm:px-4 md:px-3 py-3 sm:py-2 text-base sm:text-sm font-medium rounded-lg sm:rounded transition-all flex items-center gap-1.5 sm:gap-1 ${
                     activeTab === 'burnTokens' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                 >
-                  🔥 Burn
+                  <span className="text-lg sm:text-base">🔥</span> Burn
                 </Button>
                 <Button
                   onClick={() => setActiveTab('swap')}
-                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
+                  className={`px-5 sm:px-4 md:px-3 py-3 sm:py-2 text-base sm:text-sm font-medium rounded-lg sm:rounded transition-all flex items-center gap-1.5 sm:gap-1 ${
                     activeTab === 'swap' 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
                   }`}
                   data-testid="button-swap-tab"
                 >
-                  <ArrowRightLeft className="h-4 w-4" />
+                  <ArrowRightLeft className="h-5 w-5 sm:h-4 sm:w-4" />
                   Swap
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
