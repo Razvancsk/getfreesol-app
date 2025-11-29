@@ -158,25 +158,6 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
-            <h3 className="text-white font-semibold text-lg mb-4">Activity Summary</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-purple-500/20">
-                <span className="text-purple-300">NFTs Burned</span>
-                <span className="text-white font-medium" data-testid="text-nfts-burned">
-                  {isLoading ? '...' : (stats?.totalNftsBurned || 0)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-purple-500/20">
-                <span className="text-purple-300">Points per Account</span>
-                <span className="text-white font-medium">20 points</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-purple-300">Referral Commission</span>
-                <span className="text-white font-medium">50%</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
