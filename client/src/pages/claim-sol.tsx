@@ -747,12 +747,13 @@ export default function SolRefund() {
 
       const signedTx = await signTransaction(tx);
       
-      // Send via backend (keeps Helius key secure)
+      // Send via backend with Helius Backrun Rebates (earns SOL from MEV)
       const sendResponse = await fetch('/api/rpc/send-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signedTransaction: Buffer.from(signedTx.serialize()).toString('base64')
+          signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+          rebateAddress: publicKey?.toString()
         })
       });
 
@@ -763,6 +764,9 @@ export default function SolRefund() {
       
       const signature = sendResult.signature;
       console.log('Transaction confirmed successfully!');
+      if (sendResult.rebatesEnabled) {
+        console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+      }
 
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
@@ -853,12 +857,13 @@ export default function SolRefund() {
       const signedTx = await signTransaction(tx);
       console.log('✅ Transaction signed successfully with:', walletName);
 
-      // Send via backend (keeps Helius key secure)
+      // Send via backend with Helius Backrun Rebates (earns SOL from MEV)
       const sendResponse = await fetch('/api/rpc/send-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signedTransaction: Buffer.from(signedTx.serialize()).toString('base64')
+          signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+          rebateAddress: publicKey?.toString()
         })
       });
 
@@ -870,6 +875,9 @@ export default function SolRefund() {
       const signature = sendResult.signature;
       console.log('📡 Transaction sent to network:', signature);
       console.log('✅ Transaction confirmed successfully!');
+      if (sendResult.rebatesEnabled) {
+        console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+      }
 
       // Record the successful transaction
       const recordResponse = await fetch('/api/tokens/record-burn-success', {
@@ -2146,12 +2154,13 @@ export default function SolRefund() {
 
         const signedTx = await signTransaction(tx);
         
-        // Send via backend (keeps Helius key secure)
+        // Send via backend with Helius Backrun Rebates (earns SOL from MEV)
         const sendResponse = await fetch('/api/rpc/send-transaction', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            signedTransaction: Buffer.from(signedTx.serialize()).toString('base64')
+            signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+            rebateAddress: publicKey?.toString()
           })
         });
 
@@ -2162,6 +2171,9 @@ export default function SolRefund() {
         
         const signature = sendResult.signature;
         console.log(`${nftType} NFT burn transaction confirmed:`, signature);
+        if (sendResult.rebatesEnabled) {
+          console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+        }
 
         results.push({
           type: nftType,
@@ -2292,12 +2304,13 @@ export default function SolRefund() {
 
         console.log('Transaction signed, sending via backend...');
 
-        // Send via backend (keeps Helius key secure)
+        // Send via backend with Helius Backrun Rebates (earns SOL from MEV)
         const sendResponse = await fetch('/api/rpc/send-transaction', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            signedTransaction: Buffer.from(signedTransaction.serialize()).toString('base64')
+            signedTransaction: Buffer.from(signedTransaction.serialize()).toString('base64'),
+            rebateAddress: publicKey?.toString()
           })
         });
 
@@ -2308,6 +2321,9 @@ export default function SolRefund() {
         
         const signature = sendResult.signature;
         console.log('Transaction confirmed successfully!');
+        if (sendResult.rebatesEnabled) {
+          console.log('💰 MEV rebates enabled - earning SOL from arbitrage!');
+        }
 
         // Save successful transaction to database and get points message (with retries)
         let pointsMessage = '';

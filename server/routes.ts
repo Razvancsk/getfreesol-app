@@ -632,16 +632,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send signed transaction via backend (keeps Helius key secure)
+  // Supports Helius Backrun Rebates - users earn SOL from MEV their trades create
   app.post("/api/rpc/send-transaction", async (req, res) => {
     try {
-      const { signedTransaction } = req.body;
+      const { signedTransaction, rebateAddress } = req.body;
       
       if (!signedTransaction) {
         return res.status(400).json({ error: "Missing signed transaction" });
       }
 
-      // Get RPC connection with Helius (server-side only)
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      
+      // Use Helius with Backrun Rebates if available
+      if (heliusApiKey && rebateAddress) {
+        try {
+          // Build Helius RPC URL with rebate-address for MEV rebates
+          const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}&rebate-address=${rebateAddress}`;
+          
+          console.log(`🔄 Sending transaction with Helius Backrun Rebates enabled`);
+          console.log(`💰 MEV rebates will be paid to: ${rebateAddress}`);
+          
+          const response = await fetch(heliusUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: 1,
+              method: 'sendTransaction',
+              params: [
+                signedTransaction,
+                {
+                  skipPreflight: true,
+                  preflightCommitment: 'processed',
+                  maxRetries: 3
+                }
+              ]
+            })
+          });
+
+          const result = await response.json();
+          
+          if (result.error) {
+            console.error('Helius sendTransaction error:', result.error);
+            throw new Error(result.error.message || 'Transaction failed');
+          }
+
+          const signature = result.result;
+          console.log(`✅ Transaction sent with rebates: ${signature}`);
+          
+          // Confirm transaction
+          const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, 'confirmed');
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+          
+          if (confirmation.value.err) {
+            return res.status(400).json({ 
+              error: "Transaction failed on blockchain",
+              details: confirmation.value.err,
+              signature 
+            });
+          }
+
+          return res.json({ 
+            success: true, 
+            signature,
+            confirmed: true,
+            rebatesEnabled: true,
+            rebateAddress
+          });
+        } catch (heliusError: any) {
+          console.error('Helius rebate transaction failed, falling back:', heliusError.message);
+        }
+      }
+
+      // Fallback: standard transaction without rebates
       const rpcEndpoints = [
         heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
         'https://api.mainnet-beta.solana.com',
@@ -689,7 +752,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true, 
         signature,
-        confirmed: true 
+        confirmed: true,
+        rebatesEnabled: false
       });
 
     } catch (error: any) {
