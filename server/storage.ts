@@ -124,6 +124,8 @@ export interface IStorage {
   getTotalNftsBurned(): Promise<number>;
   getStatisticsOverview(sinceTimestamp: Date | null): Promise<{ totalUsers: number; totalSolRecovered: string }>;
   getLeaderboard(sinceTimestamp: Date | null, limit: number): Promise<Array<{ walletAddress: string; totalSolRecovered: string }>>;
+  isTop10Wallet(walletAddress: string): Promise<boolean>;
+  getTop10Wallets(): Promise<string[]>;
   
   // Referral System
   createReferralCode(referral: InsertReferralCode): Promise<ReferralCode>;
@@ -1249,6 +1251,20 @@ export class DatabaseStorage implements IStorage {
       .from(userPoints)
       .orderBy(desc(userPoints.points))
       .limit(limit);
+  }
+
+  async getTop10Wallets(): Promise<string[]> {
+    const top10 = await db
+      .select({ walletAddress: userPoints.walletAddress })
+      .from(userPoints)
+      .orderBy(desc(userPoints.points))
+      .limit(10);
+    return top10.map(entry => entry.walletAddress);
+  }
+
+  async isTop10Wallet(walletAddress: string): Promise<boolean> {
+    const top10 = await this.getTop10Wallets();
+    return top10.includes(walletAddress);
   }
 }
 
