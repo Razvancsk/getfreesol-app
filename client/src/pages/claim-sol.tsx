@@ -2941,29 +2941,6 @@ export default function SolRefund() {
                   <ArrowRightLeft className="h-4 w-4" />
                   Swap
                 </Button>
-                <Button
-                  onClick={() => setActiveTab('referrals')}
-                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
-                    activeTab === 'referrals' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                >
-                  <Users className="h-4 w-4" />
-                  Referrals
-                </Button>
-                <Button
-                  onClick={() => setActiveTab('points')}
-                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
-                    activeTab === 'points' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-points-tab"
-                >
-                  <Trophy className="h-4 w-4" />
-                  Points
-                </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
