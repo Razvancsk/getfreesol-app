@@ -44,7 +44,6 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction, Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 import { SwapModal } from '@/components/SwapModal';
-import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
@@ -98,7 +97,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'statistics' | 'docs' | 'points'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
@@ -2915,18 +2914,6 @@ export default function SolRefund() {
                   🔥 Burn
                 </Button>
                 <Button
-                  onClick={() => setActiveTab('swap')}
-                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
-                    activeTab === 'swap' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-swap-tab"
-                >
-                  <ArrowRightLeft className="h-4 w-4" />
-                  Swap
-                </Button>
-                <Button
                   onClick={() => setActiveTab('referrals')}
                   className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
                     activeTab === 'referrals' 
@@ -2972,7 +2959,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center space-y-4 py-4">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3712,33 +3699,6 @@ export default function SolRefund() {
                     <p className="text-sm text-yellow-200 font-semibold">
                       Burning tokens can't be undone. By using GetFreeSOL, you agree it's on you — we're not responsible for mistakes or accidental burns.
                     </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Swap Tab Content */}
-          {activeTab === 'swap' && (
-            <div className="space-y-6 py-4">
-              <div className="flex justify-center">
-                <SwapPanel />
-              </div>
-              
-              {/* MEV Rebates Explanation */}
-              <div className="max-w-xl mx-auto space-y-4">
-                <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-white mb-2">What are MEV Rebates?</h4>
-                      <p className="text-sm text-purple-200 leading-relaxed">
-                        When you swap tokens, your trade may create arbitrage opportunities for MEV bots. Instead of losing this value, you earn <span className="text-green-400 font-semibold">50% of the MEV</span> your trade creates as a rebate — paid directly to your wallet in the same block.
-                      </p>
-                      <p className="text-sm text-purple-200 mt-2 leading-relaxed">
-                        <span className="font-medium text-white">Your swap is protected from toxic MEV. Your transaction executes first, then searchers can only backrun (not frontrun) your trade.</span>
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
