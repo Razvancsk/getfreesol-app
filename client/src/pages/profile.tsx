@@ -119,14 +119,14 @@ export default function ProfilePage() {
           </div>
 
           {stats?.referralCode && (
-            <div className="bg-gradient-to-br from-green-900/50 to-slate-800/80 border border-green-500/30 rounded-xl p-6">
+            <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
               <h3 className="text-white font-semibold text-lg flex items-center gap-2 mb-4">
-                <Trophy className="h-5 w-5 text-green-400" />
+                <Trophy className="h-5 w-5 text-purple-400" />
                 Referral Program
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-green-300 text-sm mb-1">Your Referral Code</p>
+                  <p className="text-purple-300 text-sm mb-1">Your Referral Code</p>
                   <div className="flex items-center gap-2">
                     <span className="text-white font-mono text-lg bg-slate-900/50 px-3 py-1 rounded" data-testid="text-referral-code">
                       {stats.referralCode}
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                           description: 'Referral code copied to clipboard',
                         });
                       }}
-                      className="text-green-400 hover:text-white p-1"
+                      className="text-purple-400 hover:text-white p-1"
                       data-testid="button-copy-referral"
                     >
                       <Copy className="h-4 w-4" />
@@ -149,7 +149,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-green-300 text-sm mb-1">Referral Earnings</p>
+                  <p className="text-purple-300 text-sm mb-1">Referral Earnings</p>
                   <p className="text-2xl font-bold text-white" data-testid="text-referral-earnings">
                     {parseFloat(String(stats.referralEarnings || 0)).toFixed(4)} SOL
                   </p>
