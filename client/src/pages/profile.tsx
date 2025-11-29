@@ -128,7 +128,7 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-purple-300 text-sm">SOL Claimed</p>
                     <p className="text-2xl font-bold text-white" data-testid="text-sol-claimed">
-                      {isLoading ? '...' : (stats?.totalSolClaimed || 0).toFixed(4)}
+                      {isLoading ? '...' : parseFloat(String(stats?.totalSolClaimed || 0)).toFixed(4)}
                     </p>
                   </div>
                   <Coins className="h-8 w-8 text-yellow-400" />
@@ -215,7 +215,7 @@ export default function ProfilePage() {
                   <div>
                     <p className="text-green-300 text-sm mb-1">Referral Earnings</p>
                     <p className="text-2xl font-bold text-white" data-testid="text-referral-earnings">
-                      {(stats.referralEarnings || 0).toFixed(4)} SOL
+                      {parseFloat(String(stats.referralEarnings || 0)).toFixed(4)} SOL
                     </p>
                   </div>
                 </div>
