@@ -4963,7 +4963,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalNftsBurned = nftBurnRecords.length;
       
       // Get referral info
-      const referral = await storage.getReferralByWallet(walletAddress);
+      const referralCode = await storage.getReferralCodeByWallet(walletAddress);
+      let referralEarnings = 0;
+      if (referralCode) {
+        const referralStats = await storage.getReferralStats(referralCode.id);
+        referralEarnings = parseFloat(referralStats.totalEarnings) || 0;
+      }
       
       res.json({
         totalSolClaimed: points?.totalSolClaimed || 0,
@@ -4971,8 +4976,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalTokensBurned,
         totalNftsBurned,
         totalPoints: points?.points || 0,
-        referralCode: referral?.referralCode || null,
-        referralEarnings: referral?.totalEarnings || 0
+        referralCode: referralCode?.code || null,
+        referralEarnings
       });
     } catch (error) {
       console.error("Get user stats error:", error);
