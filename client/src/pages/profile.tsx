@@ -82,45 +82,6 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-gradient-to-br from-purple-800/30 to-slate-800/50 border-purple-500/30">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Wallet className="h-5 w-5 text-purple-400" />
-                Wallet Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                  <p className="text-purple-300 text-sm mb-1">Connected Wallet</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-mono text-lg" data-testid="text-wallet-address">
-                      {truncateAddress(publicKey.toString())}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={copyAddress}
-                      className="text-purple-400 hover:text-white p-1"
-                      data-testid="button-copy-address"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <a
-                      href={`https://solscan.io/account/${publicKey.toString()}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-purple-400 hover:text-white p-1"
-                      data-testid="link-solscan"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-slate-800/50 border-purple-500/30">
               <CardContent className="pt-6">
