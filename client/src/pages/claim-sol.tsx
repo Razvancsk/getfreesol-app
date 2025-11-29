@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -97,7 +97,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'statistics' | 'docs' | 'points'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
@@ -2818,6 +2818,18 @@ export default function SolRefund() {
                   🔥 Burn
                 </Button>
                 <Button
+                  onClick={() => setActiveTab('swap')}
+                  className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
+                    activeTab === 'swap' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                  }`}
+                  data-testid="button-swap-tab"
+                >
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Swap
+                </Button>
+                <Button
                   onClick={() => setActiveTab('referrals')}
                   className={`px-3 md:px-2 py-2 text-sm font-medium rounded transition-all flex items-center gap-1 ${
                     activeTab === 'referrals' 
@@ -2863,7 +2875,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center space-y-4 py-4">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly with Jupiter.' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
               </p>
             </div>
           )}
