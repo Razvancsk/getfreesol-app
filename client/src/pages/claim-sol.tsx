@@ -44,6 +44,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction, Connection, PublicKey, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 import { SwapModal } from '@/components/SwapModal';
+import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
@@ -3618,6 +3619,13 @@ export default function SolRefund() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Swap Tab Content */}
+          {activeTab === 'swap' && (
+            <div className="flex justify-center py-4">
+              <SwapPanel />
             </div>
           )}
 
