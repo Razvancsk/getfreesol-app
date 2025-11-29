@@ -1262,10 +1262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (referralWalletExists) {
-          // Referral split based on wallet tier (Top 10 = 65%, others = 50%)
-          referralFeeLamports = Math.floor(totalFeeLamports * (REFERRAL_SPLIT_PERCENT / 100));
+          // Check if REFERRER is Top 10 for higher commission rate
+          const referrerFeeRates = await getWalletFeeRates(referralCodeData.walletAddress);
+          const referrerSplitPercent = referrerFeeRates.referralPercent; // Top 10 referrer = 65%, others = 50%
+          referralFeeLamports = Math.floor(totalFeeLamports * (referrerSplitPercent / 100));
           platformFeeLamports = totalFeeLamports - referralFeeLamports;
-          console.log(`✅ Referral wallet exists - platform=${platformFeeLamports} (${100 - REFERRAL_SPLIT_PERCENT}%), referral=${referralFeeLamports} (${REFERRAL_SPLIT_PERCENT}%)`);
+          console.log(`✅ Referral wallet exists - platform=${platformFeeLamports} (${100 - referrerSplitPercent}%), referral=${referralFeeLamports} (${referrerSplitPercent}%)${referrerFeeRates.isTop10 ? ' 👑 TOP 10 REFERRER' : ''}`);
         } else {
           // Referral wallet doesn't exist, all fees go to platform
           platformFeeLamports = totalFeeLamports;
@@ -2487,10 +2489,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (referralWalletExists) {
-          // Tier-based referral split (Top 10 = 65%, others = 50%)
-          referralFeeLamports = Math.floor(totalFeeLamports * (REFERRAL_SPLIT_PERCENT / 100));
+          // Check if REFERRER is Top 10 for higher commission rate
+          const referrerFeeRates = await getWalletFeeRates(referralCodeData.walletAddress);
+          const referrerSplitPercent = referrerFeeRates.referralPercent; // Top 10 referrer = 65%, others = 50%
+          referralFeeLamports = Math.floor(totalFeeLamports * (referrerSplitPercent / 100));
           platformFeeLamports = totalFeeLamports - referralFeeLamports;
-          console.log(`TOKEN BURN ✅ Referral wallet exists - platform=${platformFeeLamports} (${100 - REFERRAL_SPLIT_PERCENT}%), referral=${referralFeeLamports} (${REFERRAL_SPLIT_PERCENT}%)`);
+          console.log(`TOKEN BURN ✅ Referral wallet exists - platform=${platformFeeLamports} (${100 - referrerSplitPercent}%), referral=${referralFeeLamports} (${referrerSplitPercent}%)${referrerFeeRates.isTop10 ? ' 👑 TOP 10 REFERRER' : ''}`);
         } else {
           // Referral wallet doesn't exist, all fees go to platform
           platformFeeLamports = totalFeeLamports;
@@ -3566,7 +3570,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Standard NFTs estimate 0.002 SOL per NFT (others provide no recovery yet)
       const estimatedSolRecovery = nftType === 'standard' ? nftMints.length * 0.002 : 0;
       const platformFeeAmount = estimatedSolRecovery * (nftBurnFeeRates.feePercent / 100); // Tier-based fee
-      const referralFeeAmount = referralCodeData ? platformFeeAmount * (nftBurnFeeRates.referralPercent / 100) : 0; // Tier-based referral split
+      // Check if REFERRER is Top 10 for higher commission rate
+      let referralFeeAmount = 0;
+      if (referralCodeData) {
+        const referrerFeeRates = await getWalletFeeRates(referralCodeData.walletAddress);
+        referralFeeAmount = platformFeeAmount * (referrerFeeRates.referralPercent / 100);
+        console.log(`NFT BURN - Referrer tier: ${referrerFeeRates.referralPercent}% commission${referrerFeeRates.isTop10 ? ' 👑 TOP 10 REFERRER' : ''}`);
+      }
       const finalPlatformFeeAmount = platformFeeAmount - referralFeeAmount;
       console.log(`NFT BURN - Fee rates: ${nftBurnFeeRates.feePercent}% fee, ${nftBurnFeeRates.referralPercent}% referral${nftBurnFeeRates.isTop10 ? ' 👑 TOP 10' : ''}`);
       
@@ -3989,7 +3999,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get wallet tier fee rates (Top 10 = 7%, others = 15%)
       const coreNftFeeRates = await getWalletFeeRates(walletAddress);
-      console.log(`CORE NFT BURN - Fee rates: ${coreNftFeeRates.feePercent}% fee, ${coreNftFeeRates.referralPercent}% referral${coreNftFeeRates.isTop10 ? ' 👑 TOP 10' : ''}`);
+      // Get referrer's tier for commission rate (if applicable)
+      const referrerFeeRates = referralCodeData ? await getWalletFeeRates(referralCodeData.walletAddress) : null;
+      console.log(`CORE NFT BURN - Claimer fee: ${coreNftFeeRates.feePercent}%${coreNftFeeRates.isTop10 ? ' 👑 TOP 10' : ''}, Referrer commission: ${referrerFeeRates ? referrerFeeRates.referralPercent + '%' : 'N/A'}${referrerFeeRates?.isTop10 ? ' 👑 TOP 10 REFERRER' : ''}`);
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
@@ -4003,8 +4015,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
 
-        // Split fees per batch (tier-based referral split)
-        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * (coreNftFeeRates.referralPercent / 100)) : 0;
+        // Split fees per batch (referrer's tier determines commission)
+        const referrerCommissionPercent = referrerFeeRates ? referrerFeeRates.referralPercent : 50;
+        const referralFeeLamports = referralWalletExists ? Math.floor(batchFeeLamports * (referrerCommissionPercent / 100)) : 0;
         const platformFeeLamports = batchFeeLamports - referralFeeLamports;
 
         console.log(`BATCH ${batchIndex + 1} - Expected rent: ${batchExpectedRentLamports/1e9} SOL, Fees: platform=${platformFeeLamports/1e9}, referral=${referralFeeLamports/1e9}`);
