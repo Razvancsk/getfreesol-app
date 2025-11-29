@@ -740,14 +740,13 @@ export default function SolRefund() {
 
       const { Connection, Transaction } = await import('@solana/web3.js');
 
-      // Use Helius RPC if available, otherwise fallback
-      const heliusResponse = await fetch('/api/helius-config');
-      const rpcConfig = await heliusResponse.json();
+      // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
+      const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
+      const rpcUrl = heliusKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : 'https://api.mainnet-beta.solana.com';
 
-      const connection = new Connection(
-        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-        'confirmed'
-      );
+      const connection = new Connection(rpcUrl, 'confirmed');
 
       // Deserialize and sign transaction with connected wallet
       const txBuffer = Buffer.from(transaction, 'base64');
@@ -848,13 +847,13 @@ export default function SolRefund() {
 
       const { Connection, Transaction } = await import('@solana/web3.js');
 
-      const heliusResponse = await fetch('/api/helius-config');
-      const rpcConfig = await heliusResponse.json();
+      // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
+      const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
+      const rpcUrl = heliusKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : 'https://api.mainnet-beta.solana.com';
 
-      const connection = new Connection(
-        rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-        'confirmed'
-      );
+      const connection = new Connection(rpcUrl, 'confirmed');
 
       const txBuffer = Buffer.from(transaction, 'base64');
       const tx = Transaction.from(txBuffer);
@@ -2146,13 +2145,13 @@ export default function SolRefund() {
         // Sign and send transaction using connected wallet
         const { Connection, Transaction } = await import('@solana/web3.js');
 
-        const heliusResponse = await fetch('/api/helius-config');
-        const rpcConfig = await heliusResponse.json();
+        // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
+        const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
+        const rpcUrl = heliusKey 
+          ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+          : 'https://api.mainnet-beta.solana.com';
 
-        const connection = new Connection(
-          rpcConfig.success && rpcConfig.apiKey ? rpcConfig.rpcUrl : 'https://api.mainnet-beta.solana.com',
-          'confirmed'
-        );
+        const connection = new Connection(rpcUrl, 'confirmed');
 
         const txBuffer = Buffer.from(transaction, 'base64');
         const tx = Transaction.from(txBuffer);
@@ -2274,11 +2273,11 @@ export default function SolRefund() {
 
       const { Connection } = await import('@solana/web3.js');
 
-      // Get RPC configuration with fallbacks from backend
-      console.log('Getting RPC configuration with fallbacks...');
-
-      const heliusResponse = await fetch('/api/helius-config');
-      const rpcConfig = await heliusResponse.json();
+      // Use Helius RPC if available (VITE_ prefix means it's designed for frontend)
+      const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
+      const heliusUrl = heliusKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : null;
 
       // Build fallback endpoint list (public endpoints that work reliably)
       const fallbackEndpoints = [
@@ -2292,11 +2291,10 @@ export default function SolRefund() {
       let endpointUsed: string = '';
       let connectionWorking = false;
 
-      // Try Helius if we have any API key, but test if it actually works
-      if (rpcConfig.success && rpcConfig.apiKey) {
+      // Try Helius if we have the key
+      if (heliusUrl) {
         try {
-          connection = new Connection(rpcConfig.rpcUrl, 'confirmed');
-          // Test the connection with a simple call
+          connection = new Connection(heliusUrl, 'confirmed');
           await connection.getLatestBlockhash();
           endpointUsed = 'Helius RPC';
           connectionWorking = true;
@@ -2304,8 +2302,6 @@ export default function SolRefund() {
         } catch (heliusError) {
           console.log('Helius RPC failed, trying fallback endpoints...');
         }
-      } else {
-        console.log('No valid Helius key, using public endpoints...');
       }
 
       // If Helius failed or not available, try fallback endpoints
@@ -2313,7 +2309,6 @@ export default function SolRefund() {
         for (const endpoint of fallbackEndpoints) {
           try {
             connection = new Connection(endpoint, 'confirmed');
-            // Test the connection
             await connection.getLatestBlockhash();
             endpointUsed = endpoint.includes('mainnet-beta') ? 'Solana Public RPC' : 'Alternative RPC';
             connectionWorking = true;
