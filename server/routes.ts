@@ -622,21 +622,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Helius configuration
+  // Check if Helius is configured (without exposing the key)
   app.get("/api/helius-config", async (req, res) => {
     const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY || "";
-    if (apiKey) {
-      res.json({
-        success: true,
-        apiKey: apiKey,
-        rpcUrl: `https://mainnet.helius-rpc.com/?api-key=${apiKey}`
-      });
-    } else {
-      res.json({
-        success: false,
-        message: "No Helius API key configured"
-      });
-    }
+    res.json({
+      success: !!apiKey,
+      configured: !!apiKey
+    });
   });
 
   // Scan wallet for empty token accounts

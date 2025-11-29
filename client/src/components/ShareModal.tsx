@@ -24,8 +24,6 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
     ? `${baseUrl}?ref=${referralCode}&claimed=${Math.floor(solClaimed * 1e9)}`
     : `${baseUrl}?claimed=${Math.floor(solClaimed * 1e9)}`;
   
-  const commissionRate = "50%"; // 50% commission split
-  
   // Pick a NEW random message every time the modal opens
   useEffect(() => {
     if (isOpen) {
@@ -105,22 +103,11 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
             </Button>
           </div>
           
-          {/* Commission Rate Display */}
+          {/* Commission Info */}
           {referralCode && (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-3.5">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-sm text-green-300">Your Commission Rate</p>
-                <div className="bg-green-500/20 px-2.5 py-0.5 rounded-full">
-                  <p className="text-xs text-green-300 font-semibold">
-                    Highest in Market
-                  </p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-green-400">{commissionRate}</p>
-              <p className="text-xs text-green-200 mt-1.5">
-                Earn {commissionRate} commission of every SOL your referrals claim!
-              </p>
-            </div>
+            <p className="text-sm text-green-400 text-center">
+              Earn 50% commission of every SOL your referrals claim!
+            </p>
           )}
         </div>
       </DialogContent>
