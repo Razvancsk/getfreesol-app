@@ -1,9 +1,9 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { ArrowLeft, Copy, ExternalLink, Wallet, Trophy, Flame, Coins } from 'lucide-react';
+import { ArrowLeft, Copy, Wallet, Trophy, Flame, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import logoImage from '@assets/image_1757882056840.png';
 
@@ -30,20 +30,6 @@ export default function ProfilePage() {
     },
     enabled: !!publicKey,
   });
-
-  const copyAddress = () => {
-    if (publicKey) {
-      navigator.clipboard.writeText(publicKey.toString());
-      toast({
-        title: 'Copied!',
-        description: 'Wallet address copied to clipboard',
-      });
-    }
-  };
-
-  const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-6)}`;
-  };
 
   if (!publicKey) {
     return (
@@ -83,130 +69,114 @@ export default function ProfilePage() {
 
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-slate-800/50 border-purple-500/30">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-300 text-sm">SOL Claimed</p>
-                    <p className="text-2xl font-bold text-white" data-testid="text-sol-claimed">
-                      {isLoading ? '...' : parseFloat(String(stats?.totalSolClaimed || 0)).toFixed(4)}
-                    </p>
-                  </div>
-                  <Coins className="h-8 w-8 text-yellow-400" />
+            <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-300 text-sm">SOL Claimed</p>
+                  <p className="text-2xl font-bold text-white" data-testid="text-sol-claimed">
+                    {isLoading ? '...' : parseFloat(String(stats?.totalSolClaimed || 0)).toFixed(4)}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Coins className="h-8 w-8 text-yellow-400" />
+              </div>
+            </div>
 
-            <Card className="bg-slate-800/50 border-purple-500/30">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-300 text-sm">Accounts Closed</p>
-                    <p className="text-2xl font-bold text-white" data-testid="text-accounts-closed">
-                      {isLoading ? '...' : (stats?.totalAccountsClosed || 0)}
-                    </p>
-                  </div>
-                  <Wallet className="h-8 w-8 text-green-400" />
+            <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-300 text-sm">Accounts Closed</p>
+                  <p className="text-2xl font-bold text-white" data-testid="text-accounts-closed">
+                    {isLoading ? '...' : (stats?.totalAccountsClosed || 0)}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Wallet className="h-8 w-8 text-green-400" />
+              </div>
+            </div>
 
-            <Card className="bg-slate-800/50 border-purple-500/30">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-300 text-sm">Tokens Burned</p>
-                    <p className="text-2xl font-bold text-white" data-testid="text-tokens-burned">
-                      {isLoading ? '...' : (stats?.totalTokensBurned || 0)}
-                    </p>
-                  </div>
-                  <Flame className="h-8 w-8 text-orange-400" />
+            <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-300 text-sm">Tokens Burned</p>
+                  <p className="text-2xl font-bold text-white" data-testid="text-tokens-burned">
+                    {isLoading ? '...' : (stats?.totalTokensBurned || 0)}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Flame className="h-8 w-8 text-orange-400" />
+              </div>
+            </div>
 
-            <Card className="bg-slate-800/50 border-purple-500/30">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-300 text-sm">Total Points</p>
-                    <p className="text-2xl font-bold text-white" data-testid="text-total-points">
-                      {isLoading ? '...' : (stats?.totalPoints || 0)}
-                    </p>
-                  </div>
-                  <Trophy className="h-8 w-8 text-purple-400" />
+            <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-300 text-sm">Total Points</p>
+                  <p className="text-2xl font-bold text-white" data-testid="text-total-points">
+                    {isLoading ? '...' : (stats?.totalPoints || 0)}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Trophy className="h-8 w-8 text-purple-400" />
+              </div>
+            </div>
           </div>
 
           {stats?.referralCode && (
-            <Card className="bg-gradient-to-br from-green-800/30 to-slate-800/50 border-green-500/30">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-green-400" />
-                  Referral Program
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-green-300 text-sm mb-1">Your Referral Code</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-mono text-lg bg-slate-700/50 px-3 py-1 rounded" data-testid="text-referral-code">
-                        {stats.referralCode}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(stats.referralCode);
-                          toast({
-                            title: 'Copied!',
-                            description: 'Referral code copied to clipboard',
-                          });
-                        }}
-                        className="text-green-400 hover:text-white p-1"
-                        data-testid="button-copy-referral"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-green-300 text-sm mb-1">Referral Earnings</p>
-                    <p className="text-2xl font-bold text-white" data-testid="text-referral-earnings">
-                      {parseFloat(String(stats.referralEarnings || 0)).toFixed(4)} SOL
-                    </p>
+            <div className="bg-gradient-to-br from-green-900/50 to-slate-800/80 border border-green-500/30 rounded-xl p-6">
+              <h3 className="text-white font-semibold text-lg flex items-center gap-2 mb-4">
+                <Trophy className="h-5 w-5 text-green-400" />
+                Referral Program
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-green-300 text-sm mb-1">Your Referral Code</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-mono text-lg bg-slate-900/50 px-3 py-1 rounded" data-testid="text-referral-code">
+                      {stats.referralCode}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(stats.referralCode);
+                        toast({
+                          title: 'Copied!',
+                          description: 'Referral code copied to clipboard',
+                        });
+                      }}
+                      className="text-green-400 hover:text-white p-1"
+                      data-testid="button-copy-referral"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="bg-slate-800/50 border-purple-500/30">
-            <CardHeader>
-              <CardTitle className="text-white">Activity Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-2 border-b border-purple-500/20">
-                  <span className="text-purple-300">NFTs Burned</span>
-                  <span className="text-white font-medium" data-testid="text-nfts-burned">
-                    {isLoading ? '...' : (stats?.totalNftsBurned || 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b border-purple-500/20">
-                  <span className="text-purple-300">Points per Account</span>
-                  <span className="text-white font-medium">20 points</span>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-purple-300">Referral Commission</span>
-                  <span className="text-white font-medium">50%</span>
+                <div>
+                  <p className="text-green-300 text-sm mb-1">Referral Earnings</p>
+                  <p className="text-2xl font-bold text-white" data-testid="text-referral-earnings">
+                    {parseFloat(String(stats.referralEarnings || 0)).toFixed(4)} SOL
+                  </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
+
+          <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
+            <h3 className="text-white font-semibold text-lg mb-4">Activity Summary</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-purple-500/20">
+                <span className="text-purple-300">NFTs Burned</span>
+                <span className="text-white font-medium" data-testid="text-nfts-burned">
+                  {isLoading ? '...' : (stats?.totalNftsBurned || 0)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-purple-500/20">
+                <span className="text-purple-300">Points per Account</span>
+                <span className="text-white font-medium">20 points</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-purple-300">Referral Commission</span>
+                <span className="text-white font-medium">50%</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
