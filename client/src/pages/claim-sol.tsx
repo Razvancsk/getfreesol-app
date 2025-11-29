@@ -2761,6 +2761,14 @@ export default function SolRefund() {
                           </Link>
                         </>
                       )}
+                      <Link href="/profile">
+                        <DropdownMenuItem 
+                          className="text-white hover:bg-purple-600/40 cursor-pointer"
+                          data-testid="button-profile"
+                        >
+                          👤 Profile
+                        </DropdownMenuItem>
+                      </Link>
                       <DropdownMenuItem 
                         onClick={disconnectWallet}
                         className="text-white hover:bg-purple-600/40 cursor-pointer"
@@ -2853,6 +2861,14 @@ export default function SolRefund() {
                         </Link>
                       </>
                     )}
+                    <Link href="/profile">
+                      <DropdownMenuItem 
+                        className="text-white hover:bg-purple-600/40 cursor-pointer"
+                        data-testid="button-profile-desktop"
+                      >
+                        👤 Profile
+                      </DropdownMenuItem>
+                    </Link>
                     <DropdownMenuItem 
                       onClick={disconnectWallet}
                       className="text-white hover:bg-purple-600/40 cursor-pointer"

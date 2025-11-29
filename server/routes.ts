@@ -4946,6 +4946,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get comprehensive user stats by wallet address
+  app.get("/api/user/stats/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      // Get user points (includes totalSolClaimed and accountsClosed)
+      const points = await storage.getUserPoints(walletAddress);
+      
+      // Get token burn count from transaction ledger
+      const tokenBurnRecords = await storage.getTokenBurnRecordsByWallet(walletAddress);
+      const totalTokensBurned = tokenBurnRecords.length;
+      
+      // Get NFT burn count from transaction ledger
+      const nftBurnRecords = await storage.getNftBurnRecordsByWallet(walletAddress);
+      const totalNftsBurned = nftBurnRecords.length;
+      
+      // Get referral info
+      const referral = await storage.getReferralByWallet(walletAddress);
+      
+      res.json({
+        totalSolClaimed: points?.totalSolClaimed || 0,
+        totalAccountsClosed: points?.accountsClosed || 0,
+        totalTokensBurned,
+        totalNftsBurned,
+        totalPoints: points?.points || 0,
+        referralCode: referral?.referralCode || null,
+        referralEarnings: referral?.totalEarnings || 0
+      });
+    } catch (error) {
+      console.error("Get user stats error:", error);
+      res.status(500).json({ error: "Failed to get user stats" });
+    }
+  });
+
   // Transaction Relay - Submit signed transactions via server to bypass domain restrictions
   app.post("/api/tx/relay", async (req, res) => {
     try {
