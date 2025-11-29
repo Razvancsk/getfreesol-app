@@ -2902,57 +2902,56 @@ export default function SolRefund() {
           {/* Center Navigation Buttons */}
           {isConnected && activeTab !== 'docs' && (
             <div className="flex justify-center py-2 px-2">
-              <div className="flex items-center space-x-2 sm:space-x-2">
+              <div className="flex items-center space-x-2">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`px-5 sm:px-4 md:px-3 py-3 sm:py-2 text-base sm:text-sm font-medium rounded-lg sm:rounded transition-all flex items-center gap-1.5 sm:gap-1 ${
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'reclaim' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <svg className="h-5 w-5 sm:h-4 sm:w-4" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                  <svg className="h-5 w-5" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                   </svg>
-                  <span className="hidden sm:inline">Claim SOL</span>
-                  <span className="sm:hidden">Claim</span>
+                  Claim
                 </Button>
                 <Button
                   onClick={() => setActiveTab('burnTokens')}
-                  className={`px-5 sm:px-4 md:px-3 py-3 sm:py-2 text-base sm:text-sm font-medium rounded-lg sm:rounded transition-all flex items-center gap-1.5 sm:gap-1 ${
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'burnTokens' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-lg sm:text-base">🔥</span> Burn
+                  <span className="text-lg">🔥</span> Burn
                 </Button>
                 <Button
                   onClick={() => setActiveTab('swap')}
-                  className={`px-5 sm:px-4 md:px-3 py-3 sm:py-2 text-base sm:text-sm font-medium rounded-lg sm:rounded transition-all flex items-center gap-1.5 sm:gap-1 ${
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'swap' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                   data-testid="button-swap-tab"
                 >
-                  <ArrowRightLeft className="h-5 w-5 sm:h-4 sm:w-4" />
+                  <ArrowRightLeft className="h-5 w-5" />
                   Swap
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
                     onClick={() => setActiveTab('statistics')}
-                    className={`hidden md:inline-flex px-3 lg:px-2 py-2 text-sm font-medium rounded transition-all items-center gap-1 ${
+                    className={`hidden md:inline-flex px-5 py-2.5 text-base font-medium rounded-full transition-all items-center gap-2 border ${
                       activeTab === 'statistics' 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60'
+                        ? 'bg-purple-600 text-white border-purple-500' 
+                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                     }`}
                     data-testid="button-statistics"
                   >
-                    <TrendingUp className="h-4 w-4" />
+                    <TrendingUp className="h-5 w-5" />
                     Statistics
                   </Button>
                 )}
