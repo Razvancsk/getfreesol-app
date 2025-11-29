@@ -122,26 +122,28 @@ export default function ProfilePage() {
             <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
               <h3 className="text-white font-semibold text-lg flex items-center gap-2 mb-4">
                 <Trophy className="h-5 w-5 text-purple-400" />
-                Referral Program
+                Your Referral Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
-                  <p className="text-purple-300 text-sm mb-1">Your Referral Code</p>
+                  <p className="text-purple-300 text-sm mb-2">Referral Link</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-white font-mono text-lg bg-slate-900/50 px-3 py-1 rounded" data-testid="text-referral-code">
-                      {stats.referralCode}
-                    </span>
+                    <div className="flex-1 bg-slate-900/50 px-4 py-2 rounded overflow-hidden">
+                      <span className="text-white font-mono text-sm break-all" data-testid="text-referral-link">
+                        {`${window.location.origin}/${stats.referralCode}`}
+                      </span>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(stats.referralCode);
+                        navigator.clipboard.writeText(`${window.location.origin}/${stats.referralCode}`);
                         toast({
                           title: 'Copied!',
-                          description: 'Referral code copied to clipboard',
+                          description: 'Referral link copied to clipboard',
                         });
                       }}
-                      className="text-purple-400 hover:text-white p-1"
+                      className="text-purple-400 hover:text-white p-2"
                       data-testid="button-copy-referral"
                     >
                       <Copy className="h-4 w-4" />
