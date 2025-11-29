@@ -17,6 +17,13 @@ interface UserStats {
   referralEarnings: number;
 }
 
+interface LeaderboardEntry {
+  rank: number;
+  walletAddress: string;
+  points: number;
+  totalSolClaimed: string;
+}
+
 export default function ProfilePage() {
   const { publicKey } = useWallet();
   const { toast } = useToast();
@@ -30,6 +37,19 @@ export default function ProfilePage() {
     },
     enabled: !!publicKey,
   });
+
+  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery<{ leaderboard: LeaderboardEntry[] }>({
+    queryKey: ['/api/points/leaderboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/points/leaderboard?limit=10');
+      if (!response.ok) throw new Error('Failed to fetch leaderboard');
+      return response.json();
+    },
+  });
+
+  const truncateWallet = (address: string) => {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
 
   if (!publicKey) {
     return (
@@ -163,6 +183,71 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+
+          {/* Leaderboard */}
+          <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
+            <h3 className="text-white font-semibold text-lg flex items-center gap-2 mb-2">
+              <Trophy className="h-5 w-5 text-yellow-400" />
+              Top 10 Leaders
+            </h3>
+            <p className="text-purple-300 text-sm mb-4">Top 10 users with the most points</p>
+            
+            {isLoadingLeaderboard ? (
+              <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-purple-500/30">
+                      <th className="text-left py-3 px-2 text-purple-300 text-sm font-medium">Rank</th>
+                      <th className="text-left py-3 px-2 text-purple-300 text-sm font-medium">Wallet</th>
+                      <th className="text-right py-3 px-2 text-purple-300 text-sm font-medium">Points</th>
+                      <th className="text-right py-3 px-2 text-purple-300 text-sm font-medium">SOL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboardData?.leaderboard?.map((entry, index) => (
+                      <tr 
+                        key={entry.walletAddress} 
+                        className="border-b border-purple-500/20 hover:bg-purple-900/20"
+                      >
+                        <td className="py-3 px-2">
+                          <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-xs font-bold ${
+                            entry.rank === 1 ? 'bg-yellow-500 text-black' :
+                            entry.rank === 2 ? 'bg-gray-300 text-black' :
+                            entry.rank === 3 ? 'bg-amber-600 text-white' :
+                            'bg-purple-700 text-white'
+                          }`}>
+                            #{entry.rank}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className="text-white font-mono text-sm">
+                            {entry.walletAddress}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-yellow-400 font-medium">
+                            {Number(entry.points).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-green-400 font-medium flex items-center justify-end gap-1">
+                            <svg className="h-3 w-3" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                              <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                              <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                              <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                            </svg>
+                            {parseFloat(entry.totalSolClaimed || '0').toFixed(4)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
         </div>
       </div>
