@@ -435,9 +435,9 @@ export function SwapPanel() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-2xl">
+    <div className="w-full max-w-md md:max-w-xl lg:max-w-2xl mx-auto bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 md:p-8 shadow-2xl">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">Swap</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-white">Swap</h2>
         <Button
           variant="ghost"
           size="sm"
@@ -483,7 +483,7 @@ export function SwapPanel() {
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+          <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3 md:p-4">
             <TokenSelector 
               token={fromToken} 
               onSelect={(token) => {
@@ -509,7 +509,7 @@ export function SwapPanel() {
                 setFromAmount(e.target.value);
                 getQuote(e.target.value);
               }}
-              className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+              className="flex-1 bg-transparent border-none text-right text-white text-2xl md:text-3xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
               data-testid="input-swap-from-amount"
             />
           </div>
@@ -529,7 +529,7 @@ export function SwapPanel() {
 
         <div className="space-y-2">
           <label className="text-sm text-purple-300">Receive:</label>
-          <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+          <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3 md:p-4">
             <TokenSelector 
               token={toToken} 
               onSelect={(token) => {
@@ -552,7 +552,7 @@ export function SwapPanel() {
               placeholder="0.00"
               value={toAmount}
               readOnly
-              className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+              className="flex-1 bg-transparent border-none text-right text-white text-2xl md:text-3xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
               data-testid="input-swap-to-amount"
             />
           </div>
@@ -583,7 +583,7 @@ export function SwapPanel() {
         <Button
           onClick={handleSwap}
           disabled={!publicKey || !quote || isSwapping || isLoadingQuote}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12 text-lg rounded-lg"
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12 md:h-14 text-lg md:text-xl rounded-lg"
           data-testid="button-execute-swap"
         >
           {isSwapping ? (
