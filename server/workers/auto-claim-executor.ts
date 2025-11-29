@@ -3,8 +3,8 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction 
 import { storage } from "../storage";
 import bs58 from "bs58";
 
-const HELIUS_RPC = process.env.VITE_HELIUS_API_KEY 
-  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
+const HELIUS_RPC = process.env.HELIUS_API_KEY 
+  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
   : "https://api.mainnet-beta.solana.com";
 
 const PLATFORM_WALLET = "GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6";
