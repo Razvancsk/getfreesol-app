@@ -1,0 +1,101 @@
+A private swap (also called stealth swap, shielded swap, privacy-preserving swap) is a crypto token swap that hides some or all information about who is trading, what wallet is involved, or what route the trade took, compared to a normal public DEX swap.
+
+Here’s the simplest way to understand it:
+
+✅ Normal Swap (public)
+
+On Solana or Ethereum, a normal swap is fully visible:
+
+Your wallet → sends tokens
+
+Public DEX pool → processes swap
+
+You receive tokens
+
+Anyone on a block explorer can see:
+
+Your wallet address
+
+What tokens you swapped
+
+How much
+
+Exact time
+
+Which pools you used
+
+This is how Jupiter, Raydium, Orca, Uniswap, etc. usually work.
+
+🔒 Private Swap (privacy version)
+
+A private swap hides some of that information, usually by mixing, routing, or shielding.
+
+Depending on the protocol, a private swap can:
+
+1. Hide your wallet address
+
+Observers cannot easily tell which wallet performed the swap.
+
+2. Hide trade amounts
+
+Amounts might be encrypted or mixed to avoid direct identification.
+
+3. Hide trading strategy
+
+Bots cannot copy-trade, front-run, or analyze your behavior.
+
+4. Break the link between “wallet A sent tokens” → “wallet A received tokens”
+
+This is the most important part:
+A private swap makes your input and output appear unconnected, even though they are related inside the protocol.
+
+🧩 How private swaps usually work
+
+Different protocols use different techniques. Most common:
+
+A. Shielded Pools
+
+Tokens enter a private contract that uses:
+
+zero-knowledge proofs (ZK)
+
+internal accounting
+The blockchain only sees "deposit" and "withdraw," not the swap inside.
+
+Example: Zcash shielded pool, Aztec, Penumbra.
+
+B. Stealth Routing
+
+Trades are routed through:
+
+service-owned wallets
+
+internal liquidity
+
+hidden execution pathways
+
+The chain only sees generic activity, not the exact path.
+
+This is what Vanish Trade aims for.
+
+C. Blending / mixing
+
+Your deposit is mixed with many other users, making it impossible to know which output belongs to you.
+
+🧠 Why people use private swaps
+
+Not to hide crime (that’s illegal), but for legitimate privacy reasons:
+
+Don’t want competitors to see your trading strategy
+
+Don’t want wallets doxxed (identity linked to wallet)
+
+Protect against front-running bots
+
+Keep portfolio private
+
+Avoid stalkers, scammers, or unwanted tracking
+
+OTC or large size trades that need stealth execution
+
+Privacy ≠ crime. It’s a normal need.
