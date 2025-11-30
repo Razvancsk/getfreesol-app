@@ -747,3 +747,84 @@ export const insertUserPointsSchema = createInsertSchema(userPoints).omit({
 // Types for user points
 export type UserPoints = typeof userPoints.$inferSelect;
 export type InsertUserPoints = z.infer<typeof insertUserPointsSchema>;
+
+// ============================================
+// Community Social Tasks (Earn SOL by completing tasks)
+// ============================================
+
+// Social tasks created by advertisers
+export const socialTasks = pgTable("social_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  creatorWallet: text("creator_wallet").notNull(),
+  platform: text("platform").notNull(), // 'x', 'discord', 'telegram', etc.
+  taskType: text("task_type").notNull(), // 'follow', 'like', 'retweet', 'comment', 'join'
+  title: text("title").notNull(),
+  description: text("description"),
+  targetUrl: text("target_url").notNull(), // URL to follow/like/join
+  targetHandle: text("target_handle"), // @username for display
+  rewardLamports: decimal("reward_lamports", { precision: 18, scale: 0 }).notNull(), // reward per completion
+  totalBudgetLamports: decimal("total_budget_lamports", { precision: 18, scale: 0 }).notNull(),
+  remainingBudgetLamports: decimal("remaining_budget_lamports", { precision: 18, scale: 0 }).notNull(),
+  maxCompletions: integer("max_completions").notNull(),
+  completedCount: integer("completed_count").notNull().default(0),
+  status: text("status").notNull().default("active"), // 'active', 'paused', 'completed', 'cancelled'
+  depositTxSignature: text("deposit_tx_signature"), // proof of SOL deposit
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+});
+
+// Task submissions by workers
+export const socialTaskSubmissions = pgTable("social_task_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  taskId: varchar("task_id").notNull(),
+  workerWallet: text("worker_wallet").notNull(),
+  workerHandle: text("worker_handle"), // their X/social handle
+  proofUrl: text("proof_url"), // screenshot or URL proof
+  status: text("status").notNull().default("pending"), // 'pending', 'approved', 'rejected', 'claimed'
+  rewardLamports: decimal("reward_lamports", { precision: 18, scale: 0 }).notNull(),
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewerWallet: text("reviewer_wallet"),
+  rejectionReason: text("rejection_reason"),
+});
+
+// Payout records for claimed rewards
+export const socialTaskPayouts = pgTable("social_task_payouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  submissionId: varchar("submission_id").notNull(),
+  workerWallet: text("worker_wallet").notNull(),
+  taskId: varchar("task_id").notNull(),
+  txSignature: text("tx_signature").notNull(),
+  paidLamports: decimal("paid_lamports", { precision: 18, scale: 0 }).notNull(),
+  paidAt: timestamp("paid_at").notNull().defaultNow(),
+});
+
+// Insert schemas for social tasks
+export const insertSocialTaskSchema = createInsertSchema(socialTasks).omit({
+  id: true,
+  completedCount: true,
+  status: true,
+  createdAt: true,
+});
+
+export const insertSocialTaskSubmissionSchema = createInsertSchema(socialTaskSubmissions).omit({
+  id: true,
+  status: true,
+  submittedAt: true,
+  reviewedAt: true,
+  reviewerWallet: true,
+  rejectionReason: true,
+});
+
+export const insertSocialTaskPayoutSchema = createInsertSchema(socialTaskPayouts).omit({
+  id: true,
+  paidAt: true,
+});
+
+// Types for social tasks
+export type SocialTask = typeof socialTasks.$inferSelect;
+export type InsertSocialTask = z.infer<typeof insertSocialTaskSchema>;
+export type SocialTaskSubmission = typeof socialTaskSubmissions.$inferSelect;
+export type InsertSocialTaskSubmission = z.infer<typeof insertSocialTaskSubmissionSchema>;
+export type SocialTaskPayout = typeof socialTaskPayouts.$inferSelect;
+export type InsertSocialTaskPayout = z.infer<typeof insertSocialTaskPayoutSchema>;
