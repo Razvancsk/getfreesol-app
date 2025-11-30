@@ -146,22 +146,19 @@ export default function CommunityTasks() {
       const rewardLamports = Math.floor(parseFloat(taskData.rewardSol) * 1e9);
       const totalBudget = rewardLamports * taskData.maxCompletions;
       
-      const response = await apiRequest('/api/social-tasks', {
-        method: 'POST',
-        body: JSON.stringify({
-          creatorWallet: walletAddress,
-          platform: taskData.platform,
-          taskType: taskData.taskType,
-          title: taskData.title,
-          description: taskData.description,
-          targetUrl: taskData.targetUrl,
-          targetHandle: taskData.targetHandle,
-          rewardLamports,
-          totalBudgetLamports: totalBudget,
-          maxCompletions: taskData.maxCompletions
-        })
+      const response = await apiRequest('POST', '/api/social-tasks', {
+        creatorWallet: walletAddress,
+        platform: taskData.platform,
+        taskType: taskData.taskType,
+        title: taskData.title,
+        description: taskData.description,
+        targetUrl: taskData.targetUrl,
+        targetHandle: taskData.targetHandle,
+        rewardLamports,
+        totalBudgetLamports: totalBudget,
+        maxCompletions: taskData.maxCompletions
       });
-      return response;
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Task created!", description: "Your social task is now live." });
@@ -186,15 +183,12 @@ export default function CommunityTasks() {
 
   const submitTaskMutation = useMutation({
     mutationFn: async ({ taskId, proofUrl, workerHandle }: { taskId: string; proofUrl: string; workerHandle: string }) => {
-      const response = await apiRequest(`/api/social-tasks/${taskId}/submit`, {
-        method: 'POST',
-        body: JSON.stringify({
-          workerWallet: walletAddress,
-          workerHandle,
-          proofUrl
-        })
+      const response = await apiRequest('POST', `/api/social-tasks/${taskId}/submit`, {
+        workerWallet: walletAddress,
+        workerHandle,
+        proofUrl
       });
-      return response;
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Submitted!", description: "Your task completion is pending review." });
@@ -267,28 +261,28 @@ export default function CommunityTasks() {
                   <div>
                     <Label>Platform</Label>
                     <Select value={newTask.platform} onValueChange={(v) => setNewTask({ ...newTask, platform: v })}>
-                      <SelectTrigger className="bg-purple-800 border-purple-600">
+                      <SelectTrigger className="bg-purple-800 border-purple-600" data-testid="select-platform">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-purple-800 border-purple-600">
-                        <SelectItem value="x">X (Twitter)</SelectItem>
-                        <SelectItem value="discord">Discord</SelectItem>
+                        <SelectItem value="x" data-testid="option-platform-x">X (Twitter)</SelectItem>
+                        <SelectItem value="discord" data-testid="option-platform-discord">Discord</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label>Task Type</Label>
                     <Select value={newTask.taskType} onValueChange={(v) => setNewTask({ ...newTask, taskType: v })}>
-                      <SelectTrigger className="bg-purple-800 border-purple-600">
+                      <SelectTrigger className="bg-purple-800 border-purple-600" data-testid="select-tasktype">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-purple-800 border-purple-600">
-                        <SelectItem value="follow">Follow</SelectItem>
-                        <SelectItem value="like">Like</SelectItem>
-                        <SelectItem value="retweet">Retweet</SelectItem>
-                        <SelectItem value="reply">Reply</SelectItem>
-                        <SelectItem value="quote">Quote Tweet</SelectItem>
-                        <SelectItem value="join">Join Server</SelectItem>
+                        <SelectItem value="follow" data-testid="option-type-follow">Follow</SelectItem>
+                        <SelectItem value="like" data-testid="option-type-like">Like</SelectItem>
+                        <SelectItem value="retweet" data-testid="option-type-retweet">Retweet</SelectItem>
+                        <SelectItem value="reply" data-testid="option-type-reply">Reply</SelectItem>
+                        <SelectItem value="quote" data-testid="option-type-quote">Quote Tweet</SelectItem>
+                        <SelectItem value="join" data-testid="option-type-join">Join Server</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -301,6 +295,7 @@ export default function CommunityTasks() {
                     placeholder="e.g., Follow our X account"
                     value={newTask.title}
                     onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    data-testid="input-title"
                   />
                 </div>
                 
@@ -311,6 +306,7 @@ export default function CommunityTasks() {
                     placeholder="Additional instructions..."
                     value={newTask.description}
                     onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                    data-testid="input-description"
                   />
                 </div>
                 
@@ -321,6 +317,7 @@ export default function CommunityTasks() {
                     placeholder="https://x.com/your_account"
                     value={newTask.targetUrl}
                     onChange={(e) => setNewTask({ ...newTask, targetUrl: e.target.value })}
+                    data-testid="input-targeturl"
                   />
                 </div>
                 
@@ -331,6 +328,7 @@ export default function CommunityTasks() {
                     placeholder="@your_handle"
                     value={newTask.targetHandle}
                     onChange={(e) => setNewTask({ ...newTask, targetHandle: e.target.value })}
+                    data-testid="input-targethandle"
                   />
                 </div>
                 
@@ -344,6 +342,7 @@ export default function CommunityTasks() {
                       className="bg-purple-800 border-purple-600"
                       value={newTask.rewardSol}
                       onChange={(e) => setNewTask({ ...newTask, rewardSol: e.target.value })}
+                      data-testid="input-reward"
                     />
                   </div>
                   <div>
@@ -354,6 +353,7 @@ export default function CommunityTasks() {
                       className="bg-purple-800 border-purple-600"
                       value={newTask.maxCompletions}
                       onChange={(e) => setNewTask({ ...newTask, maxCompletions: parseInt(e.target.value) || 1 })}
+                      data-testid="input-maxcompletions"
                     />
                   </div>
                 </div>
@@ -371,6 +371,7 @@ export default function CommunityTasks() {
                   variant="outline" 
                   onClick={() => setCreateDialogOpen(false)}
                   className="border-purple-600 text-purple-200"
+                  data-testid="button-cancel-create"
                 >
                   Cancel
                 </Button>
@@ -389,13 +390,13 @@ export default function CommunityTasks() {
 
         <Tabs defaultValue="available" className="w-full">
           <TabsList className="bg-purple-800/50 border-purple-600">
-            <TabsTrigger value="available" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger value="available" className="data-[state=active]:bg-purple-600" data-testid="tab-available">
               Available Tasks
             </TabsTrigger>
-            <TabsTrigger value="my-tasks" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger value="my-tasks" className="data-[state=active]:bg-purple-600" data-testid="tab-mytasks">
               My Tasks
             </TabsTrigger>
-            <TabsTrigger value="my-submissions" className="data-[state=active]:bg-purple-600">
+            <TabsTrigger value="my-submissions" className="data-[state=active]:bg-purple-600" data-testid="tab-mysubmissions">
               My Submissions
             </TabsTrigger>
           </TabsList>
@@ -454,6 +455,7 @@ export default function CommunityTasks() {
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-purple-300 hover:text-purple-100 text-sm"
+                          data-testid={`link-target-${task.id}`}
                         >
                           <ExternalLink className="w-3 h-3" />
                           {task.targetHandle || "View target"}
@@ -493,6 +495,7 @@ export default function CommunityTasks() {
                   <Button 
                     className="mt-4 bg-purple-600 hover:bg-purple-700"
                     onClick={() => setCreateDialogOpen(true)}
+                    data-testid="button-create-first-task"
                   >
                     Create Your First Task
                   </Button>
@@ -602,6 +605,7 @@ export default function CommunityTasks() {
                   placeholder="@your_handle"
                   value={workerHandle}
                   onChange={(e) => setWorkerHandle(e.target.value)}
+                  data-testid="input-workerhandle"
                 />
               </div>
               
@@ -612,6 +616,7 @@ export default function CommunityTasks() {
                   placeholder="Link to screenshot or post proving completion"
                   value={proofUrl}
                   onChange={(e) => setProofUrl(e.target.value)}
+                  data-testid="input-proofurl"
                 />
                 <p className="text-xs text-purple-300 mt-1">
                   Providing proof increases approval chances
@@ -633,6 +638,7 @@ export default function CommunityTasks() {
                 variant="outline" 
                 onClick={() => setSubmitDialogOpen(false)}
                 className="border-purple-600 text-purple-200"
+                data-testid="button-cancel-submit"
               >
                 Cancel
               </Button>

@@ -1351,21 +1351,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async decrementSocialTaskBudget(id: string, amount: string): Promise<void> {
-    await db
-      .update(socialTasks)
-      .set({
-        remainingBudgetLamports: sql`${socialTasks.remainingBudgetLamports} - ${amount}`
-      })
-      .where(eq(socialTasks.id, id));
+    const task = await this.getSocialTaskById(id);
+    if (!task) return;
+    
+    const currentBudget = BigInt(task.remainingBudgetLamports);
+    const decrementAmount = BigInt(amount);
+    
+    if (decrementAmount < 0n) {
+      const newBudget = currentBudget - decrementAmount;
+      await db
+        .update(socialTasks)
+        .set({ remainingBudgetLamports: newBudget.toString() })
+        .where(eq(socialTasks.id, id));
+    } else {
+      const newBudget = currentBudget >= decrementAmount ? currentBudget - decrementAmount : 0n;
+      await db
+        .update(socialTasks)
+        .set({ remainingBudgetLamports: newBudget.toString() })
+        .where(eq(socialTasks.id, id));
+    }
   }
 
   async incrementSocialTaskCompletions(id: string): Promise<void> {
-    await db
-      .update(socialTasks)
-      .set({
-        completedCount: sql`${socialTasks.completedCount} + 1`
-      })
-      .where(eq(socialTasks.id, id));
+    const task = await this.getSocialTaskById(id);
+    if (!task) return;
+    
+    if (task.completedCount < task.maxCompletions) {
+      await db
+        .update(socialTasks)
+        .set({
+          completedCount: sql`${socialTasks.completedCount} + 1`
+        })
+        .where(eq(socialTasks.id, id));
+    }
   }
 
   // Social Task Submissions

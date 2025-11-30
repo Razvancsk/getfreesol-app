@@ -2769,6 +2769,14 @@ export default function SolRefund() {
                           👤 Profile
                         </DropdownMenuItem>
                       </Link>
+                      <Link href="/tasks">
+                        <DropdownMenuItem 
+                          className="text-white hover:bg-purple-600/40 cursor-pointer"
+                          data-testid="button-tasks"
+                        >
+                          👥 Community Tasks
+                        </DropdownMenuItem>
+                      </Link>
                       <DropdownMenuItem 
                         onClick={disconnectWallet}
                         className="text-white hover:bg-purple-600/40 cursor-pointer"
@@ -2867,6 +2875,14 @@ export default function SolRefund() {
                         data-testid="button-profile-desktop"
                       >
                         👤 Profile
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/tasks">
+                      <DropdownMenuItem 
+                        className="text-white hover:bg-purple-600/40 cursor-pointer"
+                        data-testid="button-tasks-desktop"
+                      >
+                        👥 Community Tasks
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuItem 
