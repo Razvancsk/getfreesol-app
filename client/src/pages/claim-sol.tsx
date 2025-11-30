@@ -46,6 +46,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountIn
 import { SwapModal } from '@/components/SwapModal';
 import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
+import { TasksPanel } from '@/components/TasksPanel';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import ApiDocs from './api-docs';
@@ -97,7 +98,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'statistics' | 'docs' | 'points'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'statistics' | 'docs' | 'points' | 'tasks'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
@@ -2769,14 +2770,6 @@ export default function SolRefund() {
                           👤 Profile
                         </DropdownMenuItem>
                       </Link>
-                      <Link href="/tasks">
-                        <DropdownMenuItem 
-                          className="text-white hover:bg-purple-600/40 cursor-pointer"
-                          data-testid="button-tasks"
-                        >
-                          👥 Community Tasks
-                        </DropdownMenuItem>
-                      </Link>
                       <DropdownMenuItem 
                         onClick={disconnectWallet}
                         className="text-white hover:bg-purple-600/40 cursor-pointer"
@@ -2877,14 +2870,6 @@ export default function SolRefund() {
                         👤 Profile
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/tasks">
-                      <DropdownMenuItem 
-                        className="text-white hover:bg-purple-600/40 cursor-pointer"
-                        data-testid="button-tasks-desktop"
-                      >
-                        👥 Community Tasks
-                      </DropdownMenuItem>
-                    </Link>
                     <DropdownMenuItem 
                       onClick={disconnectWallet}
                       className="text-white hover:bg-purple-600/40 cursor-pointer"
@@ -2956,6 +2941,18 @@ export default function SolRefund() {
                   <ArrowRightLeft className="h-5 w-5" />
                   Swap
                 </Button>
+                <Button
+                  onClick={() => setActiveTab('tasks')}
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
+                    activeTab === 'tasks' 
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                  }`}
+                  data-testid="button-tasks-tab"
+                >
+                  <Users className="h-5 w-5" />
+                  Tasks
+                </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
@@ -2979,7 +2976,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center space-y-4 py-4">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : activeTab === 'tasks' ? 'Complete social tasks to earn SOL rewards!' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3749,6 +3746,13 @@ export default function SolRefund() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Tasks Tab Content */}
+          {activeTab === 'tasks' && (
+            <div className="space-y-6 py-4">
+              <TasksPanel />
             </div>
           )}
 

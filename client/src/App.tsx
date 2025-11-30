@@ -13,7 +13,6 @@ import ApiDocs from "@/pages/api-docs";
 import DeveloperDashboard from "@/pages/developer-dashboard";
 import AdminMigrate from "@/pages/admin-migrate";
 import ProfilePage from "@/pages/profile";
-import CommunityTasks from "@/pages/community-tasks";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,7 +28,6 @@ function Router() {
       <Route path="/admin/migrate" component={AdminMigrate} />
       <Route path="/docs" component={ApiDocs} />
       <Route path="/profile" component={ProfilePage} />
-      <Route path="/tasks" component={CommunityTasks} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />
       <Route component={NotFound} />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
@@ -20,7 +21,6 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertCircle,
-  Twitter,
   MessageSquare,
   Heart,
   Repeat,
@@ -28,9 +28,15 @@ import {
   Share2,
   Coins,
   Eye,
-  Send
+  Send,
+  ChevronUp,
+  ChevronDown,
+  Globe,
+  Sparkles,
+  Trophy,
+  Star
 } from "lucide-react";
-import { SiDiscord } from "react-icons/si";
+import { SiDiscord, SiTelegram, SiX } from "react-icons/si";
 
 interface SocialTask {
   id: string;
@@ -64,19 +70,47 @@ interface SocialTaskSubmission {
   rejectionReason: string | null;
 }
 
-const platformIcons: Record<string, JSX.Element> = {
-  twitter: <Twitter className="w-4 h-4" />,
-  x: <Twitter className="w-4 h-4" />,
-  discord: <SiDiscord className="w-4 h-4" />
+const platformConfig: Record<string, { icon: JSX.Element; name: string; color: string; bgColor: string }> = {
+  x: { 
+    icon: <SiX className="w-5 h-5" />, 
+    name: "Twitter Task", 
+    color: "text-white",
+    bgColor: "bg-[#1DA1F2]"
+  },
+  twitter: { 
+    icon: <SiX className="w-5 h-5" />, 
+    name: "Twitter Task", 
+    color: "text-white",
+    bgColor: "bg-[#1DA1F2]"
+  },
+  discord: { 
+    icon: <SiDiscord className="w-5 h-5" />, 
+    name: "Discord Task", 
+    color: "text-white",
+    bgColor: "bg-[#5865F2]"
+  },
+  telegram: { 
+    icon: <SiTelegram className="w-5 h-5" />, 
+    name: "Telegram Task", 
+    color: "text-white",
+    bgColor: "bg-[#0088cc]"
+  },
+  website: { 
+    icon: <Globe className="w-5 h-5" />, 
+    name: "Website Task", 
+    color: "text-white",
+    bgColor: "bg-gradient-to-r from-pink-500 to-purple-500"
+  }
 };
 
-const taskTypeIcons: Record<string, JSX.Element> = {
-  follow: <UserPlus className="w-4 h-4" />,
-  like: <Heart className="w-4 h-4" />,
-  retweet: <Repeat className="w-4 h-4" />,
-  reply: <MessageSquare className="w-4 h-4" />,
-  quote: <Share2 className="w-4 h-4" />,
-  join: <Users className="w-4 h-4" />
+const taskTypeLabels: Record<string, string> = {
+  follow: "Follow",
+  like: "Like",
+  retweet: "Retweet",
+  reply: "Reply",
+  quote: "Quote Tweet",
+  join: "Join",
+  visit: "Visit"
 };
 
 const formatLamports = (lamports: string) => {
@@ -98,6 +132,14 @@ export default function CommunityTasks() {
   const [selectedTask, setSelectedTask] = useState<SocialTask | null>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [workerHandle, setWorkerHandle] = useState("");
+  
+  const [expandedPlatforms, setExpandedPlatforms] = useState<Record<string, boolean>>({
+    x: true,
+    twitter: true,
+    discord: true,
+    telegram: true,
+    website: true
+  });
   
   const [newTask, setNewTask] = useState({
     platform: "x",
@@ -213,7 +255,7 @@ export default function CommunityTasks() {
       completed: "bg-gray-600 text-white",
       paused: "bg-orange-600 text-white"
     };
-    return <Badge className={styles[status] || "bg-gray-600"}>{status}</Badge>;
+    return <Badge className={styles[status] || "bg-gray-600"} data-testid={`badge-status-${status}`}>{status}</Badge>;
   };
 
   const openSubmitDialog = (task: SocialTask) => {
@@ -221,338 +263,468 @@ export default function CommunityTasks() {
     setSubmitDialogOpen(true);
   };
 
+  const togglePlatform = (platform: string) => {
+    setExpandedPlatforms(prev => ({
+      ...prev,
+      [platform]: !prev[platform]
+    }));
+  };
+
   const tasks = tasksData?.tasks || [];
   const myTasks = myTasksData?.tasks || [];
   const mySubmissions = mySubmissionsData?.submissions || [];
 
+  const availableTasks = tasks.filter(t => t.creatorWallet !== walletAddress);
+  
+  const groupedTasks = useMemo(() => {
+    const groups: Record<string, SocialTask[]> = {};
+    availableTasks.forEach(task => {
+      const platform = task.platform.toLowerCase();
+      if (!groups[platform]) groups[platform] = [];
+      groups[platform].push(task);
+    });
+    return groups;
+  }, [availableTasks]);
+
+  const totalTasks = availableTasks.length;
+  const completedByUser = mySubmissions.filter(s => s.status === 'approved' || s.status === 'claimed').length;
+
+  const totalRewardPool = useMemo(() => {
+    return tasks.reduce((sum, task) => sum + Number(task.totalBudgetLamports), 0);
+  }, [tasks]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 text-white">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 flex items-center justify-center gap-2">
-            <Users className="w-8 h-8 text-purple-300" />
-            Community Tasks
-          </h1>
-          <p className="text-purple-200">Complete social tasks to earn SOL or create tasks to grow your presence</p>
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] text-white">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-green-400" />
+              Task
+            </h1>
+            <span className="text-sm text-gray-400">*GetFreeSol will verify tasks before distributing rewards</span>
+          </div>
         </div>
 
-        <div className="flex justify-end mb-6">
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-purple-600 hover:bg-purple-700"
-                disabled={!connected}
-                data-testid="button-create-task"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Task
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-purple-900 border-purple-600 text-white max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create Social Task</DialogTitle>
-                <DialogDescription className="text-purple-200">
-                  Create a task for the community to complete and earn rewards
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Platform</Label>
-                    <Select value={newTask.platform} onValueChange={(v) => setNewTask({ ...newTask, platform: v })}>
-                      <SelectTrigger className="bg-purple-800 border-purple-600" data-testid="select-platform">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-purple-800 border-purple-600">
-                        <SelectItem value="x" data-testid="option-platform-x">X (Twitter)</SelectItem>
-                        <SelectItem value="discord" data-testid="option-platform-discord">Discord</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Task Type</Label>
-                    <Select value={newTask.taskType} onValueChange={(v) => setNewTask({ ...newTask, taskType: v })}>
-                      <SelectTrigger className="bg-purple-800 border-purple-600" data-testid="select-tasktype">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-purple-800 border-purple-600">
-                        <SelectItem value="follow" data-testid="option-type-follow">Follow</SelectItem>
-                        <SelectItem value="like" data-testid="option-type-like">Like</SelectItem>
-                        <SelectItem value="retweet" data-testid="option-type-retweet">Retweet</SelectItem>
-                        <SelectItem value="reply" data-testid="option-type-reply">Reply</SelectItem>
-                        <SelectItem value="quote" data-testid="option-type-quote">Quote Tweet</SelectItem>
-                        <SelectItem value="join" data-testid="option-type-join">Join Server</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label>Title</Label>
-                  <Input 
-                    className="bg-purple-800 border-purple-600"
-                    placeholder="e.g., Follow our X account"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    data-testid="input-title"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Description (optional)</Label>
-                  <Textarea 
-                    className="bg-purple-800 border-purple-600"
-                    placeholder="Additional instructions..."
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    data-testid="input-description"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Target URL</Label>
-                  <Input 
-                    className="bg-purple-800 border-purple-600"
-                    placeholder="https://x.com/your_account"
-                    value={newTask.targetUrl}
-                    onChange={(e) => setNewTask({ ...newTask, targetUrl: e.target.value })}
-                    data-testid="input-targeturl"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Target Handle (optional)</Label>
-                  <Input 
-                    className="bg-purple-800 border-purple-600"
-                    placeholder="@your_handle"
-                    value={newTask.targetHandle}
-                    onChange={(e) => setNewTask({ ...newTask, targetHandle: e.target.value })}
-                    data-testid="input-targethandle"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Reward (SOL)</Label>
-                    <Input 
-                      type="number"
-                      step="0.001"
-                      min="0.001"
-                      className="bg-purple-800 border-purple-600"
-                      value={newTask.rewardSol}
-                      onChange={(e) => setNewTask({ ...newTask, rewardSol: e.target.value })}
-                      data-testid="input-reward"
-                    />
-                  </div>
-                  <div>
-                    <Label>Max Completions</Label>
-                    <Input 
-                      type="number"
-                      min="1"
-                      className="bg-purple-800 border-purple-600"
-                      value={newTask.maxCompletions}
-                      onChange={(e) => setNewTask({ ...newTask, maxCompletions: parseInt(e.target.value) || 1 })}
-                      data-testid="input-maxcompletions"
-                    />
-                  </div>
-                </div>
-                
-                <div className="bg-purple-800/50 p-3 rounded-lg">
-                  <div className="text-sm text-purple-200">Total Budget Required</div>
-                  <div className="text-lg font-bold text-yellow-400">
-                    {(parseFloat(newTask.rewardSol || "0") * (newTask.maxCompletions || 1)).toFixed(4)} SOL
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="bg-gradient-to-br from-purple-900/50 to-indigo-900/50 border-purple-500/30 overflow-hidden" data-testid="card-campaign-featured">
+            <div className="relative h-32 bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
+              <div className="text-center">
+                <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
+                <div className="text-2xl font-bold">{formatLamports(totalRewardPool.toString())} SOL</div>
+                <div className="text-sm opacity-80">Total Prize Pool</div>
               </div>
-              
-              <DialogFooter>
+              <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full text-xs">
+                <Users className="w-3 h-3" />
+                <span>{tasks.length} tasks</span>
+              </div>
+            </div>
+            <CardContent className="pt-4">
+              <div className="text-sm text-gray-300">GetFreeSol Community Tasks</div>
+              <div className="flex gap-2 mt-2">
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">+20 EXP</Badge>
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">SOL Rewards</Badge>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-600/30 flex flex-col justify-center items-center py-8" data-testid="card-create-campaign">
+            <Plus className="w-12 h-12 text-gray-500 mb-2" />
+            <p className="text-gray-400 text-sm mb-3">Create your own campaign</p>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
                 <Button 
-                  variant="outline" 
-                  onClick={() => setCreateDialogOpen(false)}
-                  className="border-purple-600 text-purple-200"
-                  data-testid="button-cancel-create"
+                  variant="outline"
+                  className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20"
+                  disabled={!connected}
+                  data-testid="button-create-task"
                 >
-                  Cancel
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Task
                 </Button>
-                <Button 
-                  onClick={() => createTaskMutation.mutate(newTask)}
-                  disabled={createTaskMutation.isPending || !newTask.title || !newTask.targetUrl}
-                  className="bg-purple-600 hover:bg-purple-700"
-                  data-testid="button-confirm-create"
-                >
-                  {createTaskMutation.isPending ? "Creating..." : "Create Task"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="bg-[#1a1a1a] border-gray-700 text-white max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create Social Task</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Create a task for the community to complete and earn rewards
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Platform</Label>
+                      <Select value={newTask.platform} onValueChange={(v) => setNewTask({ ...newTask, platform: v })}>
+                        <SelectTrigger className="bg-[#2a2a2a] border-gray-600" data-testid="select-platform">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#2a2a2a] border-gray-600">
+                          <SelectItem value="x" data-testid="option-platform-x">X (Twitter)</SelectItem>
+                          <SelectItem value="discord" data-testid="option-platform-discord">Discord</SelectItem>
+                          <SelectItem value="telegram" data-testid="option-platform-telegram">Telegram</SelectItem>
+                          <SelectItem value="website" data-testid="option-platform-website">Website</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Task Type</Label>
+                      <Select value={newTask.taskType} onValueChange={(v) => setNewTask({ ...newTask, taskType: v })}>
+                        <SelectTrigger className="bg-[#2a2a2a] border-gray-600" data-testid="select-tasktype">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#2a2a2a] border-gray-600">
+                          <SelectItem value="follow" data-testid="option-type-follow">Follow</SelectItem>
+                          <SelectItem value="like" data-testid="option-type-like">Like</SelectItem>
+                          <SelectItem value="retweet" data-testid="option-type-retweet">Retweet</SelectItem>
+                          <SelectItem value="reply" data-testid="option-type-reply">Reply</SelectItem>
+                          <SelectItem value="quote" data-testid="option-type-quote">Quote Tweet</SelectItem>
+                          <SelectItem value="join" data-testid="option-type-join">Join Server</SelectItem>
+                          <SelectItem value="visit" data-testid="option-type-visit">Visit Page</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Title</Label>
+                    <Input 
+                      className="bg-[#2a2a2a] border-gray-600"
+                      placeholder="e.g., Follow our X account"
+                      value={newTask.title}
+                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                      data-testid="input-title"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Description (optional)</Label>
+                    <Textarea 
+                      className="bg-[#2a2a2a] border-gray-600"
+                      placeholder="Additional instructions..."
+                      value={newTask.description}
+                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                      data-testid="input-description"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Target URL</Label>
+                    <Input 
+                      className="bg-[#2a2a2a] border-gray-600"
+                      placeholder="https://x.com/your_account"
+                      value={newTask.targetUrl}
+                      onChange={(e) => setNewTask({ ...newTask, targetUrl: e.target.value })}
+                      data-testid="input-targeturl"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Target Handle (optional)</Label>
+                    <Input 
+                      className="bg-[#2a2a2a] border-gray-600"
+                      placeholder="@your_handle"
+                      value={newTask.targetHandle}
+                      onChange={(e) => setNewTask({ ...newTask, targetHandle: e.target.value })}
+                      data-testid="input-targethandle"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Reward (SOL)</Label>
+                      <Input 
+                        type="number"
+                        step="0.001"
+                        min="0.001"
+                        className="bg-[#2a2a2a] border-gray-600"
+                        value={newTask.rewardSol}
+                        onChange={(e) => setNewTask({ ...newTask, rewardSol: e.target.value })}
+                        data-testid="input-reward"
+                      />
+                    </div>
+                    <div>
+                      <Label>Max Completions</Label>
+                      <Input 
+                        type="number"
+                        min="1"
+                        className="bg-[#2a2a2a] border-gray-600"
+                        value={newTask.maxCompletions}
+                        onChange={(e) => setNewTask({ ...newTask, maxCompletions: parseInt(e.target.value) || 1 })}
+                        data-testid="input-maxcompletions"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="bg-[#2a2a2a] p-3 rounded-lg">
+                    <div className="text-sm text-gray-400">Total Budget Required</div>
+                    <div className="text-lg font-bold text-yellow-400">
+                      {(parseFloat(newTask.rewardSol || "0") * (newTask.maxCompletions || 1)).toFixed(4)} SOL
+                    </div>
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setCreateDialogOpen(false)}
+                    className="border-gray-600 text-gray-300"
+                    data-testid="button-cancel-create"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => createTaskMutation.mutate(newTask)}
+                    disabled={createTaskMutation.isPending || !newTask.title || !newTask.targetUrl}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    data-testid="button-confirm-create"
+                  >
+                    {createTaskMutation.isPending ? "Creating..." : "Create Task"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-600/30 flex flex-col justify-center items-center py-8" data-testid="card-my-progress">
+            <Star className="w-10 h-10 text-yellow-400 mb-2" />
+            <div className="text-2xl font-bold">{completedByUser}</div>
+            <p className="text-gray-400 text-sm">Tasks Completed</p>
+            <div className="flex gap-2 mt-3">
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">{mySubmissions.filter(s => s.status === 'pending').length} Pending</Badge>
+            </div>
+          </Card>
         </div>
 
         <Tabs defaultValue="available" className="w-full">
-          <TabsList className="bg-purple-800/50 border-purple-600">
-            <TabsTrigger value="available" className="data-[state=active]:bg-purple-600" data-testid="tab-available">
-              Available Tasks
+          <TabsList className="bg-[#1a1a1a] border-gray-700 mb-6">
+            <TabsTrigger value="available" className="data-[state=active]:bg-gray-700" data-testid="tab-available">
+              Mandatory Tasks
             </TabsTrigger>
-            <TabsTrigger value="my-tasks" className="data-[state=active]:bg-purple-600" data-testid="tab-mytasks">
-              My Tasks
+            <TabsTrigger value="my-tasks" className="data-[state=active]:bg-gray-700" data-testid="tab-mytasks">
+              My Campaigns
             </TabsTrigger>
-            <TabsTrigger value="my-submissions" className="data-[state=active]:bg-purple-600" data-testid="tab-mysubmissions">
+            <TabsTrigger value="my-submissions" className="data-[state=active]:bg-gray-700" data-testid="tab-mysubmissions">
               My Submissions
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="available" className="mt-6">
+          <TabsContent value="available" className="mt-0">
             {tasksLoading ? (
-              <div className="text-center py-12 text-purple-300">Loading tasks...</div>
-            ) : tasks.length === 0 ? (
-              <Card className="bg-purple-800/50 border-purple-600">
-                <CardContent className="py-12 text-center text-purple-200">
+              <div className="text-center py-12 text-gray-400">Loading tasks...</div>
+            ) : availableTasks.length === 0 ? (
+              <Card className="bg-[#1a1a1a] border-gray-700">
+                <CardContent className="py-12 text-center text-gray-400">
                   <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>No tasks available right now. Check back later!</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tasks.filter(t => t.creatorWallet !== walletAddress).map((task) => (
-                  <Card key={task.id} className="bg-purple-800/50 border-purple-600 hover:border-purple-400 transition-colors" data-testid={`card-task-${task.id}`}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {platformIcons[task.platform] || <Share2 className="w-4 h-4" />}
-                          {taskTypeIcons[task.taskType] || <CheckCircle2 className="w-4 h-4" />}
-                        </div>
-                        {getStatusBadge(task.status)}
-                      </div>
-                      <CardTitle className="text-lg text-white">{task.title}</CardTitle>
-                      {task.description && (
-                        <CardDescription className="text-purple-200">{task.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-purple-300">Reward</span>
-                          <span className="text-yellow-400 font-bold flex items-center gap-1">
-                            <Coins className="w-4 h-4" />
-                            {formatLamports(task.rewardLamports)} SOL
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-purple-300">Progress</span>
-                          <span className="text-purple-100">{task.completedCount} / {task.maxCompletions}</span>
-                        </div>
-                        
-                        <div className="w-full bg-purple-900 rounded-full h-2">
-                          <div 
-                            className="bg-purple-500 h-2 rounded-full transition-all"
-                            style={{ width: `${(task.completedCount / task.maxCompletions) * 100}%` }}
-                          />
-                        </div>
-                        
-                        <a 
-                          href={task.targetUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-purple-300 hover:text-purple-100 text-sm"
-                          data-testid={`link-target-${task.id}`}
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          {task.targetHandle || "View target"}
-                        </a>
-                        
-                        <Button 
-                          className="w-full bg-purple-600 hover:bg-purple-700 mt-2"
-                          disabled={!connected || task.completedCount >= task.maxCompletions}
-                          onClick={() => openSubmitDialog(task)}
-                          data-testid={`button-complete-${task.id}`}
-                        >
-                          Complete Task
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                  <span>Mandatory Task</span>
+                  <span>({completedByUser}/{totalTasks}) Completed</span>
+                </div>
+
+                {Object.entries(groupedTasks).map(([platform, platformTasks]) => {
+                  const config = platformConfig[platform] || platformConfig.website;
+                  const completedInPlatform = platformTasks.filter(t => 
+                    mySubmissions.some(s => s.taskId === t.id && (s.status === 'approved' || s.status === 'claimed'))
+                  ).length;
+
+                  return (
+                    <Collapsible 
+                      key={platform} 
+                      open={expandedPlatforms[platform]} 
+                      onOpenChange={() => togglePlatform(platform)}
+                    >
+                      <Card className="bg-[#1a1a1a] border-gray-700 overflow-hidden" data-testid={`card-platform-${platform}`}>
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/30 transition-colors" data-testid={`trigger-platform-${platform}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full ${config.bgColor} flex items-center justify-center`}>
+                                {config.icon}
+                              </div>
+                              <span className="font-medium">{config.name}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-gray-400">({completedInPlatform}/{platformTasks.length}) Completed</span>
+                              {expandedPlatforms[platform] ? (
+                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                              ) : (
+                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                              )}
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+
+                        <CollapsibleContent>
+                          <div className="border-t border-gray-700">
+                            {platformTasks.map((task) => {
+                              const userSubmission = mySubmissions.find(s => s.taskId === task.id);
+                              const isCompleted = userSubmission && (userSubmission.status === 'approved' || userSubmission.status === 'claimed');
+                              const isPending = userSubmission && userSubmission.status === 'pending';
+
+                              return (
+                                <div 
+                                  key={task.id} 
+                                  className="flex items-center justify-between p-4 border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/20"
+                                  data-testid={`task-item-${task.id}`}
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-300">
+                                        {taskTypeLabels[task.taskType] || task.taskType}{" "}
+                                        <a 
+                                          href={task.targetUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-400 hover:underline"
+                                          data-testid={`link-target-${task.id}`}
+                                        >
+                                          {task.targetHandle || task.title}
+                                        </a>
+                                        {" "}on {platform === 'x' ? 'Twitter' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                                      </span>
+                                    </div>
+                                    {task.description && (
+                                      <p className="text-sm text-gray-500 mt-1">{task.description}</p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+                                        {formatLamports(task.rewardLamports)} SOL
+                                      </Badge>
+                                      <span className="text-xs text-gray-500">
+                                        {task.completedCount}/{task.maxCompletions} completed
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="ml-4">
+                                    {isCompleted ? (
+                                      <div className="flex items-center gap-2 text-green-400">
+                                        <CheckCircle2 className="w-5 h-5" />
+                                        <span className="text-sm">Verified</span>
+                                      </div>
+                                    ) : isPending ? (
+                                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                                        Pending
+                                      </Badge>
+                                    ) : (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                                        disabled={!connected || task.completedCount >= task.maxCompletions}
+                                        onClick={() => openSubmitDialog(task)}
+                                        data-testid={`button-verify-${task.id}`}
+                                      >
+                                        Verify
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+                  );
+                })}
+
+                <Button 
+                  className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 hover:from-green-500 hover:via-emerald-500 hover:to-teal-500 text-black mt-6"
+                  disabled={!connected}
+                  data-testid="button-start-earning"
+                >
+                  Start Earning
+                </Button>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="my-tasks" className="mt-6">
+          <TabsContent value="my-tasks" className="mt-0">
             {!connected ? (
-              <Card className="bg-purple-800/50 border-purple-600">
-                <CardContent className="py-12 text-center text-purple-200">
+              <Card className="bg-[#1a1a1a] border-gray-700">
+                <CardContent className="py-12 text-center text-gray-400">
                   <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Connect your wallet to see your created tasks</p>
+                  <p>Connect your wallet to see your created campaigns</p>
                 </CardContent>
               </Card>
             ) : myTasksLoading ? (
-              <div className="text-center py-12 text-purple-300">Loading your tasks...</div>
+              <div className="text-center py-12 text-gray-400">Loading your campaigns...</div>
             ) : myTasks.length === 0 ? (
-              <Card className="bg-purple-800/50 border-purple-600">
-                <CardContent className="py-12 text-center text-purple-200">
+              <Card className="bg-[#1a1a1a] border-gray-700">
+                <CardContent className="py-12 text-center text-gray-400">
                   <Plus className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>You haven't created any tasks yet.</p>
+                  <p>You haven't created any campaigns yet.</p>
                   <Button 
-                    className="mt-4 bg-purple-600 hover:bg-purple-700"
+                    className="mt-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                     onClick={() => setCreateDialogOpen(true)}
                     data-testid="button-create-first-task"
                   >
-                    Create Your First Task
+                    Create Your First Campaign
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
-                {myTasks.map((task) => (
-                  <Card key={task.id} className="bg-purple-800/50 border-purple-600" data-testid={`card-my-task-${task.id}`}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {platformIcons[task.platform]}
-                          <CardTitle className="text-lg text-white">{task.title}</CardTitle>
+                {myTasks.map((task) => {
+                  const config = platformConfig[task.platform] || platformConfig.website;
+                  
+                  return (
+                    <Card key={task.id} className="bg-[#1a1a1a] border-gray-700" data-testid={`card-my-task-${task.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full ${config.bgColor} flex items-center justify-center`}>
+                              {config.icon}
+                            </div>
+                            <span className="font-medium">{task.title}</span>
+                          </div>
+                          {getStatusBadge(task.status)}
                         </div>
-                        {getStatusBadge(task.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-purple-300">Reward</span>
-                          <div className="text-yellow-400 font-bold">{formatLamports(task.rewardLamports)} SOL</div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-400">Reward</span>
+                            <div className="text-yellow-400 font-bold">{formatLamports(task.rewardLamports)} SOL</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Budget Left</span>
+                            <div className="text-gray-200">{formatLamports(task.remainingBudgetLamports)} SOL</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Completions</span>
+                            <div className="text-gray-200">{task.completedCount} / {task.maxCompletions}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Created</span>
+                            <div className="text-gray-200">{new Date(task.createdAt).toLocaleDateString()}</div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-purple-300">Budget Remaining</span>
-                          <div className="text-purple-100">{formatLamports(task.remainingBudgetLamports)} SOL</div>
-                        </div>
-                        <div>
-                          <span className="text-purple-300">Completions</span>
-                          <div className="text-purple-100">{task.completedCount} / {task.maxCompletions}</div>
-                        </div>
-                        <div>
-                          <span className="text-purple-300">Created</span>
-                          <div className="text-purple-100">{new Date(task.createdAt).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="my-submissions" className="mt-6">
+          <TabsContent value="my-submissions" className="mt-0">
             {!connected ? (
-              <Card className="bg-purple-800/50 border-purple-600">
-                <CardContent className="py-12 text-center text-purple-200">
+              <Card className="bg-[#1a1a1a] border-gray-700">
+                <CardContent className="py-12 text-center text-gray-400">
                   <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Connect your wallet to see your submissions</p>
                 </CardContent>
               </Card>
             ) : submissionsLoading ? (
-              <div className="text-center py-12 text-purple-300">Loading your submissions...</div>
+              <div className="text-center py-12 text-gray-400">Loading your submissions...</div>
             ) : mySubmissions.length === 0 ? (
-              <Card className="bg-purple-800/50 border-purple-600">
-                <CardContent className="py-12 text-center text-purple-200">
+              <Card className="bg-[#1a1a1a] border-gray-700">
+                <CardContent className="py-12 text-center text-gray-400">
                   <Send className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>You haven't submitted any tasks yet.</p>
                 </CardContent>
@@ -560,16 +732,16 @@ export default function CommunityTasks() {
             ) : (
               <div className="space-y-4">
                 {mySubmissions.map((submission) => (
-                  <Card key={submission.id} className="bg-purple-800/50 border-purple-600" data-testid={`card-submission-${submission.id}`}>
-                    <CardContent className="py-4">
+                  <Card key={submission.id} className="bg-[#1a1a1a] border-gray-700" data-testid={`card-submission-${submission.id}`}>
+                    <CardContent className="py-4 px-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div>
-                            <div className="text-sm text-purple-300">Submitted</div>
-                            <div className="text-purple-100">{new Date(submission.submittedAt).toLocaleString()}</div>
+                            <div className="text-sm text-gray-400">Submitted</div>
+                            <div className="text-gray-200">{new Date(submission.submittedAt).toLocaleString()}</div>
                           </div>
                           <div>
-                            <div className="text-sm text-purple-300">Reward</div>
+                            <div className="text-sm text-gray-400">Reward</div>
                             <div className="text-yellow-400 font-bold">{formatLamports(submission.rewardLamports)} SOL</div>
                           </div>
                         </div>
@@ -589,10 +761,10 @@ export default function CommunityTasks() {
         </Tabs>
 
         <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
-          <DialogContent className="bg-purple-900 border-purple-600 text-white">
+          <DialogContent className="bg-[#1a1a1a] border-gray-700 text-white">
             <DialogHeader>
-              <DialogTitle>Submit Task Completion</DialogTitle>
-              <DialogDescription className="text-purple-200">
+              <DialogTitle>Verify Task Completion</DialogTitle>
+              <DialogDescription className="text-gray-400">
                 {selectedTask?.title}
               </DialogDescription>
             </DialogHeader>
@@ -601,7 +773,7 @@ export default function CommunityTasks() {
               <div>
                 <Label>Your Handle (optional)</Label>
                 <Input 
-                  className="bg-purple-800 border-purple-600"
+                  className="bg-[#2a2a2a] border-gray-600"
                   placeholder="@your_handle"
                   value={workerHandle}
                   onChange={(e) => setWorkerHandle(e.target.value)}
@@ -612,21 +784,21 @@ export default function CommunityTasks() {
               <div>
                 <Label>Proof URL (optional)</Label>
                 <Input 
-                  className="bg-purple-800 border-purple-600"
+                  className="bg-[#2a2a2a] border-gray-600"
                   placeholder="Link to screenshot or post proving completion"
                   value={proofUrl}
                   onChange={(e) => setProofUrl(e.target.value)}
                   data-testid="input-proofurl"
                 />
-                <p className="text-xs text-purple-300 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Providing proof increases approval chances
                 </p>
               </div>
               
               {selectedTask && (
-                <div className="bg-purple-800/50 p-3 rounded-lg">
+                <div className="bg-[#2a2a2a] p-3 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-200">Reward upon approval</span>
+                    <span className="text-gray-400">Reward upon approval</span>
                     <span className="text-yellow-400 font-bold">{formatLamports(selectedTask.rewardLamports)} SOL</span>
                   </div>
                 </div>
@@ -637,7 +809,7 @@ export default function CommunityTasks() {
               <Button 
                 variant="outline" 
                 onClick={() => setSubmitDialogOpen(false)}
-                className="border-purple-600 text-purple-200"
+                className="border-gray-600 text-gray-300"
                 data-testid="button-cancel-submit"
               >
                 Cancel
@@ -649,10 +821,10 @@ export default function CommunityTasks() {
                   workerHandle
                 })}
                 disabled={submitTaskMutation.isPending}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                 data-testid="button-confirm-submit"
               >
-                {submitTaskMutation.isPending ? "Submitting..." : "Submit Completion"}
+                {submitTaskMutation.isPending ? "Verifying..." : "Link & Verify"}
               </Button>
             </DialogFooter>
           </DialogContent>
