@@ -49,6 +49,12 @@ import {
   type InsertReferralClaim,
   type UserPoints,
   type InsertUserPoints,
+  type SocialTask,
+  type InsertSocialTask,
+  type SocialTaskSubmission,
+  type InsertSocialTaskSubmission,
+  type SocialTaskPayout,
+  type InsertSocialTaskPayout,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -73,7 +79,10 @@ import {
   referralTokenAccounts,
   referralFeeTransactions,
   referralClaims,
-  userPoints
+  userPoints,
+  socialTasks,
+  socialTaskSubmissions,
+  socialTaskPayouts
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -221,6 +230,28 @@ export interface IStorage {
   getUserPoints(walletAddress: string): Promise<UserPoints | undefined>;
   awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
   getPointsLeaderboard(limit?: number): Promise<UserPoints[]>;
+  
+  // Social Tasks System (Community Grow)
+  createSocialTask(task: InsertSocialTask): Promise<SocialTask>;
+  getSocialTasks(status?: string, limit?: number): Promise<SocialTask[]>;
+  getSocialTaskById(id: string): Promise<SocialTask | undefined>;
+  getSocialTasksByCreator(creatorWallet: string, limit?: number): Promise<SocialTask[]>;
+  updateSocialTaskStatus(id: string, status: string): Promise<void>;
+  decrementSocialTaskBudget(id: string, amount: string): Promise<void>;
+  incrementSocialTaskCompletions(id: string): Promise<void>;
+  
+  // Social Task Submissions
+  createSocialTaskSubmission(submission: InsertSocialTaskSubmission): Promise<SocialTaskSubmission>;
+  getSocialTaskSubmissionById(id: string): Promise<SocialTaskSubmission | undefined>;
+  getSocialTaskSubmissionsByTask(taskId: string, limit?: number): Promise<SocialTaskSubmission[]>;
+  getSocialTaskSubmissionsByWorker(workerWallet: string, limit?: number): Promise<SocialTaskSubmission[]>;
+  getWorkerSubmissionForTask(taskId: string, workerWallet: string): Promise<SocialTaskSubmission | undefined>;
+  updateSocialTaskSubmissionStatus(id: string, status: string, reviewerWallet?: string, rejectionReason?: string): Promise<void>;
+  getPendingSocialTaskSubmissions(limit?: number): Promise<SocialTaskSubmission[]>;
+  
+  // Social Task Payouts
+  createSocialTaskPayout(payout: InsertSocialTaskPayout): Promise<SocialTaskPayout>;
+  getSocialTaskPayoutsByWorker(workerWallet: string, limit?: number): Promise<SocialTaskPayout[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1265,6 +1296,165 @@ export class DatabaseStorage implements IStorage {
   async isTop10Wallet(walletAddress: string): Promise<boolean> {
     const top10 = await this.getTop10Wallets();
     return top10.includes(walletAddress);
+  }
+
+  // ============================================
+  // Social Tasks System Implementation
+  // ============================================
+
+  async createSocialTask(task: InsertSocialTask): Promise<SocialTask> {
+    const [created] = await db
+      .insert(socialTasks)
+      .values(task)
+      .returning();
+    return created;
+  }
+
+  async getSocialTasks(status: string = 'active', limit: number = 50): Promise<SocialTask[]> {
+    if (status === 'all') {
+      return await db
+        .select()
+        .from(socialTasks)
+        .orderBy(desc(socialTasks.createdAt))
+        .limit(limit);
+    }
+    return await db
+      .select()
+      .from(socialTasks)
+      .where(eq(socialTasks.status, status))
+      .orderBy(desc(socialTasks.createdAt))
+      .limit(limit);
+  }
+
+  async getSocialTaskById(id: string): Promise<SocialTask | undefined> {
+    const [task] = await db
+      .select()
+      .from(socialTasks)
+      .where(eq(socialTasks.id, id));
+    return task || undefined;
+  }
+
+  async getSocialTasksByCreator(creatorWallet: string, limit: number = 50): Promise<SocialTask[]> {
+    return await db
+      .select()
+      .from(socialTasks)
+      .where(eq(socialTasks.creatorWallet, creatorWallet))
+      .orderBy(desc(socialTasks.createdAt))
+      .limit(limit);
+  }
+
+  async updateSocialTaskStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(socialTasks)
+      .set({ status })
+      .where(eq(socialTasks.id, id));
+  }
+
+  async decrementSocialTaskBudget(id: string, amount: string): Promise<void> {
+    await db
+      .update(socialTasks)
+      .set({
+        remainingBudgetLamports: sql`${socialTasks.remainingBudgetLamports} - ${amount}`
+      })
+      .where(eq(socialTasks.id, id));
+  }
+
+  async incrementSocialTaskCompletions(id: string): Promise<void> {
+    await db
+      .update(socialTasks)
+      .set({
+        completedCount: sql`${socialTasks.completedCount} + 1`
+      })
+      .where(eq(socialTasks.id, id));
+  }
+
+  // Social Task Submissions
+  async createSocialTaskSubmission(submission: InsertSocialTaskSubmission): Promise<SocialTaskSubmission> {
+    const [created] = await db
+      .insert(socialTaskSubmissions)
+      .values(submission)
+      .returning();
+    return created;
+  }
+
+  async getSocialTaskSubmissionById(id: string): Promise<SocialTaskSubmission | undefined> {
+    const [submission] = await db
+      .select()
+      .from(socialTaskSubmissions)
+      .where(eq(socialTaskSubmissions.id, id));
+    return submission || undefined;
+  }
+
+  async getSocialTaskSubmissionsByTask(taskId: string, limit: number = 100): Promise<SocialTaskSubmission[]> {
+    return await db
+      .select()
+      .from(socialTaskSubmissions)
+      .where(eq(socialTaskSubmissions.taskId, taskId))
+      .orderBy(desc(socialTaskSubmissions.submittedAt))
+      .limit(limit);
+  }
+
+  async getSocialTaskSubmissionsByWorker(workerWallet: string, limit: number = 50): Promise<SocialTaskSubmission[]> {
+    return await db
+      .select()
+      .from(socialTaskSubmissions)
+      .where(eq(socialTaskSubmissions.workerWallet, workerWallet))
+      .orderBy(desc(socialTaskSubmissions.submittedAt))
+      .limit(limit);
+  }
+
+  async getWorkerSubmissionForTask(taskId: string, workerWallet: string): Promise<SocialTaskSubmission | undefined> {
+    const [submission] = await db
+      .select()
+      .from(socialTaskSubmissions)
+      .where(and(
+        eq(socialTaskSubmissions.taskId, taskId),
+        eq(socialTaskSubmissions.workerWallet, workerWallet)
+      ));
+    return submission || undefined;
+  }
+
+  async updateSocialTaskSubmissionStatus(
+    id: string, 
+    status: string, 
+    reviewerWallet?: string, 
+    rejectionReason?: string
+  ): Promise<void> {
+    const updates: any = { status, reviewedAt: new Date() };
+    if (reviewerWallet) updates.reviewerWallet = reviewerWallet;
+    if (rejectionReason) updates.rejectionReason = rejectionReason;
+    
+    await db
+      .update(socialTaskSubmissions)
+      .set(updates)
+      .where(eq(socialTaskSubmissions.id, id));
+  }
+
+  async getPendingSocialTaskSubmissions(limit: number = 100): Promise<SocialTaskSubmission[]> {
+    return await db
+      .select()
+      .from(socialTaskSubmissions)
+      .where(eq(socialTaskSubmissions.status, 'pending'))
+      .orderBy(socialTaskSubmissions.submittedAt)
+      .limit(limit);
+  }
+
+  // Social Task Payouts
+  async createSocialTaskPayout(payout: InsertSocialTaskPayout): Promise<SocialTaskPayout> {
+    const [created] = await db
+      .insert(socialTaskPayouts)
+      .values(payout)
+      .returning();
+    return created;
+  }
+
+  async getSocialTaskPayoutsByWorker(workerWallet: string, limit: number = 50): Promise<SocialTaskPayout[]> {
+    return await db
+      .select()
+      .from(socialTaskPayouts)
+      .where(eq(socialTaskPayouts.workerWallet, workerWallet))
+      .orderBy(desc(socialTaskPayouts.paidAt))
+      .limit(limit);
   }
 }
 
