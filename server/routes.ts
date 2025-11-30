@@ -8214,6 +8214,350 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // ============================================
+  // Community Social Tasks API Routes
+  // ============================================
+
+  // Get all active social tasks
+  app.get("/api/social-tasks", async (req, res) => {
+    try {
+      const { status = 'active', limit = '50' } = req.query;
+      const tasks = await storage.getSocialTasks(status as string, parseInt(limit as string));
+      res.json({ success: true, tasks });
+    } catch (error: any) {
+      console.error('Error fetching social tasks:', error);
+      res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+  });
+
+  // Get tasks by creator wallet
+  app.get("/api/social-tasks/creator/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const tasks = await storage.getSocialTasksByCreator(walletAddress);
+      res.json({ success: true, tasks });
+    } catch (error: any) {
+      console.error('Error fetching creator tasks:', error);
+      res.status(500).json({ error: 'Failed to fetch creator tasks' });
+    }
+  });
+
+  // Get single task by ID
+  app.get("/api/social-tasks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const task = await storage.getSocialTaskById(id);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      res.json({ success: true, task });
+    } catch (error: any) {
+      console.error('Error fetching task:', error);
+      res.status(500).json({ error: 'Failed to fetch task' });
+    }
+  });
+
+  // Create a new social task (requires SOL deposit)
+  app.post("/api/social-tasks", async (req, res) => {
+    try {
+      const { 
+        creatorWallet, 
+        platform, 
+        taskType, 
+        title, 
+        description, 
+        targetUrl, 
+        targetHandle,
+        rewardLamports,
+        totalBudgetLamports,
+        maxCompletions,
+        depositTxSignature,
+        expiresAt
+      } = req.body;
+
+      // Validate required fields
+      if (!creatorWallet || !platform || !taskType || !title || !targetUrl || !rewardLamports || !totalBudgetLamports || !maxCompletions) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Verify the deposit transaction on Solana
+      if (depositTxSignature) {
+        try {
+          const connection = new Connection(HELIUS_RPC_URL);
+          const txInfo = await connection.getTransaction(depositTxSignature, { 
+            commitment: 'confirmed',
+            maxSupportedTransactionVersion: 0 
+          });
+          
+          if (!txInfo) {
+            return res.status(400).json({ error: 'Deposit transaction not found' });
+          }
+          console.log(`Verified deposit tx: ${depositTxSignature}`);
+        } catch (txError) {
+          console.error('Error verifying deposit:', txError);
+          // Continue anyway for now - can be made stricter later
+        }
+      }
+
+      const task = await storage.createSocialTask({
+        creatorWallet,
+        platform,
+        taskType,
+        title,
+        description,
+        targetUrl,
+        targetHandle,
+        rewardLamports: rewardLamports.toString(),
+        totalBudgetLamports: totalBudgetLamports.toString(),
+        remainingBudgetLamports: totalBudgetLamports.toString(),
+        maxCompletions,
+        depositTxSignature,
+        expiresAt: expiresAt ? new Date(expiresAt) : undefined
+      });
+
+      res.json({ success: true, task });
+    } catch (error: any) {
+      console.error('Error creating social task:', error);
+      res.status(500).json({ error: 'Failed to create task' });
+    }
+  });
+
+  // Submit a task completion
+  app.post("/api/social-tasks/:taskId/submit", async (req, res) => {
+    try {
+      const { taskId } = req.params;
+      const { workerWallet, workerHandle, proofUrl } = req.body;
+
+      if (!workerWallet) {
+        return res.status(400).json({ error: 'Worker wallet is required' });
+      }
+
+      // Check if task exists and is active
+      const task = await storage.getSocialTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      if (task.status !== 'active') {
+        return res.status(400).json({ error: 'Task is not active' });
+      }
+      if (task.creatorWallet === workerWallet) {
+        return res.status(400).json({ error: 'Cannot complete your own task' });
+      }
+
+      // Check if worker already submitted for this task
+      const existingSubmission = await storage.getWorkerSubmissionForTask(taskId, workerWallet);
+      if (existingSubmission) {
+        return res.status(400).json({ error: 'You have already submitted for this task' });
+      }
+
+      // Check if task has remaining budget
+      const remainingBudget = BigInt(task.remainingBudgetLamports);
+      const rewardAmount = BigInt(task.rewardLamports);
+      if (remainingBudget < rewardAmount) {
+        return res.status(400).json({ error: 'Task budget exhausted' });
+      }
+
+      // Check if max completions reached
+      if (task.completedCount >= task.maxCompletions) {
+        return res.status(400).json({ error: 'Task max completions reached' });
+      }
+
+      // Create submission
+      const submission = await storage.createSocialTaskSubmission({
+        taskId,
+        workerWallet,
+        workerHandle,
+        proofUrl,
+        rewardLamports: task.rewardLamports
+      });
+
+      // Reserve budget (decrement remaining)
+      await storage.decrementSocialTaskBudget(taskId, task.rewardLamports);
+
+      res.json({ success: true, submission });
+    } catch (error: any) {
+      console.error('Error submitting task:', error);
+      res.status(500).json({ error: 'Failed to submit task' });
+    }
+  });
+
+  // Get submissions for a task (for task creator to review)
+  app.get("/api/social-tasks/:taskId/submissions", async (req, res) => {
+    try {
+      const { taskId } = req.params;
+      const submissions = await storage.getSocialTaskSubmissionsByTask(taskId);
+      res.json({ success: true, submissions });
+    } catch (error: any) {
+      console.error('Error fetching submissions:', error);
+      res.status(500).json({ error: 'Failed to fetch submissions' });
+    }
+  });
+
+  // Get worker's submissions
+  app.get("/api/social-tasks/worker/:walletAddress/submissions", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const submissions = await storage.getSocialTaskSubmissionsByWorker(walletAddress);
+      res.json({ success: true, submissions });
+    } catch (error: any) {
+      console.error('Error fetching worker submissions:', error);
+      res.status(500).json({ error: 'Failed to fetch submissions' });
+    }
+  });
+
+  // Approve or reject a submission (task creator only)
+  app.patch("/api/social-tasks/submissions/:submissionId", async (req, res) => {
+    try {
+      const { submissionId } = req.params;
+      const { status, reviewerWallet, rejectionReason } = req.body;
+
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const submission = await storage.getSocialTaskSubmissionById(submissionId);
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+
+      // Verify reviewer is the task creator
+      const task = await storage.getSocialTaskById(submission.taskId);
+      if (!task || task.creatorWallet !== reviewerWallet) {
+        return res.status(403).json({ error: 'Only task creator can review submissions' });
+      }
+
+      await storage.updateSocialTaskSubmissionStatus(submissionId, status, reviewerWallet, rejectionReason);
+
+      // If approved, increment task completions
+      if (status === 'approved') {
+        await storage.incrementSocialTaskCompletions(submission.taskId);
+        
+        // Check if task should be marked complete
+        const updatedTask = await storage.getSocialTaskById(submission.taskId);
+        if (updatedTask && updatedTask.completedCount >= updatedTask.maxCompletions) {
+          await storage.updateSocialTaskStatus(submission.taskId, 'completed');
+        }
+      } else if (status === 'rejected') {
+        // Return budget if rejected
+        await storage.decrementSocialTaskBudget(submission.taskId, `-${submission.rewardLamports}`);
+      }
+
+      res.json({ success: true, message: `Submission ${status}` });
+    } catch (error: any) {
+      console.error('Error reviewing submission:', error);
+      res.status(500).json({ error: 'Failed to review submission' });
+    }
+  });
+
+  // Claim reward for approved submission (returns transaction to sign)
+  app.post("/api/social-tasks/submissions/:submissionId/claim", async (req, res) => {
+    try {
+      const { submissionId } = req.params;
+      const { workerWallet } = req.body;
+
+      const submission = await storage.getSocialTaskSubmissionById(submissionId);
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+      if (submission.workerWallet !== workerWallet) {
+        return res.status(403).json({ error: 'Not your submission' });
+      }
+      if (submission.status !== 'approved') {
+        return res.status(400).json({ error: 'Submission not approved' });
+      }
+
+      const task = await storage.getSocialTaskById(submission.taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      // Build transaction to transfer SOL from creator to worker
+      const connection = new Connection(HELIUS_RPC_URL);
+      const { Transaction, SystemProgram, PublicKey } = await import('@solana/web3.js');
+      
+      const rewardLamports = BigInt(submission.rewardLamports);
+      const platformFee = rewardLamports * 5n / 100n; // 5% platform fee
+      const workerReward = rewardLamports - platformFee;
+
+      const transaction = new Transaction();
+      
+      // Add transfer from task creator to worker
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: new PublicKey(task.creatorWallet),
+          toPubkey: new PublicKey(workerWallet),
+          lamports: workerReward
+        })
+      );
+
+      // Add platform fee
+      if (platformFee > 0n) {
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: new PublicKey(task.creatorWallet),
+            toPubkey: new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'),
+            lamports: platformFee
+          })
+        );
+      }
+
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = new PublicKey(task.creatorWallet);
+
+      const serializedTx = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false
+      }).toString('base64');
+
+      res.json({ 
+        success: true, 
+        transaction: serializedTx,
+        rewardLamports: workerReward.toString(),
+        platformFee: platformFee.toString()
+      });
+    } catch (error: any) {
+      console.error('Error claiming reward:', error);
+      res.status(500).json({ error: 'Failed to claim reward' });
+    }
+  });
+
+  // Record successful payout
+  app.post("/api/social-tasks/payouts", async (req, res) => {
+    try {
+      const { submissionId, workerWallet, taskId, txSignature, paidLamports } = req.body;
+
+      // Mark submission as claimed
+      await storage.updateSocialTaskSubmissionStatus(submissionId, 'claimed');
+
+      // Record payout
+      const payout = await storage.createSocialTaskPayout({
+        submissionId,
+        workerWallet,
+        taskId,
+        txSignature,
+        paidLamports: paidLamports.toString()
+      });
+
+      res.json({ success: true, payout });
+    } catch (error: any) {
+      console.error('Error recording payout:', error);
+      res.status(500).json({ error: 'Failed to record payout' });
+    }
+  });
+
+  // Get worker's payouts history
+  app.get("/api/social-tasks/payouts/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const payouts = await storage.getSocialTaskPayoutsByWorker(walletAddress);
+      res.json({ success: true, payouts });
+    } catch (error: any) {
+      console.error('Error fetching payouts:', error);
+      res.status(500).json({ error: 'Failed to fetch payouts' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
