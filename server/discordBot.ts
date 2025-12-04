@@ -71,6 +71,73 @@ export async function initializeDiscordBot() {
       processedMessages.delete(message.id);
     }, 60000);
 
+    const content = message.content.trim();
+
+    // Check for !scan or #scan command (simple text command for wallet scanning)
+    // Supports: !scan <wallet>, #scan <wallet>, !scan<wallet>, #scan<wallet>
+    const scanMatch = content.match(/^[!#]scan\s*([A-HJ-NP-Za-km-z1-9]{32,44})$/i);
+    if (scanMatch) {
+      const walletAddress = scanMatch[1];
+      
+      console.log(`🔍 Discord: Text scan command for wallet ${walletAddress} from ${message.author.tag}`);
+      
+      try {
+        // Validate Solana address
+        const pubkey = new PublicKey(walletAddress);
+        const validatedAddress = pubkey.toString();
+        
+        // Show typing indicator
+        if ('sendTyping' in message.channel) {
+          await message.channel.sendTyping();
+        }
+        
+        // Scan the wallet
+        const scanResult = await scanWallet(validatedAddress);
+        
+        // Create embed response
+        const embed = new EmbedBuilder()
+          .setTitle(scanResult.emptyAccounts > 0 ? '💰 Claimable Rent Found!' : '❌ No Claimable Rent')
+          .setColor(scanResult.emptyAccounts > 0 ? 0x00FF00 : 0x808080)
+          .addFields(
+            { name: '👤 Wallet', value: `\`${validatedAddress}\``, inline: false },
+            { name: '🗑️ Empty Accounts', value: `**${scanResult.emptyAccounts}**`, inline: true },
+            { name: '💰 Claimable SOL', value: `**~${scanResult.totalReclaimable} SOL**`, inline: true }
+          )
+          .setFooter({ text: 'GetFreeSol.xyz • Claim your SOL today!' })
+          .setTimestamp();
+        
+        if (scanResult.emptyAccounts > 0) {
+          embed.addFields({
+            name: '🚀 Claim Now',
+            value: `Visit [GetFreeSol.xyz](https://getfreesol.xyz) to claim your rent!`,
+            inline: false
+          });
+        }
+        
+        await message.reply({ embeds: [embed] });
+        
+        console.log(`✅ Discord: Text scan complete for ${validatedAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
+        
+        // Send webhook alert
+        try {
+          const { sendWalletCheckAlert } = await import('./discordWebhookService.js');
+          await sendWalletCheckAlert({
+            walletAddress: validatedAddress,
+            emptyAccountsFound: scanResult.emptyAccounts,
+            estimatedSOL: parseFloat(scanResult.totalReclaimable)
+          });
+        } catch (webhookError) {
+          console.error('Failed to send Discord webhook alert:', webhookError);
+        }
+        
+      } catch (error: any) {
+        console.error('❌ Discord text scan error:', error);
+        await message.reply('❌ Invalid Solana wallet address or scan failed. Please check the address and try again.');
+      }
+      
+      return; // Don't process as AI message
+    }
+
     // Check if OpenAI is configured
     if (!OPENAI_API_KEY) {
       return;
