@@ -186,16 +186,12 @@ export async function initializeDiscordBot() {
       return;
     }
 
-    // AI only responds when:
-    // 1. Someone mentions the bot (@GetFreeSol Bot)
-    // 2. Message is a DM
-    // 3. Message ends with a question mark (user is asking a question)
+    // AI only responds when someone mentions the bot (@GetFreeSol Bot) or DMs
     const isMentioned = message.mentions.has(client.user!.id);
     const isDM = message.channel.isDMBased();
-    const isQuestion = content.trim().endsWith('?');
     
-    // Skip if not a direct interaction with the bot
-    if (!isMentioned && !isDM && !isQuestion) {
+    // Skip if not mentioned or DM - no more responding to questions in channels
+    if (!isMentioned && !isDM) {
       return;
     }
 
@@ -205,8 +201,18 @@ export async function initializeDiscordBot() {
       userMessage = userMessage.replace(`<@${client.user!.id}>`, '').trim();
     }
 
-    // Ignore very short messages or messages that look like commands
-    if (!userMessage || userMessage.length < 3 || userMessage.startsWith('!') || userMessage.startsWith('#') || userMessage.startsWith('/')) {
+    // Ignore messages that look like scan commands
+    if (userMessage.toLowerCase().includes('scan') || 
+        userMessage.match(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/) ||
+        userMessage.startsWith('!') || 
+        userMessage.startsWith('#') || 
+        userMessage.startsWith('/')) {
+      console.log(`💬 Discord AI: Skipping command-like message: "${userMessage}"`);
+      return;
+    }
+
+    // Ignore very short messages
+    if (!userMessage || userMessage.length < 3) {
       return;
     }
 
