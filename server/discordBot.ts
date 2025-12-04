@@ -159,14 +159,27 @@ export async function initializeDiscordBot() {
       return;
     }
 
+    // AI only responds when:
+    // 1. Someone mentions the bot (@GetFreeSol Bot)
+    // 2. Message is a DM
+    // 3. Message ends with a question mark (user is asking a question)
+    const isMentioned = message.mentions.has(client.user!.id);
+    const isDM = message.channel.isDMBased();
+    const isQuestion = content.trim().endsWith('?');
+    
+    // Skip if not a direct interaction with the bot
+    if (!isMentioned && !isDM && !isQuestion) {
+      return;
+    }
+
     // Get user message (remove mention if present)
     let userMessage = message.content;
-    if (message.mentions.has(client.user!.id)) {
+    if (isMentioned) {
       userMessage = userMessage.replace(`<@${client.user!.id}>`, '').trim();
     }
 
-    // Ignore very short messages
-    if (!userMessage || userMessage.length < 2) {
+    // Ignore very short messages or messages that look like commands
+    if (!userMessage || userMessage.length < 3 || userMessage.startsWith('!') || userMessage.startsWith('#') || userMessage.startsWith('/')) {
       return;
     }
 
