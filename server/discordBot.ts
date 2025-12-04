@@ -76,24 +76,35 @@ export async function initializeDiscordBot() {
     // Log all incoming messages for debugging
     console.log(`📨 Discord: Received message from ${message.author.tag}: "${content.substring(0, 50)}..."`);
 
-    // Check for !scan or #scan command (simple text command for wallet scanning)
-    // Supports: !scan <wallet>, #scan <wallet>, !scan<wallet>, #scan<wallet>
-    // More flexible pattern that handles various inputs
-    const scanCommandMatch = content.match(/^[!#]scan\s*/i);
-    if (scanCommandMatch) {
-      // Extract everything after !scan or #scan
-      const afterCommand = content.substring(scanCommandMatch[0].length).trim();
-      console.log(`🔍 Discord: Scan command detected, wallet part: "${afterCommand}"`);
+    // Check for scan command (supports !, #, / prefixes or just a wallet address)
+    // Supports: !scan <wallet>, #scan <wallet>, /scan <wallet>, or just <wallet>
+    const scanCommandMatch = content.match(/^[!#/]scan\s*/i);
+    
+    // Also check if message is just a wallet address (for convenience)
+    const bareWalletMatch = content.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})$/);
+    
+    if (scanCommandMatch || bareWalletMatch) {
+      let walletAddress: string;
       
-      // Try to extract a valid Solana address (base58, 32-44 chars)
-      const walletMatch = afterCommand.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})/);
-      if (!walletMatch) {
-        console.log(`❌ Discord: No valid wallet address found in: "${afterCommand}"`);
-        await message.reply('❌ Please provide a valid Solana wallet address.\n\nExample: `!scan GnV7urSN5aiRWdioX5uRaYSoykWVJaKHwWGdb8BFH9Bm`');
-        return;
+      if (bareWalletMatch) {
+        // User just sent a wallet address
+        walletAddress = bareWalletMatch[1];
+        console.log(`🔍 Discord: Bare wallet address detected: "${walletAddress}"`);
+      } else {
+        // Extract everything after the scan command
+        const afterCommand = content.substring(scanCommandMatch![0].length).trim();
+        console.log(`🔍 Discord: Scan command detected, wallet part: "${afterCommand}"`);
+        
+        // Try to extract a valid Solana address (base58, 32-44 chars)
+        const walletMatch = afterCommand.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})/);
+        if (!walletMatch) {
+          console.log(`❌ Discord: No valid wallet address found in: "${afterCommand}"`);
+          await message.reply('❌ Please provide a valid Solana wallet address.\n\nExample: `!scan GnV7urSN5aiRWdioX5uRaYSoykWVJaKHwWGdb8BFH9Bm`');
+          return;
+        }
+        
+        walletAddress = walletMatch[1];
       }
-      
-      const walletAddress = walletMatch[1];
       
       console.log(`🔍 Discord: Text scan command for wallet ${walletAddress} from ${message.author.tag}`);
       
