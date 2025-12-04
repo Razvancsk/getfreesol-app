@@ -141,9 +141,21 @@ export async function initializeDiscordBot() {
           });
         }
         
-        await message.reply({ embeds: [embed] });
-        
-        console.log(`✅ Discord: Text scan complete for ${validatedAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
+        try {
+          await message.reply({ embeds: [embed] });
+          console.log(`✅ Discord: Text scan complete for ${validatedAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
+        } catch (replyError: any) {
+          console.error('❌ Failed to send scan result (missing permissions?):', replyError.message);
+          // Try sending without reply (just a message)
+          try {
+            if ('send' in message.channel) {
+              await message.channel.send({ embeds: [embed] });
+              console.log(`✅ Discord: Sent scan result without reply for ${validatedAddress}`);
+            }
+          } catch (sendError: any) {
+            console.error('❌ Failed to send message at all:', sendError.message);
+          }
+        }
         
         // Send webhook alert
         try {
@@ -159,7 +171,11 @@ export async function initializeDiscordBot() {
         
       } catch (error: any) {
         console.error('❌ Discord text scan error:', error);
-        await message.reply('❌ Invalid Solana wallet address or scan failed. Please check the address and try again.');
+        try {
+          await message.reply('❌ Invalid Solana wallet address or scan failed. Please check the address and try again.');
+        } catch (replyError: any) {
+          console.error('❌ Failed to send error reply (missing permissions?):', replyError.message);
+        }
       }
       
       return; // Don't process as AI message
