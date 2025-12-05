@@ -192,9 +192,9 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
   }
 
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-  ctx.font = '28px sans-serif';
+  ctx.font = '28px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('#Solana  #DeFi  #GetFreeSol', width - 40, height - 40);
+  ctx.fillText('Solana | DeFi | GetFreeSol', width - 40, height - 40);
 
   return canvas.toBuffer('image/png');
 }
