@@ -29,14 +29,18 @@ const GN_TEMPLATES = [
 ];
 
 const FUNNY_TEMPLATES = [
-  "Me watching my empty token accounts burn 🔥\n\nThat hidden SOL coming back home\n\ngetfreesol.xyz\n\n#Solana #DeFi",
-  "POV: You just found out you have 47 empty token accounts 💀\n\nTime to reclaim that SOL\n\ngetfreesol.xyz\n\n#Solana",
-  "When someone asks why I'm burning all my dead tokens 🔥\n\nBecause free SOL, thats why\n\ngetfreesol.xyz\n\n#Solana #DeFi",
-  "My wallet after I reclaimed SOL from 100 empty accounts 🚀\n\nWe're so back\n\ngetfreesol.xyz\n\n#Solana",
-  "Burning worthless NFTs and getting SOL back be like:\n\nThis is fine 🔥\n\ngetfreesol.xyz\n\n#Solana #NFTs",
-  "Nobody:\n\nMe at 3am burning shitcoins for rent deposits:\n\n🔥🔥🔥\n\ngetfreesol.xyz\n\n#Solana",
-  "Therapist: Dead tokens cant hurt you\n\nMy wallet with 200 empty accounts: 👀\n\nReclaim that SOL: getfreesol.xyz\n\n#Solana",
-  "That feeling when you burn a rugpull token and get SOL back\n\nRevenge is sweet 🔥\n\ngetfreesol.xyz\n\n#Solana #DeFi",
+  "If youre reading this, youre probably a degen who forgot about 50 empty token accounts 🔥\n\nTime to cleanup\n\ngetfreesol.xyz\n\n#Solana",
+  "POV: You just discovered you have more empty accounts than actual holdings 💀\n\nWe fix that\n\ngetfreesol.xyz\n\n#Solana",
+  "Some people collect NFTs\n\nReal ones collect rent deposits from dead tokens 🔥\n\ngetfreesol.xyz\n\n#Solana #DeFi",
+  "If you survived the bear market, you deserve to reclaim your hidden SOL 🫡\n\nCleanup time\n\ngetfreesol.xyz\n\n#Solana",
+  "Your wallet needs a spring cleaning 🧹\n\nBurn the rugs, close the empties, stack the SOL\n\ngetfreesol.xyz\n\n#Solana",
+  "Every degen has that one wallet with 200 empty accounts from 2021 💀\n\nNo judgment, just cleanup\n\ngetfreesol.xyz\n\n#Solana",
+  "The smart money is reclaiming SOL from dead accounts while you sleep 🔥\n\nJoin us\n\ngetfreesol.xyz\n\n#Solana #DeFi",
+  "If you aped into 100 memecoins last cycle, theres free SOL waiting for you 🚀\n\nCleanup szn\n\ngetfreesol.xyz\n\n#Solana",
+  "Solana degens understand: cleanup your wallet, stack your SOL 🔥\n\nSimple as\n\ngetfreesol.xyz\n\n#Solana",
+  "Your rent deposits from 2022 rugs are still waiting 💀\n\nCome get your SOL back\n\ngetfreesol.xyz\n\n#Solana",
+  "Some call it burning tokens\n\nWe call it wallet hygiene 🧼\n\ngetfreesol.xyz\n\n#Solana #DeFi",
+  "That feeling when you burn a rug and recover the rent deposit 🔥\n\nRevenge is profitable\n\ngetfreesol.xyz\n\n#Solana",
 ];
 
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
