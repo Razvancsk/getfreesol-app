@@ -8,16 +8,21 @@ const openai = new OpenAI({
 });
 
 const MEME_PROMPTS = [
-  "A cartoon degen wojak character discovering hidden treasure (SOL coins) inside an old dusty wallet, crypto meme style, simple flat colors, dark background",
-  "A happy cartoon face surrounded by flames saying 'this is fine' while burning worthless crypto tokens, meme style, bold colors",
-  "Before and after meme: left side sad wojak with empty pockets, right side happy wojak with stack of SOL coins, crypto meme style",
-  "A cartoon brain expanding/glowing meme with crypto wallet cleanup theme, galaxy brain style, purple and green colors",
-  "A cartoon degen character at 3am on computer burning shitcoins, funny crypto meme style, dark room with monitor glow",
-  "A cartoon trash can overflowing with worthless tokens being converted into shiny SOL coins, crypto meme style",
-  "POV meme: shocked cartoon face discovering 200 empty token accounts in wallet, crypto degen style",
-  "A cartoon broom sweeping away rugged tokens revealing hidden SOL underneath, cleanup theme, crypto meme style",
-  "Gigachad cartoon character proudly cleaning their Solana wallet, recovering SOL, crypto meme style",
-  "A cartoon recycling symbol with worthless NFTs going in and SOL coins coming out, crypto meme style",
+  "Pepe the frog wearing a hoodie at 3am discovering hidden SOL in his wallet, green frog meme, degen crypto style, dark monitor glow background, internet meme aesthetic",
+  "Wojak with laser eyes burning rugged shitcoins, Solana degen meme style, pink wojak, flames and SOL coins flying, raw internet meme look",
+  "Before and after wojak meme: left side crying pink wojak with rugged tokens, right side smug pepe with stack of SOL, classic meme template style",
+  "Galaxy brain expanding meme format, small brain holding shitcoins, huge glowing brain cleaning Solana wallet recovering SOL, degen meme style",
+  "Gigachad sigma male face cleaning his Solana wallet, flexing recovered SOL, meme aesthetic, bold dramatic lighting, crypto degen culture",
+  "Pepe frog sweating nervously at computer screen showing 500 empty token accounts, Solana degen meme, sweating pepe format",
+  "Smug Pepe throwing rugged NFTs into trash and receiving shiny SOL coins, recycling meme, degen crypto aesthetic, green frog",
+  "Wojak vs Chad meme: virgin wojak holding worthless tokens, chad holding cleaned Solana wallet with recovered SOL, classic meme format",
+  "Distracted boyfriend meme style: boyfriend looking at recovered SOL, girlfriend as worthless shitcoins, classic internet meme aesthetic",
+  "Pepe millionaire meme, frog in suit counting recovered SOL from wallet cleanup, smug rich pepe, degen crypto success meme",
+  "Drake meme format: drake rejecting rugged tokens, drake approving wallet cleanup recovering SOL, Solana degen style",
+  "Stonks meme guy but for Solana wallet cleanup, arrow going up, recovered SOL gains, classic meme man aesthetic",
+  "This is fine dog in burning room but the fire is worthless tokens and dog is happy Solana degen, classic meme format",
+  "Crying wojak turning into gigachad after cleaning Solana wallet and recovering SOL, transformation meme, degen crypto style",
+  "Pepe holding bag of rugged tokens on left, same pepe as wealthy frog with SOL stack on right, degen success story meme",
 ];
 
 export async function generateMemeFunnyImage(): Promise<{ imageBuffer: Buffer; prompt: string } | null> {
@@ -28,7 +33,7 @@ export async function generateMemeFunnyImage(): Promise<{ imageBuffer: Buffer; p
     
     const response = await openai.images.generate({
       model: "gpt-image-1",
-      prompt: `${randomPrompt}. Style: internet meme, cartoon, simple, bold text-free, humorous, crypto/Solana themed. NO TEXT ON IMAGE.`,
+      prompt: `${randomPrompt}. Style: classic internet meme format, degen crypto culture, Solana themed, raw meme aesthetic like from crypto twitter or discord. NO TEXT ON IMAGE - visual meme only.`,
       n: 1,
       size: "1024x1024",
     });
@@ -63,7 +68,7 @@ export async function generateCustomMemeImage(customPrompt: string): Promise<Buf
     
     const response = await openai.images.generate({
       model: "gpt-image-1",
-      prompt: `${customPrompt}. Style: internet meme, cartoon, simple, bold, humorous, crypto/Solana themed. NO TEXT ON IMAGE - image only.`,
+      prompt: `${customPrompt}. Style: classic internet meme format, degen crypto culture, Solana themed, raw meme aesthetic like from crypto twitter or discord. NO TEXT ON IMAGE - visual meme only.`,
       n: 1,
       size: "1024x1024",
     });
