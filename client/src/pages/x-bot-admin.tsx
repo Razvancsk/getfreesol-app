@@ -28,10 +28,21 @@ const GN_TEMPLATES = [
   "GN! Another great day in Solana 🌙\n\nTomorrow, reclaim more hidden SOL!\n\ngetfreesol.xyz ✨\n\n#Solana #GN",
 ];
 
+const FUNNY_TEMPLATES = [
+  "Me watching my empty token accounts burn 🔥\n\nThat hidden SOL coming back home\n\ngetfreesol.xyz\n\n#Solana #DeFi",
+  "POV: You just found out you have 47 empty token accounts 💀\n\nTime to reclaim that SOL\n\ngetfreesol.xyz\n\n#Solana",
+  "When someone asks why I'm burning all my dead tokens 🔥\n\nBecause free SOL, thats why\n\ngetfreesol.xyz\n\n#Solana #DeFi",
+  "My wallet after I reclaimed SOL from 100 empty accounts 🚀\n\nWe're so back\n\ngetfreesol.xyz\n\n#Solana",
+  "Burning worthless NFTs and getting SOL back be like:\n\nThis is fine 🔥\n\ngetfreesol.xyz\n\n#Solana #NFTs",
+  "Nobody:\n\nMe at 3am burning shitcoins for rent deposits:\n\n🔥🔥🔥\n\ngetfreesol.xyz\n\n#Solana",
+  "Therapist: Dead tokens cant hurt you\n\nMy wallet with 200 empty accounts: 👀\n\nReclaim that SOL: getfreesol.xyz\n\n#Solana",
+  "That feeling when you burn a rugpull token and get SOL back\n\nRevenge is sweet 🔥\n\ngetfreesol.xyz\n\n#Solana #DeFi",
+];
+
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
 
   const postMutation = useMutation({
@@ -61,7 +72,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny') => {
     setPostContent(template);
     setImageType(imgType);
     setImageKey(Date.now());
@@ -151,6 +162,14 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
               className="border-purple-500 text-purple-200 hover:bg-purple-700"
             >
               📊 Stats Post
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost(FUNNY_TEMPLATES[Math.floor(Math.random() * FUNNY_TEMPLATES.length)], 'funny')}
+              className="border-orange-500 text-orange-200 hover:bg-orange-700"
+            >
+              😂 Funny Post
             </Button>
           </div>
         </div>

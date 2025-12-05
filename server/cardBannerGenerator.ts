@@ -686,6 +686,164 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillText('getfreesol.xyz', 80, height - 70);
     }
     
+  } else if (type === 'funny') {
+    if (template === 0) {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
+      
+      ctx.fillStyle = '#f97316';
+      for (let i = 0; i < 30; i++) {
+        const x = Math.random() * width;
+        const y = height - Math.random() * 200;
+        const size = 20 + Math.random() * 40;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - size/2, y + size);
+        ctx.lineTo(x + size/2, y + size);
+        ctx.closePath();
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('THIS IS FINE', width / 2, 200);
+      
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('Burning tokens for SOL', width / 2, 300);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 550);
+      
+    } else if (template === 1) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#dc2626');
+      gradient.addColorStop(1, '#7f1d1d');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawParticles(ctx, width, height, 'rgba(251,191,36,0.5)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width - 150, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.fillText('BURN', 80, 180);
+      ctx.fillText('BABY', 80, 270);
+      ctx.fillText('BURN', 80, 360);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('Getting my SOL back one token at a time', 80, 450);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', 80, 560);
+      
+    } else if (template === 2) {
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(0, 0, width, height);
+      drawGlowOrbs(ctx, width, height, ['rgba(239,68,68,0.3)', 'rgba(249,115,22,0.25)', 'rgba(251,191,36,0.2)', 'rgba(234,179,8,0.15)']);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 50, 80, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 65px sans-serif';
+      ctx.fillText('POV: Finding 100', width / 2, 280);
+      ctx.fillText('Empty Token Accounts', width / 2, 360);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('Free SOL incoming', width / 2, 460);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 560);
+      
+    } else if (template === 3) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+      
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(40, 40, width - 80, height - 80);
+      
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(width - 150, 150, 80, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', width - 150, 175);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 80, 80);
+      } catch (e) {}
+      
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('NOBODY:', 80, 220);
+      ctx.fillStyle = '#f97316';
+      ctx.fillText('ME AT 3AM:', 80, 300);
+      ctx.fillStyle = '#34d399';
+      ctx.fillText('BURNING SHITCOINS', 80, 400);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', 80, 550);
+      
+    } else {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
+      
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(width * 0.6, 0, width * 0.4, height);
+      
+      drawDiagonalLines(ctx, width, height, 'rgba(255,255,255,0.05)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, height - 130, 80, 80);
+      } catch (e) {}
+      
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('WHEN SOMEONE', 60, 180);
+      ctx.fillText('ASKS WHY I BURN', 60, 260);
+      ctx.fillText('DEAD TOKENS:', 60, 340);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('FREE SOL', 60, 450);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText('getfreesol.xyz', 60, 560);
+    }
+    
   } else {
     if (template === 0) {
       const gradient = ctx.createLinearGradient(0, 0, width, height);
