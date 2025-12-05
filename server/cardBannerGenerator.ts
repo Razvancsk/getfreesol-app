@@ -689,155 +689,153 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
   } else if (type === 'funny') {
     if (template === 0) {
       const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, '#22c55e');
-      gradient.addColorStop(1, '#15803d');
+      gradient.addColorStop(0, '#87ceeb');
+      gradient.addColorStop(1, '#228b22');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#166534';
-      ctx.fillRect(0, height * 0.7, width, height * 0.3);
+      ctx.fillStyle = '#32cd32';
+      ctx.beginPath();
+      for (let x = 0; x < width; x += 3) {
+        const grassHeight = 80 + Math.random() * 40;
+        ctx.fillRect(x, height - grassHeight, 2, grassHeight);
+      }
       
       try {
         const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
         const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 80, height/2 - 120, 160, 160);
+        ctx.drawImage(logo, width/2 - 100, height/2 - 100, 200, 200);
       } catch (e) {}
       
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#1e1b4b';
-      ctx.font = 'bold 90px sans-serif';
-      ctx.fillText('CLEANUP', width / 2, height - 80);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 40px sans-serif';
-      ctx.fillText('getfreesol.xyz', width / 2, 60);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.font = 'bold 100px sans-serif';
+      ctx.fillText('CLEANUP', width / 2, height - 50);
       
     } else if (template === 1) {
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
-      drawGlowOrbs(ctx, width, height, ['rgba(34,197,94,0.3)', 'rgba(22,163,74,0.2)', 'rgba(21,128,61,0.2)', 'rgba(20,83,45,0.15)']);
+      
+      ctx.fillStyle = '#dc2626';
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * width;
+        const y = height - Math.random() * 350;
+        const flameHeight = 50 + Math.random() * 150;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 20, y - flameHeight/2, x, y - flameHeight);
+        ctx.quadraticCurveTo(x + 20, y - flameHeight/2, x, y);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#f97316';
+      for (let i = 0; i < 30; i++) {
+        const x = Math.random() * width;
+        const y = height - Math.random() * 250;
+        const flameHeight = 30 + Math.random() * 100;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 15, y - flameHeight/2, x, y - flameHeight);
+        ctx.quadraticCurveTo(x + 15, y - flameHeight/2, x, y);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fbbf24';
+      for (let i = 0; i < 20; i++) {
+        const x = Math.random() * width;
+        const y = height - Math.random() * 150;
+        const flameHeight = 20 + Math.random() * 60;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 10, y - flameHeight/2, x, y - flameHeight);
+        ctx.quadraticCurveTo(x + 10, y - flameHeight/2, x, y);
+        ctx.fill();
+      }
       
       try {
         const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
         const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, 50, 50, 100, 100);
+        ctx.drawImage(logo, width/2 - 80, 80, 160, 160);
       } catch (e) {}
-      
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('WALLET HYGIENE', width / 2, 220);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 75px sans-serif';
-      ctx.fillText('Burn the rugs', width / 2, 320);
-      ctx.fillText('Close the empties', width / 2, 410);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('Stack the SOL', width / 2, 510);
-      
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 40px sans-serif';
-      ctx.fillText('getfreesol.xyz', width / 2, 590);
       
     } else if (template === 2) {
       ctx.fillStyle = '#1e1b4b';
       ctx.fillRect(0, 0, width, height);
-      drawDotGrid(ctx, width, height, 'rgba(167,139,250,0.15)');
+      
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.arc(width/2, height/2, 200, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(width/2 - 140, height/2 - 140);
+      ctx.lineTo(width/2 + 140, height/2 + 140);
+      ctx.stroke();
       
       try {
         const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
         const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width - 150, 50, 100, 100);
+        ctx.drawImage(logo, width/2 - 60, height/2 - 60, 120, 120);
       } catch (e) {}
       
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#a78bfa';
-      ctx.font = '45px sans-serif';
-      ctx.fillText('Every degen has that wallet with', 80, 200);
-      
       ctx.fillStyle = '#f97316';
-      ctx.font = 'bold 100px sans-serif';
-      ctx.fillText('200+', 80, 320);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 60px sans-serif';
-      ctx.fillText('empty accounts from 2021', 80, 410);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = '50px sans-serif';
-      ctx.fillText('No judgment, just cleanup', 80, 500);
-      
-      ctx.fillStyle = '#fbbf24';
       ctx.font = 'bold 50px sans-serif';
-      ctx.fillText('getfreesol.xyz', 80, 590);
+      ctx.textAlign = 'center';
+      ctx.fillText('NO MORE RUGS', width/2, height - 80);
       
     } else if (template === 3) {
-      const gradient = ctx.createLinearGradient(0, 0, width, 0);
-      gradient.addColorStop(0, '#7c3aed');
-      gradient.addColorStop(1, '#4c1d95');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-      drawWaveLines(ctx, width, height, 'rgba(255,255,255,0.08)');
-      
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, 50, 50, 100, 100);
-      } catch (e) {}
-      
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 50px sans-serif';
-      ctx.fillText('If you survived the bear market', width / 2, 200);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 70px sans-serif';
-      ctx.fillText('You deserve to reclaim', width / 2, 310);
-      ctx.fillText('your hidden SOL', width / 2, 400);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 60px sans-serif';
-      ctx.fillText('Cleanup time', width / 2, 510);
-      
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 45px sans-serif';
-      ctx.fillText('getfreesol.xyz', width / 2, 590);
-      
-    } else {
-      ctx.fillStyle = '#0a0a0a';
+      ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#f97316';
+      ctx.fillStyle = '#22c55e';
       ctx.beginPath();
-      ctx.moveTo(width, 0);
-      ctx.lineTo(width, height);
-      ctx.lineTo(width * 0.4, height);
-      ctx.lineTo(width * 0.6, 0);
-      ctx.closePath();
+      ctx.arc(width/2, height/2, 180, 0, Math.PI * 2);
       ctx.fill();
       
       try {
         const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
         const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, 50, 50, 100, 100);
+        ctx.drawImage(logo, width/2 - 100, height/2 - 100, 200, 200);
       } catch (e) {}
       
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('Smart money is', 60, 220);
-      ctx.fillText('reclaiming SOL from', 60, 290);
-      ctx.fillText('dead accounts', 60, 360);
+      ctx.fillStyle = '#34d399';
+      for (let i = 0; i < 20; i++) {
+        const angle = (Math.PI * 2 / 20) * i;
+        const x = width/2 + Math.cos(angle) * 280;
+        const y = height/2 + Math.sin(angle) * 280;
+        ctx.beginPath();
+        ctx.arc(x, y, 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+    } else {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
+      
+      ctx.strokeStyle = '#7c3aed';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 8; i++) {
+        ctx.beginPath();
+        ctx.arc(width/2, height/2, 60 + i * 40, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 80, height/2 - 80, 160, 160);
+      } catch (e) {}
       
       ctx.fillStyle = '#f97316';
-      ctx.font = 'bold 70px sans-serif';
-      ctx.fillText('while you sleep', 60, 460);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 50px sans-serif';
-      ctx.fillText('getfreesol.xyz', 60, 570);
+      for (let i = 0; i < 12; i++) {
+        const angle = (Math.PI * 2 / 12) * i;
+        const x = width/2 + Math.cos(angle) * 250;
+        const y = height/2 + Math.sin(angle) * 250;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 20);
+        ctx.lineTo(x - 15, y + 20);
+        ctx.lineTo(x + 15, y + 20);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
     
   } else {
