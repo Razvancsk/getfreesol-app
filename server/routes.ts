@@ -6835,6 +6835,38 @@ Claimer: ${walletAddress}`;
     }
   });
   
+  // Quick post endpoint (simpler auth - for admin dashboard)
+  app.post("/api/x-bot/quick-post", async (req, res) => {
+    try {
+      const { content } = req.body;
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+      
+      if (content.length > 280) {
+        return res.status(400).json({ error: 'Content exceeds 280 character limit' });
+      }
+      
+      console.log(`📢 Quick post to X: "${content.substring(0, 50)}..."`);
+      
+      const result = await xApiService.postTweet({ content, postType: 'quick_post' });
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          tweetId: result.tweetId,
+          message: 'Posted successfully',
+        });
+      } else {
+        res.status(500).json({ error: result.error || 'Failed to post' });
+      }
+    } catch (error: any) {
+      console.error("Quick post error:", error);
+      res.status(500).json({ error: error.message || "Failed to post tweet" });
+    }
+  });
+  
   // ============================================
   // X BOT SCHEDULED POSTING SYSTEM
   // ============================================

@@ -4,16 +4,171 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 
 const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+
+const GM_TEMPLATES = [
+  "GM Solana fam! ☀️\n\nReady to reclaim some hidden SOL today?\n\nVisit getfreesol.xyz 💜\n\n#Solana #SOL #DeFi #GM",
+  "GM! Rise and grind, Solana family! 🌅\n\nDon't let your SOL stay locked in empty accounts!\n\ngetfreesol.xyz 💎\n\n#Solana #GM #GetFreeSol",
+  "GM to everyone building on Solana! ☀️\n\nReclaim your rent deposits from empty token accounts\n\ngetfreesol.xyz\n\n#Solana #DeFi #GM",
+  "GM frens! ☀️\n\nDid you know you can recover SOL from empty token accounts?\n\nCheck it out at getfreesol.xyz 🚀\n\n#Solana #GM",
+];
+
+const GN_TEMPLATES = [
+  "GN Solana fam! 🌙\n\nSleep well knowing your SOL is safe!\n\ngetfreesol.xyz 💜\n\n#Solana #GN #GetFreeSol",
+  "GN! Another great day in Solana 🌙\n\nTomorrow, reclaim more hidden SOL!\n\ngetfreesol.xyz ✨\n\n#Solana #GN",
+];
+
+function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
+  const [postContent, setPostContent] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+
+  const postMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest('POST', '/api/x-bot/quick-post', { content });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Posted Successfully! 🎉',
+        description: `Tweet ID: ${data.tweetId}`,
+      });
+      setPostContent('');
+      queryClient.invalidateQueries({ queryKey: ['/api/x-bot/status'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Post Failed',
+        description: error.message || 'Failed to post tweet',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleQuickPost = (template: string) => {
+    setPostContent(template);
+  };
+
+  const handlePost = async () => {
+    if (!postContent.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter some content to post',
+        variant: 'destructive',
+      });
+      return;
+    }
+    postMutation.mutate(postContent);
+  };
+
+  if (!botStatus?.isAuthenticated) {
+    return (
+      <Card className="bg-purple-800/50 border-purple-600">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Quick Post
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert className="bg-yellow-900/30 border-yellow-600">
+            <AlertCircle className="h-4 w-4 text-yellow-400" />
+            <AlertDescription className="text-yellow-200">
+              Connect your X account first to post content
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-purple-800/50 border-purple-600">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <Send className="h-5 w-5" />
+          Quick Post
+        </CardTitle>
+        <CardDescription className="text-purple-200">
+          Post content to X immediately
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Quick Templates */}
+        <div className="space-y-2">
+          <Label className="text-purple-200">Quick Templates</Label>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost(GM_TEMPLATES[Math.floor(Math.random() * GM_TEMPLATES.length)])}
+              className="border-purple-500 text-purple-200 hover:bg-purple-700"
+            >
+              ☀️ GM Post
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost(GN_TEMPLATES[Math.floor(Math.random() * GN_TEMPLATES.length)])}
+              className="border-purple-500 text-purple-200 hover:bg-purple-700"
+            >
+              🌙 GN Post
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost("🔥 Reclaim your hidden SOL today!\n\nEmpty token accounts are holding your rent deposits.\n\nVisit getfreesol.xyz to recover them!\n\n#Solana #DeFi #GetFreeSol")}
+              className="border-purple-500 text-purple-200 hover:bg-purple-700"
+            >
+              🔥 Promo Post
+            </Button>
+          </div>
+        </div>
+
+        {/* Post Content */}
+        <div className="space-y-2">
+          <Label className="text-purple-200">Post Content</Label>
+          <Textarea
+            value={postContent}
+            onChange={(e) => setPostContent(e.target.value)}
+            placeholder="Write your post here..."
+            className="bg-purple-900/50 border-purple-600 text-white placeholder-purple-400 min-h-[120px]"
+            maxLength={280}
+          />
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-purple-400">{postContent.length}/280 characters</span>
+            <Button
+              onClick={handlePost}
+              disabled={postMutation.isPending || !postContent.trim()}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              {postMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Posting...
+                </>
+              ) : (
+                <>
+                  <Twitter className="h-4 w-4 mr-2" />
+                  Post to X
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function XBotAdmin() {
   const { publicKey, connected } = useWallet();
@@ -162,8 +317,8 @@ export default function XBotAdmin() {
                   <CardTitle className="text-sm text-purple-200">Posts This Month</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-white">0</p>
-                  <p className="text-xs text-purple-300 mt-1">0 / 1,500 limit</p>
+                  <p className="text-3xl font-bold text-white">{botStatus?.postsThisMonth || 0}</p>
+                  <p className="text-xs text-purple-300 mt-1">{botStatus?.postsThisMonth || 0} / {botStatus?.monthlyLimit || 1500} limit</p>
                 </CardContent>
               </Card>
               
@@ -172,7 +327,7 @@ export default function XBotAdmin() {
                   <CardTitle className="text-sm text-purple-200">Total Engagement</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold text-white">0</p>
+                  <p className="text-3xl font-bold text-white">{botStatus?.totalEngagement || 0}</p>
                   <p className="text-xs text-purple-300 mt-1">Likes + Retweets + Replies</p>
                 </CardContent>
               </Card>
@@ -182,8 +337,17 @@ export default function XBotAdmin() {
                   <CardTitle className="text-sm text-purple-200">Bot Status</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Badge className="bg-yellow-500 text-white">Not Configured</Badge>
-                  <p className="text-xs text-purple-300 mt-2">Connect X account to activate</p>
+                  {botStatus?.isAuthenticated ? (
+                    <>
+                      <Badge className="bg-green-500 text-white">Active</Badge>
+                      <p className="text-xs text-purple-300 mt-2">Connected as @{botStatus?.accountName}</p>
+                    </>
+                  ) : (
+                    <>
+                      <Badge className="bg-yellow-500 text-white">Not Configured</Badge>
+                      <p className="text-xs text-purple-300 mt-2">Connect X account to activate</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -279,7 +443,10 @@ export default function XBotAdmin() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="schedules">
+          <TabsContent value="schedules" className="space-y-4">
+            {/* Quick Post Section */}
+            <QuickPostCard botStatus={botStatus} toast={toast} />
+            
             <Card className="bg-purple-800/50 border-purple-600">
               <CardHeader>
                 <CardTitle className="text-white">Posting Schedules</CardTitle>
@@ -288,9 +455,17 @@ export default function XBotAdmin() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-purple-200 text-center py-8">
-                  Schedule configuration will be available after connecting your X account
-                </p>
+                {botStatus?.isAuthenticated ? (
+                  <div className="space-y-4">
+                    <p className="text-purple-200 text-center py-4">
+                      Scheduled posting is available. Configure your GM/GN posts below.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-purple-200 text-center py-8">
+                    Connect your X account first to configure posting schedules
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
