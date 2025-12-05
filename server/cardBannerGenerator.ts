@@ -137,17 +137,19 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
   }
 
   ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
   
   if (type === 'gm') {
-    ctx.font = 'bold 120px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('☀️ GM SOLANA!', width / 2, 200);
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 100px sans-serif';
+    ctx.fillText('GM SOLANA!', width / 2, 200);
     
+    ctx.fillStyle = '#ffffff';
     ctx.font = '48px sans-serif';
     ctx.fillText('Rise and reclaim your hidden SOL', width / 2, 300);
     
     ctx.font = 'bold 60px sans-serif';
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = '#34d399';
     ctx.fillText('getfreesol.xyz', width / 2, 420);
     
     ctx.font = '36px sans-serif';
@@ -155,9 +157,9 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     ctx.fillText('Recover rent deposits from empty token accounts', width / 2, 500);
     
   } else if (type === 'stats') {
-    ctx.font = 'bold 80px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('📊 PLATFORM STATS', width / 2, 180);
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = 'bold 70px sans-serif';
+    ctx.fillText('PLATFORM STATS', width / 2, 180);
     
     ctx.font = 'bold 100px sans-serif';
     ctx.fillStyle = '#34d399';
@@ -172,10 +174,11 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     ctx.fillText('Join us: getfreesol.xyz', width / 2, 520);
     
   } else {
-    ctx.font = 'bold 90px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🔥 RECLAIM YOUR SOL', width / 2, 180);
+    ctx.fillStyle = '#f97316';
+    ctx.font = 'bold 80px sans-serif';
+    ctx.fillText('RECLAIM YOUR SOL', width / 2, 180);
     
+    ctx.fillStyle = '#ffffff';
     ctx.font = '44px sans-serif';
     ctx.fillText('Empty token accounts = Hidden SOL', width / 2, 280);
     
@@ -191,7 +194,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
   ctx.font = '28px sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText('#Solana #DeFi #GetFreeSol', width - 40, height - 40);
+  ctx.fillText('#Solana  #DeFi  #GetFreeSol', width - 40, height - 40);
 
   return canvas.toBuffer('image/png');
 }
