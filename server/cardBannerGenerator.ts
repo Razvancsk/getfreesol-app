@@ -687,235 +687,322 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     }
     
   } else if (type === 'funny') {
+    const neonGreen = '#39ff14';
+    const neonPurple = '#bf00ff';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    const drawPerson = (x: number, y: number, scale: number, color: string, armUp = false, hasCrown = false) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y - 60 * scale, 25 * scale, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y - 35 * scale);
+      ctx.lineTo(x, y + 40 * scale);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y + 40 * scale);
+      ctx.lineTo(x - 25 * scale, y + 100 * scale);
+      ctx.moveTo(x, y + 40 * scale);
+      ctx.lineTo(x + 25 * scale, y + 100 * scale);
+      ctx.stroke();
+      ctx.beginPath();
+      if (armUp) {
+        ctx.moveTo(x, y - 10 * scale);
+        ctx.lineTo(x - 35 * scale, y - 50 * scale);
+        ctx.moveTo(x, y - 10 * scale);
+        ctx.lineTo(x + 35 * scale, y + 20 * scale);
+      } else {
+        ctx.moveTo(x, y - 10 * scale);
+        ctx.lineTo(x - 35 * scale, y + 20 * scale);
+        ctx.moveTo(x, y - 10 * scale);
+        ctx.lineTo(x + 35 * scale, y + 20 * scale);
+      }
+      ctx.stroke();
+      if (hasCrown) {
+        ctx.beginPath();
+        ctx.moveTo(x - 20 * scale, y - 85 * scale);
+        ctx.lineTo(x - 15 * scale, y - 100 * scale);
+        ctx.lineTo(x - 5 * scale, y - 85 * scale);
+        ctx.lineTo(x, y - 105 * scale);
+        ctx.lineTo(x + 5 * scale, y - 85 * scale);
+        ctx.lineTo(x + 15 * scale, y - 100 * scale);
+        ctx.lineTo(x + 20 * scale, y - 85 * scale);
+        ctx.stroke();
+      }
+    };
+    
     if (template === 0) {
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 45px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('ME LOOKING AT MY WALLET', width/2, 60);
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width - 180, 30, 150, 50);
+      } catch (e) {}
       
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(50, 100, width/2 - 80, height - 150);
-      ctx.fillRect(width/2 + 30, 100, width/2 - 80, height - 150);
-      
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = neonGreen;
       ctx.font = 'bold 35px sans-serif';
-      ctx.fillText('BEFORE', width/4, 150);
-      ctx.fillStyle = '#22c55e';
-      ctx.fillText('AFTER', width * 3/4, 150);
+      ctx.textAlign = 'left';
+      ctx.fillText('GETFREESOL', width - 175, 60);
       
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(width/4, 280, 80, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(width/4 - 25, 260, 12, 0, Math.PI * 2);
-      ctx.arc(width/4 + 25, 260, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(width/4, 310, 30, 0, Math.PI);
-      ctx.stroke();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(width/4, 320, 30, 0.2, Math.PI - 0.2);
-      ctx.stroke();
+      drawPerson(120, 280, 1.2, neonGreen, false, true);
       
-      ctx.fillStyle = '#fbbf24';
+      drawPerson(350, 350, 1, neonGreen);
+      drawPerson(450, 320, 1, neonGreen);
+      drawPerson(550, 380, 0.9, neonGreen);
+      drawPerson(650, 340, 1, neonGreen);
+      drawPerson(750, 360, 0.95, neonGreen);
+      
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(width * 3/4, 280, 80, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(width * 3/4 - 25, 260, 12, 0, Math.PI * 2);
-      ctx.arc(width * 3/4 + 25, 260, 12, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(width * 3/4, 300, 30, Math.PI, 0);
+      ctx.moveTo(300, 500);
+      ctx.lineTo(800, 500);
+      ctx.lineTo(850, 550);
+      ctx.lineTo(250, 550);
+      ctx.closePath();
       ctx.stroke();
       
-      ctx.fillStyle = '#64748b';
-      ctx.font = '28px sans-serif';
-      ctx.fillText('47 empty accounts', width/4, 420);
-      ctx.fillText('0.02 SOL locked', width/4, 460);
-      
-      ctx.fillStyle = '#22c55e';
-      ctx.fillText('0 empty accounts', width * 3/4, 420);
-      ctx.fillText('+0.47 SOL', width * 3/4, 460);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 40px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 40);
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.rect(50, 150, 150, 80);
+      ctx.stroke();
+      ctx.fillStyle = neonGreen;
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('They dont know', 125, 185);
+      ctx.fillText('I reclaimed 2 SOL', 125, 210);
       
     } else if (template === 1) {
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#f97316';
-      for (let i = 0; i < 60; i++) {
-        const x = Math.random() * width;
-        const y = height - Math.random() * height;
-        const flameH = 30 + Math.random() * 100;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 15, y - flameH/2, x, y - flameH);
-        ctx.quadraticCurveTo(x + 15, y - flameH/2, x, y);
-        ctx.fill();
-      }
-      ctx.fillStyle = '#fbbf24';
-      for (let i = 0; i < 30; i++) {
-        const x = Math.random() * width;
-        const y = height - Math.random() * (height * 0.6);
-        const flameH = 20 + Math.random() * 60;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 10, y - flameH/2, x, y - flameH);
-        ctx.quadraticCurveTo(x + 10, y - flameH/2, x, y);
-        ctx.fill();
-      }
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 30, 80, 80);
+      } catch (e) {}
       
-      ctx.fillStyle = '#fbbf24';
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(width/2, height/2 - 30, 100, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0a0a0a';
-      ctx.beginPath();
-      ctx.arc(width/2 - 30, height/2 - 50, 15, 0, Math.PI * 2);
-      ctx.arc(width/2 + 30, height/2 - 50, 15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(width/2, height/2, 40, Math.PI, 0);
+      ctx.arc(width/2, 320, 100, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = '#0a0a0a';
+      ctx.beginPath();
+      ctx.arc(width/2 - 30, 290, 8, 0, Math.PI * 2);
+      ctx.arc(width/2 + 30, 290, 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(width/2 - 40, 360);
+      ctx.quadraticCurveTo(width/2, 320, width/2 + 40, 360);
       ctx.stroke();
       
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 60px sans-serif';
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI / 4) * i;
+        const x1 = width/2 + Math.cos(angle) * 120;
+        const y1 = 320 + Math.sin(angle) * 120;
+        const x2 = width/2 + Math.cos(angle) * 160;
+        const y2 = 320 + Math.sin(angle) * 160;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(width/2, 420);
+      ctx.lineTo(width/2, 520);
+      ctx.moveTo(width/2, 460);
+      ctx.lineTo(width/2 - 50, 500);
+      ctx.moveTo(width/2, 460);
+      ctx.lineTo(width/2 + 50, 500);
+      ctx.stroke();
+      
+      ctx.fillStyle = neonGreen;
+      ctx.font = 'bold 50px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('THIS IS FINE', width/2, 80);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 40px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 40);
+      ctx.fillText('CLEAN WALLET ENERGY', width/2, 80);
       
     } else if (template === 2) {
-      ctx.fillStyle = '#1e1b4b';
+      ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 50px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('SMALL BRAIN:', 60, 100);
-      ctx.fillText('MEDIUM BRAIN:', 60, 260);
-      ctx.fillText('GALAXY BRAIN:', 60, 420);
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width - 130, 30, 100, 100);
+      } catch (e) {}
       
-      ctx.fillStyle = '#64748b';
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(width - 150, 80, 40, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.fillStyle = '#a78bfa';
+      ctx.arc(200, 300, 80, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.beginPath();
-      ctx.arc(width - 150, 240, 60, 0, Math.PI * 2);
-      ctx.fill();
-      
-      const gradient = ctx.createRadialGradient(width - 150, 400, 0, width - 150, 400, 100);
-      gradient.addColorStop(0, '#ffffff');
-      gradient.addColorStop(0.5, '#a78bfa');
-      gradient.addColorStop(1, '#4c1d95');
-      ctx.fillStyle = gradient;
+      ctx.arc(170, 280, 10, 0, Math.PI * 2);
+      ctx.arc(230, 280, 10, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.beginPath();
-      ctx.arc(width - 150, 400, 80, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(160, 330);
+      ctx.lineTo(240, 330);
+      ctx.stroke();
       
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '30px sans-serif';
-      ctx.fillText('Ignoring empty accounts', 60, 150);
-      ctx.fillStyle = '#c4b5fd';
-      ctx.fillText('Manually closing one by one', 60, 310);
-      ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillText('Using getfreesol.xyz', 60, 470);
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(300, 200);
+      ctx.lineTo(350, 250);
+      ctx.lineTo(300, 300);
+      ctx.lineTo(350, 350);
+      ctx.lineTo(300, 400);
+      ctx.stroke();
       
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 40px sans-serif';
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.rect(400, 150, 350, 300);
+      ctx.stroke();
+      
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 5; col++) {
+          ctx.strokeStyle = row < 2 ? '#ff3333' : neonGreen;
+          ctx.beginPath();
+          ctx.rect(420 + col * 65, 170 + row * 70, 55, 55);
+          ctx.stroke();
+          if (row >= 2) {
+            ctx.beginPath();
+            ctx.moveTo(430 + col * 65, 195 + row * 70);
+            ctx.lineTo(450 + col * 65, 215 + row * 70);
+            ctx.lineTo(465 + col * 65, 180 + row * 70);
+            ctx.stroke();
+          }
+        }
+      }
+      
+      ctx.fillStyle = neonGreen;
+      ctx.font = 'bold 35px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('getfreesol.xyz', width/2, height - 40);
+      ctx.fillText('CLEANING IN PROGRESS', width/2, height - 60);
       
     } else if (template === 3) {
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 55px sans-serif';
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 30, 80, 80);
+      } catch (e) {}
+      
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(200, 350, 80, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(175, 330, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.arc(225, 330, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(200, 370, 25, 0, Math.PI);
+      ctx.stroke();
+      
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(260, 320);
+      ctx.lineTo(380, 280);
+      ctx.lineTo(380, 200);
+      ctx.stroke();
+      
+      ctx.strokeStyle = neonPurple;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(350, 120);
+      ctx.quadraticCurveTo(420, 80, 450, 150);
+      ctx.quadraticCurveTo(480, 100, 520, 140);
+      ctx.quadraticCurveTo(560, 80, 600, 150);
+      ctx.quadraticCurveTo(640, 200, 580, 250);
+      ctx.lineTo(400, 250);
+      ctx.quadraticCurveTo(320, 200, 350, 120);
+      ctx.stroke();
+      
+      ctx.fillStyle = neonPurple;
+      ctx.font = 'bold 25px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('POV:', width/2, 70);
-      ctx.font = 'bold 40px sans-serif';
-      ctx.fillText('You just discovered you have', width/2, 140);
+      ctx.fillText('Is this free SOL?', 490, 190);
       
-      ctx.fillStyle = '#f97316';
-      ctx.font = 'bold 120px sans-serif';
-      ctx.fillText('200+', width/2, 280);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 45px sans-serif';
-      ctx.fillText('empty token accounts', width/2, 360);
-      
-      ctx.fillStyle = '#fbbf24';
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(width/2, 480, 70, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(width/2 - 20, 460, 10, 0, Math.PI * 2);
-      ctx.arc(width/2 + 20, 460, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.font = 'bold 50px sans-serif';
-      ctx.fillText('O', width/2, 510);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 35px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 30);
+      ctx.rect(450, 350, 300, 180);
+      ctx.stroke();
+      ctx.fillStyle = neonGreen;
+      ctx.font = '22px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Empty Accounts: 47', 470, 400);
+      ctx.fillText('Locked SOL: 0.47', 470, 440);
+      ctx.fillText('Status: RECLAIMABLE', 470, 480);
       
     } else {
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.strokeStyle = '#22c55e';
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 50, 30, 100, 100);
+      } catch (e) {}
+      
+      drawPerson(200, 280, 1.1, neonGreen, true);
+      
+      ctx.strokeStyle = neonGreen;
       ctx.lineWidth = 3;
-      ctx.strokeRect(50, 50, width - 100, height - 100);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 50px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('NOBODY:', width/2, 130);
-      
-      ctx.fillStyle = '#f97316';
-      ctx.font = 'bold 45px sans-serif';
-      ctx.fillText('SOLANA DEGENS AT 3AM:', width/2, 220);
-      
-      ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.roundRect(width/2 - 200, 260, 400, 200, 20);
-      ctx.fill();
+      ctx.rect(350, 180, 400, 280);
+      ctx.stroke();
       
-      ctx.fillStyle = '#334155';
-      ctx.font = '25px sans-serif';
-      ctx.fillText('Burning 847 shitcoins', width/2, 320);
-      ctx.fillText('Closing 156 empty accounts', width/2, 360);
-      ctx.fillText('Reclaiming 2.3 SOL', width/2, 400);
+      ctx.strokeStyle = '#ff3333';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i++) {
+        const y = 220 + i * 45;
+        ctx.beginPath();
+        ctx.arc(400, y, 15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(420, y);
+        ctx.lineTo(600, y);
+        ctx.stroke();
+      }
       
-      ctx.fillStyle = '#22c55e';
-      ctx.font = 'bold 35px sans-serif';
-      ctx.fillText('Worth it', width/2, 440);
+      ctx.strokeStyle = neonGreen;
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 5; i++) {
+        const x = 670 + i * 20;
+        const h = 30 + i * 25;
+        ctx.beginPath();
+        ctx.rect(x, 420 - h, 15, h);
+        ctx.stroke();
+      }
       
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = neonGreen;
+      ctx.font = 'bold 30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SOL GO UP', 720, 450);
+      
+      ctx.fillStyle = neonGreen;
       ctx.font = 'bold 40px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 40);
+      ctx.fillText('BURNING TOKENS BE LIKE', width/2, height - 50);
     }
     
   } else {
