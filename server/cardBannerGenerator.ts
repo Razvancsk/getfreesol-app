@@ -534,21 +534,155 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     }
     
   } else if (type === 'stats') {
-    ctx.fillStyle = '#a78bfa';
-    ctx.font = 'bold 70px sans-serif';
-    ctx.fillText('PLATFORM STATS', width / 2, 180);
-    
-    ctx.font = 'bold 100px sans-serif';
-    ctx.fillStyle = '#34d399';
-    ctx.fillText('100+ SOL', width / 2, 320);
-    
-    ctx.font = '42px sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('Total SOL Recovered by Our Community', width / 2, 400);
-    
-    ctx.font = 'bold 50px sans-serif';
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillText('Join us: getfreesol.xyz', width / 2, 520);
+    if (template === 0) {
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#1e1b4b');
+      gradient.addColorStop(1, '#312e81');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawDotGrid(ctx, width, height, 'rgba(167,139,250,0.15)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#a78bfa';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('PLATFORM STATS', width / 2, 200);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 120px sans-serif';
+      ctx.fillText('100+ SOL', width / 2, 350);
+      
+      ctx.fillStyle = '#e0e7ff';
+      ctx.font = '38px sans-serif';
+      ctx.fillText('Total SOL Recovered', width / 2, 440);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 550);
+      
+    } else if (template === 1) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+      drawGlowOrbs(ctx, width, height, ['rgba(52,211,153,0.25)', 'rgba(167,139,250,0.2)', 'rgba(251,191,36,0.15)', 'rgba(34,211,238,0.15)']);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width - 150, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('STATS', 80, 180);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 130px sans-serif';
+      ctx.fillText('100+', 80, 320);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('SOL RECOVERED', 80, 410);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', 80, 550);
+      
+    } else if (template === 2) {
+      ctx.fillStyle = '#34d399';
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#059669';
+      ctx.fillRect(0, height * 0.6, width, height * 0.4);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 140px sans-serif';
+      ctx.fillText('100+ SOL', width / 2, 280);
+      
+      ctx.fillStyle = '#1e1b4b';
+      ctx.font = '50px sans-serif';
+      ctx.fillText('Recovered by Community', width / 2, 380);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 530);
+      
+    } else if (template === 3) {
+      ctx.fillStyle = '#0f0326';
+      ctx.fillRect(0, 0, width, height);
+      
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(50, 50, width - 100, height - 100);
+      
+      drawDiagonalLines(ctx, width, height, 'rgba(139,92,246,0.1)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 50, 80, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#a78bfa';
+      ctx.font = '50px sans-serif';
+      ctx.fillText('COMMUNITY STATS', width / 2, 280);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 100px sans-serif';
+      ctx.fillText('100+ SOL', width / 2, 400);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 530);
+      
+    } else {
+      const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, 500);
+      gradient.addColorStop(0, '#7c3aed');
+      gradient.addColorStop(1, '#4c1d95');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawParticles(ctx, width, height, 'rgba(255,255,255,0.3)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, height - 150, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('PLATFORM STATS', width - 80, 150);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 120px sans-serif';
+      ctx.fillText('100+', width - 80, 300);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.fillText('SOL', width - 80, 400);
+      
+      ctx.fillStyle = '#e0e7ff';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('Recovered by our community', width - 80, 480);
+      
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', 80, height - 70);
+    }
     
   } else {
     if (template === 0) {
