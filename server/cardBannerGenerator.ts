@@ -688,154 +688,284 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     
   } else if (type === 'funny') {
     if (template === 0) {
-      const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, '#87ceeb');
-      gradient.addColorStop(1, '#228b22');
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#32cd32';
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(width/2 - 100, height/2 - 80, 200, 250);
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(width/2 - 80, height/2 - 60, 160, 180);
+      ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      for (let x = 0; x < width; x += 3) {
-        const grassHeight = 80 + Math.random() * 40;
-        ctx.fillRect(x, height - grassHeight, 2, grassHeight);
+      ctx.arc(width/2, height/2 + 140, 120, Math.PI, 0);
+      ctx.fill();
+      
+      const tokenColors = ['#dc2626', '#f97316', '#eab308', '#84cc16', '#06b6d4', '#8b5cf6'];
+      for (let i = 0; i < 15; i++) {
+        const x = width/2 - 60 + Math.random() * 120;
+        const y = height/2 - 40 + Math.random() * 100;
+        ctx.fillStyle = tokenColors[Math.floor(Math.random() * tokenColors.length)];
+        ctx.beginPath();
+        ctx.arc(x, y, 15 + Math.random() * 10, 0, Math.PI * 2);
+        ctx.fill();
       }
       
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 100, height/2 - 100, 200, 200);
-      } catch (e) {}
+      ctx.fillStyle = '#f97316';
+      for (let i = 0; i < 8; i++) {
+        const x = width/2 - 40 + Math.random() * 80;
+        const y = height/2 + 100 + Math.random() * 60;
+        const flameH = 20 + Math.random() * 30;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 10, y - flameH/2, x, y - flameH);
+        ctx.quadraticCurveTo(x + 10, y - flameH/2, x, y);
+        ctx.fill();
+      }
       
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(width - 150, 150, 60, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 40px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#1a1a1a';
-      ctx.font = 'bold 100px sans-serif';
-      ctx.fillText('CLEANUP', width / 2, height - 50);
+      ctx.fillText('SOL', width - 150, 165);
+      
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 5]);
+      ctx.beginPath();
+      ctx.moveTo(width/2 + 60, height/2);
+      ctx.lineTo(width - 180, 150);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.moveTo(width - 175, 140);
+      ctx.lineTo(width - 195, 160);
+      ctx.lineTo(width - 175, 155);
+      ctx.fill();
       
     } else if (template === 1) {
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
       ctx.fillStyle = '#dc2626';
-      for (let i = 0; i < 50; i++) {
-        const x = Math.random() * width;
-        const y = height - Math.random() * 350;
-        const flameHeight = 50 + Math.random() * 150;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 20, y - flameHeight/2, x, y - flameHeight);
-        ctx.quadraticCurveTo(x + 20, y - flameHeight/2, x, y);
-        ctx.fill();
-      }
-      ctx.fillStyle = '#f97316';
-      for (let i = 0; i < 30; i++) {
-        const x = Math.random() * width;
-        const y = height - Math.random() * 250;
-        const flameHeight = 30 + Math.random() * 100;
+      for (let i = 0; i < 40; i++) {
+        const x = 50 + Math.random() * (width - 100);
+        const y = height - Math.random() * 300;
+        const flameHeight = 40 + Math.random() * 120;
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.quadraticCurveTo(x - 15, y - flameHeight/2, x, y - flameHeight);
         ctx.quadraticCurveTo(x + 15, y - flameHeight/2, x, y);
         ctx.fill();
       }
-      ctx.fillStyle = '#fbbf24';
-      for (let i = 0; i < 20; i++) {
-        const x = Math.random() * width;
-        const y = height - Math.random() * 150;
-        const flameHeight = 20 + Math.random() * 60;
+      ctx.fillStyle = '#f97316';
+      for (let i = 0; i < 25; i++) {
+        const x = 80 + Math.random() * (width - 160);
+        const y = height - Math.random() * 200;
+        const flameHeight = 25 + Math.random() * 80;
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 10, y - flameHeight/2, x, y - flameHeight);
-        ctx.quadraticCurveTo(x + 10, y - flameHeight/2, x, y);
+        ctx.quadraticCurveTo(x - 12, y - flameHeight/2, x, y - flameHeight);
+        ctx.quadraticCurveTo(x + 12, y - flameHeight/2, x, y);
         ctx.fill();
       }
       
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 80, 80, 160, 160);
-      } catch (e) {}
+      const tokenColors = ['#a855f7', '#3b82f6', '#ec4899', '#14b8a6'];
+      for (let i = 0; i < 12; i++) {
+        const x = 100 + (i % 4) * 200;
+        const y = 100 + Math.floor(i / 4) * 120 + Math.random() * 50;
+        ctx.fillStyle = tokenColors[i % tokenColors.length];
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.arc(x, y, 35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y + 40);
+        ctx.lineTo(x, height - 150);
+        ctx.stroke();
+      }
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('BURN TOKENS', width/2, 80);
       
     } else if (template === 2) {
       ctx.fillStyle = '#1e1b4b';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.strokeStyle = '#f97316';
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.arc(width/2, height/2, 200, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(width/2 - 140, height/2 - 140);
-      ctx.lineTo(width/2 + 140, height/2 + 140);
-      ctx.stroke();
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 6; i++) {
+        const x = 100 + i * 140;
+        const y = 120;
+        ctx.strokeRect(x - 50, y - 50, 100, 120);
+        
+        ctx.fillStyle = '#7c3aed';
+        ctx.fillRect(x - 40, y - 40, 80, 60);
+        
+        ctx.fillStyle = '#c4b5fd';
+        ctx.beginPath();
+        ctx.arc(x, y + 30, 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
       
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 60, height/2 - 60, 120, 120);
-      } catch (e) {}
+      ctx.fillStyle = '#dc2626';
+      for (let i = 0; i < 30; i++) {
+        const x = 80 + Math.random() * (width - 160);
+        const y = height - 50 - Math.random() * 200;
+        const flameHeight = 30 + Math.random() * 80;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 12, y - flameHeight/2, x, y - flameHeight);
+        ctx.quadraticCurveTo(x + 12, y - flameHeight/2, x, y);
+        ctx.fill();
+      }
+      
+      for (let i = 0; i < 6; i++) {
+        const x = 100 + i * 140;
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(x, 200);
+        ctx.lineTo(x, height - 180);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
       
       ctx.fillStyle = '#f97316';
-      ctx.font = 'bold 50px sans-serif';
+      ctx.font = 'bold 60px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('NO MORE RUGS', width/2, height - 80);
+      ctx.fillText('BURN NFTs', width/2, height - 60);
       
     } else if (template === 3) {
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = '#334155';
       ctx.beginPath();
-      ctx.arc(width/2, height/2, 180, 0, Math.PI * 2);
+      ctx.roundRect(100, 150, width - 200, 350, 20);
       ctx.fill();
       
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 100, height/2 - 100, 200, 200);
-      } catch (e) {}
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(120, 170, width - 240, 310, 15);
+      ctx.fill();
+      
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 8; col++) {
+          const x = 160 + col * 85;
+          const y = 210 + row * 90;
+          ctx.fillStyle = '#475569';
+          ctx.beginPath();
+          ctx.roundRect(x, y, 65, 70, 8);
+          ctx.fill();
+          
+          ctx.fillStyle = '#64748b';
+          ctx.font = '12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('EMPTY', x + 32, y + 45);
+        }
+      }
+      
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(width - 100, height/2, 80, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SOL', width - 100, height/2 + 15);
+      
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 5]);
+      ctx.beginPath();
+      ctx.moveTo(width - 220, height/2);
+      ctx.lineTo(width - 160, height/2);
+      ctx.stroke();
+      ctx.setLineDash([]);
       
       ctx.fillStyle = '#34d399';
-      for (let i = 0; i < 20; i++) {
-        const angle = (Math.PI * 2 / 20) * i;
-        const x = width/2 + Math.cos(angle) * 280;
-        const y = height/2 + Math.sin(angle) * 280;
-        ctx.beginPath();
-        ctx.arc(x, y, 15, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('RECLAIM RENT', width/2, height - 50);
       
     } else {
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.strokeStyle = '#7c3aed';
-      ctx.lineWidth = 3;
-      for (let i = 0; i < 8; i++) {
-        ctx.beginPath();
-        ctx.arc(width/2, height/2, 60 + i * 40, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.moveTo(width/2, 50);
+      ctx.lineTo(width - 100, height/2);
+      ctx.lineTo(width/2, height - 50);
+      ctx.lineTo(100, height/2);
+      ctx.closePath();
+      ctx.fill();
       
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 80, height/2 - 80, 160, 160);
-      } catch (e) {}
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 4;
+      ctx.stroke();
       
-      ctx.fillStyle = '#f97316';
-      for (let i = 0; i < 12; i++) {
-        const angle = (Math.PI * 2 / 12) * i;
-        const x = width/2 + Math.cos(angle) * 250;
-        const y = height/2 + Math.sin(angle) * 250;
+      const items = [
+        { label: 'TOKENS', color: '#f97316', y: height/2 - 100 },
+        { label: 'NFTs', color: '#a855f7', y: height/2 },
+        { label: 'ACCOUNTS', color: '#3b82f6', y: height/2 + 100 },
+      ];
+      
+      items.forEach((item, i) => {
+        ctx.fillStyle = item.color;
         ctx.beginPath();
-        ctx.moveTo(x, y - 20);
-        ctx.lineTo(x - 15, y + 20);
-        ctx.lineTo(x + 15, y + 20);
-        ctx.closePath();
+        ctx.arc(200, item.y, 40, 0, Math.PI * 2);
         ctx.fill();
-      }
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.label, 200, item.y + 5);
+        
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(250, item.y);
+        ctx.lineTo(width/2 - 50, height/2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+      
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(width - 200, height/2, 70, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText('SOL', width - 200, height/2 + 15);
+      
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 5]);
+      ctx.beginPath();
+      ctx.moveTo(width/2 + 80, height/2);
+      ctx.lineTo(width - 280, height/2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.moveTo(width - 275, height/2 - 15);
+      ctx.lineTo(width - 275, height/2 + 15);
+      ctx.lineTo(width - 255, height/2);
+      ctx.closePath();
+      ctx.fill();
     }
     
   } else {
