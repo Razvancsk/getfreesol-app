@@ -691,30 +691,85 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(width/2 - 100, height/2 - 80, 200, 250);
-      ctx.fillStyle = '#64748b';
-      ctx.fillRect(width/2 - 80, height/2 - 60, 160, 180);
-      ctx.fillStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.arc(width/2, height/2 + 140, 120, Math.PI, 0);
-      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ME LOOKING AT MY WALLET', width/2, 60);
       
-      const tokenColors = ['#dc2626', '#f97316', '#eab308', '#84cc16', '#06b6d4', '#8b5cf6'];
-      for (let i = 0; i < 15; i++) {
-        const x = width/2 - 60 + Math.random() * 120;
-        const y = height/2 - 40 + Math.random() * 100;
-        ctx.fillStyle = tokenColors[Math.floor(Math.random() * tokenColors.length)];
-        ctx.beginPath();
-        ctx.arc(x, y, 15 + Math.random() * 10, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(50, 100, width/2 - 80, height - 150);
+      ctx.fillRect(width/2 + 30, 100, width/2 - 80, height - 150);
+      
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 35px sans-serif';
+      ctx.fillText('BEFORE', width/4, 150);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillText('AFTER', width * 3/4, 150);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(width/4, 280, 80, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(width/4 - 25, 260, 12, 0, Math.PI * 2);
+      ctx.arc(width/4 + 25, 260, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(width/4, 310, 30, 0, Math.PI);
+      ctx.stroke();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(width/4, 320, 30, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(width * 3/4, 280, 80, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(width * 3/4 - 25, 260, 12, 0, Math.PI * 2);
+      ctx.arc(width * 3/4 + 25, 260, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(width * 3/4, 300, 30, Math.PI, 0);
+      ctx.stroke();
+      
+      ctx.fillStyle = '#64748b';
+      ctx.font = '28px sans-serif';
+      ctx.fillText('47 empty accounts', width/4, 420);
+      ctx.fillText('0.02 SOL locked', width/4, 460);
+      
+      ctx.fillStyle = '#22c55e';
+      ctx.fillText('0 empty accounts', width * 3/4, 420);
+      ctx.fillText('+0.47 SOL', width * 3/4, 460);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 40);
+      
+    } else if (template === 1) {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
       
       ctx.fillStyle = '#f97316';
-      for (let i = 0; i < 8; i++) {
-        const x = width/2 - 40 + Math.random() * 80;
-        const y = height/2 + 100 + Math.random() * 60;
-        const flameH = 20 + Math.random() * 30;
+      for (let i = 0; i < 60; i++) {
+        const x = Math.random() * width;
+        const y = height - Math.random() * height;
+        const flameH = 30 + Math.random() * 100;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 15, y - flameH/2, x, y - flameH);
+        ctx.quadraticCurveTo(x + 15, y - flameH/2, x, y);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fbbf24';
+      for (let i = 0; i < 30; i++) {
+        const x = Math.random() * width;
+        const y = height - Math.random() * (height * 0.6);
+        const flameH = 20 + Math.random() * 60;
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.quadraticCurveTo(x - 10, y - flameH/2, x, y - flameH);
@@ -722,250 +777,145 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
         ctx.fill();
       }
       
-      ctx.fillStyle = '#22c55e';
+      ctx.fillStyle = '#fbbf24';
       ctx.beginPath();
-      ctx.arc(width - 150, 150, 60, 0, Math.PI * 2);
+      ctx.arc(width/2, height/2 - 30, 100, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 40px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('SOL', width - 150, 165);
-      
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 4;
-      ctx.setLineDash([10, 5]);
+      ctx.fillStyle = '#0a0a0a';
       ctx.beginPath();
-      ctx.moveTo(width/2 + 60, height/2);
-      ctx.lineTo(width - 180, 150);
+      ctx.arc(width/2 - 30, height/2 - 50, 15, 0, Math.PI * 2);
+      ctx.arc(width/2 + 30, height/2 - 50, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(width/2, height/2, 40, Math.PI, 0);
       ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#0a0a0a';
+      ctx.stroke();
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('THIS IS FINE', width/2, 80);
       
       ctx.fillStyle = '#34d399';
-      ctx.beginPath();
-      ctx.moveTo(width - 175, 140);
-      ctx.lineTo(width - 195, 160);
-      ctx.lineTo(width - 175, 155);
-      ctx.fill();
-      
-    } else if (template === 1) {
-      ctx.fillStyle = '#0a0a0a';
-      ctx.fillRect(0, 0, width, height);
-      
-      ctx.fillStyle = '#dc2626';
-      for (let i = 0; i < 40; i++) {
-        const x = 50 + Math.random() * (width - 100);
-        const y = height - Math.random() * 300;
-        const flameHeight = 40 + Math.random() * 120;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 15, y - flameHeight/2, x, y - flameHeight);
-        ctx.quadraticCurveTo(x + 15, y - flameHeight/2, x, y);
-        ctx.fill();
-      }
-      ctx.fillStyle = '#f97316';
-      for (let i = 0; i < 25; i++) {
-        const x = 80 + Math.random() * (width - 160);
-        const y = height - Math.random() * 200;
-        const flameHeight = 25 + Math.random() * 80;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 12, y - flameHeight/2, x, y - flameHeight);
-        ctx.quadraticCurveTo(x + 12, y - flameHeight/2, x, y);
-        ctx.fill();
-      }
-      
-      const tokenColors = ['#a855f7', '#3b82f6', '#ec4899', '#14b8a6'];
-      for (let i = 0; i < 12; i++) {
-        const x = 100 + (i % 4) * 200;
-        const y = 100 + Math.floor(i / 4) * 120 + Math.random() * 50;
-        ctx.fillStyle = tokenColors[i % tokenColors.length];
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.arc(x, y, 35, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        
-        ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x, y + 40);
-        ctx.lineTo(x, height - 150);
-        ctx.stroke();
-      }
-      
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 70px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('BURN TOKENS', width/2, 80);
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 40);
       
     } else if (template === 2) {
       ctx.fillStyle = '#1e1b4b';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 3;
-      for (let i = 0; i < 6; i++) {
-        const x = 100 + i * 140;
-        const y = 120;
-        ctx.strokeRect(x - 50, y - 50, 100, 120);
-        
-        ctx.fillStyle = '#7c3aed';
-        ctx.fillRect(x - 40, y - 40, 80, 60);
-        
-        ctx.fillStyle = '#c4b5fd';
-        ctx.beginPath();
-        ctx.arc(x, y + 30, 20, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('SMALL BRAIN:', 60, 100);
+      ctx.fillText('MEDIUM BRAIN:', 60, 260);
+      ctx.fillText('GALAXY BRAIN:', 60, 420);
       
-      ctx.fillStyle = '#dc2626';
-      for (let i = 0; i < 30; i++) {
-        const x = 80 + Math.random() * (width - 160);
-        const y = height - 50 - Math.random() * 200;
-        const flameHeight = 30 + Math.random() * 80;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 12, y - flameHeight/2, x, y - flameHeight);
-        ctx.quadraticCurveTo(x + 12, y - flameHeight/2, x, y);
-        ctx.fill();
-      }
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.arc(width - 150, 80, 40, 0, Math.PI * 2);
+      ctx.fill();
       
-      for (let i = 0; i < 6; i++) {
-        const x = 100 + i * 140;
-        ctx.strokeStyle = '#f97316';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([8, 4]);
-        ctx.beginPath();
-        ctx.moveTo(x, 200);
-        ctx.lineTo(x, height - 180);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
+      ctx.fillStyle = '#a78bfa';
+      ctx.beginPath();
+      ctx.arc(width - 150, 240, 60, 0, Math.PI * 2);
+      ctx.fill();
       
-      ctx.fillStyle = '#f97316';
-      ctx.font = 'bold 60px sans-serif';
+      const gradient = ctx.createRadialGradient(width - 150, 400, 0, width - 150, 400, 100);
+      gradient.addColorStop(0, '#ffffff');
+      gradient.addColorStop(0.5, '#a78bfa');
+      gradient.addColorStop(1, '#4c1d95');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(width - 150, 400, 80, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '30px sans-serif';
+      ctx.fillText('Ignoring empty accounts', 60, 150);
+      ctx.fillStyle = '#c4b5fd';
+      ctx.fillText('Manually closing one by one', 60, 310);
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('Using getfreesol.xyz', 60, 470);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 40px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('BURN NFTs', width/2, height - 60);
+      ctx.fillText('getfreesol.xyz', width/2, height - 40);
       
     } else if (template === 3) {
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
       
-      ctx.fillStyle = '#334155';
-      ctx.beginPath();
-      ctx.roundRect(100, 150, width - 200, 350, 20);
-      ctx.fill();
-      
-      ctx.fillStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.roundRect(120, 170, width - 240, 310, 15);
-      ctx.fill();
-      
-      for (let row = 0; row < 3; row++) {
-        for (let col = 0; col < 8; col++) {
-          const x = 160 + col * 85;
-          const y = 210 + row * 90;
-          ctx.fillStyle = '#475569';
-          ctx.beginPath();
-          ctx.roundRect(x, y, 65, 70, 8);
-          ctx.fill();
-          
-          ctx.fillStyle = '#64748b';
-          ctx.font = '12px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('EMPTY', x + 32, y + 45);
-        }
-      }
-      
-      ctx.fillStyle = '#22c55e';
-      ctx.beginPath();
-      ctx.arc(width - 100, height/2, 80, 0, Math.PI * 2);
-      ctx.fill();
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 50px sans-serif';
+      ctx.font = 'bold 55px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('SOL', width - 100, height/2 + 15);
+      ctx.fillText('POV:', width/2, 70);
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText('You just discovered you have', width/2, 140);
       
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 4;
-      ctx.setLineDash([10, 5]);
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 120px sans-serif';
+      ctx.fillText('200+', width/2, 280);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText('empty token accounts', width/2, 360);
+      
+      ctx.fillStyle = '#fbbf24';
       ctx.beginPath();
-      ctx.moveTo(width - 220, height/2);
-      ctx.lineTo(width - 160, height/2);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.arc(width/2, 480, 70, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(width/2 - 20, 460, 10, 0, Math.PI * 2);
+      ctx.arc(width/2 + 20, 460, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('O', width/2, 510);
       
       ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 50px sans-serif';
-      ctx.fillText('RECLAIM RENT', width/2, height - 50);
+      ctx.font = 'bold 35px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 30);
       
     } else {
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, width, height);
       
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(50, 50, width - 100, height - 100);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('NOBODY:', width/2, 130);
+      
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText('SOLANA DEGENS AT 3AM:', width/2, 220);
+      
       ctx.fillStyle = '#1e293b';
       ctx.beginPath();
-      ctx.moveTo(width/2, 50);
-      ctx.lineTo(width - 100, height/2);
-      ctx.lineTo(width/2, height - 50);
-      ctx.lineTo(100, height/2);
-      ctx.closePath();
+      ctx.roundRect(width/2 - 200, 260, 400, 200, 20);
       ctx.fill();
       
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-      
-      const items = [
-        { label: 'TOKENS', color: '#f97316', y: height/2 - 100 },
-        { label: 'NFTs', color: '#a855f7', y: height/2 },
-        { label: 'ACCOUNTS', color: '#3b82f6', y: height/2 + 100 },
-      ];
-      
-      items.forEach((item, i) => {
-        ctx.fillStyle = item.color;
-        ctx.beginPath();
-        ctx.arc(200, item.y, 40, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(item.label, 200, item.y + 5);
-        
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 3;
-        ctx.setLineDash([8, 4]);
-        ctx.beginPath();
-        ctx.moveTo(250, item.y);
-        ctx.lineTo(width/2 - 50, height/2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      });
+      ctx.fillStyle = '#334155';
+      ctx.font = '25px sans-serif';
+      ctx.fillText('Burning 847 shitcoins', width/2, 320);
+      ctx.fillText('Closing 156 empty accounts', width/2, 360);
+      ctx.fillText('Reclaiming 2.3 SOL', width/2, 400);
       
       ctx.fillStyle = '#22c55e';
-      ctx.beginPath();
-      ctx.arc(width - 200, height/2, 70, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 45px sans-serif';
-      ctx.fillText('SOL', width - 200, height/2 + 15);
-      
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 4;
-      ctx.setLineDash([10, 5]);
-      ctx.beginPath();
-      ctx.moveTo(width/2 + 80, height/2);
-      ctx.lineTo(width - 280, height/2);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.font = 'bold 35px sans-serif';
+      ctx.fillText('Worth it', width/2, 440);
       
       ctx.fillStyle = '#34d399';
-      ctx.beginPath();
-      ctx.moveTo(width - 275, height/2 - 15);
-      ctx.lineTo(width - 275, height/2 + 15);
-      ctx.lineTo(width - 255, height/2);
-      ctx.closePath();
-      ctx.fill();
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 40);
     }
     
   } else {
