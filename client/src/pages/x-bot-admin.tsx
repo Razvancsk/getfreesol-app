@@ -242,9 +242,9 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Post Content */}
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1">
             <Label className="text-purple-200">Post Content</Label>
             <Textarea
               value={postContent}
@@ -259,7 +259,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
           </div>
 
           {/* Image Preview */}
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1">
             <div className="flex items-center justify-between">
               <Label className="text-purple-200 flex items-center gap-2">
                 <Image className="h-4 w-4" />
@@ -285,15 +285,16 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                 </label>
               </div>
             </div>
-            <div className={`relative rounded-lg border border-purple-600 bg-purple-900/30 ${!includeImage ? 'opacity-50' : ''}`}>
+            <div className={`relative rounded-lg border border-purple-600 bg-purple-900/30 p-2 ${!includeImage ? 'opacity-50' : ''}`}>
               {imageType === 'ai_meme' && aiMemePreview ? (
                 <img
                   src={aiMemePreview}
                   alt="AI generated meme preview"
-                  className="w-full h-auto max-h-[400px] object-contain mx-auto block"
+                  className="w-full h-auto rounded"
+                  style={{ maxWidth: '100%', display: 'block' }}
                 />
               ) : imageType === 'ai_meme' && isGeneratingAiMeme ? (
-                <div className="w-full h-64 flex items-center justify-center bg-purple-900/50">
+                <div className="w-full aspect-square flex items-center justify-center bg-purple-900/50 rounded">
                   <div className="text-center">
                     <Loader2 className="h-10 w-10 animate-spin text-pink-400 mx-auto mb-2" />
                     <p className="text-pink-300">Generating AI meme...</p>
@@ -304,14 +305,15 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                   key={imageKey}
                   src={`/api/x/generate-card?type=${imageType}&t=${imageKey}`}
                   alt="Post image preview"
-                  className="w-full h-auto max-h-[400px] object-contain mx-auto block"
+                  className="w-full h-auto rounded"
+                  style={{ maxWidth: '100%', display: 'block' }}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/api/x/preview-card';
                   }}
                 />
               )}
               {imageType === 'ai_meme' && (
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-4 right-4">
                   <Badge className="bg-pink-500/80">
                     <Sparkles className="h-3 w-3 mr-1" /> AI Generated
                   </Badge>
