@@ -157,21 +157,59 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     ctx.fillText('Recover rent deposits from empty token accounts', width / 2, 500);
     
   } else if (type === 'gn') {
-    ctx.fillStyle = '#818cf8';
-    ctx.font = 'bold 100px sans-serif';
-    ctx.fillText('GN SOLANA!', width / 2, 200);
+    ctx.fillStyle = '#1e1b4b';
+    ctx.fillRect(0, 0, width, height);
     
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '48px sans-serif';
-    ctx.fillText('Rest well, your SOL is waiting', width / 2, 300);
+    const nightGradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, 500);
+    nightGradient.addColorStop(0, '#312e81');
+    nightGradient.addColorStop(1, '#0f0a1e');
+    ctx.fillStyle = nightGradient;
+    ctx.fillRect(0, 0, width, height);
     
-    ctx.font = 'bold 60px sans-serif';
-    ctx.fillStyle = '#34d399';
-    ctx.fillText('getfreesol.xyz', width / 2, 420);
-    
-    ctx.font = '36px sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.fillText('Reclaim hidden SOL from empty accounts', width / 2, 500);
+    for (let i = 0; i < 50; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height * 0.6;
+      const size = Math.random() * 3 + 1;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    ctx.fillStyle = '#fef3c7';
+    ctx.beginPath();
+    ctx.arc(width - 150, 120, 60, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1e1b4b';
+    ctx.beginPath();
+    ctx.arc(width - 130, 110, 50, 0, Math.PI * 2);
+    ctx.fill();
+    
+    try {
+      const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+      const logo = await loadImage(logoPath);
+      ctx.drawImage(logo, 50, 50, 100, 100);
+    } catch (error) {
+      console.error('Failed to load logo:', error);
+    }
+    
+    ctx.fillStyle = '#c4b5fd';
+    ctx.font = 'bold 110px sans-serif';
+    ctx.fillText('GN SOLANA', width / 2, 280);
+    
+    ctx.fillStyle = '#e0e7ff';
+    ctx.font = '44px sans-serif';
+    ctx.fillText('Rest well, your SOL is safe', width / 2, 370);
+    
+    ctx.font = 'bold 56px sans-serif';
+    ctx.fillStyle = '#a78bfa';
+    ctx.fillText('getfreesol.xyz', width / 2, 480);
+    
+    ctx.font = '32px sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillText('Tomorrow, reclaim your hidden SOL', width / 2, 560);
+    
+    return canvas.toBuffer('image/png');
     
   } else if (type === 'stats') {
     ctx.fillStyle = '#a78bfa';
