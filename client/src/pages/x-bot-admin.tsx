@@ -106,9 +106,11 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
         setAiMemePreview(url);
         setImageType('ai_meme');
         setIncludeImage(true);
+        const randomText = FUNNY_TEMPLATES[Math.floor(Math.random() * FUNNY_TEMPLATES.length)];
+        setPostContent(randomText);
         toast({
           title: 'AI Meme Generated!',
-          description: 'Click refresh to generate a new one, or post it now!',
+          description: 'New image + text ready! Click refresh for another one.',
         });
       } else {
         throw new Error('Failed to generate AI meme');
