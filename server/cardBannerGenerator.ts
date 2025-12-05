@@ -648,7 +648,9 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillText('getfreesol.xyz', width / 2, 530);
       
     } else {
-      const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, 500);
+      ctx.fillStyle = '#4c1d95';
+      ctx.fillRect(0, 0, width, height);
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
       gradient.addColorStop(0, '#7c3aed');
       gradient.addColorStop(1, '#4c1d95');
       ctx.fillStyle = gradient;
@@ -776,7 +778,9 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillText('getfreesol.xyz', width / 2, 540);
       
     } else if (template === 3) {
-      const gradient = ctx.createRadialGradient(0, 0, 0, width, height, 1000);
+      ctx.fillStyle = '#059669';
+      ctx.fillRect(0, 0, width, height);
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
       gradient.addColorStop(0, '#34d399');
       gradient.addColorStop(1, '#059669');
       ctx.fillStyle = gradient;
@@ -806,7 +810,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillText('getfreesol.xyz', 80, 540);
       
     } else {
-      ctx.fillStyle = '#0f0326';
+      ctx.fillStyle = '#1e1b4b';
       ctx.fillRect(0, 0, width, height);
       drawTriangles(ctx, width, height, 'rgba(139,92,246,0.15)');
       
