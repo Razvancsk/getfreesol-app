@@ -31,7 +31,7 @@ const GN_TEMPLATES = [
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'stats'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
 
   const postMutation = useMutation({
@@ -61,7 +61,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'stats') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats') => {
     setPostContent(template);
     setImageType(imgType);
     setImageKey(Date.now());
@@ -131,7 +131,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleQuickPost(GN_TEMPLATES[Math.floor(Math.random() * GN_TEMPLATES.length)], 'gm')}
+              onClick={() => handleQuickPost(GN_TEMPLATES[Math.floor(Math.random() * GN_TEMPLATES.length)], 'gn')}
               className="border-purple-500 text-purple-200 hover:bg-purple-700"
             >
               🌙 GN Post

@@ -156,6 +156,23 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.fillText('Recover rent deposits from empty token accounts', width / 2, 500);
     
+  } else if (type === 'gn') {
+    ctx.fillStyle = '#818cf8';
+    ctx.font = 'bold 100px sans-serif';
+    ctx.fillText('GN SOLANA!', width / 2, 200);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '48px sans-serif';
+    ctx.fillText('Rest well, your SOL is waiting', width / 2, 300);
+    
+    ctx.font = 'bold 60px sans-serif';
+    ctx.fillStyle = '#34d399';
+    ctx.fillText('getfreesol.xyz', width / 2, 420);
+    
+    ctx.font = '36px sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillText('Reclaim hidden SOL from empty accounts', width / 2, 500);
+    
   } else if (type === 'stats') {
     ctx.fillStyle = '#a78bfa';
     ctx.font = 'bold 70px sans-serif';
