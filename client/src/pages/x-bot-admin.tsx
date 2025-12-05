@@ -79,7 +79,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny') => {
     setPostContent(template);
     setImageType(imgType);
-    setImageKey(Date.now() + Math.random());
+    setImageKey(Date.now());
   };
 
   const handlePost = async () => {
@@ -95,7 +95,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   };
 
   const refreshImage = () => {
-    setImageKey(Date.now() + Math.random());
+    setImageKey(Date.now());
   };
 
   if (!botStatus?.isAuthenticated) {
