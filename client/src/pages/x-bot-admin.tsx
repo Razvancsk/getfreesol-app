@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft, Send, Loader2, Image, RefreshCw } from 'lucide-react';
+import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft, Send, Loader2, Image, RefreshCw, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -46,11 +46,17 @@ const FUNNY_TEMPLATES = [
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
+  const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
+  const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
 
   const postMutation = useMutation({
     mutationFn: async ({ content, withImage, imgType }: { content: string; withImage: boolean; imgType: string }) => {
+      if (imgType === 'ai_meme') {
+        const response = await apiRequest('POST', '/api/x-bot/post-ai-meme', { content });
+        return response.json();
+      }
       const response = await apiRequest('POST', '/api/x-bot/quick-post', { 
         content, 
         includeImage: withImage,
@@ -76,10 +82,40 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme') => {
     setPostContent(template);
     setImageType(imgType);
+    setAiMemePreview(null);
     setImageKey(Date.now());
+  };
+
+  const generateAiMeme = async () => {
+    setIsGeneratingAiMeme(true);
+    setAiMemePreview(null);
+    try {
+      const response = await fetch('/api/x-bot/generate-ai-meme', { method: 'POST' });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setAiMemePreview(url);
+        setImageType('ai_meme');
+        setIncludeImage(true);
+        toast({
+          title: 'AI Meme Generated!',
+          description: 'Click refresh to generate a new one, or post it now!',
+        });
+      } else {
+        throw new Error('Failed to generate AI meme');
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Generation Failed',
+        description: error.message || 'Failed to generate AI meme',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingAiMeme(false);
+    }
   };
 
   const handlePost = async () => {
@@ -95,7 +131,11 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   };
 
   const refreshImage = () => {
-    setImageKey(Date.now());
+    if (imageType === 'ai_meme') {
+      generateAiMeme();
+    } else {
+      setImageKey(Date.now());
+    }
   };
 
   if (!botStatus?.isAuthenticated) {
@@ -175,6 +215,22 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
             >
               😂 Funny Post
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPostContent(FUNNY_TEMPLATES[Math.floor(Math.random() * FUNNY_TEMPLATES.length)]);
+                generateAiMeme();
+              }}
+              disabled={isGeneratingAiMeme}
+              className="border-pink-500 text-pink-200 hover:bg-pink-700"
+            >
+              {isGeneratingAiMeme ? (
+                <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Generating...</>
+              ) : (
+                <><Sparkles className="h-4 w-4 mr-1" /> AI Meme</>
+              )}
+            </Button>
           </div>
         </div>
 
@@ -222,15 +278,37 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
               </div>
             </div>
             <div className={`relative rounded-lg overflow-hidden border border-purple-600 ${!includeImage ? 'opacity-50' : ''}`}>
-              <img
-                key={imageKey}
-                src={`/api/x/generate-card?type=${imageType}&t=${imageKey}`}
-                alt="Post image preview"
-                className="w-full h-auto"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/api/x/preview-card';
-                }}
-              />
+              {imageType === 'ai_meme' && aiMemePreview ? (
+                <img
+                  src={aiMemePreview}
+                  alt="AI generated meme preview"
+                  className="w-full h-auto"
+                />
+              ) : imageType === 'ai_meme' && isGeneratingAiMeme ? (
+                <div className="w-full h-64 flex items-center justify-center bg-purple-900/50">
+                  <div className="text-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-pink-400 mx-auto mb-2" />
+                    <p className="text-pink-300">Generating AI meme...</p>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  key={imageKey}
+                  src={`/api/x/generate-card?type=${imageType}&t=${imageKey}`}
+                  alt="Post image preview"
+                  className="w-full h-auto"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/api/x/preview-card';
+                  }}
+                />
+              )}
+              {imageType === 'ai_meme' && (
+                <div className="absolute top-2 right-2">
+                  <Badge className="bg-pink-500/80">
+                    <Sparkles className="h-3 w-3 mr-1" /> AI Generated
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
         </div>

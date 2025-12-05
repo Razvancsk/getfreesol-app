@@ -7106,6 +7106,72 @@ Claimer: ${walletAddress}`;
     }
   });
   
+  // Generate AI meme image for funny posts
+  app.post("/api/x-bot/generate-ai-meme", async (req, res) => {
+    try {
+      const { generateMemeFunnyImage } = await import('./aiMemeGenerator');
+      
+      console.log('🎨 Generating AI meme image...');
+      const result = await generateMemeFunnyImage();
+      
+      if (result && result.imageBuffer) {
+        res.set('Content-Type', 'image/png');
+        res.send(result.imageBuffer);
+      } else {
+        res.status(500).json({ error: 'Failed to generate meme image' });
+      }
+    } catch (error: any) {
+      console.error("AI meme generation error:", error);
+      res.status(500).json({ error: "Failed to generate AI meme", details: error.message });
+    }
+  });
+  
+  // Post tweet with AI-generated meme image
+  app.post("/api/x-bot/post-ai-meme", async (req, res) => {
+    try {
+      const { content } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+      
+      const { generateMemeFunnyImage } = await import('./aiMemeGenerator');
+      
+      console.log('🎨 Generating AI meme for post...');
+      const memeResult = await generateMemeFunnyImage();
+      
+      if (!memeResult || !memeResult.imageBuffer) {
+        return res.status(500).json({ error: 'Failed to generate meme image' });
+      }
+      
+      console.log('📤 Posting tweet with AI meme...');
+      const result = await xApiService.postTweetWithMedia(content, memeResult.imageBuffer);
+      
+      if (result.success) {
+        await db.insert(xPosts).values({
+          content,
+          imageType: 'ai_meme',
+          postType: 'ai_meme',
+          status: 'posted',
+          tweetId: result.tweetId,
+          postedAt: new Date(),
+        });
+        
+        res.json({
+          success: true,
+          tweetId: result.tweetId,
+          message: 'AI meme posted successfully!',
+          prompt: memeResult.prompt,
+        });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+    } catch (error: any) {
+      console.error("Post AI meme error:", error);
+      res.status(500).json({ error: "Failed to post AI meme", details: error.message });
+    }
+  });
+  
   // Auto-engagement cron job (runs every 2 hours)
   cron.schedule('0 */2 * * *', async () => {
     try {
