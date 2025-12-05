@@ -106,3 +106,92 @@ function drawHexagon(ctx: any, x: number, y: number, size: number) {
   ctx.closePath();
   ctx.stroke();
 }
+
+export async function generatePostCardBanner(type: string = 'promo'): Promise<Buffer> {
+  const width = 1200;
+  const height = 630;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+  bgGradient.addColorStop(0, '#6b21a8');
+  bgGradient.addColorStop(0.5, '#7c3aed');
+  bgGradient.addColorStop(1, '#581c87');
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 8; i++) {
+    const x = 100 + (i * 150);
+    const y = 100 + (i * 70);
+    drawHexagon(ctx, x, y, 40 + Math.random() * 20);
+  }
+
+  try {
+    const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+    const logo = await loadImage(logoPath);
+    ctx.drawImage(logo, 50, 50, 100, 100);
+  } catch (error) {
+    console.error('Failed to load logo:', error);
+  }
+
+  ctx.fillStyle = '#ffffff';
+  
+  if (type === 'gm') {
+    ctx.font = 'bold 120px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('☀️ GM SOLANA!', width / 2, 200);
+    
+    ctx.font = '48px sans-serif';
+    ctx.fillText('Rise and reclaim your hidden SOL', width / 2, 300);
+    
+    ctx.font = 'bold 60px sans-serif';
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText('getfreesol.xyz', width / 2, 420);
+    
+    ctx.font = '36px sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillText('Recover rent deposits from empty token accounts', width / 2, 500);
+    
+  } else if (type === 'stats') {
+    ctx.font = 'bold 80px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('📊 PLATFORM STATS', width / 2, 180);
+    
+    ctx.font = 'bold 100px sans-serif';
+    ctx.fillStyle = '#34d399';
+    ctx.fillText('100+ SOL', width / 2, 320);
+    
+    ctx.font = '42px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Total SOL Recovered by Our Community', width / 2, 400);
+    
+    ctx.font = 'bold 50px sans-serif';
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText('Join us: getfreesol.xyz', width / 2, 520);
+    
+  } else {
+    ctx.font = 'bold 90px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔥 RECLAIM YOUR SOL', width / 2, 180);
+    
+    ctx.font = '44px sans-serif';
+    ctx.fillText('Empty token accounts = Hidden SOL', width / 2, 280);
+    
+    ctx.font = 'bold 70px sans-serif';
+    ctx.fillStyle = '#34d399';
+    ctx.fillText('~0.002 SOL per account', width / 2, 400);
+    
+    ctx.font = 'bold 50px sans-serif';
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText('getfreesol.xyz', width / 2, 520);
+  }
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.font = '28px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('#Solana #DeFi #GetFreeSol', width - 40, height - 40);
+
+  return canvas.toBuffer('image/png');
+}

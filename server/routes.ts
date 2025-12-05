@@ -6838,7 +6838,7 @@ Claimer: ${walletAddress}`;
   // Quick post endpoint (simpler auth - for admin dashboard)
   app.post("/api/x-bot/quick-post", async (req, res) => {
     try {
-      const { content } = req.body;
+      const { content, includeImage, imageType } = req.body;
       
       if (!content || content.trim().length === 0) {
         return res.status(400).json({ error: 'Content is required' });
@@ -6848,15 +6848,33 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'Content exceeds 280 character limit' });
       }
       
-      console.log(`📢 Quick post to X: "${content.substring(0, 50)}..."`);
+      console.log(`📢 Quick post to X: "${content.substring(0, 50)}..." (includeImage: ${includeImage})`);
       
-      const result = await xApiService.postTweet({ content, postType: 'quick_post' });
+      let mediaIds: string[] = [];
+      
+      if (includeImage) {
+        try {
+          const { generatePostCardBanner } = await import('./cardBannerGenerator.js');
+          const cardImage = await generatePostCardBanner(imageType || 'promo');
+          
+          const uploadResult = await xApiService.uploadMedia(cardImage);
+          if (uploadResult.success && uploadResult.mediaId) {
+            mediaIds = [uploadResult.mediaId];
+            console.log(`✅ Media uploaded: ${uploadResult.mediaId}`);
+          }
+        } catch (imgError: any) {
+          console.error('Failed to generate/upload image:', imgError.message);
+        }
+      }
+      
+      const result = await xApiService.postTweet({ content, postType: 'quick_post', mediaIds });
       
       if (result.success) {
         res.json({
           success: true,
           tweetId: result.tweetId,
           message: 'Posted successfully',
+          hasImage: mediaIds.length > 0,
         });
       } else {
         res.status(500).json({ error: result.error || 'Failed to post' });
@@ -6864,6 +6882,23 @@ Claimer: ${walletAddress}`;
     } catch (error: any) {
       console.error("Quick post error:", error);
       res.status(500).json({ error: error.message || "Failed to post tweet" });
+    }
+  });
+  
+  // Generate card for preview
+  app.get("/api/x/generate-card", async (req, res) => {
+    try {
+      const imageType = (req.query.type as string) || 'promo';
+      
+      const { generatePostCardBanner } = await import('./cardBannerGenerator.js');
+      const cardImage = await generatePostCardBanner(imageType);
+      
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.send(cardImage);
+    } catch (error: any) {
+      console.error('Generate card error:', error);
+      res.status(500).json({ error: error.message || 'Failed to generate card' });
     }
   });
   

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
@@ -34,7 +35,12 @@ import {
   Globe,
   Sparkles,
   Trophy,
-  Star
+  Star,
+  Gift,
+  Zap,
+  Target,
+  Award,
+  TrendingUp
 } from "lucide-react";
 import { SiDiscord, SiTelegram, SiX } from "react-icons/si";
 
@@ -70,47 +76,52 @@ interface SocialTaskSubmission {
   rejectionReason: string | null;
 }
 
-const platformConfig: Record<string, { icon: JSX.Element; name: string; color: string; bgColor: string }> = {
+const platformConfig: Record<string, { icon: JSX.Element; name: string; color: string; bgColor: string; gradient: string }> = {
   x: { 
     icon: <SiX className="w-5 h-5" />, 
-    name: "Twitter Task", 
+    name: "X (Twitter)", 
     color: "text-white",
-    bgColor: "bg-[#1DA1F2]"
+    bgColor: "bg-black",
+    gradient: "from-gray-800 to-black"
   },
   twitter: { 
     icon: <SiX className="w-5 h-5" />, 
-    name: "Twitter Task", 
+    name: "X (Twitter)", 
     color: "text-white",
-    bgColor: "bg-[#1DA1F2]"
+    bgColor: "bg-black",
+    gradient: "from-gray-800 to-black"
   },
   discord: { 
     icon: <SiDiscord className="w-5 h-5" />, 
-    name: "Discord Task", 
+    name: "Discord", 
     color: "text-white",
-    bgColor: "bg-[#5865F2]"
+    bgColor: "bg-[#5865F2]",
+    gradient: "from-[#7289da] to-[#5865F2]"
   },
   telegram: { 
     icon: <SiTelegram className="w-5 h-5" />, 
-    name: "Telegram Task", 
+    name: "Telegram", 
     color: "text-white",
-    bgColor: "bg-[#0088cc]"
+    bgColor: "bg-[#0088cc]",
+    gradient: "from-[#00a0e9] to-[#0088cc]"
   },
   website: { 
     icon: <Globe className="w-5 h-5" />, 
-    name: "Website Task", 
+    name: "Website", 
     color: "text-white",
-    bgColor: "bg-gradient-to-r from-pink-500 to-purple-500"
+    bgColor: "bg-purple-600",
+    gradient: "from-purple-500 to-purple-700"
   }
 };
 
-const taskTypeLabels: Record<string, string> = {
-  follow: "Follow",
-  like: "Like",
-  retweet: "Retweet",
-  reply: "Reply",
-  quote: "Quote Tweet",
-  join: "Join",
-  visit: "Visit"
+const taskTypeConfig: Record<string, { icon: JSX.Element; label: string }> = {
+  follow: { icon: <UserPlus className="w-4 h-4" />, label: "Follow" },
+  like: { icon: <Heart className="w-4 h-4" />, label: "Like" },
+  retweet: { icon: <Repeat className="w-4 h-4" />, label: "Retweet" },
+  reply: { icon: <MessageSquare className="w-4 h-4" />, label: "Reply" },
+  quote: { icon: <Share2 className="w-4 h-4" />, label: "Quote Tweet" },
+  join: { icon: <Users className="w-4 h-4" />, label: "Join" },
+  visit: { icon: <Eye className="w-4 h-4" />, label: "Visit" }
 };
 
 const formatLamports = (lamports: string) => {
@@ -122,6 +133,240 @@ const truncateAddress = (address: string) => {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 };
 
+function CampaignCard({ 
+  title, 
+  description, 
+  prizePool, 
+  participants, 
+  tasks,
+  gradient,
+  icon,
+  onStartClick,
+  isActive = true
+}: {
+  title: string;
+  description: string;
+  prizePool: string;
+  participants: number;
+  tasks: number;
+  gradient: string;
+  icon: JSX.Element;
+  onStartClick?: () => void;
+  isActive?: boolean;
+}) {
+  return (
+    <Card className={`relative overflow-hidden border-0 ${isActive ? '' : 'opacity-60'}`} data-testid={`card-campaign-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+      <div className="absolute inset-0 bg-black/20" />
+      <div className="relative p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+            {icon}
+          </div>
+          <div className="flex items-center gap-1 bg-black/30 backdrop-blur px-2 py-1 rounded-full text-xs">
+            <Users className="w-3 h-3" />
+            <span>{participants} joined</span>
+          </div>
+        </div>
+        
+        <h3 className="text-lg font-bold mb-1">{title}</h3>
+        <p className="text-sm text-white/70 mb-4">{description}</p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-yellow-300">
+              <Trophy className="w-4 h-4" />
+              <span className="font-bold">{prizePool} SOL</span>
+            </div>
+            <Badge variant="outline" className="border-white/30 text-white/80 text-xs">
+              {tasks} tasks
+            </Badge>
+          </div>
+          {onStartClick && (
+            <Button 
+              size="sm" 
+              className="bg-white/20 hover:bg-white/30 backdrop-blur border-0"
+              onClick={onStartClick}
+              data-testid="button-campaign-start"
+            >
+              Start
+            </Button>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function PlatformTaskGroup({
+  platform,
+  tasks,
+  mySubmissions,
+  connected,
+  onVerifyClick,
+  defaultExpanded = true
+}: {
+  platform: string;
+  tasks: SocialTask[];
+  mySubmissions: SocialTaskSubmission[];
+  connected: boolean;
+  onVerifyClick: (task: SocialTask) => void;
+  defaultExpanded?: boolean;
+}) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const config = platformConfig[platform] || platformConfig.website;
+  
+  const completedTasks = tasks.filter(t => 
+    mySubmissions.some(s => s.taskId === t.id && (s.status === 'approved' || s.status === 'claimed'))
+  );
+  const completedCount = completedTasks.length;
+  const totalTasks = tasks.length;
+  const progressPercent = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
+  
+  const totalReward = tasks.reduce((sum, t) => sum + Number(t.rewardLamports), 0);
+
+  return (
+    <Card className="bg-[#141414] border-gray-800 overflow-hidden" data-testid={`card-platform-${platform}`}>
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <CollapsibleTrigger asChild>
+          <div className="p-4 cursor-pointer hover:bg-white/5 transition-colors" data-testid={`trigger-platform-${platform}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
+                  {config.icon}
+                </div>
+                <div>
+                  <h3 className="font-semibold">{config.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <span className="text-yellow-400">{formatLamports(totalReward.toString())} SOL</span>
+                    <span>•</span>
+                    <span>{totalTasks} tasks</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="text-right hidden sm:block">
+                  <div className="text-sm">
+                    <span className="text-green-400">{completedCount}</span>
+                    <span className="text-gray-500">/{totalTasks}</span>
+                  </div>
+                  <Progress value={progressPercent} className="w-24 h-1.5 bg-gray-700" />
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center">
+                  {isExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="border-t border-gray-800">
+            {tasks.map((task, index) => {
+              const userSubmission = mySubmissions.find(s => s.taskId === task.id);
+              const isCompleted = userSubmission && (userSubmission.status === 'approved' || userSubmission.status === 'claimed');
+              const isPending = userSubmission && userSubmission.status === 'pending';
+              const isRejected = userSubmission && userSubmission.status === 'rejected';
+              const taskConfig = taskTypeConfig[task.taskType] || { icon: <Zap className="w-4 h-4" />, label: task.taskType };
+
+              return (
+                <div 
+                  key={task.id}
+                  className={`flex items-center gap-4 p-4 ${index > 0 ? 'border-t border-gray-800/50' : ''} hover:bg-white/[0.02]`}
+                  data-testid={`task-item-${task.id}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    isCompleted ? 'bg-green-500/20 text-green-400' : 
+                    isPending ? 'bg-yellow-500/20 text-yellow-400' :
+                    isRejected ? 'bg-red-500/20 text-red-400' :
+                    'bg-gray-800 text-gray-400'
+                  }`}>
+                    {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : taskConfig.icon}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-gray-200 text-sm">
+                        {taskConfig.label}{" "}
+                        <a 
+                          href={task.targetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-400 hover:text-purple-300 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                          data-testid={`link-target-${task.id}`}
+                        >
+                          {task.targetHandle || task.title}
+                        </a>
+                      </span>
+                      <ExternalLink className="w-3 h-3 text-gray-500" />
+                    </div>
+                    {task.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">{task.description}</p>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-xs">
+                      +{formatLamports(task.rewardLamports)} SOL
+                    </Badge>
+                    
+                    {isCompleted ? (
+                      <div className="flex items-center gap-1.5 text-green-400 text-sm">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Done</span>
+                      </div>
+                    ) : isPending ? (
+                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
+                        Pending
+                      </Badge>
+                    ) : isRejected ? (
+                      <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+                        Retry
+                      </Badge>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20 h-8"
+                        disabled={!connected || task.completedCount >= task.maxCompletions}
+                        onClick={() => onVerifyClick(task)}
+                        data-testid={`button-verify-${task.id}`}
+                      >
+                        Verify
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {tasks.length > 3 && (
+            <div className="p-3 border-t border-gray-800 text-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-400 hover:text-white"
+                onClick={() => setIsExpanded(false)}
+                data-testid={`button-showless-${platform}`}
+              >
+                <ChevronUp className="w-4 h-4 mr-1" />
+                Show less
+              </Button>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+}
+
 export default function CommunityTasks() {
   const { publicKey, signTransaction, connected } = useWallet();
   const walletAddress = publicKey?.toBase58();
@@ -132,14 +377,6 @@ export default function CommunityTasks() {
   const [selectedTask, setSelectedTask] = useState<SocialTask | null>(null);
   const [proofUrl, setProofUrl] = useState("");
   const [workerHandle, setWorkerHandle] = useState("");
-  
-  const [expandedPlatforms, setExpandedPlatforms] = useState<Record<string, boolean>>({
-    x: true,
-    twitter: true,
-    discord: true,
-    telegram: true,
-    website: true
-  });
   
   const [newTask, setNewTask] = useState({
     platform: "x",
@@ -247,27 +484,20 @@ export default function CommunityTasks() {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      active: "bg-green-600 text-white",
-      pending: "bg-yellow-600 text-white",
-      approved: "bg-green-600 text-white",
-      rejected: "bg-red-600 text-white",
-      claimed: "bg-blue-600 text-white",
-      completed: "bg-gray-600 text-white",
-      paused: "bg-orange-600 text-white"
+      active: "bg-green-500/20 text-green-400 border-green-500/30",
+      pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      approved: "bg-green-500/20 text-green-400 border-green-500/30",
+      rejected: "bg-red-500/20 text-red-400 border-red-500/30",
+      claimed: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      completed: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+      paused: "bg-orange-500/20 text-orange-400 border-orange-500/30"
     };
-    return <Badge className={styles[status] || "bg-gray-600"} data-testid={`badge-status-${status}`}>{status}</Badge>;
+    return <Badge className={styles[status] || "bg-gray-500/20 text-gray-400"} data-testid={`badge-status-${status}`}>{status}</Badge>;
   };
 
   const openSubmitDialog = (task: SocialTask) => {
     setSelectedTask(task);
     setSubmitDialogOpen(true);
-  };
-
-  const togglePlatform = (platform: string) => {
-    setExpandedPlatforms(prev => ({
-      ...prev,
-      [platform]: !prev[platform]
-    }));
   };
 
   const tasks = tasksData?.tasks || [];
@@ -288,50 +518,60 @@ export default function CommunityTasks() {
 
   const totalTasks = availableTasks.length;
   const completedByUser = mySubmissions.filter(s => s.status === 'approved' || s.status === 'claimed').length;
+  const pendingCount = mySubmissions.filter(s => s.status === 'pending').length;
 
   const totalRewardPool = useMemo(() => {
     return tasks.reduce((sum, task) => sum + Number(task.totalBudgetLamports), 0);
   }, [tasks]);
 
+  const platformOrder = ['x', 'twitter', 'discord', 'telegram', 'website'];
+  const sortedPlatforms = Object.keys(groupedTasks).sort((a, b) => {
+    const aIndex = platformOrder.indexOf(a);
+    const bIndex = platformOrder.indexOf(b);
+    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0a0a0a] text-white">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-green-400" />
-              Task
-            </h1>
-            <span className="text-sm text-gray-400">*GetFreeSol will verify tasks before distributing rewards</span>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Sparkles className="w-7 h-7 text-purple-400" />
+                Community Tasks
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">Complete tasks, earn SOL rewards</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="bg-[#1a1a1a] rounded-lg px-4 py-2 flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm">
+                  <span className="text-yellow-400 font-bold">{formatLamports(totalRewardPool.toString())}</span>
+                  <span className="text-gray-400"> SOL Pool</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-purple-900/50 to-indigo-900/50 border-purple-500/30 overflow-hidden" data-testid="card-campaign-featured">
-            <div className="relative h-32 bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center">
-              <div className="text-center">
-                <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                <div className="text-2xl font-bold">{formatLamports(totalRewardPool.toString())} SOL</div>
-                <div className="text-sm opacity-80">Total Prize Pool</div>
-              </div>
-              <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full text-xs">
-                <Users className="w-3 h-3" />
-                <span>{tasks.length} tasks</span>
-              </div>
-            </div>
-            <CardContent className="pt-4">
-              <div className="text-sm text-gray-300">GetFreeSol Community Tasks</div>
-              <div className="flex gap-2 mt-2">
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">+20 EXP</Badge>
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">SOL Rewards</Badge>
-              </div>
-            </CardContent>
-          </Card>
+          <CampaignCard
+            title="GetFreeSol Campaign"
+            description="Complete social tasks and earn SOL"
+            prizePool={formatLamports(totalRewardPool.toString())}
+            participants={tasks.reduce((sum, t) => sum + t.completedCount, 0)}
+            tasks={totalTasks}
+            gradient="from-purple-600 via-purple-700 to-indigo-800"
+            icon={<Gift className="w-6 h-6 text-white" />}
+          />
           
-          <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-600/30 flex flex-col justify-center items-center py-8" data-testid="card-create-campaign">
-            <Plus className="w-12 h-12 text-gray-500 mb-2" />
-            <p className="text-gray-400 text-sm mb-3">Create your own campaign</p>
+          <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#111] border-gray-800 flex flex-col justify-center items-center p-6" data-testid="card-create-campaign">
+            <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3">
+              <Plus className="w-6 h-6 text-purple-400" />
+            </div>
+            <p className="text-gray-400 text-sm mb-4 text-center">Create your own task campaign</p>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
@@ -487,34 +727,62 @@ export default function CommunityTasks() {
             </Dialog>
           </Card>
 
-          <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-600/30 flex flex-col justify-center items-center py-8" data-testid="card-my-progress">
-            <Star className="w-10 h-10 text-yellow-400 mb-2" />
-            <div className="text-2xl font-bold">{completedByUser}</div>
-            <p className="text-gray-400 text-sm">Tasks Completed</p>
-            <div className="flex gap-2 mt-3">
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">{mySubmissions.filter(s => s.status === 'pending').length} Pending</Badge>
+          <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#111] border-gray-800 p-6" data-testid="card-my-progress">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                <Award className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-400">Your Progress</div>
+                <div className="text-xl font-bold">
+                  <span className="text-green-400">{completedByUser}</span>
+                  <span className="text-gray-500">/{totalTasks}</span>
+                </div>
+              </div>
+            </div>
+            <Progress value={totalTasks > 0 ? (completedByUser / totalTasks) * 100 : 0} className="h-2 bg-gray-800 mb-3" />
+            <div className="flex gap-2">
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">{completedByUser} Done</Badge>
+              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{pendingCount} Pending</Badge>
             </div>
           </Card>
         </div>
 
         <Tabs defaultValue="available" className="w-full">
-          <TabsList className="bg-[#1a1a1a] border-gray-700 mb-6">
-            <TabsTrigger value="available" className="data-[state=active]:bg-gray-700" data-testid="tab-available">
-              Mandatory Tasks
+          <TabsList className="bg-[#141414] border border-gray-800 mb-6 p-1">
+            <TabsTrigger 
+              value="available" 
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white" 
+              data-testid="tab-available"
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Available Tasks
             </TabsTrigger>
-            <TabsTrigger value="my-tasks" className="data-[state=active]:bg-gray-700" data-testid="tab-mytasks">
+            <TabsTrigger 
+              value="my-tasks" 
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white" 
+              data-testid="tab-mytasks"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
               My Campaigns
             </TabsTrigger>
-            <TabsTrigger value="my-submissions" className="data-[state=active]:bg-gray-700" data-testid="tab-mysubmissions">
-              My Submissions
+            <TabsTrigger 
+              value="my-submissions" 
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white" 
+              data-testid="tab-mysubmissions"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Submissions
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="available" className="mt-0">
             {tasksLoading ? (
-              <div className="text-center py-12 text-gray-400">Loading tasks...</div>
+              <div className="text-center py-12 text-gray-400">
+                <div className="animate-pulse">Loading tasks...</div>
+              </div>
             ) : availableTasks.length === 0 ? (
-              <Card className="bg-[#1a1a1a] border-gray-700">
+              <Card className="bg-[#141414] border-gray-800">
                 <CardContent className="py-12 text-center text-gray-400">
                   <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>No tasks available right now. Check back later!</p>
@@ -522,124 +790,29 @@ export default function CommunityTasks() {
               </Card>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
-                  <span>Mandatory Task</span>
-                  <span>({completedByUser}/{totalTasks}) Completed</span>
+                <div className="flex items-center justify-between text-sm text-gray-400 px-1">
+                  <span>Complete tasks to earn rewards</span>
+                  <span className="text-green-400">{completedByUser}/{totalTasks} completed</span>
                 </div>
 
-                {Object.entries(groupedTasks).map(([platform, platformTasks]) => {
-                  const config = platformConfig[platform] || platformConfig.website;
-                  const completedInPlatform = platformTasks.filter(t => 
-                    mySubmissions.some(s => s.taskId === t.id && (s.status === 'approved' || s.status === 'claimed'))
-                  ).length;
-
-                  return (
-                    <Collapsible 
-                      key={platform} 
-                      open={expandedPlatforms[platform]} 
-                      onOpenChange={() => togglePlatform(platform)}
-                    >
-                      <Card className="bg-[#1a1a1a] border-gray-700 overflow-hidden" data-testid={`card-platform-${platform}`}>
-                        <CollapsibleTrigger asChild>
-                          <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/30 transition-colors" data-testid={`trigger-platform-${platform}`}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full ${config.bgColor} flex items-center justify-center`}>
-                                {config.icon}
-                              </div>
-                              <span className="font-medium">{config.name}</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-400">({completedInPlatform}/{platformTasks.length}) Completed</span>
-                              {expandedPlatforms[platform] ? (
-                                <ChevronUp className="w-5 h-5 text-gray-400" />
-                              ) : (
-                                <ChevronDown className="w-5 h-5 text-gray-400" />
-                              )}
-                            </div>
-                          </div>
-                        </CollapsibleTrigger>
-
-                        <CollapsibleContent>
-                          <div className="border-t border-gray-700">
-                            {platformTasks.map((task) => {
-                              const userSubmission = mySubmissions.find(s => s.taskId === task.id);
-                              const isCompleted = userSubmission && (userSubmission.status === 'approved' || userSubmission.status === 'claimed');
-                              const isPending = userSubmission && userSubmission.status === 'pending';
-
-                              return (
-                                <div 
-                                  key={task.id} 
-                                  className="flex items-center justify-between p-4 border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/20"
-                                  data-testid={`task-item-${task.id}`}
-                                >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-gray-300">
-                                        {taskTypeLabels[task.taskType] || task.taskType}{" "}
-                                        <a 
-                                          href={task.targetUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-400 hover:underline"
-                                          data-testid={`link-target-${task.id}`}
-                                        >
-                                          {task.targetHandle || task.title}
-                                        </a>
-                                        {" "}on {platform === 'x' ? 'Twitter' : platform.charAt(0).toUpperCase() + platform.slice(1)}
-                                      </span>
-                                    </div>
-                                    {task.description && (
-                                      <p className="text-sm text-gray-500 mt-1">{task.description}</p>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                                        {formatLamports(task.rewardLamports)} SOL
-                                      </Badge>
-                                      <span className="text-xs text-gray-500">
-                                        {task.completedCount}/{task.maxCompletions} completed
-                                      </span>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="ml-4">
-                                    {isCompleted ? (
-                                      <div className="flex items-center gap-2 text-green-400">
-                                        <CheckCircle2 className="w-5 h-5" />
-                                        <span className="text-sm">Verified</span>
-                                      </div>
-                                    ) : isPending ? (
-                                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
-                                        Pending
-                                      </Badge>
-                                    ) : (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                                        disabled={!connected || task.completedCount >= task.maxCompletions}
-                                        onClick={() => openSubmitDialog(task)}
-                                        data-testid={`button-verify-${task.id}`}
-                                      >
-                                        Verify
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </CollapsibleContent>
-                      </Card>
-                    </Collapsible>
-                  );
-                })}
+                {sortedPlatforms.map((platform) => (
+                  <PlatformTaskGroup
+                    key={platform}
+                    platform={platform}
+                    tasks={groupedTasks[platform]}
+                    mySubmissions={mySubmissions}
+                    connected={connected}
+                    onVerifyClick={openSubmitDialog}
+                  />
+                ))}
 
                 <Button 
-                  className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 hover:from-green-500 hover:via-emerald-500 hover:to-teal-500 text-black mt-6"
+                  className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 hover:from-green-500 hover:via-emerald-600 hover:to-teal-600 text-black mt-6 shadow-lg shadow-green-500/20"
                   disabled={!connected}
                   data-testid="button-start-earning"
                 >
-                  Start Earning
+                  <Coins className="w-5 h-5 mr-2" />
+                  Start Earning SOL
                 </Button>
               </div>
             )}
@@ -647,7 +820,7 @@ export default function CommunityTasks() {
 
           <TabsContent value="my-tasks" className="mt-0">
             {!connected ? (
-              <Card className="bg-[#1a1a1a] border-gray-700">
+              <Card className="bg-[#141414] border-gray-800">
                 <CardContent className="py-12 text-center text-gray-400">
                   <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Connect your wallet to see your created campaigns</p>
@@ -656,12 +829,12 @@ export default function CommunityTasks() {
             ) : myTasksLoading ? (
               <div className="text-center py-12 text-gray-400">Loading your campaigns...</div>
             ) : myTasks.length === 0 ? (
-              <Card className="bg-[#1a1a1a] border-gray-700">
+              <Card className="bg-[#141414] border-gray-800">
                 <CardContent className="py-12 text-center text-gray-400">
                   <Plus className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>You haven't created any campaigns yet.</p>
                   <Button 
-                    className="mt-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    className="mt-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600"
                     onClick={() => setCreateDialogOpen(true)}
                     data-testid="button-create-first-task"
                   >
@@ -673,34 +846,43 @@ export default function CommunityTasks() {
               <div className="space-y-4">
                 {myTasks.map((task) => {
                   const config = platformConfig[task.platform] || platformConfig.website;
+                  const progressPercent = task.maxCompletions > 0 ? (task.completedCount / task.maxCompletions) * 100 : 0;
                   
                   return (
-                    <Card key={task.id} className="bg-[#1a1a1a] border-gray-700" data-testid={`card-my-task-${task.id}`}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-3">
+                    <Card key={task.id} className="bg-[#141414] border-gray-800" data-testid={`card-my-task-${task.id}`}>
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full ${config.bgColor} flex items-center justify-center`}>
+                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
                               {config.icon}
                             </div>
-                            <span className="font-medium">{task.title}</span>
+                            <div>
+                              <span className="font-medium">{task.title}</span>
+                              <div className="text-sm text-gray-400">{config.name}</div>
+                            </div>
                           </div>
                           {getStatusBadge(task.status)}
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        
+                        <div className="mb-3">
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-gray-400">Progress</span>
+                            <span className="text-gray-300">{task.completedCount}/{task.maxCompletions}</span>
+                          </div>
+                          <Progress value={progressPercent} className="h-2 bg-gray-800" />
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="text-gray-400">Reward</span>
+                            <span className="text-gray-500">Reward</span>
                             <div className="text-yellow-400 font-bold">{formatLamports(task.rewardLamports)} SOL</div>
                           </div>
                           <div>
-                            <span className="text-gray-400">Budget Left</span>
+                            <span className="text-gray-500">Budget Left</span>
                             <div className="text-gray-200">{formatLamports(task.remainingBudgetLamports)} SOL</div>
                           </div>
                           <div>
-                            <span className="text-gray-400">Completions</span>
-                            <div className="text-gray-200">{task.completedCount} / {task.maxCompletions}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">Created</span>
+                            <span className="text-gray-500">Created</span>
                             <div className="text-gray-200">{new Date(task.createdAt).toLocaleDateString()}</div>
                           </div>
                         </div>
@@ -714,7 +896,7 @@ export default function CommunityTasks() {
 
           <TabsContent value="my-submissions" className="mt-0">
             {!connected ? (
-              <Card className="bg-[#1a1a1a] border-gray-700">
+              <Card className="bg-[#141414] border-gray-800">
                 <CardContent className="py-12 text-center text-gray-400">
                   <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Connect your wallet to see your submissions</p>
@@ -723,19 +905,32 @@ export default function CommunityTasks() {
             ) : submissionsLoading ? (
               <div className="text-center py-12 text-gray-400">Loading your submissions...</div>
             ) : mySubmissions.length === 0 ? (
-              <Card className="bg-[#1a1a1a] border-gray-700">
+              <Card className="bg-[#141414] border-gray-800">
                 <CardContent className="py-12 text-center text-gray-400">
                   <Send className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>You haven't submitted any tasks yet.</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {mySubmissions.map((submission) => (
-                  <Card key={submission.id} className="bg-[#1a1a1a] border-gray-700" data-testid={`card-submission-${submission.id}`}>
-                    <CardContent className="py-4 px-4">
+                  <Card key={submission.id} className="bg-[#141414] border-gray-800" data-testid={`card-submission-${submission.id}`}>
+                    <CardContent className="py-4 px-5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            submission.status === 'approved' || submission.status === 'claimed' ? 'bg-green-500/20 text-green-400' :
+                            submission.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {submission.status === 'approved' || submission.status === 'claimed' ? (
+                              <CheckCircle2 className="w-5 h-5" />
+                            ) : submission.status === 'pending' ? (
+                              <Clock className="w-5 h-5" />
+                            ) : (
+                              <XCircle className="w-5 h-5" />
+                            )}
+                          </div>
                           <div>
                             <div className="text-sm text-gray-400">Submitted</div>
                             <div className="text-gray-200">{new Date(submission.submittedAt).toLocaleString()}</div>
@@ -748,7 +943,7 @@ export default function CommunityTasks() {
                         <div className="flex items-center gap-3">
                           {getStatusBadge(submission.status)}
                           {submission.status === 'rejected' && submission.rejectionReason && (
-                            <span className="text-sm text-red-400">{submission.rejectionReason}</span>
+                            <span className="text-sm text-red-400 max-w-[200px] truncate">{submission.rejectionReason}</span>
                           )}
                         </div>
                       </div>
@@ -763,7 +958,10 @@ export default function CommunityTasks() {
         <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
           <DialogContent className="bg-[#1a1a1a] border-gray-700 text-white">
             <DialogHeader>
-              <DialogTitle>Verify Task Completion</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+                Verify Task Completion
+              </DialogTitle>
               <DialogDescription className="text-gray-400">
                 {selectedTask?.title}
               </DialogDescription>
@@ -796,10 +994,10 @@ export default function CommunityTasks() {
               </div>
               
               {selectedTask && (
-                <div className="bg-[#2a2a2a] p-3 rounded-lg">
+                <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-4 rounded-lg border border-green-500/30">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Reward upon approval</span>
-                    <span className="text-yellow-400 font-bold">{formatLamports(selectedTask.rewardLamports)} SOL</span>
+                    <span className="text-gray-300">Reward upon approval</span>
+                    <span className="text-green-400 font-bold text-lg">{formatLamports(selectedTask.rewardLamports)} SOL</span>
                   </div>
                 </div>
               )}

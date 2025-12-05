@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft, Send, Loader2, Image, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -30,11 +30,17 @@ const GN_TEMPLATES = [
 
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
-  const [isPosting, setIsPosting] = useState(false);
+  const [includeImage, setIncludeImage] = useState(true);
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'stats'>('promo');
+  const [imageKey, setImageKey] = useState(Date.now());
 
   const postMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const response = await apiRequest('POST', '/api/x-bot/quick-post', { content });
+    mutationFn: async ({ content, withImage, imgType }: { content: string; withImage: boolean; imgType: string }) => {
+      const response = await apiRequest('POST', '/api/x-bot/quick-post', { 
+        content, 
+        includeImage: withImage,
+        imageType: imgType 
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -43,6 +49,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
         description: `Tweet ID: ${data.tweetId}`,
       });
       setPostContent('');
+      setImageKey(Date.now());
       queryClient.invalidateQueries({ queryKey: ['/api/x-bot/status'] });
     },
     onError: (error: any) => {
@@ -54,8 +61,10 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string) => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'stats') => {
     setPostContent(template);
+    setImageType(imgType);
+    setImageKey(Date.now());
   };
 
   const handlePost = async () => {
@@ -67,7 +76,11 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
       });
       return;
     }
-    postMutation.mutate(postContent);
+    postMutation.mutate({ content: postContent, withImage: includeImage, imgType: imageType });
+  };
+
+  const refreshImage = () => {
+    setImageKey(Date.now());
   };
 
   if (!botStatus?.isAuthenticated) {
@@ -99,7 +112,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
           Quick Post
         </CardTitle>
         <CardDescription className="text-purple-200">
-          Post content to X immediately
+          Post content to X immediately with auto-generated images
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -110,7 +123,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleQuickPost(GM_TEMPLATES[Math.floor(Math.random() * GM_TEMPLATES.length)])}
+              onClick={() => handleQuickPost(GM_TEMPLATES[Math.floor(Math.random() * GM_TEMPLATES.length)], 'gm')}
               className="border-purple-500 text-purple-200 hover:bg-purple-700"
             >
               ☀️ GM Post
@@ -118,7 +131,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleQuickPost(GN_TEMPLATES[Math.floor(Math.random() * GN_TEMPLATES.length)])}
+              onClick={() => handleQuickPost(GN_TEMPLATES[Math.floor(Math.random() * GN_TEMPLATES.length)], 'gm')}
               className="border-purple-500 text-purple-200 hover:bg-purple-700"
             >
               🌙 GN Post
@@ -126,44 +139,98 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleQuickPost("🔥 Reclaim your hidden SOL today!\n\nEmpty token accounts are holding your rent deposits.\n\nVisit getfreesol.xyz to recover them!\n\n#Solana #DeFi #GetFreeSol")}
+              onClick={() => handleQuickPost("🔥 Reclaim your hidden SOL today!\n\nEmpty token accounts are holding your rent deposits.\n\nVisit getfreesol.xyz to recover them!\n\n#Solana #DeFi #GetFreeSol", 'promo')}
               className="border-purple-500 text-purple-200 hover:bg-purple-700"
             >
               🔥 Promo Post
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost("📊 Platform Stats Update!\n\nCheck out how much SOL our community has reclaimed!\n\nJoin us: getfreesol.xyz\n\n#Solana #DeFi #GetFreeSol", 'stats')}
+              className="border-purple-500 text-purple-200 hover:bg-purple-700"
+            >
+              📊 Stats Post
+            </Button>
           </div>
         </div>
 
-        {/* Post Content */}
-        <div className="space-y-2">
-          <Label className="text-purple-200">Post Content</Label>
-          <Textarea
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-            placeholder="Write your post here..."
-            className="bg-purple-900/50 border-purple-600 text-white placeholder-purple-400 min-h-[120px]"
-            maxLength={280}
-          />
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-purple-400">{postContent.length}/280 characters</span>
-            <Button
-              onClick={handlePost}
-              disabled={postMutation.isPending || !postContent.trim()}
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-            >
-              {postMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Posting...
-                </>
-              ) : (
-                <>
-                  <Twitter className="h-4 w-4 mr-2" />
-                  Post to X
-                </>
-              )}
-            </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Post Content */}
+          <div className="space-y-2">
+            <Label className="text-purple-200">Post Content</Label>
+            <Textarea
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+              placeholder="Write your post here..."
+              className="bg-purple-900/50 border-purple-600 text-white placeholder-purple-400 min-h-[180px]"
+              maxLength={280}
+            />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-purple-400">{postContent.length}/280 characters</span>
+            </div>
           </div>
+
+          {/* Image Preview */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-purple-200 flex items-center gap-2">
+                <Image className="h-4 w-4" />
+                Image Preview
+              </Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={refreshImage}
+                  className="text-purple-300 hover:text-white hover:bg-purple-700 h-8 w-8 p-0"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <label className="flex items-center gap-2 text-sm text-purple-200 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeImage}
+                    onChange={(e) => setIncludeImage(e.target.checked)}
+                    className="rounded border-purple-500 bg-purple-900/50"
+                  />
+                  Include
+                </label>
+              </div>
+            </div>
+            <div className={`relative rounded-lg overflow-hidden border border-purple-600 ${!includeImage ? 'opacity-50' : ''}`}>
+              <img
+                key={imageKey}
+                src={`/api/x/generate-card?type=${imageType}&t=${imageKey}`}
+                alt="Post image preview"
+                className="w-full h-auto"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/api/x/preview-card';
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Post Button */}
+        <div className="flex justify-end">
+          <Button
+            onClick={handlePost}
+            disabled={postMutation.isPending || !postContent.trim()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6"
+          >
+            {postMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Posting...
+              </>
+            ) : (
+              <>
+                <Twitter className="h-4 w-4 mr-2" />
+                Post to X {includeImage && '(with image)'}
+              </>
+            )}
+          </Button>
         </div>
       </CardContent>
     </Card>
