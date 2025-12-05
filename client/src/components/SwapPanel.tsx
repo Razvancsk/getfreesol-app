@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowDownUp, Loader2, RefreshCw, Search, ChevronDown, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, Transaction, PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress, createCloseAccountInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 
@@ -374,19 +375,101 @@ export function SwapPanel() {
         const signature = executeData.signature;
         console.log('✅ Ultra Swap successful:', signature);
         
+        let rentReclaimed = 0;
+        let closeSignature = '';
+        
+        const isSolOutput = toToken.address === 'So11111111111111111111111111111111111111112';
+        const isNotSolInput = fromToken.address !== 'So11111111111111111111111111111111111111112';
+        
+        if (isSolOutput && isNotSolInput && signTransaction) {
+          try {
+            console.log('🔍 Checking if source token account is now empty...');
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const fromMint = new PublicKey(fromToken.address);
+            const tokenAccountAddress = await getAssociatedTokenAddress(fromMint, publicKey);
+            
+            const accountInfo = await connection.getAccountInfo(tokenAccountAddress);
+            
+            if (accountInfo) {
+              const tokenAccountData = await connection.getParsedAccountInfo(tokenAccountAddress);
+              const parsedData = tokenAccountData.value?.data;
+              
+              if (parsedData && 'parsed' in parsedData) {
+                const balance = parsedData.parsed.info.tokenAmount?.uiAmount || 0;
+                
+                if (balance === 0) {
+                  console.log('✅ Token account is empty, closing to reclaim rent...');
+                  
+                  const rentLamports = accountInfo.lamports;
+                  
+                  const closeIx = createCloseAccountInstruction(
+                    tokenAccountAddress,
+                    publicKey,
+                    publicKey,
+                    [],
+                    TOKEN_PROGRAM_ID
+                  );
+                  
+                  const closeTx = new Transaction().add(closeIx);
+                  closeTx.feePayer = publicKey;
+                  const latestBlockhash = await connection.getLatestBlockhash();
+                  closeTx.recentBlockhash = latestBlockhash.blockhash;
+                  
+                  const signedCloseTx = await signTransaction(closeTx);
+                  closeSignature = await connection.sendRawTransaction(signedCloseTx.serialize());
+                  
+                  await connection.confirmTransaction({
+                    signature: closeSignature,
+                    blockhash: latestBlockhash.blockhash,
+                    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+                  });
+                  
+                  rentReclaimed = rentLamports / 1e9;
+                  console.log(`✅ Account closed! Reclaimed ${rentReclaimed.toFixed(6)} SOL rent`);
+                } else {
+                  console.log(`ℹ️ Token account still has balance: ${balance}, not closing`);
+                }
+              }
+            } else {
+              console.log('ℹ️ Token account already closed or does not exist');
+            }
+          } catch (closeError: any) {
+            console.error('⚠️ Could not auto-close account:', closeError?.message);
+          }
+        }
+        
         toast({
-          title: 'Swap Successful!',
+          title: rentReclaimed > 0 ? 'Swap + Rent Reclaimed!' : 'Swap Successful!',
           description: (
             <div className="space-y-2">
               <p>Transaction confirmed on Solana blockchain</p>
-              <a 
-                href={`https://solscan.io/tx/${signature}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-white hover:text-green-100 underline font-medium"
-              >
-                View Transaction →
-              </a>
+              {rentReclaimed > 0 && (
+                <p className="text-green-200 font-medium">
+                  + {rentReclaimed.toFixed(6)} SOL rent recovered!
+                </p>
+              )}
+              <div className="flex flex-col gap-1">
+                <a 
+                  href={`https://solscan.io/tx/${signature}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-white hover:text-green-100 underline font-medium"
+                >
+                  View Swap Transaction →
+                </a>
+                {closeSignature && (
+                  <a 
+                    href={`https://solscan.io/tx/${closeSignature}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-white hover:text-green-100 underline font-medium"
+                  >
+                    View Close Account Transaction →
+                  </a>
+                )}
+              </div>
             </div>
           ),
           className: 'bg-green-600 text-white border-green-500',
