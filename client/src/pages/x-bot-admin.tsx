@@ -285,12 +285,12 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                 </label>
               </div>
             </div>
-            <div className={`relative rounded-lg overflow-hidden border border-purple-600 ${!includeImage ? 'opacity-50' : ''}`}>
+            <div className={`relative rounded-lg border border-purple-600 bg-purple-900/30 ${!includeImage ? 'opacity-50' : ''}`}>
               {imageType === 'ai_meme' && aiMemePreview ? (
                 <img
                   src={aiMemePreview}
                   alt="AI generated meme preview"
-                  className="w-full h-auto"
+                  className="w-full h-auto max-h-[400px] object-contain mx-auto block"
                 />
               ) : imageType === 'ai_meme' && isGeneratingAiMeme ? (
                 <div className="w-full h-64 flex items-center justify-center bg-purple-900/50">
@@ -304,7 +304,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                   key={imageKey}
                   src={`/api/x/generate-card?type=${imageType}&t=${imageKey}`}
                   alt="Post image preview"
-                  className="w-full h-auto"
+                  className="w-full h-auto max-h-[400px] object-contain mx-auto block"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/api/x/preview-card';
                   }}
