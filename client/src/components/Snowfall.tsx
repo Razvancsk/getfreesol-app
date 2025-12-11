@@ -70,7 +70,7 @@ export function Snowfall() {
               fontSize: `${flake.size}px`,
               opacity: flake.opacity,
               animation: `snowfall ${flake.animationDuration}s linear ${flake.animationDelay}s infinite`,
-              filter: 'brightness(1.3) saturate(0.3)',
+              filter: 'brightness(2) saturate(0) contrast(1.5)',
             }}
           >
             ❄️
