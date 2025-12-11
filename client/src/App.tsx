@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/SolanaProvider";
+import { Snowfall } from "@/components/Snowfall";
 import ClaimSol from "@/pages/claim-sol";
 import Referrals from "@/pages/referrals";
 import AdminSettings from "@/pages/admin-settings";
@@ -40,6 +41,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <SolanaProvider>
         <TooltipProvider>
+          <Snowfall />
           <Toaster />
           <Router />
         </TooltipProvider>
