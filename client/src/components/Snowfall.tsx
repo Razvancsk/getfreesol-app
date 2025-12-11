@@ -20,11 +20,12 @@ export function Snowfall() {
     
     // Background layer - small, slow, blurry, faint
     for (let i = 0; i < 25; i++) {
+      const duration = 20 + Math.random() * 15;
       flakes.push({
         id: i,
         left: Math.random() * 100,
-        duration: 20 + Math.random() * 15,
-        delay: Math.random() * 20,
+        duration,
+        delay: -Math.random() * duration,
         size: 2 + Math.random() * 3,
         opacity: 0.2 + Math.random() * 0.2,
         isEmoji: false,
@@ -38,11 +39,12 @@ export function Snowfall() {
     // Middle layer - medium size, moderate speed
     for (let i = 25; i < 55; i++) {
       const isEmoji = Math.random() > 0.8;
+      const duration = 14 + Math.random() * 10;
       flakes.push({
         id: i,
         left: Math.random() * 100,
-        duration: 14 + Math.random() * 10,
-        delay: Math.random() * 15,
+        duration,
+        delay: -Math.random() * duration,
         size: isEmoji ? 14 + Math.random() * 8 : 3 + Math.random() * 4,
         opacity: 0.5 + Math.random() * 0.3,
         isEmoji,
@@ -56,11 +58,12 @@ export function Snowfall() {
     // Foreground layer - larger, faster, sharp, bright
     for (let i = 55; i < 70; i++) {
       const isEmoji = Math.random() > 0.6;
+      const duration = 8 + Math.random() * 6;
       flakes.push({
         id: i,
         left: Math.random() * 100,
-        duration: 8 + Math.random() * 6,
-        delay: Math.random() * 10,
+        duration,
+        delay: -Math.random() * duration,
         size: isEmoji ? 20 + Math.random() * 12 : 4 + Math.random() * 5,
         opacity: 0.7 + Math.random() * 0.3,
         isEmoji,
