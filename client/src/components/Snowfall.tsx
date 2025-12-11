@@ -53,17 +53,20 @@ export function Snowfall() {
       {snowflakes.map((flake) => (
         <div
           key={flake.id}
-          className="absolute rounded-full bg-white"
+          className="absolute"
           style={{
             left: `${flake.left}%`,
             top: '-20px',
-            width: `${flake.size}px`,
-            height: `${flake.size}px`,
+            fontSize: `${flake.size}px`,
             opacity: flake.opacity,
             animation: `snowfall ${flake.animationDuration}s linear ${flake.animationDelay}s infinite`,
-            boxShadow: '0 0 3px rgba(255, 255, 255, 0.8)',
+            color: '#ffffff',
+            textShadow: '0 0 3px rgba(255, 255, 255, 0.8)',
+            filter: 'brightness(0) invert(1)',
           }}
-        />
+        >
+          ❄
+        </div>
       ))}
     </div>
   );
