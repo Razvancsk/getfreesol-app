@@ -84,26 +84,23 @@ export function Snowfall() {
         @keyframes fall${flake.id} {
           0% {
             transform: translateY(-5vh) translateX(0px)${flake.isEmoji ? ' rotate(0deg)' : ''};
-            opacity: 0;
-          }
-          5% {
             opacity: ${flake.opacity};
           }
           25% {
-            transform: translateY(22vh) translateX(${flake.drift * 0.25 + wobbleOffset1}px)${flake.isEmoji ? ' rotate(90deg)' : ''};
+            transform: translateY(25vh) translateX(${flake.drift * 0.25 + wobbleOffset1}px)${flake.isEmoji ? ' rotate(90deg)' : ''};
+            opacity: ${flake.opacity};
           }
           50% {
-            transform: translateY(47vh) translateX(${flake.drift * 0.5 + wobbleOffset2}px)${flake.isEmoji ? ' rotate(180deg)' : ''};
+            transform: translateY(50vh) translateX(${flake.drift * 0.5 + wobbleOffset2}px)${flake.isEmoji ? ' rotate(180deg)' : ''};
+            opacity: ${flake.opacity};
           }
           75% {
-            transform: translateY(72vh) translateX(${flake.drift * 0.75 + wobbleOffset3}px)${flake.isEmoji ? ' rotate(270deg)' : ''};
-          }
-          95% {
+            transform: translateY(75vh) translateX(${flake.drift * 0.75 + wobbleOffset3}px)${flake.isEmoji ? ' rotate(270deg)' : ''};
             opacity: ${flake.opacity};
           }
           100% {
             transform: translateY(105vh) translateX(${flake.drift}px)${flake.isEmoji ? ' rotate(360deg)' : ''};
-            opacity: 0;
+            opacity: ${flake.opacity};
           }
         }
       `;
@@ -122,7 +119,7 @@ export function Snowfall() {
               left: `${flake.left}%`,
               top: '-30px',
               fontSize: `${flake.size}px`,
-              animation: `fall${flake.id} ${flake.duration}s ease-in-out ${flake.delay}s infinite`,
+              animation: `fall${flake.id} ${flake.duration}s linear ${flake.delay}s infinite`,
               filter: `brightness(2) saturate(0) contrast(1.5) blur(${flake.blur}px)`,
               zIndex: flake.layer === 'front' ? 52 : flake.layer === 'mid' ? 51 : 50,
             }}
@@ -139,7 +136,7 @@ export function Snowfall() {
               width: `${flake.size}px`,
               height: `${flake.size}px`,
               background: `radial-gradient(circle, rgba(255,255,255,${flake.opacity}) 0%, rgba(255,255,255,${flake.opacity * 0.6}) 50%, rgba(255,255,255,0) 100%)`,
-              animation: `fall${flake.id} ${flake.duration}s ease-in-out ${flake.delay}s infinite`,
+              animation: `fall${flake.id} ${flake.duration}s linear ${flake.delay}s infinite`,
               filter: `blur(${flake.blur}px)`,
               boxShadow: flake.layer === 'front' ? '0 0 4px rgba(255, 255, 255, 0.8)' : 'none',
               zIndex: flake.layer === 'front' ? 52 : flake.layer === 'mid' ? 51 : 50,
