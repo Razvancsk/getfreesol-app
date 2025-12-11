@@ -47,7 +47,7 @@ import { SwapModal } from '@/components/SwapModal';
 import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
-import logoImage from '@assets/image_1765419546657.png';
+import logoImage from '@assets/image_1765419958982.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
