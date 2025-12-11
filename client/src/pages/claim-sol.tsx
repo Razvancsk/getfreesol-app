@@ -48,7 +48,6 @@ import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
-import { ChristmasLogo } from '@/components/ChristmasLogo';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -2677,7 +2676,11 @@ export default function SolRefund() {
             {activeTab === 'docs' ? (
               /* Docs Mode Header - Logo only */
               <div className="flex items-center justify-between w-full">
-                <ChristmasLogo size={80} />
+                <img 
+                  src={logoImage}
+                  alt="Get your SOL back!"
+                  className="h-[80px] w-[80px]"
+                />
               </div>
             ) : (
               <>
@@ -2685,7 +2688,11 @@ export default function SolRefund() {
                 <div className="flex items-center justify-between">
                   {/* Logo */}
                   <div className="flex items-center">
-                    <ChristmasLogo size={100} />
+                    <img 
+                      src={logoImage}
+                      alt="Get your SOL back!"
+                      className="h-[100px] w-[100px]"
+                    />
                   </div>
 
                   {/* Mobile Wallet Connection */}
@@ -5896,8 +5903,12 @@ export default function SolRefund() {
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex flex-col items-center justify-center space-y-2">
             <div className="flex items-center space-x-3">
-              <ChristmasLogo size={40} />
-              <div className="text-white font-semibold text-lg">Get Free Sol 🎄</div>
+              <img 
+                src={logoImage}
+                alt="Get Free Sol"
+                className="h-8 w-8"
+              />
+              <div className="text-white font-semibold text-lg">Get Free Sol</div>
             </div>
             <div className="text-purple-300 text-sm">2025 All rights reserved</div>
           </div>
