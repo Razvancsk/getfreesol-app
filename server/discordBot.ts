@@ -76,9 +76,10 @@ export async function initializeDiscordBot() {
     // Log all incoming messages for debugging
     console.log(`📨 Discord: Received message from ${message.author.tag}: "${content.substring(0, 50)}..."`);
 
-    // Check for scan command (supports !, #, / prefixes or just a wallet address)
-    // Supports: !scan <wallet>, #scan <wallet>, /scan <wallet>, or just <wallet>
-    const scanCommandMatch = content.match(/^[!#/]scan\s*/i);
+    // Check for scan command (supports !, # prefixes or just a wallet address)
+    // Supports: !scan <wallet>, #scan <wallet>, or just <wallet>
+    // Note: /scan is handled by slash command interaction handler, not text
+    const scanCommandMatch = content.match(/^[!#]scan\s*/i);
     
     // Also check if message is just a wallet address (for convenience)
     const bareWalletMatch = content.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})$/);
