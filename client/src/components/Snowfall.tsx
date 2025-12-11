@@ -9,19 +9,8 @@ interface Snowflake {
   opacity: number;
 }
 
-interface Decoration {
-  id: number;
-  left: number;
-  top: number;
-  emoji: string;
-  size: number;
-  animationDuration: number;
-  animationDelay: number;
-}
-
 export function Snowfall() {
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
-  const [decorations, setDecorations] = useState<Decoration[]>([]);
 
   useEffect(() => {
     const flakes: Snowflake[] = [];
@@ -39,24 +28,6 @@ export function Snowfall() {
     }
 
     setSnowflakes(flakes);
-
-    const christmasEmojis = ['🎄', '🍪', '🎅', '🦌', '🎁', '🔔', '⭐', '🧑‍🎄'];
-    const decos: Decoration[] = [];
-    const numDecos = 12;
-
-    for (let i = 0; i < numDecos; i++) {
-      decos.push({
-        id: i,
-        left: Math.random() * 95,
-        top: Math.random() * 90,
-        emoji: christmasEmojis[Math.floor(Math.random() * christmasEmojis.length)],
-        size: 20 + Math.random() * 20,
-        animationDuration: 15 + Math.random() * 20,
-        animationDelay: Math.random() * 5,
-      });
-    }
-
-    setDecorations(decos);
   }, []);
 
   return (
@@ -71,23 +42,6 @@ export function Snowfall() {
           }
           100% {
             transform: translateY(110vh) translateX(-10px);
-          }
-        }
-        @keyframes floatAround {
-          0% {
-            transform: translate(0, 0) rotate(0deg);
-          }
-          25% {
-            transform: translate(20px, 30px) rotate(10deg);
-          }
-          50% {
-            transform: translate(-10px, 50px) rotate(-5deg);
-          }
-          75% {
-            transform: translate(15px, 20px) rotate(5deg);
-          }
-          100% {
-            transform: translate(0, 0) rotate(0deg);
           }
         }
       `}</style>
@@ -105,21 +59,6 @@ export function Snowfall() {
             boxShadow: '0 0 2px rgba(255, 255, 255, 0.6)',
           }}
         />
-      ))}
-      {decorations.map((deco) => (
-        <div
-          key={`deco-${deco.id}`}
-          className="absolute"
-          style={{
-            left: `${deco.left}%`,
-            top: `${deco.top}%`,
-            fontSize: `${deco.size}px`,
-            animation: `floatAround ${deco.animationDuration}s ease-in-out ${deco.animationDelay}s infinite`,
-            opacity: 0.8,
-          }}
-        >
-          {deco.emoji}
-        </div>
       ))}
     </div>
   );
