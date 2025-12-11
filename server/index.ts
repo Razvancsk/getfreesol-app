@@ -198,13 +198,17 @@ function getStaticAssetsPath() {
     const server = await registerRoutes(app);
     log(`Routes registered successfully`);
 
-    // Initialize Discord bot for wallet scanning
-    try {
-      const { initializeDiscordBot } = await import('./discordBot.js');
-      await initializeDiscordBot();
-    } catch (discordError) {
-      log(`Discord bot initialization failed: ${discordError instanceof Error ? discordError.message : String(discordError)}`);
-      log(`Server will continue without Discord bot functionality`);
+    // Initialize Discord bot for wallet scanning (production only to avoid double responses)
+    if (process.env.NODE_ENV === 'production' || process.env.REPL_DEPLOYMENT) {
+      try {
+        const { initializeDiscordBot } = await import('./discordBot.js');
+        await initializeDiscordBot();
+      } catch (discordError) {
+        log(`Discord bot initialization failed: ${discordError instanceof Error ? discordError.message : String(discordError)}`);
+        log(`Server will continue without Discord bot functionality`);
+      }
+    } else {
+      log(`Discord bot disabled in development mode to avoid double responses`);
     }
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
