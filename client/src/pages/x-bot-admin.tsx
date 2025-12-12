@@ -29,10 +29,17 @@ const GN_TEMPLATES = [
 ];
 
 const TRENDING_TEMPLATES = [
-  "🔥 #2 ON PHANTOM WALLET 🔥\n\nGet Free Sol is now the second most popular tool on @phantom!\n\nThank you Solana fam 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom #GetFreeSol",
-  "We're trending #2 on @phantom! 🚀\n\nRight behind @JupiterExchange\n\nThe SOL reclaim movement is real 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom",
-  "no way... we're #2 on phantom 🤯\n\nonly @JupiterExchange ahead of us\n\nyou guys are insane. thank you 💜\n\ngetfreesol.xyz\n\n#Solana #GetFreeSol",
-  "🏆 #2 TRENDING ON PHANTOM 🏆\n\nAhead of pump.fun, Photon, and GMGN\n\nAll we do is help you get YOUR SOL back 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom",
+  "🔥 #2 ON PHANTOM WALLET 🔥\n\nGet Free Sol is trending on @phantom!\n\nThank you Solana fam 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom #GetFreeSol",
+  "We're trending #2 on @phantom! 🚀\n\nThe SOL reclaim movement is real 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom",
+  "no way... we're #2 on phantom 🤯\n\nyou guys are insane. thank you 💜\n\ngetfreesol.xyz\n\n#Solana #GetFreeSol",
+  "🏆 #2 TRENDING ON PHANTOM 🏆\n\nReclaim your hidden SOL today 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom",
+];
+
+const TRENDING1_TEMPLATES = [
+  "🥇 #1 ON PHANTOM WALLET 🥇\n\nGet Free Sol is now the top tool on @phantom!\n\nThank you Solana fam 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom #GetFreeSol",
+  "WE DID IT! #1 on @phantom! 🏆\n\nThe SOL reclaim movement is unstoppable 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom",
+  "no way... we're #1 on phantom 🤯\n\nyou guys are absolutely insane. THANK YOU 💜\n\ngetfreesol.xyz\n\n#Solana #GetFreeSol",
+  "🥇 NUMBER ONE ON PHANTOM 🥇\n\nReclaim your hidden SOL at getfreesol.xyz 💜\n\n#Solana #Phantom #GetFreeSol",
 ];
 
 const FUNNY_TEMPLATES = [
@@ -61,7 +68,7 @@ const FUNNY_TEMPLATES = [
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
   const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
   const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
@@ -97,7 +104,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1') => {
     setPostContent(template);
     setImageType(imgType);
     setAiMemePreview(null);
@@ -238,7 +245,15 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
               onClick={() => handleQuickPost(TRENDING_TEMPLATES[Math.floor(Math.random() * TRENDING_TEMPLATES.length)], 'trending')}
               className="border-green-500 text-green-200 hover:bg-green-700"
             >
-              🚀 Trending
+              🚀 Trending #2
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost(TRENDING1_TEMPLATES[Math.floor(Math.random() * TRENDING1_TEMPLATES.length)], 'trending1')}
+              className="border-yellow-500 text-yellow-200 hover:bg-yellow-700"
+            >
+              🥇 Trending #1
             </Button>
             <Button
               variant="outline"
