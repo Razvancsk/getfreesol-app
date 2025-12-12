@@ -1303,17 +1303,17 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       } catch (e) {}
       
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#3d2a0a';
-      ctx.font = 'bold 65px sans-serif';
-      ctx.fillText('NUMBER ONE', width/2, 180);
-      
       ctx.fillStyle = '#1a1207';
       ctx.font = 'bold 160px sans-serif';
-      ctx.fillText('#1', width/2, 360);
+      ctx.fillText('#1', width/2, 280);
       
       ctx.fillStyle = '#3d2a0a';
-      ctx.font = 'bold 50px sans-serif';
-      ctx.fillText('Phantom Wallet', width/2, 430);
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('ON PHANTOM', width/2, 380);
+      
+      ctx.fillStyle = '#3d2a0a';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('Thank you Solana community!', width/2, 450);
       
       ctx.fillStyle = '#1a1207';
       ctx.font = 'bold 55px sans-serif';
