@@ -1056,7 +1056,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#e0e7ff';
       ctx.font = '40px sans-serif';
-      ctx.fillText('Thank you for believing in us 💜', width/2, 460);
+      ctx.fillText('Thank you for believing in us', width/2, 460);
       
       ctx.fillStyle = '#34d399';
       ctx.font = 'bold 50px sans-serif';
@@ -1080,7 +1080,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.textAlign = 'center';
       ctx.fillStyle = '#fbbf24';
       ctx.font = 'bold 60px sans-serif';
-      ctx.fillText('🚀 TRENDING #2 🚀', width/2, 200);
+      ctx.fillText('TRENDING #2', width/2, 200);
       
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 50px sans-serif';
