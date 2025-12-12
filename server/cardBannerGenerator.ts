@@ -918,6 +918,183 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillText('getfreesol.xyz', width/2, height - 40);
     }
     
+  } else if (type === 'trending') {
+    if (template === 0) {
+      // Purple/gold gradient celebrating trending status
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#4c1d95');
+      gradient.addColorStop(0.5, '#7c3aed');
+      gradient.addColorStop(1, '#fbbf24');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawParticles(ctx, width, height, 'rgba(255,255,255,0.3)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 75, 30, 150, 150);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 100px sans-serif';
+      ctx.fillText('#2', width/2, 280);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('ON PHANTOM', width/2, 360);
+      
+      ctx.fillStyle = '#e0e7ff';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('Thank you Solana community!', width/2, 450);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 60);
+      
+    } else if (template === 1) {
+      // Trophy/achievement style
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Gold border
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(30, 30, width - 60, height - 60);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('🏆 TRENDING ON PHANTOM 🏆', width/2, 120);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 180px sans-serif';
+      ctx.fillText('#2', width/2, 330);
+      
+      ctx.fillStyle = '#a78bfa';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('Behind only Jupiter Exchange', width/2, 420);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 60);
+      
+    } else if (template === 2) {
+      // Leaderboard style
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#1e1b4b');
+      gradient.addColorStop(1, '#0f172a');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PHANTOM WALLET TOP SITES', width/2, 70);
+      
+      // Leaderboard entries
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#c0c0c0';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('1. Jupiter Exchange', 200, 180);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('2. GET FREE SOL', 200, 280);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 80, 230, 80, 80);
+      } catch (e) {}
+      
+      ctx.fillStyle = '#cd7f32';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('3. pump.fun', 200, 370);
+      ctx.fillText('4. Photon', 200, 440);
+      ctx.fillText('5. GMGN', 200, 510);
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 50);
+      
+    } else if (template === 3) {
+      // Celebration style with confetti-like elements
+      ctx.fillStyle = '#4c1d95';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw colorful celebration dots
+      const colors = ['#fbbf24', '#22c55e', '#f97316', '#ec4899', '#3b82f6'];
+      for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+        ctx.beginPath();
+        ctx.arc(Math.random() * width, Math.random() * height, 3 + Math.random() * 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 60, 40, 120, 120);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('WE DID IT!', width/2, 250);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 90px sans-serif';
+      ctx.fillText('#2 ON PHANTOM', width/2, 370);
+      
+      ctx.fillStyle = '#e0e7ff';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('Thank you for believing in us 💜', width/2, 460);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 50);
+      
+    } else {
+      // Simple elegant style
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#7c3aed');
+      gradient.addColorStop(1, '#4c1d95');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawWaveLines(ctx, width, height, 'rgba(255,255,255,0.1)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('🚀 TRENDING #2 🚀', width/2, 200);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('on Phantom Wallet', width/2, 290);
+      
+      ctx.fillStyle = '#e0e7ff';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('Solana Tools Category', width/2, 380);
+      
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 80);
+    }
+    
   } else {
     if (template === 0) {
       const gradient = ctx.createLinearGradient(0, 0, width, height);

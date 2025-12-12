@@ -28,6 +28,13 @@ const GN_TEMPLATES = [
   "GN! Another great day in Solana 🌙\n\nTomorrow, reclaim more hidden SOL!\n\ngetfreesol.xyz ✨\n\n#Solana #GN",
 ];
 
+const TRENDING_TEMPLATES = [
+  "🔥 #2 ON PHANTOM WALLET 🔥\n\nGet Free Sol is now the second most popular tool on @phantom!\n\nThank you Solana fam 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom #GetFreeSol",
+  "We're trending #2 on @phantom! 🚀\n\nRight behind @JupiterExchange\n\nThe SOL reclaim movement is real 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom",
+  "no way... we're #2 on phantom 🤯\n\nonly @JupiterExchange ahead of us\n\nyou guys are insane. thank you 💜\n\ngetfreesol.xyz\n\n#Solana #GetFreeSol",
+  "🏆 #2 TRENDING ON PHANTOM 🏆\n\nAhead of pump.fun, Photon, and GMGN\n\nAll we do is help you get YOUR SOL back 💜\n\ngetfreesol.xyz\n\n#Solana #Phantom",
+];
+
 const FUNNY_TEMPLATES = [
   "ser you got rent deposits just sitting there doing nothing 💀\n\nclose those empty accounts\n\ngetfreesol.xyz\n\n#Solana",
   "POV: you realize you got 0.5 SOL locked in rent from old tokens 🧠\n\ntime to reclaim\n\ngetfreesol.xyz\n\n#Solana",
@@ -54,7 +61,7 @@ const FUNNY_TEMPLATES = [
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
   const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
   const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
@@ -90,7 +97,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending') => {
     setPostContent(template);
     setImageType(imgType);
     setAiMemePreview(null);
@@ -224,6 +231,14 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
               className="border-orange-500 text-orange-200 hover:bg-orange-700"
             >
               😂 Funny Post
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost(TRENDING_TEMPLATES[Math.floor(Math.random() * TRENDING_TEMPLATES.length)], 'trending')}
+              className="border-green-500 text-green-200 hover:bg-green-700"
+            >
+              🚀 Trending
             </Button>
             <Button
               variant="outline"
