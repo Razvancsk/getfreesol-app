@@ -930,7 +930,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       drawParticles(ctx, width, height, 'rgba(255,255,255,0.3)');
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, width/2 - 75, 30, 150, 150);
       } catch (e) {}
@@ -963,7 +963,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.strokeRect(30, 30, width - 60, height - 60);
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, 50, 50, 100, 100);
       } catch (e) {}
@@ -1009,7 +1009,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillText('2. GET FREE SOL', 200, 280);
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, 80, 230, 80, 80);
       } catch (e) {}
@@ -1040,7 +1040,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       }
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, width/2 - 60, 40, 120, 120);
       } catch (e) {}
@@ -1072,7 +1072,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       drawWaveLines(ctx, width, height, 'rgba(255,255,255,0.1)');
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/image_1765419958982.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, 50, 50, 100, 100);
       } catch (e) {}
