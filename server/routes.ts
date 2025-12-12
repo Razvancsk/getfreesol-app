@@ -6897,7 +6897,10 @@ Claimer: ${walletAddress}`;
       console.log(`[generate-card] Generated ${imageType}, size: ${cardImage.length} bytes`);
       
       res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
       res.send(cardImage);
     } catch (error: any) {
       console.error('Generate card error:', error);
