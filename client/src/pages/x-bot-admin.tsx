@@ -21,6 +21,22 @@ const GM_TEMPLATES = [
   "GM! Rise and grind, Solana family! 🌅\n\nDon't let your SOL stay locked in empty accounts!\n\ngetfreesol.xyz 💎\n\n#Solana #GM #GetFreeSol",
   "GM to everyone building on Solana! ☀️\n\nReclaim your rent deposits from empty token accounts\n\ngetfreesol.xyz\n\n#Solana #DeFi #GM",
   "GM frens! ☀️\n\nDid you know you can recover SOL from empty token accounts?\n\nCheck it out at getfreesol.xyz 🚀\n\n#Solana #GM",
+  "GM! ☀️\n\nAnother beautiful day to clean up your wallet\n\ngetfreesol.xyz\n\n#Solana #GM #GetFreeSol",
+  "GM Solana! 🌞\n\nStart your day by recovering hidden SOL\n\ngetfreesol.xyz 💜\n\n#Solana #GM",
+  "GM! ☀️\n\nYour wallet has hidden treasure waiting\n\nFind it at getfreesol.xyz\n\n#Solana #GM #DeFi",
+  "GM builders! 🌅\n\nEmpty accounts = locked SOL\n\nUnlock yours at getfreesol.xyz\n\n#Solana #GM",
+  "GM! ☀️\n\nDon't forget to check for claimable SOL today\n\ngetfreesol.xyz\n\n#Solana #GM #GetFreeSol",
+  "GM Solana fam! 🌞\n\nWho's claiming some free SOL today?\n\ngetfreesol.xyz 💎\n\n#Solana #GM",
+  "GM! ☀️\n\nClean wallet = happy wallet\n\nReclaim at getfreesol.xyz\n\n#Solana #GM #DeFi",
+  "GM to all the Solana degens! 🌅\n\nGet your hidden SOL back\n\ngetfreesol.xyz\n\n#Solana #GM",
+  "GM! ☀️\n\nFun fact: You probably have SOL stuck in old accounts\n\nCheck getfreesol.xyz\n\n#Solana #GM",
+  "GM everyone! 🌞\n\nNew day, new SOL to reclaim\n\ngetfreesol.xyz 💜\n\n#Solana #GM #GetFreeSol",
+  "GM! ☀️\n\nCoffee + reclaiming SOL = perfect morning\n\ngetfreesol.xyz\n\n#Solana #GM",
+  "GM Solana! 🌅\n\nHave you scanned your wallet lately?\n\ngetfreesol.xyz\n\n#Solana #GM #DeFi",
+  "GM frens! ☀️\n\nYour empty token accounts are waiting\n\ngetfreesol.xyz 💎\n\n#Solana #GM",
+  "GM! 🌞\n\nLet's make today a SOL reclaim day\n\ngetfreesol.xyz\n\n#Solana #GM #GetFreeSol",
+  "GM to the best community! ☀️\n\nReclaim your rent deposits today\n\ngetfreesol.xyz 💜\n\n#Solana #GM",
+  "GM! 🌅\n\nEvery empty account = ~0.002 SOL waiting for you\n\ngetfreesol.xyz\n\n#Solana #GM",
 ];
 
 const GN_TEMPLATES = [
