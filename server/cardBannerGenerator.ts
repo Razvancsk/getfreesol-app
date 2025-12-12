@@ -1090,153 +1090,211 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     }
     
   } else if (type === 'trending1') {
-    // GOLD #1 TRENDING TEMPLATES
+    // GOLD METAL #1 TRENDING TEMPLATES - Metallic gold style
     if (template === 0) {
-      // Full gold gradient celebration
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#fbbf24');
-      gradient.addColorStop(0.5, '#f59e0b');
-      gradient.addColorStop(1, '#d97706');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-      drawParticles(ctx, width, height, 'rgba(255,255,255,0.4)');
-      
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 75, 30, 150, 150);
-      } catch (e) {}
-      
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 120px sans-serif';
-      ctx.fillText('#1', width/2, 290);
-      
-      ctx.fillStyle = '#1e1b4b';
-      ctx.font = 'bold 70px sans-serif';
-      ctx.fillText('ON PHANTOM', width/2, 380);
-      
-      ctx.fillStyle = '#0f172a';
-      ctx.font = '45px sans-serif';
-      ctx.fillText('Thank you Solana community!', width/2, 470);
-      
-      ctx.fillStyle = '#1e1b4b';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 60);
-      
-    } else if (template === 1) {
-      // Dark background with gold #1 crown
-      ctx.fillStyle = '#0f172a';
+      // Brushed gold metal background
+      const metalGradient = ctx.createLinearGradient(0, 0, 0, height);
+      metalGradient.addColorStop(0, '#d4a84b');
+      metalGradient.addColorStop(0.15, '#f5e6a3');
+      metalGradient.addColorStop(0.3, '#c9a227');
+      metalGradient.addColorStop(0.5, '#f5e6a3');
+      metalGradient.addColorStop(0.7, '#8b6914');
+      metalGradient.addColorStop(0.85, '#f5e6a3');
+      metalGradient.addColorStop(1, '#c9a227');
+      ctx.fillStyle = metalGradient;
       ctx.fillRect(0, 0, width, height);
       
-      // Gold border double-line
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 10;
-      ctx.strokeRect(20, 20, width - 40, height - 40);
-      ctx.strokeStyle = '#d97706';
-      ctx.lineWidth = 5;
-      ctx.strokeRect(40, 40, width - 80, height - 80);
-      
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, 60, 60, 100, 100);
-      } catch (e) {}
-      
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('GOLD ON PHANTOM', width/2, 130);
-      
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 200px sans-serif';
-      ctx.fillText('#1', width/2, 360);
-      
-      ctx.fillStyle = '#e0e7ff';
-      ctx.font = '45px sans-serif';
-      ctx.fillText('We made it to the top!', width/2, 450);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 60);
-      
-    } else if (template === 2) {
-      // Purple/gold split celebration
-      const gradient = ctx.createLinearGradient(0, 0, width, 0);
-      gradient.addColorStop(0, '#4c1d95');
-      gradient.addColorStop(1, '#fbbf24');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-      drawParticles(ctx, width, height, 'rgba(255,255,255,0.3)');
-      
-      try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
-        const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 75, 30, 150, 150);
-      } catch (e) {}
-      
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 80px sans-serif';
-      ctx.fillText('WE DID IT!', width/2, 260);
-      
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 100px sans-serif';
-      ctx.fillText('#1 ON PHANTOM', width/2, 380);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '40px sans-serif';
-      ctx.fillText('Reclaim your hidden SOL at', width/2, 470);
-      
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 60);
-      
-    } else if (template === 3) {
-      // Gold confetti celebration
-      ctx.fillStyle = '#1e1b4b';
-      ctx.fillRect(0, 0, width, height);
-      
-      // Draw gold celebration dots
-      const goldColors = ['#fbbf24', '#f59e0b', '#d97706', '#fcd34d', '#fde68a'];
-      for (let i = 0; i < 120; i++) {
-        ctx.fillStyle = goldColors[Math.floor(Math.random() * goldColors.length)];
+      // Brushed metal horizontal lines
+      for (let y = 0; y < height; y += 3) {
+        ctx.strokeStyle = `rgba(139, 105, 20, ${0.05 + Math.random() * 0.1})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(Math.random() * width, Math.random() * height, 3 + Math.random() * 10, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
       }
       
       try {
         const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
-        ctx.drawImage(logo, width/2 - 60, 40, 120, 120);
+        ctx.drawImage(logo, width/2 - 70, 25, 140, 140);
       } catch (e) {}
       
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 70px sans-serif';
-      ctx.fillText('GET FREE SOL', width/2, 250);
+      ctx.fillStyle = '#3d2a0a';
+      ctx.font = 'bold 130px sans-serif';
+      ctx.fillText('#1', width/2, 300);
       
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 100px sans-serif';
-      ctx.fillText('#1 ON PHANTOM', width/2, 380);
+      ctx.fillStyle = '#5c3d10';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('ON PHANTOM', width/2, 380);
       
-      ctx.fillStyle = '#e0e7ff';
+      ctx.fillStyle = '#3d2a0a';
       ctx.font = '40px sans-serif';
-      ctx.fillText('Thank you for your support!', width/2, 470);
+      ctx.fillText('Solana Tools Category', width/2, 450);
       
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = '#1a1207';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 55);
+      
+    } else if (template === 1) {
+      // Black with gold metal plate
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Gold metal plate in center
+      const plateY = 100;
+      const plateHeight = 380;
+      const plateGradient = ctx.createLinearGradient(60, plateY, 60, plateY + plateHeight);
+      plateGradient.addColorStop(0, '#c9a227');
+      plateGradient.addColorStop(0.2, '#f5e6a3');
+      plateGradient.addColorStop(0.4, '#d4a84b');
+      plateGradient.addColorStop(0.6, '#f5e6a3');
+      plateGradient.addColorStop(0.8, '#8b6914');
+      plateGradient.addColorStop(1, '#c9a227');
+      ctx.fillStyle = plateGradient;
+      ctx.fillRect(60, plateY, width - 120, plateHeight);
+      
+      // Plate border emboss
+      ctx.strokeStyle = '#5c3d10';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(60, plateY, width - 120, plateHeight);
+      ctx.strokeStyle = '#f5e6a3';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(65, plateY + 5, width - 130, plateHeight - 10);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 50, plateY + 20, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#3d2a0a';
+      ctx.font = 'bold 140px sans-serif';
+      ctx.fillText('#1', width/2, plateY + 260);
+      
+      ctx.fillStyle = '#5c3d10';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('PHANTOM WALLET', width/2, plateY + 330);
+      
+      ctx.fillStyle = '#c9a227';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 45);
+      
+    } else if (template === 2) {
+      // Gold metal with shine effect
+      const shineGradient = ctx.createRadialGradient(width * 0.3, height * 0.3, 0, width * 0.5, height * 0.5, width);
+      shineGradient.addColorStop(0, '#fff8dc');
+      shineGradient.addColorStop(0.2, '#f5e6a3');
+      shineGradient.addColorStop(0.5, '#c9a227');
+      shineGradient.addColorStop(0.8, '#8b6914');
+      shineGradient.addColorStop(1, '#5c3d10');
+      ctx.fillStyle = shineGradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Metallic highlights
+      for (let i = 0; i < 8; i++) {
+        const hlGradient = ctx.createLinearGradient(0, i * 70, width, i * 70 + 30);
+        hlGradient.addColorStop(0, 'rgba(255, 248, 220, 0)');
+        hlGradient.addColorStop(0.5, 'rgba(255, 248, 220, 0.3)');
+        hlGradient.addColorStop(1, 'rgba(255, 248, 220, 0)');
+        ctx.fillStyle = hlGradient;
+        ctx.fillRect(0, i * 70, width, 15);
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 65, 30, 130, 130);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#3d2a0a';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('WE ARE', width/2, 240);
+      
+      ctx.fillStyle = '#1a1207';
+      ctx.font = 'bold 150px sans-serif';
+      ctx.fillText('#1', width/2, 390);
+      
+      ctx.fillStyle = '#3d2a0a';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText('on Phantom Wallet', width/2, 460);
+      
+      ctx.fillStyle = '#1a1207';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width/2, height - 55);
+      
+    } else if (template === 3) {
+      // Dark premium with gold metal text effect
+      ctx.fillStyle = '#1a1207';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Subtle gold dust particles
+      for (let i = 0; i < 100; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const size = 1 + Math.random() * 3;
+        const alpha = 0.3 + Math.random() * 0.5;
+        ctx.fillStyle = `rgba(201, 162, 39, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Gold metal border
+      const borderGradient = ctx.createLinearGradient(0, 0, width, 0);
+      borderGradient.addColorStop(0, '#8b6914');
+      borderGradient.addColorStop(0.3, '#f5e6a3');
+      borderGradient.addColorStop(0.5, '#c9a227');
+      borderGradient.addColorStop(0.7, '#f5e6a3');
+      borderGradient.addColorStop(1, '#8b6914');
+      ctx.strokeStyle = borderGradient;
+      ctx.lineWidth = 8;
+      ctx.strokeRect(25, 25, width - 50, height - 50);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 55, 50, 110, 110);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#c9a227';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('GET FREE SOL', width/2, 240);
+      
+      ctx.fillStyle = '#f5e6a3';
+      ctx.font = 'bold 120px sans-serif';
+      ctx.fillText('#1', width/2, 380);
+      
+      ctx.fillStyle = '#c9a227';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('Top Solana Tools on Phantom', width/2, 455);
+      
+      ctx.fillStyle = '#f5e6a3';
       ctx.font = 'bold 50px sans-serif';
       ctx.fillText('getfreesol.xyz', width/2, height - 50);
       
     } else {
-      // Simple gold champion style
-      const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, '#fbbf24');
-      gradient.addColorStop(1, '#d97706');
-      ctx.fillStyle = gradient;
+      // Polished gold medal style
+      const medalGradient = ctx.createLinearGradient(0, 0, width, height);
+      medalGradient.addColorStop(0, '#8b6914');
+      medalGradient.addColorStop(0.25, '#f5e6a3');
+      medalGradient.addColorStop(0.5, '#c9a227');
+      medalGradient.addColorStop(0.75, '#f5e6a3');
+      medalGradient.addColorStop(1, '#8b6914');
+      ctx.fillStyle = medalGradient;
       ctx.fillRect(0, 0, width, height);
-      drawWaveLines(ctx, width, height, 'rgba(0,0,0,0.1)');
+      
+      // Circular shine overlay
+      const circleGradient = ctx.createRadialGradient(width * 0.7, height * 0.2, 0, width * 0.5, height * 0.5, width);
+      circleGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+      circleGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.1)');
+      circleGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = circleGradient;
+      ctx.fillRect(0, 0, width, height);
       
       try {
         const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
@@ -1245,21 +1303,21 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       } catch (e) {}
       
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#3d2a0a';
       ctx.font = 'bold 65px sans-serif';
-      ctx.fillText('NUMBER ONE', width/2, 200);
+      ctx.fillText('CHAMPION', width/2, 180);
       
-      ctx.fillStyle = '#1e1b4b';
+      ctx.fillStyle = '#1a1207';
+      ctx.font = 'bold 160px sans-serif';
+      ctx.fillText('#1', width/2, 360);
+      
+      ctx.fillStyle = '#3d2a0a';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('Phantom Wallet', width/2, 430);
+      
+      ctx.fillStyle = '#1a1207';
       ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('on Phantom Wallet', width/2, 290);
-      
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 150px sans-serif';
-      ctx.fillText('#1', width/2, 450);
-      
-      ctx.fillStyle = '#1e1b4b';
-      ctx.font = 'bold 55px sans-serif';
-      ctx.fillText('getfreesol.xyz', width/2, height - 60);
+      ctx.fillText('getfreesol.xyz', width/2, height - 55);
     }
     
   } else {
