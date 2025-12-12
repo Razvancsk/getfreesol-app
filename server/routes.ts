@@ -6889,9 +6889,12 @@ Claimer: ${walletAddress}`;
   app.get("/api/x/generate-card", async (req, res) => {
     try {
       const imageType = (req.query.type as string) || 'promo';
+      console.log(`[generate-card] Generating type: ${imageType}`);
       
       const { generatePostCardBanner } = await import('./cardBannerGenerator.js');
       const cardImage = await generatePostCardBanner(imageType);
+      
+      console.log(`[generate-card] Generated ${imageType}, size: ${cardImage.length} bytes`);
       
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
