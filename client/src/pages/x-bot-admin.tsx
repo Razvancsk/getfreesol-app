@@ -325,7 +325,8 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                   className="w-full h-auto rounded"
                   style={{ maxWidth: '100%', display: 'block' }}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/api/x/preview-card';
+                    console.error('Image failed to load for type:', imageType);
+                    (e.target as HTMLImageElement).src = `/api/x/generate-card?type=promo&t=${Date.now()}`;
                   }}
                 />
               )}
