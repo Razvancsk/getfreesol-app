@@ -191,10 +191,11 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  const template = Math.floor(Math.random() * 5);
+  const template = Math.floor(Math.random() * 10);
   
   if (type === 'gm') {
     if (template === 0) {
+      // Sunrise gradient - warm orange/yellow
       const gradient = ctx.createLinearGradient(0, 0, width, height);
       gradient.addColorStop(0, '#fbbf24');
       gradient.addColorStop(1, '#f97316');
@@ -203,7 +204,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       drawDiagonalLines(ctx, width, height, 'rgba(255,255,255,0.1)');
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, width - 150, 50, 100, 100);
       } catch (e) {}
@@ -217,19 +218,20 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#ffffff';
       ctx.font = '44px sans-serif';
-      ctx.fillText('Rise and reclaim your hidden SOL', 80, 400);
+      ctx.fillText('New day, new opportunities', 80, 400);
       
       ctx.font = 'bold 50px sans-serif';
       ctx.fillStyle = '#1e1b4b';
       ctx.fillText('getfreesol.xyz', 80, 520);
       
     } else if (template === 1) {
+      // Dark with glow orbs
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
       drawGlowOrbs(ctx, width, height, ['rgba(251,191,36,0.3)', 'rgba(249,115,22,0.2)', 'rgba(234,88,12,0.2)', 'rgba(220,38,38,0.15)']);
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, 50, 50, 100, 100);
       } catch (e) {}
@@ -245,13 +247,14 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#94a3b8';
       ctx.font = '36px sans-serif';
-      ctx.fillText('Another day to reclaim your hidden SOL', width / 2, 440);
+      ctx.fillText('Wishing you a productive day', width / 2, 440);
       
       ctx.fillStyle = '#22c55e';
       ctx.font = 'bold 48px sans-serif';
       ctx.fillText('getfreesol.xyz', width / 2, 550);
       
     } else if (template === 2) {
+      // Split purple/gold
       ctx.fillStyle = '#6b21a8';
       ctx.fillRect(0, 0, width / 2, height);
       ctx.fillStyle = '#fbbf24';
@@ -259,7 +262,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       drawDotGrid(ctx, width, height, 'rgba(255,255,255,0.1)');
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, 50, height - 150, 100, 100);
       } catch (e) {}
@@ -271,17 +274,18 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#1e1b4b';
       ctx.font = 'bold 100px sans-serif';
-      ctx.fillText('SOLANA', width * 3/4, 280);
+      ctx.fillText('FRENS', width * 3/4, 280);
       
       ctx.fillStyle = '#ffffff';
       ctx.font = '40px sans-serif';
-      ctx.fillText('Reclaim hidden SOL', width / 4, 400);
+      ctx.fillText('Rise and shine', width / 4, 400);
       
       ctx.fillStyle = '#1e1b4b';
       ctx.font = '40px sans-serif';
       ctx.fillText('getfreesol.xyz', width * 3/4, 400);
       
     } else if (template === 3) {
+      // Radial sunrise
       const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, 600);
       gradient.addColorStop(0, '#fef3c7');
       gradient.addColorStop(1, '#f97316');
@@ -295,7 +299,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fill();
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, width/2 - 60, 140, 120, 120);
       } catch (e) {}
@@ -311,9 +315,10 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#374151';
       ctx.font = '32px sans-serif';
-      ctx.fillText('Start your day by reclaiming hidden SOL', width / 2, 570);
+      ctx.fillText('Have an amazing day ahead', width / 2, 570);
       
-    } else {
+    } else if (template === 4) {
+      // Purple with gold border
       ctx.fillStyle = '#1e1b4b';
       ctx.fillRect(0, 0, width, height);
       drawTriangles(ctx, width, height, 'rgba(139,92,246,0.2)');
@@ -323,7 +328,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.strokeRect(40, 40, width - 80, height - 80);
       
       try {
-        const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
         const logo = await loadImage(logoPath);
         ctx.drawImage(logo, width/2 - 50, 80, 100, 100);
       } catch (e) {}
@@ -335,11 +340,179 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#a78bfa';
       ctx.font = '42px sans-serif';
-      ctx.fillText('Rise, shine, and reclaim your SOL', width / 2, 400);
+      ctx.fillText('Lets build something great today', width / 2, 400);
       
       ctx.fillStyle = '#34d399';
       ctx.font = 'bold 55px sans-serif';
       ctx.fillText('getfreesol.xyz', width / 2, 520);
+      
+    } else if (template === 5) {
+      // Teal/cyan morning vibe
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#0d9488');
+      gradient.addColorStop(1, '#06b6d4');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawParticles(ctx, width, height, 'rgba(255,255,255,0.3)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 60, 60, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 130px sans-serif';
+      ctx.fillText('GM', width / 2, 250);
+      
+      ctx.fillStyle = '#ecfeff';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('HAPPY MONDAY', width / 2, 340);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '38px sans-serif';
+      ctx.fillText('Start your week strong', width / 2, 440);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 550);
+      
+    } else if (template === 6) {
+      // Pink/purple gradient
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#ec4899');
+      gradient.addColorStop(1, '#8b5cf6');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawDotGrid(ctx, width, height, 'rgba(255,255,255,0.15)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 60, 40, 120, 120);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 100px sans-serif';
+      ctx.fillText('GM EVERYONE', width / 2, 280);
+      
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('Sending good vibes to the community', width / 2, 380);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 520);
+      
+    } else if (template === 7) {
+      // Dark green forest morning
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(0, 0, width, height);
+      drawWaveLines(ctx, width, height, 'rgba(16,185,129,0.2)');
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width - 150, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 110px sans-serif';
+      ctx.fillText('GM', 80, 220);
+      
+      ctx.fillStyle = '#6ee7b7';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('SOLANA BUILDERS', 80, 320);
+      
+      ctx.fillStyle = '#a7f3d0';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('Another day to create something amazing', 80, 420);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', 80, 530);
+      
+    } else if (template === 8) {
+      // Minimal white/clean
+      ctx.fillStyle = '#fafafa';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Subtle gradient overlay
+      const overlay = ctx.createLinearGradient(0, 0, width, height);
+      overlay.addColorStop(0, 'rgba(251,191,36,0.1)');
+      overlay.addColorStop(1, 'rgba(249,115,22,0.1)');
+      ctx.fillStyle = overlay;
+      ctx.fillRect(0, 0, width, height);
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 60, 60, 120, 120);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#1e1b4b';
+      ctx.font = 'bold 120px sans-serif';
+      ctx.fillText('GM', width / 2, 300);
+      
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '42px sans-serif';
+      ctx.fillText('Simple greeting, big energy', width / 2, 400);
+      
+      ctx.fillStyle = '#7c3aed';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 520);
+      
+    } else {
+      // Retro/vaporwave style
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#7c3aed');
+      gradient.addColorStop(0.5, '#ec4899');
+      gradient.addColorStop(1, '#f97316');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 130px sans-serif';
+      ctx.fillText('GM', width / 2, 280);
+      
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('RISE AND SHINE', width / 2, 370);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '38px sans-serif';
+      ctx.fillText('Time to check your wallet', width / 2, 460);
+      
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 560);
     }
     
   } else if (type === 'gn') {
