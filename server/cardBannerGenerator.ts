@@ -1131,7 +1131,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#3d2a0a';
       ctx.font = '40px sans-serif';
-      ctx.fillText('Solana Tools Category', width/2, 450);
+      ctx.fillText('Thank you Solana community!', width/2, 450);
       
       ctx.fillStyle = '#1a1207';
       ctx.font = 'bold 55px sans-serif';
@@ -1271,7 +1271,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       
       ctx.fillStyle = '#c9a227';
       ctx.font = '40px sans-serif';
-      ctx.fillText('Top Solana Tools on Phantom', width/2, 455);
+      ctx.fillText('Thank you for your support!', width/2, 455);
       
       ctx.fillStyle = '#f5e6a3';
       ctx.font = 'bold 50px sans-serif';
@@ -1305,7 +1305,7 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.textAlign = 'center';
       ctx.fillStyle = '#3d2a0a';
       ctx.font = 'bold 65px sans-serif';
-      ctx.fillText('CHAMPION', width/2, 180);
+      ctx.fillText('NUMBER ONE', width/2, 180);
       
       ctx.fillStyle = '#1a1207';
       ctx.font = 'bold 160px sans-serif';
