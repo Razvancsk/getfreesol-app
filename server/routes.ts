@@ -6480,40 +6480,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         instructions.push(depositIx);
       } else {
-        // For existing accounts with SOL, build manually to avoid SDK's BN.toNumber() bug
-        // For non-SOL tokens, use the standard SDK method
-        if (isNativeSol) {
-          // Build deposit instruction manually using Anchor for SOL
-          const SPL_TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-          
-          let bankLiquidityVault: PublicKey;
-          if ((bank as any).liquidityVault) {
-            bankLiquidityVault = (bank as any).liquidityVault;
-          } else {
-            const bankAccountData = await client.program.account.bank.fetch(bankPubkey);
-            bankLiquidityVault = (bankAccountData as any).liquidityVault;
-          }
-          
-          const depositIx = await client.program.methods
-            .lendingAccountDeposit(new BN(depositAmountNativeStr))
-            .accounts({
-              group: client.groupAddress,
-              marginfiAccount: marginfiAccountPk,
-              signer: userPubkey,
-              bank: bankPubkey,
-              signerTokenAccount: signerTokenAccount,
-              bankLiquidityVault: bankLiquidityVault,
-              tokenProgram: SPL_TOKEN_PROGRAM_ID,
-            })
-            .instruction();
-          
-          instructions.push(depositIx);
-        } else {
-          // For non-SOL tokens, use the standard SDK method
-          // SDK expects UI units (e.g., 1.5 for 1.5 USDC), not native units
-          const depositIx = await marginfiAccounts[0].makeDepositIx(depositAmount, bankPubkey);
-          instructions.push(...depositIx.instructions);
-        }
+        // For existing accounts, use the SDK's makeDepositIx which handles all accounts correctly
+        // SDK expects UI units (e.g., 1.5 for 1.5 SOL/USDC), not native units
+        console.log('Using SDK makeDepositIx for existing account:', {
+          depositAmount,
+          bankPubkey: bankPubkey.toBase58(),
+          isNativeSol,
+        });
+        const depositIx = await marginfiAccounts[0].makeDepositIx(depositAmount, bankPubkey);
+        instructions.push(...depositIx.instructions);
       }
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
