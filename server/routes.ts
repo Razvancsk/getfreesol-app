@@ -472,24 +472,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const tokensWithMetadata: any[] = [];
 
-      // Fetch native SOL balance via RPC (always reliable)
-      try {
-        const walletPubkey = new PublicKey(address);
-        const nativeSolBalance = await connection.getBalance(walletPubkey);
-        const solBalance = nativeSolBalance / 1e9;
-        if (solBalance > 0) {
-          tokensWithMetadata.push({
-            address: 'So11111111111111111111111111111111111111112',
-            symbol: 'SOL',
-            name: 'Solana',
-            decimals: 9,
-            logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
-            balance: solBalance,
-            balanceRaw: nativeSolBalance.toString()
-          });
-        }
-      } catch (solErr) {
-        console.error('Error fetching native SOL balance:', solErr);
+      // Add native SOL from Jupiter Holdings response (top-level fields)
+      const solBalance = typeof holdings.uiAmount === 'number' ? holdings.uiAmount : parseFloat(holdings.uiAmount || '0');
+      if (solBalance > 0) {
+        tokensWithMetadata.push({
+          address: 'So11111111111111111111111111111111111111112',
+          symbol: 'SOL',
+          name: 'Solana',
+          decimals: 9,
+          logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+          balance: solBalance,
+          balanceRaw: holdings.amount || '0'
+        });
       }
 
       // Process all token holdings (includes both standard and Token-2022)
