@@ -5999,9 +5999,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // Compute TVL using official SDK method (bank.computeTvl returns BigNumber)
-        const tvl = bank.computeTvl(oraclePrice);
-        const totalDepositsUsd = tvl?.toNumber?.() || 0;
+        // Get raw asset price from oracle (unweighted, no bias)
+        // Following SDK: getPrice(oraclePrice, PriceBias.None, false)
+        const priceObj = oraclePrice.priceRealtime || oraclePrice.priceWeighted;
+        const rawPrice = priceObj?.price?.toNumber?.() || oraclePrice.price?.toNumber?.() || 0;
+        
+        // Get total asset quantity in native units (bank.totalAssetShares * bank.assetShareValue)
+        // Following SDK compute.utils.ts: getTotalAssetQuantity()
+        const totalAssetQuantity = bank.totalAssetShares?.times?.(bank.assetShareValue) || bank.getTotalAssetQuantity?.();
+        const assetQuantityNum = totalAssetQuantity?.toNumber?.() || 0;
+        
+        // Get total liability quantity 
+        const totalLiabilityQuantity = bank.totalLiabilityShares?.times?.(bank.liabilityShareValue) || bank.getTotalLiabilityQuantity?.();
+        const liabilityQuantityNum = totalLiabilityQuantity?.toNumber?.() || 0;
+        
+        // Convert to USD: quantity * price / 10^decimals
+        const decimals = bank.mintDecimals || 9;
+        const totalDepositsUsd = (assetQuantityNum * rawPrice) / Math.pow(10, decimals);
+        const totalBorrowsUsd = (liabilityQuantityNum * rawPrice) / Math.pow(10, decimals);
         
         // Get interest rates - use computeInterestRates if available
         let lendingApy = 0;
@@ -6014,12 +6029,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Get utilization rate
         let utilizationRate = 0;
-        if (typeof bank.computeUtilizationRate === 'function') {
-          utilizationRate = bank.computeUtilizationRate()?.toNumber?.() || 0;
+        if (totalDepositsUsd > 0) {
+          utilizationRate = totalBorrowsUsd / totalDepositsUsd;
         }
-        
-        // Calculate borrows from TVL and utilization
-        const totalBorrowsUsd = totalDepositsUsd * utilizationRate;
         
         banks.push({
           bankAddress: address,
@@ -6035,7 +6047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           decimals: bank.mintDecimals || 9,
         });
         
-        console.log(`Bank ${meta.symbol}: APY=${(lendingApy * 100).toFixed(2)}%, TVL=$${(totalDepositsUsd/1e6).toFixed(2)}M, Util=${(utilizationRate * 100).toFixed(2)}%`);
+        console.log(`Bank ${meta.symbol}: APY=${(lendingApy * 100).toFixed(2)}%, Deposits=$${(totalDepositsUsd/1e6).toFixed(2)}M, Borrows=$${(totalBorrowsUsd/1e6).toFixed(2)}M, Util=${(utilizationRate * 100).toFixed(2)}%`);
       } catch (err: any) {
         console.log(`Skipping bank ${address}: ${err.message}`);
       }
