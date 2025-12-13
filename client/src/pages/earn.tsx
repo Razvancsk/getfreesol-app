@@ -289,6 +289,60 @@ export function EarnContent() {
     setIsWithdrawDialogOpen(true);
   };
 
+  const handleWithdrawAllDirect = async (bankAddress: string, tokenSymbol: string) => {
+    if (!publicKey || !signTransaction) {
+      toast({
+        title: "Error",
+        description: "Please connect wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/marginfi/build-withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: publicKey.toBase58(),
+          bankAddress: bankAddress,
+          withdrawAll: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success || !data.transaction) {
+        throw new Error(data.error || 'Failed to build withdraw transaction');
+      }
+
+      const txBuffer = Buffer.from(data.transaction, 'base64');
+      const transaction = Transaction.from(txBuffer);
+      
+      const signedTx = await signTransaction(transaction);
+      const txId = await connection.sendRawTransaction(signedTx.serialize());
+      
+      await connection.confirmTransaction(txId, 'confirmed');
+
+      toast({
+        title: "Withdrawal Successful!",
+        description: `Withdrew all ${tokenSymbol} + interest from MarginFi`,
+      });
+
+      refetchPositions();
+    } catch (error: any) {
+      console.error('Withdraw error:', error);
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Transaction failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -457,6 +511,27 @@ export function EarnContent() {
                   <p className="text-white font-medium">{(selectedBank.utilizationRate * 100).toFixed(1)}%</p>
                 </div>
               </div>
+            )}
+
+            {userPosition && totalDeposited > 0 && (
+              <Button
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white h-12 text-base font-medium mt-4"
+                onClick={() => handleWithdrawAllDirect(userPosition.bankAddress, userPosition.tokenSymbol)}
+                disabled={isProcessing || !publicKey}
+                data-testid="button-withdraw-all-inline"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Withdrawing...
+                  </>
+                ) : (
+                  <>
+                    <Minus className="w-4 h-4 mr-2" />
+                    Withdraw All ({totalDeposited.toFixed(4)} {selectedBank?.tokenSymbol})
+                  </>
+                )}
+              </Button>
             )}
         </CardContent>
       </Card>
