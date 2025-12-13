@@ -6392,9 +6392,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         marginfiAccountPk = marginfiAccounts[0].address;
       }
       
-      // For SOL deposits, we need to manually wrap SOL for BOTH new and existing accounts
+      // For SOL deposits with NEW accounts only, we need to manually wrap SOL
+      // For EXISTING accounts, the SDK's makeDepositIx handles WSOL wrapping internally
       // The SDK's makeWrapSolIxs has a bug that calls BN.toNumber() causing overflow for large amounts
-      if (isNativeSol) {
+      if (isNativeSol && isNewAccount) {
         const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
         
         try {
