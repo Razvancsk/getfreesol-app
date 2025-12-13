@@ -6360,11 +6360,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Bank not found' });
       }
       
-      // Convert to native units using integer math to avoid precision issues
-      const multiplier = Math.pow(10, bank.mintDecimals);
-      const depositAmountNative = Math.floor(depositAmount * multiplier);
+      // Convert to native units using Decimal.js to avoid precision issues with large numbers
+      const Decimal = (await import('decimal.js')).default;
+      const decimalAmount = new Decimal(depositAmount);
+      const multiplier = new Decimal(10).pow(bank.mintDecimals);
+      const depositAmountNativeStr = decimalAmount.mul(multiplier).floor().toFixed(0);
       
-      if (depositAmountNative <= 0) {
+      if (depositAmountNativeStr === '0' || depositAmountNativeStr.startsWith('-')) {
         return res.status(400).json({ error: 'Deposit amount too small' });
       }
       
@@ -6405,7 +6407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           SystemProgram.transfer({
             fromPubkey: userPubkey,
             toPubkey: wsolAta,
-            lamports: depositAmountNative,
+            lamports: BigInt(depositAmountNativeStr),
           }),
           createSyncNativeInstruction(wsolAta)
         );
@@ -6457,11 +6459,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           signer: userPubkey.toBase58(),
           bank: bankPubkey.toBase58(),
           bankLiquidityVault: bankLiquidityVault.toBase58(),
-          amount: depositAmountNative,
+          amount: depositAmountNativeStr,
         });
         
         const depositIx = await client.program.methods
-          .lendingAccountDeposit(new BN(depositAmountNative))
+          .lendingAccountDeposit(new BN(depositAmountNativeStr))
           .accounts({
             marginfiGroup: client.groupAddress,
             marginfiAccount: marginfiAccountPk,
@@ -6476,7 +6478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         instructions.push(depositIx);
       } else {
         // For existing accounts, use the standard SDK method
-        const depositIx = await marginfiAccounts[0].makeDepositIx(depositAmountNative, bankPubkey);
+        const depositIx = await marginfiAccounts[0].makeDepositIx(new BN(depositAmountNativeStr), bankPubkey);
         instructions.push(...depositIx.instructions);
       }
       
@@ -6545,6 +6547,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Bank not found' });
       }
       
+      const { BN } = await import('bn.js');
+      
       let withdrawIx;
       if (withdrawAll) {
         withdrawIx = await marginfiAccount.makeWithdrawAllIx(bankPubkey);
@@ -6553,9 +6557,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
           return res.status(400).json({ error: 'Invalid withdraw amount' });
         }
-        const multiplier = Math.pow(10, bank.mintDecimals);
-        const withdrawAmountNative = Math.floor(withdrawAmount * multiplier);
-        withdrawIx = await marginfiAccount.makeWithdrawIx(withdrawAmountNative, bankPubkey);
+        // Use Decimal.js for precision with large numbers
+        const Decimal = (await import('decimal.js')).default;
+        const decimalAmount = new Decimal(withdrawAmount);
+        const multiplier = new Decimal(10).pow(bank.mintDecimals);
+        const withdrawAmountNativeStr = decimalAmount.mul(multiplier).floor().toFixed(0);
+        withdrawIx = await marginfiAccount.makeWithdrawIx(new BN(withdrawAmountNativeStr), bankPubkey);
       }
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
