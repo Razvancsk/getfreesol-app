@@ -355,8 +355,8 @@ export function EarnContent() {
   }
 
   return (
-    <div className="w-full space-y-6 px-4">
-      <Card className="max-w-md md:max-w-xl lg:max-w-2xl mx-auto bg-purple-900/80 border-purple-600 backdrop-blur overflow-hidden">
+    <div className="w-full space-y-6 px-2 md:px-4">
+      <Card className="w-full md:max-w-xl lg:max-w-2xl mx-auto bg-purple-900/80 border-purple-600 backdrop-blur overflow-hidden">
         <CardContent className="p-5 space-y-5">
             {markets?.source && markets.source !== 'live' && (
               <div className="p-2 bg-yellow-900/30 border border-yellow-600/50 rounded-lg flex items-center gap-2">
