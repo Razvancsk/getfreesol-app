@@ -6639,6 +6639,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NOTE: The SDK's makeWithdrawIx already handles WSOL unwrapping and closing for SOL withdrawals
       // Do NOT add a manual createCloseAccountInstruction - it would fail because the SDK already closes the account
       
+      // Calculate 0.40% withdraw fee
+      // Get the actual withdrawal amount - for withdrawAll, get from user's position
+      let actualWithdrawAmount = withdrawAmount;
+      if (withdrawAll) {
+        const activeBalances = marginfiAccount.activeBalances;
+        for (const balance of activeBalances) {
+          if (balance.bankPk.equals(bankPubkey)) {
+            actualWithdrawAmount = balance.computeQuantityUi(bank).assets.toNumber();
+            break;
+          }
+        }
+      }
+      
+      // Get token price and SOL price to calculate fee in SOL
+      const WITHDRAW_FEE_PERCENT = 0.40; // 0.40% fee
+      const REFERRAL_SPLIT_PERCENT = 15; // 15% of fee goes to referral
+      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      
+      let feeLamports = 0;
+      
+      try {
+        // Get prices from Jupiter
+        const tokenMint = bank.mint.toBase58();
+        const priceResponse = await fetch(`https://lite-api.jup.ag/price/v3?ids=${tokenMint},So11111111111111111111111111111111111111112`);
+        
+        if (priceResponse.ok) {
+          const priceData = await priceResponse.json();
+          const tokenPrice = priceData[tokenMint]?.usdPrice || 0;
+          const solPrice = priceData['So11111111111111111111111111111111111111112']?.usdPrice || 0;
+          
+          if (tokenPrice > 0 && solPrice > 0) {
+            // Calculate withdrawal USD value
+            const withdrawUsdValue = actualWithdrawAmount * tokenPrice;
+            // Calculate fee in USD (0.40%)
+            const feeUsdValue = withdrawUsdValue * (WITHDRAW_FEE_PERCENT / 100);
+            // Convert fee to SOL
+            const feeSol = feeUsdValue / solPrice;
+            feeLamports = Math.floor(feeSol * 1e9);
+            
+            console.log(`MarginFi Withdraw Fee: ${actualWithdrawAmount} ${bank.tokenSymbol || tokenMint} @ $${tokenPrice} = $${withdrawUsdValue.toFixed(2)} USD`);
+            console.log(`Fee: ${WITHDRAW_FEE_PERCENT}% = $${feeUsdValue.toFixed(4)} USD = ${feeSol.toFixed(6)} SOL (${feeLamports} lamports)`);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to calculate withdraw fee:', error);
+      }
+      
+      // Add fee transfer instruction if fee is significant (> 1000 lamports = 0.000001 SOL)
+      if (feeLamports > 1000) {
+        const { SystemProgram } = await import('@solana/web3.js');
+        
+        const platformFeeInstruction = SystemProgram.transfer({
+          fromPubkey: userPubkey,
+          toPubkey: new PublicKey(platformWalletAddress),
+          lamports: feeLamports,
+        });
+        
+        instructions.push(platformFeeInstruction);
+        console.log(`Added MarginFi withdraw fee transfer: ${feeLamports} lamports to platform wallet`);
+      }
+      
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       
       const transaction = new Transaction({
@@ -6670,6 +6731,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         transaction: serializedTx,
         message: withdrawAll ? 'Withdraw all from MarginFi' : `Withdraw ${amount} from MarginFi`,
+        feeInfo: feeLamports > 1000 ? {
+          feeLamports,
+          feePercent: WITHDRAW_FEE_PERCENT,
+          feeSol: feeLamports / 1e9,
+        } : undefined,
       });
     } catch (error: any) {
       console.error('MarginFi build withdraw error:', error);
