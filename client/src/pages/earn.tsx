@@ -561,7 +561,7 @@ export function EarnContent() {
             Can I withdraw anytime?
           </AccordionTrigger>
           <AccordionContent className="text-purple-200 text-sm pb-3">
-            Yes, you can withdraw anytime.
+            Yes, you can withdraw anytime. Your funds are never locked.
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="rates" className="border-b border-purple-600/30">
