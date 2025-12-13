@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, TrendingUp, RefreshCw, Wallet, PiggyBank, Plus, Minus, Loader2 } from "lucide-react";
+import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Transaction } from '@solana/web3.js';
+import { Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 interface MarginFiBank {
   bankAddress: string;
@@ -40,19 +42,24 @@ interface UserPosition {
   borrowApy: number;
 }
 
+export default function EarnPage() {
+  return <EarnContent />;
+}
+
 export function EarnContent() {
   const { toast } = useToast();
   const wallet = useWallet();
   const { publicKey, signTransaction } = wallet;
   const { connection } = useConnection();
   
-  const [selectedBank, setSelectedBank] = useState<MarginFiBank | null>(null);
-  const [depositAmount, setDepositAmount] = useState("");
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'lend' | 'borrow'>('lend');
+  const [selectedTokenMint, setSelectedTokenMint] = useState<string>('');
+  const [amount, setAmount] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<UserPosition | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
 
   const { data: markets, isLoading, refetch } = useQuery<{ 
     success: boolean; 
@@ -87,9 +94,38 @@ export function EarnContent() {
     staleTime: 30000,
   });
 
-  const formatApy = (apy: number) => {
-    return `${(apy * 100).toFixed(2)}%`;
-  };
+  const selectedBank = markets?.banks?.find(b => b.tokenMint === selectedTokenMint);
+
+  useEffect(() => {
+    if (markets?.banks && markets.banks.length > 0 && !selectedTokenMint) {
+      setSelectedTokenMint(markets.banks[0].tokenMint);
+    }
+  }, [markets?.banks, selectedTokenMint]);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!publicKey || !connection || !selectedBank) return;
+      
+      try {
+        if (selectedBank.tokenSymbol === 'SOL') {
+          const balance = await connection.getBalance(publicKey);
+          setWalletBalance(balance / LAMPORTS_PER_SOL);
+        } else {
+          const response = await fetch(`/api/wallet/token-balance?wallet=${publicKey.toBase58()}&mint=${selectedBank.tokenMint}`);
+          if (response.ok) {
+            const data = await response.json();
+            setWalletBalance(data.balance || 0);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+      }
+    };
+
+    fetchBalance();
+  }, [publicKey, connection, selectedBank]);
+
+  const formatApy = (apy: number) => `${(apy * 100).toFixed(2)}%`;
 
   const formatUsd = (value: number) => {
     if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
@@ -98,8 +134,13 @@ export function EarnContent() {
     return `$${value.toFixed(2)}`;
   };
 
-  const handleDeposit = async () => {
-    if (!publicKey || !signTransaction || !selectedBank || !depositAmount) {
+  const userPosition = userPositions?.positions?.find(p => p.tokenMint === selectedTokenMint);
+  const totalDeposited = userPosition?.depositAmount || 0;
+  const depositedUsdValue = totalDeposited * (selectedBank?.price || 0);
+  const collateralProgress = selectedBank ? Math.min((totalDeposited / (selectedBank.globalLimit / selectedBank.price || 1)) * 100, 100) : 0;
+
+  const handleSupply = async () => {
+    if (!publicKey || !signTransaction || !selectedBank || !amount) {
       toast({
         title: "Error",
         description: "Please connect wallet and enter an amount",
@@ -108,11 +149,11 @@ export function EarnContent() {
       return;
     }
 
-    const amount = parseFloat(depositAmount);
-    if (isNaN(amount) || amount <= 0) {
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
       toast({
         title: "Invalid Amount",
-        description: "Please enter a valid deposit amount",
+        description: "Please enter a valid amount",
         variant: "destructive",
       });
       return;
@@ -126,7 +167,7 @@ export function EarnContent() {
         body: JSON.stringify({
           wallet: publicKey.toBase58(),
           bankAddress: selectedBank.bankAddress,
-          amount,
+          amount: amountNum,
           tokenMint: selectedBank.tokenMint,
         }),
       });
@@ -147,13 +188,10 @@ export function EarnContent() {
 
       toast({
         title: data.isNewAccount ? "Account Created & Deposit Successful!" : "Deposit Successful!",
-        description: data.isNewAccount 
-          ? `Created MarginFi account and deposited ${amount} ${selectedBank.tokenSymbol}` 
-          : `Deposited ${amount} ${selectedBank.tokenSymbol} to MarginFi`,
+        description: `Deposited ${amountNum} ${selectedBank.tokenSymbol} to MarginFi`,
       });
 
-      setIsDepositDialogOpen(false);
-      setDepositAmount("");
+      setAmount("");
       refetchPositions();
     } catch (error: any) {
       console.error('Deposit error:', error);
@@ -177,8 +215,8 @@ export function EarnContent() {
       return;
     }
 
-    const amount = withdrawAll ? selectedPosition.depositAmount : parseFloat(withdrawAmount);
-    if (!withdrawAll && (isNaN(amount) || amount <= 0)) {
+    const amountNum = withdrawAll ? selectedPosition.depositAmount : parseFloat(withdrawAmount);
+    if (!withdrawAll && (isNaN(amountNum) || amountNum <= 0)) {
       toast({
         title: "Invalid Amount",
         description: "Please enter a valid withdrawal amount",
@@ -195,7 +233,7 @@ export function EarnContent() {
         body: JSON.stringify({
           wallet: publicKey.toBase58(),
           bankAddress: selectedPosition.bankAddress,
-          amount: withdrawAll ? undefined : amount,
+          amount: withdrawAll ? undefined : amountNum,
           withdrawAll,
         }),
       });
@@ -218,7 +256,7 @@ export function EarnContent() {
         title: "Withdrawal Successful!",
         description: withdrawAll 
           ? `Withdrew all ${selectedPosition.tokenSymbol} from MarginFi`
-          : `Withdrew ${amount} ${selectedPosition.tokenSymbol} from MarginFi`,
+          : `Withdrew ${amountNum} ${selectedPosition.tokenSymbol} from MarginFi`,
       });
 
       setIsWithdrawDialogOpen(false);
@@ -236,260 +274,272 @@ export function EarnContent() {
     }
   };
 
-  const openDepositDialog = (bank: MarginFiBank) => {
-    if (!publicKey) {
-      toast({
-        title: "Wallet Required",
-        description: "Please connect your wallet to deposit",
-        variant: "destructive",
-      });
-      return;
-    }
-    setSelectedBank(bank);
-    setDepositAmount("");
-    setIsDepositDialogOpen(true);
-  };
-
   const openWithdrawDialog = (position: UserPosition) => {
     setSelectedPosition(position);
     setWithdrawAmount("");
     setIsWithdrawDialogOpen(true);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <RefreshCw className="w-8 h-8 text-purple-400 animate-spin" />
+        <span className="ml-3 text-purple-200">Loading markets...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-        {publicKey && userPositions?.positions && userPositions.positions.length > 0 && (
-          <Card className="bg-green-800/30 border-green-600 backdrop-blur mb-6">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-green-400" />
-                Your Positions
-              </CardTitle>
-              <CardDescription className="text-green-200">
-                Your active deposits earning yield
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {userPositions.positions.map((position) => (
-                  <div 
-                    key={position.bankAddress} 
-                    className="flex items-center justify-between p-4 bg-green-900/30 rounded-lg border border-green-700/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      {position.tokenLogoUri ? (
-                        <img src={position.tokenLogoUri} alt={position.tokenSymbol} className="w-8 h-8 rounded-full" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
-                          <Coins className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-white font-medium">{position.tokenSymbol}</p>
-                        <p className="text-green-400 text-sm">
-                          {position.depositAmount.toFixed(4)} deposited @ {formatApy(position.depositApy)} APY
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-green-500 text-green-200 hover:bg-green-700"
-                      onClick={() => openWithdrawDialog(position)}
-                      data-testid={`button-withdraw-${position.tokenSymbol}`}
-                    >
-                      <Minus className="w-4 h-4 mr-1" />
-                      Withdraw
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="bg-purple-800/50 border-purple-600 backdrop-blur mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-green-400" />
-                  Lending Markets
-                </CardTitle>
-                <CardDescription className="text-purple-200">
-                  Deposit assets to earn yield via MarginFi protocol
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-                className="border-purple-500 text-purple-200 hover:bg-purple-700"
-                data-testid="button-refresh-markets"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {markets?.source && markets.source !== 'live' && (
-              <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-600/50 rounded-lg flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 text-yellow-400" />
-                <span className="text-yellow-300 text-sm">
-                  Showing cached data (live rates temporarily unavailable)
-                </span>
-              </div>
-            )}
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <RefreshCw className="w-8 h-8 text-purple-400 animate-spin" />
-                <span className="ml-3 text-purple-200">Loading markets...</span>
-              </div>
-            ) : markets?.banks && markets.banks.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-purple-600">
-                      <th className="text-left py-3 px-4 text-purple-300 font-medium">Asset</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden sm:table-cell">Price</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium">APY</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden lg:table-cell">Weight</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden md:table-cell">Deposits</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden lg:table-cell">Global limit</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden md:table-cell">Utilization</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {markets.banks.map((bank) => (
-                      <tr key={bank.bankAddress} className="border-b border-purple-700/50 hover:bg-purple-700/30 transition-colors">
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            {bank.tokenLogoUri ? (
-                              <img src={bank.tokenLogoUri} alt={bank.tokenSymbol} className="w-8 h-8 rounded-full" />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
-                                <Coins className="w-4 h-4 text-white" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="text-white font-medium">{bank.tokenSymbol}</p>
-                              <p className="text-purple-400 text-xs">{bank.tokenName}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-right hidden sm:table-cell">
-                          <span className="text-white">${bank.price < 0.01 ? bank.price.toFixed(6) : bank.price < 1 ? bank.price.toFixed(4) : bank.price.toFixed(2)}</span>
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <span className="text-green-400 font-semibold">{formatApy(bank.depositApy)}</span>
-                        </td>
-                        <td className="py-4 px-4 text-right hidden lg:table-cell">
-                          <span className="text-purple-200">{(bank.weight * 100).toFixed(0)}%</span>
-                        </td>
-                        <td className="py-4 px-4 text-right hidden md:table-cell">
-                          <span className="text-purple-200">{formatUsd(bank.totalDeposits)}</span>
-                        </td>
-                        <td className="py-4 px-4 text-right hidden lg:table-cell">
-                          <span className="text-purple-200">{formatUsd(bank.globalLimit)}</span>
-                        </td>
-                        <td className="py-4 px-4 text-right hidden md:table-cell">
-                          <span className="text-purple-300">{(bank.utilizationRate * 100).toFixed(2)}%</span>
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => openDepositDialog(bank)}
-                            data-testid={`button-deposit-${bank.tokenSymbol}`}
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Deposit
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <PiggyBank className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                <p className="text-purple-200 mb-2">No lending markets available</p>
-                <p className="text-purple-400 text-sm">Check back later or refresh</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-      <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
-        <DialogContent className="bg-purple-900 border-purple-600 text-white">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-green-400" />
-              Deposit {selectedBank?.tokenSymbol}
-            </DialogTitle>
-            <DialogDescription className="text-purple-300">
-              Deposit to MarginFi and earn {selectedBank ? formatApy(selectedBank.depositApy) : '0%'} APY
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-3 p-3 bg-purple-800/50 rounded-lg">
-              {selectedBank?.tokenLogoUri ? (
-                <img src={selectedBank.tokenLogoUri} alt={selectedBank.tokenSymbol} className="w-10 h-10 rounded-full" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
-                  <Coins className="w-5 h-5 text-white" />
-                </div>
-              )}
-              <div>
-                <p className="font-medium">{selectedBank?.tokenSymbol}</p>
-                <p className="text-sm text-purple-300">{selectedBank?.tokenName}</p>
-              </div>
+    <div className="max-w-md mx-auto space-y-6">
+      {publicKey && userPositions?.positions && userPositions.positions.length > 0 && (
+        <Card className="bg-green-800/30 border-green-600 backdrop-blur">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Wallet className="w-4 h-4 text-green-400" />
+              <span className="text-green-200 text-sm font-medium">Your Positions</span>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="depositAmount">Amount to Deposit</Label>
+              {userPositions.positions.map((position) => (
+                <div 
+                  key={position.bankAddress} 
+                  className="flex items-center justify-between p-3 bg-green-900/30 rounded-lg border border-green-700/50"
+                >
+                  <div className="flex items-center gap-2">
+                    {position.tokenLogoUri ? (
+                      <img src={position.tokenLogoUri} alt={position.tokenSymbol} className="w-6 h-6 rounded-full" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
+                        <Coins className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-white text-sm font-medium">{position.depositAmount.toFixed(4)} {position.tokenSymbol}</p>
+                      <p className="text-green-400 text-xs">{formatApy(position.depositApy)} APY</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-green-500 text-green-200 hover:bg-green-700 h-8 text-xs"
+                    onClick={() => openWithdrawDialog(position)}
+                    data-testid={`button-withdraw-${position.tokenSymbol}`}
+                  >
+                    <Minus className="w-3 h-3 mr-1" />
+                    Withdraw
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="bg-purple-900/80 border-purple-600 backdrop-blur overflow-hidden">
+        <CardContent className="p-0">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'lend' | 'borrow')} className="w-full">
+            <TabsList className="w-full rounded-none bg-purple-800/50 border-b border-purple-600 h-12">
+              <TabsTrigger 
+                value="lend" 
+                className="flex-1 data-[state=active]:bg-purple-700 data-[state=active]:text-white rounded-none h-full"
+                data-testid="tab-lend"
+              >
+                Lend
+              </TabsTrigger>
+              <TabsTrigger 
+                value="borrow" 
+                className="flex-1 data-[state=active]:bg-purple-700 data-[state=active]:text-white rounded-none h-full"
+                data-testid="tab-borrow"
+              >
+                Borrow
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="p-5 space-y-5">
+            {markets?.source && markets.source !== 'live' && (
+              <div className="p-2 bg-yellow-900/30 border border-yellow-600/50 rounded-lg flex items-center gap-2">
+                <RefreshCw className="w-3 h-3 text-yellow-400" />
+                <span className="text-yellow-300 text-xs">Cached data</span>
+              </div>
+            )}
+
+            <Select value={selectedTokenMint} onValueChange={setSelectedTokenMint}>
+              <SelectTrigger 
+                className="w-full bg-purple-800/50 border-purple-600 text-white h-14"
+                data-testid="select-token"
+              >
+                <SelectValue>
+                  {selectedBank && (
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        {selectedBank.tokenLogoUri ? (
+                          <img src={selectedBank.tokenLogoUri} alt={selectedBank.tokenSymbol} className="w-8 h-8 rounded-full" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+                            <Coins className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                        <span className="font-medium">{selectedBank.tokenSymbol}</span>
+                      </div>
+                      <span className="text-green-400 font-semibold">
+                        {activeTab === 'lend' ? formatApy(selectedBank.depositApy) : formatApy(selectedBank.borrowApy)} APY
+                      </span>
+                    </div>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-purple-900 border-purple-600">
+                {markets?.banks?.map((bank) => (
+                  <SelectItem 
+                    key={bank.tokenMint} 
+                    value={bank.tokenMint}
+                    className="text-white hover:bg-purple-700 focus:bg-purple-700"
+                  >
+                    <div className="flex items-center justify-between w-full gap-8">
+                      <div className="flex items-center gap-2">
+                        {bank.tokenLogoUri ? (
+                          <img src={bank.tokenLogoUri} alt={bank.tokenSymbol} className="w-6 h-6 rounded-full" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center">
+                            <Coins className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        <span>{bank.tokenSymbol}</span>
+                      </div>
+                      <span className="text-green-400 text-sm">
+                        {activeTab === 'lend' ? formatApy(bank.depositApy) : formatApy(bank.borrowApy)}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-purple-300 text-sm">Amount</span>
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-3 h-3 text-purple-400" />
+                  <span className="text-purple-300 text-sm">
+                    {walletBalance.toFixed(4)} {selectedBank?.tokenSymbol || ''}
+                  </span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-purple-400 hover:text-purple-200 p-0 h-auto text-sm"
+                    onClick={() => setAmount(walletBalance.toString())}
+                    data-testid="button-max"
+                  >
+                    MAX
+                  </Button>
+                </div>
+              </div>
               <Input
-                id="depositAmount"
                 type="number"
                 placeholder="0.00"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                className="bg-purple-800/50 border-purple-600 text-white"
-                data-testid="input-deposit-amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="bg-purple-800/50 border-purple-600 text-white text-lg h-12"
+                data-testid="input-amount"
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDepositDialogOpen(false)}
-              className="border-purple-500 text-purple-200"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleDeposit}
-              disabled={isProcessing || !depositAmount}
-              className="bg-green-600 hover:bg-green-700"
-              data-testid="button-confirm-deposit"
+
+            {userPosition && userPosition.depositAmount > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-purple-300">Available collateral</span>
+                  <span className="text-white">{formatUsd(depositedUsdValue)}</span>
+                </div>
+                <Progress value={collateralProgress} className="h-2 bg-purple-800" />
+              </div>
+            )}
+
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-medium"
+              onClick={handleSupply}
+              disabled={isProcessing || !amount || !publicKey || activeTab === 'borrow'}
+              data-testid="button-supply"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
                 </>
+              ) : activeTab === 'borrow' ? (
+                'Borrow (Coming Soon)'
               ) : (
-                <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Deposit
-                </>
+                'Supply'
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+            {!publicKey && (
+              <p className="text-center text-purple-400 text-sm">
+                Connect your wallet to supply assets
+              </p>
+            )}
+
+            {selectedBank && (
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-purple-700">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-purple-400 text-xs">
+                    <Coins className="w-3 h-3" />
+                    Total Deposited
+                  </div>
+                  <p className="text-white font-medium">{totalDeposited.toFixed(4)} {selectedBank.tokenSymbol}</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-purple-400 text-xs">
+                    <TrendingUp className="w-3 h-3" />
+                    USD Value
+                  </div>
+                  <p className="text-white font-medium">{formatUsd(depositedUsdValue)}</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-purple-400 text-xs">
+                    <TrendingUp className="w-3 h-3" />
+                    Lending Rate
+                  </div>
+                  <p className="text-green-400 font-medium">{formatApy(selectedBank.depositApy)}</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-purple-400 text-xs">
+                    <Shield className="w-3 h-3" />
+                    Weight
+                  </div>
+                  <p className="text-white font-medium">{(selectedBank.weight * 100).toFixed(0)}%</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-purple-400 text-xs">
+                    <Database className="w-3 h-3" />
+                    Pool Size
+                  </div>
+                  <p className="text-white font-medium">{formatUsd(selectedBank.totalDeposits)}</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-purple-400 text-xs">
+                    <Eye className="w-3 h-3" />
+                    Utilization
+                  </div>
+                  <p className="text-white font-medium">{(selectedBank.utilizationRate * 100).toFixed(1)}%</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="text-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => refetch()}
+          className="text-purple-400 hover:text-purple-200"
+          data-testid="button-refresh"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh Rates
+        </Button>
+      </div>
 
       <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">
@@ -519,9 +569,18 @@ export function EarnContent() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="withdrawAmount">Amount to Withdraw</Label>
+              <div className="flex items-center justify-between">
+                <span className="text-purple-300 text-sm">Amount</span>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-purple-300 p-0 h-auto"
+                  onClick={() => setWithdrawAmount(selectedPosition?.depositAmount.toString() || "")}
+                >
+                  MAX
+                </Button>
+              </div>
               <Input
-                id="withdrawAmount"
                 type="number"
                 placeholder="0.00"
                 value={withdrawAmount}
@@ -529,14 +588,6 @@ export function EarnContent() {
                 className="bg-purple-800/50 border-purple-600 text-white"
                 data-testid="input-withdraw-amount"
               />
-              <Button
-                variant="link"
-                size="sm"
-                className="text-purple-300 p-0 h-auto"
-                onClick={() => setWithdrawAmount(selectedPosition?.depositAmount.toString() || "")}
-              >
-                Use Max
-              </Button>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
@@ -563,30 +614,14 @@ export function EarnContent() {
               data-testid="button-confirm-withdraw"
             >
               {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <Minus className="w-4 h-4 mr-2" />
-                  Withdraw
-                </>
+                "Withdraw"
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-export default function EarnPage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <EarnContent />
-      </div>
     </div>
   );
 }

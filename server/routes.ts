@@ -6104,6 +6104,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setTimeout(refreshMarginFiCache, 5000);
 
   // MarginFi Lending Markets API endpoint
+  // Filter to only show SOL and USDC for simplified UI
+  const ALLOWED_MINTS = [
+    'So11111111111111111111111111111111111111112', // SOL
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // USDC
+  ];
+  
+  const filterBanks = (banks: MarginFiBankData[]) => 
+    banks.filter(b => ALLOWED_MINTS.includes(b.tokenMint));
+  
   app.get("/api/marginfi/markets", async (req, res) => {
     try {
       const now = Date.now();
@@ -6113,7 +6122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`MarginFi: Returning cached data (${marginfiDataCache.isLive ? 'live' : 'fallback'})`);
         return res.json({ 
           success: true, 
-          banks: marginfiDataCache.banks,
+          banks: filterBanks(marginfiDataCache.banks),
           source: marginfiDataCache.isLive ? 'live' : 'cached',
           cachedAt: marginfiDataCache.timestamp
         });
@@ -6124,8 +6133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('MarginFi: Fetching fresh data...');
         const banks = await retryWithBackoff(fetchMarginFiDataFromSDK, 2, 2000);
         marginfiDataCache = { banks, timestamp: now, isLive: true };
-        console.log(`MarginFi: Returning ${banks.length} live banks`);
-        return res.json({ success: true, banks, source: 'live', cachedAt: now });
+        console.log(`MarginFi: Returning ${filterBanks(banks).length} filtered banks (SOL, USDC)`);
+        return res.json({ success: true, banks: filterBanks(banks), source: 'live', cachedAt: now });
       } catch (fetchError: any) {
         console.log('MarginFi: SDK fetch failed, using fallback:', fetchError.message);
         
@@ -6133,7 +6142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (marginfiDataCache) {
           return res.json({ 
             success: true, 
-            banks: marginfiDataCache.banks,
+            banks: filterBanks(marginfiDataCache.banks),
             source: 'cached',
             cachedAt: marginfiDataCache.timestamp
           });
@@ -6142,14 +6151,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Use static fallback as last resort
         return res.json({ 
           success: true, 
-          banks: marginFiFallbackBanks,
+          banks: filterBanks(marginFiFallbackBanks),
           source: 'fallback',
           cachedAt: now
         });
       }
     } catch (error: any) {
       console.error('MarginFi markets error:', error);
-      res.json({ success: true, banks: marginFiFallbackBanks, source: 'fallback', cachedAt: Date.now() });
+      res.json({ success: true, banks: filterBanks(marginFiFallbackBanks), source: 'fallback', cachedAt: Date.now() });
     }
   });
 
