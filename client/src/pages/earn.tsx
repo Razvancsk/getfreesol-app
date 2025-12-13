@@ -537,18 +537,6 @@ export function EarnContent() {
         </CardContent>
       </Card>
 
-      <div className="text-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          className="text-purple-400 hover:text-purple-200"
-          data-testid="button-refresh"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh Rates
-        </Button>
-      </div>
 
       <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">
