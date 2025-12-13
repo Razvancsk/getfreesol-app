@@ -553,7 +553,7 @@ export function EarnContent() {
             Is it safe?
           </AccordionTrigger>
           <AccordionContent className="text-purple-200 text-sm pb-3">
-            Your funds are secured by overcollateralized loans. Borrowers must deposit more collateral than they borrow, reducing risk. However, smart contract risks always exist in DeFi.
+            Yes! Your funds are secured by overcollateralized loans. Borrowers must deposit more collateral than they borrow, ensuring your deposits are protected. You maintain full control and can withdraw anytime.
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="withdraw" className="border-b border-purple-600/30">
