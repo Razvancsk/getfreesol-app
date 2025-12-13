@@ -98,7 +98,8 @@ export function EarnContent() {
 
   useEffect(() => {
     if (markets?.banks && markets.banks.length > 0 && !selectedTokenMint) {
-      setSelectedTokenMint(markets.banks[0].tokenMint);
+      const solBank = markets.banks.find(b => b.tokenSymbol === 'SOL');
+      setSelectedTokenMint(solBank ? solBank.tokenMint : markets.banks[0].tokenMint);
     }
   }, [markets?.banks, selectedTokenMint]);
 
