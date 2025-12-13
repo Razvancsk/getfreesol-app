@@ -5966,11 +5966,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { NodeWallet } = await import('@mrgnlabs/mrgn-common');
     const { Connection, Keypair } = await import('@solana/web3.js');
     
-    // Use public Solana RPC for MarginFi to avoid Helius rate limits
-    // The SDK makes many internal RPC calls which exhaust Helius rate limits quickly
-    const marginfiRpcUrl = 'https://api.mainnet-beta.solana.com';
-    console.log('MarginFi: Using public Solana RPC to avoid rate limits');
-    const connection = new Connection(marginfiRpcUrl, { commitment: 'confirmed' });
+    // Construct Helius RPC URL from API key if available
+    const heliusApiKey = process.env.HELIUS_API_KEY;
+    const heliusRpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null;
+    const rpcUrl = process.env.HELIUS_RPC_URL || heliusRpcUrl || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+    console.log('MarginFi: Using RPC endpoint:', rpcUrl.includes('helius') ? 'Helius' : rpcUrl.slice(0, 40));
+    const connection = new Connection(rpcUrl, { commitment: 'confirmed' });
     
     const dummyKeypair = Keypair.generate();
     const wallet = new NodeWallet(dummyKeypair);
