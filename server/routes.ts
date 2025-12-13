@@ -5960,6 +5960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Core function to fetch MarginFi data from SDK
+  // Following official examples from https://github.com/mrgnlabs/mrgn-ts/tree/main/packages/marginfi-client-v2/examples
   async function fetchMarginFiDataFromSDK(): Promise<MarginFiBankData[]> {
     const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
     const { NodeWallet } = await import('@mrgnlabs/mrgn-common');
@@ -5972,44 +5973,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const wallet = new NodeWallet(dummyKeypair);
     const config = getConfig("production");
     
-    // Fetch with timeout - use readOnly mode to reduce RPC calls
+    // Fetch with timeout - use readOnly mode and empty preloadedBankAddresses per official examples
     const client = await withTimeout(
-      MarginfiClient.fetch(config, wallet, connection, { readOnly: true }),
+      MarginfiClient.fetch(config, wallet, connection, { readOnly: true, preloadedBankAddresses: [] }),
       45000 // 45 second timeout
     );
     
     const allBanks = client.banks;
     const banks: MarginFiBankData[] = [];
     
-    allBanks.forEach((bank: any, address: string) => {
+    for (const [address, bank] of allBanks) {
       try {
         const mintAddress = bank.mint.toBase58();
         const meta = marginfiTokenMetadata[mintAddress];
-        if (!meta) return;
+        if (!meta) continue;
         
-        const lendingApy = bank.computeInterestRates?.()?.lendingRate?.toNumber?.() || 0;
-        const borrowingApy = bank.computeInterestRates?.()?.borrowingRate?.toNumber?.() || 0;
-        const utilizationRate = bank.computeUtilizationRate?.()?.toNumber?.() || 0;
-        const totalDeposits = bank.computeAssetUsdValue?.(bank.getTotalAssetQuantity?.())?.toNumber?.() || 0;
-        const totalBorrows = bank.computeLiabilityUsdValue?.(bank.getTotalLiabilityQuantity?.())?.toNumber?.() || 0;
+        // Get oracle price using official SDK method
+        const oraclePrice = client.getOraclePriceByBank(address);
+        if (!oraclePrice) {
+          console.log(`No oracle price for bank ${address}, skipping`);
+          continue;
+        }
+        
+        // Compute TVL using official SDK method (bank.computeTvl returns BigNumber)
+        const tvl = bank.computeTvl(oraclePrice);
+        const totalDepositsUsd = tvl?.toNumber?.() || 0;
+        
+        // Get interest rates - use computeInterestRates if available
+        let lendingApy = 0;
+        let borrowingApy = 0;
+        if (typeof bank.computeInterestRates === 'function') {
+          const rates = bank.computeInterestRates();
+          lendingApy = rates?.lendingRate?.toNumber?.() || 0;
+          borrowingApy = rates?.borrowingRate?.toNumber?.() || 0;
+        }
+        
+        // Get utilization rate
+        let utilizationRate = 0;
+        if (typeof bank.computeUtilizationRate === 'function') {
+          utilizationRate = bank.computeUtilizationRate()?.toNumber?.() || 0;
+        }
+        
+        // Calculate borrows from TVL and utilization
+        const totalBorrowsUsd = totalDepositsUsd * utilizationRate;
         
         banks.push({
           bankAddress: address,
-          tokenSymbol: meta.symbol,
+          tokenSymbol: bank.tokenSymbol || meta.symbol,
           tokenMint: mintAddress,
           tokenName: meta.name,
           tokenLogoUri: meta.logo,
           depositApy: lendingApy,
           borrowApy: borrowingApy,
-          totalDeposits,
-          totalBorrows,
+          totalDeposits: totalDepositsUsd,
+          totalBorrows: totalBorrowsUsd,
           utilizationRate,
           decimals: bank.mintDecimals || 9,
         });
-      } catch (err) {
-        console.log(`Skipping bank ${address}`);
+        
+        console.log(`Bank ${meta.symbol}: APY=${(lendingApy * 100).toFixed(2)}%, TVL=$${(totalDepositsUsd/1e6).toFixed(2)}M, Util=${(utilizationRate * 100).toFixed(2)}%`);
+      } catch (err: any) {
+        console.log(`Skipping bank ${address}: ${err.message}`);
       }
-    });
+    }
     
     banks.sort((a, b) => b.totalDeposits - a.totalDeposits);
     return banks;
