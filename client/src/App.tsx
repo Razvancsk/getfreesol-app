@@ -14,7 +14,6 @@ import ApiDocs from "@/pages/api-docs";
 import DeveloperDashboard from "@/pages/developer-dashboard";
 import AdminMigrate from "@/pages/admin-migrate";
 import ProfilePage from "@/pages/profile";
-import EarnPage from "@/pages/earn";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,7 +21,6 @@ function Router() {
     <Switch>
       <Route path="/" component={ClaimSol} />
       <Route path="/claim-sol" component={ClaimSol} />
-      <Route path="/earn" component={EarnPage} />
       <Route path="/referrals" component={Referrals} />
       <Route path="/developer" component={DeveloperDashboard} />
       <Route path="/admin/settings" component={AdminSettings} />
