@@ -1,19 +1,14 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, TrendingUp, ArrowLeft, RefreshCw, Wallet, ExternalLink, Percent, DollarSign, PiggyBank, Plus, Minus, Loader2 } from "lucide-react";
+import { Coins, TrendingUp, RefreshCw, Wallet, PiggyBank, Plus, Minus, Loader2 } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Transaction } from '@solana/web3.js';
-import logoImage from '@assets/image_1765419958982.png';
-import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface MarginFiBank {
   bankAddress: string;
@@ -42,7 +37,7 @@ interface UserPosition {
   borrowApy: number;
 }
 
-export default function EarnPage() {
+export function EarnContent() {
   const { toast } = useToast();
   const wallet = useWallet();
   const { publicKey, signTransaction } = wallet;
@@ -253,30 +248,7 @@ export default function EarnPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="text-purple-200 hover:text-white hover:bg-purple-700/50" data-testid="button-back-home">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </Link>
-            <div className="flex items-center gap-3">
-              <img src={logoImage} alt="Logo" className="w-10 h-10 rounded-full" />
-              <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <PiggyBank className="w-6 h-6 text-green-400" />
-                  Earn
-                </h1>
-                <p className="text-purple-300 text-sm">Powered by MarginFi</p>
-              </div>
-            </div>
-          </div>
-          <WalletMultiButton />
-        </div>
-
+    <div className="space-y-6">
         {publicKey && userPositions?.positions && userPositions.positions.length > 0 && (
           <Card className="bg-green-800/30 border-green-600 backdrop-blur mb-6">
             <CardHeader>
@@ -434,8 +406,6 @@ export default function EarnPage() {
           </CardContent>
         </Card>
 
-      </div>
-
       <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">
           <DialogHeader>
@@ -590,6 +560,16 @@ export default function EarnPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+export default function EarnPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900">
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        <EarnContent />
+      </div>
     </div>
   );
 }

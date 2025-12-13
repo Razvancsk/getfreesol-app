@@ -49,6 +49,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1765419958982.png';
 import ApiDocs from './api-docs';
+import { EarnContent } from './earn';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
 interface EmptyTokenAccount {
@@ -97,7 +98,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'statistics' | 'docs' | 'points'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'earn' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
@@ -2940,15 +2941,18 @@ export default function SolRefund() {
                   <ArrowRightLeft className="h-5 w-5" />
                   Swap
                 </Button>
-                <Link href="/earn">
-                  <Button
-                    className="px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30"
-                    data-testid="button-earn"
-                  >
-                    <DollarSign className="h-5 w-5 text-green-400" />
-                    Earn
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => setActiveTab('earn')}
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
+                    activeTab === 'earn' 
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                  }`}
+                  data-testid="button-earn"
+                >
+                  <DollarSign className="h-5 w-5 text-green-400" />
+                  Earn
+                </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button
@@ -2972,7 +2976,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center space-y-4 py-4">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'earn' ? 'Deposit assets to earn yield via MarginFi.' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3745,6 +3749,12 @@ export default function SolRefund() {
             </div>
           )}
 
+          {/* Earn Tab Content */}
+          {activeTab === 'earn' && (
+            <div className="py-4">
+              <EarnContent />
+            </div>
+          )}
 
           {/* Referrals Tab Content */}
           {activeTab === 'referrals' && (
