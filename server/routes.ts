@@ -6653,8 +6653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get token price and SOL price to calculate fee in SOL
-      const WITHDRAW_FEE_PERCENT = 0.40; // 0.40% fee
-      const REFERRAL_SPLIT_PERCENT = 15; // 15% of fee goes to referral
+      const WITHDRAW_FEE_PERCENT = 0.40; // 0.40% fee (100% to platform, no referral split)
       const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
       
       let feeLamports = 0;
