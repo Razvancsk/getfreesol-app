@@ -561,7 +561,7 @@ export function EarnContent() {
             Can I withdraw anytime?
           </AccordionTrigger>
           <AccordionContent className="text-purple-200 text-sm pb-3">
-            Yes, your funds are never locked. You can withdraw your deposit plus earned interest whenever you want, subject to available liquidity in the pool.
+            Yes, you can withdraw anytime.
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="rates" className="border-b border-purple-600/30">
