@@ -6510,7 +6510,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           instructions.push(depositIx);
         } else {
           // For non-SOL tokens, use the standard SDK method
-          const depositIx = await marginfiAccounts[0].makeDepositIx(new BN(depositAmountNativeStr), bankPubkey);
+          // SDK expects UI units (e.g., 1.5 for 1.5 USDC), not native units
+          const depositIx = await marginfiAccounts[0].makeDepositIx(depositAmount, bankPubkey);
           instructions.push(...depositIx.instructions);
         }
       }
