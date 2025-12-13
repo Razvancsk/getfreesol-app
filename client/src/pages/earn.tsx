@@ -539,8 +539,7 @@ export function EarnContent() {
       </Card>
 
       {/* FAQ Accordion */}
-      <div className="px-5">
-        <Accordion type="single" collapsible className="w-full">
+      <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="how-it-works" className="border-b border-purple-600/30">
             <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
               How does earning work?
@@ -572,9 +571,8 @@ export function EarnContent() {
             <AccordionContent className="text-purple-200 text-sm pb-4">
               Rates are variable and adjust based on supply and demand. When more people borrow, rates go up. When more people deposit, rates may decrease.
             </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
+        </AccordionItem>
+      </Accordion>
 
       <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">
