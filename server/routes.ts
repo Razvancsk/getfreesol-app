@@ -6392,7 +6392,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         marginfiAccountPk = marginfiAccounts[0].address;
       }
       
-      if (isNativeSol) {
+      // For existing accounts, the SDK's makeDepositIx handles SOL wrapping internally
+      // Only add manual SOL wrapping for new accounts where we use raw Anchor instructions
+      if (isNativeSol && isNewAccount) {
         const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
         
         try {
@@ -6419,8 +6421,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await getAssociatedTokenAddress(NATIVE_MINT, userPubkey)
         : await getAssociatedTokenAddress(new PublicKey(tokenMint), userPubkey);
       
-      // Check if user has a token account (for non-SOL tokens)
-      if (!isNativeSol) {
+      // Check if user has a token account (for non-SOL tokens, only for new accounts)
+      // For existing accounts, the SDK's makeDepositIx handles ATA creation
+      if (!isNativeSol && isNewAccount) {
         try {
           await getAccount(connection, signerTokenAccount);
         } catch {
