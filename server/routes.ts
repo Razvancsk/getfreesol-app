@@ -466,6 +466,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const holdings = await holdingsResponse.json();
       
+      console.log('📊 Jupiter Holdings API raw response for SOL:', {
+        amount: holdings.amount,
+        uiAmount: holdings.uiAmount,
+        hasTokens: !!holdings.tokens,
+        tokenCount: holdings.tokens ? Object.keys(holdings.tokens).length : 0
+      });
+      
       if (holdings.error) {
         return res.status(400).json({ error: holdings.error });
       }
@@ -474,7 +481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add native SOL from Jupiter Holdings response (top-level fields)
       const solBalance = typeof holdings.uiAmount === 'number' ? holdings.uiAmount : parseFloat(holdings.uiAmount || '0');
-      if (solBalance > 0) {
+      console.log('📊 Parsed SOL balance:', solBalance);
+      if (solBalance >= 0) {
         tokensWithMetadata.push({
           address: 'So11111111111111111111111111111111111111112',
           symbol: 'SOL',
@@ -489,6 +497,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process all token holdings (includes both standard and Token-2022)
       if (holdings.tokens) {
         for (const [mintAddress, tokenAccounts] of Object.entries(holdings.tokens)) {
+          // Skip wrapped SOL - we already added native SOL from top-level fields
+          if (mintAddress === 'So11111111111111111111111111111111111111112') {
+            console.log('📊 Skipping wrapped SOL in tokens (already added native SOL)');
+            continue;
+          }
+          
           // Sum all token accounts for this mint (some tokens may have multiple accounts)
           const totalBalance = (tokenAccounts as any[]).reduce((sum, acc) => 
             sum + parseFloat(acc.uiAmount || '0'), 0
