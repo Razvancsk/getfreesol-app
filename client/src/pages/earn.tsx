@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info, Landmark } from "lucide-react";
+import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info, Landmark, DollarSign } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
 
@@ -479,7 +479,7 @@ export function EarnContent() {
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <TrendingUp className="w-3 h-3" />
+                    <DollarSign className="w-3 h-3" />
                     USD Value
                   </div>
                   <p className="text-white font-medium">{formatUsd(depositedUsdValue)}</p>
