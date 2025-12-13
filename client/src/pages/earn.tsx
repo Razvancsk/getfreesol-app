@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus } from "lucide-react";
+import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
 
@@ -537,6 +537,27 @@ export function EarnContent() {
         </CardContent>
       </Card>
 
+      {/* How it works explanation */}
+      <div className="bg-purple-800/30 border border-purple-600/30 rounded-xl p-4 mt-4">
+        <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+          <Info className="w-4 h-4 text-purple-400" />
+          How Earning Works
+        </h4>
+        <div className="space-y-2 text-sm text-purple-200">
+          <p>
+            <span className="text-green-400 font-medium">1. Deposit</span> — Supply your tokens to the lending pool and start earning interest immediately.
+          </p>
+          <p>
+            <span className="text-green-400 font-medium">2. Earn Yield</span> — Your deposits earn APY from borrowers who pay interest on their loans.
+          </p>
+          <p>
+            <span className="text-green-400 font-medium">3. Withdraw Anytime</span> — Your funds are never locked. Withdraw your deposit plus earned interest whenever you want.
+          </p>
+        </div>
+        <p className="text-xs text-purple-400 mt-3">
+          Rates are variable and adjust based on supply and demand in the lending market.
+        </p>
+      </div>
 
       <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">
