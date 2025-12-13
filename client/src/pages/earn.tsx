@@ -390,34 +390,21 @@ export function EarnContent() {
               />
             </div>
 
-            <div className="flex gap-3">
-              <Button
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white h-12 text-base font-medium"
-                onClick={handleSupply}
-                disabled={isProcessing || !amount || !publicKey}
-                data-testid="button-supply"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  'Supply'
-                )}
-              </Button>
-              {userPosition && userPosition.depositAmount > 0 && (
-                <Button
-                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white h-12 text-base font-medium"
-                  onClick={() => openWithdrawDialog(userPosition)}
-                  disabled={isProcessing}
-                  data-testid="button-withdraw"
-                >
-                  <Minus className="w-4 h-4 mr-2" />
-                  Withdraw
-                </Button>
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-medium"
+              onClick={handleSupply}
+              disabled={isProcessing || !amount || !publicKey}
+              data-testid="button-supply"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Supply'
               )}
-            </div>
+            </Button>
 
             {!publicKey && (
               <p className="text-center text-purple-400 text-sm">
