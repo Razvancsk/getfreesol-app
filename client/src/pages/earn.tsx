@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from "@/hooks/use-toast";
 import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Transaction } from '@solana/web3.js';
 
 interface MarginFiBank {
   bankAddress: string;
@@ -102,17 +102,15 @@ export function EarnContent() {
 
   useEffect(() => {
     const fetchBalance = async () => {
-      if (!publicKey || !connection || !selectedBank) return;
+      if (!publicKey || !selectedBank) return;
       
       try {
-        if (selectedBank.tokenSymbol === 'SOL') {
-          const balance = await connection.getBalance(publicKey);
-          setWalletBalance(balance / LAMPORTS_PER_SOL);
-        } else {
-          const response = await fetch(`/api/wallet/token-balance?wallet=${publicKey.toBase58()}&mint=${selectedBank.tokenMint}`);
-          if (response.ok) {
-            const data = await response.json();
-            setWalletBalance(data.balance || 0);
+        const response = await fetch(`/api/wallet/all-tokens?address=${publicKey.toBase58()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.tokens) {
+            const token = data.tokens.find((t: any) => t.address === selectedBank.tokenMint);
+            setWalletBalance(token?.balance || 0);
           }
         }
       } catch (error) {
@@ -121,7 +119,7 @@ export function EarnContent() {
     };
 
     fetchBalance();
-  }, [publicKey, connection, selectedBank]);
+  }, [publicKey, selectedBank]);
 
   const formatApy = (apy: number) => `${(apy * 100).toFixed(2)}%`;
 
