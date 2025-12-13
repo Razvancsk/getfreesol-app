@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -133,7 +132,6 @@ export function EarnContent() {
   const userPosition = userPositions?.positions?.find(p => p.tokenMint === selectedTokenMint);
   const totalDeposited = userPosition?.depositAmount || 0;
   const depositedUsdValue = totalDeposited * (selectedBank?.price || 0);
-  const collateralProgress = selectedBank ? Math.min((totalDeposited / (selectedBank.globalLimit / selectedBank.price || 1)) * 100, 100) : 0;
 
   const handleSupply = async () => {
     if (!publicKey || !signTransaction || !selectedBank || !amount) {
@@ -376,16 +374,6 @@ export function EarnContent() {
                 data-testid="input-amount"
               />
             </div>
-
-            {userPosition && userPosition.depositAmount > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-purple-300">Available collateral</span>
-                  <span className="text-white">{formatUsd(depositedUsdValue)}</span>
-                </div>
-                <Progress value={collateralProgress} className="h-2 bg-purple-800" />
-              </div>
-            )}
 
             <Button
               className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-medium"
