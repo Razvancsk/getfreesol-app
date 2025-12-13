@@ -105,10 +105,11 @@ export function EarnContent() {
 
     const fetchBalances = async () => {
       setIsLoadingBalances(true);
+      console.log('Fetching balances for wallet:', publicKey.toString());
       const newBalances: Record<string, number> = {};
       
       try {
-        const holdingsResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toBase58()}`);
+        const holdingsResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
         
         if (!holdingsResponse.ok) {
           throw new Error('Failed to fetch holdings');
@@ -127,6 +128,7 @@ export function EarnContent() {
       
       setBalances(newBalances);
       setIsLoadingBalances(false);
+      console.log('Balances fetched:', newBalances);
     };
 
     fetchBalances();
