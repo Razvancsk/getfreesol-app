@@ -539,44 +539,42 @@ export function EarnContent() {
       </Card>
 
       {/* FAQ Accordion */}
-      <Card className="bg-purple-900/80 border-purple-600 backdrop-blur overflow-hidden">
-        <CardContent className="p-5">
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="how-it-works" className="border-b border-purple-600/30">
-              <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
-                How does earning work?
-              </AccordionTrigger>
-              <AccordionContent className="text-purple-200 text-sm pb-4">
-                Deposit your tokens into the lending pool. Borrowers pay interest on their loans, and you earn a share of that interest as yield. Your deposits earn APY automatically.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="safety" className="border-b border-purple-600/30">
-              <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
-                Is it safe?
-              </AccordionTrigger>
-              <AccordionContent className="text-purple-200 text-sm pb-4">
-                Yes! Your funds are secured by overcollateralized loans. Borrowers must deposit more collateral than they borrow, ensuring your deposits are protected. You maintain full control and can withdraw anytime.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="withdraw" className="border-b border-purple-600/30">
-              <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
-                Can I withdraw anytime?
-              </AccordionTrigger>
-              <AccordionContent className="text-purple-200 text-sm pb-4">
-                Yes, you can withdraw anytime. Your funds are never locked.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="rates" className="border-b-0">
-              <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
-                Why do rates change?
-              </AccordionTrigger>
-              <AccordionContent className="text-purple-200 text-sm pb-4">
-                Rates are variable and adjust based on supply and demand. When more people borrow, rates go up. When more people deposit, rates may decrease.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
+      <div className="px-5">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="how-it-works" className="border-b border-purple-600/30">
+            <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
+              How does earning work?
+            </AccordionTrigger>
+            <AccordionContent className="text-purple-200 text-sm pb-4">
+              Deposit your tokens into the lending pool. Borrowers pay interest on their loans, and you earn a share of that interest as yield. Your deposits earn APY automatically.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="safety" className="border-b border-purple-600/30">
+            <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
+              Is it safe?
+            </AccordionTrigger>
+            <AccordionContent className="text-purple-200 text-sm pb-4">
+              Yes! Your funds are secured by overcollateralized loans. Borrowers must deposit more collateral than they borrow, ensuring your deposits are protected. You maintain full control and can withdraw anytime.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="withdraw" className="border-b border-purple-600/30">
+            <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
+              Can I withdraw anytime?
+            </AccordionTrigger>
+            <AccordionContent className="text-purple-200 text-sm pb-4">
+              Yes, you can withdraw anytime. Your funds are never locked.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="rates" className="border-b border-purple-600/30">
+            <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
+              Why do rates change?
+            </AccordionTrigger>
+            <AccordionContent className="text-purple-200 text-sm pb-4">
+              Rates are variable and adjust based on supply and demand. When more people borrow, rates go up. When more people deposit, rates may decrease.
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
 
       <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">
