@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info } from "lucide-react";
+import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info, Landmark } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
 
@@ -472,7 +472,7 @@ export function EarnContent() {
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-purple-700">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <Coins className="w-3 h-3" />
+                    <Landmark className="w-3 h-3" />
                     Total Deposited
                   </div>
                   <p className="text-white font-medium">{totalDeposited.toFixed(4)} {selectedBank.tokenSymbol}</p>
