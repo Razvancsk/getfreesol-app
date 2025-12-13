@@ -287,49 +287,6 @@ export function EarnContent() {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
-      {publicKey && userPositions?.positions && userPositions.positions.length > 0 && (
-        <Card className="bg-green-800/30 border-green-600 backdrop-blur">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Wallet className="w-4 h-4 text-green-400" />
-              <span className="text-green-200 text-sm font-medium">Your Positions</span>
-            </div>
-            <div className="space-y-2">
-              {userPositions.positions.map((position) => (
-                <div 
-                  key={position.bankAddress} 
-                  className="flex items-center justify-between p-3 bg-green-900/30 rounded-lg border border-green-700/50"
-                >
-                  <div className="flex items-center gap-2">
-                    {position.tokenLogoUri ? (
-                      <img src={position.tokenLogoUri} alt={position.tokenSymbol} className="w-6 h-6 rounded-full" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
-                        <Coins className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-white text-sm font-medium">{position.depositAmount.toFixed(4)} {position.tokenSymbol}</p>
-                      <p className="text-green-400 text-xs">{formatApy(position.depositApy)} APY</p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-green-500 text-green-200 hover:bg-green-700 h-8 text-xs"
-                    onClick={() => openWithdrawDialog(position)}
-                    data-testid={`button-withdraw-${position.tokenSymbol}`}
-                  >
-                    <Minus className="w-3 h-3 mr-1" />
-                    Withdraw
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card className="bg-purple-900/80 border-purple-600 backdrop-blur overflow-hidden">
         <CardContent className="p-5 space-y-5">
             {markets?.source && markets.source !== 'live' && (
