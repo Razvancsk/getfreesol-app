@@ -129,17 +129,6 @@ export default function EarnPage() {
 
       const data = await response.json();
 
-      if (data.needsAccount) {
-        toast({
-          title: "Account Required",
-          description: "You need to create a MarginFi account first. Please visit MarginFi to set up your account.",
-        });
-        window.open('https://app.marginfi.com', '_blank');
-        setIsProcessing(false);
-        setIsDepositDialogOpen(false);
-        return;
-      }
-
       if (!data.success || !data.transaction) {
         throw new Error(data.error || 'Failed to build deposit transaction');
       }
@@ -153,8 +142,10 @@ export default function EarnPage() {
       await connection.confirmTransaction(txId, 'confirmed');
 
       toast({
-        title: "Deposit Successful!",
-        description: `Deposited ${amount} ${selectedBank.tokenSymbol} to MarginFi`,
+        title: data.isNewAccount ? "Account Created & Deposit Successful!" : "Deposit Successful!",
+        description: data.isNewAccount 
+          ? `Created MarginFi account and deposited ${amount} ${selectedBank.tokenSymbol}` 
+          : `Deposited ${amount} ${selectedBank.tokenSymbol} to MarginFi`,
       });
 
       setIsDepositDialogOpen(false);
@@ -443,24 +434,6 @@ export default function EarnPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-purple-800/30 border-purple-600/50">
-          <CardContent className="py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Badge className="bg-purple-600 text-white">MarginFi</Badge>
-                <span className="text-purple-300 text-sm">Decentralized lending protocol on Solana</span>
-              </div>
-              <a 
-                href="https://app.marginfi.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-purple-300 hover:text-white flex items-center gap-1 text-sm"
-              >
-                Visit MarginFi <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>

@@ -6073,8 +6073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ 
           success: true, 
           hasAccount: false,
-          message: 'No MarginFi account found. Please create one on MarginFi first.',
-          createAccountUrl: 'https://app.marginfi.com'
+          message: 'No MarginFi account found. An account will be created automatically on your first deposit.'
         });
       }
       
@@ -6089,7 +6088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // MarginFi - Build deposit transaction (for existing accounts only)
+  // MarginFi - Build deposit transaction (creates account on-demand if needed)
   app.post("/api/marginfi/build-deposit", async (req, res) => {
     try {
       const { wallet, bankAddress, amount, tokenMint } = req.body;
@@ -6104,9 +6103,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid deposit amount' });
       }
 
-      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
-      const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
+      const marginfiSdk = await import('@mrgnlabs/marginfi-client-v2');
+      const { MarginfiClient, getConfig } = marginfiSdk;
+      const { Connection, PublicKey, Transaction, SystemProgram, Keypair } = await import('@solana/web3.js');
       const { getAssociatedTokenAddress, createSyncNativeInstruction, NATIVE_MINT, createAssociatedTokenAccountInstruction, getAccount } = await import('@solana/spl-token');
+      const { BN } = await import('bn.js');
       
       const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
       const connection = new Connection(rpcUrl, 'confirmed');
@@ -6118,16 +6119,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
       const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
       
-      if (!marginfiAccounts || marginfiAccounts.length === 0) {
-        return res.json({
-          success: false,
-          needsAccount: true,
-          message: 'You need to create a MarginFi account first. Please visit MarginFi to set up your account.',
-          createAccountUrl: 'https://app.marginfi.com'
-        });
-      }
-      
-      const marginfiAccount = marginfiAccounts[0];
       const bank = client.getBankByPk(bankPubkey);
       if (!bank) {
         return res.status(400).json({ error: 'Bank not found' });
@@ -6143,6 +6134,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const instructions: any[] = [];
       const isNativeSol = tokenMint === 'So11111111111111111111111111111111111111112';
+      
+      let marginfiAccountPk: PublicKey;
+      let isNewAccount = false;
+      let newAccountKeypair: any = null;
+      
+      if (!marginfiAccounts || marginfiAccounts.length === 0) {
+        console.log('Creating new MarginFi account for user:', wallet);
+        isNewAccount = true;
+        
+        // Generate a new keypair for the marginfi account
+        newAccountKeypair = Keypair.generate();
+        marginfiAccountPk = newAccountKeypair.publicKey;
+        
+        // Get account creation instructions
+        const createAccountIx = await client.makeCreateMarginfiAccountIx(newAccountKeypair.publicKey);
+        instructions.push(...createAccountIx.instructions);
+      } else {
+        marginfiAccountPk = marginfiAccounts[0].address;
+      }
       
       if (isNativeSol) {
         const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
@@ -6166,8 +6176,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Build deposit instruction
-      const depositIx = await marginfiAccount.makeDepositIx(depositAmountNative, bankPubkey);
-      instructions.push(...depositIx.instructions);
+      // Get the user's token ATA for the deposit
+      const signerTokenAccount = isNativeSol 
+        ? await getAssociatedTokenAddress(NATIVE_MINT, userPubkey)
+        : await getAssociatedTokenAddress(new PublicKey(tokenMint), userPubkey);
+      
+      // Check if user has a token account (for non-SOL tokens)
+      if (!isNativeSol) {
+        try {
+          await getAccount(connection, signerTokenAccount);
+        } catch {
+          instructions.push(
+            createAssociatedTokenAccountInstruction(userPubkey, signerTokenAccount, userPubkey, new PublicKey(tokenMint))
+          );
+        }
+      }
+      
+      if (isNewAccount) {
+        // For new accounts, use Anchor program builder directly since account doesn't exist on-chain
+        // Build the deposit instruction using the program's IDL
+        const SPL_TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+        
+        // Fetch the bank account data directly from the chain to get the liquidity vault
+        // The SDK's Bank object may not have this populated in read-only mode
+        let bankLiquidityVault: PublicKey;
+        
+        // First try the SDK bank object
+        if ((bank as any).liquidityVault) {
+          bankLiquidityVault = (bank as any).liquidityVault;
+        } else {
+          // Fallback: fetch directly from chain using Anchor
+          console.log('Bank liquidityVault not in SDK object, fetching from chain...');
+          const bankAccountData = await client.program.account.bank.fetch(bankPubkey);
+          bankLiquidityVault = (bankAccountData as any).liquidityVault;
+          
+          if (!bankLiquidityVault) {
+            throw new Error('Unable to get bank liquidity vault from chain data');
+          }
+        }
+        
+        console.log('Building deposit instruction for new account:', {
+          marginfiGroup: client.groupAddress.toBase58(),
+          marginfiAccount: marginfiAccountPk.toBase58(),
+          signer: userPubkey.toBase58(),
+          bank: bankPubkey.toBase58(),
+          bankLiquidityVault: bankLiquidityVault.toBase58(),
+          amount: depositAmountNative,
+        });
+        
+        const depositIx = await client.program.methods
+          .lendingAccountDeposit(new BN(depositAmountNative))
+          .accounts({
+            marginfiGroup: client.groupAddress,
+            marginfiAccount: marginfiAccountPk,
+            signer: userPubkey,
+            bank: bankPubkey,
+            signerTokenAccount: signerTokenAccount,
+            bankLiquidityVault: bankLiquidityVault,
+            tokenProgram: SPL_TOKEN_PROGRAM_ID,
+          })
+          .instruction();
+        
+        instructions.push(depositIx);
+      } else {
+        // For existing accounts, use the standard SDK method
+        const depositIx = await marginfiAccounts[0].makeDepositIx(depositAmountNative, bankPubkey);
+        instructions.push(...depositIx.instructions);
+      }
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       
@@ -6179,6 +6254,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       instructions.forEach(ix => transaction.add(ix));
       
+      // If creating a new account, sign with the new account keypair server-side
+      // The client only needs to add their wallet signature
+      if (isNewAccount && newAccountKeypair) {
+        transaction.partialSign(newAccountKeypair);
+      }
+      
       const serializedTx = transaction.serialize({ 
         requireAllSignatures: false,
         verifySignatures: false 
@@ -6187,7 +6268,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         transaction: serializedTx,
-        message: `Deposit ${depositAmount} ${isNativeSol ? 'SOL' : 'tokens'} to MarginFi`,
+        message: isNewAccount 
+          ? `Create MarginFi account & deposit ${depositAmount} ${isNativeSol ? 'SOL' : 'tokens'}` 
+          : `Deposit ${depositAmount} ${isNativeSol ? 'SOL' : 'tokens'} to MarginFi`,
+        isNewAccount,
       });
     } catch (error: any) {
       console.error('MarginFi build deposit error:', error);
