@@ -51,7 +51,12 @@ export function EarnContent() {
   const [selectedPosition, setSelectedPosition] = useState<UserPosition | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const { data: markets, isLoading, refetch } = useQuery<{ success: boolean; banks: MarginFiBank[] }>({
+  const { data: markets, isLoading, refetch } = useQuery<{ 
+    success: boolean; 
+    banks: MarginFiBank[];
+    source?: 'live' | 'cached' | 'fallback';
+    cachedAt?: number;
+  }>({
     queryKey: ['/api/marginfi/markets'],
     queryFn: async () => {
       const response = await fetch('/api/marginfi/markets');
@@ -59,6 +64,7 @@ export function EarnContent() {
       return response.json();
     },
     staleTime: 60000,
+    refetchInterval: 120000,
   });
 
   const { data: userPositions, refetch: refetchPositions } = useQuery<{ 
@@ -324,6 +330,14 @@ export function EarnContent() {
             </div>
           </CardHeader>
           <CardContent>
+            {markets?.source && markets.source !== 'live' && (
+              <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-600/50 rounded-lg flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-300 text-sm">
+                  Showing cached data (live rates temporarily unavailable)
+                </span>
+              </div>
+            )}
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <RefreshCw className="w-8 h-8 text-purple-400 animate-spin" />
