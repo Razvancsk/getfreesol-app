@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
@@ -537,27 +538,41 @@ export function EarnContent() {
         </CardContent>
       </Card>
 
-      {/* How it works explanation */}
-      <div className="bg-purple-800/30 border border-purple-600/30 rounded-xl p-4 mt-4">
-        <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-          <Info className="w-4 h-4 text-purple-400" />
-          How Earning Works
-        </h4>
-        <div className="space-y-2 text-sm text-purple-200">
-          <p>
-            <span className="text-green-400 font-medium">1. Deposit</span> — Supply your tokens to the lending pool and start earning interest immediately.
-          </p>
-          <p>
-            <span className="text-green-400 font-medium">2. Earn Yield</span> — Your deposits earn APY from borrowers who pay interest on their loans.
-          </p>
-          <p>
-            <span className="text-green-400 font-medium">3. Withdraw Anytime</span> — Your funds are never locked. Withdraw your deposit plus earned interest whenever you want.
-          </p>
-        </div>
-        <p className="text-xs text-purple-400 mt-3">
-          Rates are variable and adjust based on supply and demand in the lending market.
-        </p>
-      </div>
+      {/* FAQ Accordion */}
+      <Accordion type="single" collapsible className="mt-4 space-y-2">
+        <AccordionItem value="how-it-works" className="border-b border-purple-600/30">
+          <AccordionTrigger className="text-white hover:no-underline py-3 text-left">
+            How does earning work?
+          </AccordionTrigger>
+          <AccordionContent className="text-purple-200 text-sm pb-3">
+            Deposit your tokens into the lending pool. Borrowers pay interest on their loans, and you earn a share of that interest as yield. Your deposits earn APY automatically.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="safety" className="border-b border-purple-600/30">
+          <AccordionTrigger className="text-white hover:no-underline py-3 text-left">
+            Is it safe?
+          </AccordionTrigger>
+          <AccordionContent className="text-purple-200 text-sm pb-3">
+            Your funds are secured by overcollateralized loans. Borrowers must deposit more collateral than they borrow, reducing risk. However, smart contract risks always exist in DeFi.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="withdraw" className="border-b border-purple-600/30">
+          <AccordionTrigger className="text-white hover:no-underline py-3 text-left">
+            Can I withdraw anytime?
+          </AccordionTrigger>
+          <AccordionContent className="text-purple-200 text-sm pb-3">
+            Yes, your funds are never locked. You can withdraw your deposit plus earned interest whenever you want, subject to available liquidity in the pool.
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="rates" className="border-b border-purple-600/30">
+          <AccordionTrigger className="text-white hover:no-underline py-3 text-left">
+            Why do rates change?
+          </AccordionTrigger>
+          <AccordionContent className="text-purple-200 text-sm pb-3">
+            Rates are variable and adjust based on supply and demand. When more people borrow, rates go up. When more people deposit, rates may decrease.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">
