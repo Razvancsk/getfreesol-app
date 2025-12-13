@@ -5960,10 +5960,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Core function to fetch MarginFi data from SDK
-  // Following official examples from https://github.com/mrgnlabs/mrgn-ts/tree/main/packages/marginfi-client-v2/examples
+  // Using ONLY official SDK methods from Bank class:
+  // - bank.getTotalAssetQuantity()
+  // - bank.getTotalLiabilityQuantity()
+  // - bank.computeAssetUsdValue()
+  // - bank.computeLiabilityUsdValue()
+  // - bank.computeInterestRates()
+  // - bank.computeUtilizationRate()
+  // Reference: https://github.com/mrgnlabs/mrgn-ts/blob/main/packages/marginfi-client-v2/src/models/bank.ts
   async function fetchMarginFiDataFromSDK(): Promise<MarginFiBankData[]> {
-    const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
-    const { NodeWallet } = await import('@mrgnlabs/mrgn-common');
+    const marginfiSdk = await import('@mrgnlabs/marginfi-client-v2');
+    const { MarginfiClient, getConfig, MarginRequirementType, PriceBias, Bank } = marginfiSdk;
+    const { NodeWallet, nativeToUi } = await import('@mrgnlabs/mrgn-common');
     const { Connection, Keypair } = await import('@solana/web3.js');
     
     // Construct Helius RPC URL from API key if available
@@ -5977,10 +5985,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const wallet = new NodeWallet(dummyKeypair);
     const config = getConfig("production");
     
-    // Fetch with timeout - use readOnly mode and empty preloadedBankAddresses per official examples
+    // Fetch client using official SDK method
     const client = await withTimeout(
       MarginfiClient.fetch(config, wallet, connection, { readOnly: true, preloadedBankAddresses: [] }),
-      45000 // 45 second timeout
+      45000
     );
     
     const allBanks = client.banks;
@@ -5999,39 +6007,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // Get raw asset price from oracle (unweighted, no bias)
-        // Following SDK: getPrice(oraclePrice, PriceBias.None, false)
-        const priceObj = oraclePrice.priceRealtime || oraclePrice.priceWeighted;
-        const rawPrice = priceObj?.price?.toNumber?.() || oraclePrice.price?.toNumber?.() || 0;
+        const decimals = bank.mintDecimals;
         
-        // Get total asset quantity in native units (bank.totalAssetShares * bank.assetShareValue)
-        // Following SDK compute.utils.ts: getTotalAssetQuantity()
-        const totalAssetQuantity = bank.totalAssetShares?.times?.(bank.assetShareValue) || bank.getTotalAssetQuantity?.();
-        const assetQuantityNum = totalAssetQuantity?.toNumber?.() || 0;
+        // Use ONLY official SDK Bank methods - exactly as shown in bank.describe()
+        // Reference: https://github.com/mrgnlabs/mrgn-ts/blob/main/packages/marginfi-client-v2/src/models/bank.ts#L261
         
-        // Get total liability quantity 
-        const totalLiabilityQuantity = bank.totalLiabilityShares?.times?.(bank.liabilityShareValue) || bank.getTotalLiabilityQuantity?.();
-        const liabilityQuantityNum = totalLiabilityQuantity?.toNumber?.() || 0;
+        // Get total deposits/borrows in USD using SDK's computeAssetUsdValue/computeLiabilityUsdValue
+        const totalDepositsUsd = bank.computeAssetUsdValue(
+          oraclePrice,
+          bank.totalAssetShares,
+          MarginRequirementType.Equity,
+          PriceBias.None
+        ).toNumber();
         
-        // Convert to USD: quantity * price / 10^decimals
-        const decimals = bank.mintDecimals || 9;
-        const totalDepositsUsd = (assetQuantityNum * rawPrice) / Math.pow(10, decimals);
-        const totalBorrowsUsd = (liabilityQuantityNum * rawPrice) / Math.pow(10, decimals);
+        const totalBorrowsUsd = bank.computeLiabilityUsdValue(
+          oraclePrice,
+          bank.totalLiabilityShares,
+          MarginRequirementType.Equity,
+          PriceBias.None
+        ).toNumber();
         
-        // Get interest rates - use computeInterestRates if available
-        let lendingApy = 0;
-        let borrowingApy = 0;
-        if (typeof bank.computeInterestRates === 'function') {
-          const rates = bank.computeInterestRates();
-          lendingApy = rates?.lendingRate?.toNumber?.() || 0;
-          borrowingApy = rates?.borrowingRate?.toNumber?.() || 0;
-        }
+        // Get interest rates using SDK's computeInterestRates()
+        const rates = bank.computeInterestRates();
+        const lendingApy = rates.lendingRate.toNumber();
+        const borrowingApy = rates.borrowingRate.toNumber();
         
-        // Get utilization rate
-        let utilizationRate = 0;
-        if (totalDepositsUsd > 0) {
-          utilizationRate = totalBorrowsUsd / totalDepositsUsd;
-        }
+        // Get utilization rate using SDK's computeUtilizationRate()
+        const utilizationRate = bank.computeUtilizationRate().toNumber();
         
         banks.push({
           bankAddress: address,
@@ -6044,7 +6046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalDeposits: totalDepositsUsd,
           totalBorrows: totalBorrowsUsd,
           utilizationRate,
-          decimals: bank.mintDecimals || 9,
+          decimals,
         });
         
         console.log(`Bank ${meta.symbol}: APY=${(lendingApy * 100).toFixed(2)}%, Deposits=$${(totalDepositsUsd/1e6).toFixed(2)}M, Borrows=$${(totalBorrowsUsd/1e6).toFixed(2)}M, Util=${(utilizationRate * 100).toFixed(2)}%`);
