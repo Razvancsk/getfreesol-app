@@ -2940,6 +2940,15 @@ export default function SolRefund() {
                   <ArrowRightLeft className="h-5 w-5" />
                   Swap
                 </Button>
+                <Link href="/earn">
+                  <Button
+                    className="px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30"
+                    data-testid="button-earn"
+                  >
+                    <DollarSign className="h-5 w-5 text-green-400" />
+                    Earn
+                  </Button>
+                </Link>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
                   <Button

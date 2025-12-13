@@ -5870,6 +5870,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // MarginFi Lending Markets
+  app.get("/api/marginfi/markets", async (req, res) => {
+    try {
+      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
+      const { Connection, PublicKey } = await import('@solana/web3.js');
+      
+      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      // Fetch MarginFi banks data from their API
+      const banksResponse = await fetch('https://storage.googleapis.com/mrgn-public/mfi-bank-metadata-cache.json');
+      if (!banksResponse.ok) {
+        throw new Error('Failed to fetch MarginFi banks');
+      }
+      const banksData = await banksResponse.json();
+      
+      // Token metadata for logos
+      const tokenMetadata: Record<string, { name: string; logo: string }> = {
+        'So11111111111111111111111111111111111111112': { name: 'Solana', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png' },
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { name: 'USD Coin', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png' },
+        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { name: 'USDT', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg' },
+        'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So': { name: 'Marinade SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So/logo.png' },
+        'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn': { name: 'Jito SOL', logo: 'https://storage.googleapis.com/token-metadata/JitoSOL-256.png' },
+        'bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1': { name: 'BlazeStake SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1/logo.png' },
+      };
+      
+      // Process banks into our format
+      const banks = Object.entries(banksData)
+        .filter(([_, bank]: [string, any]) => bank && bank.tokenSymbol)
+        .slice(0, 20) // Limit to top 20 banks
+        .map(([address, bank]: [string, any]) => {
+          const meta = tokenMetadata[bank.tokenMint] || { name: bank.tokenSymbol, logo: '' };
+          return {
+            bankAddress: address,
+            tokenSymbol: bank.tokenSymbol || 'Unknown',
+            tokenMint: bank.tokenMint || '',
+            tokenName: meta.name || bank.tokenSymbol || 'Unknown',
+            tokenLogoUri: meta.logo || bank.tokenLogoUri || '',
+            depositApy: bank.lendingRate || 0,
+            borrowApy: bank.borrowingRate || 0,
+            totalDeposits: bank.totalDepositsNative || 0,
+            totalBorrows: bank.totalBorrowsNative || 0,
+            utilizationRate: bank.utilizationRate || 0,
+            decimals: bank.mintDecimals || 9,
+          };
+        })
+        .sort((a, b) => b.totalDeposits - a.totalDeposits);
+      
+      res.json({ success: true, banks });
+    } catch (error: any) {
+      console.error('MarginFi markets error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch MarginFi markets' });
+    }
+  });
+
   // Backpack Borrow/Lend - Get borrow history (authenticated)
   app.get("/api/backpack/borrow-history", async (req, res) => {
     try {
