@@ -5884,10 +5884,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenMint: string;
     tokenName: string;
     tokenLogoUri: string;
+    price: number;
     depositApy: number;
     borrowApy: number;
+    weight: number;
     totalDeposits: number;
     totalBorrows: number;
+    globalLimit: number;
     utilizationRate: number;
     decimals: number;
   }
@@ -6038,16 +6041,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tokenName = meta?.name || bank.tokenSymbol || 'Unknown Token';
         const tokenLogo = meta?.logo || `https://storage.googleapis.com/mrgn-public/mrgn-token-icons/${mintAddress}.png`;
         
+        // Get price using SDK's Bank.getPrice method
+        const priceValue = Bank.getPrice(oraclePrice, PriceBias.None, false).toNumber();
+        
+        // Get weight from bank config (asset weight for collateral)
+        const weight = bank.config.assetWeightInit.toNumber();
+        
+        // Get global deposit limit from bank config
+        const globalLimit = bank.config.depositLimit.toNumber();
+        
         banks.push({
           bankAddress: address,
           tokenSymbol,
           tokenMint: mintAddress,
           tokenName,
           tokenLogoUri: tokenLogo,
+          price: priceValue,
           depositApy: lendingApy,
           borrowApy: borrowingApy,
+          weight,
           totalDeposits: totalDepositsUsd,
           totalBorrows: totalBorrowsUsd,
+          globalLimit,
           utilizationRate,
           decimals,
         });

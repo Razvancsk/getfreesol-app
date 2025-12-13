@@ -16,10 +16,13 @@ interface MarginFiBank {
   tokenMint: string;
   tokenName: string;
   tokenLogoUri?: string;
+  price: number;
   depositApy: number;
   borrowApy: number;
+  weight: number;
   totalDeposits: number;
   totalBorrows: number;
+  globalLimit: number;
   utilizationRate: number;
   decimals: number;
 }
@@ -349,9 +352,11 @@ export function EarnContent() {
                   <thead>
                     <tr className="border-b border-purple-600">
                       <th className="text-left py-3 px-4 text-purple-300 font-medium">Asset</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium">Deposit APY</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium">Borrow APY</th>
-                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden md:table-cell">Total Deposits</th>
+                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden sm:table-cell">Price</th>
+                      <th className="text-right py-3 px-4 text-purple-300 font-medium">APY</th>
+                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden lg:table-cell">Weight</th>
+                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden md:table-cell">Deposits</th>
+                      <th className="text-right py-3 px-4 text-purple-300 font-medium hidden lg:table-cell">Global limit</th>
                       <th className="text-right py-3 px-4 text-purple-300 font-medium hidden md:table-cell">Utilization</th>
                       <th className="text-right py-3 px-4 text-purple-300 font-medium">Action</th>
                     </tr>
@@ -374,25 +379,23 @@ export function EarnContent() {
                             </div>
                           </div>
                         </td>
+                        <td className="py-4 px-4 text-right hidden sm:table-cell">
+                          <span className="text-white">${bank.price < 0.01 ? bank.price.toFixed(6) : bank.price < 1 ? bank.price.toFixed(4) : bank.price.toFixed(2)}</span>
+                        </td>
                         <td className="py-4 px-4 text-right">
                           <span className="text-green-400 font-semibold">{formatApy(bank.depositApy)}</span>
                         </td>
-                        <td className="py-4 px-4 text-right">
-                          <span className="text-orange-400 font-semibold">{formatApy(bank.borrowApy)}</span>
+                        <td className="py-4 px-4 text-right hidden lg:table-cell">
+                          <span className="text-purple-200">{(bank.weight * 100).toFixed(0)}%</span>
                         </td>
                         <td className="py-4 px-4 text-right hidden md:table-cell">
                           <span className="text-purple-200">{formatUsd(bank.totalDeposits)}</span>
                         </td>
+                        <td className="py-4 px-4 text-right hidden lg:table-cell">
+                          <span className="text-purple-200">{formatUsd(bank.globalLimit)}</span>
+                        </td>
                         <td className="py-4 px-4 text-right hidden md:table-cell">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-16 bg-purple-900 rounded-full h-2">
-                              <div 
-                                className="bg-purple-400 h-2 rounded-full" 
-                                style={{ width: `${Math.min(bank.utilizationRate * 100, 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-purple-300 text-sm">{(bank.utilizationRate * 100).toFixed(0)}%</span>
-                          </div>
+                          <span className="text-purple-300">{(bank.utilizationRate * 100).toFixed(2)}%</span>
                         </td>
                         <td className="py-4 px-4 text-right">
                           <Button
