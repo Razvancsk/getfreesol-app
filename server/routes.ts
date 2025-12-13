@@ -6457,7 +6457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         console.log('Building deposit instruction for new account:', {
-          marginfiGroup: client.groupAddress.toBase58(),
+          group: client.groupAddress.toBase58(),
           marginfiAccount: marginfiAccountPk.toBase58(),
           signer: userPubkey.toBase58(),
           bank: bankPubkey.toBase58(),
@@ -6468,7 +6468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const depositIx = await client.program.methods
           .lendingAccountDeposit(new BN(depositAmountNativeStr))
           .accounts({
-            marginfiGroup: client.groupAddress,
+            group: client.groupAddress,
             marginfiAccount: marginfiAccountPk,
             signer: userPubkey,
             bank: bankPubkey,
@@ -6497,7 +6497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const depositIx = await client.program.methods
             .lendingAccountDeposit(new BN(depositAmountNativeStr))
             .accounts({
-              marginfiGroup: client.groupAddress,
+              group: client.groupAddress,
               marginfiAccount: marginfiAccountPk,
               signer: userPubkey,
               bank: bankPubkey,
