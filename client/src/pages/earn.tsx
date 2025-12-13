@@ -372,7 +372,7 @@ export function EarnContent() {
               >
                 <SelectValue>
                   {selectedBank && (
-                    <div className="flex items-center justify-between w-full overflow-visible">
+                    <div className="flex items-center justify-between w-full overflow-visible gap-4">
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {selectedBank.tokenLogoUri ? (
                           <img src={selectedBank.tokenLogoUri} alt={selectedBank.tokenSymbol} className="w-6 h-6 rounded-full flex-shrink-0" />
@@ -383,7 +383,7 @@ export function EarnContent() {
                         )}
                         <span className="font-medium flex-shrink-0">{selectedBank.tokenSymbol}</span>
                       </div>
-                      <span className="text-green-400 font-semibold flex-shrink-0">
+                      <span className="text-green-400 font-semibold flex-shrink-0 ml-auto">
                         {formatApy(selectedBank.depositApy)} APY
                       </span>
                     </div>
