@@ -5879,12 +5879,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
       const connection = new Connection(rpcUrl, 'confirmed');
       
-      // Fetch MarginFi banks data from their API
-      const banksResponse = await fetch('https://storage.googleapis.com/mrgn-public/mfi-bank-metadata-cache.json');
-      if (!banksResponse.ok) {
-        throw new Error('Failed to fetch MarginFi banks');
+      // Try the primary MarginFi API first, fall back to alternative sources
+      let banksData: any = null;
+      
+      // Try mrgn API endpoint
+      try {
+        const banksResponse = await fetch('https://storage.googleapis.com/mrgn-public/mfi-bank-metadata-cache.json', {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (banksResponse.ok) {
+          banksData = await banksResponse.json();
+        }
+      } catch (e) {
+        console.log('Primary MarginFi API unavailable, trying fallback...');
       }
-      const banksData = await banksResponse.json();
+      
+      // Fallback: Use SDK to fetch banks directly from on-chain
+      if (!banksData) {
+        try {
+          const config = getConfig("production");
+          const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
+          const allBanks = client.banks;
+          
+          banksData = {};
+          allBanks.forEach((bank, address) => {
+            const rates = bank.computeInterestRates();
+            banksData[address] = {
+              tokenSymbol: 'Unknown',
+              tokenMint: bank.mint.toBase58(),
+              lendingRate: rates.lendingRate.toNumber(),
+              borrowingRate: rates.borrowingRate.toNumber(),
+              totalDepositsNative: bank.computeAssetUsdValue(
+                bank.getAssetQuantity(bank.totalAssetShares), 
+                bank, 
+                'Lower'
+              ).toNumber(),
+              totalBorrowsNative: 0,
+              utilizationRate: rates.utilizationRate.toNumber(),
+              mintDecimals: bank.mintDecimals,
+            };
+          });
+        } catch (sdkError) {
+          console.error('SDK fallback failed:', sdkError);
+          throw new Error('Unable to fetch MarginFi banks from any source');
+        }
+      }
       
       // Token metadata for logos
       const tokenMetadata: Record<string, { name: string; logo: string }> = {
@@ -5922,6 +5961,310 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('MarginFi markets error:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch MarginFi markets' });
+    }
+  });
+
+  // MarginFi - Get user positions (deposits)
+  app.get("/api/marginfi/user-positions", async (req, res) => {
+    try {
+      const { wallet } = req.query;
+      
+      if (!wallet || typeof wallet !== 'string') {
+        return res.status(400).json({ error: 'Wallet address required' });
+      }
+
+      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
+      const { Connection, PublicKey } = await import('@solana/web3.js');
+      
+      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      // Create a read-only client (no wallet needed for fetching positions)
+      const config = getConfig("production");
+      const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
+      
+      // Find user's marginfi accounts
+      const userPubkey = new PublicKey(wallet);
+      const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
+      
+      if (!marginfiAccounts || marginfiAccounts.length === 0) {
+        return res.json({ success: true, positions: [], hasAccount: false });
+      }
+
+      // Get positions from the first account
+      const marginfiAccount = marginfiAccounts[0];
+      const balances = marginfiAccount.balances;
+      
+      const positions: any[] = [];
+      
+      // Token metadata for display
+      const tokenMetadata: Record<string, { symbol: string; name: string; logo: string; decimals: number }> = {
+        'So11111111111111111111111111111111111111112': { symbol: 'SOL', name: 'Solana', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png', decimals: 9 },
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', name: 'USD Coin', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png', decimals: 6 },
+        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', name: 'USDT', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg', decimals: 6 },
+        'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So': { symbol: 'mSOL', name: 'Marinade SOL', logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So/logo.png', decimals: 9 },
+        'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn': { symbol: 'JitoSOL', name: 'Jito SOL', logo: 'https://storage.googleapis.com/token-metadata/JitoSOL-256.png', decimals: 9 },
+      };
+      
+      for (const balance of balances) {
+        if (balance.active) {
+          const bank = client.getBankByPk(balance.bankPk);
+          if (bank) {
+            const mint = bank.mint.toBase58();
+            const meta = tokenMetadata[mint] || { symbol: 'Unknown', name: 'Unknown', logo: '', decimals: 9 };
+            
+            const depositAmount = balance.computeQuantityUi(bank).assets.toNumber();
+            const borrowAmount = balance.computeQuantityUi(bank).liabilities.toNumber();
+            
+            if (depositAmount > 0 || borrowAmount > 0) {
+              positions.push({
+                bankAddress: balance.bankPk.toBase58(),
+                tokenMint: mint,
+                tokenSymbol: meta.symbol,
+                tokenName: meta.name,
+                tokenLogoUri: meta.logo,
+                decimals: meta.decimals,
+                depositAmount,
+                borrowAmount,
+                depositApy: bank.computeInterestRates().lendingRate.toNumber(),
+                borrowApy: bank.computeInterestRates().borrowingRate.toNumber(),
+              });
+            }
+          }
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        positions, 
+        hasAccount: true,
+        accountAddress: marginfiAccount.address.toBase58()
+      });
+    } catch (error: any) {
+      console.error('MarginFi user positions error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch user positions' });
+    }
+  });
+
+  // MarginFi - Check if user has account and return account info
+  // The actual deposit/withdraw transactions should be built client-side using the MarginFi SDK
+  // This endpoint just provides the necessary info
+  app.get("/api/marginfi/account-info", async (req, res) => {
+    try {
+      const { wallet } = req.query;
+      
+      if (!wallet || typeof wallet !== 'string') {
+        return res.status(400).json({ error: 'Wallet address required' });
+      }
+
+      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
+      const { Connection, PublicKey } = await import('@solana/web3.js');
+      
+      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      const config = getConfig("production");
+      const userPubkey = new PublicKey(wallet);
+      
+      const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
+      const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
+      
+      if (!marginfiAccounts || marginfiAccounts.length === 0) {
+        return res.json({ 
+          success: true, 
+          hasAccount: false,
+          message: 'No MarginFi account found. Please create one on MarginFi first.',
+          createAccountUrl: 'https://app.marginfi.com'
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        hasAccount: true,
+        accountAddress: marginfiAccounts[0].address.toBase58()
+      });
+    } catch (error: any) {
+      console.error('MarginFi account info error:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch account info' });
+    }
+  });
+
+  // MarginFi - Build deposit transaction (for existing accounts only)
+  app.post("/api/marginfi/build-deposit", async (req, res) => {
+    try {
+      const { wallet, bankAddress, amount, tokenMint } = req.body;
+      
+      if (!wallet || !bankAddress || amount === undefined || !tokenMint) {
+        return res.status(400).json({ error: 'Missing required parameters: wallet, bankAddress, amount, tokenMint' });
+      }
+
+      // Validate amount
+      const depositAmount = parseFloat(amount);
+      if (isNaN(depositAmount) || depositAmount <= 0) {
+        return res.status(400).json({ error: 'Invalid deposit amount' });
+      }
+
+      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
+      const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
+      const { getAssociatedTokenAddress, createSyncNativeInstruction, NATIVE_MINT, createAssociatedTokenAccountInstruction, getAccount } = await import('@solana/spl-token');
+      
+      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      const config = getConfig("production");
+      const userPubkey = new PublicKey(wallet);
+      const bankPubkey = new PublicKey(bankAddress);
+      
+      const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
+      const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
+      
+      if (!marginfiAccounts || marginfiAccounts.length === 0) {
+        return res.json({
+          success: false,
+          needsAccount: true,
+          message: 'You need to create a MarginFi account first. Please visit MarginFi to set up your account.',
+          createAccountUrl: 'https://app.marginfi.com'
+        });
+      }
+      
+      const marginfiAccount = marginfiAccounts[0];
+      const bank = client.getBankByPk(bankPubkey);
+      if (!bank) {
+        return res.status(400).json({ error: 'Bank not found' });
+      }
+      
+      // Convert to native units using integer math to avoid precision issues
+      const multiplier = Math.pow(10, bank.mintDecimals);
+      const depositAmountNative = Math.floor(depositAmount * multiplier);
+      
+      if (depositAmountNative <= 0) {
+        return res.status(400).json({ error: 'Deposit amount too small' });
+      }
+      
+      const instructions: any[] = [];
+      const isNativeSol = tokenMint === 'So11111111111111111111111111111111111111112';
+      
+      if (isNativeSol) {
+        const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
+        
+        try {
+          await getAccount(connection, wsolAta);
+        } catch {
+          instructions.push(
+            createAssociatedTokenAccountInstruction(userPubkey, wsolAta, userPubkey, NATIVE_MINT)
+          );
+        }
+        
+        instructions.push(
+          SystemProgram.transfer({
+            fromPubkey: userPubkey,
+            toPubkey: wsolAta,
+            lamports: depositAmountNative,
+          }),
+          createSyncNativeInstruction(wsolAta)
+        );
+      }
+      
+      // Build deposit instruction
+      const depositIx = await marginfiAccount.makeDepositIx(depositAmountNative, bankPubkey);
+      instructions.push(...depositIx.instructions);
+      
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      
+      const transaction = new Transaction({
+        feePayer: userPubkey,
+        blockhash,
+        lastValidBlockHeight,
+      });
+      
+      instructions.forEach(ix => transaction.add(ix));
+      
+      const serializedTx = transaction.serialize({ 
+        requireAllSignatures: false,
+        verifySignatures: false 
+      }).toString('base64');
+      
+      res.json({
+        success: true,
+        transaction: serializedTx,
+        message: `Deposit ${depositAmount} ${isNativeSol ? 'SOL' : 'tokens'} to MarginFi`,
+      });
+    } catch (error: any) {
+      console.error('MarginFi build deposit error:', error);
+      res.status(500).json({ error: error.message || 'Failed to build deposit transaction' });
+    }
+  });
+
+  // MarginFi - Build withdraw transaction
+  app.post("/api/marginfi/build-withdraw", async (req, res) => {
+    try {
+      const { wallet, bankAddress, amount, withdrawAll } = req.body;
+      
+      if (!wallet || !bankAddress || (amount === undefined && !withdrawAll)) {
+        return res.status(400).json({ error: 'Missing required parameters: wallet, bankAddress, amount or withdrawAll' });
+      }
+
+      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
+      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      
+      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+      
+      const config = getConfig("production");
+      const userPubkey = new PublicKey(wallet);
+      const bankPubkey = new PublicKey(bankAddress);
+      
+      const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
+      const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
+      
+      if (!marginfiAccounts || marginfiAccounts.length === 0) {
+        return res.status(400).json({ error: 'No MarginFi account found for this wallet' });
+      }
+      
+      const marginfiAccount = marginfiAccounts[0];
+      const bank = client.getBankByPk(bankPubkey);
+      if (!bank) {
+        return res.status(400).json({ error: 'Bank not found' });
+      }
+      
+      let withdrawIx;
+      if (withdrawAll) {
+        withdrawIx = await marginfiAccount.makeWithdrawAllIx(bankPubkey);
+      } else {
+        const withdrawAmount = parseFloat(amount);
+        if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
+          return res.status(400).json({ error: 'Invalid withdraw amount' });
+        }
+        const multiplier = Math.pow(10, bank.mintDecimals);
+        const withdrawAmountNative = Math.floor(withdrawAmount * multiplier);
+        withdrawIx = await marginfiAccount.makeWithdrawIx(withdrawAmountNative, bankPubkey);
+      }
+      
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      
+      const transaction = new Transaction({
+        feePayer: userPubkey,
+        blockhash,
+        lastValidBlockHeight,
+      });
+      
+      if (withdrawIx.instructions && withdrawIx.instructions.length > 0) {
+        withdrawIx.instructions.forEach((ix: any) => transaction.add(ix));
+      }
+      
+      const serializedTx = transaction.serialize({ 
+        requireAllSignatures: false,
+        verifySignatures: false 
+      }).toString('base64');
+      
+      res.json({
+        success: true,
+        transaction: serializedTx,
+        message: withdrawAll ? 'Withdraw all from MarginFi' : `Withdraw ${amount} from MarginFi`,
+      });
+    } catch (error: any) {
+      console.error('MarginFi build withdraw error:', error);
+      res.status(500).json({ error: error.message || 'Failed to build withdraw transaction' });
     }
   });
 
