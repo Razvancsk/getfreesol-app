@@ -52,7 +52,8 @@ export function EarnContent() {
   
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('');
   const [amount, setAmount] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
@@ -168,7 +169,7 @@ export function EarnContent() {
       return;
     }
 
-    setIsProcessing(true);
+    setIsDepositing(true);
     try {
       const response = await fetch('/api/marginfi/build-deposit', {
         method: 'POST',
@@ -210,7 +211,7 @@ export function EarnContent() {
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsDepositing(false);
     }
   };
 
@@ -234,7 +235,7 @@ export function EarnContent() {
       return;
     }
 
-    setIsProcessing(true);
+    setIsWithdrawing(true);
     try {
       const response = await fetch('/api/marginfi/build-withdraw', {
         method: 'POST',
@@ -279,7 +280,7 @@ export function EarnContent() {
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsWithdrawing(false);
     }
   };
 
@@ -299,7 +300,7 @@ export function EarnContent() {
       return;
     }
 
-    setIsProcessing(true);
+    setIsWithdrawing(true);
     try {
       const response = await fetch('/api/marginfi/build-withdraw', {
         method: 'POST',
@@ -339,7 +340,7 @@ export function EarnContent() {
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsWithdrawing(false);
     }
   };
 
@@ -447,10 +448,10 @@ export function EarnContent() {
             <Button
               className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-medium"
               onClick={handleSupply}
-              disabled={isProcessing || !amount || !publicKey}
+              disabled={isDepositing || !amount || !publicKey}
               data-testid="button-supply"
             >
-              {isProcessing ? (
+              {isDepositing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
@@ -517,10 +518,10 @@ export function EarnContent() {
               <Button
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white h-12 text-base font-medium mt-4"
                 onClick={() => handleWithdrawAllDirect(userPosition.bankAddress, userPosition.tokenSymbol)}
-                disabled={isProcessing || !publicKey}
+                disabled={isWithdrawing || !publicKey}
                 data-testid="button-withdraw-all-inline"
               >
-                {isProcessing ? (
+                {isDepositing ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Withdrawing...
@@ -609,19 +610,19 @@ export function EarnContent() {
             <Button 
               variant="outline"
               onClick={() => handleWithdraw(true)}
-              disabled={isProcessing}
+              disabled={isWithdrawing}
               className="border-orange-500 text-orange-200 hover:bg-orange-700"
               data-testid="button-withdraw-all"
             >
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw All"}
+              {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw All"}
             </Button>
             <Button 
               onClick={() => handleWithdraw(false)}
-              disabled={isProcessing || !withdrawAmount}
+              disabled={isWithdrawing || !withdrawAmount}
               className="bg-orange-600 hover:bg-orange-700"
               data-testid="button-confirm-withdraw"
             >
-              {isProcessing ? (
+              {isDepositing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 "Withdraw"
