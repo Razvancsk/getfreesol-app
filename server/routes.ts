@@ -6639,7 +6639,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NOTE: The SDK's makeWithdrawIx already handles WSOL unwrapping and closing for SOL withdrawals
       // Do NOT add a manual createCloseAccountInstruction - it would fail because the SDK already closes the account
       
-      // Calculate 0.40% withdraw fee
+      // Calculate 0.40% withdraw fee in the SAME TOKEN being withdrawn
+      const WITHDRAW_FEE_PERCENT = 0.40; // 0.40% fee (100% to platform, no referral split)
+      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const platformWalletPubkey = new PublicKey(platformWalletAddress);
+      
       // Get the actual withdrawal amount - for withdrawAll, get from user's position
       let actualWithdrawAmount = withdrawAmount;
       if (withdrawAll) {
@@ -6652,51 +6656,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Get token price and SOL price to calculate fee in SOL
-      const WITHDRAW_FEE_PERCENT = 0.40; // 0.40% fee (100% to platform, no referral split)
-      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      // Calculate fee in the same token (0.40% of withdrawal amount)
+      const feeAmount = actualWithdrawAmount * (WITHDRAW_FEE_PERCENT / 100);
+      const tokenDecimals = bank.mintDecimals;
+      const feeAmountRaw = Math.floor(feeAmount * Math.pow(10, tokenDecimals));
       
-      let feeLamports = 0;
+      console.log(`MarginFi Withdraw Fee: ${WITHDRAW_FEE_PERCENT}% of ${actualWithdrawAmount} = ${feeAmount} tokens (${feeAmountRaw} raw)`);
       
-      try {
-        // Get prices from Jupiter
-        const tokenMint = bank.mint.toBase58();
-        const priceResponse = await fetch(`https://lite-api.jup.ag/price/v3?ids=${tokenMint},So11111111111111111111111111111111111111112`);
-        
-        if (priceResponse.ok) {
-          const priceData = await priceResponse.json();
-          const tokenPrice = priceData[tokenMint]?.usdPrice || 0;
-          const solPrice = priceData['So11111111111111111111111111111111111111112']?.usdPrice || 0;
-          
-          if (tokenPrice > 0 && solPrice > 0) {
-            // Calculate withdrawal USD value
-            const withdrawUsdValue = actualWithdrawAmount * tokenPrice;
-            // Calculate fee in USD (0.40%)
-            const feeUsdValue = withdrawUsdValue * (WITHDRAW_FEE_PERCENT / 100);
-            // Convert fee to SOL
-            const feeSol = feeUsdValue / solPrice;
-            feeLamports = Math.floor(feeSol * 1e9);
-            
-            console.log(`MarginFi Withdraw Fee: ${actualWithdrawAmount} ${bank.tokenSymbol || tokenMint} @ $${tokenPrice} = $${withdrawUsdValue.toFixed(2)} USD`);
-            console.log(`Fee: ${WITHDRAW_FEE_PERCENT}% = $${feeUsdValue.toFixed(4)} USD = ${feeSol.toFixed(6)} SOL (${feeLamports} lamports)`);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to calculate withdraw fee:', error);
-      }
-      
-      // Add fee transfer instruction if fee is significant (> 1000 lamports = 0.000001 SOL)
-      if (feeLamports > 1000) {
+      // Add fee transfer instruction if fee is significant
+      if (feeAmountRaw > 0) {
         const { SystemProgram } = await import('@solana/web3.js');
+        const { createTransferInstruction, getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction: createAtaIx } = await import('@solana/spl-token');
         
-        const platformFeeInstruction = SystemProgram.transfer({
-          fromPubkey: userPubkey,
-          toPubkey: new PublicKey(platformWalletAddress),
-          lamports: feeLamports,
-        });
+        const tokenMint = bank.mint;
         
-        instructions.push(platformFeeInstruction);
-        console.log(`Added MarginFi withdraw fee transfer: ${feeLamports} lamports to platform wallet`);
+        if (isNativeSol) {
+          // For SOL withdrawals, transfer SOL directly
+          const feeLamports = feeAmountRaw;
+          const platformFeeInstruction = SystemProgram.transfer({
+            fromPubkey: userPubkey,
+            toPubkey: platformWalletPubkey,
+            lamports: feeLamports,
+          });
+          instructions.push(platformFeeInstruction);
+          console.log(`Added MarginFi withdraw fee: ${feeLamports} lamports SOL to platform wallet`);
+        } else {
+          // For SPL tokens, transfer tokens to platform's ATA
+          const userTokenAccount = await getAssociatedTokenAddress(tokenMint, userPubkey);
+          const platformTokenAccount = getAssociatedTokenAddressSync(tokenMint, platformWalletPubkey);
+          
+          // Check if platform ATA exists, if not create it
+          try {
+            await getAccount(connection, platformTokenAccount);
+          } catch {
+            // Platform ATA doesn't exist, create it (user pays for creation)
+            instructions.push(
+              createAtaIx(userPubkey, platformTokenAccount, platformWalletPubkey, tokenMint)
+            );
+            console.log(`Creating platform ATA for token ${tokenMint.toBase58()}`);
+          }
+          
+          // Transfer fee tokens to platform
+          const feeTransferIx = createTransferInstruction(
+            userTokenAccount,
+            platformTokenAccount,
+            userPubkey,
+            BigInt(feeAmountRaw)
+          );
+          instructions.push(feeTransferIx);
+          console.log(`Added MarginFi withdraw fee: ${feeAmount} tokens to platform wallet`);
+        }
       }
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
@@ -6730,10 +6739,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         transaction: serializedTx,
         message: withdrawAll ? 'Withdraw all from MarginFi' : `Withdraw ${amount} from MarginFi`,
-        feeInfo: feeLamports > 1000 ? {
-          feeLamports,
+        feeInfo: feeAmountRaw > 0 ? {
+          feeAmount,
+          feeAmountRaw,
           feePercent: WITHDRAW_FEE_PERCENT,
-          feeSol: feeLamports / 1e9,
+          tokenMint: bank.mint.toBase58(),
         } : undefined,
       });
     } catch (error: any) {
