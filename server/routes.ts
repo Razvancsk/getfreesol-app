@@ -5972,9 +5972,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const wallet = new NodeWallet(dummyKeypair);
     const config = getConfig("production");
     
-    // Fetch with timeout
+    // Fetch with timeout - use readOnly mode to reduce RPC calls
     const client = await withTimeout(
-      MarginfiClient.fetch(config, wallet, connection),
+      MarginfiClient.fetch(config, wallet, connection, { readOnly: true }),
       45000 // 45 second timeout
     );
     
