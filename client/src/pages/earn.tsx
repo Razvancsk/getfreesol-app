@@ -311,7 +311,7 @@ export function EarnContent() {
 
             <Select value={selectedTokenMint} onValueChange={setSelectedTokenMint}>
               <SelectTrigger 
-                className="w-full bg-purple-800/50 border-purple-600 text-white h-14"
+                className="w-full bg-purple-800/50 border-purple-600 text-white h-14 focus:ring-purple-500 focus:ring-offset-purple-900"
                 data-testid="select-token"
               >
                 <SelectValue>
