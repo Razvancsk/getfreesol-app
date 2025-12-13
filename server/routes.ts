@@ -6392,9 +6392,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         marginfiAccountPk = marginfiAccounts[0].address;
       }
       
-      // For existing accounts, the SDK's makeDepositIx handles SOL wrapping internally
-      // Only add manual SOL wrapping for new accounts where we use raw Anchor instructions
-      if (isNativeSol && isNewAccount) {
+      // For SOL deposits, we need to manually wrap SOL for BOTH new and existing accounts
+      // The SDK's makeWrapSolIxs has a bug that calls BN.toNumber() causing overflow for large amounts
+      if (isNativeSol) {
         const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
         
         try {
@@ -6480,9 +6480,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         instructions.push(depositIx);
       } else {
-        // For existing accounts, use the standard SDK method
-        const depositIx = await marginfiAccounts[0].makeDepositIx(new BN(depositAmountNativeStr), bankPubkey);
-        instructions.push(...depositIx.instructions);
+        // For existing accounts with SOL, build manually to avoid SDK's BN.toNumber() bug
+        // For non-SOL tokens, use the standard SDK method
+        if (isNativeSol) {
+          // Build deposit instruction manually using Anchor for SOL
+          const SPL_TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+          
+          let bankLiquidityVault: PublicKey;
+          if ((bank as any).liquidityVault) {
+            bankLiquidityVault = (bank as any).liquidityVault;
+          } else {
+            const bankAccountData = await client.program.account.bank.fetch(bankPubkey);
+            bankLiquidityVault = (bankAccountData as any).liquidityVault;
+          }
+          
+          const depositIx = await client.program.methods
+            .lendingAccountDeposit(new BN(depositAmountNativeStr))
+            .accounts({
+              marginfiGroup: client.groupAddress,
+              marginfiAccount: marginfiAccountPk,
+              signer: userPubkey,
+              bank: bankPubkey,
+              signerTokenAccount: signerTokenAccount,
+              bankLiquidityVault: bankLiquidityVault,
+              tokenProgram: SPL_TOKEN_PROGRAM_ID,
+            })
+            .instruction();
+          
+          instructions.push(depositIx);
+        } else {
+          // For non-SOL tokens, use the standard SDK method
+          const depositIx = await marginfiAccounts[0].makeDepositIx(new BN(depositAmountNativeStr), bankPubkey);
+          instructions.push(...depositIx.instructions);
+        }
       }
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
