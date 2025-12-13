@@ -6585,7 +6585,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let withdrawIx;
       if (withdrawAll) {
-        withdrawIx = await marginfiAccount.makeWithdrawAllIx(bankPubkey);
+        // Per SDK docs: makeWithdrawIx(amount, bankAddress, withdrawAll)
+        // When withdrawAll=true, amount is ignored so we pass 0
+        withdrawIx = await marginfiAccount.makeWithdrawIx(new BN(0), bankPubkey, true);
       } else {
         const withdrawAmount = parseFloat(amount);
         if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
@@ -6596,7 +6598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const decimalAmount = new Decimal(withdrawAmount);
         const multiplier = new Decimal(10).pow(bank.mintDecimals);
         const withdrawAmountNativeStr = decimalAmount.mul(multiplier).floor().toFixed(0);
-        withdrawIx = await marginfiAccount.makeWithdrawIx(new BN(withdrawAmountNativeStr), bankPubkey);
+        withdrawIx = await marginfiAccount.makeWithdrawIx(new BN(withdrawAmountNativeStr), bankPubkey, false);
       }
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
