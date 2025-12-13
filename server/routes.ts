@@ -6552,7 +6552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // MarginFi - Build withdraw transaction
-  // Following SDK docs: https://www.npmjs.com/package/@mrgnlabs/marginfi-client-v2
+  // Using SDK's makeWithdrawIx with withdrawAll parameter per docs
   app.post("/api/marginfi/build-withdraw", async (req, res) => {
     try {
       const { wallet, bankAddress, amount, withdrawAll } = req.body;
@@ -6562,8 +6562,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { PublicKey, Transaction } = await import('@solana/web3.js');
+      const { getAssociatedTokenAddress, NATIVE_MINT, createCloseAccountInstruction, getAccount, createAssociatedTokenAccountInstruction } = await import('@solana/spl-token');
       
-      // Use cached client to avoid rate limiting (following SDK docs)
+      // Use cached client to avoid rate limiting
       const { client, connection } = await getCachedMarginfiClient();
       
       const userPubkey = new PublicKey(wallet);
@@ -6581,24 +6582,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Bank not found' });
       }
       
-      const { BN } = await import('bn.js');
+      const isNativeSol = bank.mint.toBase58() === 'So11111111111111111111111111111111111111112';
+      const instructions: any[] = [];
       
-      let withdrawIx;
-      if (withdrawAll) {
-        // Per SDK docs: makeWithdrawIx(amount, bankAddress, withdrawAll)
-        // When withdrawAll=true, amount is ignored so we pass 0
-        withdrawIx = await marginfiAccount.makeWithdrawIx(new BN(0), bankPubkey, true);
-      } else {
-        const withdrawAmount = parseFloat(amount);
-        if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
-          return res.status(400).json({ error: 'Invalid withdraw amount' });
+      // Ensure destination token account exists for SOL withdrawals
+      if (isNativeSol) {
+        const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
+        try {
+          await getAccount(connection, wsolAta);
+        } catch {
+          instructions.push(
+            createAssociatedTokenAccountInstruction(userPubkey, wsolAta, userPubkey, NATIVE_MINT)
+          );
         }
-        // Use Decimal.js for precision with large numbers
-        const Decimal = (await import('decimal.js')).default;
-        const decimalAmount = new Decimal(withdrawAmount);
-        const multiplier = new Decimal(10).pow(bank.mintDecimals);
-        const withdrawAmountNativeStr = decimalAmount.mul(multiplier).floor().toFixed(0);
-        withdrawIx = await marginfiAccount.makeWithdrawIx(new BN(withdrawAmountNativeStr), bankPubkey, false);
+      }
+      
+      // Use SDK's makeWithdrawIx method per docs: makeWithdrawIx(amount, bankAddress, withdrawAll)
+      // For withdrawAll, amount is ignored when withdrawAll=true
+      const withdrawAmount = withdrawAll ? 0 : parseFloat(amount);
+      
+      if (!withdrawAll && (isNaN(withdrawAmount) || withdrawAmount <= 0)) {
+        return res.status(400).json({ error: 'Invalid withdraw amount' });
+      }
+      
+      console.log('Building withdraw with SDK:', {
+        amount: withdrawAmount,
+        bankAddress: bankPubkey.toBase58(),
+        withdrawAll: !!withdrawAll,
+      });
+      
+      // SDK's makeWithdrawIx returns InstructionsWrapper with instructions and possibly signers
+      const withdrawIxWrapper = await marginfiAccount.makeWithdrawIx(
+        withdrawAmount, 
+        bankPubkey,
+        !!withdrawAll  // withdrawAll parameter
+      );
+      
+      // Add withdraw instructions
+      if (withdrawIxWrapper.instructions && withdrawIxWrapper.instructions.length > 0) {
+        instructions.push(...withdrawIxWrapper.instructions);
+      }
+      
+      // For SOL, unwrap WSOL back to native SOL after withdrawal
+      if (isNativeSol) {
+        const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
+        instructions.push(
+          createCloseAccountInstruction(wsolAta, userPubkey, userPubkey)
+        );
       }
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
@@ -6609,8 +6639,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastValidBlockHeight,
       });
       
-      if (withdrawIx.instructions && withdrawIx.instructions.length > 0) {
-        withdrawIx.instructions.forEach((ix: any) => transaction.add(ix));
+      instructions.forEach(ix => transaction.add(ix));
+      
+      // Handle any signers from the SDK (similar to how deposit handles new account keypair)
+      if (withdrawIxWrapper.keys && withdrawIxWrapper.keys.length > 0) {
+        for (const signer of withdrawIxWrapper.keys) {
+          if (signer.secretKey) {
+            transaction.partialSign(signer);
+          }
+        }
       }
       
       const serializedTx = transaction.serialize({ 
