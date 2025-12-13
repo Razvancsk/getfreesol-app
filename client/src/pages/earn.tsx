@@ -53,7 +53,8 @@ export function EarnContent() {
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('');
   const [amount, setAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [balances, setBalances] = useState<Record<string, number>>({});
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<UserPosition | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -100,25 +101,36 @@ export function EarnContent() {
   }, [markets?.banks, selectedTokenMint]);
 
   useEffect(() => {
-    const fetchBalance = async () => {
-      if (!publicKey || !selectedBank) return;
+    if (!publicKey) return;
+
+    const fetchBalances = async () => {
+      setIsLoadingBalances(true);
+      const newBalances: Record<string, number> = {};
       
       try {
-        const response = await fetch(`/api/wallet/all-tokens?address=${publicKey.toBase58()}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.tokens) {
-            const token = data.tokens.find((t: any) => t.address === selectedBank.tokenMint);
-            setWalletBalance(token?.balance || 0);
+        const holdingsResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toBase58()}`);
+        
+        if (!holdingsResponse.ok) {
+          throw new Error('Failed to fetch holdings');
+        }
+        
+        const holdingsData = await holdingsResponse.json();
+        
+        if (holdingsData.success && holdingsData.tokens) {
+          for (const token of holdingsData.tokens) {
+            newBalances[token.address] = token.balance;
           }
         }
-      } catch (error) {
-        console.error('Error fetching balance:', error);
+      } catch (error: any) {
+        console.error('Error fetching holdings:', error?.message || error);
       }
+      
+      setBalances(newBalances);
+      setIsLoadingBalances(false);
     };
 
-    fetchBalance();
-  }, [publicKey, selectedBank]);
+    fetchBalances();
+  }, [publicKey]);
 
   const formatApy = (apy: number) => `${(apy * 100).toFixed(2)}%`;
 
@@ -132,6 +144,7 @@ export function EarnContent() {
   const userPosition = userPositions?.positions?.find(p => p.tokenMint === selectedTokenMint);
   const totalDeposited = userPosition?.depositAmount || 0;
   const depositedUsdValue = totalDeposited * (selectedBank?.price || 0);
+  const walletBalance = selectedBank ? (balances[selectedBank.tokenMint] || 0) : 0;
 
   const handleSupply = async () => {
     if (!publicKey || !signTransaction || !selectedBank || !amount) {
