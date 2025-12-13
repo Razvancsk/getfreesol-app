@@ -6552,7 +6552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // MarginFi - Build withdraw transaction
-  // Using SDK's makeWithdrawIx with withdrawAll parameter per docs
+  // CRITICAL: Must create MarginFi client with user's wallet context for proper authority
   app.post("/api/marginfi/build-withdraw", async (req, res) => {
     try {
       const { wallet, bankAddress, amount, withdrawAll } = req.body;
@@ -6561,23 +6561,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters: wallet, bankAddress, amount or withdrawAll' });
       }
 
-      const { PublicKey, Transaction } = await import('@solana/web3.js');
+      const { PublicKey, Transaction, Connection, Keypair } = await import('@solana/web3.js');
       const { getAssociatedTokenAddress, NATIVE_MINT, createCloseAccountInstruction, getAccount, createAssociatedTokenAccountInstruction } = await import('@solana/spl-token');
-      
-      // Use cached client to avoid rate limiting
-      const { client, connection } = await getCachedMarginfiClient();
+      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
+      const { NodeWallet } = await import('@mrgnlabs/mrgn-common');
       
       const userPubkey = new PublicKey(wallet);
       const bankPubkey = new PublicKey(bankAddress);
       
-      const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
+      // Use Helius RPC for better rate limits
+      const heliusApiKey = process.env.HELIUS_API_KEY;
+      const heliusRpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null;
+      const rpcUrl = process.env.HELIUS_RPC_URL || heliusRpcUrl || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, { commitment: 'confirmed' });
+      
+      // CRITICAL FIX: Create a wallet wrapper that uses the USER's public key
+      // This ensures makeWithdrawIx generates instructions with correct authority
+      // The wallet can't sign (no private key), but the publicKey is correct
+      const userWalletWrapper = {
+        publicKey: userPubkey,
+        signTransaction: async (tx: any) => tx,
+        signAllTransactions: async (txs: any[]) => txs,
+      };
+      
+      const config = getConfig("production");
+      
+      console.log('Creating MarginFi client with user wallet context:', userPubkey.toBase58());
+      
+      // Create client with user's wallet context (not read-only, to get proper instruction building)
+      const userClient = await MarginfiClient.fetch(config, userWalletWrapper as any, connection);
+      
+      // Get user's marginfi accounts
+      const marginfiAccounts = await userClient.getMarginfiAccountsForAuthority(userPubkey);
       
       if (!marginfiAccounts || marginfiAccounts.length === 0) {
         return res.status(400).json({ error: 'No MarginFi account found for this wallet' });
       }
       
       const marginfiAccount = marginfiAccounts[0];
-      const bank = client.getBankByPk(bankPubkey);
+      console.log('Found MarginFi account:', marginfiAccount.address.toBase58());
+      console.log('Account authority:', marginfiAccount.authority.toBase58());
+      
+      const bank = userClient.getBankByPk(bankPubkey);
       if (!bank) {
         return res.status(400).json({ error: 'Bank not found' });
       }
@@ -6598,28 +6623,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Use SDK's makeWithdrawIx method per docs: makeWithdrawIx(amount, bankAddress, withdrawAll)
-      // For withdrawAll, amount is ignored when withdrawAll=true
       const withdrawAmount = withdrawAll ? 0 : parseFloat(amount);
       
       if (!withdrawAll && (isNaN(withdrawAmount) || withdrawAmount <= 0)) {
         return res.status(400).json({ error: 'Invalid withdraw amount' });
       }
       
-      console.log('Building withdraw with SDK:', {
+      console.log('Building withdraw with SDK (user wallet context):', {
         amount: withdrawAmount,
         bankAddress: bankPubkey.toBase58(),
         withdrawAll: !!withdrawAll,
+        clientWallet: userClient.wallet.publicKey.toBase58(),
+        accountAuthority: marginfiAccount.authority.toBase58(),
       });
       
-      // SDK's makeWithdrawIx returns InstructionsWrapper with instructions and possibly signers
+      // SDK's makeWithdrawIx with user's wallet context should generate correct authority references
       const withdrawIxWrapper = await marginfiAccount.makeWithdrawIx(
         withdrawAmount, 
         bankPubkey,
-        !!withdrawAll  // withdrawAll parameter
+        !!withdrawAll
       );
       
-      // Add withdraw instructions
+      console.log('withdrawIxWrapper properties:', Object.keys(withdrawIxWrapper));
+      console.log('withdrawIxWrapper.instructions count:', withdrawIxWrapper.instructions?.length || 0);
+      
+      // Log instruction account details for debugging
       if (withdrawIxWrapper.instructions && withdrawIxWrapper.instructions.length > 0) {
+        withdrawIxWrapper.instructions.forEach((ix: any, idx: number) => {
+          console.log(`Instruction ${idx} has ${ix.keys?.length || 0} accounts`);
+          ix.keys?.forEach((key: any, keyIdx: number) => {
+            if (key.isSigner) {
+              console.log(`  Account ${keyIdx}: ${key.pubkey.toBase58()} (SIGNER)`);
+            }
+          });
+        });
         instructions.push(...withdrawIxWrapper.instructions);
       }
       
@@ -6641,9 +6678,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       instructions.forEach(ix => transaction.add(ix));
       
-      // Handle any signers from the SDK (similar to how deposit handles new account keypair)
-      if (withdrawIxWrapper.keys && withdrawIxWrapper.keys.length > 0) {
-        for (const signer of withdrawIxWrapper.keys) {
+      // Handle any signers from the SDK wrapper
+      if ((withdrawIxWrapper as any).signers && (withdrawIxWrapper as any).signers.length > 0) {
+        console.log('Found SDK signers:', (withdrawIxWrapper as any).signers.length);
+        for (const signer of (withdrawIxWrapper as any).signers) {
           if (signer.secretKey) {
             transaction.partialSign(signer);
           }
@@ -6654,6 +6692,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requireAllSignatures: false,
         verifySignatures: false 
       }).toString('base64');
+      
+      console.log('Withdraw transaction built successfully, awaiting user signature');
       
       res.json({
         success: true,
