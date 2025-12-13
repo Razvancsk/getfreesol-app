@@ -6636,13 +6636,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         instructions.push(...withdrawIxWrapper.instructions);
       }
       
-      // For SOL, unwrap WSOL back to native SOL after withdrawal
-      if (isNativeSol) {
-        const wsolAta = await getAssociatedTokenAddress(NATIVE_MINT, userPubkey);
-        instructions.push(
-          createCloseAccountInstruction(wsolAta, userPubkey, userPubkey)
-        );
-      }
+      // NOTE: The SDK's makeWithdrawIx already handles WSOL unwrapping and closing for SOL withdrawals
+      // Do NOT add a manual createCloseAccountInstruction - it would fail because the SDK already closes the account
       
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       
