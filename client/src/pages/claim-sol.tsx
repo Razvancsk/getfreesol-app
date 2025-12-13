@@ -353,6 +353,9 @@ export default function SolRefund() {
 
   // Check if platform wallet
   const isPlatformWallet = publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+  
+  // Check if swap wallet (only this wallet can see swap)
+  const isSwapWallet = publicKey?.toString() === '9gigncDCysCcmfYStcSYhoo4bL6Se2SPxsiivwRXQqcf';
 
   // Redirect from lend tab if not platform wallet
   useEffect(() => {
@@ -2929,8 +2932,8 @@ export default function SolRefund() {
                 >
                   <span className="text-lg">🔥</span> Burn
                 </Button>
-                {/* Swap button - only visible to platform wallet */}
-                {isPlatformWallet && (
+                {/* Swap button - only visible to swap wallet */}
+                {isSwapWallet && (
                   <Button
                     onClick={() => setActiveTab('swap')}
                     className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
