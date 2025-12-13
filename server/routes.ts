@@ -5998,12 +5998,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const mintAddress = bank.mint.toBase58();
         const meta = marginfiTokenMetadata[mintAddress];
-        if (!meta) continue;
         
         // Get oracle price using official SDK method
         const oraclePrice = client.getOraclePriceByBank(address);
         if (!oraclePrice) {
-          console.log(`No oracle price for bank ${address}, skipping`);
           continue;
         }
         
@@ -6035,12 +6033,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get utilization rate using SDK's computeUtilizationRate()
         const utilizationRate = bank.computeUtilizationRate().toNumber();
         
+        // Use SDK's tokenSymbol first, fallback to our metadata, then use mint abbreviation
+        const tokenSymbol = bank.tokenSymbol || meta?.symbol || mintAddress.slice(0, 4);
+        const tokenName = meta?.name || bank.tokenSymbol || 'Unknown Token';
+        const tokenLogo = meta?.logo || `https://storage.googleapis.com/mrgn-public/mrgn-token-icons/${mintAddress}.png`;
+        
         banks.push({
           bankAddress: address,
-          tokenSymbol: bank.tokenSymbol || meta.symbol,
+          tokenSymbol,
           tokenMint: mintAddress,
-          tokenName: meta.name,
-          tokenLogoUri: meta.logo,
+          tokenName,
+          tokenLogoUri: tokenLogo,
           depositApy: lendingApy,
           borrowApy: borrowingApy,
           totalDeposits: totalDepositsUsd,
@@ -6049,7 +6052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           decimals,
         });
         
-        console.log(`Bank ${meta.symbol}: APY=${(lendingApy * 100).toFixed(2)}%, Deposits=$${(totalDepositsUsd/1e6).toFixed(2)}M, Borrows=$${(totalBorrowsUsd/1e6).toFixed(2)}M, Util=${(utilizationRate * 100).toFixed(2)}%`);
+        console.log(`Bank ${tokenSymbol}: APY=${(lendingApy * 100).toFixed(2)}%, Deposits=$${(totalDepositsUsd/1e6).toFixed(2)}M, Borrows=$${(totalBorrowsUsd/1e6).toFixed(2)}M, Util=${(utilizationRate * 100).toFixed(2)}%`);
       } catch (err: any) {
         console.log(`Skipping bank ${address}: ${err.message}`);
       }
