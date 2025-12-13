@@ -541,7 +541,7 @@ export function EarnContent() {
       {/* FAQ Accordion */}
       <Accordion type="single" collapsible className="mt-4 space-y-2 w-full">
         <AccordionItem value="how-it-works" className="border-b border-purple-600/30">
-          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-base font-medium">
+          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
             How does earning work?
           </AccordionTrigger>
           <AccordionContent className="text-purple-200 text-sm pb-4">
@@ -549,7 +549,7 @@ export function EarnContent() {
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="safety" className="border-b border-purple-600/30">
-          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-base font-medium">
+          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
             Is it safe?
           </AccordionTrigger>
           <AccordionContent className="text-purple-200 text-sm pb-4">
@@ -557,7 +557,7 @@ export function EarnContent() {
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="withdraw" className="border-b border-purple-600/30">
-          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-base font-medium">
+          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
             Can I withdraw anytime?
           </AccordionTrigger>
           <AccordionContent className="text-purple-200 text-sm pb-4">
@@ -565,7 +565,7 @@ export function EarnContent() {
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="rates" className="border-b border-purple-600/30">
-          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-base font-medium">
+          <AccordionTrigger className="text-white hover:no-underline py-4 text-left text-sm sm:text-base font-medium whitespace-normal break-words pr-2">
             Why do rates change?
           </AccordionTrigger>
           <AccordionContent className="text-purple-200 text-sm pb-4">
