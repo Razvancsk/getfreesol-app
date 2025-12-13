@@ -521,7 +521,7 @@ export function EarnContent() {
                 disabled={isWithdrawing || !publicKey}
                 data-testid="button-withdraw-all-inline"
               >
-                {isDepositing ? (
+                {isWithdrawing ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Withdrawing...
@@ -622,7 +622,7 @@ export function EarnContent() {
               className="bg-orange-600 hover:bg-orange-700"
               data-testid="button-confirm-withdraw"
             >
-              {isDepositing ? (
+              {isWithdrawing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 "Withdraw"
