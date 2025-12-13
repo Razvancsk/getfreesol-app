@@ -5901,9 +5901,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isLive: boolean;
   } | null = null;
   
+  // Global cached MarginFi client to avoid rate limiting
+  let marginfiClientCache: {
+    client: any;
+    connection: any;
+    timestamp: number;
+  } | null = null;
+  const MARGINFI_CLIENT_CACHE_TTL = 5 * 60 * 1000; // 5 minute cache for client
+  
   const MARGINFI_DATA_CACHE_TTL = 60 * 1000; // 1 minute cache for live data
   const MARGINFI_BACKGROUND_INTERVAL = 2 * 60 * 1000; // Refresh every 2 minutes
   let marginfiBackgroundJobRunning = false;
+  
+  // Get or create cached MarginFi client (following SDK docs pattern)
+  async function getCachedMarginfiClient() {
+    const now = Date.now();
+    if (marginfiClientCache && (now - marginfiClientCache.timestamp) < MARGINFI_CLIENT_CACHE_TTL) {
+      return marginfiClientCache;
+    }
+    
+    const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
+    const { NodeWallet } = await import('@mrgnlabs/mrgn-common');
+    const { Connection, Keypair } = await import('@solana/web3.js');
+    
+    // Use Helius RPC for better rate limits
+    const heliusApiKey = process.env.HELIUS_API_KEY;
+    const heliusRpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null;
+    const rpcUrl = process.env.HELIUS_RPC_URL || heliusRpcUrl || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+    
+    const connection = new Connection(rpcUrl, { commitment: 'confirmed' });
+    const wallet = new NodeWallet(Keypair.generate());
+    const config = getConfig("production");
+    
+    // Following SDK docs exactly: MarginfiClient.fetch(config, wallet, connection)
+    const client = await MarginfiClient.fetch(config, wallet, connection, { readOnly: true });
+    
+    marginfiClientCache = { client, connection, timestamp: now };
+    console.log('MarginFi: Client cache refreshed');
+    return marginfiClientCache;
+  }
 
   // Token metadata for display
   const marginfiTokenMetadata: Record<string, { symbol: string; name: string; logo: string }> = {
@@ -6171,20 +6207,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Wallet address required' });
       }
 
-      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
-      const { NodeWallet } = await import('@mrgnlabs/mrgn-common');
-      const { Connection, PublicKey, Keypair } = await import('@solana/web3.js');
+      const { PublicKey } = await import('@solana/web3.js');
       
-      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcUrl, { commitment: 'confirmed' });
-      
-      // Create wallet as per SDK docs
-      const dummyKeypair = Keypair.generate();
-      const nodeWallet = new NodeWallet(dummyKeypair);
-      
-      // Initialize client following SDK docs
-      const config = getConfig("production");
-      const client = await MarginfiClient.fetch(config, nodeWallet, connection);
+      // Use cached client to avoid rate limiting
+      const { client } = await getCachedMarginfiClient();
       
       // Find user's marginfi accounts
       const userPubkey = new PublicKey(wallet);
@@ -6260,16 +6286,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Wallet address required' });
       }
 
-      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
-      const { Connection, PublicKey } = await import('@solana/web3.js');
+      const { PublicKey } = await import('@solana/web3.js');
       
-      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcUrl, 'confirmed');
-      
-      const config = getConfig("production");
+      // Use cached client to avoid rate limiting
+      const { client } = await getCachedMarginfiClient();
       const userPubkey = new PublicKey(wallet);
-      
-      const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
       const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
       
       if (!marginfiAccounts || marginfiAccounts.length === 0) {
@@ -6292,6 +6313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // MarginFi - Build deposit transaction (creates account on-demand if needed)
+  // Following SDK docs: https://www.npmjs.com/package/@mrgnlabs/marginfi-client-v2
   app.post("/api/marginfi/build-deposit", async (req, res) => {
     try {
       const { wallet, bankAddress, amount, tokenMint } = req.body;
@@ -6306,20 +6328,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid deposit amount' });
       }
 
-      const marginfiSdk = await import('@mrgnlabs/marginfi-client-v2');
-      const { MarginfiClient, getConfig } = marginfiSdk;
-      const { Connection, PublicKey, Transaction, SystemProgram, Keypair } = await import('@solana/web3.js');
+      const { PublicKey, Transaction, SystemProgram, Keypair } = await import('@solana/web3.js');
       const { getAssociatedTokenAddress, createSyncNativeInstruction, NATIVE_MINT, createAssociatedTokenAccountInstruction, getAccount } = await import('@solana/spl-token');
       const { BN } = await import('bn.js');
       
-      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcUrl, 'confirmed');
+      // Use cached client to avoid rate limiting (following SDK docs)
+      const { client, connection } = await getCachedMarginfiClient();
       
-      const config = getConfig("production");
       const userPubkey = new PublicKey(wallet);
       const bankPubkey = new PublicKey(bankAddress);
       
-      const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
+      // Get bank using SDK method: client.getBankByPk()
       const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
       
       const bank = client.getBankByPk(bankPubkey);
@@ -6483,6 +6502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // MarginFi - Build withdraw transaction
+  // Following SDK docs: https://www.npmjs.com/package/@mrgnlabs/marginfi-client-v2
   app.post("/api/marginfi/build-withdraw", async (req, res) => {
     try {
       const { wallet, bankAddress, amount, withdrawAll } = req.body;
@@ -6491,17 +6511,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters: wallet, bankAddress, amount or withdrawAll' });
       }
 
-      const { MarginfiClient, getConfig } = await import('@mrgnlabs/marginfi-client-v2');
-      const { Connection, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { PublicKey, Transaction } = await import('@solana/web3.js');
       
-      const rpcUrl = process.env.HELIUS_RPC_URL || process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcUrl, 'confirmed');
+      // Use cached client to avoid rate limiting (following SDK docs)
+      const { client, connection } = await getCachedMarginfiClient();
       
-      const config = getConfig("production");
       const userPubkey = new PublicKey(wallet);
       const bankPubkey = new PublicKey(bankAddress);
       
-      const client = await MarginfiClient.fetch(config, {} as any, connection, { readOnly: true });
       const marginfiAccounts = await client.getMarginfiAccountsForAuthority(userPubkey);
       
       if (!marginfiAccounts || marginfiAccounts.length === 0) {
