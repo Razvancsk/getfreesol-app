@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus } from "lucide-react";
@@ -52,7 +51,6 @@ export function EarnContent() {
   const { publicKey, signTransaction } = wallet;
   const { connection } = useConnection();
   
-  const [activeTab, setActiveTab] = useState<'lend' | 'borrow'>('lend');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('');
   const [amount, setAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -335,27 +333,7 @@ export function EarnContent() {
       )}
 
       <Card className="bg-purple-900/80 border-purple-600 backdrop-blur overflow-hidden">
-        <CardContent className="p-0">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'lend' | 'borrow')} className="w-full">
-            <TabsList className="w-full rounded-none bg-purple-800/50 border-b border-purple-600 h-12">
-              <TabsTrigger 
-                value="lend" 
-                className="flex-1 data-[state=active]:bg-purple-700 data-[state=active]:text-white rounded-none h-full"
-                data-testid="tab-lend"
-              >
-                Lend
-              </TabsTrigger>
-              <TabsTrigger 
-                value="borrow" 
-                className="flex-1 data-[state=active]:bg-purple-700 data-[state=active]:text-white rounded-none h-full"
-                data-testid="tab-borrow"
-              >
-                Borrow
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="p-5 space-y-5">
+        <CardContent className="p-5 space-y-5">
             {markets?.source && markets.source !== 'live' && (
               <div className="p-2 bg-yellow-900/30 border border-yellow-600/50 rounded-lg flex items-center gap-2">
                 <RefreshCw className="w-3 h-3 text-yellow-400" />
@@ -382,7 +360,7 @@ export function EarnContent() {
                         <span className="font-medium">{selectedBank.tokenSymbol}</span>
                       </div>
                       <span className="text-green-400 font-semibold">
-                        {activeTab === 'lend' ? formatApy(selectedBank.depositApy) : formatApy(selectedBank.borrowApy)} APY
+                        {formatApy(selectedBank.depositApy)} APY
                       </span>
                     </div>
                   )}
@@ -407,7 +385,7 @@ export function EarnContent() {
                         <span>{bank.tokenSymbol}</span>
                       </div>
                       <span className="text-green-400 text-sm">
-                        {activeTab === 'lend' ? formatApy(bank.depositApy) : formatApy(bank.borrowApy)}
+                        {formatApy(bank.depositApy)}
                       </span>
                     </div>
                   </SelectItem>
@@ -457,7 +435,7 @@ export function EarnContent() {
             <Button
               className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base font-medium"
               onClick={handleSupply}
-              disabled={isProcessing || !amount || !publicKey || activeTab === 'borrow'}
+              disabled={isProcessing || !amount || !publicKey}
               data-testid="button-supply"
             >
               {isProcessing ? (
@@ -465,8 +443,6 @@ export function EarnContent() {
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
                 </>
-              ) : activeTab === 'borrow' ? (
-                'Borrow (Coming Soon)'
               ) : (
                 'Supply'
               )}
@@ -524,7 +500,6 @@ export function EarnContent() {
                 </div>
               </div>
             )}
-          </div>
         </CardContent>
       </Card>
 
