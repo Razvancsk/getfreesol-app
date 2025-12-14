@@ -6467,14 +6467,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         const depositIx = await client.program.methods
-          .lendingAccountDeposit(new BN(depositAmountNativeStr))
+          .lendingAccountDeposit(new BN(depositAmountNativeStr), null)
           .accounts({
             group: client.groupAddress,
             marginfiAccount: marginfiAccountPk,
-            signer: userPubkey,
+            authority: userPubkey,
             bank: bankPubkey,
             signerTokenAccount: signerTokenAccount,
-            bankLiquidityVault: bankLiquidityVault,
+            liquidityVault: bankLiquidityVault,
             tokenProgram: SPL_TOKEN_PROGRAM_ID,
           })
           .instruction();
