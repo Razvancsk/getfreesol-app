@@ -468,7 +468,12 @@ export function EarnContent() {
                     variant="link"
                     size="sm"
                     className="text-purple-400 hover:text-purple-200 p-0 h-auto text-sm"
-                    onClick={() => setAmount(walletBalance.toString())}
+                    onClick={() => {
+                      // Reserve 0.003 SOL for token account creation fee when depositing SOL
+                      const reserveAmount = selectedBank?.tokenSymbol === 'SOL' ? 0.003 : 0;
+                      const maxAmount = Math.max(0, walletBalance - reserveAmount);
+                      setAmount(maxAmount.toString());
+                    }}
                     data-testid="button-max"
                   >
                     MAX
