@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info, Landmark, DollarSign } from "lucide-react";
+import { Coins, RefreshCw, Wallet, Loader2, ChevronDown, TrendingUp, Shield, Database, Eye, Minus, Info, Landmark, DollarSign, BarChart3, Users } from "lucide-react";
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
 
@@ -92,6 +92,25 @@ export function EarnContent() {
     },
     enabled: !!publicKey,
     staleTime: 30000,
+  });
+
+  const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+  const isPlatformWallet = publicKey?.toBase58() === PLATFORM_WALLET;
+
+  const { data: lendSummary } = useQuery<{
+    success: boolean;
+    byToken: Array<{ tokenSymbol: string; tokenMint: string; totalAmount: string; totalUsd: string; depositCount: string; uniqueWallets: string }>;
+    totalUsd: number;
+    totalDeposits: number;
+  }>({
+    queryKey: ['/api/lend/summary', publicKey?.toBase58()],
+    queryFn: async () => {
+      const response = await fetch(`/api/lend/summary?wallet=${publicKey?.toBase58()}`);
+      if (!response.ok) return { success: false, byToken: [], totalUsd: 0, totalDeposits: 0 };
+      return response.json();
+    },
+    enabled: isPlatformWallet,
+    staleTime: 60000,
   });
 
   const selectedBank = markets?.banks?.find(b => b.tokenMint === selectedTokenMint);
@@ -197,6 +216,25 @@ export function EarnContent() {
       const txId = await connection.sendRawTransaction(signedTx.serialize());
       
       await connection.confirmTransaction(txId, 'confirmed');
+
+      // Record deposit for analytics
+      try {
+        await fetch('/api/lend/record-deposit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: publicKey.toBase58(),
+            tokenMint: selectedBank.tokenMint,
+            tokenSymbol: selectedBank.tokenSymbol,
+            amountDeposited: amountNum,
+            usdValue: amountNum * selectedBank.price,
+            apy: selectedBank.depositApy * 100,
+            signature: txId,
+          }),
+        });
+      } catch (e) {
+        console.error('Failed to record deposit:', e);
+      }
 
       toast({
         title: data.isNewAccount ? "Account Created & Deposit Successful!" : "Deposit Successful!",
@@ -574,6 +612,58 @@ export function EarnContent() {
             </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Admin Panel - Platform Wallet Only */}
+      {isPlatformWallet && lendSummary?.success && (
+        <Card className="w-full sm:max-w-md md:max-w-2xl lg:max-w-3xl mx-auto bg-gradient-to-br from-green-900/80 to-emerald-900/80 border-green-600 backdrop-blur overflow-hidden">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-2 text-green-300">
+              <BarChart3 className="w-5 h-5" />
+              <span className="font-semibold">Lend Deposit Analytics</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-green-800/50 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center gap-1.5 text-green-400 text-sm mb-1">
+                  <DollarSign className="w-4 h-4" />
+                  Total USD Deposited
+                </div>
+                <p className="text-white font-bold text-xl">{formatUsd(lendSummary.totalUsd)}</p>
+              </div>
+              <div className="bg-green-800/50 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center gap-1.5 text-green-400 text-sm mb-1">
+                  <TrendingUp className="w-4 h-4" />
+                  Total Deposits
+                </div>
+                <p className="text-white font-bold text-xl">{lendSummary.totalDeposits}</p>
+              </div>
+            </div>
+
+            {lendSummary.byToken.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-green-300 text-sm font-medium">By Token</h4>
+                <div className="space-y-2">
+                  {lendSummary.byToken.map((token, idx) => (
+                    <div key={idx} className="bg-green-800/30 rounded-lg p-3 flex justify-between items-center">
+                      <div>
+                        <span className="text-white font-medium">{token.tokenSymbol}</span>
+                        <div className="flex items-center gap-2 text-green-400 text-xs">
+                          <Users className="w-3 h-3" />
+                          {token.uniqueWallets} wallets
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-semibold">{parseFloat(token.totalAmount).toFixed(4)}</p>
+                        <p className="text-green-400 text-sm">{formatUsd(parseFloat(token.totalUsd))}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
         <DialogContent className="bg-purple-900 border-purple-600 text-white">

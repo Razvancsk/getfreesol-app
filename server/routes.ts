@@ -9600,6 +9600,74 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // ========== LEND DEPOSIT TRACKING ==========
+
+  // Record lend deposit for analytics
+  app.post("/api/lend/record-deposit", async (req, res) => {
+    try {
+      const { walletAddress, tokenMint, tokenSymbol, amountDeposited, usdValue, apy, signature } = req.body;
+      
+      if (!walletAddress || !tokenMint || !amountDeposited || !signature) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      // Check for duplicate signature
+      const existing = await db.select().from(jupiterLendDeposits).where(eq(jupiterLendDeposits.signature, signature)).limit(1);
+      if (existing.length > 0) {
+        return res.json({ success: true, message: 'Deposit already recorded' });
+      }
+      
+      await db.insert(jupiterLendDeposits).values({
+        signature,
+        walletAddress,
+        tokenMint,
+        tokenSymbol: tokenSymbol || 'UNKNOWN',
+        amountDeposited: amountDeposited.toString(),
+        usdValueAtDeposit: (usdValue || 0).toString(),
+        apyAtDeposit: (apy || 0).toString(),
+      });
+      
+      console.log(`Recorded lend deposit: ${amountDeposited} ${tokenSymbol} from ${walletAddress}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Record deposit error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get lend statistics - platform wallet only
+  app.get("/api/lend/summary", async (req, res) => {
+    try {
+      const { wallet } = req.query;
+      
+      if (wallet !== PLATFORM_WALLET) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      const deposits = await db.select({
+        tokenSymbol: jupiterLendDeposits.tokenSymbol,
+        tokenMint: jupiterLendDeposits.tokenMint,
+        totalAmount: sql`SUM(CAST(${jupiterLendDeposits.amountDeposited} AS DECIMAL))`,
+        totalUsd: sql`SUM(CAST(${jupiterLendDeposits.usdValueAtDeposit} AS DECIMAL))`,
+        depositCount: sql`COUNT(*)`,
+        uniqueWallets: sql`COUNT(DISTINCT ${jupiterLendDeposits.walletAddress})`,
+      }).from(jupiterLendDeposits).groupBy(jupiterLendDeposits.tokenSymbol, jupiterLendDeposits.tokenMint);
+      
+      const totalUsd = deposits.reduce((sum, d) => sum + parseFloat(d.totalUsd?.toString() || '0'), 0);
+      const totalDeposits = deposits.reduce((sum, d) => sum + parseInt(d.depositCount?.toString() || '0'), 0);
+      
+      res.json({
+        success: true,
+        byToken: deposits,
+        totalUsd,
+        totalDeposits,
+      });
+    } catch (error: any) {
+      console.error('Lend summary error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
