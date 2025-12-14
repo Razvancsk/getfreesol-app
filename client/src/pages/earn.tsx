@@ -470,48 +470,48 @@ export function EarnContent() {
             )}
 
             {selectedBank && (
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-purple-700">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <Landmark className="w-3 h-3" />
+              <div className="grid grid-cols-2 gap-4 pt-5 border-t border-purple-700">
+                <div className="space-y-1 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-purple-400 text-sm">
+                    <Landmark className="w-4 h-4" />
                     Total Deposited
                   </div>
-                  <p className="text-white font-medium">{totalDeposited.toFixed(4)} {selectedBank.tokenSymbol}</p>
+                  <p className="text-white font-semibold text-base">{totalDeposited.toFixed(4)} {selectedBank.tokenSymbol}</p>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <DollarSign className="w-3 h-3" />
+                <div className="space-y-1 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-purple-400 text-sm">
+                    <DollarSign className="w-4 h-4" />
                     USD Value
                   </div>
-                  <p className="text-white font-medium">{formatUsd(depositedUsdValue)}</p>
+                  <p className="text-white font-semibold text-base">{formatUsd(depositedUsdValue)}</p>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <TrendingUp className="w-3 h-3" />
+                <div className="space-y-1 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-purple-400 text-sm">
+                    <TrendingUp className="w-4 h-4" />
                     Lending Rate
                   </div>
-                  <p className="text-green-400 font-medium">{formatApy(selectedBank.depositApy)}</p>
+                  <p className="text-green-400 font-semibold text-base">{formatApy(selectedBank.depositApy)}</p>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <Shield className="w-3 h-3" />
+                <div className="space-y-1 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-purple-400 text-sm">
+                    <Shield className="w-4 h-4" />
                     Weight
                   </div>
-                  <p className="text-white font-medium">{(selectedBank.weight * 100).toFixed(0)}%</p>
+                  <p className="text-white font-semibold text-base">{(selectedBank.weight * 100).toFixed(0)}%</p>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <Database className="w-3 h-3" />
+                <div className="space-y-1 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-purple-400 text-sm">
+                    <Database className="w-4 h-4" />
                     Pool Size
                   </div>
-                  <p className="text-white font-medium">{formatUsd(selectedBank.totalDeposits)}</p>
+                  <p className="text-white font-semibold text-base">{formatUsd(selectedBank.totalDeposits)}</p>
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-purple-400 text-xs">
-                    <Eye className="w-3 h-3" />
+                <div className="space-y-1 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-purple-400 text-sm">
+                    <Eye className="w-4 h-4" />
                     Utilization
                   </div>
-                  <p className="text-white font-medium">{(selectedBank.utilizationRate * 100).toFixed(1)}%</p>
+                  <p className="text-white font-semibold text-base">{(selectedBank.utilizationRate * 100).toFixed(1)}%</p>
                 </div>
               </div>
             )}
