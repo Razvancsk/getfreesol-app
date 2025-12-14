@@ -6696,9 +6696,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const userTokenAccount = await getAssociatedTokenAddress(tokenMint, userPubkey);
           const platformTokenAccount = getAssociatedTokenAddressSync(tokenMint, platformWalletPubkey);
           
+          console.log(`Fee transfer addresses:`);
+          console.log(`  Token mint: ${tokenMint.toBase58()}`);
+          console.log(`  User token account: ${userTokenAccount.toBase58()}`);
+          console.log(`  Platform wallet: ${platformWalletPubkey.toBase58()}`);
+          console.log(`  Platform token account (ATA): ${platformTokenAccount.toBase58()}`);
+          
           // Check if platform ATA exists, if not create it
           try {
             await getAccount(connection, platformTokenAccount);
+            console.log(`Platform ATA exists`);
           } catch {
             // Platform ATA doesn't exist, create it (user pays for creation)
             instructions.push(
@@ -6715,7 +6722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             BigInt(feeAmountRaw)
           );
           instructions.push(feeTransferIx);
-          console.log(`Added MarginFi withdraw fee: ${feeAmount} tokens to platform wallet`);
+          console.log(`Added MarginFi withdraw fee: ${feeAmount} tokens (${feeAmountRaw} raw) to platform ATA ${platformTokenAccount.toBase58()}`);
         }
       }
       
