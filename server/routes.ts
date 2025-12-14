@@ -6385,9 +6385,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newAccountKeypair = Keypair.generate();
         marginfiAccountPk = newAccountKeypair.publicKey;
         
-        // Get account creation instructions
-        const createAccountIx = await client.makeCreateMarginfiAccountIx(newAccountKeypair.publicKey);
-        instructions.push(...createAccountIx.instructions);
+        // Build account creation instruction manually with correct user authority
+        // The SDK's makeCreateMarginfiAccountIx uses the cached client's wallet, not the user's
+        const initAccountIx = await client.program.methods
+          .marginfiAccountInitialize()
+          .accounts({
+            marginfiGroup: client.groupAddress,
+            marginfiAccount: newAccountKeypair.publicKey,
+            authority: userPubkey,
+            feePayer: userPubkey,
+            systemProgram: SystemProgram.programId,
+          })
+          .instruction();
+        
+        instructions.push(initAccountIx);
       } else {
         marginfiAccountPk = marginfiAccounts[0].address;
       }
