@@ -108,7 +108,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
         description: `Tweet ID: ${data.tweetId}`,
       });
       setPostContent('');
-      setImageKey(Date.now() + Math.random());
+      setImageKey(Date.now());
       queryClient.invalidateQueries({ queryKey: ['/api/x-bot/status'] });
     },
     onError: (error: any) => {
@@ -124,7 +124,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     setPostContent(template);
     setImageType(imgType);
     setAiMemePreview(null);
-    setImageKey(Date.now() + Math.random());
+    setImageKey(Date.now());
   };
 
   const generateAiMeme = async () => {
@@ -174,7 +174,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     if (imageType === 'ai_meme') {
       generateAiMeme();
     } else {
-      setImageKey(Date.now() + Math.random());
+      setImageKey(Date.now());
     }
   };
 
