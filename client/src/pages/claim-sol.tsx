@@ -2981,7 +2981,7 @@ export default function SolRefund() {
               <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-3 flex items-center justify-between gap-4 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <img src={trojanLogo} alt="Trojan on Solana" className="h-10 w-auto" />
-                  <div className="text-gray-300 text-xs hidden sm:block">Trade Solana tokens with Trojan Bot</div>
+                  <div className="text-gray-300 text-sm font-medium hidden sm:block">Start Earning</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="bg-gradient-to-r from-green-500 to-emerald-400 text-black text-xs font-bold px-2 py-1 rounded">10% OFF</div>
