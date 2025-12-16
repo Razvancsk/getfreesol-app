@@ -2975,18 +2975,17 @@ export default function SolRefund() {
               href="https://t.me/solana_trojanbot?start=r-getfreesolx" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="block mx-auto max-w-2xl mb-4"
+              className="block mx-auto max-w-md mb-4"
               data-testid="banner-trojan-sponsor"
             >
-              <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-3 flex items-center justify-between gap-4 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
-                <div className="flex items-center gap-3">
-                  <img src={trojanLogo} alt="Trojan on Solana" className="h-10 w-auto" />
-                  <div className="text-gray-300 text-sm font-medium hidden sm:block">Start Earning</div>
-                </div>
+              <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-lg p-2 flex items-center justify-between gap-2 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
                 <div className="flex items-center gap-2">
-                  <div className="bg-gradient-to-r from-green-500 to-emerald-400 text-black text-xs font-bold px-2 py-1 rounded">10% OFF</div>
-                  <div className="bg-gradient-to-r from-yellow-500 to-orange-400 text-black text-xs font-bold px-2 py-1 rounded">20% CASHBACK</div>
-                  <ExternalLink className="h-4 w-4 text-cyan-400 group-hover:text-cyan-300" />
+                  <img src={trojanLogo} alt="Trojan on Solana" className="h-7 w-auto" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">10% OFF</div>
+                  <div className="bg-gradient-to-r from-yellow-500 to-orange-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">20% CASHBACK</div>
+                  <ExternalLink className="h-3 w-3 text-cyan-400 group-hover:text-cyan-300" />
                 </div>
               </div>
             </a>
