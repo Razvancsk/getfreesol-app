@@ -50,7 +50,6 @@ import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1765419958982.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
-import trojanLogo from '@assets/image_1765863613753.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2980,10 +2979,26 @@ export default function SolRefund() {
             >
               <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-3 flex items-center justify-between gap-4 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
                 <div className="flex items-center gap-3">
-                  <img src={trojanLogo} alt="Trojan on Solana" className="h-10 w-auto" />
+                  {/* Trojan Horse Icon */}
+                  <div className="w-10 h-10 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none">
+                      <path d="M12 2C10.5 2 9 3 8.5 4.5L7 8L4 9C3 9.3 2.5 10 2.5 11C2.5 12 3 13 4 13.5L5 14L4.5 18C4.3 19 5 20 6 20.5C7 21 8 20.8 8.5 20L10 17L12 18L14 17L15.5 20C16 20.8 17 21 18 20.5C19 20 19.7 19 19.5 18L19 14L20 13.5C21 13 21.5 12 21.5 11C21.5 10 21 9.3 20 9L17 8L15.5 4.5C15 3 13.5 2 12 2Z" stroke="url(#trojanGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M9 11.5C9.5 11.5 10 11 10 10.5C10 10 9.5 9.5 9 9.5C8.5 9.5 8 10 8 10.5C8 11 8.5 11.5 9 11.5Z" fill="#00D9FF"/>
+                      <path d="M15 11.5C15.5 11.5 16 11 16 10.5C16 10 15.5 9.5 15 9.5C14.5 9.5 14 10 14 10.5C14 11 14.5 11.5 15 11.5Z" fill="#00D9FF"/>
+                      <defs>
+                        <linearGradient id="trojanGrad" x1="2" y1="2" x2="22" y2="22">
+                          <stop stopColor="#00D9FF"/>
+                          <stop offset="1" stopColor="#7B61FF"/>
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
                   <div className="text-left">
-                    <div className="text-cyan-300 text-sm font-semibold group-hover:text-cyan-200">Our Sponsor</div>
-                    <div className="text-white text-xs">Trade Solana tokens with Trojan Bot</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 font-bold text-lg">TROJAN</span>
+                      <span className="text-gray-400 text-xs">ON SOLANA</span>
+                    </div>
+                    <div className="text-gray-300 text-xs">Trade Solana tokens with Trojan Bot</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
