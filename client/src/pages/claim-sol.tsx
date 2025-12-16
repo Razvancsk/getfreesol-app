@@ -50,6 +50,7 @@ import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1765419958982.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
+import trojanLogo from '@assets/image_1765863613753.png';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2966,6 +2967,32 @@ export default function SolRefund() {
 {activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
               </p>
             </div>
+          )}
+
+          {/* Trojan Sponsor Banner */}
+          {activeTab !== 'docs' && (
+            <a 
+              href="https://t.me/solana_trojanbot?start=r-getfreesolx" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block mx-auto max-w-2xl mb-4"
+              data-testid="banner-trojan-sponsor"
+            >
+              <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-3 flex items-center justify-between gap-4 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <img src={trojanLogo} alt="Trojan on Solana" className="h-10 w-auto" />
+                  <div className="text-left">
+                    <div className="text-cyan-300 text-sm font-semibold group-hover:text-cyan-200">Our Sponsor</div>
+                    <div className="text-white text-xs">Trade Solana tokens with Trojan Bot</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-400 text-black text-xs font-bold px-2 py-1 rounded">10% OFF</div>
+                  <div className="bg-gradient-to-r from-yellow-500 to-orange-400 text-black text-xs font-bold px-2 py-1 rounded">20% CASHBACK</div>
+                  <ExternalLink className="h-4 w-4 text-cyan-400 group-hover:text-cyan-300" />
+                </div>
+              </div>
+            </a>
           )}
 
           {/* Burn Sub-Tabs */}
