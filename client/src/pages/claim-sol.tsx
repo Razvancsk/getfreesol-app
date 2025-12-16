@@ -2975,10 +2975,10 @@ export default function SolRefund() {
               href="https://t.me/solana_trojanbot?start=r-getfreesolx" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="block mx-auto max-w-md mb-4"
+              className="block mx-auto w-fit mb-4"
               data-testid="banner-trojan-sponsor"
             >
-              <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-3 flex items-center justify-between gap-3 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
+              <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-3 flex items-center gap-4 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
                 <div className="flex items-center gap-2">
                   <img src={trojanLogo} alt="Trojan on Solana" className="h-10 w-auto" />
                 </div>
