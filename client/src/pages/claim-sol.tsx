@@ -2978,14 +2978,14 @@ export default function SolRefund() {
               className="block mx-auto max-w-md mb-4"
               data-testid="banner-trojan-sponsor"
             >
-              <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-lg p-2 flex items-center justify-between gap-2 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
+              <div className="bg-gradient-to-r from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-3 flex items-center justify-between gap-3 transition-all hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group">
                 <div className="flex items-center gap-2">
-                  <img src={trojanLogo} alt="Trojan on Solana" className="h-7 w-auto" />
+                  <img src={trojanLogo} alt="Trojan on Solana" className="h-10 w-auto" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="bg-gradient-to-r from-green-500 to-emerald-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">10% OFF</div>
-                  <div className="bg-gradient-to-r from-yellow-500 to-orange-400 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">20% CASHBACK</div>
-                  <ExternalLink className="h-3 w-3 text-cyan-400 group-hover:text-cyan-300" />
+                <div className="flex items-center gap-2">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-400 text-black text-xs font-bold px-2 py-1 rounded">10% OFF</div>
+                  <div className="bg-gradient-to-r from-yellow-500 to-orange-400 text-black text-xs font-bold px-2 py-1 rounded">20% CASHBACK</div>
+                  <ExternalLink className="h-4 w-4 text-cyan-400 group-hover:text-cyan-300" />
                 </div>
               </div>
             </a>
