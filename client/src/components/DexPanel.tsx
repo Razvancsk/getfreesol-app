@@ -907,12 +907,37 @@ export function DexPanel() {
               </div>
             </div>
 
-            {/* Swap Direction Button */}
+            {/* Swap Direction Button - swaps Pay and Receive tokens */}
             <div className="flex justify-center">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSwapMode(swapMode === 'buy' ? 'sell' : 'buy')}
+                onClick={() => {
+                  // Swap the tokens
+                  const newInputToken: TokenInfo = {
+                    address: selectedToken.address,
+                    symbol: selectedToken.symbol,
+                    name: selectedToken.name,
+                    decimals: selectedToken.decimals,
+                    logoURI: selectedToken.logoURI
+                  };
+                  const newOutputToken: TokenData = {
+                    address: inputToken.address,
+                    symbol: inputToken.symbol,
+                    name: inputToken.name,
+                    decimals: inputToken.decimals,
+                    logoURI: inputToken.logoURI,
+                    price: 0,
+                    market_cap: 0,
+                    daily_volume: 0,
+                    liquidity: 0,
+                    num_transactions: 0
+                  };
+                  setInputToken(newInputToken);
+                  setSelectedToken(newOutputToken);
+                  setSolAmount('');
+                  setQuoteAmount('0.00');
+                }}
                 className="text-purple-300 hover:text-white hover:bg-purple-800/30 rounded-full"
               >
                 <ArrowDownUp className="h-5 w-5" />
