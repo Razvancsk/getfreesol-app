@@ -750,7 +750,8 @@ export function DexPanel() {
 
       {/* Fixed Floating Swap Panel - Bottom Right - Matches SwapPanel design */}
       {selectedToken && (
-        <div className="fixed bottom-4 right-4 z-50 w-96 bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl shadow-2xl p-5">
+        <div className="fixed bottom-4 right-4 z-50 w-96 bg-[#1a1035] border border-purple-500/40 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-gradient-to-br from-purple-800/40 to-purple-900/60 p-5">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white">Swap</h2>
@@ -864,6 +865,7 @@ export function DexPanel() {
                 Connect your wallet to swap
               </p>
             )}
+          </div>
           </div>
         </div>
       )}
