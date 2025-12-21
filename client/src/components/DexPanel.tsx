@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, ArrowRightLeft, Droplets, Activity, RefreshCw } from 'lucide-react';
+import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, Droplets, Activity, RefreshCw } from 'lucide-react';
 
 interface TokenData {
   address: string;
@@ -77,35 +77,43 @@ const formatTransactions = (num: number | undefined) => {
   return num.toString();
 };
 
-function TokenCard({ token, onSwap }: { token: TokenData; onSwap: (token: TokenData) => void }) {
+function TokenCard({ token, isRecent }: { token: TokenData; isRecent?: boolean }) {
   const priceChange = formatPriceChange(token.price_change ?? token.price_change_24h);
   const age = formatAge(token.created_at);
   
+  const handleClick = () => {
+    window.open(`https://jup.ag/swap/SOL-${token.address}`, '_blank');
+  };
+  
   return (
-    <div className="bg-[#1a1035]/80 rounded-xl p-4 hover:bg-[#251545]/80 transition-all border border-purple-500/20">
-      <div className="flex items-start justify-between mb-3">
+    <div 
+      onClick={handleClick}
+      className="bg-[#1a1035] rounded-xl p-4 hover:bg-[#251545] transition-all border border-purple-500/20 cursor-pointer"
+    >
+      <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#0d0820] border border-purple-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-[#0d0820] border border-purple-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
             {token.logoURI ? (
-              <img src={token.logoURI} alt={token.symbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src={token.logoURI} alt={token.symbol} className="w-10 h-10 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
-              <span className="text-lg font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
+              <span className="text-sm font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
             )}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-lg">{token.symbol}</span>
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-white">{token.symbol}</span>
               <a 
                 href={`https://solscan.io/token/${token.address}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="text-purple-400 hover:text-white"
               >
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-purple-200/70 truncate max-w-[120px]">{token.name}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-purple-300/70 truncate max-w-[80px]">{token.name}</span>
               {age !== '-' && (
                 <span className="text-xs text-purple-400 font-medium">{age}</span>
               )}
@@ -113,81 +121,81 @@ function TokenCard({ token, onSwap }: { token: TokenData; onSwap: (token: TokenD
           </div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-bold text-white">{formatPrice(token.price)}</div>
+          <div className="font-bold text-white">{formatPrice(token.price)}</div>
           {priceChange && (
             <div className={`text-sm font-medium ${priceChange.color}`}>{priceChange.text}</div>
           )}
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
-          <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        <div>
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
             <TrendingUp className="h-3 w-3" />
             Market Cap
           </div>
-          <div className="text-white font-semibold text-sm">{formatNumber(token.market_cap)}</div>
+          <div className="text-white font-medium">{formatNumber(token.market_cap)}</div>
         </div>
-        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
-          <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
+        <div>
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
             <BarChart3 className="h-3 w-3" />
-            Volume
+            Volume 24h
           </div>
-          <div className="text-white font-semibold text-sm">{formatNumber(token.daily_volume)}</div>
+          <div className="text-white font-medium">{formatNumber(token.daily_volume)}</div>
         </div>
-        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
-          <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
+        <div>
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
             <Droplets className="h-3 w-3" />
             Liquidity
           </div>
-          <div className="text-white font-semibold text-sm">{formatNumber(token.liquidity)}</div>
+          <div className="text-white font-medium">{formatNumber(token.liquidity)}</div>
         </div>
-        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
-          <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
+        <div>
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
             <Activity className="h-3 w-3" />
             Transactions
           </div>
-          <div className="text-white font-semibold text-sm">{formatTransactions(token.num_transactions)}</div>
+          <div className="text-white font-medium">{formatTransactions(token.num_transactions)}</div>
         </div>
       </div>
       
-      <Button
-        size="sm"
-        className="w-full bg-purple-600 hover:bg-purple-700 text-white border border-purple-500/50"
-        onClick={() => onSwap(token)}
-        data-testid={`button-swap-token-${token.address}`}
-      >
-        <ArrowRightLeft className="h-4 w-4 mr-2" />
-        Swap on Jupiter
-      </Button>
+      {isRecent && (
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-purple-500/10">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">NEW</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">UNKNOWN</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">TRADABLE</span>
+        </div>
+      )}
     </div>
   );
 }
 
 function TokenListSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-[#1a1035]/80 rounded-xl p-4 border border-purple-500/20">
-          <div className="flex items-start justify-between mb-3">
+        <div key={i} className="bg-[#1a1035] rounded-xl p-4 border border-purple-500/20">
+          <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Skeleton className="w-12 h-12 rounded-full" />
+              <Skeleton className="w-10 h-10 rounded-full" />
               <div>
-                <Skeleton className="w-20 h-5 mb-1" />
-                <Skeleton className="w-28 h-4" />
+                <Skeleton className="w-16 h-4 mb-1" />
+                <Skeleton className="w-20 h-3" />
               </div>
             </div>
             <div>
-              <Skeleton className="w-16 h-5 mb-1" />
-              <Skeleton className="w-12 h-4" />
+              <Skeleton className="w-16 h-4 mb-1" />
+              <Skeleton className="w-12 h-3" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-2 gap-4">
             {[...Array(4)].map((_, j) => (
-              <Skeleton key={j} className="h-14 rounded-lg" />
+              <div key={j}>
+                <Skeleton className="w-16 h-3 mb-1" />
+                <Skeleton className="w-12 h-4" />
+              </div>
             ))}
           </div>
-          <Skeleton className="h-9 w-full rounded" />
         </div>
       ))}
     </div>
@@ -237,34 +245,47 @@ export function DexPanel() {
     refetchOnWindowFocus: 'always',
   });
 
-  const handleSwap = (token: TokenData) => {
-    const solMint = 'So11111111111111111111111111111111111111112';
-    window.open(`https://jup.ag/swap/${solMint}-${token.address}`, '_blank');
+  const getTokenCount = () => {
+    if (activeTab === 'trending') return trendingData?.tokens?.length || 0;
+    if (activeTab === 'top') return topData?.tokens?.length || 0;
+    return recentData?.tokens?.length || 0;
   };
 
   return (
-    <Card className="bg-transparent border-0">
-      <CardContent className="p-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')}>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <TabsList className="bg-[#1a1035]/80 border border-purple-500/20 w-fit">
-              <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
-                <Flame className="h-4 w-4 mr-2 text-orange-400" />
-                Trending
-              </TabsTrigger>
-              <TabsTrigger value="top" className="data-[state=active]:bg-purple-600">
-                <BarChart3 className="h-4 w-4 mr-2 text-green-400" />
-                Top
-              </TabsTrigger>
-              <TabsTrigger value="recent" className="data-[state=active]:bg-purple-600">
-                <Clock className="h-4 w-4 mr-2" />
-                New
-              </TabsTrigger>
-            </TabsList>
-            
+    <div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <TabsList className="bg-[#1a1035] border border-purple-500/20 w-fit">
+            <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
+              <Flame className="h-4 w-4 mr-2 text-orange-400" />
+              Trending
+            </TabsTrigger>
+            <TabsTrigger value="top" className="data-[state=active]:bg-purple-600">
+              <BarChart3 className="h-4 w-4 mr-2 text-green-400" />
+              Top
+            </TabsTrigger>
+            <TabsTrigger value="recent" className="data-[state=active]:bg-purple-600">
+              <Clock className="h-4 w-4 mr-2" />
+              New
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="flex items-center gap-2">
+            {activeTab === 'recent' && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-purple-500/30 hover:bg-purple-500/20 text-purple-300 bg-[#1a1035]"
+                onClick={() => refetchRecent()}
+                disabled={recentLoading}
+                data-testid="button-refresh-recent"
+              >
+                <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
             {(activeTab === 'trending' || activeTab === 'top') && (
               <Select value={interval} onValueChange={(v) => setInterval(v as typeof interval)}>
-                <SelectTrigger className="w-[80px] bg-[#1a1035]/80 border-purple-500/30" data-testid="select-interval">
+                <SelectTrigger className="w-[80px] bg-[#1a1035] border-purple-500/30" data-testid="select-interval">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -276,80 +297,72 @@ export function DexPanel() {
               </Select>
             )}
           </div>
+        </div>
 
-          <TabsContent value="trending" className="mt-0">
-            <div className="max-h-[600px] overflow-y-auto pr-1">
-              {trendingLoading ? (
-                <TokenListSkeleton />
-              ) : trendingData?.tokens?.length ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {trendingData.tokens.map((token) => (
-                    <TokenCard key={token.address} token={token} onSwap={handleSwap} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-400">
-                  No trending tokens found
-                </div>
-              )}
-            </div>
-          </TabsContent>
+        <p className="text-purple-300/60 text-sm mb-4">
+          Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : activeTab === 'top' ? 'top traded' : 'new'} tokens
+        </p>
 
-          <TabsContent value="top" className="mt-0">
-            <div className="max-h-[600px] overflow-y-auto pr-1">
-              {topLoading ? (
-                <TokenListSkeleton />
-              ) : topData?.tokens?.length ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {topData.tokens.map((token) => (
-                    <TokenCard key={token.address} token={token} onSwap={handleSwap} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-400">
-                  No top traded tokens found
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="recent" className="mt-0">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex-1 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-yellow-300 text-sm flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  New tokens with recently created pools. High risk - DYOR!
-                </p>
+        <TabsContent value="trending" className="mt-0">
+          <div className="max-h-[600px] overflow-y-auto pr-1">
+            {trendingLoading ? (
+              <TokenListSkeleton />
+            ) : trendingData?.tokens?.length ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {trendingData.tokens.map((token) => (
+                  <TokenCard key={token.address} token={token} />
+                ))}
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-purple-500/50 hover:bg-purple-500/20 text-purple-300"
-                onClick={() => refetchRecent()}
-                disabled={recentLoading}
-                data-testid="button-refresh-recent"
-              >
-                <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-            <div className="max-h-[550px] overflow-y-auto pr-1">
-              {recentLoading ? (
-                <TokenListSkeleton />
-              ) : recentData?.tokens?.length ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {recentData.tokens.map((token) => (
-                    <TokenCard key={token.address} token={token} onSwap={handleSwap} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-400">
-                  No recent tokens found
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+            ) : (
+              <div className="text-center py-8 text-purple-300/60">
+                No trending tokens found
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="top" className="mt-0">
+          <div className="max-h-[600px] overflow-y-auto pr-1">
+            {topLoading ? (
+              <TokenListSkeleton />
+            ) : topData?.tokens?.length ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {topData.tokens.map((token) => (
+                  <TokenCard key={token.address} token={token} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-purple-300/60">
+                No top traded tokens found
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="recent" className="mt-0">
+          <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <p className="text-yellow-300 text-sm flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              New tokens with recently created pools. High risk - DYOR!
+            </p>
+          </div>
+          <div className="max-h-[550px] overflow-y-auto pr-1">
+            {recentLoading ? (
+              <TokenListSkeleton />
+            ) : recentData?.tokens?.length ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recentData.tokens.map((token) => (
+                  <TokenCard key={token.address} token={token} isRecent />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-purple-300/60">
+                No recent tokens found
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
