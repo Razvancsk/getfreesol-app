@@ -135,7 +135,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         decimals: t.decimals,
         price: t.usdPrice,
         market_cap: t.mcap,
-        daily_volume: t.stats24h?.buyVolume + t.stats24h?.sellVolume || 0,
+        liquidity: t.liquidity,
+        daily_volume: (t.stats24h?.buyVolume || 0) + (t.stats24h?.sellVolume || 0),
+        num_transactions: (t.stats24h?.numBuys || 0) + (t.stats24h?.numSells || 0),
+        price_change_24h: t.stats24h?.priceChange,
         created_at: t.firstPool?.createdAt
       }));
       console.log(`Found ${tokens.length} recent tokens`);
@@ -183,18 +186,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const rawData = await response.json();
+      // Get stats based on interval
+      const getStats = (t: any, interval: string) => {
+        const statsKey = `stats${interval}` as keyof typeof t;
+        return t[statsKey] || t.stats24h || {};
+      };
       // Transform Jupiter API v2 response to frontend format
-      const tokens = (Array.isArray(rawData) ? rawData : []).map((t: any) => ({
-        address: t.id,
-        symbol: t.symbol,
-        name: t.name,
-        logoURI: t.icon,
-        decimals: t.decimals,
-        price: t.usdPrice,
-        market_cap: t.mcap,
-        daily_volume: t.stats24h?.buyVolume + t.stats24h?.sellVolume || 0,
-        organic_score: t.organicScore
-      }));
+      const tokens = (Array.isArray(rawData) ? rawData : []).map((t: any) => {
+        const stats = getStats(t, interval);
+        return {
+          address: t.id,
+          symbol: t.symbol,
+          name: t.name,
+          logoURI: t.icon,
+          decimals: t.decimals,
+          price: t.usdPrice,
+          market_cap: t.mcap,
+          liquidity: t.liquidity,
+          daily_volume: (stats?.buyVolume || 0) + (stats?.sellVolume || 0),
+          num_transactions: (stats?.numBuys || 0) + (stats?.numSells || 0),
+          price_change: stats?.priceChange,
+          organic_score: t.organicScore,
+          created_at: t.firstPool?.createdAt
+        };
+      });
       console.log(`Found ${tokens.length} ${category} tokens (${interval})`);
       res.json({ tokens });
     } catch (error) {

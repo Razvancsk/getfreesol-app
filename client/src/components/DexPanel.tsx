@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, ArrowRightLeft } from 'lucide-react';
+import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, ArrowRightLeft, Droplets, Activity } from 'lucide-react';
 
 interface TokenData {
   address: string;
@@ -16,6 +16,10 @@ interface TokenData {
   daily_volume?: number;
   price?: number;
   market_cap?: number;
+  liquidity?: number;
+  num_transactions?: number;
+  price_change?: number;
+  price_change_24h?: number;
   created_at?: string;
   organic_score?: number;
 }
@@ -25,7 +29,7 @@ interface TokenListResponse {
 }
 
 const formatNumber = (num: number | undefined) => {
-  if (!num) return '-';
+  if (num === undefined || num === null) return '-';
   if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
   if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
   if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
@@ -34,70 +38,156 @@ const formatNumber = (num: number | undefined) => {
 
 const formatPrice = (price: number | undefined) => {
   if (!price) return '-';
-  if (price < 0.00001) return `$${price.toExponential(2)}`;
-  if (price < 1) return `$${price.toFixed(6)}`;
+  if (price < 0.000001) return `$${price.toExponential(2)}`;
+  if (price < 0.01) return `$${price.toFixed(6)}`;
+  if (price < 1) return `$${price.toFixed(4)}`;
   return `$${price.toFixed(2)}`;
 };
 
-function TokenRow({ token, index, onSwap }: { token: TokenData; index: number; onSwap: (token: TokenData) => void }) {
+const formatAge = (createdAt: string | undefined) => {
+  if (!createdAt) return '-';
+  const now = new Date();
+  const created = new Date(createdAt);
+  const diffMs = now.getTime() - created.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSecs < 60) return `${diffSecs}s`;
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays < 30) return `${diffDays}d`;
+  return `${Math.floor(diffDays / 30)}mo`;
+};
+
+const formatPriceChange = (change: number | undefined) => {
+  if (change === undefined || change === null) return null;
+  const isPositive = change >= 0;
+  return {
+    text: `${isPositive ? '+' : ''}${change.toFixed(2)}%`,
+    color: isPositive ? 'text-green-400' : 'text-red-400'
+  };
+};
+
+const formatTransactions = (num: number | undefined) => {
+  if (num === undefined || num === null) return '-';
+  if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
+  if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
+  return num.toString();
+};
+
+function TokenCard({ token, onSwap }: { token: TokenData; onSwap: (token: TokenData) => void }) {
+  const priceChange = formatPriceChange(token.price_change ?? token.price_change_24h);
+  const age = formatAge(token.created_at);
+  
   return (
-    <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 transition-colors group">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <span className="text-slate-500 font-mono w-6 text-sm">{index + 1}</span>
-        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {token.logoURI ? (
-            <img src={token.logoURI} alt={token.symbol} className="w-8 h-8 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-          ) : (
-            <span className="text-xs font-bold text-slate-400">{token.symbol?.charAt(0)}</span>
+    <div className="bg-slate-800/60 rounded-xl p-4 hover:bg-slate-700/60 transition-colors border border-slate-700/50">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {token.logoURI ? (
+              <img src={token.logoURI} alt={token.symbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            ) : (
+              <span className="text-lg font-bold text-slate-400">{token.symbol?.charAt(0)}</span>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-lg">{token.symbol}</span>
+              <a 
+                href={`https://solscan.io/token/${token.address}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-400 truncate max-w-[120px]">{token.name}</span>
+              {age !== '-' && (
+                <span className="text-xs text-purple-400 font-medium">{age}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-bold text-white">{formatPrice(token.price)}</div>
+          {priceChange && (
+            <div className={`text-sm font-medium ${priceChange.color}`}>{priceChange.text}</div>
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-white truncate">{token.symbol}</span>
-            <a 
-              href={`https://solscan.io/token/${token.address}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <ExternalLink className="h-3 w-3 text-slate-400 hover:text-white" />
-            </a>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="bg-slate-900/50 rounded-lg p-2">
+          <div className="flex items-center gap-1 text-slate-400 text-xs mb-1">
+            <TrendingUp className="h-3 w-3" />
+            Market Cap
           </div>
-          <span className="text-xs text-slate-400 truncate block">{token.name}</span>
+          <div className="text-white font-semibold text-sm">{formatNumber(token.market_cap)}</div>
+        </div>
+        <div className="bg-slate-900/50 rounded-lg p-2">
+          <div className="flex items-center gap-1 text-slate-400 text-xs mb-1">
+            <BarChart3 className="h-3 w-3" />
+            Volume
+          </div>
+          <div className="text-white font-semibold text-sm">{formatNumber(token.daily_volume)}</div>
+        </div>
+        <div className="bg-slate-900/50 rounded-lg p-2">
+          <div className="flex items-center gap-1 text-slate-400 text-xs mb-1">
+            <Droplets className="h-3 w-3" />
+            Liquidity
+          </div>
+          <div className="text-white font-semibold text-sm">{formatNumber(token.liquidity)}</div>
+        </div>
+        <div className="bg-slate-900/50 rounded-lg p-2">
+          <div className="flex items-center gap-1 text-slate-400 text-xs mb-1">
+            <Activity className="h-3 w-3" />
+            Transactions
+          </div>
+          <div className="text-white font-semibold text-sm">{formatTransactions(token.num_transactions)}</div>
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="text-right hidden sm:block">
-          <div className="text-sm font-medium text-white">{formatPrice(token.price)}</div>
-          <div className="text-xs text-slate-400">Vol: {formatNumber(token.daily_volume)}</div>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="border-purple-500/50 hover:bg-purple-500/20 text-purple-300"
-          onClick={() => onSwap(token)}
-          data-testid={`button-swap-token-${token.address}`}
-        >
-          <ArrowRightLeft className="h-3 w-3 mr-1" />
-          Swap
-        </Button>
-      </div>
+      
+      <Button
+        size="sm"
+        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+        onClick={() => onSwap(token)}
+        data-testid={`button-swap-token-${token.address}`}
+      >
+        <ArrowRightLeft className="h-4 w-4 mr-2" />
+        Swap on Jupiter
+      </Button>
     </div>
   );
 }
 
 function TokenListSkeleton() {
   return (
-    <div className="space-y-2">
-      {[...Array(10)].map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-          <Skeleton className="w-6 h-4" />
-          <Skeleton className="w-8 h-8 rounded-full" />
-          <div className="flex-1">
-            <Skeleton className="w-20 h-4 mb-1" />
-            <Skeleton className="w-32 h-3" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-12 h-12 rounded-full" />
+              <div>
+                <Skeleton className="w-20 h-5 mb-1" />
+                <Skeleton className="w-28 h-4" />
+              </div>
+            </div>
+            <div>
+              <Skeleton className="w-16 h-5 mb-1" />
+              <Skeleton className="w-12 h-4" />
+            </div>
           </div>
-          <Skeleton className="w-16 h-8" />
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {[...Array(4)].map((_, j) => (
+              <Skeleton key={j} className="h-14 rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="h-9 w-full rounded" />
         </div>
       ))}
     </div>
@@ -108,7 +198,6 @@ export function DexPanel() {
   const [interval, setInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [activeTab, setActiveTab] = useState<'trending' | 'top' | 'recent'>('trending');
 
-  // Trending tokens (toptrending category)
   const { data: trendingData, isLoading: trendingLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/category', 'toptrending', interval],
     queryFn: async () => {
@@ -120,7 +209,6 @@ export function DexPanel() {
     refetchInterval: 30000,
   });
 
-  // Top traded tokens (toptraded category)
   const { data: topData, isLoading: topLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/category', 'toptraded', interval],
     queryFn: async () => {
@@ -132,7 +220,6 @@ export function DexPanel() {
     refetchInterval: 30000,
   });
 
-  // Recent tokens (newly created pools)
   const { data: recentData, isLoading: recentLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/recent'],
     queryFn: async () => {
@@ -185,13 +272,15 @@ export function DexPanel() {
           </div>
 
           <TabsContent value="trending" className="mt-0">
-            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+            <div className="max-h-[600px] overflow-y-auto pr-1">
               {trendingLoading ? (
                 <TokenListSkeleton />
               ) : trendingData?.tokens?.length ? (
-                trendingData.tokens.map((token, index) => (
-                  <TokenRow key={token.address} token={token} index={index} onSwap={handleSwap} />
-                ))
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {trendingData.tokens.map((token) => (
+                    <TokenCard key={token.address} token={token} onSwap={handleSwap} />
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-slate-400">
                   No trending tokens found
@@ -201,13 +290,15 @@ export function DexPanel() {
           </TabsContent>
 
           <TabsContent value="top" className="mt-0">
-            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+            <div className="max-h-[600px] overflow-y-auto pr-1">
               {topLoading ? (
                 <TokenListSkeleton />
               ) : topData?.tokens?.length ? (
-                topData.tokens.map((token, index) => (
-                  <TokenRow key={token.address} token={token} index={index} onSwap={handleSwap} />
-                ))
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {topData.tokens.map((token) => (
+                    <TokenCard key={token.address} token={token} onSwap={handleSwap} />
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-slate-400">
                   No top traded tokens found
@@ -223,13 +314,15 @@ export function DexPanel() {
                 New tokens with recently created pools. High risk - DYOR!
               </p>
             </div>
-            <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1">
+            <div className="max-h-[550px] overflow-y-auto pr-1">
               {recentLoading ? (
                 <TokenListSkeleton />
               ) : recentData?.tokens?.length ? (
-                recentData.tokens.map((token, index) => (
-                  <TokenRow key={token.address} token={token} index={index} onSwap={handleSwap} />
-                ))
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {recentData.tokens.map((token) => (
+                    <TokenCard key={token.address} token={token} onSwap={handleSwap} />
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-8 text-slate-400">
                   No recent tokens found
