@@ -748,18 +748,16 @@ export function DexPanel() {
         </TabsContent>
       </Tabs>
 
-      {/* Fixed Floating Swap Panel - Bottom Right - Matches SwapPanel design */}
+      {/* Fixed Floating Swap Panel - Bottom Right - Matches SwapPanel design exactly */}
       {selectedToken && (
-        <div className="fixed bottom-4 right-4 z-50 w-96 bg-[#1a1035] border border-purple-500/40 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="bg-gradient-to-br from-purple-800/40 to-purple-900/60 p-5">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
+        <div className="fixed bottom-4 right-4 z-50 w-96 bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-5 shadow-2xl">
+          <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold text-white">Swap</h2>
             <button 
               onClick={() => setSelectedToken(null)} 
-              className="text-purple-300 hover:text-white p-1"
+              className="p-2 text-purple-300 hover:text-white hover:bg-purple-800/30 rounded"
             >
-              <RefreshCw className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
@@ -770,14 +768,14 @@ export function DexPanel() {
                 <label className="text-sm text-purple-300">Pay:</label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-purple-400">
-                    ≈ {(balances[inputToken.address] || 0).toFixed(6)} {inputToken.symbol}
+                    ≈ {(balances[inputToken.address] || 0).toFixed(8)} {inputToken.symbol}
                   </span>
                   <button 
                     onClick={() => {
                       const balance = balances[inputToken.address] || 0;
                       setSolAmount((balance / 2).toString());
                     }}
-                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                    className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
                   >
                     HALF
                   </button>
@@ -789,7 +787,7 @@ export function DexPanel() {
                       const maxAmount = isSol ? Math.max(0, balance - feeReserve) : balance;
                       setSolAmount(maxAmount.toString());
                     }}
-                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                    className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
                   >
                     MAX
                   </button>
@@ -807,7 +805,7 @@ export function DexPanel() {
                   placeholder="0.00"
                   value={solAmount}
                   onChange={(e) => setSolAmount(e.target.value)}
-                  className="flex-1 bg-transparent border-none text-right text-white text-xl font-medium focus:outline-none"
+                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus:outline-none p-0"
                   data-testid="input-swap-pay-amount"
                 />
               </div>
@@ -827,9 +825,9 @@ export function DexPanel() {
             <div className="space-y-2">
               <label className="text-sm text-purple-300">Receive:</label>
               <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-                <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/30 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-3 py-2">
                   {selectedToken.logoURI && (
-                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-5 h-5 rounded-full" />
+                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" />
                   )}
                   <span className="text-white font-medium">{selectedToken.symbol}</span>
                 </div>
@@ -837,7 +835,7 @@ export function DexPanel() {
                   type="number"
                   placeholder="0.00"
                   readOnly
-                  className="flex-1 bg-transparent border-none text-right text-white text-xl font-medium focus:outline-none"
+                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus:outline-none p-0"
                   data-testid="input-swap-receive-amount"
                 />
               </div>
@@ -865,7 +863,6 @@ export function DexPanel() {
                 Connect your wallet to swap
               </p>
             )}
-          </div>
           </div>
         </div>
       )}
