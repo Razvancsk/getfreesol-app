@@ -650,38 +650,6 @@ export function DexPanel() {
               New
             </TabsTrigger>
           </TabsList>
-
-            {/* Swap-style Control Panel */}
-            <div className="flex items-center bg-[#1a1035] rounded-lg px-3 py-1.5 border border-purple-400/30">
-              <button
-                onClick={() => setSwapMode('buy')}
-                className={`px-3 py-1 rounded text-sm font-medium mr-1 ${swapMode === 'buy' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-green-400'}`}
-                data-testid="button-buy-mode"
-              >
-                Buy
-              </button>
-              <button
-                onClick={() => setSwapMode('sell')}
-                className={`px-3 py-1 rounded text-sm font-medium ${swapMode === 'sell' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-red-400'}`}
-                data-testid="button-sell-mode"
-              >
-                Sell
-              </button>
-              <div className="h-5 w-px bg-purple-500/40 mx-3" />
-              <input
-                type="text"
-                value={solAmount}
-                onChange={(e) => setSolAmount(e.target.value)}
-                className="w-10 bg-transparent text-white text-center outline-none"
-                data-testid="input-sol-amount-top"
-              />
-              <DexTokenSelector
-                token={inputToken}
-                onSelect={handleSelectInputToken}
-                balances={balances}
-                ownedTokens={ownedTokens}
-              />
-            </div>
           </div>
           
           <div className="flex items-center gap-2">
