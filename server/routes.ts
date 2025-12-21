@@ -108,6 +108,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter API - Get Recent Tokens (newly created pools)
+  app.get("/api/tokens/recent", async (req, res) => {
+    try {
+      const jupiterApiKey = process.env.JUPITER_API_KEY;
+      if (!jupiterApiKey) {
+        return res.status(500).json({ error: 'Jupiter API key not configured' });
+      }
+
+      const response = await fetch('https://api.jup.ag/tokens/v2/recent', {
+        headers: { 'x-api-key': jupiterApiKey }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch recent tokens:', response.status);
+        return res.status(response.status).json({ error: 'Failed to fetch recent tokens' });
+      }
+
+      const data = await response.json();
+      console.log(`Found ${data.tokens?.length || 0} recent tokens`);
+      res.json(data);
+    } catch (error) {
+      console.error('Recent tokens error:', error);
+      res.status(500).json({ error: 'Failed to fetch recent tokens' });
+    }
+  });
+
+  // Jupiter API - Get Trending/Top Tokens by category
+  app.get("/api/tokens/category/:category/:interval", async (req, res) => {
+    try {
+      const { category, interval } = req.params;
+      const { limit = '100' } = req.query;
+      
+      // Validate category: toporganicscore, toptraded, toptrending
+      const validCategories = ['toporganicscore', 'toptraded', 'toptrending'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ error: `Invalid category. Valid: ${validCategories.join(', ')}` });
+      }
+      
+      // Validate interval: 5m, 1h, 6h, 24h
+      const validIntervals = ['5m', '1h', '6h', '24h'];
+      if (!validIntervals.includes(interval)) {
+        return res.status(400).json({ error: `Invalid interval. Valid: ${validIntervals.join(', ')}` });
+      }
+
+      const jupiterApiKey = process.env.JUPITER_API_KEY;
+      if (!jupiterApiKey) {
+        return res.status(500).json({ error: 'Jupiter API key not configured' });
+      }
+
+      const url = `https://api.jup.ag/tokens/v2/${category}/${interval}?limit=${limit}`;
+      console.log(`Fetching ${category} tokens (${interval}):`, url);
+
+      const response = await fetch(url, {
+        headers: { 'x-api-key': jupiterApiKey }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to fetch ${category} tokens:`, response.status, errorText);
+        return res.status(response.status).json({ error: `Failed to fetch ${category} tokens` });
+      }
+
+      const data = await response.json();
+      console.log(`Found ${data.tokens?.length || 0} ${category} tokens (${interval})`);
+      res.json(data);
+    } catch (error) {
+      console.error('Category tokens error:', error);
+      res.status(500).json({ error: 'Failed to fetch category tokens' });
+    }
+  });
+
   // Helius API - Get wallet token balances
   app.get("/api/tokens/holdings/:walletAddress", async (req, res) => {
     try {
