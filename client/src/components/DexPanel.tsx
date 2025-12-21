@@ -436,7 +436,8 @@ export function DexPanel() {
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <TabsList className="bg-[#2a1f4e]/60 border border-purple-400/40 w-fit">
+          <div className="flex items-center gap-3">
+            <TabsList className="bg-[#2a1f4e]/60 border border-purple-400/40 w-fit">
             <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
               <Flame className="h-4 w-4 mr-2 text-orange-400" />
               Trending
@@ -450,6 +451,20 @@ export function DexPanel() {
               New
             </TabsTrigger>
           </TabsList>
+
+            {/* SOL Amount Input */}
+            <div className="flex items-center gap-2 bg-[#1a1035] rounded-lg px-3 py-2 border border-purple-400/30">
+              <Zap className="h-4 w-4 text-yellow-400" />
+              <input
+                type="text"
+                value={solAmount}
+                onChange={(e) => setSolAmount(e.target.value)}
+                className="w-12 bg-transparent text-white text-center outline-none"
+                data-testid="input-sol-amount-top"
+              />
+              <span className="text-purple-300/80 font-medium">SOL</span>
+            </div>
+          </div>
           
           <div className="flex items-center gap-2">
             {activeTab === 'recent' && (
