@@ -858,7 +858,7 @@ export function DexPanel() {
 
       {/* Fixed Floating Swap Panel - Bottom Right - Exact copy of SwapPanel design */}
       {selectedToken && (
-        <div className="fixed bottom-4 right-4 z-50 w-[340px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-xl border border-purple-500/30 p-4 shadow-2xl overflow-hidden">
+        <div className="fixed bottom-0 right-0 z-50 w-[340px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-tl-xl border border-purple-500/30 p-4 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-bold text-white">Swap</h2>
             <Button
