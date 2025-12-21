@@ -750,7 +750,7 @@ export function DexPanel() {
 
       {/* Fixed Floating Swap Panel - Bottom Right - Exact copy of SwapPanel design */}
       {selectedToken && (
-        <div className="fixed bottom-4 right-4 z-50 w-[420px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-2xl">
+        <div className="fixed bottom-4 right-4 z-50 w-[420px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-white">Swap</h2>
             <Button
@@ -795,21 +795,23 @@ export function DexPanel() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
                 <DexTokenSelector
                   token={inputToken}
                   onSelect={handleSelectInputToken}
                   balances={balances}
                   ownedTokens={ownedTokens}
                 />
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={solAmount}
-                  onChange={(e) => setSolAmount(e.target.value)}
-                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none p-0"
-                  data-testid="input-swap-pay-amount"
-                />
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={solAmount}
+                    onChange={(e) => setSolAmount(e.target.value)}
+                    className="w-full bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                    data-testid="input-swap-pay-amount"
+                  />
+                </div>
               </div>
             </div>
 
@@ -828,7 +830,7 @@ export function DexPanel() {
             {/* Receive Section */}
             <div className="space-y-2">
               <label className="text-sm text-purple-300">Receive:</label>
-              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
                 <button className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-3 py-2 transition-colors">
                   {selectedToken.logoURI && (
                     <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" />
@@ -836,13 +838,15 @@ export function DexPanel() {
                   <span className="text-white font-medium">{selectedToken.symbol}</span>
                   <ChevronDown className="w-4 h-4 text-purple-300" />
                 </button>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  readOnly
-                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none p-0"
-                  data-testid="input-swap-receive-amount"
-                />
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    readOnly
+                    className="w-full bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                    data-testid="input-swap-receive-amount"
+                  />
+                </div>
               </div>
             </div>
 
