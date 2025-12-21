@@ -748,20 +748,22 @@ export function DexPanel() {
         </TabsContent>
       </Tabs>
 
-      {/* Fixed Floating Swap Panel - Bottom Right - Matches SwapPanel design exactly */}
+      {/* Fixed Floating Swap Panel - Bottom Right - Exact copy of SwapPanel design */}
       {selectedToken && (
-        <div className="fixed bottom-4 right-4 z-50 w-96 bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-5 shadow-2xl">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-white">Swap</h2>
-            <button 
-              onClick={() => setSelectedToken(null)} 
-              className="p-2 text-purple-300 hover:text-white hover:bg-purple-800/30 rounded"
+        <div className="fixed bottom-4 right-4 z-50 w-[420px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-2xl">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white">Swap</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedToken(null)}
+              className="p-2 text-purple-300 hover:text-white hover:bg-purple-800/30"
             >
-              <X className="h-4 w-4" />
-            </button>
+              <RefreshCw className="h-5 w-5" />
+            </Button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Pay Section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -805,7 +807,7 @@ export function DexPanel() {
                   placeholder="0.00"
                   value={solAmount}
                   onChange={(e) => setSolAmount(e.target.value)}
-                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus:outline-none p-0"
+                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none p-0"
                   data-testid="input-swap-pay-amount"
                 />
               </div>
@@ -813,29 +815,32 @@ export function DexPanel() {
 
             {/* Swap Direction Button */}
             <div className="flex justify-center">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSwapMode(swapMode === 'buy' ? 'sell' : 'buy')}
-                className="text-purple-300 hover:text-white hover:bg-purple-800/30 rounded-full p-2"
+                className="text-purple-300 hover:text-white hover:bg-purple-800/30 rounded-full"
               >
                 <ArrowDownUp className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
 
             {/* Receive Section */}
             <div className="space-y-2">
               <label className="text-sm text-purple-300">Receive:</label>
               <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
-                <div className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-3 py-2">
+                <button className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-3 py-2 transition-colors">
                   {selectedToken.logoURI && (
                     <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" />
                   )}
                   <span className="text-white font-medium">{selectedToken.symbol}</span>
-                </div>
+                  <ChevronDown className="w-4 h-4 text-purple-300" />
+                </button>
                 <input
                   type="number"
                   placeholder="0.00"
                   readOnly
-                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus:outline-none p-0"
+                  className="flex-1 bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none p-0"
                   data-testid="input-swap-receive-amount"
                 />
               </div>
