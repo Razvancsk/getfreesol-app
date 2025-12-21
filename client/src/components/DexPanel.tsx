@@ -637,25 +637,41 @@ export function DexPanel() {
     refetchIntervalInBackground: false,
   });
 
-  // Search query for tokens
+  // Search query for tokens - fetch from Jupiter then get price data
   const { data: searchData, isLoading: searchLoading } = useQuery<{ tokens: TokenData[] }>({
     queryKey: ['token-search', searchQuery],
     queryFn: async () => {
+      // First get basic token info from Jupiter search
       const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(searchQuery)}`);
       const data = await response.json();
-      const tokens = Array.isArray(data) ? data.map((t: any) => ({
-        address: t.id,
-        symbol: t.symbol,
-        name: t.name,
-        decimals: t.decimals,
-        logoURI: t.icon,
-        price: 0,
-        price_change_24h: 0,
-        market_cap: 0,
-        daily_volume: 0,
-        liquidity: 0,
-        num_transactions: 0,
-      })) : [];
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        return { tokens: [] };
+      }
+
+      // Get token addresses to fetch price data
+      const addresses = data.slice(0, 20).map((t: any) => t.id);
+      
+      // Fetch price data from Jupiter price API
+      const priceResponse = await fetch(`https://api.jup.ag/price/v2?ids=${addresses.join(',')}`);
+      const priceData = await priceResponse.json();
+      
+      const tokens = data.slice(0, 20).map((t: any) => {
+        const price = priceData?.data?.[t.id]?.price || 0;
+        return {
+          address: t.id,
+          symbol: t.symbol,
+          name: t.name,
+          decimals: t.decimals,
+          logoURI: t.icon,
+          price: price,
+          price_change_24h: 0,
+          market_cap: 0,
+          daily_volume: 0,
+          liquidity: 0,
+          num_transactions: 0,
+        };
+      });
       return { tokens };
     },
     enabled: searchQuery.trim().length > 1,
