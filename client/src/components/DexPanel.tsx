@@ -383,6 +383,8 @@ export function DexPanel() {
   const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [quoteAmount, setQuoteAmount] = useState<string>('0.00');
+  const [isQuoting, setIsQuoting] = useState(false);
   const [inputToken, setInputToken] = useState<TokenInfo>({
     address: SOL_MINT,
     symbol: 'SOL',
@@ -441,11 +443,51 @@ export function DexPanel() {
 
   const handleSelectToken = (token: TokenData) => {
     setSelectedToken(token);
+    setQuoteAmount('0.00');
   };
 
   const handleSelectInputToken = (token: TokenInfo) => {
     setInputToken(token);
+    setQuoteAmount('0.00');
   };
+
+  // Fetch quote when amount or tokens change
+  useEffect(() => {
+    const fetchQuote = async () => {
+      if (!selectedToken || !solAmount || solAmount === '0' || solAmount === '') {
+        setQuoteAmount('0.00');
+        return;
+      }
+
+      const amount = parseFloat(solAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setQuoteAmount('0.00');
+        return;
+      }
+
+      setIsQuoting(true);
+      try {
+        const inputAmount = Math.floor(amount * Math.pow(10, inputToken.decimals || 9));
+        const quoteUrl = `https://api.jup.ag/quote/v1?inputMint=${inputToken.address}&outputMint=${selectedToken.address}&amount=${inputAmount}&slippageBps=300`;
+        
+        const response = await fetch(quoteUrl);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.outAmount) {
+            const outAmount = parseFloat(data.outAmount) / Math.pow(10, selectedToken.decimals || 6);
+            setQuoteAmount(outAmount.toFixed(6));
+          }
+        }
+      } catch (error) {
+        console.error('Quote error:', error);
+      } finally {
+        setIsQuoting(false);
+      }
+    };
+
+    const debounce = setTimeout(fetchQuote, 500);
+    return () => clearTimeout(debounce);
+  }, [solAmount, inputToken.address, selectedToken?.address]);
 
   const setAmountPercent = (percent: number) => {
     if (percent === 100) {
@@ -905,13 +947,20 @@ export function DexPanel() {
                   <ChevronDown className="w-3 h-3 text-purple-300" />
                 </button>
                 <div className="flex-1 min-w-0">
-                  <input
-                    type="number"
-                    placeholder="0.00"
-                    readOnly
-                    className="w-full bg-transparent border-none text-right text-white text-lg font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
-                    data-testid="input-swap-receive-amount"
-                  />
+                  {isQuoting ? (
+                    <div className="text-right text-purple-300 text-lg">
+                      <Loader2 className="w-4 h-4 animate-spin inline" />
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="0.00"
+                      value={quoteAmount}
+                      readOnly
+                      className="w-full bg-transparent border-none text-right text-white text-lg font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                      data-testid="input-swap-receive-amount"
+                    />
+                  )}
                 </div>
               </div>
             </div>
