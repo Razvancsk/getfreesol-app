@@ -159,14 +159,14 @@ function DexTokenSelector({
       </button>
 
       {showSearchModal && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowSearchModal(false)} />
-          <div className="relative bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 w-full h-full flex flex-col overflow-hidden">
+          <div className="relative bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 w-full max-w-md mx-4 rounded-xl border border-purple-500/40 shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-purple-500/30">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-white font-semibold text-lg">Search Tokens</h3>
                 <button onClick={() => setShowSearchModal(false)} className="text-purple-200 hover:text-white">
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="relative">
@@ -183,7 +183,7 @@ function DexTokenSelector({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="max-h-80 overflow-y-auto p-2">
               {isSearching ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-purple-300" />
