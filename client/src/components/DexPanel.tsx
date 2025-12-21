@@ -726,12 +726,6 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="recent" className="mt-0 w-full">
-          <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <p className="text-yellow-300 text-sm flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              New tokens with recently created pools. High risk - DYOR!
-            </p>
-          </div>
           <div>
             {recentLoading ? (
               <TokenListSkeleton />
