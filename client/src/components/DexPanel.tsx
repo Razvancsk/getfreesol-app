@@ -222,7 +222,7 @@ export function DexPanel() {
   const { data: trendingData, isLoading: trendingLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/category', 'toptrending', interval],
     queryFn: async () => {
-      const res = await fetch(`/api/tokens/category/toptrending/${interval}?limit=50`);
+      const res = await fetch(`/api/tokens/category/toptrending/${interval}?limit=100`);
       if (!res.ok) throw new Error('Failed to fetch tokens');
       return res.json();
     },
@@ -233,7 +233,7 @@ export function DexPanel() {
   const { data: topData, isLoading: topLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/category', 'toptraded', interval],
     queryFn: async () => {
-      const res = await fetch(`/api/tokens/category/toptraded/${interval}?limit=50`);
+      const res = await fetch(`/api/tokens/category/toptraded/${interval}?limit=100`);
       if (!res.ok) throw new Error('Failed to fetch tokens');
       return res.json();
     },
