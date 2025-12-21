@@ -1,11 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { VersionedTransaction } from '@solana/web3.js';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, Droplets, Activity, RefreshCw } from 'lucide-react';
+import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, Droplets, Activity, RefreshCw, Loader2, Zap } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
+const SOL_PRESETS = [0.1, 1, 2, 3];
 
 interface TokenData {
   address: string;
@@ -89,18 +95,28 @@ const formatTransactions = (num: number | undefined) => {
   return num.toString();
 };
 
-function TokenCard({ token, isRecent, now }: { token: TokenData; isRecent?: boolean; now: Date }) {
+function TokenCard({ token, isRecent, now, onSwap, isSwapping }: { 
+  token: TokenData; 
+  isRecent?: boolean; 
+  now: Date;
+  onSwap?: (token: TokenData) => void;
+  isSwapping?: boolean;
+}) {
   const priceChange = formatPriceChange(token.price_change ?? token.price_change_24h);
   const age = useMemo(() => formatAge(token.created_at, now), [token.created_at, now]);
   
   const handleClick = () => {
-    window.open(`https://jup.ag/swap/SOL-${token.address}`, '_blank');
+    if (onSwap) {
+      onSwap(token);
+    } else {
+      window.open(`https://jup.ag/swap/SOL-${token.address}`, '_blank');
+    }
   };
   
   return (
     <div 
       onClick={handleClick}
-      className="bg-[#2a1f4e]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer"
+      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -217,7 +233,129 @@ function TokenListSkeleton() {
 export function DexPanel() {
   const [interval, setInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [activeTab, setActiveTab] = useState<'trending' | 'top' | 'recent'>('trending');
+  const [solAmount, setSolAmount] = useState<number>(0.1);
+  const [isSwapping, setIsSwapping] = useState(false);
+  const [swappingToken, setSwappingToken] = useState<string | null>(null);
   const now = useLiveNow(1000); // Update every second for live age
+  
+  const { publicKey, signTransaction } = useWallet();
+  const { connection } = useConnection();
+  const { toast } = useToast();
+
+  const handleSwap = async (token: TokenData) => {
+    if (!publicKey || !signTransaction) {
+      toast({
+        title: 'Wallet Not Connected',
+        description: 'Please connect your wallet to swap tokens',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSwapping(true);
+    setSwappingToken(token.address);
+
+    try {
+      const inputAmount = Math.floor(solAmount * 1e9);
+      
+      const orderUrl = `/api/jupiter/ultra/order?inputMint=${SOL_MINT}&outputMint=${token.address}&amount=${inputAmount}&taker=${publicKey.toString()}`;
+      console.log('Fetching swap quote:', orderUrl);
+      
+      const response = await fetch(orderUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMsg = 'Unable to get swap quote';
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error?.includes?.('Failed to get quotes')) {
+            errorMsg = 'No swap route available. Try a different token.';
+          } else {
+            errorMsg = errorData.error || errorMsg;
+          }
+        } catch {
+          errorMsg = errorText || response.statusText;
+        }
+        throw new Error(errorMsg);
+      }
+      
+      const quote = await response.json();
+      
+      if (!quote || !quote.outAmount) {
+        throw new Error('No swap route available');
+      }
+      
+      if (!quote.transaction || !quote.requestId) {
+        throw new Error('Invalid order: missing transaction');
+      }
+
+      console.log('Signing swap transaction...');
+      
+      const transactionBuf = Buffer.from(quote.transaction, 'base64');
+      const transaction = VersionedTransaction.deserialize(transactionBuf);
+      const signedTransaction = await signTransaction(transaction);
+      const signedBase64 = Buffer.from(signedTransaction.serialize()).toString('base64');
+
+      console.log('Executing swap...');
+      
+      const executeResponse = await fetch('/api/jupiter/ultra/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signedTransaction: signedBase64,
+          requestId: quote.requestId
+        })
+      });
+
+      if (!executeResponse.ok) {
+        let errorMessage = 'Failed to execute swap';
+        try {
+          const errorData = await executeResponse.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch {
+          errorMessage = await executeResponse.text();
+        }
+        throw new Error(errorMessage);
+      }
+
+      const executeData = await executeResponse.json();
+      
+      if (executeData.status === "Success") {
+        const signature = executeData.signature;
+        const outAmount = parseFloat(quote.outAmount) / Math.pow(10, token.decimals || 9);
+        
+        toast({
+          title: 'Swap Successful!',
+          description: (
+            <div className="space-y-1">
+              <p>Bought {outAmount.toFixed(4)} {token.symbol} for {solAmount} SOL</p>
+              <a 
+                href={`https://solscan.io/tx/${signature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-white hover:text-green-100 underline"
+              >
+                View Transaction
+              </a>
+            </div>
+          ),
+          className: 'bg-green-600 text-white border-green-500',
+        });
+      } else {
+        throw new Error(executeData.error || 'Swap failed on-chain');
+      }
+    } catch (error: any) {
+      console.error('Swap error:', error);
+      toast({
+        title: 'Swap Failed',
+        description: error.message || 'Failed to complete swap',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSwapping(false);
+      setSwappingToken(null);
+    }
+  };
 
   const { data: trendingData, isLoading: trendingLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/category', 'toptrending', interval],
@@ -314,6 +452,32 @@ export function DexPanel() {
           </div>
         </div>
 
+        {/* SOL Amount Selector */}
+        <div className="flex items-center gap-2 mb-4 bg-[#1a1035] rounded-lg p-2 border border-purple-400/30 w-fit">
+          <Zap className="h-4 w-4 text-yellow-400" />
+          {SOL_PRESETS.map((amount) => (
+            <Button
+              key={amount}
+              size="sm"
+              variant={solAmount === amount ? "default" : "ghost"}
+              className={`px-3 py-1 ${solAmount === amount 
+                ? 'bg-purple-600 text-white' 
+                : 'text-purple-300 hover:bg-purple-500/20'}`}
+              onClick={() => setSolAmount(amount)}
+              data-testid={`button-sol-${amount}`}
+            >
+              {amount === 0.1 ? '0.1' : amount}
+            </Button>
+          ))}
+          <span className="text-white font-medium ml-1">SOL</span>
+          {isSwapping && (
+            <div className="flex items-center gap-2 ml-2 text-purple-300">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Swapping...</span>
+            </div>
+          )}
+        </div>
+
         {activeTab !== 'recent' && (
           <p className="text-purple-300/60 text-sm mb-4">
             Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : 'top traded'} tokens
@@ -327,7 +491,7 @@ export function DexPanel() {
             ) : trendingData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {trendingData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} />
+                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSwap} isSwapping={swappingToken === token.address} />
                 ))}
               </div>
             ) : (
@@ -345,7 +509,7 @@ export function DexPanel() {
             ) : topData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {topData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} />
+                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSwap} isSwapping={swappingToken === token.address} />
                 ))}
               </div>
             ) : (
@@ -369,7 +533,7 @@ export function DexPanel() {
             ) : recentData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} isRecent />
+                  <TokenCard key={token.address} token={token} now={now} isRecent onSwap={handleSwap} isSwapping={swappingToken === token.address} />
                 ))}
               </div>
             ) : (
