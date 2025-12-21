@@ -82,10 +82,10 @@ function TokenCard({ token, onSwap }: { token: TokenData; onSwap: (token: TokenD
   const age = formatAge(token.created_at);
   
   return (
-    <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl p-4 hover:from-purple-700/30 hover:to-purple-800/40 transition-all border border-purple-500/20">
+    <div className="bg-[#1a1035]/80 rounded-xl p-4 hover:bg-[#251545]/80 transition-all border border-purple-500/20">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-purple-900/50 border border-purple-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-12 h-12 rounded-full bg-[#0d0820] border border-purple-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
             {token.logoURI ? (
               <img src={token.logoURI} alt={token.symbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
@@ -121,28 +121,28 @@ function TokenCard({ token, onSwap }: { token: TokenData; onSwap: (token: TokenD
       </div>
       
       <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="bg-purple-900/30 border border-purple-500/10 rounded-lg p-2">
+        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
           <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
             <TrendingUp className="h-3 w-3" />
             Market Cap
           </div>
           <div className="text-white font-semibold text-sm">{formatNumber(token.market_cap)}</div>
         </div>
-        <div className="bg-purple-900/30 border border-purple-500/10 rounded-lg p-2">
+        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
           <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
             <BarChart3 className="h-3 w-3" />
             Volume
           </div>
           <div className="text-white font-semibold text-sm">{formatNumber(token.daily_volume)}</div>
         </div>
-        <div className="bg-purple-900/30 border border-purple-500/10 rounded-lg p-2">
+        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
           <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
             <Droplets className="h-3 w-3" />
             Liquidity
           </div>
           <div className="text-white font-semibold text-sm">{formatNumber(token.liquidity)}</div>
         </div>
-        <div className="bg-purple-900/30 border border-purple-500/10 rounded-lg p-2">
+        <div className="bg-[#0d0820]/60 border border-purple-500/10 rounded-lg p-2">
           <div className="flex items-center gap-1 text-purple-300/70 text-xs mb-1">
             <Activity className="h-3 w-3" />
             Transactions
@@ -168,7 +168,7 @@ function TokenListSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 rounded-xl p-4 border border-purple-500/20">
+        <div key={i} className="bg-[#1a1035]/80 rounded-xl p-4 border border-purple-500/20">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
               <Skeleton className="w-12 h-12 rounded-full" />
@@ -243,11 +243,11 @@ export function DexPanel() {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border-purple-500/20">
+    <Card className="bg-transparent border-0">
       <CardContent className="p-4">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <TabsList className="bg-purple-900/50 border border-purple-500/20 w-fit">
+            <TabsList className="bg-[#1a1035]/80 border border-purple-500/20 w-fit">
               <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
                 <Flame className="h-4 w-4 mr-2 text-orange-400" />
                 Trending
@@ -264,7 +264,7 @@ export function DexPanel() {
             
             {(activeTab === 'trending' || activeTab === 'top') && (
               <Select value={interval} onValueChange={(v) => setInterval(v as typeof interval)}>
-                <SelectTrigger className="w-[80px] bg-purple-900/50 border-purple-500/30" data-testid="select-interval">
+                <SelectTrigger className="w-[80px] bg-[#1a1035]/80 border-purple-500/30" data-testid="select-interval">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
