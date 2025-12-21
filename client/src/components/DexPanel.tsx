@@ -688,7 +688,7 @@ export function DexPanel() {
         )}
 
         <TabsContent value="trending" className="mt-0">
-          <div className="max-h-[600px] overflow-y-auto pr-1">
+          <div>
             {trendingLoading ? (
               <TokenListSkeleton />
             ) : trendingData?.tokens?.length ? (
@@ -706,7 +706,7 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="top" className="mt-0">
-          <div className="max-h-[600px] overflow-y-auto pr-1">
+          <div>
             {topLoading ? (
               <TokenListSkeleton />
             ) : topData?.tokens?.length ? (
@@ -730,7 +730,7 @@ export function DexPanel() {
               New tokens with recently created pools. High risk - DYOR!
             </p>
           </div>
-          <div className="max-h-[550px] overflow-y-auto pr-1">
+          <div>
             {recentLoading ? (
               <TokenListSkeleton />
             ) : recentData?.tokens?.length ? (
