@@ -827,6 +827,16 @@ export function DexPanel() {
           </div>
 
           <div className="p-4 space-y-4">
+            {/* Token Selector - Pay with */}
+            <div className="flex items-center justify-center">
+              <DexTokenSelector
+                token={inputToken}
+                onSelect={handleSelectInputToken}
+                balances={balances}
+                ownedTokens={ownedTokens}
+              />
+            </div>
+
             {/* Amount Input */}
             <div>
               <div className="flex items-center gap-2 bg-[#2a1f4e]/60 rounded-lg p-3 border border-purple-500/20">
