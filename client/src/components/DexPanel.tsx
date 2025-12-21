@@ -241,25 +241,24 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
   token: TokenData; 
   isRecent?: boolean; 
   now: Date;
-  onSwap?: (token: TokenData, mode: 'buy' | 'sell') => void;
+  onSwap?: (token: TokenData) => void;
   isSwapping?: boolean;
 }) {
   const priceChange = formatPriceChange(token.price_change ?? token.price_change_24h);
   const age = useMemo(() => formatAge(token.created_at, now), [token.created_at, now]);
   
-  const handleBuy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onSwap) onSwap(token, 'buy');
-  };
-  
-  const handleSell = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onSwap) onSwap(token, 'sell');
+  const handleClick = () => {
+    if (onSwap) {
+      onSwap(token);
+    } else {
+      window.open(`https://jup.ag/swap/SOL-${token.address}`, '_blank');
+    }
   };
   
   return (
     <div 
-      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+      onClick={handleClick}
+      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -337,26 +336,6 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">TRADABLE</span>
         </div>
       )}
-      
-      {/* Buy/Sell Buttons */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-purple-500/20">
-        <button
-          onClick={handleBuy}
-          className="flex items-center gap-1 px-4 py-1.5 text-sm font-medium text-purple-300 hover:text-green-400 transition-colors"
-          data-testid={`button-buy-${token.address}`}
-        >
-          <Zap className="h-3.5 w-3.5" />
-          Buy
-        </button>
-        <button
-          onClick={handleSell}
-          className="flex items-center gap-1 px-4 py-1.5 text-sm font-medium text-purple-300 hover:text-red-400 transition-colors"
-          data-testid={`button-sell-${token.address}`}
-        >
-          <TrendingUp className="h-3.5 w-3.5" />
-          Sell
-        </button>
-      </div>
     </div>
   );
 }
@@ -671,6 +650,38 @@ export function DexPanel() {
               New
             </TabsTrigger>
           </TabsList>
+
+            {/* Swap-style Control Panel */}
+            <div className="flex items-center bg-[#1a1035] rounded-lg px-3 py-1.5 border border-purple-400/30">
+              <button
+                onClick={() => setSwapMode('buy')}
+                className={`px-3 py-1 rounded text-sm font-medium mr-1 ${swapMode === 'buy' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-green-400'}`}
+                data-testid="button-buy-mode"
+              >
+                Buy
+              </button>
+              <button
+                onClick={() => setSwapMode('sell')}
+                className={`px-3 py-1 rounded text-sm font-medium ${swapMode === 'sell' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-red-400'}`}
+                data-testid="button-sell-mode"
+              >
+                Sell
+              </button>
+              <div className="h-5 w-px bg-purple-500/40 mx-3" />
+              <input
+                type="text"
+                value={solAmount}
+                onChange={(e) => setSolAmount(e.target.value)}
+                className="w-10 bg-transparent text-white text-center outline-none"
+                data-testid="input-sol-amount-top"
+              />
+              <DexTokenSelector
+                token={inputToken}
+                onSelect={handleSelectInputToken}
+                balances={balances}
+                ownedTokens={ownedTokens}
+              />
+            </div>
           </div>
           
           <div className="flex items-center gap-2">
