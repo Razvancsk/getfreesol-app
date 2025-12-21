@@ -258,20 +258,20 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
   return (
     <div 
       onClick={handleClick}
-      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-xl p-6 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-xl p-5 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
     >
-      <div className="flex items-start justify-between mb-5">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-[#1a1035] border border-purple-400/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-[#1a1035] border border-purple-400/30 flex items-center justify-center overflow-hidden flex-shrink-0">
             {token.logoURI ? (
-              <img src={token.logoURI} alt={token.symbol} className="w-14 h-14 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src={token.logoURI} alt={token.symbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
-              <span className="text-lg font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
+              <span className="text-base font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-lg">{token.symbol}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-white text-base">{token.symbol}</span>
               <a 
                 href={`https://solscan.io/token/${token.address}`} 
                 target="_blank" 
@@ -279,61 +279,61 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
                 onClick={(e) => e.stopPropagation()}
                 className="text-purple-400 hover:text-white"
               >
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-purple-300/70 truncate max-w-[100px]">{token.name}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-purple-300/70 truncate max-w-[90px]">{token.name}</span>
               {age !== '-' && (
-                <span className="text-sm text-purple-400 font-medium">{age}</span>
+                <span className="text-xs text-purple-400 font-medium whitespace-nowrap">{age}</span>
               )}
             </div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="font-bold text-white text-xl">{formatPrice(token.price)}</div>
+        <div className="text-right flex-shrink-0">
+          <div className="font-bold text-white text-lg">{formatPrice(token.price)}</div>
           {priceChange && (
-            <div className={`text-base font-medium ${priceChange.color}`}>{priceChange.text}</div>
+            <div className={`text-sm font-medium ${priceChange.color}`}>{priceChange.text}</div>
           )}
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-base">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         <div>
-          <div className="text-purple-300/60 text-sm flex items-center gap-1">
-            <TrendingUp className="h-4 w-4" />
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
+            <TrendingUp className="h-3.5 w-3.5" />
             Market Cap
           </div>
-          <div className="text-white font-semibold text-lg">{formatNumber(token.market_cap)}</div>
+          <div className="text-white font-semibold">{formatNumber(token.market_cap)}</div>
         </div>
         <div>
-          <div className="text-purple-300/60 text-sm flex items-center gap-1">
-            <BarChart3 className="h-4 w-4" />
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
+            <BarChart3 className="h-3.5 w-3.5" />
             Volume 24h
           </div>
-          <div className="text-white font-semibold text-lg">{formatNumber(token.daily_volume)}</div>
+          <div className="text-white font-semibold">{formatNumber(token.daily_volume)}</div>
         </div>
         <div>
-          <div className="text-purple-300/60 text-sm flex items-center gap-1">
-            <Droplets className="h-4 w-4" />
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
+            <Droplets className="h-3.5 w-3.5" />
             Liquidity
           </div>
-          <div className="text-white font-semibold text-lg">{formatNumber(token.liquidity)}</div>
+          <div className="text-white font-semibold">{formatNumber(token.liquidity)}</div>
         </div>
         <div>
-          <div className="text-purple-300/60 text-sm flex items-center gap-1">
-            <Activity className="h-4 w-4" />
+          <div className="text-purple-300/60 text-xs flex items-center gap-1">
+            <Activity className="h-3.5 w-3.5" />
             Transactions
           </div>
-          <div className="text-white font-semibold text-lg">{formatTransactions(token.num_transactions)}</div>
+          <div className="text-white font-semibold">{formatTransactions(token.num_transactions)}</div>
         </div>
       </div>
       
       {isRecent && (
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-purple-500/10">
-          <span className="text-xs font-semibold px-3 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30">NEW</span>
-          <span className="text-xs font-semibold px-3 py-1 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">UNKNOWN</span>
-          <span className="text-xs font-semibold px-3 py-1 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">TRADABLE</span>
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-purple-500/10">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">NEW</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">UNKNOWN</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">TRADABLE</span>
         </div>
       )}
     </div>
@@ -634,7 +634,7 @@ export function DexPanel() {
   return (
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
             <TabsList className="bg-[#2a1f4e]/60 border border-purple-400/40 w-fit">
             <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
@@ -682,7 +682,7 @@ export function DexPanel() {
         </div>
 
         {activeTab !== 'recent' && (
-          <p className="text-purple-300/60 text-sm mb-4">
+          <p className="text-purple-300/60 text-sm mb-2">
             Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : 'top traded'} tokens
           </p>
         )}
@@ -692,7 +692,7 @@ export function DexPanel() {
             {trendingLoading ? (
               <TokenListSkeleton />
             ) : trendingData?.tokens?.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {trendingData.tokens.map((token) => (
                   <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
                 ))}
