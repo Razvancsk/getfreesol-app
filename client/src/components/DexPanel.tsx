@@ -380,6 +380,7 @@ export function DexPanel() {
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [inputToken, setInputToken] = useState<TokenInfo>({
     address: SOL_MINT,
     symbol: 'SOL',
@@ -618,8 +619,32 @@ export function DexPanel() {
     gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: 'always',
-    refetchInterval: 5000, // Auto-refresh every 5 seconds for live data
-    refetchIntervalInBackground: false, // Pause when tab not focused
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
+  });
+
+  // Search query for tokens
+  const { data: searchData, isLoading: searchLoading } = useQuery<{ tokens: TokenData[] }>({
+    queryKey: ['token-search', searchQuery],
+    queryFn: async () => {
+      const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(searchQuery)}`);
+      const data = await response.json();
+      const tokens = Array.isArray(data) ? data.map((t: any) => ({
+        address: t.id,
+        symbol: t.symbol,
+        name: t.name,
+        decimals: t.decimals,
+        logoURI: t.icon,
+        price: 0,
+        price_change_24h: 0,
+        market_cap: 0,
+        daily_volume: 0,
+        liquidity: 0,
+        num_transactions: 0,
+      })) : [];
+      return { tokens };
+    },
+    enabled: searchQuery.trim().length > 1,
   });
 
   const getTokenCount = () => {
@@ -678,13 +703,59 @@ export function DexPanel() {
           </div>
         </div>
 
-        {activeTab !== 'recent' && (
-          <p className="text-purple-300/60 text-sm mb-2">
-            Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : 'top traded'} tokens
-          </p>
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tokens by name or address..."
+            className="w-full bg-[#2a1f4e]/60 border border-purple-400/40 rounded-lg py-3 pl-11 pr-4 text-white placeholder-purple-300/60 outline-none focus:border-purple-400"
+            data-testid="input-token-search"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-300 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Search Results */}
+        {searchQuery.trim().length > 1 && (
+          <div className="mb-4">
+            <p className="text-purple-300/60 text-sm mb-2">
+              {searchLoading ? 'Searching...' : `Found ${searchData?.tokens?.length || 0} tokens`}
+            </p>
+            {searchLoading ? (
+              <TokenListSkeleton />
+            ) : searchData?.tokens?.length ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {searchData.tokens.map((token) => (
+                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-purple-300/60">
+                No tokens found for "{searchQuery}"
+              </div>
+            )}
+          </div>
         )}
 
-        <TabsContent value="trending" className="mt-0 w-full">
+        {/* Only show tabs content when not searching */}
+        {searchQuery.trim().length <= 1 && (
+          <>
+            {activeTab !== 'recent' && (
+              <p className="text-purple-300/60 text-sm mb-2">
+                Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : 'top traded'} tokens
+              </p>
+            )}
+
+            <TabsContent value="trending" className="mt-0 w-full">
           <div>
             {trendingLoading ? (
               <TokenListSkeleton />
@@ -737,6 +808,8 @@ export function DexPanel() {
             )}
           </div>
         </TabsContent>
+          </>
+        )}
       </Tabs>
 
       {/* Fixed Floating Swap Panel - Bottom Right - Exact copy of SwapPanel design */}
