@@ -454,7 +454,7 @@ export function DexPanel() {
   // Fetch quote when amount or tokens change
   useEffect(() => {
     const fetchQuote = async () => {
-      if (!selectedToken || !solAmount || solAmount === '0' || solAmount === '') {
+      if (!selectedToken || !solAmount || solAmount === '0' || solAmount === '' || !publicKey) {
         setQuoteAmount('0.00');
         return;
       }
@@ -468,9 +468,9 @@ export function DexPanel() {
       setIsQuoting(true);
       try {
         const inputAmount = Math.floor(amount * Math.pow(10, inputToken.decimals || 9));
-        const quoteUrl = `https://api.jup.ag/quote/v1?inputMint=${inputToken.address}&outputMint=${selectedToken.address}&amount=${inputAmount}&slippageBps=300`;
+        const orderUrl = `/api/jupiter/ultra/order?inputMint=${inputToken.address}&outputMint=${selectedToken.address}&amount=${inputAmount}&taker=${publicKey.toString()}`;
         
-        const response = await fetch(quoteUrl);
+        const response = await fetch(orderUrl);
         if (response.ok) {
           const data = await response.json();
           if (data.outAmount) {
@@ -487,7 +487,7 @@ export function DexPanel() {
 
     const debounce = setTimeout(fetchQuote, 500);
     return () => clearTimeout(debounce);
-  }, [solAmount, inputToken.address, selectedToken?.address]);
+  }, [solAmount, inputToken.address, selectedToken?.address, publicKey]);
 
   const setAmountPercent = (percent: number) => {
     if (percent === 100) {
