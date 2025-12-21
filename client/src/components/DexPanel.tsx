@@ -651,23 +651,8 @@ export function DexPanel() {
             </TabsTrigger>
           </TabsList>
 
-            {/* Token Selector with Amount and Buy/Sell - all in one card */}
+            {/* Buy/Sell and Token Selector with Amount - all in one card */}
             <div className="flex items-center bg-[#1a1035] rounded-lg px-3 py-1.5 border border-purple-400/30">
-              <Zap className="h-4 w-4 text-yellow-400 mr-2" />
-              <input
-                type="text"
-                value={solAmount}
-                onChange={(e) => setSolAmount(e.target.value)}
-                className="w-10 bg-transparent text-white text-center outline-none"
-                data-testid="input-sol-amount-top"
-              />
-              <DexTokenSelector
-                token={inputToken}
-                onSelect={handleSelectInputToken}
-                balances={balances}
-                ownedTokens={ownedTokens}
-              />
-              <div className="h-5 w-px bg-purple-500/40 mx-3" />
               <button
                 onClick={() => setSwapMode('buy')}
                 className={`px-3 py-1 rounded text-sm font-medium mr-1 ${swapMode === 'buy' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-green-400'}`}
@@ -682,6 +667,21 @@ export function DexPanel() {
               >
                 Sell
               </button>
+              <div className="h-5 w-px bg-purple-500/40 mx-3" />
+              <Zap className="h-4 w-4 text-yellow-400 mr-2" />
+              <input
+                type="text"
+                value={solAmount}
+                onChange={(e) => setSolAmount(e.target.value)}
+                className="w-10 bg-transparent text-white text-center outline-none"
+                data-testid="input-sol-amount-top"
+              />
+              <DexTokenSelector
+                token={inputToken}
+                onSelect={handleSelectInputToken}
+                balances={balances}
+                ownedTokens={ownedTokens}
+              />
             </div>
           </div>
           
