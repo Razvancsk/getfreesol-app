@@ -854,22 +854,7 @@ export function DexPanel() {
               </Button>
             </div>
 
-            {/* Buy/Sell Toggle */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => setSwapMode('buy')}
-                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${swapMode === 'buy' ? 'bg-green-600 text-white' : 'bg-purple-800/50 text-purple-300'}`}
-              >
-                Buy {selectedToken.symbol}
-              </button>
-              <button
-                onClick={() => setSwapMode('sell')}
-                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${swapMode === 'sell' ? 'bg-red-600 text-white' : 'bg-purple-800/50 text-purple-300'}`}
-              >
-                Sell {selectedToken.symbol}
-              </button>
-            </div>
-
+            
           <div className="space-y-3">
             {/* Pay Section */}
             <div className="space-y-1">
