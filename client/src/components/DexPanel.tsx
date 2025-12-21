@@ -228,7 +228,8 @@ export function DexPanel() {
       return res.json();
     },
     enabled: activeTab === 'recent',
-    refetchInterval: 60000,
+    refetchInterval: 10000, // Refresh every 10 seconds for live updates
+    staleTime: 5000, // Consider data stale after 5 seconds
   });
 
   const handleSwap = (token: TokenData) => {
