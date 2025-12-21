@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { VersionedTransaction } from '@solana/web3.js';
@@ -158,8 +159,8 @@ function DexTokenSelector({
         <ChevronDown className="w-4 h-4 text-purple-300" />
       </button>
 
-      {showSearchModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      {showSearchModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowSearchModal(false)} />
           <div className="relative bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 w-full max-w-md mx-4 rounded-xl border border-purple-500/40 shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-purple-500/30">
@@ -231,7 +232,8 @@ function DexTokenSelector({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
