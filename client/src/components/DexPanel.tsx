@@ -17,6 +17,7 @@ interface TokenData {
   price?: number;
   market_cap?: number;
   created_at?: string;
+  organic_score?: number;
 }
 
 interface TokenListResponse {
@@ -104,22 +105,41 @@ function TokenListSkeleton() {
 }
 
 export function DexPanel() {
-  const [category, setCategory] = useState<'toptrending' | 'toptraded' | 'toporganicscore'>('toptrending');
   const [interval, setInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
-  const [activeTab, setActiveTab] = useState<'trending' | 'recent'>('trending');
+  const [activeTab, setActiveTab] = useState<'trending' | 'top' | 'recent'>('trending');
 
-  const { data: categoryData, isLoading: categoryLoading } = useQuery<TokenListResponse>({
-    queryKey: ['/api/tokens/category', category, interval],
+  // Trending tokens (toptrending category)
+  const { data: trendingData, isLoading: trendingLoading } = useQuery<TokenListResponse>({
+    queryKey: ['/api/tokens/category', 'toptrending', interval],
     queryFn: async () => {
-      const res = await fetch(`/api/tokens/category/${category}/${interval}?limit=50`);
+      const res = await fetch(`/api/tokens/category/toptrending/${interval}?limit=50`);
       if (!res.ok) throw new Error('Failed to fetch tokens');
       return res.json();
     },
+    enabled: activeTab === 'trending',
     refetchInterval: 30000,
   });
 
+  // Top traded tokens (toptraded category)
+  const { data: topData, isLoading: topLoading } = useQuery<TokenListResponse>({
+    queryKey: ['/api/tokens/category', 'toptraded', interval],
+    queryFn: async () => {
+      const res = await fetch(`/api/tokens/category/toptraded/${interval}?limit=50`);
+      if (!res.ok) throw new Error('Failed to fetch tokens');
+      return res.json();
+    },
+    enabled: activeTab === 'top',
+    refetchInterval: 30000,
+  });
+
+  // Recent tokens (newly created pools)
   const { data: recentData, isLoading: recentLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/recent'],
+    queryFn: async () => {
+      const res = await fetch('/api/tokens/recent');
+      if (!res.ok) throw new Error('Failed to fetch tokens');
+      return res.json();
+    },
     enabled: activeTab === 'recent',
     refetchInterval: 60000,
   });
@@ -132,73 +152,65 @@ export function DexPanel() {
   return (
     <Card className="bg-slate-900/80 border-slate-700">
       <CardContent className="p-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'recent')}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <TabsList className="bg-slate-800 w-fit">
               <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Trending & Top
+                <Flame className="h-4 w-4 mr-2 text-orange-400" />
+                Trending
+              </TabsTrigger>
+              <TabsTrigger value="top" className="data-[state=active]:bg-purple-600">
+                <BarChart3 className="h-4 w-4 mr-2 text-green-400" />
+                Top
               </TabsTrigger>
               <TabsTrigger value="recent" className="data-[state=active]:bg-purple-600">
                 <Clock className="h-4 w-4 mr-2" />
-                New Tokens
+                New
               </TabsTrigger>
             </TabsList>
             
-            {activeTab === 'trending' && (
-              <div className="flex items-center gap-2">
-                <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
-                  <SelectTrigger className="w-[140px] bg-slate-800 border-slate-600" data-testid="select-category">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="toptrending">
-                      <div className="flex items-center gap-2">
-                        <Flame className="h-3 w-3 text-orange-400" />
-                        Trending
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="toptraded">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-3 w-3 text-green-400" />
-                        Top Traded
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="toporganicscore">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-3 w-3 text-blue-400" />
-                        Organic
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Select value={interval} onValueChange={(v) => setInterval(v as typeof interval)}>
-                  <SelectTrigger className="w-[80px] bg-slate-800 border-slate-600" data-testid="select-interval">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5m">5m</SelectItem>
-                    <SelectItem value="1h">1h</SelectItem>
-                    <SelectItem value="6h">6h</SelectItem>
-                    <SelectItem value="24h">24h</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {(activeTab === 'trending' || activeTab === 'top') && (
+              <Select value={interval} onValueChange={(v) => setInterval(v as typeof interval)}>
+                <SelectTrigger className="w-[80px] bg-slate-800 border-slate-600" data-testid="select-interval">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5m">5m</SelectItem>
+                  <SelectItem value="1h">1h</SelectItem>
+                  <SelectItem value="6h">6h</SelectItem>
+                  <SelectItem value="24h">24h</SelectItem>
+                </SelectContent>
+              </Select>
             )}
           </div>
 
           <TabsContent value="trending" className="mt-0">
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-              {categoryLoading ? (
+              {trendingLoading ? (
                 <TokenListSkeleton />
-              ) : categoryData?.tokens?.length ? (
-                categoryData.tokens.map((token, index) => (
+              ) : trendingData?.tokens?.length ? (
+                trendingData.tokens.map((token, index) => (
                   <TokenRow key={token.address} token={token} index={index} onSwap={handleSwap} />
                 ))
               ) : (
                 <div className="text-center py-8 text-slate-400">
-                  No tokens found
+                  No trending tokens found
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="top" className="mt-0">
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+              {topLoading ? (
+                <TokenListSkeleton />
+              ) : topData?.tokens?.length ? (
+                topData.tokens.map((token, index) => (
+                  <TokenRow key={token.address} token={token} index={index} onSwap={handleSwap} />
+                ))
+              ) : (
+                <div className="text-center py-8 text-slate-400">
+                  No top traded tokens found
                 </div>
               )}
             </div>

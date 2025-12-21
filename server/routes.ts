@@ -125,9 +125,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(response.status).json({ error: 'Failed to fetch recent tokens' });
       }
 
-      const data = await response.json();
-      console.log(`Found ${data.tokens?.length || 0} recent tokens`);
-      res.json(data);
+      const rawData = await response.json();
+      // Transform Jupiter API v2 response to frontend format
+      const tokens = (Array.isArray(rawData) ? rawData : []).map((t: any) => ({
+        address: t.id,
+        symbol: t.symbol,
+        name: t.name,
+        logoURI: t.icon,
+        decimals: t.decimals,
+        price: t.usdPrice,
+        market_cap: t.mcap,
+        daily_volume: t.stats24h?.buyVolume + t.stats24h?.sellVolume || 0,
+        created_at: t.firstPool?.createdAt
+      }));
+      console.log(`Found ${tokens.length} recent tokens`);
+      res.json({ tokens });
     } catch (error) {
       console.error('Recent tokens error:', error);
       res.status(500).json({ error: 'Failed to fetch recent tokens' });
@@ -170,9 +182,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(response.status).json({ error: `Failed to fetch ${category} tokens` });
       }
 
-      const data = await response.json();
-      console.log(`Found ${data.tokens?.length || 0} ${category} tokens (${interval})`);
-      res.json(data);
+      const rawData = await response.json();
+      // Transform Jupiter API v2 response to frontend format
+      const tokens = (Array.isArray(rawData) ? rawData : []).map((t: any) => ({
+        address: t.id,
+        symbol: t.symbol,
+        name: t.name,
+        logoURI: t.icon,
+        decimals: t.decimals,
+        price: t.usdPrice,
+        market_cap: t.mcap,
+        daily_volume: t.stats24h?.buyVolume + t.stats24h?.sellVolume || 0,
+        organic_score: t.organicScore
+      }));
+      console.log(`Found ${tokens.length} ${category} tokens (${interval})`);
+      res.json({ tokens });
     } catch (error) {
       console.error('Category tokens error:', error);
       res.status(500).json({ error: 'Failed to fetch category tokens' });
