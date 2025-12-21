@@ -651,7 +651,7 @@ export function DexPanel() {
             </TabsTrigger>
           </TabsList>
 
-            {/* Token Selector with Amount */}
+            {/* Token Selector with Amount and Buy/Sell */}
             <div className="flex items-center gap-2 bg-[#1a1035] rounded-lg px-2 py-1 border border-purple-400/30">
               <Zap className="h-4 w-4 text-yellow-400" />
               <input
@@ -667,6 +667,24 @@ export function DexPanel() {
                 balances={balances}
                 ownedTokens={ownedTokens}
               />
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                onClick={() => { setSwapMode('buy'); }}
+                className={`px-3 py-1 ${swapMode === 'buy' ? 'bg-green-600 hover:bg-green-500' : 'bg-[#2a1f4e]/60 hover:bg-green-600/50'} text-white`}
+                data-testid="button-buy-mode"
+              >
+                Buy
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => { setSwapMode('sell'); }}
+                className={`px-3 py-1 ${swapMode === 'sell' ? 'bg-red-600 hover:bg-red-500' : 'bg-[#2a1f4e]/60 hover:bg-red-600/50'} text-white`}
+                data-testid="button-sell-mode"
+              >
+                Sell
+              </Button>
             </div>
           </div>
           
