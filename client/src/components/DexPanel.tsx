@@ -256,6 +256,8 @@ export function DexPanel() {
     gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: 'always',
+    refetchInterval: 5000, // Auto-refresh every 5 seconds for live data
+    refetchIntervalInBackground: false, // Pause when tab not focused
   });
 
   const getTokenCount = () => {
