@@ -258,16 +258,16 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
   return (
     <div 
       onClick={handleClick}
-      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-2xl p-7 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-2xl p-6 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
     >
       {/* Header with logo, name, price */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[#1a1035] border border-purple-400/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-16 h-16 rounded-full bg-[#1a1035] border-2 border-purple-400/40 flex items-center justify-center overflow-hidden flex-shrink-0">
             {token.logoURI ? (
               <img src={token.logoURI} alt={token.symbol} className="w-16 h-16 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
-              <span className="text-xl font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
+              <span className="text-2xl font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
             )}
           </div>
           <div>
@@ -278,20 +278,15 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
                 target="_blank" 
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="text-purple-400 hover:text-white"
+                className="text-blue-400 hover:text-white"
               >
                 <ExternalLink className="h-4 w-4" />
               </a>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-purple-300/70 break-words">{token.name}</span>
-              {age !== '-' && (
-                <span className="text-sm text-purple-400 font-medium">{age}</span>
-              )}
-            </div>
+            <div className="text-sm text-purple-300/70">{token.name}</div>
           </div>
         </div>
-        <div className="text-right flex-shrink-0">
+        <div className="text-right">
           <div className="font-bold text-white text-2xl">{formatPrice(token.price)}</div>
           {priceChange && (
             <div className={`text-base font-medium ${priceChange.color}`}>{priceChange.text}</div>
@@ -299,35 +294,35 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
         </div>
       </div>
       
-      {/* Stats - stacked vertically for full visibility */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="text-purple-300/60 text-base flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+      {/* Stats - 2x2 grid like reference */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
+            <span className="text-yellow-500">💰</span>
             Market Cap
           </div>
-          <div className="text-white font-semibold text-lg">{formatNumber(token.market_cap)}</div>
+          <div className="text-white font-bold text-lg">{formatNumber(token.market_cap)}</div>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="text-purple-300/60 text-base flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+        <div>
+          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
+            <BarChart3 className="h-4 w-4 text-purple-400" />
             Volume 24h
           </div>
-          <div className="text-white font-semibold text-lg">{formatNumber(token.daily_volume)}</div>
+          <div className="text-white font-bold text-lg">{formatNumber(token.daily_volume)}</div>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="text-purple-300/60 text-base flex items-center gap-2">
-            <Droplets className="h-5 w-5" />
+        <div>
+          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
+            <Droplets className="h-4 w-4 text-blue-400" />
             Liquidity
           </div>
-          <div className="text-white font-semibold text-lg">{formatNumber(token.liquidity)}</div>
+          <div className="text-white font-bold text-lg">{formatNumber(token.liquidity)}</div>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="text-purple-300/60 text-base flex items-center gap-2">
-            <Activity className="h-5 w-5" />
+        <div>
+          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
+            <Activity className="h-4 w-4 text-green-400" />
             Transactions
           </div>
-          <div className="text-white font-semibold text-lg">{formatTransactions(token.num_transactions)}</div>
+          <div className="text-white font-bold text-lg">{formatTransactions(token.num_transactions)}</div>
         </div>
       </div>
       
