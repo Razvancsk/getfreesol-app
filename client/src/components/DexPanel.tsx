@@ -239,6 +239,7 @@ function DexTokenSelector({
   );
 }
 
+// Mobile-friendly token card matching reference design
 function TokenCard({ token, isRecent, now, onSwap, isSwapping }: { 
   token: TokenData; 
   isRecent?: boolean; 
@@ -260,81 +261,50 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
   return (
     <div 
       onClick={handleClick}
-      className={`bg-[#2a1f4e]/60 backdrop-blur-sm rounded-2xl p-6 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+      className={`bg-[#2a1f4e]/80 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/30 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
     >
-      {/* Header with logo, name, price */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[#1a1035] border-2 border-purple-400/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+      {/* Header row - logo, name, price */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-[#1a1035] border border-purple-400/40 flex items-center justify-center overflow-hidden flex-shrink-0">
             {token.logoURI ? (
-              <img src={token.logoURI} alt={token.symbol} className="w-16 h-16 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src={token.logoURI} alt={token.symbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
-              <span className="text-2xl font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
+              <span className="text-lg font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
             )}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-xl">{token.symbol}</span>
-              <a 
-                href={`https://solscan.io/token/${token.address}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-blue-400 hover:text-white"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-            <div className="text-sm text-purple-300/70">{token.name}</div>
+            <div className="font-bold text-white text-base">{token.symbol}</div>
+            <div className="text-xs text-purple-300/70 truncate max-w-[120px]">{token.name}</div>
           </div>
         </div>
         <div className="text-right">
-          <div className="font-bold text-white text-2xl">{formatPrice(token.price)}</div>
+          <div className="font-bold text-white text-lg">{formatPrice(token.price)}</div>
           {priceChange && (
-            <div className={`text-base font-medium ${priceChange.color}`}>{priceChange.text}</div>
+            <div className={`text-sm font-medium ${priceChange.color}`}>{priceChange.text}</div>
           )}
         </div>
       </div>
       
-      {/* Stats - 2x2 grid like reference */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
-            <span className="text-yellow-500">💰</span>
-            Market Cap
-          </div>
-          <div className="text-white font-bold text-lg">{formatNumber(token.market_cap)}</div>
+      {/* Stats - 2x2 grid */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-purple-300/60">Volume</span>
+          <span className="text-white font-medium">{formatNumber(token.daily_volume)}</span>
         </div>
-        <div>
-          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
-            <BarChart3 className="h-4 w-4 text-purple-400" />
-            Volume 24h
-          </div>
-          <div className="text-white font-bold text-lg">{formatNumber(token.daily_volume)}</div>
+        <div className="flex justify-between">
+          <span className="text-purple-300/60">Market Cap</span>
+          <span className="text-white font-medium">{formatNumber(token.market_cap)}</span>
         </div>
-        <div>
-          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
-            <Droplets className="h-4 w-4 text-blue-400" />
-            Liquidity
-          </div>
-          <div className="text-white font-bold text-lg">{formatNumber(token.liquidity)}</div>
+        <div className="flex justify-between">
+          <span className="text-purple-300/60">Liquidity</span>
+          <span className="text-white font-medium">{formatNumber(token.liquidity)}</span>
         </div>
-        <div>
-          <div className="text-purple-300/70 text-sm flex items-center gap-2 mb-1">
-            <Activity className="h-4 w-4 text-green-400" />
-            Transactions
-          </div>
-          <div className="text-white font-bold text-lg">{formatTransactions(token.num_transactions)}</div>
+        <div className="flex justify-between">
+          <span className="text-purple-300/60">Txns</span>
+          <span className="text-white font-medium">{formatTransactions(token.num_transactions)}</span>
         </div>
       </div>
-      
-      {isRecent && (
-        <div className="flex items-center gap-3 mt-5 pt-5 border-t border-purple-500/10">
-          <span className="text-xs font-semibold px-3 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30">NEW</span>
-          <span className="text-xs font-semibold px-3 py-1 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">UNKNOWN</span>
-          <span className="text-xs font-semibold px-3 py-1 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">TRADABLE</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -700,62 +670,15 @@ export function DexPanel() {
   return (
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')} className="w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-          <div className="flex items-center gap-3">
-            <TabsList className="bg-[#2a1f4e]/60 border border-purple-400/40 w-fit">
-            <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
-              <Flame className="h-4 w-4 mr-2 text-orange-400" />
-              Trending
-            </TabsTrigger>
-            <TabsTrigger value="top" className="data-[state=active]:bg-purple-600">
-              <BarChart3 className="h-4 w-4 mr-2 text-green-400" />
-              Top
-            </TabsTrigger>
-            <TabsTrigger value="recent" className="data-[state=active]:bg-purple-600">
-              <Clock className="h-4 w-4 mr-2" />
-              New
-            </TabsTrigger>
-          </TabsList>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {activeTab === 'recent' && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-purple-400/40 hover:bg-purple-500/20 text-purple-300 bg-[#2a1f4e]/60"
-                onClick={() => refetchRecent()}
-                disabled={recentLoading}
-                data-testid="button-refresh-recent"
-              >
-                <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
-              </Button>
-            )}
-            {(activeTab === 'trending' || activeTab === 'top') && (
-              <Select value={interval} onValueChange={(v) => setInterval(v as typeof interval)}>
-                <SelectTrigger className="w-[80px] bg-[#2a1f4e]/60 border-purple-400/40" data-testid="select-interval">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5m">5m</SelectItem>
-                  <SelectItem value="1h">1h</SelectItem>
-                  <SelectItem value="6h">6h</SelectItem>
-                  <SelectItem value="24h">24h</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative mb-4">
+        {/* Search Bar - Top on mobile like reference */}
+        <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tokens by name or address..."
-            className="w-full bg-[#2a1f4e]/60 border border-purple-400/40 rounded-lg py-3 pl-11 pr-4 text-white placeholder-purple-300/60 outline-none focus:border-purple-400"
+            placeholder="Search by name, symbol, or address..."
+            className="w-full bg-[#2a1f4e]/60 border border-purple-400/40 rounded-full py-2.5 pl-11 pr-4 text-white placeholder-purple-300/60 outline-none focus:border-purple-400 text-sm"
             data-testid="input-token-search"
           />
           {searchQuery && (
@@ -768,6 +691,50 @@ export function DexPanel() {
           )}
         </div>
 
+        {/* Tabs row - mobile friendly */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <TabsList className="bg-transparent border-0 p-0 gap-2">
+            <TabsTrigger value="trending" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+              TRENDING
+            </TabsTrigger>
+            <TabsTrigger value="top" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+              Top
+            </TabsTrigger>
+            <TabsTrigger value="recent" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+              NEW
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Time filter row */}
+        <div className="flex items-center gap-2 mb-4">
+          {(activeTab === 'trending' || activeTab === 'top') && (
+            <div className="flex items-center gap-1 bg-[#2a1f4e]/60 rounded-full p-1">
+              {['5m', '1h', '6h', '24h'].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setInterval(t as typeof interval)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${interval === t ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          {activeTab === 'recent' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-purple-300 hover:text-white"
+              onClick={() => refetchRecent()}
+              disabled={recentLoading}
+              data-testid="button-refresh-recent"
+            >
+              <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
+        </div>
+
         {/* Search Results */}
         {searchQuery.trim().length > 1 && (
           <div className="mb-4">
@@ -777,7 +744,7 @@ export function DexPanel() {
             {searchLoading ? (
               <TokenListSkeleton />
             ) : searchData?.tokens?.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="space-y-3">
                 {searchData.tokens.map((token) => (
                   <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
                 ))}
@@ -800,15 +767,13 @@ export function DexPanel() {
             )}
 
             <TabsContent value="trending" className="mt-0 w-full">
-          <div>
+          <div className="space-y-3">
             {trendingLoading ? (
               <TokenListSkeleton />
             ) : trendingData?.tokens?.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {trendingData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
-                ))}
-              </div>
+              trendingData.tokens.map((token) => (
+                <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
+              ))
             ) : (
               <div className="text-center py-8 text-purple-300/60">
                 No trending tokens found
@@ -818,15 +783,13 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="top" className="mt-0 w-full">
-          <div>
+          <div className="space-y-3">
             {topLoading ? (
               <TokenListSkeleton />
             ) : topData?.tokens?.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {topData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
-                ))}
-              </div>
+              topData.tokens.map((token) => (
+                <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
+              ))
             ) : (
               <div className="text-center py-8 text-purple-300/60">
                 No top traded tokens found
@@ -836,15 +799,13 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="recent" className="mt-0 w-full">
-          <div>
+          <div className="space-y-3">
             {recentLoading ? (
               <TokenListSkeleton />
             ) : recentData?.tokens?.length ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recentData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} isRecent onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
-                ))}
-              </div>
+              recentData.tokens.map((token) => (
+                <TokenCard key={token.address} token={token} now={now} isRecent onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
+              ))
             ) : (
               <div className="text-center py-8 text-purple-300/60">
                 No recent tokens found
@@ -856,20 +817,42 @@ export function DexPanel() {
         )}
       </Tabs>
 
-      {/* Fixed Floating Swap Panel - Bottom Right - Exact copy of SwapPanel design */}
-      {selectedToken && (
-        <div className="fixed bottom-0 right-0 z-50 w-[340px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-tl-xl border border-purple-500/30 p-4 shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-white">Swap</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedToken(null)}
-              className="p-1 text-purple-300 hover:text-white hover:bg-purple-800/30 h-6 w-6"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Slide-up Swap Panel - Mobile friendly bottom sheet */}
+      {selectedToken && createPortal(
+        <div className="fixed inset-0 z-[100]">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSelectedToken(null)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-b from-purple-900 to-purple-950 rounded-t-3xl p-5 pb-8 animate-in slide-in-from-bottom duration-300">
+            {/* Drag handle */}
+            <div className="w-12 h-1 bg-purple-400/40 rounded-full mx-auto mb-4" />
+            
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white">Trade {selectedToken.symbol}</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedToken(null)}
+                className="p-1 text-purple-300 hover:text-white hover:bg-purple-800/30 h-8 w-8"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Buy/Sell Toggle */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setSwapMode('buy')}
+                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${swapMode === 'buy' ? 'bg-green-600 text-white' : 'bg-purple-800/50 text-purple-300'}`}
+              >
+                Buy {selectedToken.symbol}
+              </button>
+              <button
+                onClick={() => setSwapMode('sell')}
+                className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${swapMode === 'sell' ? 'bg-red-600 text-white' : 'bg-purple-800/50 text-purple-300'}`}
+              >
+                Sell {selectedToken.symbol}
+              </button>
+            </div>
 
           <div className="space-y-3">
             {/* Pay Section */}
@@ -989,6 +972,8 @@ export function DexPanel() {
             )}
           </div>
         </div>
+        </div>,
+        document.body
       )}
     </div>
   );
