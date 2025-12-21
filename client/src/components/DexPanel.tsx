@@ -314,9 +314,11 @@ export function DexPanel() {
           </div>
         </div>
 
-        <p className="text-purple-300/60 text-sm mb-4">
-          Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : activeTab === 'top' ? 'top traded' : 'new'} tokens
-        </p>
+        {activeTab !== 'recent' && (
+          <p className="text-purple-300/60 text-sm mb-4">
+            Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : 'top traded'} tokens
+          </p>
+        )}
 
         <TabsContent value="trending" className="mt-0">
           <div className="max-h-[600px] overflow-y-auto pr-1">
