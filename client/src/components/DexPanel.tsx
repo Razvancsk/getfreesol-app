@@ -668,7 +668,6 @@ export function DexPanel() {
                 Sell
               </button>
               <div className="h-5 w-px bg-purple-500/40 mx-3" />
-              <Zap className="h-4 w-4 text-yellow-400 mr-2" />
               <input
                 type="text"
                 value={solAmount}
