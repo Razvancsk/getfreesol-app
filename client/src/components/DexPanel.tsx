@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, ArrowRightLeft, Droplets, Activity } from 'lucide-react';
+import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, ArrowRightLeft, Droplets, Activity, RefreshCw } from 'lucide-react';
 
 interface TokenData {
   address: string;
@@ -220,16 +220,21 @@ export function DexPanel() {
     refetchInterval: 30000,
   });
 
-  const { data: recentData, isLoading: recentLoading } = useQuery<TokenListResponse>({
+  const { data: recentData, isLoading: recentLoading, refetch: refetchRecent } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/recent'],
     queryFn: async () => {
-      const res = await fetch('/api/tokens/recent');
+      const res = await fetch('/api/tokens/recent', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       if (!res.ok) throw new Error('Failed to fetch tokens');
       return res.json();
     },
     enabled: activeTab === 'recent',
-    refetchInterval: 10000, // Refresh every 10 seconds for live updates
-    staleTime: 5000, // Consider data stale after 5 seconds
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
   });
 
   const handleSwap = (token: TokenData) => {
@@ -309,11 +314,23 @@ export function DexPanel() {
           </TabsContent>
 
           <TabsContent value="recent" className="mt-0">
-            <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-yellow-300 text-sm flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                New tokens with recently created pools. High risk - DYOR!
-              </p>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex-1 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-300 text-sm flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  New tokens with recently created pools. High risk - DYOR!
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-purple-500/50 hover:bg-purple-500/20 text-purple-300"
+                onClick={() => refetchRecent()}
+                disabled={recentLoading}
+                data-testid="button-refresh-recent"
+              >
+                <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
             <div className="max-h-[550px] overflow-y-auto pr-1">
               {recentLoading ? (

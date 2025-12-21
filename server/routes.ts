@@ -142,6 +142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         created_at: t.firstPool?.createdAt
       }));
       console.log(`Found ${tokens.length} recent tokens`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
       res.json({ tokens });
     } catch (error) {
       console.error('Recent tokens error:', error);
