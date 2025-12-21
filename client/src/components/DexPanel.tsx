@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,9 +44,8 @@ const formatPrice = (price: number | undefined) => {
   return `$${price.toFixed(2)}`;
 };
 
-const formatAge = (createdAt: string | undefined) => {
+const formatAge = (createdAt: string | undefined, now: Date) => {
   if (!createdAt) return '-';
-  const now = new Date();
   const created = new Date(createdAt);
   const diffMs = now.getTime() - created.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -60,6 +59,19 @@ const formatAge = (createdAt: string | undefined) => {
   if (diffDays < 30) return `${diffDays}d`;
   return `${Math.floor(diffDays / 30)}mo`;
 };
+
+function useLiveNow(intervalMs: number = 1000) {
+  const [now, setNow] = useState(() => new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+  
+  return now;
+}
 
 const formatPriceChange = (change: number | undefined) => {
   if (change === undefined || change === null) return null;
@@ -77,9 +89,9 @@ const formatTransactions = (num: number | undefined) => {
   return num.toString();
 };
 
-function TokenCard({ token, isRecent }: { token: TokenData; isRecent?: boolean }) {
+function TokenCard({ token, isRecent, now }: { token: TokenData; isRecent?: boolean; now: Date }) {
   const priceChange = formatPriceChange(token.price_change ?? token.price_change_24h);
-  const age = formatAge(token.created_at);
+  const age = useMemo(() => formatAge(token.created_at, now), [token.created_at, now]);
   
   const handleClick = () => {
     window.open(`https://jup.ag/swap/SOL-${token.address}`, '_blank');
@@ -205,6 +217,7 @@ function TokenListSkeleton() {
 export function DexPanel() {
   const [interval, setInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [activeTab, setActiveTab] = useState<'trending' | 'top' | 'recent'>('trending');
+  const now = useLiveNow(1000); // Update every second for live age
 
   const { data: trendingData, isLoading: trendingLoading } = useQuery<TokenListResponse>({
     queryKey: ['/api/tokens/category', 'toptrending', interval],
@@ -310,7 +323,7 @@ export function DexPanel() {
             ) : trendingData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {trendingData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} />
+                  <TokenCard key={token.address} token={token} now={now} />
                 ))}
               </div>
             ) : (
@@ -328,7 +341,7 @@ export function DexPanel() {
             ) : topData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {topData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} />
+                  <TokenCard key={token.address} token={token} now={now} />
                 ))}
               </div>
             ) : (
@@ -352,7 +365,7 @@ export function DexPanel() {
             ) : recentData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} isRecent />
+                  <TokenCard key={token.address} token={token} now={now} isRecent />
                 ))}
               </div>
             ) : (
