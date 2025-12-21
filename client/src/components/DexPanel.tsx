@@ -233,16 +233,33 @@ function TokenListSkeleton() {
 export function DexPanel() {
   const [interval, setInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
   const [activeTab, setActiveTab] = useState<'trending' | 'top' | 'recent'>('trending');
-  const [solAmount, setSolAmount] = useState<number>(0.1);
+  const [solAmount, setSolAmount] = useState<string>('0.1');
   const [isSwapping, setIsSwapping] = useState(false);
   const [swappingToken, setSwappingToken] = useState<string | null>(null);
+  const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
+  const [swapMode, setSwapMode] = useState<'buy' | 'sell'>('buy');
   const now = useLiveNow(1000); // Update every second for live age
   
   const { publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
   const { toast } = useToast();
 
-  const handleSwap = async (token: TokenData) => {
+  const handleSelectToken = (token: TokenData) => {
+    setSelectedToken(token);
+  };
+
+  const setAmountPercent = (percent: number) => {
+    if (percent === 100) {
+      setSolAmount('MAX');
+    } else {
+      const baseAmount = 1; // 1 SOL base
+      setSolAmount((baseAmount * percent / 100).toString());
+    }
+  };
+
+  const executeSwap = async () => {
+    if (!selectedToken) return;
+    
     if (!publicKey || !signTransaction) {
       toast({
         title: 'Wallet Not Connected',
@@ -252,11 +269,22 @@ export function DexPanel() {
       return;
     }
 
+    const amount = solAmount === 'MAX' ? 1 : parseFloat(solAmount) || 0.1;
+    if (amount <= 0) {
+      toast({
+        title: 'Invalid Amount',
+        description: 'Please enter a valid amount',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSwapping(true);
-    setSwappingToken(token.address);
+    setSwappingToken(selectedToken.address);
+    const token = selectedToken;
 
     try {
-      const inputAmount = Math.floor(solAmount * 1e9);
+      const inputAmount = Math.floor(amount * 1e9);
       
       const orderUrl = `/api/jupiter/ultra/order?inputMint=${SOL_MINT}&outputMint=${token.address}&amount=${inputAmount}&taker=${publicKey.toString()}`;
       console.log('Fetching swap quote:', orderUrl);
@@ -452,32 +480,6 @@ export function DexPanel() {
           </div>
         </div>
 
-        {/* SOL Amount Selector */}
-        <div className="flex items-center gap-2 mb-4 bg-[#1a1035] rounded-lg p-2 border border-purple-400/30 w-fit">
-          <Zap className="h-4 w-4 text-yellow-400" />
-          {SOL_PRESETS.map((amount) => (
-            <Button
-              key={amount}
-              size="sm"
-              variant={solAmount === amount ? "default" : "ghost"}
-              className={`px-3 py-1 ${solAmount === amount 
-                ? 'bg-purple-600 text-white' 
-                : 'text-purple-300 hover:bg-purple-500/20'}`}
-              onClick={() => setSolAmount(amount)}
-              data-testid={`button-sol-${amount}`}
-            >
-              {amount === 0.1 ? '0.1' : amount}
-            </Button>
-          ))}
-          <span className="text-white font-medium ml-1">SOL</span>
-          {isSwapping && (
-            <div className="flex items-center gap-2 ml-2 text-purple-300">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Swapping...</span>
-            </div>
-          )}
-        </div>
-
         {activeTab !== 'recent' && (
           <p className="text-purple-300/60 text-sm mb-4">
             Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : 'top traded'} tokens
@@ -491,7 +493,7 @@ export function DexPanel() {
             ) : trendingData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {trendingData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSwap} isSwapping={swappingToken === token.address} />
+                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
                 ))}
               </div>
             ) : (
@@ -509,7 +511,7 @@ export function DexPanel() {
             ) : topData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {topData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSwap} isSwapping={swappingToken === token.address} />
+                  <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
                 ))}
               </div>
             ) : (
@@ -533,7 +535,7 @@ export function DexPanel() {
             ) : recentData?.tokens?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentData.tokens.map((token) => (
-                  <TokenCard key={token.address} token={token} now={now} isRecent onSwap={handleSwap} isSwapping={swappingToken === token.address} />
+                  <TokenCard key={token.address} token={token} now={now} isRecent onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
                 ))}
               </div>
             ) : (
@@ -544,6 +546,118 @@ export function DexPanel() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Fixed Floating Swap Panel - Bottom Right */}
+      {selectedToken && (
+        <div className="fixed bottom-4 right-4 z-50 w-80 bg-[#1a1035] border border-purple-500/40 rounded-xl shadow-2xl overflow-hidden">
+          {/* Header with token info */}
+          <div className="flex items-center justify-between p-3 border-b border-purple-500/20 bg-[#2a1f4e]/60">
+            <div className="flex items-center gap-2">
+              {selectedToken.logoURI && (
+                <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" />
+              )}
+              <span className="font-bold text-white">{selectedToken.symbol}</span>
+              <span className="text-purple-300/60 text-sm">{formatPrice(selectedToken.price)}</span>
+            </div>
+            <button 
+              onClick={() => setSelectedToken(null)} 
+              className="text-purple-300 hover:text-white p-1"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Buy/Sell Tabs */}
+          <div className="flex border-b border-purple-500/20">
+            <button
+              onClick={() => setSwapMode('buy')}
+              className={`flex-1 py-2 text-center font-medium flex items-center justify-center gap-2 ${
+                swapMode === 'buy' 
+                  ? 'text-white border-b-2 border-green-400' 
+                  : 'text-purple-300/60 hover:text-white'
+              }`}
+            >
+              <Zap className="h-4 w-4" />
+              Buy
+            </button>
+            <button
+              onClick={() => setSwapMode('sell')}
+              className={`flex-1 py-2 text-center font-medium flex items-center justify-center gap-2 ${
+                swapMode === 'sell' 
+                  ? 'text-white border-b-2 border-red-400' 
+                  : 'text-purple-300/60 hover:text-white'
+              }`}
+            >
+              <Activity className="h-4 w-4" />
+              Sell
+            </button>
+          </div>
+
+          <div className="p-4 space-y-4">
+            {/* Amount Input */}
+            <div>
+              <div className="flex items-center gap-2 bg-[#2a1f4e]/60 rounded-lg p-3 border border-purple-500/20">
+                <span className="text-purple-300/60 text-sm">Amount</span>
+                <input
+                  type="text"
+                  value={solAmount}
+                  onChange={(e) => setSolAmount(e.target.value)}
+                  placeholder="0.0"
+                  className="flex-1 bg-transparent text-white text-right outline-none"
+                  data-testid="input-swap-amount"
+                />
+              </div>
+            </div>
+
+            {/* Percentage Buttons */}
+            <div className="flex gap-2">
+              {[25, 50, 75].map((pct) => (
+                <Button
+                  key={pct}
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                  onClick={() => setAmountPercent(pct)}
+                >
+                  {pct}%
+                </Button>
+              ))}
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                onClick={() => setSolAmount('1')}
+              >
+                MAX
+              </Button>
+            </div>
+
+            {/* Quick Swap Button */}
+            <Button
+              className={`w-full py-3 font-bold ${
+                swapMode === 'buy'
+                  ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400'
+                  : 'bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400'
+              }`}
+              onClick={executeSwap}
+              disabled={isSwapping || !publicKey}
+              data-testid="button-quick-swap"
+            >
+              {isSwapping ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Swapping...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Quick {swapMode === 'buy' ? 'Buy' : 'Sell'} {solAmount} SOL
+                </div>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
