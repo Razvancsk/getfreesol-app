@@ -3775,9 +3775,7 @@ export default function SolRefund() {
           {/* DEX Tab Content */}
           {activeTab === 'dex' && (
             <div className="space-y-6 py-4">
-              <div className="max-w-4xl mx-auto">
-                <DexPanel />
-              </div>
+              <DexPanel />
             </div>
           )}
 
