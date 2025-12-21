@@ -7,11 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, Droplets, Activity, RefreshCw, Loader2, Zap } from 'lucide-react';
+import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, Droplets, Activity, RefreshCw, Loader2, Zap, ChevronDown, Search, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
-const SOL_PRESETS = [0.1, 1, 2, 3];
+const SOL_LOGO = 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png';
+
+interface TokenInfo {
+  address: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoURI?: string;
+}
 
 interface TokenData {
   address: string;
@@ -94,6 +102,140 @@ const formatTransactions = (num: number | undefined) => {
   if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
   return num.toString();
 };
+
+function DexTokenSelector({ 
+  token, 
+  onSelect, 
+  balances,
+  ownedTokens
+}: { 
+  token: TokenInfo; 
+  onSelect: (token: TokenInfo) => void; 
+  balances: Record<string, number>;
+  ownedTokens: TokenInfo[];
+}) {
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const { data: searchData, isLoading: isSearching } = useQuery({
+    queryKey: ['jupiter-search-dex', searchQuery.trim()],
+    queryFn: async () => {
+      const query = searchQuery.trim();
+      const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      
+      const tokens = Array.isArray(data) ? data.map((t: any) => ({
+        address: t.id,
+        symbol: t.symbol,
+        name: t.name,
+        decimals: t.decimals,
+        logoURI: t.icon
+      })) : [];
+      
+      return { tokens };
+    },
+    enabled: showSearchModal && searchQuery.trim().length > 0,
+  });
+
+  const getTokenList = () => {
+    if (searchQuery.trim().length > 0 && searchData?.tokens) {
+      return searchData.tokens;
+    }
+    return ownedTokens || [];
+  };
+
+  const tokenList = getTokenList();
+
+  return (
+    <>
+      <button
+        onClick={() => setShowSearchModal(true)}
+        className="flex items-center gap-2 bg-purple-900/60 hover:bg-purple-800/60 border border-purple-500/40 rounded-lg px-3 py-2 transition-colors"
+        data-testid="button-dex-token-selector"
+      >
+        {token.logoURI && <img src={token.logoURI} alt={token.symbol} className="w-5 h-5 rounded-full" />}
+        <span className="text-white font-medium">{token.symbol}</span>
+        <ChevronDown className="w-4 h-4 text-purple-300" />
+      </button>
+
+      {showSearchModal && (
+        <div className="fixed inset-0 z-[100]">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowSearchModal(false)} />
+          <div className="relative bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 w-full h-full flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-purple-500/30">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-semibold text-lg">Search Tokens</h3>
+                <button onClick={() => setShowSearchModal(false)} className="text-purple-200 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tokens"
+                  className="w-full bg-purple-800/50 border border-purple-500/30 rounded-lg py-3 pl-10 pr-4 text-white placeholder-purple-300/60 outline-none focus:border-purple-400"
+                  autoFocus
+                  data-testid="input-dex-token-search"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {isSearching ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-purple-300" />
+                </div>
+              ) : tokenList.length === 0 ? (
+                <div className="text-center py-8 text-purple-300/60">
+                  {searchQuery ? 'No tokens found' : 'Your holdings will appear here'}
+                </div>
+              ) : (
+                tokenList.map((t: TokenInfo) => (
+                  <button
+                    key={t.address}
+                    onClick={() => {
+                      onSelect(t);
+                      setShowSearchModal(false);
+                      setSearchQuery('');
+                    }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-purple-800/40 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {t.logoURI ? (
+                        <img src={t.logoURI} alt={t.symbol} className="w-10 h-10 rounded-full bg-purple-900" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center text-white font-bold">
+                          {t.symbol?.charAt(0)}
+                        </div>
+                      )}
+                      <div className="text-left">
+                        <p className="text-white font-medium">{t.symbol}</p>
+                        <p className="text-purple-300/60 text-sm">{t.name}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {balances[t.address] !== undefined && (
+                        <>
+                          <p className="text-white font-medium">{balances[t.address].toFixed(4)}</p>
+                          <p className="text-purple-300/60 text-xs truncate max-w-[100px]">
+                            {t.address.slice(0, 6)}...{t.address.slice(-6)}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 function TokenCard({ token, isRecent, now, onSwap, isSwapping }: { 
   token: TokenData; 
@@ -238,14 +380,71 @@ export function DexPanel() {
   const [swappingToken, setSwappingToken] = useState<string | null>(null);
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [swapMode, setSwapMode] = useState<'buy' | 'sell'>('buy');
+  const [balances, setBalances] = useState<Record<string, number>>({});
+  const [ownedTokens, setOwnedTokens] = useState<TokenInfo[]>([]);
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+  const [inputToken, setInputToken] = useState<TokenInfo>({
+    address: SOL_MINT,
+    symbol: 'SOL',
+    name: 'Solana',
+    decimals: 9,
+    logoURI: SOL_LOGO
+  });
   const now = useLiveNow(1000); // Update every second for live age
   
   const { publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (!publicKey) return;
+    fetchBalances();
+  }, [publicKey]);
+
+  const fetchBalances = async () => {
+    if (!publicKey) return;
+    
+    setIsLoadingBalances(true);
+    const newBalances: Record<string, number> = {};
+    const tokensWithMetadata: TokenInfo[] = [];
+    
+    try {
+      const holdingsResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
+      
+      if (!holdingsResponse.ok) {
+        throw new Error('Failed to fetch holdings');
+      }
+      
+      const holdingsData = await holdingsResponse.json();
+      
+      if (holdingsData.success && holdingsData.tokens) {
+        for (const token of holdingsData.tokens) {
+          newBalances[token.address] = token.balance;
+          tokensWithMetadata.push({
+            address: token.address,
+            symbol: token.symbol,
+            name: token.name,
+            decimals: token.decimals,
+            logoURI: token.logoURI
+          });
+        }
+      }
+      
+      setOwnedTokens(tokensWithMetadata);
+    } catch (error: any) {
+      console.error('Error fetching holdings:', error?.message || error);
+    }
+    
+    setBalances(newBalances);
+    setIsLoadingBalances(false);
+  };
+
   const handleSelectToken = (token: TokenData) => {
     setSelectedToken(token);
+  };
+
+  const handleSelectInputToken = (token: TokenInfo) => {
+    setInputToken(token);
   };
 
   const setAmountPercent = (percent: number) => {
@@ -286,7 +485,7 @@ export function DexPanel() {
     try {
       const inputAmount = Math.floor(amount * 1e9);
       
-      const orderUrl = `/api/jupiter/ultra/order?inputMint=${SOL_MINT}&outputMint=${token.address}&amount=${inputAmount}&taker=${publicKey.toString()}`;
+      const orderUrl = `/api/jupiter/ultra/order?inputMint=${inputToken.address}&outputMint=${token.address}&amount=${inputAmount}&taker=${publicKey.toString()}`;
       console.log('Fetching swap quote:', orderUrl);
       
       const response = await fetch(orderUrl);
@@ -452,8 +651,8 @@ export function DexPanel() {
             </TabsTrigger>
           </TabsList>
 
-            {/* SOL Amount Input */}
-            <div className="flex items-center gap-2 bg-[#1a1035] rounded-lg px-3 py-2 border border-purple-400/30">
+            {/* Token Selector with Amount */}
+            <div className="flex items-center gap-2 bg-[#1a1035] rounded-lg px-2 py-1 border border-purple-400/30">
               <Zap className="h-4 w-4 text-yellow-400" />
               <input
                 type="text"
@@ -462,7 +661,12 @@ export function DexPanel() {
                 className="w-12 bg-transparent text-white text-center outline-none"
                 data-testid="input-sol-amount-top"
               />
-              <span className="text-purple-300/80 font-medium">SOL</span>
+              <DexTokenSelector
+                token={inputToken}
+                onSelect={handleSelectInputToken}
+                balances={balances}
+                ownedTokens={ownedTokens}
+              />
             </div>
           </div>
           
@@ -666,7 +870,7 @@ export function DexPanel() {
               ) : (
                 <div className="flex items-center gap-2">
                   <Activity className="h-4 w-4" />
-                  Quick {swapMode === 'buy' ? 'Buy' : 'Sell'} {solAmount} SOL
+                  Quick {swapMode === 'buy' ? 'Buy' : 'Sell'} {solAmount} {inputToken.symbol}
                 </div>
               )}
             </Button>
