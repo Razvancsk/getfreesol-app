@@ -741,34 +741,34 @@ export function DexPanel() {
 
       {/* Fixed Floating Swap Panel - Bottom Right - Exact copy of SwapPanel design */}
       {selectedToken && (
-        <div className="fixed bottom-4 right-4 z-50 w-[480px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">Swap</h2>
+        <div className="fixed bottom-4 right-4 z-50 w-[340px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-xl border border-purple-500/30 p-4 shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-white">Swap</h2>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSelectedToken(null)}
-              className="p-2 text-purple-300 hover:text-white hover:bg-purple-800/30"
+              className="p-1 text-purple-300 hover:text-white hover:bg-purple-800/30 h-6 w-6"
             >
-              <RefreshCw className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-3">
             {/* Pay Section */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-sm text-purple-300">Pay:</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-purple-400">
-                    ≈ {(balances[inputToken.address] || 0).toFixed(8)} {inputToken.symbol}
+                <label className="text-xs text-purple-300">Pay:</label>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-purple-400">
+                    ≈ {(balances[inputToken.address] || 0).toFixed(4)} {inputToken.symbol}
                   </span>
                   <button 
                     onClick={() => {
                       const balance = balances[inputToken.address] || 0;
                       setSolAmount((balance / 2).toString());
                     }}
-                    className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-[10px] font-medium transition-colors"
                   >
                     HALF
                   </button>
@@ -780,13 +780,13 @@ export function DexPanel() {
                       const maxAmount = isSol ? Math.max(0, balance - feeReserve) : balance;
                       setSolAmount(maxAmount.toString());
                     }}
-                    className="px-3 py-1 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-[10px] font-medium transition-colors"
                   >
                     MAX
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/30 rounded-lg p-2">
                 <DexTokenSelector
                   token={inputToken}
                   onSelect={handleSelectInputToken}
@@ -799,7 +799,7 @@ export function DexPanel() {
                     placeholder="0.00"
                     value={solAmount}
                     onChange={(e) => setSolAmount(e.target.value)}
-                    className="w-full bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                    className="w-full bg-transparent border-none text-right text-white text-lg font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
                     data-testid="input-swap-pay-amount"
                   />
                 </div>
@@ -819,22 +819,22 @@ export function DexPanel() {
             </div>
 
             {/* Receive Section */}
-            <div className="space-y-2">
-              <label className="text-sm text-purple-300">Receive:</label>
-              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
-                <button className="flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-3 py-2 transition-colors">
+            <div className="space-y-1">
+              <label className="text-xs text-purple-300">Receive:</label>
+              <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/30 rounded-lg p-2">
+                <button className="flex items-center gap-1.5 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-2 py-1.5 transition-colors text-sm">
                   {selectedToken.logoURI && (
-                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" />
+                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-5 h-5 rounded-full" />
                   )}
                   <span className="text-white font-medium">{selectedToken.symbol}</span>
-                  <ChevronDown className="w-4 h-4 text-purple-300" />
+                  <ChevronDown className="w-3 h-3 text-purple-300" />
                 </button>
                 <div className="flex-1 min-w-0">
                   <input
                     type="number"
                     placeholder="0.00"
                     readOnly
-                    className="w-full bg-transparent border-none text-right text-white text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                    className="w-full bg-transparent border-none text-right text-white text-lg font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
                     data-testid="input-swap-receive-amount"
                   />
                 </div>
@@ -845,7 +845,7 @@ export function DexPanel() {
             <Button
               onClick={executeSwap}
               disabled={!publicKey || isSwapping}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12 text-lg rounded-lg"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-9 text-sm rounded-lg"
               data-testid="button-execute-swap"
             >
               {isSwapping ? (
