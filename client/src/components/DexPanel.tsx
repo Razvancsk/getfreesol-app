@@ -841,7 +841,7 @@ export function DexPanel() {
                   <button 
                     onClick={() => {
                       const balance = balances[inputToken.address] || 0;
-                      setSolAmount((balance / 2).toString());
+                      setSolAmount((balance / 2).toFixed(6));
                     }}
                     className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-[10px] font-medium transition-colors"
                   >
@@ -853,7 +853,7 @@ export function DexPanel() {
                       const isSol = inputToken.address === 'So11111111111111111111111111111111111111112';
                       const feeReserve = 0.01;
                       const maxAmount = isSol ? Math.max(0, balance - feeReserve) : balance;
-                      setSolAmount(maxAmount.toString());
+                      setSolAmount(maxAmount.toFixed(6));
                     }}
                     className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-[10px] font-medium transition-colors"
                   >
