@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, Droplets, Activity, RefreshCw, Loader2, Zap, ChevronDown, Search, X } from 'lucide-react';
+import { TrendingUp, Flame, Clock, BarChart3, ExternalLink, Droplets, Activity, RefreshCw, Loader2, Zap, ChevronDown, Search, X, ArrowDownUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -748,124 +748,122 @@ export function DexPanel() {
         </TabsContent>
       </Tabs>
 
-      {/* Fixed Floating Swap Panel - Bottom Right */}
+      {/* Fixed Floating Swap Panel - Bottom Right - Matches SwapPanel design */}
       {selectedToken && (
-        <div className="fixed bottom-4 right-4 z-50 w-80 bg-[#1a1035] border border-purple-500/40 rounded-xl shadow-2xl overflow-hidden">
-          {/* Header with token info */}
-          <div className="flex items-center justify-between p-3 border-b border-purple-500/20 bg-[#2a1f4e]/60">
-            <div className="flex items-center gap-2">
-              {selectedToken.logoURI && (
-                <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" />
-              )}
-              <span className="font-bold text-white">{selectedToken.symbol}</span>
-              <span className="text-purple-300/60 text-sm">{formatPrice(selectedToken.price)}</span>
-            </div>
+        <div className="fixed bottom-4 right-4 z-50 w-96 bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl shadow-2xl p-5">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white">Swap</h2>
             <button 
               onClick={() => setSelectedToken(null)} 
               className="text-purple-300 hover:text-white p-1"
             >
-              ✕
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Buy/Sell Tabs */}
-          <div className="flex border-b border-purple-500/20">
-            <button
-              onClick={() => setSwapMode('buy')}
-              className={`flex-1 py-2 text-center font-medium flex items-center justify-center gap-2 ${
-                swapMode === 'buy' 
-                  ? 'text-white border-b-2 border-green-400' 
-                  : 'text-purple-300/60 hover:text-white'
-              }`}
-            >
-              <Zap className="h-4 w-4" />
-              Buy
-            </button>
-            <button
-              onClick={() => setSwapMode('sell')}
-              className={`flex-1 py-2 text-center font-medium flex items-center justify-center gap-2 ${
-                swapMode === 'sell' 
-                  ? 'text-white border-b-2 border-red-400' 
-                  : 'text-purple-300/60 hover:text-white'
-              }`}
-            >
-              <Activity className="h-4 w-4" />
-              Sell
-            </button>
-          </div>
-
-          <div className="p-4 space-y-4">
-            {/* Token Selector - Pay with */}
-            <div className="flex items-center justify-center">
-              <DexTokenSelector
-                token={inputToken}
-                onSelect={handleSelectInputToken}
-                balances={balances}
-                ownedTokens={ownedTokens}
-              />
-            </div>
-
-            {/* Amount Input */}
-            <div>
-              <div className="flex items-center gap-2 bg-[#2a1f4e]/60 rounded-lg p-3 border border-purple-500/20">
-                <span className="text-purple-300/60 text-sm">Amount</span>
+          <div className="space-y-4">
+            {/* Pay Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-purple-300">Pay:</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-purple-400">
+                    ≈ {(balances[inputToken.address] || 0).toFixed(6)} {inputToken.symbol}
+                  </span>
+                  <button 
+                    onClick={() => {
+                      const balance = balances[inputToken.address] || 0;
+                      setSolAmount((balance / 2).toString());
+                    }}
+                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                  >
+                    HALF
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const balance = balances[inputToken.address] || 0;
+                      const isSol = inputToken.address === 'So11111111111111111111111111111111111111112';
+                      const feeReserve = 0.01;
+                      const maxAmount = isSol ? Math.max(0, balance - feeReserve) : balance;
+                      setSolAmount(maxAmount.toString());
+                    }}
+                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-xs font-medium transition-colors"
+                  >
+                    MAX
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+                <DexTokenSelector
+                  token={inputToken}
+                  onSelect={handleSelectInputToken}
+                  balances={balances}
+                  ownedTokens={ownedTokens}
+                />
                 <input
-                  type="text"
+                  type="number"
+                  placeholder="0.00"
                   value={solAmount}
                   onChange={(e) => setSolAmount(e.target.value)}
-                  placeholder="0.0"
-                  className="flex-1 bg-transparent text-white text-right outline-none"
-                  data-testid="input-swap-amount"
+                  className="flex-1 bg-transparent border-none text-right text-white text-xl font-medium focus:outline-none"
+                  data-testid="input-swap-pay-amount"
                 />
               </div>
             </div>
 
-            {/* Percentage Buttons */}
-            <div className="flex gap-2">
-              {[25, 50, 75].map((pct) => (
-                <Button
-                  key={pct}
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                  onClick={() => setAmountPercent(pct)}
-                >
-                  {pct}%
-                </Button>
-              ))}
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                onClick={() => setSolAmount('1')}
+            {/* Swap Direction Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => setSwapMode(swapMode === 'buy' ? 'sell' : 'buy')}
+                className="text-purple-300 hover:text-white hover:bg-purple-800/30 rounded-full p-2"
               >
-                MAX
-              </Button>
+                <ArrowDownUp className="h-5 w-5" />
+              </button>
             </div>
 
-            {/* Quick Swap Button */}
+            {/* Receive Section */}
+            <div className="space-y-2">
+              <label className="text-sm text-purple-300">Receive:</label>
+              <div className="flex items-center gap-3 bg-purple-900/30 border border-purple-500/30 rounded-lg p-3">
+                <div className="flex items-center gap-2 bg-purple-900/40 border border-purple-500/30 rounded-lg px-3 py-2">
+                  {selectedToken.logoURI && (
+                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-5 h-5 rounded-full" />
+                  )}
+                  <span className="text-white font-medium">{selectedToken.symbol}</span>
+                </div>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  readOnly
+                  className="flex-1 bg-transparent border-none text-right text-white text-xl font-medium focus:outline-none"
+                  data-testid="input-swap-receive-amount"
+                />
+              </div>
+            </div>
+
+            {/* Swap Button */}
             <Button
-              className={`w-full py-3 font-bold ${
-                swapMode === 'buy'
-                  ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400'
-                  : 'bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400'
-              }`}
               onClick={executeSwap}
-              disabled={isSwapping || !publicKey}
-              data-testid="button-quick-swap"
+              disabled={!publicKey || isSwapping}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12 text-lg rounded-lg"
+              data-testid="button-execute-swap"
             >
               {isSwapping ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Swapping...
-                </div>
+                </>
               ) : (
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Quick {swapMode === 'buy' ? 'Buy' : 'Sell'} {solAmount} {inputToken.symbol}
-                </div>
+                'Swap'
               )}
             </Button>
+
+            {!publicKey && (
+              <p className="text-sm text-center text-purple-300">
+                Connect your wallet to swap
+              </p>
+            )}
           </div>
         </div>
       )}
