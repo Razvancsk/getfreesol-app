@@ -88,11 +88,11 @@ function TokenCard({ token, isRecent }: { token: TokenData; isRecent?: boolean }
   return (
     <div 
       onClick={handleClick}
-      className="bg-[#1a1035] rounded-xl p-4 hover:bg-[#251545] transition-all border border-purple-500/20 cursor-pointer"
+      className="bg-[#2a1f4e]/60 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/40 cursor-pointer"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#0d0820] border border-purple-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-[#1a1035] border border-purple-400/30 flex items-center justify-center overflow-hidden flex-shrink-0">
             {token.logoURI ? (
               <img src={token.logoURI} alt={token.symbol} className="w-10 h-10 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
@@ -174,7 +174,7 @@ function TokenListSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-[#1a1035] rounded-xl p-4 border border-purple-500/20">
+        <div key={i} className="bg-[#2a1f4e]/60 rounded-xl p-4 border border-purple-400/40">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <Skeleton className="w-10 h-10 rounded-full" />
@@ -255,7 +255,7 @@ export function DexPanel() {
     <div>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <TabsList className="bg-[#1a1035] border border-purple-500/20 w-fit">
+          <TabsList className="bg-[#2a1f4e]/60 border border-purple-400/40 w-fit">
             <TabsTrigger value="trending" className="data-[state=active]:bg-purple-600">
               <Flame className="h-4 w-4 mr-2 text-orange-400" />
               Trending
@@ -275,7 +275,7 @@ export function DexPanel() {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-purple-500/30 hover:bg-purple-500/20 text-purple-300 bg-[#1a1035]"
+                className="border-purple-400/40 hover:bg-purple-500/20 text-purple-300 bg-[#2a1f4e]/60"
                 onClick={() => refetchRecent()}
                 disabled={recentLoading}
                 data-testid="button-refresh-recent"
@@ -285,7 +285,7 @@ export function DexPanel() {
             )}
             {(activeTab === 'trending' || activeTab === 'top') && (
               <Select value={interval} onValueChange={(v) => setInterval(v as typeof interval)}>
-                <SelectTrigger className="w-[80px] bg-[#1a1035] border-purple-500/30" data-testid="select-interval">
+                <SelectTrigger className="w-[80px] bg-[#2a1f4e]/60 border-purple-400/40" data-testid="select-interval">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
