@@ -287,8 +287,8 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
           </div>
           <div>
             <div className="font-bold text-white text-base">{displayName}</div>
-            <div className="text-xs text-purple-300/70">{displaySymbol}</div>
-            <div className="text-xs text-purple-400/50 font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
+            <div className="text-xs text-white/80">{displaySymbol}</div>
+            <div className="text-xs text-white/60 font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
           </div>
         </div>
         <div className="text-right">
