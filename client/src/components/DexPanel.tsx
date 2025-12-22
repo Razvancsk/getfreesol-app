@@ -239,6 +239,14 @@ function DexTokenSelector({
   );
 }
 
+// Helper to shorten address-like strings
+function shortenAddress(str: string): string {
+  if (str && str.length > 20 && /^[A-Za-z0-9]+$/.test(str)) {
+    return `${str.slice(0, 6)}...${str.slice(-4)}`;
+  }
+  return str;
+}
+
 // Mobile-friendly token card matching reference design
 function TokenCard({ token, isRecent, now, onSwap, isSwapping }: { 
   token: TokenData; 
@@ -249,6 +257,10 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
 }) {
   const priceChange = formatPriceChange(token.price_change ?? token.price_change_24h);
   const age = useMemo(() => formatAge(token.created_at, now), [token.created_at, now]);
+  
+  // Shorten symbol/name if they look like addresses
+  const displaySymbol = shortenAddress(token.symbol || '');
+  const displayName = shortenAddress(token.name || '');
   
   const handleClick = () => {
     if (onSwap) {
@@ -268,14 +280,15 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-[#1a1035] border border-purple-400/40 flex items-center justify-center overflow-hidden flex-shrink-0">
             {token.logoURI ? (
-              <img src={token.logoURI} alt={token.symbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src={token.logoURI} alt={displaySymbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
-              <span className="text-lg font-bold text-purple-300">{token.symbol?.charAt(0)}</span>
+              <span className="text-lg font-bold text-purple-300">{displaySymbol?.charAt(0)}</span>
             )}
           </div>
           <div>
-            <div className="font-bold text-white text-base">{token.symbol}</div>
-            <div className="text-xs text-purple-300/70 truncate max-w-[120px]">{token.name}</div>
+            <div className="font-bold text-white text-base">{displaySymbol}</div>
+            <div className="text-xs text-purple-300/70">{displayName}</div>
+            <div className="text-xs text-purple-400/50 font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
           </div>
         </div>
         <div className="text-right">
