@@ -356,7 +356,7 @@ function TokenListSkeleton() {
 
 export function DexPanel() {
   const [interval, setInterval] = useState<'5m' | '1h' | '6h' | '24h'>('1h');
-  const [activeTab, setActiveTab] = useState<'trending' | 'top' | 'recent'>('trending');
+  const [activeTab, setActiveTab] = useState<'trending' | 'top' | 'recent' | 'volume' | 'txns'>('trending');
   const [solAmount, setSolAmount] = useState<string>('0.1');
   const [isSwapping, setIsSwapping] = useState(false);
   const [swappingToken, setSwappingToken] = useState<string | null>(null);
@@ -693,6 +693,40 @@ export function DexPanel() {
     refetchIntervalInBackground: false,
   });
 
+  // Volume - sort tokens by highest volume
+  const { data: volumeData, isLoading: volumeLoading } = useQuery<TokenListResponse>({
+    queryKey: ['/api/tokens/category', 'toptraded', interval, 'volume'],
+    queryFn: async () => {
+      const res = await fetch(`/api/tokens/category/toptraded/${interval}?limit=100`);
+      if (!res.ok) throw new Error('Failed to fetch tokens');
+      const data = await res.json();
+      // Sort by volume descending
+      if (data.tokens) {
+        data.tokens.sort((a: TokenData, b: TokenData) => (b.daily_volume || 0) - (a.daily_volume || 0));
+      }
+      return data;
+    },
+    enabled: activeTab === 'volume',
+    refetchInterval: 30000,
+  });
+
+  // Txns - sort tokens by highest transactions
+  const { data: txnsData, isLoading: txnsLoading } = useQuery<TokenListResponse>({
+    queryKey: ['/api/tokens/category', 'toptraded', interval, 'txns'],
+    queryFn: async () => {
+      const res = await fetch(`/api/tokens/category/toptraded/${interval}?limit=100`);
+      if (!res.ok) throw new Error('Failed to fetch tokens');
+      const data = await res.json();
+      // Sort by transactions descending
+      if (data.tokens) {
+        data.tokens.sort((a: TokenData, b: TokenData) => (b.num_transactions || 0) - (a.num_transactions || 0));
+      }
+      return data;
+    },
+    enabled: activeTab === 'txns',
+    refetchInterval: 30000,
+  });
+
   // Search query for tokens - fetch from Jupiter then get price data
   const { data: searchData, isLoading: searchLoading } = useQuery<{ tokens: TokenData[] }>({
     queryKey: ['token-search', searchQuery],
@@ -736,12 +770,14 @@ export function DexPanel() {
   const getTokenCount = () => {
     if (activeTab === 'trending') return trendingData?.tokens?.length || 0;
     if (activeTab === 'top') return topData?.tokens?.length || 0;
+    if (activeTab === 'volume') return volumeData?.tokens?.length || 0;
+    if (activeTab === 'txns') return txnsData?.tokens?.length || 0;
     return recentData?.tokens?.length || 0;
   };
 
   return (
     <div>
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent')} className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'trending' | 'top' | 'recent' | 'volume' | 'txns')} className="w-full">
         {/* Search Bar - Top on mobile like reference */}
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-300" />
@@ -765,7 +801,7 @@ export function DexPanel() {
 
         {/* Tabs row - mobile friendly */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <TabsList className="bg-transparent border-0 p-0 gap-2">
+          <TabsList className="bg-transparent border-0 p-0 gap-2 flex-wrap">
             <TabsTrigger value="trending" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
               TRENDING
             </TabsTrigger>
@@ -775,12 +811,18 @@ export function DexPanel() {
             <TabsTrigger value="recent" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
               NEW
             </TabsTrigger>
+            <TabsTrigger value="volume" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+              Volume
+            </TabsTrigger>
+            <TabsTrigger value="txns" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+              Txns
+            </TabsTrigger>
           </TabsList>
         </div>
 
         {/* Time filter row */}
         <div className="flex items-center gap-2 mb-4">
-          {(activeTab === 'trending' || activeTab === 'top') && (
+          {(activeTab === 'trending' || activeTab === 'top' || activeTab === 'volume' || activeTab === 'txns') && (
             <div className="flex items-center gap-1 bg-[#2a1f4e]/60 rounded-full p-1">
               {['5m', '1h', '6h', '24h'].map((t) => (
                 <button
@@ -834,7 +876,7 @@ export function DexPanel() {
           <>
             {activeTab !== 'recent' && (
               <p className="text-purple-300/60 text-sm mb-2">
-                Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : 'top traded'} tokens
+                Showing {getTokenCount()} {activeTab === 'trending' ? 'trending' : activeTab === 'volume' ? 'highest volume' : activeTab === 'txns' ? 'most transacted' : 'top traded'} tokens
               </p>
             )}
 
@@ -881,6 +923,38 @@ export function DexPanel() {
             ) : (
               <div className="text-center py-8 text-purple-300/60">
                 No recent tokens found
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="volume" className="mt-0 w-full">
+          <div className="space-y-3">
+            {volumeLoading ? (
+              <TokenListSkeleton />
+            ) : volumeData?.tokens?.length ? (
+              volumeData.tokens.map((token) => (
+                <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
+              ))
+            ) : (
+              <div className="text-center py-8 text-purple-300/60">
+                No tokens found
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="txns" className="mt-0 w-full">
+          <div className="space-y-3">
+            {txnsLoading ? (
+              <TokenListSkeleton />
+            ) : txnsData?.tokens?.length ? (
+              txnsData.tokens.map((token) => (
+                <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
+              ))
+            ) : (
+              <div className="text-center py-8 text-purple-300/60">
+                No tokens found
               </div>
             )}
           </div>
