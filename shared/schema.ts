@@ -185,6 +185,24 @@ export const relayerCosts = pgTable("relayer_costs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Swap Records - tracks token swaps for points rewards
+export const swapRecords = pgTable("swap_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  txSignature: text("tx_signature").notNull().unique(),
+  inputMint: text("input_mint").notNull(),
+  outputMint: text("output_mint").notNull(),
+  inputAmount: decimal("input_amount", { precision: 18, scale: 9 }).notNull(),
+  outputAmount: decimal("output_amount", { precision: 18, scale: 9 }).notNull(),
+  inputSymbol: text("input_symbol"),
+  outputSymbol: text("output_symbol"),
+  usdValue: decimal("usd_value", { precision: 18, scale: 2 }).notNull().default("0"), // USD value of swap
+  pointsAwarded: integer("points_awarded").notNull().default(0),
+  platformFee: decimal("platform_fee", { precision: 18, scale: 9 }).default("0"),
+  referralCode: text("referral_code"),
+  swappedAt: timestamp("swapped_at").notNull().defaultNow(),
+});
+
 // Mass Transfer Records - tracks usage of the mass transfer feature
 export const massTransferRecords = pgTable("mass_transfer_records", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -281,6 +299,11 @@ export const insertMassTransferRecordSchema = createInsertSchema(massTransferRec
   transferredAt: true,
 });
 
+export const insertSwapRecordSchema = createInsertSchema(swapRecords).omit({
+  id: true,
+  swappedAt: true,
+});
+
 // Jupiter Lend deposit records for analytics
 export const jupiterLendDeposits = pgTable("jupiter_lend_deposits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -327,6 +350,8 @@ export type RelayerCost = typeof relayerCosts.$inferSelect;
 export type InsertRelayerCost = z.infer<typeof insertRelayerCostSchema>;
 export type MassTransferRecord = typeof massTransferRecords.$inferSelect;
 export type InsertMassTransferRecord = z.infer<typeof insertMassTransferRecordSchema>;
+export type SwapRecord = typeof swapRecords.$inferSelect;
+export type InsertSwapRecord = z.infer<typeof insertSwapRecordSchema>;
 export type JupiterLendDeposit = typeof jupiterLendDeposits.$inferSelect;
 export type InsertJupiterLendDeposit = z.infer<typeof insertJupiterLendDepositSchema>;
 
