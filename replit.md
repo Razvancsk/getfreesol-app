@@ -41,6 +41,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
 - **Jupiter Ultra Swap Integration**: Advanced token swapping using Jupiter Ultra API with referral fee collection. Records all swaps and awards points.
+- **Helius Backrun Rebates**: MEV rebate system that pays users 50% of arbitrage profits their swaps create. Transactions are sent via Helius RPC with `rebate-address` parameter, enabling private order-flow auction where KYC'd searchers bid to backrun trades. Rebates paid automatically in SOL in the same block.
 - **Points Reward System**: User engagement rewards calculated based on actions:
   - **Account Closures**: 20 points per account closed (rent claims, token burns, NFT burns)
   - **Swaps**: 100 points per $1 USD swapped (calculated server-side via Jupiter Price API)

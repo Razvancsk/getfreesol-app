@@ -568,7 +568,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jupiter Ultra Swap - Execute Order endpoint (replaces send-transaction)
+  // Jupiter Ultra Swap - Execute Order endpoint with Helius Backrun Rebates
+  // Users earn 50% of MEV their trades create via Helius private auction
   app.post("/api/jupiter/ultra/execute", async (req, res) => {
     try {
       if (!process.env.JUPITER_API_KEY) {
@@ -597,27 +598,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('🚀 Executing Ultra Swap with requestId:', requestId);
+      
+      let executeData: any = null;
+      let rebatesEnabled = false;
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      
+      // Try Helius Backrun Rebates first if we have wallet address and Helius key
+      if (heliusApiKey && walletAddress) {
+        try {
+          // Build Helius RPC URL with rebate-address for MEV rebates
+          const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}&rebate-address=${walletAddress}`;
+          
+          console.log(`💰 Attempting swap with Helius Backrun Rebates enabled`);
+          console.log(`   MEV rebates will be paid to: ${walletAddress}`);
+          
+          const heliusResponse = await fetch(heliusUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: 1,
+              method: 'sendTransaction',
+              params: [
+                signedTransaction,
+                {
+                  skipPreflight: true,
+                  preflightCommitment: 'processed',
+                  maxRetries: 3
+                }
+              ]
+            })
+          });
 
-      const response = await fetch('https://api.jup.ag/ultra/v1/execute', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'x-api-key': process.env.JUPITER_API_KEY || ''
-        },
-        body: JSON.stringify({
-          signedTransaction,
-          requestId
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Jupiter Ultra execute error:', response.status, errorText);
-        return res.status(response.status).json({ error: errorText || 'Failed to execute order' });
+          const heliusResult = await heliusResponse.json();
+          
+          if (heliusResult.result && !heliusResult.error) {
+            const signature = heliusResult.result;
+            console.log(`✅ Transaction sent via Helius with rebates: ${signature}`);
+            
+            // Confirm transaction
+            const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, 'confirmed');
+            
+            // Poll for confirmation with timeout
+            let confirmed = false;
+            let attempts = 0;
+            const maxAttempts = 30; // 30 seconds max
+            
+            while (!confirmed && attempts < maxAttempts) {
+              try {
+                const status = await connection.getSignatureStatus(signature);
+                if (status.value?.confirmationStatus === 'confirmed' || status.value?.confirmationStatus === 'finalized') {
+                  if (!status.value.err) {
+                    confirmed = true;
+                    executeData = {
+                      status: 'Success',
+                      signature,
+                      rebatesEnabled: true
+                    };
+                    rebatesEnabled = true;
+                    console.log(`✅ Swap confirmed with Helius Backrun Rebates! Signature: ${signature}`);
+                  } else {
+                    throw new Error('Transaction failed on-chain');
+                  }
+                } else {
+                  await new Promise(r => setTimeout(r, 1000));
+                  attempts++;
+                }
+              } catch (pollError) {
+                await new Promise(r => setTimeout(r, 1000));
+                attempts++;
+              }
+            }
+            
+            if (!confirmed) {
+              console.log('⏳ Helius confirmation timeout, falling back to Jupiter execute');
+              executeData = null;
+            }
+          } else {
+            console.log('⚠️ Helius send failed, falling back to Jupiter execute:', heliusResult.error?.message);
+          }
+        } catch (heliusError: any) {
+          console.log('⚠️ Helius rebate attempt failed, falling back to Jupiter:', heliusError.message);
+        }
       }
+      
+      // Fallback to Jupiter Ultra execute if Helius didn't work
+      if (!executeData) {
+        const response = await fetch('https://api.jup.ag/ultra/v1/execute', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'x-api-key': process.env.JUPITER_API_KEY || ''
+          },
+          body: JSON.stringify({
+            signedTransaction,
+            requestId
+          }),
+        });
 
-      const executeData = await response.json();
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Jupiter Ultra execute error:', response.status, errorText);
+          return res.status(response.status).json({ error: errorText || 'Failed to execute order' });
+        }
+
+        executeData = await response.json();
+      }
       
       if (executeData.status === "Success") {
         console.log('✅ Ultra Swap successful:', JSON.stringify(executeData, null, 2));

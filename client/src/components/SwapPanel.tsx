@@ -395,6 +395,9 @@ export function SwapPanel() {
           description: (
             <div className="space-y-2">
               <p>Transaction confirmed on Solana blockchain</p>
+              {executeData.rebatesEnabled && (
+                <p className="text-cyan-300 font-semibold">💰 MEV rebates enabled - earning SOL!</p>
+              )}
               {executeData.pointsAwarded > 0 && (
                 <p className="text-yellow-300 font-semibold">+{executeData.pointsAwarded} points earned!</p>
               )}
