@@ -55,6 +55,8 @@ import {
   type InsertSocialTaskSubmission,
   type SocialTaskPayout,
   type InsertSocialTaskPayout,
+  type SwapRecord,
+  type InsertSwapRecord,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -82,7 +84,8 @@ import {
   userPoints,
   socialTasks,
   socialTaskSubmissions,
-  socialTaskPayouts
+  socialTaskPayouts,
+  swapRecords
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -252,6 +255,12 @@ export interface IStorage {
   // Social Task Payouts
   createSocialTaskPayout(payout: InsertSocialTaskPayout): Promise<SocialTaskPayout>;
   getSocialTaskPayoutsByWorker(workerWallet: string, limit?: number): Promise<SocialTaskPayout[]>;
+  
+  // Swap Records
+  createSwapRecord(record: InsertSwapRecord): Promise<SwapRecord>;
+  getSwapRecordsByWallet(walletAddress: string, limit?: number): Promise<SwapRecord[]>;
+  getSwapRecordBySignature(txSignature: string): Promise<SwapRecord | undefined>;
+  awardSwapPoints(walletAddress: string, usdValue: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1473,6 +1482,64 @@ export class DatabaseStorage implements IStorage {
       .where(eq(socialTaskPayouts.workerWallet, workerWallet))
       .orderBy(desc(socialTaskPayouts.paidAt))
       .limit(limit);
+  }
+
+  // Swap Records Implementation
+  async createSwapRecord(record: InsertSwapRecord): Promise<SwapRecord> {
+    const [created] = await db
+      .insert(swapRecords)
+      .values(record)
+      .returning();
+    return created;
+  }
+
+  async getSwapRecordsByWallet(walletAddress: string, limit: number = 50): Promise<SwapRecord[]> {
+    return await db
+      .select()
+      .from(swapRecords)
+      .where(eq(swapRecords.walletAddress, walletAddress))
+      .orderBy(desc(swapRecords.swappedAt))
+      .limit(limit);
+  }
+
+  async getSwapRecordBySignature(txSignature: string): Promise<SwapRecord | undefined> {
+    const [record] = await db
+      .select()
+      .from(swapRecords)
+      .where(eq(swapRecords.txSignature, txSignature));
+    return record || undefined;
+  }
+
+  async awardSwapPoints(walletAddress: string, usdValue: number): Promise<number> {
+    // Calculate points: 1 point per $0.01 USD swapped (100 points per $1)
+    const pointsToAward = Math.floor(usdValue * 100);
+    
+    if (pointsToAward <= 0) return 0;
+    
+    // Check if user already has points
+    const existing = await this.getUserPoints(walletAddress);
+    
+    if (existing) {
+      // Update existing points
+      await db
+        .update(userPoints)
+        .set({
+          points: sql`${userPoints.points} + ${pointsToAward}`,
+          lastUpdated: new Date()
+        })
+        .where(eq(userPoints.walletAddress, walletAddress));
+    } else {
+      // Create new points entry
+      await db
+        .insert(userPoints)
+        .values({
+          walletAddress,
+          points: pointsToAward,
+          accountsClosed: 0
+        });
+    }
+    
+    return pointsToAward;
   }
 }
 
