@@ -973,6 +973,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing address or mint parameter' });
       }
 
+      // Use Jupiter Ultra Holdings API for consistent balance data
+      if (process.env.JUPITER_API_KEY) {
+        try {
+          const holdingsResponse = await fetch(`https://api.jup.ag/ultra/v1/holdings/${address}`, {
+            headers: {
+              'x-api-key': process.env.JUPITER_API_KEY
+            }
+          });
+          
+          if (holdingsResponse.ok) {
+            const holdings = await holdingsResponse.json();
+            
+            // Check for SOL
+            if (mint === 'So11111111111111111111111111111111111111112') {
+              return res.json({ 
+                success: true, 
+                balance: holdings.uiAmount || 0,
+                balanceRaw: holdings.amount || '0'
+              });
+            }
+            
+            // Check token holdings
+            if (holdings.tokens && holdings.tokens[mint]) {
+              const tokenAccounts = holdings.tokens[mint];
+              // Sum all token accounts for this mint
+              const totalBalance = tokenAccounts.reduce((sum: number, acc: any) => 
+                sum + parseFloat(acc.uiAmount || '0'), 0
+              );
+              const totalRaw = tokenAccounts.reduce((sum: bigint, acc: any) => 
+                sum + BigInt(acc.amount || '0'), BigInt(0)
+              );
+              
+              return res.json({ 
+                success: true, 
+                balance: totalBalance,
+                balanceRaw: totalRaw.toString()
+              });
+            }
+            
+            // Token not found in holdings
+            return res.json({ 
+              success: true, 
+              balance: 0,
+              balanceRaw: '0'
+            });
+          }
+        } catch (holdingsErr) {
+          console.error('Holdings API error, falling back to RPC:', holdingsErr);
+        }
+      }
+
+      // Fallback to RPC-based method
       const heliusKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcUrl = heliusKey 
         ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
