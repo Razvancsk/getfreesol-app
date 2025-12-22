@@ -786,11 +786,11 @@ export function DexPanel() {
     refetchInterval: 30000,
   });
 
-  // Search query for tokens - fetch from Jupiter then get price data via backend proxy
+  // Search query for tokens - backend returns full stats from Jupiter Ultra Search
   const { data: searchData, isLoading: searchLoading } = useQuery<{ tokens: TokenData[] }>({
     queryKey: ['token-search', searchQuery],
     queryFn: async () => {
-      // First get basic token info from our backend search endpoint
+      // Backend search endpoint returns all stats from Jupiter Ultra Search API
       const response = await fetch(`/api/tokens/search?q=${encodeURIComponent(searchQuery)}&limit=20`);
       const data = await response.json();
       
@@ -798,31 +798,20 @@ export function DexPanel() {
         return { tokens: [] };
       }
 
-      // Get token addresses to fetch price data via backend proxy
-      const addresses = data.tokens.map((t: any) => t.address);
-      
-      // Fetch price data from our backend proxy (uses Jupiter Price API v3)
-      const priceResponse = await fetch(`/api/tokens/prices?ids=${addresses.join(',')}`);
-      const priceResult = await priceResponse.json();
-      const priceData = priceResult?.data || {};
-      
-      const tokens = data.tokens.map((t: any) => {
-        const priceInfo = priceData[t.address];
-        const price = priceInfo?.usdPrice || 0;
-        return {
-          address: t.address,
-          symbol: t.symbol,
-          name: t.name,
-          decimals: t.decimals,
-          logoURI: t.logoURI,
-          price: price,
-          price_change_24h: 0,
-          market_cap: 0,
-          daily_volume: 0,
-          liquidity: 0,
-          num_transactions: 0,
-        };
-      });
+      // Map to our TokenData format - all stats are already included from backend
+      const tokens = data.tokens.map((t: any) => ({
+        address: t.address,
+        symbol: t.symbol,
+        name: t.name,
+        decimals: t.decimals,
+        logoURI: t.logoURI,
+        price: t.price || 0,
+        price_change_24h: t.price_change_24h || 0,
+        market_cap: t.market_cap || 0,
+        daily_volume: t.daily_volume || 0,
+        liquidity: t.liquidity || 0,
+        num_transactions: t.num_transactions || 0,
+      }));
       return { tokens };
     },
     enabled: searchQuery.trim().length > 1,

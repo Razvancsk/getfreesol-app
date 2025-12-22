@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Jupiter Ultra search returns array directly with id, symbol, name, icon fields
       const rawTokens = Array.isArray(data) ? data : [];
       
-      // Map Jupiter's response to our format
+      // Map Jupiter's response to our format - include all stats from Ultra Search
       const tokens = rawTokens
         .slice(0, limitNum)
         .map((t: any) => ({
@@ -106,7 +106,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           symbol: t.symbol,
           name: t.name,
           decimals: t.decimals || 9,
-          logoURI: t.icon || t.logoURI
+          logoURI: t.icon || t.logoURI,
+          // Include stats from Jupiter Ultra Search
+          price: t.usdPrice || 0,
+          price_change_24h: t.priceChange24h || 0,
+          market_cap: t.mcap || t.marketCap || 0,
+          daily_volume: t.volume24h || ((t.stats24h?.buyVolume || 0) + (t.stats24h?.sellVolume || 0)) || 0,
+          liquidity: t.liquidity || 0,
+          num_transactions: t.numTransactions || ((t.stats24h?.numBuys || 0) + (t.stats24h?.numSells || 0)) || 0
         }));
 
       console.log(`Found ${tokens.length} tokens for query "${q}"`);
