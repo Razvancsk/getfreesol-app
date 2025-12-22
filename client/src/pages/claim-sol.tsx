@@ -2930,19 +2930,7 @@ export default function SolRefund() {
                 >
                   <span className="text-lg">🔥</span> Burn
                 </Button>
-                <Button
-                  onClick={() => setActiveTab('swap')}
-                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
-                    activeTab === 'swap' 
-                      ? 'bg-purple-600 text-white border-purple-500' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
-                  }`}
-                  data-testid="button-swap-tab"
-                >
-                  <ArrowRightLeft className="h-5 w-5" />
-                  Swap
-                </Button>
-                <Button
+                                <Button
                   onClick={() => setActiveTab('dex')}
                   className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'dex' 
