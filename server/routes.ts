@@ -68,7 +68,7 @@ function getWalletFeeRates(_walletAddress: string): { feePercent: number; referr
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Token search endpoint
+  // Token search endpoint - uses Jupiter Ultra Search API
   app.get("/api/tokens/search", async (req, res) => {
     try {
       const { q, limit = '50' } = req.query;
@@ -79,8 +79,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ tokens: [] });
       }
 
-      // Use Jupiter's search API
-      const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(q)}`);
+      // Use Jupiter Ultra Search API with API key
+      const jupiterApiKey = process.env.JUPITER_API_KEY;
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      if (jupiterApiKey) {
+        headers['x-api-key'] = jupiterApiKey;
+      }
+      
+      const response = await fetch(`https://api.jup.ag/ultra/v1/search?query=${encodeURIComponent(q)}`, { headers });
       if (!response.ok) {
         console.error('Failed to fetch token list:', response.status);
         return res.json({ tokens: [] });
@@ -89,14 +95,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await response.json();
       const limitNum = parseInt(limit as string, 10);
       
-      // Jupiter search API v2 returns array directly with id, symbol, name, icon fields
-      const rawTokens = Array.isArray(data) ? data : (data.tokens || []);
+      // Jupiter Ultra search returns array directly with id, symbol, name, icon fields
+      const rawTokens = Array.isArray(data) ? data : [];
       
       // Map Jupiter's response to our format
       const tokens = rawTokens
         .slice(0, limitNum)
         .map((t: any) => ({
-          address: t.id || t.address,
+          address: t.id || t.mint || t.address,
           symbol: t.symbol,
           name: t.name,
           decimals: t.decimals || 9,
