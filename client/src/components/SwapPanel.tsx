@@ -455,6 +455,26 @@ export function SwapPanel() {
     setQuote(null);
     setQuoteTimestamp(0);
   };
+  
+  // Fetch balance for a specific token when it's selected but not in balances map
+  const fetchTokenBalance = async (tokenAddress: string) => {
+    if (!publicKey || balances[tokenAddress] !== undefined) return;
+    
+    try {
+      const response = await fetch(`/api/wallet/token-balance?mint=${tokenAddress}&address=${publicKey.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setBalances(prev => ({
+            ...prev,
+            [tokenAddress]: data.balance || 0
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching token balance:', error);
+    }
+  };
 
   return (
     <div className="w-full max-w-md md:max-w-xl lg:max-w-2xl mx-auto bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 md:p-8 shadow-2xl">
@@ -518,6 +538,7 @@ export function SwapPanel() {
                 } else {
                   setFromToken(token);
                 }
+                fetchTokenBalance(token.address);
               }} 
               label="From" 
               balances={balances} 
@@ -564,6 +585,7 @@ export function SwapPanel() {
                 } else {
                   setToToken(token);
                 }
+                fetchTokenBalance(token.address);
               }} 
               label="To" 
               balances={balances} 
