@@ -108,6 +108,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter Price API v3 proxy - for frontend token price lookups
+  app.get("/api/tokens/prices", async (req, res) => {
+    try {
+      const { ids } = req.query;
+      
+      if (!ids || typeof ids !== 'string') {
+        return res.status(400).json({ error: 'Missing ids parameter' });
+      }
+
+      // Validate and limit addresses (max 100 to prevent abuse)
+      const addresses = ids.split(',').slice(0, 100).filter((addr: string) => {
+        // Basic Solana address validation (base58, 32-44 chars)
+        return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr.trim());
+      });
+
+      if (addresses.length === 0) {
+        return res.json({ data: {} });
+      }
+
+      const jupiterApiKey = process.env.JUPITER_API_KEY;
+      const priceResponse = await fetch(`https://api.jup.ag/price/v3?ids=${addresses.join(',')}`, {
+        headers: jupiterApiKey ? { 'x-api-key': jupiterApiKey } : {}
+      });
+
+      if (!priceResponse.ok) {
+        console.error('Jupiter price API error:', priceResponse.status);
+        return res.status(priceResponse.status).json({ error: 'Failed to fetch prices' });
+      }
+
+      const priceData = await priceResponse.json();
+      res.json({ data: priceData });
+    } catch (error) {
+      console.error('Price fetch error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Jupiter API - Get Recent Tokens (newly created pools)
   app.get("/api/tokens/recent", async (req, res) => {
     try {
@@ -682,7 +719,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (tokensWithMetadata.length > 0) {
         try {
           const mintAddresses = tokensWithMetadata.map(t => t.address).join(',');
-          const priceResponse = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mintAddresses}`);
+          const jupiterApiKey = process.env.JUPITER_API_KEY;
+          const priceResponse = await fetch(`https://api.jup.ag/price/v3?ids=${mintAddresses}`, {
+            headers: jupiterApiKey ? { 'x-api-key': jupiterApiKey } : {}
+          });
           
           if (priceResponse.ok) {
             const priceData = await priceResponse.json();
@@ -2348,7 +2388,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (tokens.length > 0) {
         try {
           const mintAddresses = tokens.map(t => t.mint).join(',');
-          const priceResponse = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mintAddresses}`);
+          const jupiterApiKey = process.env.JUPITER_API_KEY;
+          const priceResponse = await fetch(`https://api.jup.ag/price/v3?ids=${mintAddresses}`, {
+            headers: jupiterApiKey ? { 'x-api-key': jupiterApiKey } : {}
+          });
           
           if (priceResponse.ok) {
             const priceData = await priceResponse.json();

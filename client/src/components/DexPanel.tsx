@@ -786,33 +786,35 @@ export function DexPanel() {
     refetchInterval: 30000,
   });
 
-  // Search query for tokens - fetch from Jupiter then get price data
+  // Search query for tokens - fetch from Jupiter then get price data via backend proxy
   const { data: searchData, isLoading: searchLoading } = useQuery<{ tokens: TokenData[] }>({
     queryKey: ['token-search', searchQuery],
     queryFn: async () => {
-      // First get basic token info from Jupiter search
-      const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(searchQuery)}`);
+      // First get basic token info from our backend search endpoint
+      const response = await fetch(`/api/tokens/search?q=${encodeURIComponent(searchQuery)}&limit=20`);
       const data = await response.json();
       
-      if (!Array.isArray(data) || data.length === 0) {
+      if (!data.tokens || data.tokens.length === 0) {
         return { tokens: [] };
       }
 
-      // Get token addresses to fetch price data
-      const addresses = data.slice(0, 20).map((t: any) => t.id);
+      // Get token addresses to fetch price data via backend proxy
+      const addresses = data.tokens.map((t: any) => t.address);
       
-      // Fetch price data from Jupiter price API
-      const priceResponse = await fetch(`https://api.jup.ag/price/v2?ids=${addresses.join(',')}`);
-      const priceData = await priceResponse.json();
+      // Fetch price data from our backend proxy (uses Jupiter Price API v3)
+      const priceResponse = await fetch(`/api/tokens/prices?ids=${addresses.join(',')}`);
+      const priceResult = await priceResponse.json();
+      const priceData = priceResult?.data || {};
       
-      const tokens = data.slice(0, 20).map((t: any) => {
-        const price = priceData?.data?.[t.id]?.price || 0;
+      const tokens = data.tokens.map((t: any) => {
+        const priceInfo = priceData[t.address];
+        const price = priceInfo?.price || 0;
         return {
-          address: t.id,
+          address: t.address,
           symbol: t.symbol,
           name: t.name,
           decimals: t.decimals,
-          logoURI: t.icon,
+          logoURI: t.logoURI,
           price: price,
           price_change_24h: 0,
           market_cap: 0,
