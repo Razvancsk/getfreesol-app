@@ -381,7 +381,8 @@ export function DexPanel() {
     const tokensWithMetadata: TokenInfo[] = [];
     
     try {
-      const holdingsResponse = await fetch(`/api/wallet/all-tokens?address=${publicKey.toString()}`);
+      // Use Jupiter Ultra Holdings API
+      const holdingsResponse = await fetch(`/api/jupiter/ultra/holdings/${publicKey.toString()}`);
       
       if (!holdingsResponse.ok) {
         throw new Error('Failed to fetch holdings');
@@ -389,16 +390,52 @@ export function DexPanel() {
       
       const holdingsData = await holdingsResponse.json();
       
-      if (holdingsData.success && holdingsData.tokens) {
-        for (const token of holdingsData.tokens) {
-          newBalances[token.address] = token.balance;
-          tokensWithMetadata.push({
-            address: token.address,
-            symbol: token.symbol,
-            name: token.name,
-            decimals: token.decimals,
-            logoURI: token.logoURI
-          });
+      // Add native SOL balance
+      if (holdingsData.uiAmount !== undefined) {
+        newBalances[SOL_MINT] = holdingsData.uiAmount;
+        tokensWithMetadata.push({
+          address: SOL_MINT,
+          symbol: 'SOL',
+          name: 'Solana',
+          decimals: 9,
+          logoURI: SOL_LOGO
+        });
+      }
+      
+      // Add token balances
+      if (holdingsData.tokens) {
+        // Fetch token metadata for all tokens
+        const tokenAddresses = Object.keys(holdingsData.tokens);
+        let tokenMetadata: Record<string, any> = {};
+        
+        if (tokenAddresses.length > 0) {
+          try {
+            const metaResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/mints?mints=${tokenAddresses.slice(0, 50).join(',')}`);
+            const metaData = await metaResponse.json();
+            if (Array.isArray(metaData)) {
+              for (const t of metaData) {
+                tokenMetadata[t.id] = t;
+              }
+            }
+          } catch (e) {
+            console.error('Error fetching token metadata:', e);
+          }
+        }
+        
+        for (const [mint, accounts] of Object.entries(holdingsData.tokens)) {
+          const accountArray = accounts as any[];
+          if (accountArray.length > 0) {
+            const account = accountArray[0];
+            const meta = tokenMetadata[mint];
+            newBalances[mint] = account.uiAmount || 0;
+            tokensWithMetadata.push({
+              address: mint,
+              symbol: meta?.symbol || mint.slice(0, 4),
+              name: meta?.name || 'Unknown',
+              decimals: account.decimals || 9,
+              logoURI: meta?.icon
+            });
+          }
         }
       }
       

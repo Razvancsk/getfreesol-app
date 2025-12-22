@@ -370,6 +370,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter Ultra Holdings API - Get token balances
+  app.get("/api/jupiter/ultra/holdings/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      if (!address) {
+        return res.status(400).json({ error: 'Missing wallet address' });
+      }
+
+      const holdingsUrl = `https://api.jup.ag/ultra/v1/holdings/${address}`;
+      
+      const headers: Record<string, string> = {
+        'Accept': 'application/json'
+      };
+      
+      if (process.env.JUPITER_API_KEY) {
+        headers['x-api-key'] = process.env.JUPITER_API_KEY;
+      }
+      
+      const response = await fetch(holdingsUrl, { headers });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Jupiter Holdings API error:', response.status, errorText);
+        return res.status(response.status).json({ error: 'Failed to fetch holdings' });
+      }
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error('Holdings proxy error:', error);
+      res.status(500).json({ error: 'Failed to fetch holdings' });
+    }
+  });
+
   // Jupiter Ultra Swap - Get Order endpoint (replaces quote + swap)
   app.get("/api/jupiter/ultra/order", async (req, res) => {
     try {
