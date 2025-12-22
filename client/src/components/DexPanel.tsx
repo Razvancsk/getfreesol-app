@@ -858,9 +858,56 @@ export function DexPanel() {
           )}
         </div>
 
-        {/* Tabs and Time filter - stacked on mobile, inline on desktop */}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4">
-          <TabsList className="bg-transparent border-0 p-0 gap-2 flex flex-wrap">
+        {/* Mobile: Tabs row then Time filter row (original design) */}
+        <div className="md:hidden">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <TabsList className="bg-transparent border-0 p-0 gap-2">
+              <TabsTrigger value="trending" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+                TRENDING
+              </TabsTrigger>
+              <TabsTrigger value="top" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+                Top
+              </TabsTrigger>
+              <TabsTrigger value="recent" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+                NEW
+              </TabsTrigger>
+              <TabsTrigger value="volume" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
+                Volume
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="flex items-center gap-2 mb-4">
+            {(activeTab === 'trending' || activeTab === 'top' || activeTab === 'volume' || activeTab === 'txns') && (
+              <div className="flex items-center gap-1 bg-[#2a1f4e]/60 rounded-full p-1">
+                {['5m', '1h', '6h', '24h'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setInterval(t as typeof interval)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${interval === t ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+            {activeTab === 'recent' && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-purple-300 hover:text-white"
+                onClick={() => refetchRecent()}
+                disabled={recentLoading}
+                data-testid="button-refresh-recent-mobile"
+              >
+                <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop: Tabs and Time filter inline on same row */}
+        <div className="hidden md:flex md:items-center md:justify-between mb-4">
+          <TabsList className="bg-transparent border-0 p-0 gap-2 flex">
             <TabsTrigger value="trending" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
               TRENDING
             </TabsTrigger>
@@ -878,7 +925,6 @@ export function DexPanel() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Time filter - inline on desktop */}
           <div className="flex items-center gap-2">
             {(activeTab === 'trending' || activeTab === 'top' || activeTab === 'volume' || activeTab === 'txns') && (
               <div className="flex items-center gap-1 bg-[#2a1f4e]/60 rounded-full p-1">
