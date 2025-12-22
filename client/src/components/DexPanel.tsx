@@ -532,7 +532,9 @@ export function DexPanel() {
     const token = selectedToken;
 
     try {
-      const inputAmount = Math.floor(amount * 1e9);
+      // Use the correct decimals for the input token
+      const inputDecimals = inputToken.decimals || 9;
+      const inputAmount = Math.floor(amount * Math.pow(10, inputDecimals));
       
       const orderUrl = `/api/jupiter/ultra/order?inputMint=${inputToken.address}&outputMint=${token.address}&amount=${inputAmount}&taker=${publicKey.toString()}`;
       console.log('Fetching swap quote:', orderUrl);
@@ -561,7 +563,12 @@ export function DexPanel() {
         throw new Error('No swap route available');
       }
       
+      // Check if Jupiter returned a transaction
       if (!quote.transaction || !quote.requestId) {
+        // hasTransaction: false usually means the amount is too low or no route
+        if (quote.hasTransaction === false) {
+          throw new Error('Amount too small or no route available for this swap');
+        }
         throw new Error('Invalid order: missing transaction');
       }
 
