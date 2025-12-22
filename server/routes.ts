@@ -645,10 +645,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Swapping TO stablecoin - use output amount as USD value
               swapUsdValue = parsedOutputAmount;
             } else {
-              // Fetch price from Jupiter Price API v3 for input token
+              // Fetch price from Jupiter Price API v2 for input token
               try {
                 const priceResponse = await fetch(
-                  `https://api.jup.ag/price/v3?ids=${inputMint}`,
+                  `https://api.jup.ag/price/v2?ids=${inputMint}`,
                   { 
                     headers: { 
                       'x-api-key': process.env.JUPITER_API_KEY || '',
@@ -659,10 +659,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (priceResponse.ok) {
                   const priceData = await priceResponse.json();
-                  // v3 uses 'usdPrice' field instead of 'price'
-                  const tokenPrice = priceData?.data?.[inputMint]?.usdPrice || 0;
+                  // v2 uses 'price' field (string format, e.g., "132.176540000")
+                  const tokenPriceStr = priceData?.data?.[inputMint]?.price;
+                  const tokenPrice = parseFloat(tokenPriceStr) || 0;
                   swapUsdValue = parsedInputAmount * tokenPrice;
                   console.log(`📊 Token price for ${inputMint}: $${tokenPrice}, USD value: $${swapUsdValue.toFixed(2)}`);
+                } else {
+                  console.error('Price API returned error:', await priceResponse.text());
                 }
               } catch (priceError) {
                 console.error('Failed to fetch token price:', priceError);
