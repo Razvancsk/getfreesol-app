@@ -40,7 +40,11 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Statistics Dashboard**: Displays recovery statistics and transaction history.
 - **Multi-Wallet Integration**: Supports 8 different wallet types including hardware wallets.
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
-- **Jupiter Ultra Swap Integration**: Advanced token swapping using Jupiter Ultra API with referral fee collection.
+- **Jupiter Ultra Swap Integration**: Advanced token swapping using Jupiter Ultra API with referral fee collection. Records all swaps and awards points.
+- **Points Reward System**: User engagement rewards calculated based on actions:
+  - **Account Closures**: 20 points per account closed (rent claims, token burns, NFT burns)
+  - **Swaps**: 100 points per $1 USD swapped (calculated server-side via Jupiter Price API)
+  - Points are tracked in `user_points` table with leaderboard support
 - **Solana Integration**: Handles RPC interactions for account discovery and transaction submission.
 - **Server-Side Open Graph**: Dynamic social media link previews for sharing.
 
@@ -64,6 +68,8 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - `referral_token_accounts`: Multi-token fee collection accounts for each referral account.
 - `referral_fee_transactions`: Records of fees collected through referral system.
 - `referral_claims`: Developer claims of accumulated referral fees.
+- `swap_records`: Records token swaps with USD value and points awarded.
+- `user_points`: Tracks wallet addresses, points, accounts closed, and total SOL claimed.
 
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.

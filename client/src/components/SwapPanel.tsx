@@ -342,12 +342,23 @@ export function SwapPanel() {
 
       console.log('✅ Transaction signed, executing with requestId:', quote.requestId);
       
+      // Execute via Ultra Swap API (Jupiter handles transaction sending)
+      // USD value is calculated server-side using Jupiter Price API for accuracy
       const executeResponse = await fetch('/api/jupiter/ultra/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           signedTransaction: signedBase64,
-          requestId: quote.requestId
+          requestId: quote.requestId,
+          // Swap details for recording and points (USD value calculated server-side)
+          walletAddress: publicKey.toBase58(),
+          inputMint: fromToken?.address,
+          outputMint: toToken?.address,
+          inputAmount: fromAmount,
+          outputAmount: toAmount,
+          inputSymbol: fromToken?.symbol,
+          outputSymbol: toToken?.symbol,
+          platformFee: quote.platformFee?.amount || "0"
         })
       });
 

@@ -653,12 +653,26 @@ export function DexPanel() {
 
       console.log('Executing swap...');
       
+      // Calculate output amount for display
+      const outputAmountValue = parseFloat(quote.outAmount) / Math.pow(10, token.decimals || 6);
+      
+      // Execute via Ultra Swap API (Jupiter handles transaction sending)
+      // USD value is calculated server-side using Jupiter Price API for accuracy
       const executeResponse = await fetch('/api/jupiter/ultra/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           signedTransaction: signedBase64,
-          requestId: quote.requestId
+          requestId: quote.requestId,
+          // Swap details for recording and points (USD value calculated server-side)
+          walletAddress: publicKey.toString(),
+          inputMint: inputToken.address,
+          outputMint: token.address,
+          inputAmount: amount.toString(),
+          outputAmount: outputAmountValue.toString(),
+          inputSymbol: inputToken.symbol,
+          outputSymbol: token.symbol,
+          platformFee: quote.platformFee?.amount || "0"
         })
       });
 

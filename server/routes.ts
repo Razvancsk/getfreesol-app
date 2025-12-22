@@ -576,7 +576,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Jupiter API key not configured' });
       }
 
-      const { signedTransaction, requestId } = req.body;
+      const { 
+        signedTransaction, 
+        requestId,
+        // Additional swap details for recording
+        walletAddress,
+        inputMint,
+        outputMint,
+        inputAmount,
+        outputAmount,
+        inputSymbol,
+        outputSymbol,
+        usdValue,
+        platformFee,
+        referralCode
+      } = req.body;
       
       if (!signedTransaction || !requestId) {
         return res.status(400).json({ error: 'Missing required parameters: signedTransaction, requestId' });
@@ -608,6 +622,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (executeData.status === "Success") {
         console.log('✅ Ultra Swap successful:', JSON.stringify(executeData, null, 2));
         console.log(`   https://solscan.io/tx/${executeData.signature}`);
+        
+        // Record swap and award points if wallet address is provided
+        if (walletAddress && inputMint && outputMint && executeData.signature) {
+          try {
+            // Calculate USD value server-side using Jupiter Price API
+            let swapUsdValue = 0;
+            
+            // Known stablecoins - if input or output is a stablecoin, use that as USD value
+            const STABLECOINS = [
+              'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+              'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+            ];
+            
+            const parsedInputAmount = parseFloat(inputAmount) || 0;
+            const parsedOutputAmount = parseFloat(outputAmount) || 0;
+            
+            if (STABLECOINS.includes(inputMint)) {
+              // Swapping FROM stablecoin - use input amount as USD value
+              swapUsdValue = parsedInputAmount;
+            } else if (STABLECOINS.includes(outputMint)) {
+              // Swapping TO stablecoin - use output amount as USD value
+              swapUsdValue = parsedOutputAmount;
+            } else {
+              // Fetch price from Jupiter Price API v3 for input token
+              try {
+                const priceResponse = await fetch(
+                  `https://api.jup.ag/price/v3?ids=${inputMint}`,
+                  { 
+                    headers: { 
+                      'x-api-key': process.env.JUPITER_API_KEY || '',
+                      'Accept': 'application/json'
+                    } 
+                  }
+                );
+                
+                if (priceResponse.ok) {
+                  const priceData = await priceResponse.json();
+                  // v3 uses 'usdPrice' field instead of 'price'
+                  const tokenPrice = priceData?.data?.[inputMint]?.usdPrice || 0;
+                  swapUsdValue = parsedInputAmount * tokenPrice;
+                  console.log(`📊 Token price for ${inputMint}: $${tokenPrice}, USD value: $${swapUsdValue.toFixed(2)}`);
+                }
+              } catch (priceError) {
+                console.error('Failed to fetch token price:', priceError);
+              }
+            }
+            
+            // Award points based on USD value (1 point per $0.01 = 100 points per $1)
+            let pointsAwarded = 0;
+            if (swapUsdValue > 0) {
+              pointsAwarded = await storage.awardSwapPoints(walletAddress, swapUsdValue);
+            }
+            
+            // Record the swap
+            await storage.createSwapRecord({
+              walletAddress,
+              txSignature: executeData.signature,
+              inputMint,
+              outputMint,
+              inputAmount: inputAmount?.toString() || "0",
+              outputAmount: outputAmount?.toString() || "0",
+              inputSymbol: inputSymbol || null,
+              outputSymbol: outputSymbol || null,
+              usdValue: swapUsdValue.toFixed(2),
+              pointsAwarded,
+              platformFee: platformFee?.toString() || "0",
+              referralCode: referralCode || null
+            });
+            
+            console.log(`🎯 Swap recorded: ${walletAddress} swapped $${swapUsdValue.toFixed(2)} USD, earned ${pointsAwarded} points`);
+            
+            // Add points info to response
+            executeData.pointsAwarded = pointsAwarded;
+            executeData.usdValue = swapUsdValue.toFixed(2);
+          } catch (recordError) {
+            console.error('Failed to record swap:', recordError);
+            // Don't fail the response, swap was still successful
+          }
+        }
       } else {
         console.error('❌ Ultra Swap failed:', JSON.stringify(executeData, null, 2));
         if (executeData.signature) {
