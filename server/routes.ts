@@ -89,15 +89,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await response.json();
       const limitNum = parseInt(limit as string, 10);
       
+      // Jupiter search API v2 returns array directly with id, symbol, name, icon fields
+      const rawTokens = Array.isArray(data) ? data : (data.tokens || []);
+      
       // Map Jupiter's response to our format
-      const tokens = (data.tokens || [])
+      const tokens = rawTokens
         .slice(0, limitNum)
         .map((t: any) => ({
-          address: t.address,
+          address: t.id || t.address,
           symbol: t.symbol,
           name: t.name,
-          decimals: t.decimals,
-          logoURI: t.logoURI
+          decimals: t.decimals || 9,
+          logoURI: t.icon || t.logoURI
         }));
 
       console.log(`Found ${tokens.length} tokens for query "${q}"`);
