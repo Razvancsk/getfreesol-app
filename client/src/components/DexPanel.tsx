@@ -858,7 +858,7 @@ export function DexPanel() {
             {searchLoading ? (
               <TokenListSkeleton />
             ) : searchData?.tokens?.length ? (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {searchData.tokens.map((token) => (
                   <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
                 ))}
@@ -881,7 +881,7 @@ export function DexPanel() {
             )}
 
             <TabsContent value="trending" className="mt-0 w-full">
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {trendingLoading ? (
               <TokenListSkeleton />
             ) : trendingData?.tokens?.length ? (
@@ -889,7 +889,7 @@ export function DexPanel() {
                 <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
               ))
             ) : (
-              <div className="text-center py-8 text-purple-300/60">
+              <div className="text-center py-8 text-purple-300/60 col-span-full">
                 No trending tokens found
               </div>
             )}
@@ -897,7 +897,7 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="top" className="mt-0 w-full">
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {topLoading ? (
               <TokenListSkeleton />
             ) : topData?.tokens?.length ? (
@@ -905,7 +905,7 @@ export function DexPanel() {
                 <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
               ))
             ) : (
-              <div className="text-center py-8 text-purple-300/60">
+              <div className="text-center py-8 text-purple-300/60 col-span-full">
                 No top traded tokens found
               </div>
             )}
@@ -913,7 +913,7 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="recent" className="mt-0 w-full">
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentLoading ? (
               <TokenListSkeleton />
             ) : recentData?.tokens?.length ? (
@@ -921,7 +921,7 @@ export function DexPanel() {
                 <TokenCard key={token.address} token={token} now={now} isRecent onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
               ))
             ) : (
-              <div className="text-center py-8 text-purple-300/60">
+              <div className="text-center py-8 text-purple-300/60 col-span-full">
                 No recent tokens found
               </div>
             )}
@@ -929,7 +929,7 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="volume" className="mt-0 w-full">
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {volumeLoading ? (
               <TokenListSkeleton />
             ) : volumeData?.tokens?.length ? (
@@ -937,7 +937,7 @@ export function DexPanel() {
                 <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
               ))
             ) : (
-              <div className="text-center py-8 text-purple-300/60">
+              <div className="text-center py-8 text-purple-300/60 col-span-full">
                 No tokens found
               </div>
             )}
@@ -945,7 +945,7 @@ export function DexPanel() {
         </TabsContent>
 
         <TabsContent value="txns" className="mt-0 w-full">
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {txnsLoading ? (
               <TokenListSkeleton />
             ) : txnsData?.tokens?.length ? (
@@ -953,7 +953,7 @@ export function DexPanel() {
                 <TokenCard key={token.address} token={token} now={now} onSwap={handleSelectToken} isSwapping={swappingToken === token.address} />
               ))
             ) : (
-              <div className="text-center py-8 text-purple-300/60">
+              <div className="text-center py-8 text-purple-300/60 col-span-full">
                 No tokens found
               </div>
             )}
