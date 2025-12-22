@@ -302,12 +302,16 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-purple-300/60">Volume</span>
-            <span className="text-white font-medium">{formatNumber(token.daily_volume)}</span>
+            <span className="text-purple-300/60">Age</span>
+            <span className="text-white font-medium">{age}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-purple-300/60">Market Cap</span>
             <span className="text-white font-medium">{formatNumber(token.market_cap)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-purple-300/60">Volume</span>
+            <span className="text-white font-medium">{formatNumber(token.daily_volume)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-purple-300/60">Liquidity</span>
@@ -350,10 +354,10 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
         <div className="grid grid-cols-2 gap-4 pt-3 border-t border-purple-500/20">
           <div>
             <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
-              <span>💰</span>
-              <span>Volume</span>
+              <span>⏱️</span>
+              <span>Age</span>
             </div>
-            <div className="text-white font-semibold text-base">{formatNumber(token.daily_volume)}</div>
+            <div className="text-white font-semibold text-base">{age}</div>
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
@@ -361,6 +365,13 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
               <span>Market Cap</span>
             </div>
             <div className="text-white font-semibold text-base">{formatNumber(token.market_cap)}</div>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
+              <span>💰</span>
+              <span>Volume</span>
+            </div>
+            <div className="text-white font-semibold text-base">{formatNumber(token.daily_volume)}</div>
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
