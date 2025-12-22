@@ -799,9 +799,9 @@ export function DexPanel() {
           )}
         </div>
 
-        {/* Tabs row - mobile friendly */}
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <TabsList className="bg-transparent border-0 p-0 gap-2 flex-wrap">
+        {/* Tabs and Time filter - stacked on mobile, inline on desktop */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4">
+          <TabsList className="bg-transparent border-0 p-0 gap-2 flex flex-wrap">
             <TabsTrigger value="trending" className="bg-purple-600/30 data-[state=active]:bg-purple-600 rounded-full px-4 py-1.5 text-sm font-medium">
               TRENDING
             </TabsTrigger>
@@ -818,35 +818,35 @@ export function DexPanel() {
               Txns
             </TabsTrigger>
           </TabsList>
-        </div>
 
-        {/* Time filter row */}
-        <div className="flex items-center gap-2 mb-4">
-          {(activeTab === 'trending' || activeTab === 'top' || activeTab === 'volume' || activeTab === 'txns') && (
-            <div className="flex items-center gap-1 bg-[#2a1f4e]/60 rounded-full p-1">
-              {['5m', '1h', '6h', '24h'].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setInterval(t as typeof interval)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${interval === t ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'}`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-          {activeTab === 'recent' && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-purple-300 hover:text-white"
-              onClick={() => refetchRecent()}
-              disabled={recentLoading}
-              data-testid="button-refresh-recent"
-            >
-              <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
-            </Button>
-          )}
+          {/* Time filter - inline on desktop */}
+          <div className="flex items-center gap-2">
+            {(activeTab === 'trending' || activeTab === 'top' || activeTab === 'volume' || activeTab === 'txns') && (
+              <div className="flex items-center gap-1 bg-[#2a1f4e]/60 rounded-full p-1">
+                {['5m', '1h', '6h', '24h'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setInterval(t as typeof interval)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${interval === t ? 'bg-purple-600 text-white' : 'text-purple-300 hover:text-white'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+            {activeTab === 'recent' && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-purple-300 hover:text-white"
+                onClick={() => refetchRecent()}
+                disabled={recentLoading}
+                data-testid="button-refresh-recent"
+              >
+                <RefreshCw className={`h-4 w-4 ${recentLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Search Results */}
