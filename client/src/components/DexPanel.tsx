@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { VersionedTransaction } from '@solana/web3.js';
 import { Card, CardContent } from '@/components/ui/card';
@@ -692,11 +693,18 @@ export function DexPanel() {
       if (executeData.status === "Success") {
         const signature = executeData.signature;
         
+        // Invalidate user stats and points queries to refresh after swap
+        queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/points/leaderboard'] });
+        
         toast({
           title: 'Swap Successful!',
           description: (
             <div className="space-y-1">
               <p>Transaction confirmed on Solana blockchain</p>
+              {executeData.pointsAwarded > 0 && (
+                <p className="text-green-200">+{executeData.pointsAwarded} points earned!</p>
+              )}
               <a 
                 href={`https://solscan.io/tx/${signature}`}
                 target="_blank"

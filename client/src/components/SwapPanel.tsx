@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { VersionedTransaction } from '@solana/web3.js';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 
 interface TokenInfo {
   address: string;
@@ -385,11 +386,18 @@ export function SwapPanel() {
         const signature = executeData.signature;
         console.log('✅ Ultra Swap successful:', signature);
         
+        // Invalidate user stats and points queries to refresh after swap
+        queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/points/leaderboard'] });
+        
         toast({
           title: 'Swap Successful!',
           description: (
             <div className="space-y-2">
               <p>Transaction confirmed on Solana blockchain</p>
+              {executeData.pointsAwarded > 0 && (
+                <p className="text-green-200">+{executeData.pointsAwarded} points earned!</p>
+              )}
               <a 
                 href={`https://solscan.io/tx/${signature}`}
                 target="_blank"
