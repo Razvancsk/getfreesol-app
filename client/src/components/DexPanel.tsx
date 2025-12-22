@@ -605,27 +605,19 @@ export function DexPanel() {
       
       if (executeData.status === "Success") {
         const signature = executeData.signature;
-        const outDecimals = token.decimals || 9;
-        const outAmount = parseFloat(quote.outAmount) / Math.pow(10, outDecimals);
-        const inAmount = parseFloat(solAmount);
-        
-        // Determine output token symbol (what we're receiving)
-        const outputSymbol = token.symbol || 'tokens';
-        // Determine input token symbol (what we're paying)
-        const inputSymbol = inputToken.symbol || 'tokens';
         
         toast({
           title: 'Swap Successful!',
           description: (
             <div className="space-y-1">
-              <p>Swapped {inAmount.toLocaleString()} {inputSymbol} for {outAmount.toFixed(6)} {outputSymbol}</p>
+              <p>Transaction confirmed on Solana blockchain</p>
               <a 
                 href={`https://solscan.io/tx/${signature}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-white hover:text-green-100 underline"
               >
-                View Transaction
+                View Transaction →
               </a>
             </div>
           ),
