@@ -963,9 +963,167 @@ export function DexPanel() {
         )}
       </Tabs>
 
-      {/* Slide-up Swap Panel - Mobile friendly bottom sheet */}
+      {/* Desktop Swap Panel - Fixed bottom-right corner (hidden on mobile) */}
+      {selectedToken && (
+        <div className="hidden md:block fixed bottom-0 right-0 z-50 w-[340px] bg-gradient-to-br from-purple-800/30 to-purple-900/50 backdrop-blur-sm rounded-tl-xl border border-purple-500/30 p-4 shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-white">Swap</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedToken(null)}
+              className="p-1 text-purple-300 hover:text-white hover:bg-purple-800/30 h-6 w-6"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {/* Pay Section */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-purple-300">Pay:</label>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-purple-400">
+                    ≈ {(balances[inputToken.address] || 0).toFixed(4)} {inputToken.symbol}
+                  </span>
+                  <button 
+                    onClick={() => {
+                      const balance = balances[inputToken.address] || 0;
+                      setSolAmount((balance / 2).toFixed(6));
+                    }}
+                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-[10px] font-medium transition-colors"
+                  >
+                    HALF
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const balance = balances[inputToken.address] || 0;
+                      const isSol = inputToken.address === 'So11111111111111111111111111111111111111112';
+                      const feeReserve = 0.01;
+                      const maxAmount = isSol ? Math.max(0, balance - feeReserve) : balance;
+                      setSolAmount(maxAmount.toFixed(6));
+                    }}
+                    className="px-2 py-0.5 bg-purple-800/50 hover:bg-purple-700/50 text-purple-200 hover:text-white rounded text-[10px] font-medium transition-colors"
+                  >
+                    MAX
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/30 rounded-lg p-2">
+                <DexTokenSelector
+                  token={inputToken}
+                  onSelect={handleSelectInputToken}
+                  balances={balances}
+                  ownedTokens={ownedTokens}
+                />
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={solAmount}
+                    onChange={(e) => setSolAmount(e.target.value)}
+                    className="w-full bg-transparent border-none text-right text-white text-lg font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                    data-testid="input-swap-pay-amount-desktop"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Swap Direction Button */}
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const newInputToken: TokenInfo = {
+                    address: selectedToken.address,
+                    symbol: selectedToken.symbol,
+                    name: selectedToken.name,
+                    decimals: selectedToken.decimals,
+                    logoURI: selectedToken.logoURI
+                  };
+                  const newOutputToken: TokenData = {
+                    address: inputToken.address,
+                    symbol: inputToken.symbol,
+                    name: inputToken.name,
+                    decimals: inputToken.decimals,
+                    logoURI: inputToken.logoURI,
+                    price: 0,
+                    market_cap: 0,
+                    daily_volume: 0,
+                    liquidity: 0,
+                    num_transactions: 0
+                  };
+                  setInputToken(newInputToken);
+                  setSelectedToken(newOutputToken);
+                  setSolAmount('');
+                  setQuoteAmount('0.00');
+                }}
+                className="text-purple-300 hover:text-white hover:bg-purple-800/30 rounded-full"
+              >
+                <ArrowDownUp className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Receive Section */}
+            <div className="space-y-1">
+              <label className="text-xs text-purple-300">Receive:</label>
+              <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/30 rounded-lg p-2">
+                <button className="flex items-center gap-1.5 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-2 py-1.5 transition-colors text-sm">
+                  {selectedToken.logoURI && (
+                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-5 h-5 rounded-full" />
+                  )}
+                  <span className="text-white font-medium">{selectedToken.symbol}</span>
+                  <ChevronDown className="w-3 h-3 text-purple-300" />
+                </button>
+                <div className="flex-1 min-w-0">
+                  {isQuoting ? (
+                    <div className="text-right text-purple-300 text-lg">
+                      <Loader2 className="w-4 h-4 animate-spin inline" />
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="0.00"
+                      value={quoteAmount}
+                      readOnly
+                      className="w-full bg-transparent border-none text-right text-white text-lg font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+                      data-testid="input-swap-receive-amount-desktop"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Swap Button */}
+            <Button
+              onClick={executeSwap}
+              disabled={!publicKey || isSwapping}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-9 text-sm rounded-lg"
+              data-testid="button-execute-swap-desktop"
+            >
+              {isSwapping ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Swapping...
+                </>
+              ) : (
+                'Swap'
+              )}
+            </Button>
+
+            {!publicKey && (
+              <p className="text-sm text-center text-purple-300">
+                Connect your wallet to swap
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Swap Panel - Full-width bottom sheet (hidden on desktop) */}
       {selectedToken && createPortal(
-        <div className="fixed inset-0 z-[100]">
+        <div className="md:hidden fixed inset-0 z-[100]">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSelectedToken(null)} />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-b from-purple-900 to-purple-950 rounded-t-3xl p-5 pb-8 animate-in slide-in-from-bottom duration-300">
             {/* Drag handle */}
