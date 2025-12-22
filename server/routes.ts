@@ -860,7 +860,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Process all token holdings (includes both standard and Token-2022)
       if (holdings.tokens) {
-        for (const [mintAddress, tokenAccounts] of Object.entries(holdings.tokens)) {
+        const tokenEntries = Object.entries(holdings.tokens);
+        const mintAddresses = tokenEntries.map(([mint]) => mint);
+        
+        // Batch fetch metadata for all tokens at once using mints endpoint
+        let tokenMetadata: Record<string, any> = {};
+        if (mintAddresses.length > 0) {
+          try {
+            // Use mints endpoint for batch metadata (up to 100 tokens per request)
+            const batchSize = 100;
+            for (let i = 0; i < mintAddresses.length; i += batchSize) {
+              const batch = mintAddresses.slice(i, i + batchSize);
+              const metaResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/mints?mints=${batch.join(',')}`);
+              if (metaResponse.ok) {
+                const metaData = await metaResponse.json();
+                if (Array.isArray(metaData)) {
+                  for (const t of metaData) {
+                    if (t && t.id) {
+                      tokenMetadata[t.id] = t;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Error batch fetching token metadata:', err);
+          }
+        }
+        
+        for (const [mintAddress, tokenAccounts] of tokenEntries) {
           // Sum all token accounts for this mint (some tokens may have multiple accounts)
           const totalBalance = (tokenAccounts as any[]).reduce((sum, acc) => 
             sum + parseFloat(acc.uiAmount || '0'), 0
@@ -868,42 +896,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (totalBalance > 0) {
             const firstAccount = (tokenAccounts as any[])[0];
+            const metadata = tokenMetadata[mintAddress];
             
-            // Fetch metadata from Jupiter
-            try {
-              const metadataResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mintAddress}`);
-              if (metadataResponse.ok) {
-                const searchResults = await metadataResponse.json();
-                const metadata = Array.isArray(searchResults) 
-                  ? searchResults.find((t: any) => t.id === mintAddress)
-                  : null;
-                
-                if (metadata) {
-                  tokensWithMetadata.push({
-                    address: mintAddress,
-                    symbol: metadata.symbol || 'UNKNOWN',
-                    name: metadata.name || 'Unknown Token',
-                    decimals: firstAccount.decimals,
-                    logoURI: metadata.icon || '',
-                    balance: totalBalance,
-                    balanceRaw: (tokenAccounts as any[]).reduce((sum, acc) => 
-                      sum + BigInt(acc.amount || '0'), BigInt(0)
-                    ).toString()
-                  });
-                  continue;
-                }
-              }
-            } catch (err) {
-              console.error(`Error fetching metadata for ${mintAddress}:`, err);
-            }
-
-            // Fallback if metadata not found
             tokensWithMetadata.push({
               address: mintAddress,
-              symbol: 'UNKNOWN',
-              name: 'Unknown Token',
+              symbol: metadata?.symbol || mintAddress.slice(0, 4),
+              name: metadata?.name || 'Unknown Token',
               decimals: firstAccount.decimals,
-              logoURI: '',
+              logoURI: metadata?.icon || '',
               balance: totalBalance,
               balanceRaw: (tokenAccounts as any[]).reduce((sum, acc) => 
                 sum + BigInt(acc.amount || '0'), BigInt(0)
