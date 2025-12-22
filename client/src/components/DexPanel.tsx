@@ -287,13 +287,13 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
                 <span className="text-lg font-bold text-purple-300">{displaySymbol?.charAt(0)}</span>
               )}
             </div>
-            <div>
-              <div className="font-bold text-white text-base">{displayName}</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-white text-base truncate max-w-[140px]">{displayName}</div>
               <div className="text-xs text-white/80">{displaySymbol}</div>
               <div className="text-xs text-white/60 font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right flex-shrink-0">
             <div className="font-bold text-white text-lg">{formatPrice(token.price)}</div>
             {priceChange && (
               <div className={`text-sm font-medium ${priceChange.color}`}>{priceChange.text}</div>
@@ -338,13 +338,13 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
                 <span className="text-xl font-bold text-purple-300">{displaySymbol?.charAt(0)}</span>
               )}
             </div>
-            <div>
-              <div className="font-bold text-white text-lg">{displayName}</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-white text-lg truncate max-w-[180px]">{displayName}</div>
               <div className="text-sm text-purple-200">{displaySymbol}</div>
               <div className="text-xs text-purple-400/70 font-mono mt-0.5">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right flex-shrink-0">
             <div className="font-bold text-white text-xl">{formatPrice(token.price)}</div>
             {priceChange && (
               <div className={`text-base font-semibold ${priceChange.color}`}>{priceChange.text}</div>
