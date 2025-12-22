@@ -247,7 +247,7 @@ function shortenAddress(str: string): string {
   return str;
 }
 
-// Token card matching reference design with larger size
+// Token card with responsive design - original small on mobile, larger on desktop
 function TokenCard({ token, isRecent, now, onSwap, isSwapping }: { 
   token: TokenData; 
   isRecent?: boolean; 
@@ -271,66 +271,113 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
   };
   
   return (
-    <div 
-      onClick={handleClick}
-      className={`bg-[#1a1035] rounded-2xl p-5 hover:bg-[#251845] transition-all border border-purple-500/40 cursor-pointer shadow-lg ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
-    >
-      {/* Header row - logo, name, price */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-[#0d0820] border-2 border-purple-500/50 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {token.logoURI ? (
-              <img src={token.logoURI} alt={displaySymbol} className="w-14 h-14 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            ) : (
-              <span className="text-xl font-bold text-purple-300">{displaySymbol?.charAt(0)}</span>
+    <>
+      {/* Mobile Card - Original smaller design */}
+      <div 
+        onClick={handleClick}
+        className={`md:hidden bg-[#2a1f4e]/80 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/30 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-[#1a1035] border border-purple-400/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {token.logoURI ? (
+                <img src={token.logoURI} alt={displaySymbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <span className="text-lg font-bold text-purple-300">{displaySymbol?.charAt(0)}</span>
+              )}
+            </div>
+            <div>
+              <div className="font-bold text-white text-base">{displayName}</div>
+              <div className="text-xs text-white/80">{displaySymbol}</div>
+              <div className="text-xs text-white/60 font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-bold text-white text-lg">{formatPrice(token.price)}</div>
+            {priceChange && (
+              <div className={`text-sm font-medium ${priceChange.color}`}>{priceChange.text}</div>
             )}
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-purple-300/60">Volume</span>
+            <span className="text-white font-medium">{formatNumber(token.daily_volume)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-purple-300/60">Market Cap</span>
+            <span className="text-white font-medium">{formatNumber(token.market_cap)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-purple-300/60">Liquidity</span>
+            <span className="text-white font-medium">{formatNumber(token.liquidity)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-purple-300/60">Txns</span>
+            <span className="text-white font-medium">{formatTransactions(token.num_transactions)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Card - Larger design */}
+      <div 
+        onClick={handleClick}
+        className={`hidden md:block bg-[#1a1035] rounded-2xl p-5 hover:bg-[#251845] transition-all border border-purple-500/40 cursor-pointer shadow-lg ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-[#0d0820] border-2 border-purple-500/50 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {token.logoURI ? (
+                <img src={token.logoURI} alt={displaySymbol} className="w-14 h-14 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <span className="text-xl font-bold text-purple-300">{displaySymbol?.charAt(0)}</span>
+              )}
+            </div>
+            <div>
+              <div className="font-bold text-white text-lg">{displayName}</div>
+              <div className="text-sm text-purple-200">{displaySymbol}</div>
+              <div className="text-xs text-purple-400/70 font-mono mt-0.5">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-bold text-white text-xl">{formatPrice(token.price)}</div>
+            {priceChange && (
+              <div className={`text-base font-semibold ${priceChange.color}`}>{priceChange.text}</div>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-purple-500/20">
           <div>
-            <div className="font-bold text-white text-lg">{displayName}</div>
-            <div className="text-sm text-purple-200">{displaySymbol}</div>
-            <div className="text-xs text-purple-400/70 font-mono mt-0.5">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
+            <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
+              <span>💰</span>
+              <span>Volume</span>
+            </div>
+            <div className="text-white font-semibold text-base">{formatNumber(token.daily_volume)}</div>
           </div>
-        </div>
-        <div className="text-right">
-          <div className="font-bold text-white text-xl">{formatPrice(token.price)}</div>
-          {priceChange && (
-            <div className={`text-base font-semibold ${priceChange.color}`}>{priceChange.text}</div>
-          )}
+          <div>
+            <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
+              <span>📊</span>
+              <span>Market Cap</span>
+            </div>
+            <div className="text-white font-semibold text-base">{formatNumber(token.market_cap)}</div>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
+              <span>💧</span>
+              <span>Liquidity</span>
+            </div>
+            <div className="text-white font-semibold text-base">{formatNumber(token.liquidity)}</div>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
+              <span>📈</span>
+              <span>Transactions</span>
+            </div>
+            <div className="text-white font-semibold text-base">{formatTransactions(token.num_transactions)}</div>
+          </div>
         </div>
       </div>
-      
-      {/* Stats - 2x2 grid with labels on top */}
-      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-purple-500/20">
-        <div>
-          <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
-            <span>💰</span>
-            <span>Volume</span>
-          </div>
-          <div className="text-white font-semibold text-base">{formatNumber(token.daily_volume)}</div>
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
-            <span>📊</span>
-            <span>Market Cap</span>
-          </div>
-          <div className="text-white font-semibold text-base">{formatNumber(token.market_cap)}</div>
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
-            <span>💧</span>
-            <span>Liquidity</span>
-          </div>
-          <div className="text-white font-semibold text-base">{formatNumber(token.liquidity)}</div>
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
-            <span>📈</span>
-            <span>Transactions</span>
-          </div>
-          <div className="text-white font-semibold text-base">{formatTransactions(token.num_transactions)}</div>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 
