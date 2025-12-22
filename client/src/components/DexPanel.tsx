@@ -289,7 +289,9 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-bold text-white text-base truncate max-w-[140px]">{displayName}</div>
-              <div className="text-xs text-white/80">{displaySymbol}</div>
+              <div className="text-xs text-white/80">
+                {displaySymbol} <span className="text-green-400">{age}</span>
+              </div>
               <div className="text-xs text-white/60 font-mono">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
             </div>
           </div>
@@ -302,16 +304,12 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-purple-300/60">Age</span>
-            <span className="text-white font-medium">{age}</span>
+            <span className="text-purple-300/60">Volume</span>
+            <span className="text-white font-medium">{formatNumber(token.daily_volume)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-purple-300/60">Market Cap</span>
             <span className="text-white font-medium">{formatNumber(token.market_cap)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-purple-300/60">Volume</span>
-            <span className="text-white font-medium">{formatNumber(token.daily_volume)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-purple-300/60">Liquidity</span>
@@ -340,7 +338,9 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-bold text-white text-lg truncate max-w-[180px]">{displayName}</div>
-              <div className="text-sm text-purple-200">{displaySymbol}</div>
+              <div className="text-sm text-purple-200">
+                {displaySymbol} <span className="text-green-400">{age}</span>
+              </div>
               <div className="text-xs text-purple-400/70 font-mono mt-0.5">{token.address.slice(0, 6)}...{token.address.slice(-4)}</div>
             </div>
           </div>
@@ -354,10 +354,10 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
         <div className="grid grid-cols-2 gap-4 pt-3 border-t border-purple-500/20">
           <div>
             <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
-              <span>⏱️</span>
-              <span>Age</span>
+              <span>💰</span>
+              <span>Volume</span>
             </div>
-            <div className="text-white font-semibold text-base">{age}</div>
+            <div className="text-white font-semibold text-base">{formatNumber(token.daily_volume)}</div>
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
@@ -365,13 +365,6 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
               <span>Market Cap</span>
             </div>
             <div className="text-white font-semibold text-base">{formatNumber(token.market_cap)}</div>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
-              <span>💰</span>
-              <span>Volume</span>
-            </div>
-            <div className="text-white font-semibold text-base">{formatNumber(token.daily_volume)}</div>
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-purple-300/70 text-xs mb-1">
