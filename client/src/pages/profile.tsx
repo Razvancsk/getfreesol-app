@@ -202,7 +202,6 @@ export default function ProfilePage() {
                       <th className="text-left py-3 px-2 text-purple-300 text-sm font-medium">Rank</th>
                       <th className="text-left py-3 px-2 text-purple-300 text-sm font-medium">Wallet</th>
                       <th className="text-right py-3 px-2 text-purple-300 text-sm font-medium">Points</th>
-                      <th className="text-right py-3 px-2 text-purple-300 text-sm font-medium">SOL</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -232,16 +231,6 @@ export default function ProfilePage() {
                         <td className="py-3 px-2 text-right">
                           <span className="text-yellow-400 font-medium">
                             {Number(entry.points).toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <span className="text-green-400 font-medium flex items-center justify-end gap-1">
-                            <svg className="h-3 w-3" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
-                              <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                              <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                              <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                            </svg>
-                            {parseFloat(entry.totalSolClaimed || '0').toFixed(4)}
                           </span>
                         </td>
                       </tr>
