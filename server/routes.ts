@@ -863,15 +863,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tokenEntries = Object.entries(holdings.tokens);
         const mintAddresses = tokenEntries.map(([mint]) => mint);
         
-        // Batch fetch metadata for all tokens at once using mints endpoint
+        // Batch fetch metadata for all tokens using Jupiter Tokens API v2 (requires API key)
         let tokenMetadata: Record<string, any> = {};
-        if (mintAddresses.length > 0) {
+        if (mintAddresses.length > 0 && process.env.JUPITER_API_KEY) {
           try {
-            // Use mints endpoint for batch metadata (up to 100 tokens per request)
+            // Use v2 search endpoint with comma-separated mints (up to 100 per request)
             const batchSize = 100;
             for (let i = 0; i < mintAddresses.length; i += batchSize) {
               const batch = mintAddresses.slice(i, i + batchSize);
-              const metaResponse = await fetch(`https://lite-api.jup.ag/tokens/v2/mints?mints=${batch.join(',')}`);
+              const metaResponse = await fetch(
+                `https://api.jup.ag/tokens/v2/search?query=${batch.join(',')}`,
+                {
+                  headers: {
+                    'x-api-key': process.env.JUPITER_API_KEY
+                  }
+                }
+              );
               if (metaResponse.ok) {
                 const metaData = await metaResponse.json();
                 if (Array.isArray(metaData)) {
