@@ -504,7 +504,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
             <div className="space-y-2">
               <p>Transaction confirmed on Solana blockchain</p>
               {executeData.pointsAwarded > 0 && (
-                <p className="text-green-200">+{executeData.pointsAwarded} points earned!</p>
+                <p className="text-yellow-300 font-semibold">+{executeData.pointsAwarded} points earned!</p>
               )}
               <a 
                 href={`https://solscan.io/tx/${signature}`}
