@@ -4037,7 +4037,6 @@ export default function SolRefund() {
                               <TableHead className="text-purple-200 w-16">Rank</TableHead>
                               <TableHead className="text-purple-200">Wallet</TableHead>
                               <TableHead className="text-purple-200 text-right">Points</TableHead>
-                              <TableHead className="text-purple-200 text-right">SOL</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -4063,16 +4062,6 @@ export default function SolRefund() {
                                 </TableCell>
                                 <TableCell className="text-right font-bold text-yellow-400 text-sm py-2" data-testid={`text-points-${entry.rank}`}>
                                   {entry.points.toLocaleString()}
-                                </TableCell>
-                                <TableCell className="text-right text-green-400 font-semibold text-sm" data-testid={`text-sol-${entry.rank}`}>
-                                  <div className="flex items-center justify-end gap-0.5">
-                                    <svg className="h-3 w-3" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
-                                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                                    </svg>
-                                    {entry.totalSolClaimed ? parseFloat(entry.totalSolClaimed).toFixed(4) : '0.0000'}
-                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))}
