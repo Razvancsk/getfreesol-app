@@ -808,7 +808,7 @@ export function DexPanel() {
       
       const tokens = data.tokens.map((t: any) => {
         const priceInfo = priceData[t.address];
-        const price = priceInfo?.price || 0;
+        const price = priceInfo?.usdPrice || 0;
         return {
           address: t.address,
           symbol: t.symbol,
