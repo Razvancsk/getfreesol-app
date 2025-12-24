@@ -9134,6 +9134,209 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // ============================================
+  // Giveaway System Routes
+  // ============================================
+
+  // Get active giveaway
+  app.get("/api/giveaways/active", async (req, res) => {
+    try {
+      const giveaway = await storage.getActiveGiveaway();
+      if (!giveaway) {
+        return res.json({ success: true, giveaway: null });
+      }
+      const entryCount = await storage.getGiveawayEntryCount(giveaway.id);
+      res.json({ success: true, giveaway, entryCount });
+    } catch (error: any) {
+      console.error('Error fetching active giveaway:', error);
+      res.status(500).json({ error: 'Failed to fetch giveaway' });
+    }
+  });
+
+  // Check if wallet is eligible and has already entered
+  app.get("/api/giveaways/:id/check/:walletAddress", async (req, res) => {
+    try {
+      const { id, walletAddress } = req.params;
+      const isEligible = await storage.isWalletEligibleForGiveaway(walletAddress);
+      const existingEntry = await storage.getGiveawayEntryByWallet(id, walletAddress);
+      res.json({ 
+        success: true, 
+        isEligible, 
+        hasEntered: !!existingEntry,
+        enteredAt: existingEntry?.enteredAt || null
+      });
+    } catch (error: any) {
+      console.error('Error checking giveaway eligibility:', error);
+      res.status(500).json({ error: 'Failed to check eligibility' });
+    }
+  });
+
+  // Enter giveaway (requires wallet signature)
+  app.post("/api/giveaways/:id/enter", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { walletAddress, signature, message } = req.body;
+
+      if (!walletAddress || !signature || !message) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Verify giveaway exists and is active
+      const giveaway = await storage.getGiveawayById(id);
+      if (!giveaway) {
+        return res.status(404).json({ error: 'Giveaway not found' });
+      }
+      if (giveaway.status !== 'active') {
+        return res.status(400).json({ error: 'Giveaway is not active' });
+      }
+
+      // Check if giveaway period is valid
+      const now = new Date();
+      if (now < giveaway.startAt || now > giveaway.endAt) {
+        return res.status(400).json({ error: 'Giveaway period has ended or not started' });
+      }
+
+      // Verify wallet signature
+      if (!verifySignature(message, signature, walletAddress)) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+
+      // Check eligibility (must have claimed SOL)
+      const isEligible = await storage.isWalletEligibleForGiveaway(walletAddress);
+      if (!isEligible) {
+        return res.status(403).json({ error: 'You must claim SOL at least once to enter the giveaway' });
+      }
+
+      // Check if already entered
+      const existingEntry = await storage.getGiveawayEntryByWallet(id, walletAddress);
+      if (existingEntry) {
+        return res.status(400).json({ error: 'You have already entered this giveaway' });
+      }
+
+      // Create entry
+      const entry = await storage.createGiveawayEntry({
+        giveawayId: id,
+        walletAddress
+      });
+
+      res.json({ success: true, entry });
+    } catch (error: any) {
+      console.error('Error entering giveaway:', error);
+      res.status(500).json({ error: 'Failed to enter giveaway' });
+    }
+  });
+
+  // Get giveaway winners
+  app.get("/api/giveaways/:id/winners", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const winners = await storage.getGiveawayWinners(id);
+      res.json({ success: true, winners });
+    } catch (error: any) {
+      console.error('Error fetching winners:', error);
+      res.status(500).json({ error: 'Failed to fetch winners' });
+    }
+  });
+
+  // Admin: Create giveaway
+  app.post("/api/giveaways", async (req, res) => {
+    try {
+      const { title, description, totalPrizeUsd, prizePerWinnerUsd, totalWinners, startAt, endAt } = req.body;
+
+      const giveaway = await storage.createGiveaway({
+        title,
+        description,
+        totalPrizeUsd: totalPrizeUsd.toString(),
+        prizePerWinnerUsd: prizePerWinnerUsd.toString(),
+        totalWinners,
+        startAt: new Date(startAt),
+        endAt: new Date(endAt)
+      });
+
+      // Auto-activate if start time is now or in past
+      if (new Date(startAt) <= new Date()) {
+        await storage.updateGiveawayStatus(giveaway.id, 'active');
+        giveaway.status = 'active';
+      }
+
+      res.json({ success: true, giveaway });
+    } catch (error: any) {
+      console.error('Error creating giveaway:', error);
+      res.status(500).json({ error: 'Failed to create giveaway' });
+    }
+  });
+
+  // Admin: Activate giveaway
+  app.post("/api/giveaways/:id/activate", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.updateGiveawayStatus(id, 'active');
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error activating giveaway:', error);
+      res.status(500).json({ error: 'Failed to activate giveaway' });
+    }
+  });
+
+  // Admin: Select winners (call when giveaway ends)
+  app.post("/api/giveaways/:id/select-winners", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const giveaway = await storage.getGiveawayById(id);
+      if (!giveaway) {
+        return res.status(404).json({ error: 'Giveaway not found' });
+      }
+
+      // Get all entries
+      const entries = await storage.getGiveawayEntries(id);
+      if (entries.length === 0) {
+        return res.status(400).json({ error: 'No entries to select from' });
+      }
+
+      // Shuffle entries using Fisher-Yates algorithm
+      const shuffled = [...entries];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      // Select winners (up to totalWinners or all entries if less)
+      const winnerCount = Math.min(giveaway.totalWinners, shuffled.length);
+      const selectedWinners = shuffled.slice(0, winnerCount);
+
+      // Create winner records
+      const winners = [];
+      for (const entry of selectedWinners) {
+        const winner = await storage.createGiveawayWinner({
+          giveawayId: id,
+          walletAddress: entry.walletAddress,
+          prizeUsd: giveaway.prizePerWinnerUsd
+        });
+        winners.push(winner);
+      }
+
+      // Update giveaway status
+      await storage.updateGiveawayStatus(id, 'completed');
+
+      res.json({ success: true, winners, totalEntries: entries.length });
+    } catch (error: any) {
+      console.error('Error selecting winners:', error);
+      res.status(500).json({ error: 'Failed to select winners' });
+    }
+  });
+
+  // Get all giveaways (for admin)
+  app.get("/api/giveaways", async (req, res) => {
+    try {
+      const giveaways = await storage.getAllGiveaways();
+      res.json({ success: true, giveaways });
+    } catch (error: any) {
+      console.error('Error fetching giveaways:', error);
+      res.status(500).json({ error: 'Failed to fetch giveaways' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -90,6 +90,7 @@ interface RefundStats {
 export default function SolRefund() {
   const queryClient = useQueryClient();
   const wallet = useWallet();
+  const { signMessage } = wallet;
   const { connection: rpcConnection } = useConnection();
   const isMobile = useIsMobile();
   
@@ -110,6 +111,7 @@ export default function SolRefund() {
   const [nftTabView, setNftTabView] = useState<'nfts' | 'cnfts'>('nfts'); // Tab for NFTs vs cNFTs
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
+  const [enteringGiveaway, setEnteringGiveaway] = useState(false);
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -369,6 +371,29 @@ export default function SolRefund() {
     retry: false,
   });
 
+  // Giveaway query
+  const { data: activeGiveaway, refetch: refetchGiveaway } = useQuery<{ success: boolean; giveaway: any; entryCount: number }>({
+    queryKey: ['/api/giveaways/active'],
+    queryFn: async () => {
+      const response = await fetch('/api/giveaways/active');
+      if (!response.ok) throw new Error('Failed to fetch giveaway');
+      return response.json();
+    },
+    staleTime: 30000,
+  });
+
+  // Check if user has entered giveaway
+  const { data: giveawayStatus, refetch: refetchGiveawayStatus } = useQuery<{ success: boolean; isEligible: boolean; hasEntered: boolean }>({
+    queryKey: ['/api/giveaways', activeGiveaway?.giveaway?.id, 'check', publicKey?.toString()],
+    queryFn: async () => {
+      if (!activeGiveaway?.giveaway?.id || !publicKey) return null;
+      const response = await fetch(`/api/giveaways/${activeGiveaway.giveaway.id}/check/${publicKey.toString()}`);
+      if (!response.ok) throw new Error('Failed to check eligibility');
+      return response.json();
+    },
+    enabled: !!activeGiveaway?.giveaway?.id && !!publicKey,
+  });
+
   // Jupiter Lend query is now handled inside LendPositions component
 
   // Query for user positions
@@ -469,6 +494,87 @@ export default function SolRefund() {
       copyReferralLink(); // Fallback to copy
     }
   };
+
+  // Enter giveaway function
+  const handleEnterGiveaway = async () => {
+    if (!publicKey || !signMessage || !activeGiveaway?.giveaway?.id) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setEnteringGiveaway(true);
+    try {
+      // Create and sign message
+      const message = `Enter Giveaway: ${activeGiveaway.giveaway.title}\nWallet: ${publicKey.toString()}\nTimestamp: ${Date.now()}`;
+      const encodedMessage = new TextEncoder().encode(message);
+      const signatureBytes = await signMessage(encodedMessage);
+      const signature = btoa(String.fromCharCode(...signatureBytes));
+
+      // Convert signature to base58
+      const bs58Signature = (() => {
+        const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        const bytes = signatureBytes;
+        const digits = [0];
+        for (let i = 0; i < bytes.length; i++) {
+          let carry = bytes[i];
+          for (let j = 0; j < digits.length; j++) {
+            carry += digits[j] << 8;
+            digits[j] = carry % 58;
+            carry = (carry / 58) | 0;
+          }
+          while (carry) {
+            digits.push(carry % 58);
+            carry = (carry / 58) | 0;
+          }
+        }
+        let str = '';
+        for (let i = 0; i < bytes.length && bytes[i] === 0; i++) str += ALPHABET[0];
+        for (let i = digits.length - 1; i >= 0; i--) str += ALPHABET[digits[i]];
+        return str;
+      })();
+
+      const response = await fetch(`/api/giveaways/${activeGiveaway.giveaway.id}/enter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: publicKey.toString(),
+          signature: bs58Signature,
+          message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "You're In!",
+          description: "You've successfully entered the giveaway. Good luck!",
+        });
+        refetchGiveawayStatus();
+        refetchGiveaway();
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to enter giveaway",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error entering giveaway:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to enter giveaway",
+        variant: "destructive",
+      });
+    } finally {
+      setEnteringGiveaway(false);
+    }
+  };
+
   // Check for referral code in URL on mount - support both formats
   useEffect(() => {
     // Check for query parameter format: ?ref=CODE
@@ -2969,6 +3075,107 @@ export default function SolRefund() {
             </div>
           )}
 
+          {/* Giveaway Banner */}
+          {activeGiveaway?.giveaway && activeTab === 'reclaim' && (
+            <div className="mb-6">
+              <div 
+                className="relative overflow-hidden bg-gradient-to-r from-green-600 via-red-600 to-green-600 rounded-xl border-2 border-yellow-400/50 p-6 cursor-pointer hover:scale-[1.01] transition-transform"
+                onClick={() => {
+                  if (!giveawayStatus?.hasEntered && isConnected) {
+                    handleEnterGiveaway();
+                  }
+                }}
+                data-testid="giveaway-banner"
+              >
+                {/* Animated background sparkles */}
+                <div className="absolute inset-0 overflow-hidden">
+                  {[...Array(20)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-pulse"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 2}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                  {/* Left side - Prize info */}
+                  <div className="flex items-center gap-4">
+                    <div className="bg-yellow-400/20 p-4 rounded-full">
+                      <Gift className="h-10 w-10 text-yellow-300" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <PartyPopper className="h-6 w-6 text-yellow-300" />
+                        {activeGiveaway.giveaway.title}
+                      </h3>
+                      <p className="text-yellow-200 text-lg">
+                        <span className="font-bold text-yellow-300">${activeGiveaway.giveaway.totalPrizeUsd}</span> Total Prize Pool • {activeGiveaway.giveaway.totalWinners} Winners
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Middle - Timer */}
+                  <div className="text-center">
+                    <div className="flex items-center gap-2 text-white/80">
+                      <Clock className="h-5 w-5" />
+                      <span className="text-sm">
+                        Ends: {new Date(activeGiveaway.giveaway.endAt).toLocaleDateString()} {new Date(activeGiveaway.giveaway.endAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-yellow-300 font-semibold mt-1">
+                      {activeGiveaway.entryCount || 0} Entries
+                    </p>
+                  </div>
+
+                  {/* Right side - Action button */}
+                  <div className="flex flex-col items-center gap-2">
+                    {!isConnected ? (
+                      <div className="text-center">
+                        <p className="text-white/80 text-sm mb-2">Connect wallet to enter</p>
+                        <WalletMultiButton className="!bg-yellow-500 !text-black hover:!bg-yellow-400" />
+                      </div>
+                    ) : giveawayStatus?.hasEntered ? (
+                      <div className="bg-green-500/20 border border-green-400 rounded-lg px-6 py-3">
+                        <div className="flex items-center gap-2 text-green-300">
+                          <CheckCircle className="h-5 w-5" />
+                          <span className="font-semibold">You're Entered!</span>
+                        </div>
+                        <p className="text-green-200 text-sm">Good luck!</p>
+                      </div>
+                    ) : !giveawayStatus?.isEligible ? (
+                      <div className="bg-orange-500/20 border border-orange-400 rounded-lg px-6 py-3">
+                        <p className="text-orange-300 text-sm font-medium">
+                          Claim SOL once to be eligible
+                        </p>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEnterGiveaway();
+                        }}
+                        disabled={enteringGiveaway}
+                        className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-3 text-lg rounded-lg shadow-lg"
+                        data-testid="button-enter-giveaway"
+                      >
+                        {enteringGiveaway ? (
+                          <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                        ) : (
+                          <Gift className="h-5 w-5 mr-2" />
+                        )}
+                        {enteringGiveaway ? 'Entering...' : 'Enter Giveaway'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Burn Sub-Tabs */}
           {activeTab === 'burnTokens' && (
