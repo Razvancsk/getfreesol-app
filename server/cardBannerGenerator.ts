@@ -1493,6 +1493,111 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillText('getfreesol.xyz', width/2, height - 55);
     }
     
+  } else if (type === 'christmas') {
+    // Christmas themed banner
+    if (template < 5) {
+      // Red and green Christmas gradient
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#165B33'); // Christmas green
+      gradient.addColorStop(0.5, '#0A3622');
+      gradient.addColorStop(1, '#BB2528'); // Christmas red
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw snowflakes
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const size = Math.random() * 6 + 2;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Draw stars
+      ctx.fillStyle = '#FFD700';
+      for (let i = 0; i < 15; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * (height * 0.4);
+        const size = Math.random() * 4 + 2;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 100px sans-serif';
+      ctx.fillText('MERRY', width / 2, 200);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 110px sans-serif';
+      ctx.fillText('CHRISTMAS!', width / 2, 320);
+      
+      ctx.fillStyle = '#FFD700';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('Unwrap your hidden SOL today!', width / 2, 420);
+      
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 550);
+      
+    } else {
+      // Winter wonderland style
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#1e3a5f');
+      gradient.addColorStop(0.5, '#2d5a87');
+      gradient.addColorStop(1, '#4a7c9b');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Draw lots of snowflakes
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 80; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const size = Math.random() * 5 + 1;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Snow ground
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      ctx.lineTo(0, height - 80);
+      ctx.bezierCurveTo(width * 0.25, height - 120, width * 0.5, height - 60, width * 0.75, height - 100);
+      ctx.bezierCurveTo(width * 0.9, height - 80, width, height - 90, width, height);
+      ctx.closePath();
+      ctx.fill();
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 40, 90, 90);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FF6B6B';
+      ctx.font = 'bold 90px sans-serif';
+      ctx.fillText('HAPPY HOLIDAYS!', width / 2, 200);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '50px sans-serif';
+      ctx.fillText("Santa's gift: Free SOL from empty accounts!", width / 2, 310);
+      
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 440);
+    }
+    
   } else {
     if (template === 0) {
       const gradient = ctx.createLinearGradient(0, 0, width, height);
