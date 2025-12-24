@@ -1494,17 +1494,16 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     }
     
   } else if (type === 'christmas') {
-    // Christmas themed banner
-    if (template < 5) {
+    // Christmas themed banner - 10 unique designs
+    if (template === 0) {
       // Red and green Christmas gradient
       const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#165B33'); // Christmas green
+      gradient.addColorStop(0, '#165B33');
       gradient.addColorStop(0.5, '#0A3622');
-      gradient.addColorStop(1, '#BB2528'); // Christmas red
+      gradient.addColorStop(1, '#BB2528');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
       
-      // Draw snowflakes
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       for (let i = 0; i < 50; i++) {
         const x = Math.random() * width;
@@ -1515,7 +1514,6 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
         ctx.fill();
       }
       
-      // Draw stars
       ctx.fillStyle = '#FFD700';
       for (let i = 0; i < 15; i++) {
         const x = Math.random() * width;
@@ -1539,16 +1537,14 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 110px sans-serif';
       ctx.fillText('CHRISTMAS!', width / 2, 320);
-      
       ctx.fillStyle = '#FFD700';
       ctx.font = '45px sans-serif';
       ctx.fillText('Unwrap your hidden SOL today!', width / 2, 420);
-      
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 55px sans-serif';
       ctx.fillText('getfreesol.xyz', width / 2, 550);
       
-    } else {
+    } else if (template === 1) {
       // Winter wonderland style
       const gradient = ctx.createLinearGradient(0, 0, 0, height);
       gradient.addColorStop(0, '#1e3a5f');
@@ -1557,7 +1553,6 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
       
-      // Draw lots of snowflakes
       ctx.fillStyle = '#ffffff';
       for (let i = 0; i < 80; i++) {
         const x = Math.random() * width;
@@ -1568,7 +1563,6 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
         ctx.fill();
       }
       
-      // Snow ground
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.moveTo(0, height);
@@ -1588,14 +1582,380 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.fillStyle = '#FF6B6B';
       ctx.font = 'bold 90px sans-serif';
       ctx.fillText('HAPPY HOLIDAYS!', width / 2, 200);
-      
       ctx.fillStyle = '#ffffff';
       ctx.font = '50px sans-serif';
       ctx.fillText("Santa's gift: Free SOL from empty accounts!", width / 2, 310);
-      
       ctx.fillStyle = '#FFD700';
       ctx.font = 'bold 70px sans-serif';
       ctx.fillText('getfreesol.xyz', width / 2, 440);
+      
+    } else if (template === 2) {
+      // Festive red with ornaments
+      ctx.fillStyle = '#8B0000';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Gold ornament circles
+      const ornamentColors = ['#FFD700', '#FFA500', '#FF6347'];
+      for (let i = 0; i < 20; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const size = Math.random() * 40 + 20;
+        ctx.fillStyle = ornamentColors[i % 3];
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      
+      // Snowflakes
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 60; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 4 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 85px sans-serif';
+      ctx.fillText("SANTA'S HERE!", width / 2, 220);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '48px sans-serif';
+      ctx.fillText('Reclaim your hidden SOL gifts!', width / 2, 320);
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 520);
+      
+    } else if (template === 3) {
+      // Candy cane stripes
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Red stripes
+      ctx.fillStyle = '#DC143C';
+      const stripeWidth = 60;
+      for (let i = -height; i < width + height; i += stripeWidth * 2) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + stripeWidth, 0);
+        ctx.lineTo(i + stripeWidth + height, height);
+        ctx.lineTo(i + height, height);
+        ctx.closePath();
+        ctx.fill();
+      }
+      
+      // Snowflakes on top
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      for (let i = 0; i < 40; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 5 + 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#165B33';
+      ctx.font = 'bold 90px sans-serif';
+      ctx.fillText('MERRY XMAS!', width / 2, 220);
+      ctx.fillStyle = '#DC143C';
+      ctx.font = '50px sans-serif';
+      ctx.fillText('Your SOL is waiting under the tree!', width / 2, 330);
+      ctx.fillStyle = '#165B33';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 520);
+      
+    } else if (template === 4) {
+      // Northern lights / Aurora style
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#0a1628');
+      gradient.addColorStop(0.3, '#1a3a52');
+      gradient.addColorStop(0.5, '#2d6b5a');
+      gradient.addColorStop(0.7, '#1a5a4a');
+      gradient.addColorStop(1, '#0d2d24');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Stars
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 100; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * (height * 0.6);
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 2 + 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Snow at bottom
+      ctx.fillStyle = '#e8f4f8';
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      ctx.lineTo(0, height - 60);
+      ctx.bezierCurveTo(width * 0.3, height - 90, width * 0.7, height - 40, width, height - 70);
+      ctx.lineTo(width, height);
+      ctx.closePath();
+      ctx.fill();
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#7DF9FF';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.fillText('WINTER MAGIC!', width / 2, 200);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('Discover hidden SOL in your wallet', width / 2, 300);
+      ctx.fillStyle = '#7DF9FF';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 450);
+      
+    } else if (template === 5) {
+      // Cozy Christmas - warm colors
+      const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+      gradient.addColorStop(0, '#8B4513');
+      gradient.addColorStop(0.5, '#5D3A1A');
+      gradient.addColorStop(1, '#2F1810');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Warm glow orbs
+      const glowColors = ['rgba(255, 200, 100, 0.3)', 'rgba(255, 150, 50, 0.2)', 'rgba(255, 220, 150, 0.25)'];
+      for (let i = 0; i < 8; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const radius = Math.random() * 150 + 80;
+        const grd = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        grd.addColorStop(0, glowColors[i % 3]);
+        grd.addColorStop(1, 'transparent');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, width, height);
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 85px sans-serif';
+      ctx.fillText('COZY CHRISTMAS', width / 2, 200);
+      ctx.fillStyle = '#FFF8DC';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('Warm up with some free SOL!', width / 2, 310);
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 500);
+      
+    } else if (template === 6) {
+      // Elegant gold and navy
+      ctx.fillStyle = '#0a1628';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Gold decorative elements
+      ctx.strokeStyle = '#FFD700';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(40, 40, width - 80, height - 80);
+      ctx.strokeRect(60, 60, width - 120, height - 120);
+      
+      // Corner ornaments
+      ctx.fillStyle = '#FFD700';
+      [50, width - 50].forEach(x => {
+        [50, height - 50].forEach(y => {
+          ctx.beginPath();
+          ctx.arc(x, y, 15, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+      
+      // Snowflakes
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      for (let i = 0; i < 40; i++) {
+        const x = 100 + Math.random() * (width - 200);
+        const y = 100 + Math.random() * (height - 200);
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 3 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, width/2 - 50, 100, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 75px sans-serif';
+      ctx.fillText('SEASONS GREETINGS', width / 2, 280);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '42px sans-serif';
+      ctx.fillText('Claim your holiday SOL bonus!', width / 2, 370);
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 50px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 520);
+      
+    } else if (template === 7) {
+      // Snowy forest
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, '#87CEEB');
+      gradient.addColorStop(0.4, '#B0E0E6');
+      gradient.addColorStop(1, '#F0F8FF');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Simple trees
+      ctx.fillStyle = '#228B22';
+      for (let i = 0; i < 8; i++) {
+        const x = 100 + i * 140;
+        const y = height - 100;
+        const treeHeight = 150 + Math.random() * 100;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 40, y);
+        ctx.lineTo(x, y - treeHeight);
+        ctx.lineTo(x + 40, y);
+        ctx.closePath();
+        ctx.fill();
+      }
+      
+      // Snow ground
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, height - 100, width, 100);
+      
+      // Snowflakes
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 100; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * (height - 100);
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 4 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#DC143C';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.fillText('LET IT SNOW!', width / 2, 200);
+      ctx.fillStyle = '#165B33';
+      ctx.font = '45px sans-serif';
+      ctx.fillText('Your SOL is ready to be unwrapped!', width / 2, 300);
+      ctx.fillStyle = '#DC143C';
+      ctx.font = 'bold 55px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 450);
+      
+    } else if (template === 8) {
+      // Gift wrap pattern
+      ctx.fillStyle = '#DC143C';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Gold ribbon
+      ctx.fillStyle = '#FFD700';
+      ctx.fillRect(width/2 - 30, 0, 60, height);
+      ctx.fillRect(0, height/2 - 30, width, 60);
+      
+      // Bow center
+      ctx.beginPath();
+      ctx.arc(width/2, height/2, 50, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Snowflakes
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 4 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 80, 80);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 70px sans-serif';
+      ctx.fillText('UNWRAP YOUR', width / 2, 180);
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 90px sans-serif';
+      ctx.fillText('FREE SOL!', width / 2, 480);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 45px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 580);
+      
+    } else {
+      // Classic Christmas green with holly
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#165B33');
+      gradient.addColorStop(1, '#0D3D22');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Holly berries
+      ctx.fillStyle = '#DC143C';
+      for (let i = 0; i < 25; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 10 + 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Snowflakes
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 70; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 4 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      try {
+        const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+        const logo = await loadImage(logoPath);
+        ctx.drawImage(logo, 50, 50, 100, 100);
+      } catch (e) {}
+      
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 90px sans-serif';
+      ctx.fillText('HO HO HO!', width / 2, 200);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '50px sans-serif';
+      ctx.fillText('Santa brought you free SOL!', width / 2, 310);
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText('getfreesol.xyz', width / 2, 520);
     }
     
   } else {
