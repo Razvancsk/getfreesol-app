@@ -3077,9 +3077,9 @@ export default function SolRefund() {
 
           {/* Giveaway Banner */}
           {activeGiveaway?.giveaway && activeTab === 'reclaim' && (
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center">
               <div 
-                className="relative overflow-hidden bg-gradient-to-r from-green-600 via-red-600 to-green-600 rounded-lg border border-yellow-400/40 px-4 py-3 cursor-pointer hover:scale-[1.005] transition-transform"
+                className="relative overflow-hidden bg-gradient-to-r from-green-600 via-red-600 to-green-600 rounded-lg border border-yellow-400/40 px-4 py-2 cursor-pointer hover:scale-[1.005] transition-transform max-w-2xl"
                 onClick={() => {
                   if (!giveawayStatus?.hasEntered && isConnected) {
                     handleEnterGiveaway();
