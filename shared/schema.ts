@@ -853,3 +853,67 @@ export type SocialTaskSubmission = typeof socialTaskSubmissions.$inferSelect;
 export type InsertSocialTaskSubmission = z.infer<typeof insertSocialTaskSubmissionSchema>;
 export type SocialTaskPayout = typeof socialTaskPayouts.$inferSelect;
 export type InsertSocialTaskPayout = z.infer<typeof insertSocialTaskPayoutSchema>;
+
+// ============================================
+// Giveaway System
+// ============================================
+
+// Giveaways - campaign settings
+export const giveaways = pgTable("giveaways", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  totalPrizeUsd: decimal("total_prize_usd", { precision: 10, scale: 2 }).notNull(), // e.g., 100.00
+  prizePerWinnerUsd: decimal("prize_per_winner_usd", { precision: 10, scale: 2 }).notNull(), // e.g., 10.00
+  totalWinners: integer("total_winners").notNull(), // e.g., 10
+  status: text("status").notNull().default("draft"), // 'draft', 'active', 'selecting', 'completed', 'cancelled'
+  startAt: timestamp("start_at").notNull(),
+  endAt: timestamp("end_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Giveaway entries - users who entered
+export const giveawayEntries = pgTable("giveaway_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  giveawayId: varchar("giveaway_id").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  enteredAt: timestamp("entered_at").notNull().defaultNow(),
+});
+
+// Giveaway winners - selected winners
+export const giveawayWinners = pgTable("giveaway_winners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  giveawayId: varchar("giveaway_id").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  prizeUsd: decimal("prize_usd", { precision: 10, scale: 2 }).notNull(),
+  prizeSol: decimal("prize_sol", { precision: 18, scale: 9 }), // filled after conversion
+  payoutTxSignature: text("payout_tx_signature"), // filled after payout
+  paidAt: timestamp("paid_at"),
+  selectedAt: timestamp("selected_at").notNull().defaultNow(),
+});
+
+// Insert schemas for giveaways
+export const insertGiveawaySchema = createInsertSchema(giveaways).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export const insertGiveawayEntrySchema = createInsertSchema(giveawayEntries).omit({
+  id: true,
+  enteredAt: true,
+});
+
+export const insertGiveawayWinnerSchema = createInsertSchema(giveawayWinners).omit({
+  id: true,
+  paidAt: true,
+  selectedAt: true,
+});
+
+// Types for giveaways
+export type Giveaway = typeof giveaways.$inferSelect;
+export type InsertGiveaway = z.infer<typeof insertGiveawaySchema>;
+export type GiveawayEntry = typeof giveawayEntries.$inferSelect;
+export type InsertGiveawayEntry = z.infer<typeof insertGiveawayEntrySchema>;
+export type GiveawayWinner = typeof giveawayWinners.$inferSelect;
+export type InsertGiveawayWinner = z.infer<typeof insertGiveawayWinnerSchema>;

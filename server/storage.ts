@@ -57,6 +57,12 @@ import {
   type InsertSocialTaskPayout,
   type SwapRecord,
   type InsertSwapRecord,
+  type Giveaway,
+  type InsertGiveaway,
+  type GiveawayEntry,
+  type InsertGiveawayEntry,
+  type GiveawayWinner,
+  type InsertGiveawayWinner,
   users,
   transactionRecords,
   emptyTokenAccounts,
@@ -85,7 +91,10 @@ import {
   socialTasks,
   socialTaskSubmissions,
   socialTaskPayouts,
-  swapRecords
+  swapRecords,
+  giveaways,
+  giveawayEntries,
+  giveawayWinners
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and } from "drizzle-orm";
@@ -261,6 +270,25 @@ export interface IStorage {
   getSwapRecordsByWallet(walletAddress: string, limit?: number): Promise<SwapRecord[]>;
   getSwapRecordBySignature(txSignature: string): Promise<SwapRecord | undefined>;
   awardSwapPoints(walletAddress: string, usdValue: number): Promise<number>;
+  
+  // Giveaway System
+  createGiveaway(giveaway: InsertGiveaway): Promise<Giveaway>;
+  getGiveawayById(id: string): Promise<Giveaway | undefined>;
+  getActiveGiveaway(): Promise<Giveaway | undefined>;
+  getAllGiveaways(limit?: number): Promise<Giveaway[]>;
+  updateGiveawayStatus(id: string, status: string): Promise<void>;
+  
+  // Giveaway Entries
+  createGiveawayEntry(entry: InsertGiveawayEntry): Promise<GiveawayEntry>;
+  getGiveawayEntries(giveawayId: string): Promise<GiveawayEntry[]>;
+  getGiveawayEntryByWallet(giveawayId: string, walletAddress: string): Promise<GiveawayEntry | undefined>;
+  getGiveawayEntryCount(giveawayId: string): Promise<number>;
+  isWalletEligibleForGiveaway(walletAddress: string): Promise<boolean>;
+  
+  // Giveaway Winners
+  createGiveawayWinner(winner: InsertGiveawayWinner): Promise<GiveawayWinner>;
+  getGiveawayWinners(giveawayId: string): Promise<GiveawayWinner[]>;
+  updateGiveawayWinnerPayout(id: string, txSignature: string, prizeSol: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1540,6 +1568,122 @@ export class DatabaseStorage implements IStorage {
     }
     
     return pointsToAward;
+  }
+
+  // Giveaway System Implementation
+  async createGiveaway(giveaway: InsertGiveaway): Promise<Giveaway> {
+    const [created] = await db.insert(giveaways).values(giveaway).returning();
+    return created;
+  }
+
+  async getGiveawayById(id: string): Promise<Giveaway | undefined> {
+    const [giveaway] = await db.select().from(giveaways).where(eq(giveaways.id, id));
+    return giveaway || undefined;
+  }
+
+  async getActiveGiveaway(): Promise<Giveaway | undefined> {
+    const [giveaway] = await db
+      .select()
+      .from(giveaways)
+      .where(eq(giveaways.status, 'active'))
+      .orderBy(desc(giveaways.createdAt))
+      .limit(1);
+    return giveaway || undefined;
+  }
+
+  async getAllGiveaways(limit: number = 20): Promise<Giveaway[]> {
+    return await db
+      .select()
+      .from(giveaways)
+      .orderBy(desc(giveaways.createdAt))
+      .limit(limit);
+  }
+
+  async updateGiveawayStatus(id: string, status: string): Promise<void> {
+    await db.update(giveaways).set({ status }).where(eq(giveaways.id, id));
+  }
+
+  // Giveaway Entries Implementation
+  async createGiveawayEntry(entry: InsertGiveawayEntry): Promise<GiveawayEntry> {
+    const [created] = await db.insert(giveawayEntries).values(entry).returning();
+    return created;
+  }
+
+  async getGiveawayEntries(giveawayId: string): Promise<GiveawayEntry[]> {
+    return await db
+      .select()
+      .from(giveawayEntries)
+      .where(eq(giveawayEntries.giveawayId, giveawayId))
+      .orderBy(desc(giveawayEntries.enteredAt));
+  }
+
+  async getGiveawayEntryByWallet(giveawayId: string, walletAddress: string): Promise<GiveawayEntry | undefined> {
+    const [entry] = await db
+      .select()
+      .from(giveawayEntries)
+      .where(
+        and(
+          eq(giveawayEntries.giveawayId, giveawayId),
+          eq(giveawayEntries.walletAddress, walletAddress)
+        )
+      );
+    return entry || undefined;
+  }
+
+  async getGiveawayEntryCount(giveawayId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(giveawayEntries)
+      .where(eq(giveawayEntries.giveawayId, giveawayId));
+    return result[0]?.count || 0;
+  }
+
+  async isWalletEligibleForGiveaway(walletAddress: string): Promise<boolean> {
+    // Check if wallet has claimed SOL (exists in transaction_ledger or user_points with accountsClosed > 0)
+    const [ledgerEntry] = await db
+      .select()
+      .from(transactionLedger)
+      .where(eq(transactionLedger.walletAddress, walletAddress))
+      .limit(1);
+    
+    if (ledgerEntry) return true;
+    
+    const [pointsEntry] = await db
+      .select()
+      .from(userPoints)
+      .where(
+        and(
+          eq(userPoints.walletAddress, walletAddress),
+          sql`${userPoints.accountsClosed} > 0`
+        )
+      );
+    
+    return !!pointsEntry;
+  }
+
+  // Giveaway Winners Implementation
+  async createGiveawayWinner(winner: InsertGiveawayWinner): Promise<GiveawayWinner> {
+    const [created] = await db.insert(giveawayWinners).values(winner).returning();
+    return created;
+  }
+
+  async getGiveawayWinners(giveawayId: string): Promise<GiveawayWinner[]> {
+    return await db
+      .select()
+      .from(giveawayWinners)
+      .where(eq(giveawayWinners.giveawayId, giveawayId))
+      .orderBy(desc(giveawayWinners.selectedAt));
+  }
+
+  async updateGiveawayWinnerPayout(id: string, txSignature: string, prizeSol: string): Promise<void> {
+    await db
+      .update(giveawayWinners)
+      .set({
+        payoutTxSignature: txSignature,
+        prizeSol,
+        paidAt: new Date()
+      })
+      .where(eq(giveawayWinners.id, id));
   }
 }
 
