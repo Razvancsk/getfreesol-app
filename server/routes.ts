@@ -9294,14 +9294,27 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'No entries to select from' });
       }
 
-      // Shuffle entries using Fisher-Yates algorithm
-      const shuffled = [...entries];
+      // Filter entries to only include wallets that have claimed SOL rent on our website
+      const eligibleEntries = [];
+      for (const entry of entries) {
+        const isEligible = await storage.isWalletEligibleForGiveaway(entry.walletAddress);
+        if (isEligible) {
+          eligibleEntries.push(entry);
+        }
+      }
+
+      if (eligibleEntries.length === 0) {
+        return res.status(400).json({ error: 'No eligible entries (users must have claimed SOL rent)' });
+      }
+
+      // Shuffle eligible entries using Fisher-Yates algorithm
+      const shuffled = [...eligibleEntries];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
 
-      // Select winners (up to totalWinners or all entries if less)
+      // Select winners (up to totalWinners or all eligible entries if less)
       const winnerCount = Math.min(giveaway.totalWinners, shuffled.length);
       const selectedWinners = shuffled.slice(0, winnerCount);
 
