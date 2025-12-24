@@ -3077,9 +3077,9 @@ export default function SolRefund() {
 
           {/* Giveaway Banner */}
           {activeGiveaway?.giveaway && activeTab === 'reclaim' && (
-            <div className="mb-6">
+            <div className="mb-4">
               <div 
-                className="relative overflow-hidden bg-gradient-to-r from-green-600 via-red-600 to-green-600 rounded-xl border-2 border-yellow-400/50 p-6 cursor-pointer hover:scale-[1.01] transition-transform"
+                className="relative overflow-hidden bg-gradient-to-r from-green-600 via-red-600 to-green-600 rounded-lg border border-yellow-400/40 px-4 py-3 cursor-pointer hover:scale-[1.005] transition-transform"
                 onClick={() => {
                   if (!giveawayStatus?.hasEntered && isConnected) {
                     handleEnterGiveaway();
@@ -3087,70 +3087,49 @@ export default function SolRefund() {
                 }}
                 data-testid="giveaway-banner"
               >
-                {/* Animated background sparkles */}
-                <div className="absolute inset-0 overflow-hidden">
-                  {[...Array(20)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-pulse"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 2}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="relative z-10 flex items-center justify-between gap-3 flex-wrap">
                   {/* Left side - Prize info */}
-                  <div className="flex items-center gap-4">
-                    <div className="bg-yellow-400/20 p-4 rounded-full">
-                      <Gift className="h-10 w-10 text-yellow-300" />
+                  <div className="flex items-center gap-3">
+                    <div className="bg-yellow-400/20 p-2 rounded-full">
+                      <Gift className="h-5 w-5 text-yellow-300" />
                     </div>
-                    <div className="text-left">
-                      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <PartyPopper className="h-6 w-6 text-yellow-300" />
+                    <div>
+                      <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+                        <PartyPopper className="h-4 w-4 text-yellow-300" />
                         {activeGiveaway.giveaway.title}
                       </h3>
-                      <p className="text-yellow-200 text-lg">
-                        <span className="font-bold text-yellow-300">${activeGiveaway.giveaway.totalPrizeUsd}</span> Total Prize Pool • {activeGiveaway.giveaway.totalWinners} Winners
+                      <p className="text-yellow-200 text-sm">
+                        <span className="font-bold text-yellow-300">${activeGiveaway.giveaway.totalPrizeUsd}</span> Prize • {activeGiveaway.giveaway.totalWinners} Winners
                       </p>
                     </div>
                   </div>
 
                   {/* Middle - Timer */}
-                  <div className="text-center">
-                    <div className="flex items-center gap-2 text-white/80">
-                      <Clock className="h-5 w-5" />
-                      <span className="text-sm">
+                  <div className="text-center hidden md:block">
+                    <div className="flex items-center gap-1.5 text-white/80 text-xs">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>
                         Ends: {new Date(activeGiveaway.giveaway.endAt).toLocaleDateString('en-GB', { timeZone: 'UTC' })} {new Date(activeGiveaway.giveaway.endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC
                       </span>
                     </div>
-                    <p className="text-yellow-300 font-semibold mt-1">
+                    <p className="text-yellow-300 font-semibold text-sm">
                       {activeGiveaway.entryCount || 0} Entries
                     </p>
                   </div>
 
                   {/* Right side - Action button */}
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center">
                     {!isConnected ? (
-                      <div className="text-center">
-                        <p className="text-white/80 text-sm mb-2">Connect wallet to enter</p>
-                        <WalletMultiButton className="!bg-yellow-500 !text-black hover:!bg-yellow-400" />
-                      </div>
+                      <WalletMultiButton className="!bg-yellow-500 !text-black hover:!bg-yellow-400 !py-1.5 !px-3 !text-sm" />
                     ) : giveawayStatus?.hasEntered ? (
-                      <div className="bg-green-500/20 border border-green-400 rounded-lg px-6 py-3">
-                        <div className="flex items-center gap-2 text-green-300">
-                          <CheckCircle className="h-5 w-5" />
-                          <span className="font-semibold">You're Entered!</span>
-                        </div>
-                        <p className="text-green-200 text-sm">Good luck!</p>
+                      <div className="bg-green-500/20 border border-green-400 rounded-md px-3 py-1.5 flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4 text-green-300" />
+                        <span className="font-semibold text-green-300 text-sm">Entered!</span>
                       </div>
                     ) : !giveawayStatus?.isEligible ? (
-                      <div className="bg-orange-500/20 border border-orange-400 rounded-lg px-6 py-3">
-                        <p className="text-orange-300 text-sm font-medium">
-                          Claim SOL once to be eligible
+                      <div className="bg-orange-500/20 border border-orange-400 rounded-md px-3 py-1.5">
+                        <p className="text-orange-300 text-xs font-medium">
+                          Claim SOL to enter
                         </p>
                       </div>
                     ) : (
@@ -3160,13 +3139,13 @@ export default function SolRefund() {
                           handleEnterGiveaway();
                         }}
                         disabled={enteringGiveaway}
-                        className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-3 text-lg rounded-lg shadow-lg"
+                        className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-4 py-1.5 text-sm rounded-md"
                         data-testid="button-enter-giveaway"
                       >
                         {enteringGiveaway ? (
-                          <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                          <RefreshCw className="h-4 w-4 animate-spin mr-1.5" />
                         ) : (
-                          <Gift className="h-5 w-5 mr-2" />
+                          <Gift className="h-4 w-4 mr-1.5" />
                         )}
                         {enteringGiveaway ? 'Entering...' : 'Enter Giveaway'}
                       </Button>
