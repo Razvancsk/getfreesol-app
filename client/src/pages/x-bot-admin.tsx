@@ -58,6 +58,15 @@ const TRENDING1_TEMPLATES = [
   "🥇 NUMBER ONE ON PHANTOM 🥇\n\nReclaim your hidden SOL at getfreesol.xyz 💜\n\n#Solana #Phantom #GetFreeSol",
 ];
 
+const CHRISTMAS_TEMPLATES = [
+  "🎄 Merry Christmas Solana fam! 🎅\n\nUnwrap your hidden SOL today!\n\ngetfreesol.xyz 🎁\n\n#Solana #MerryChristmas #GetFreeSol",
+  "🎅 Ho Ho Ho! Merry Christmas! 🎄\n\nSanta's gift: Reclaim your rent deposits!\n\ngetfreesol.xyz ❄️\n\n#Solana #Christmas",
+  "🎁 Best Christmas gift?\n\nFree SOL from empty accounts! 🎄\n\ngetfreesol.xyz\n\n#Solana #MerryChristmas",
+  "Merry Christmas! 🎄🎅\n\nGive yourself the gift of reclaimed SOL\n\ngetfreesol.xyz 💜\n\n#Solana #Christmas #GetFreeSol",
+  "🎄 Tis the season to reclaim SOL! ❄️\n\nMerry Christmas from Get Free Sol 🎅\n\ngetfreesol.xyz\n\n#Solana #MerryChristmas",
+  "🎅 Santa checked your wallet...\n\nYou've got hidden SOL waiting! 🎁\n\ngetfreesol.xyz\n\n#Solana #Christmas #GetFreeSol",
+];
+
 const FUNNY_TEMPLATES = [
   "ser you got rent deposits just sitting there doing nothing 💀\n\nclose those empty accounts\n\ngetfreesol.xyz\n\n#Solana",
   "POV: you realize you got 0.5 SOL locked in rent from old tokens 🧠\n\ntime to reclaim\n\ngetfreesol.xyz\n\n#Solana",
@@ -84,7 +93,7 @@ const FUNNY_TEMPLATES = [
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
   const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
   const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
@@ -120,7 +129,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas') => {
     setPostContent(template);
     setImageType(imgType);
     setAiMemePreview(null);
@@ -270,6 +279,14 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
               className="border-yellow-500 text-yellow-200 hover:bg-yellow-700"
             >
               🥇 Trending #1
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost(CHRISTMAS_TEMPLATES[Math.floor(Math.random() * CHRISTMAS_TEMPLATES.length)], 'christmas')}
+              className="border-red-500 text-red-200 hover:bg-red-700"
+            >
+              🎄 Christmas
             </Button>
             <Button
               variant="outline"
