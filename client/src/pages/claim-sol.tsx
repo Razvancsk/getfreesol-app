@@ -3124,7 +3124,7 @@ export default function SolRefund() {
                     <div className="flex items-center gap-2 text-white/80">
                       <Clock className="h-5 w-5" />
                       <span className="text-sm">
-                        Ends: {new Date(activeGiveaway.giveaway.endAt).toLocaleDateString()} {new Date(activeGiveaway.giveaway.endAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        Ends: {new Date(activeGiveaway.giveaway.endAt).toLocaleDateString('en-GB', { timeZone: 'UTC' })} {new Date(activeGiveaway.giveaway.endAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC
                       </span>
                     </div>
                     <p className="text-yellow-300 font-semibold mt-1">
