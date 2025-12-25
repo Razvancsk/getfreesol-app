@@ -666,6 +666,11 @@ export function DexPanel() {
         queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
         queryClient.invalidateQueries({ queryKey: ['/api/points/leaderboard'] });
         
+        // Refresh token holdings after successful swap (with small delay for blockchain sync)
+        setTimeout(() => {
+          fetchBalances();
+        }, 2000);
+        
         toast({
           title: 'Swap Successful!',
           description: (
