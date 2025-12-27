@@ -276,11 +276,11 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
       {/* Mobile Card - Original smaller design */}
       <div 
         onClick={handleClick}
-        className={`md:hidden bg-[#2a1f4e]/80 backdrop-blur-sm rounded-xl p-4 hover:bg-[#3a2f5e]/70 transition-all border border-purple-400/30 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+        className={`md:hidden bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl p-4 hover:from-purple-700/30 hover:to-purple-800/40 transition-all border border-purple-500/20 cursor-pointer ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#1a1035] border border-purple-400/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-purple-900/40 border border-purple-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
               {token.logoURI ? (
                 <img src={token.logoURI} alt={displaySymbol} className="w-12 h-12 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
@@ -325,11 +325,11 @@ function TokenCard({ token, isRecent, now, onSwap, isSwapping }: {
       {/* Desktop Card - Larger design */}
       <div 
         onClick={handleClick}
-        className={`hidden md:block bg-[#1a1035] rounded-2xl p-5 hover:bg-[#251845] transition-all border border-purple-500/40 cursor-pointer shadow-lg ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
+        className={`hidden md:block bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-2xl p-5 hover:from-purple-700/30 hover:to-purple-800/40 transition-all border border-purple-500/20 cursor-pointer shadow-lg ${isSwapping ? 'opacity-50 pointer-events-none' : ''}`}
       >
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-[#0d0820] border-2 border-purple-500/50 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="w-14 h-14 rounded-full bg-purple-900/40 border border-purple-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
               {token.logoURI ? (
                 <img src={token.logoURI} alt={displaySymbol} className="w-14 h-14 rounded-full" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               ) : (
@@ -390,7 +390,7 @@ function TokenListSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-[#2a1f4e]/60 rounded-xl p-4 border border-purple-400/40">
+        <div key={i} className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl p-4 border border-purple-500/20">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <Skeleton className="w-10 h-10 rounded-full" />
