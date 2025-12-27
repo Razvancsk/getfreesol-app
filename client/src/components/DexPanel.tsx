@@ -1118,13 +1118,43 @@ export function DexPanel() {
             <div className="space-y-1">
               <label className="text-xs text-purple-300">Receive:</label>
               <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/30 rounded-lg p-2">
-                <button className="flex items-center gap-1.5 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-2 py-1.5 transition-colors text-sm">
-                  {selectedToken.logoURI && (
-                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-5 h-5 rounded-full" />
-                  )}
-                  <span className="text-white font-medium">{selectedToken.symbol}</span>
-                  <ChevronDown className="w-3 h-3 text-purple-300" />
-                </button>
+                <DexTokenSelector 
+                  token={{
+                    address: selectedToken.address,
+                    symbol: selectedToken.symbol,
+                    name: selectedToken.name,
+                    decimals: selectedToken.decimals,
+                    logoURI: selectedToken.logoURI
+                  }}
+                  onSelect={(token) => {
+                    if (token.address === inputToken.address) {
+                      const newInputToken: TokenInfo = {
+                        address: selectedToken.address,
+                        symbol: selectedToken.symbol,
+                        name: selectedToken.name,
+                        decimals: selectedToken.decimals,
+                        logoURI: selectedToken.logoURI
+                      };
+                      setInputToken(newInputToken);
+                    }
+                    setSelectedToken({
+                      address: token.address,
+                      symbol: token.symbol,
+                      name: token.name,
+                      decimals: token.decimals,
+                      logoURI: token.logoURI,
+                      price: 0,
+                      market_cap: 0,
+                      daily_volume: 0,
+                      liquidity: 0,
+                      num_transactions: 0
+                    });
+                    setSolAmount('');
+                    setQuoteAmount('0.00');
+                  }}
+                  balances={balances}
+                  ownedTokens={ownedTokens}
+                />
                 <div className="flex-1 min-w-0">
                   {isQuoting ? (
                     <div className="text-right text-purple-300 text-lg">
@@ -1285,13 +1315,43 @@ export function DexPanel() {
             <div className="space-y-1">
               <label className="text-xs text-purple-300">Receive:</label>
               <div className="flex items-center gap-2 bg-purple-900/30 border border-purple-500/30 rounded-lg p-2">
-                <button className="flex items-center gap-1.5 bg-purple-900/40 hover:bg-purple-800/40 border border-purple-500/30 rounded-lg px-2 py-1.5 transition-colors text-sm">
-                  {selectedToken.logoURI && (
-                    <img src={selectedToken.logoURI} alt={selectedToken.symbol} className="w-5 h-5 rounded-full" />
-                  )}
-                  <span className="text-white font-medium">{selectedToken.symbol}</span>
-                  <ChevronDown className="w-3 h-3 text-purple-300" />
-                </button>
+                <DexTokenSelector 
+                  token={{
+                    address: selectedToken.address,
+                    symbol: selectedToken.symbol,
+                    name: selectedToken.name,
+                    decimals: selectedToken.decimals,
+                    logoURI: selectedToken.logoURI
+                  }}
+                  onSelect={(token) => {
+                    if (token.address === inputToken.address) {
+                      const newInputToken: TokenInfo = {
+                        address: selectedToken.address,
+                        symbol: selectedToken.symbol,
+                        name: selectedToken.name,
+                        decimals: selectedToken.decimals,
+                        logoURI: selectedToken.logoURI
+                      };
+                      setInputToken(newInputToken);
+                    }
+                    setSelectedToken({
+                      address: token.address,
+                      symbol: token.symbol,
+                      name: token.name,
+                      decimals: token.decimals,
+                      logoURI: token.logoURI,
+                      price: 0,
+                      market_cap: 0,
+                      daily_volume: 0,
+                      liquidity: 0,
+                      num_transactions: 0
+                    });
+                    setSolAmount('');
+                    setQuoteAmount('0.00');
+                  }}
+                  balances={balances}
+                  ownedTokens={ownedTokens}
+                />
                 <div className="flex-1 min-w-0">
                   {isQuoting ? (
                     <div className="text-right text-purple-300 text-lg">
