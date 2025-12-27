@@ -1855,8 +1855,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Award points (20 points per account closed)
-      await storage.awardPoints(walletAddress, accountsClosed);
+      // Award points (20 points per account closed) - skip platform wallet
+      const PLATFORM_WALLET_POINTS = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      if (walletAddress !== PLATFORM_WALLET_POINTS) {
+        await storage.awardPoints(walletAddress, accountsClosed);
+      }
       
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
@@ -3202,8 +3205,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Award points (20 points per token account closed)
-      await storage.awardPoints(walletAddress, tokensProcessed);
+      // Award points (20 points per token account closed) - skip platform wallet
+      const PLATFORM_WALLET_POINTS_TOKEN = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      if (walletAddress !== PLATFORM_WALLET_POINTS_TOKEN) {
+        await storage.awardPoints(walletAddress, tokensProcessed);
+      }
       
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
@@ -4203,8 +4209,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if transaction already exists (to avoid duplicate key error)
         try {
           await storage.createTransactionLedgerEntry(transactionData);
-          // Award points (20 points per NFT account closed)
-          await storage.awardPoints(walletAddress, 1);
+          // Award points (20 points per NFT account closed) - skip platform wallet
+          const PLATFORM_WALLET_POINTS_NFT = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+          if (walletAddress !== PLATFORM_WALLET_POINTS_NFT) {
+            await storage.awardPoints(walletAddress, 1);
+          }
         } catch (insertError: any) {
           // If it's a duplicate key error, update the existing record with real amounts
           if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
