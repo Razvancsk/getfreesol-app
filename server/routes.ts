@@ -5461,12 +5461,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralEarnings = parseFloat(referralStats.totalEarnings) || 0;
       }
       
+      // Platform wallet should always show 0 points (creator shouldn't earn points)
+      const PLATFORM_WALLET_STATS = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const displayPoints = walletAddress === PLATFORM_WALLET_STATS ? 0 : (points?.points || 0);
+      
       res.json({
         totalSolClaimed: points?.totalSolClaimed || 0,
         totalAccountsClosed: points?.accountsClosed || 0,
         totalTokensBurned,
         totalNftsBurned,
-        totalPoints: points?.points || 0,
+        totalPoints: displayPoints,
         referralCode: referralCode?.code || null,
         referralEarnings
       });
