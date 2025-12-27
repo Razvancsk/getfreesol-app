@@ -2833,18 +2833,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Check transaction size limit - Solana has a 1232 byte limit
-      // Each token burn+close is ~100 bytes, safe limit is 15 tokens per transaction
-      const MAX_TOKENS_PER_TX = 15;
-      if (validTokens.length > MAX_TOKENS_PER_TX) {
-        return res.status(400).json({ 
-          error: `Too many tokens in a single transaction. The limit is ${MAX_TOKENS_PER_TX} tokens per transaction to stay within Solana's size limits. Please process tokens in smaller batches.`,
-          maxTokens: MAX_TOKENS_PER_TX,
-          selectedTokens: validTokens.length,
-          suggestion: `Split your ${validTokens.length} tokens into ${Math.ceil(validTokens.length / MAX_TOKENS_PER_TX)} batches of ${MAX_TOKENS_PER_TX} tokens each.`
-        });
-      }
-
       // Create transaction with burn+close instructions
       const transaction = new Transaction();
       
