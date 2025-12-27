@@ -947,10 +947,10 @@ export default function SolRefund() {
 
 
 
-  // Bulk Burn Tokens Mutation
+  // Bulk Burn Tokens Mutation - Now with batching (max 10 tokens per signature)
   const bulkBurnTokensMutation = useMutation({
     mutationFn: async (tokenMints: string[]) => {
-      // Get bulk transaction from backend
+      // Get batched transactions from backend
       const response = await fetch('/api/tokens/bulk-burn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -962,87 +962,125 @@ export default function SolRefund() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to prepare bulk burn transaction');
+        throw new Error('Failed to prepare bulk burn transactions');
       }
 
-      const { transaction, tokensProcessed, solRecovered, netAmount, feeAmount, platformFeeAmount, referralFeeAmount, referralCodeUsed } = await response.json();
+      const prepareResponse = await response.json();
+      
+      if (!prepareResponse.success || !prepareResponse.batches || prepareResponse.batches.length === 0) {
+        throw new Error('No burn batches prepared by server');
+      }
 
-      // Sign and send transaction using the connected wallet
-      console.log('🔐 About to sign bulk burn transaction with:', walletName || 'unknown wallet');
+      console.log(`🔥 Processing ${prepareResponse.totalBatches} batches for ${prepareResponse.totalTokens} tokens (max 10 per signature)...`);
 
       const { Transaction } = await import('@solana/web3.js');
-
-      const txBuffer = Buffer.from(transaction, 'base64');
-      const tx = Transaction.from(txBuffer);
-
-      // Use the wallet adapter's signTransaction instead of hardcoded window.solana
-      const signedTx = await signTransaction(tx);
-      console.log('✅ Transaction signed successfully with:', walletName);
-
-      // Send via backend with Helius Backrun Rebates (earns SOL from MEV)
-      const sendResponse = await fetch('/api/rpc/send-transaction', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
-          rebateAddress: publicKey?.toString()
-        })
-      });
-
-      const sendResult = await sendResponse.json();
-      if (!sendResponse.ok || !sendResult.success) {
-        throw new Error(sendResult.error || 'Transaction failed');
-      }
       
-      const signature = sendResult.signature;
-      console.log('📡 Transaction sent to network:', signature);
-      console.log('✅ Transaction confirmed successfully!');
-      
-      // Check for MEV rebates earned
-      let rebateAmount = 0;
-      if (sendResult.rebatesEnabled && publicKey) {
-        console.log('💰 MEV rebates enabled - checking for earnings...');
-        try {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          const rebateResponse = await fetch(`/api/rpc/check-rebates/${signature}/${publicKey.toString()}`);
-          const rebateData = await rebateResponse.json();
-          if (rebateData.rebateAmount > 0) {
-            rebateAmount = rebateData.rebateAmount;
-            console.log(`💰 MEV rebate earned: ${rebateAmount} SOL`);
-          }
-        } catch (e) {
-          console.log('Could not check rebates:', e);
+      const allBatchResults: { signature: string; tokensProcessed: number; solRecovered: number; netAmount: number; tokenMints: string[] }[] = [];
+      let totalTokensProcessed = 0;
+      let totalSolRecovered = 0;
+      let totalNetAmount = 0;
+      let totalRebateAmount = 0;
+
+      // Process each batch sequentially (user signs each one)
+      for (const batch of prepareResponse.batches) {
+        console.log(`🔐 Signing batch ${batch.batchIndex}/${prepareResponse.totalBatches} with ${batch.tokenCount} tokens...`);
+
+        const txBuffer = Buffer.from(batch.transaction, 'base64');
+        const tx = Transaction.from(txBuffer);
+
+        // Sign this batch with wallet
+        const signedTx = await signTransaction(tx);
+        console.log(`✅ Batch ${batch.batchIndex} signed successfully with:`, walletName);
+
+        // Send via backend with Helius Backrun Rebates
+        const sendResponse = await fetch('/api/rpc/send-transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+            rebateAddress: publicKey?.toString()
+          })
+        });
+
+        const sendResult = await sendResponse.json();
+        if (!sendResponse.ok || !sendResult.success) {
+          throw new Error(`Batch ${batch.batchIndex} failed: ${sendResult.error || 'Transaction failed'}`);
         }
-      }
+        
+        const signature = sendResult.signature;
+        console.log(`🚀 Batch ${batch.batchIndex} confirmed: ${signature}`);
+        
+        // Check for MEV rebates
+        let rebateAmount = 0;
+        if (sendResult.rebatesEnabled && publicKey) {
+          try {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const rebateResponse = await fetch(`/api/rpc/check-rebates/${signature}/${publicKey.toString()}`);
+            const rebateData = await rebateResponse.json();
+            if (rebateData.rebateAmount > 0) {
+              rebateAmount = rebateData.rebateAmount;
+              totalRebateAmount += rebateAmount;
+              console.log(`💰 Batch ${batch.batchIndex} MEV rebate: ${rebateAmount} SOL`);
+            }
+          } catch (e) {
+            console.log('Could not check rebates:', e);
+          }
+        }
 
-      // Record the successful transaction
-      const recordResponse = await fetch('/api/tokens/record-burn-success', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        // Record the batch success
+        const recordResponse = await fetch('/api/tokens/record-burn-success', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signature,
+            walletAddress: publicKey?.toString(),
+            tokenMints: batch.tokenMints,
+            tokensProcessed: batch.tokenCount,
+            solRecovered: batch.solRecovered,
+            netAmount: batch.netAmount,
+            feeAmount: batch.feeAmount,
+            referralCodeUsed: prepareResponse.referralCodeUsed || null,
+            platformFeeAmount: batch.platformFee || 0,
+            referralFeeAmount: batch.referralFee || 0
+          })
+        });
+
+        if (!recordResponse.ok) {
+          console.error('Failed to record batch burn success:', await recordResponse.text());
+        }
+
+        allBatchResults.push({
           signature,
-          walletAddress: publicKey?.toString(),
-          tokenMints,
-          tokensProcessed,
-          solRecovered,
-          netAmount,
-          feeAmount,
-          referralCodeUsed: referralCodeUsed || null,
-          platformFeeAmount: platformFeeAmount || 0,
-          referralFeeAmount: referralFeeAmount || 0
-        })
-      });
+          tokensProcessed: batch.tokenCount,
+          solRecovered: batch.solRecovered,
+          netAmount: batch.netAmount,
+          tokenMints: batch.tokenMints
+        });
 
-      if (!recordResponse.ok) {
-        console.error('Failed to record burn success:', await recordResponse.text());
+        totalTokensProcessed += batch.tokenCount;
+        totalSolRecovered += batch.solRecovered;
+        totalNetAmount += batch.netAmount;
+
+        console.log(`✅ Batch ${batch.batchIndex}/${prepareResponse.totalBatches} completed: ${batch.tokenCount} tokens burned`);
       }
 
-      return { tokensProcessed, solRecovered, netAmount, feeAmount, signature, rebateAmount };
+      console.log(`🎉 Successfully burned ${totalTokensProcessed} tokens in ${prepareResponse.totalBatches} batches!`);
+
+      return { 
+        tokensProcessed: totalTokensProcessed, 
+        solRecovered: totalSolRecovered, 
+        netAmount: totalNetAmount, 
+        signature: allBatchResults[0]?.signature || '',
+        rebateAmount: totalRebateAmount,
+        batchCount: prepareResponse.totalBatches,
+        allSignatures: allBatchResults.map(r => r.signature)
+      };
     },
     onSuccess: (result) => {
       const rebateText = result.rebateAmount > 0 ? ` + ${result.rebateAmount.toFixed(6)} SOL MEV rebate!` : '';
+      const batchText = result.batchCount > 1 ? ` (${result.batchCount} batches)` : '';
       toast({
-        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''}${rebateText}`,
+        title: `Successfully burned ${result.tokensProcessed} token${result.tokensProcessed > 1 ? 's' : ''}${batchText}${rebateText}`,
         className: "bg-green-600 text-white border-green-600",
         action: <ToastAction altText="View transaction on Solscan" onClick={() => window.open(`https://solscan.io/tx/${result.signature}`, '_blank')}>View on Solscan</ToastAction>
       });
@@ -1058,7 +1096,7 @@ export default function SolRefund() {
       console.error('Error bulk burning tokens:', error);
       toast({
         title: "Error",
-        description: "Failed to burn tokens. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to burn tokens. Please try again.",
         variant: "destructive",
       });
     },

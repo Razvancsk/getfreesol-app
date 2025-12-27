@@ -2833,95 +2833,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Create transaction with burn+close instructions
-      const transaction = new Transaction();
-      
-      // Add priority fee instruction first (0.00001 SOL = 10,000 microlamports)
-      const { ComputeBudgetProgram } = await import('@solana/web3.js');
-      transaction.add(
-        ComputeBudgetProgram.setComputeUnitPrice({
-          microLamports: 10000 // Fixed priority fee for faster confirmation
-        })
-      );
-      console.log('⚡ Added priority fee instruction: 0.00001 SOL (10,000 microlamports) for faster transaction confirmation');
-      
-      for (const token of validTokens) {
-        const mintPublicKey = new PublicKey(token.mint);
-        const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
-        
-        // Step 1: Burn tokens (if balance > 0)
-        if (token.balance > 0) {
-          // Use BurnChecked for Token-2022 (required for extensions like transfer fees)
-          const burnInstruction = isToken2022
-            ? createBurnCheckedInstruction(
-                token.account,      // Token account to burn from
-                mintPublicKey,      // Token mint
-                ownerPublicKey,     // Owner
-                token.balance,      // Amount to burn (full balance)
-                token.decimals,     // Decimals (required for checked instruction)
-                [],                 // Additional signers
-                TOKEN_2022_PROGRAM_ID  // Token-2022 program
-              )
-            : createBurnInstruction(
-                token.account,    // Token account to burn from
-                mintPublicKey,    // Token mint
-                ownerPublicKey,   // Owner
-                token.balance     // Amount to burn (full balance)
-              );
-          transaction.add(burnInstruction);
-          console.log(`Added ${isToken2022 ? 'BurnChecked' : 'Burn'} instruction for ${token.mint}`);
-        }
-        
-        // Step 2: Close the now-empty account to reclaim SOL
-        const closeInstruction = createCloseAccountInstruction(
-          token.account,
-          ownerPublicKey,     // destination (receives SOL)
-          ownerPublicKey,     // owner
-          [],                 // no multisig
-          token.programId     // correct program ID (TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID)
-        );
-        
-        transaction.add(closeInstruction);
-      }
-      
-      // Get recent blockhash for fee estimation
+      // Batch tokens: max 10 per transaction
+      const TOKENS_PER_BATCH = 10;
+      const batches: any[] = [];
       const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = ownerPublicKey;
-
-      // Estimate transaction fee
-      let estimatedTxFeeLamports = 5000; // Default 5k lamports
-      try {
-        const message = transaction.compileMessage();
-        const feeForMessage = await connection.getFeeForMessage(message);
-        if (feeForMessage.value) {
-          estimatedTxFeeLamports = feeForMessage.value;
-        }
-      } catch (error) {
-        console.log('Failed to estimate transaction fee, using default:', error);
-      }
-
-      // Calculate fees in lamports with proper capping (flat 15% fee)
-      // All users: 15% platform fee, 50% referral commission
-      const tokenBurnFeeRates = getWalletFeeRates(walletAddress);
-      const donationFactor = tokenBurnFeeRates.feePercent / 100; // 15% fee for token burning
-      const REFERRAL_SPLIT_PERCENT = tokenBurnFeeRates.referralPercent; // 50%
-      const requestedFeeLamports = Math.floor(totalRecoveredLamports * donationFactor);
-      const safetyBufferLamports = 50000; // 0.00005 SOL buffer
-      const maxAllowedFeeLamports = Math.max(0, totalRecoveredLamports - estimatedTxFeeLamports - safetyBufferLamports);
-      const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
+      const { ComputeBudgetProgram } = await import('@solana/web3.js');
       
-      console.log(`TOKEN BURN - Fee rates: ${tokenBurnFeeRates.feePercent}% fee, ${REFERRAL_SPLIT_PERCENT}% referral`);
-      
-      let referralFeeLamports = 0;
-      let platformFeeLamports = totalFeeLamports;
-      
-      // Check referral wallet BEFORE calculating final fees
+      // Check referral wallet once for all batches
       let referralWalletExists = false;
-      if (referralCodeData && totalFeeLamports > 0) {
+      if (referralCodeData) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-        
-        // Check if referral wallet exists (has SOL balance)
         try {
           const referralBalance = await connection.getBalance(referralWalletPublicKey);
           referralWalletExists = referralBalance > 0;
@@ -2930,86 +2851,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('TOKEN BURN - Failed to check referral wallet balance:', error);
           referralWalletExists = false;
         }
-        
-        if (referralWalletExists) {
-          // All referrers get 50% commission
-          const referrerFeeRates = getWalletFeeRates(referralCodeData.walletAddress);
-          const referrerSplitPercent = referrerFeeRates.referralPercent; // 50%
-          referralFeeLamports = Math.floor(totalFeeLamports * (referrerSplitPercent / 100));
-          platformFeeLamports = totalFeeLamports - referralFeeLamports;
-          console.log(`TOKEN BURN ✅ Referral wallet exists - platform=${platformFeeLamports} (${100 - referrerSplitPercent}%), referral=${referralFeeLamports} (${referrerSplitPercent}%)`);
-        } else {
-          // Referral wallet doesn't exist, all fees go to platform
-          platformFeeLamports = totalFeeLamports;
-          referralFeeLamports = 0;
-          console.log(`TOKEN BURN ❌ Referral wallet ${referralCodeData.walletAddress} doesn't exist - all fees to platform: ${platformFeeLamports}`);
-        }
-      } else {
-        console.log('TOKEN BURN - No referral code data - using full platform fee');
       }
       
-      // Calculate net amount after platform fees only
-      const netLamports = Math.max(0, totalRecoveredLamports - totalFeeLamports);
+      // Calculate fee rates once
+      const tokenBurnFeeRates = getWalletFeeRates(walletAddress);
+      const donationFactor = tokenBurnFeeRates.feePercent / 100; // 15% fee for token burning
+      const REFERRAL_SPLIT_PERCENT = tokenBurnFeeRates.referralPercent; // 50%
+      console.log(`TOKEN BURN - Fee rates: ${tokenBurnFeeRates.feePercent}% fee, ${REFERRAL_SPLIT_PERCENT}% referral`);
 
-      // Add fee transfer instructions AFTER burn instructions
-      if (platformFeeLamports > 0) {
-        const feeCollectorPublicKey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+      // Create batches of up to 10 tokens each
+      for (let i = 0; i < validTokens.length; i += TOKENS_PER_BATCH) {
+        const batchTokens = validTokens.slice(i, i + TOKENS_PER_BATCH);
+        const batchIndex = Math.floor(i / TOKENS_PER_BATCH) + 1;
+        const totalBatches = Math.ceil(validTokens.length / TOKENS_PER_BATCH);
         
-        const platformFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: ownerPublicKey,
-          toPubkey: feeCollectorPublicKey,
-          lamports: platformFeeLamports,
+        // Calculate batch-specific rent recovery
+        const batchRecoveredLamports = batchTokens.reduce((sum, t) => sum + t.lamports, 0);
+        
+        // Create transaction for this batch
+        const transaction = new Transaction();
+        
+        // Add priority fee instruction
+        transaction.add(
+          ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: 10000
+          })
+        );
+        
+        // Add burn and close instructions for each token in batch
+        for (const token of batchTokens) {
+          const mintPublicKey = new PublicKey(token.mint);
+          const isToken2022 = token.programId.equals(TOKEN_2022_PROGRAM_ID);
+          
+          // Burn tokens (if balance > 0)
+          if (token.balance > 0) {
+            const burnInstruction = isToken2022
+              ? createBurnCheckedInstruction(
+                  token.account,
+                  mintPublicKey,
+                  ownerPublicKey,
+                  token.balance,
+                  token.decimals,
+                  [],
+                  TOKEN_2022_PROGRAM_ID
+                )
+              : createBurnInstruction(
+                  token.account,
+                  mintPublicKey,
+                  ownerPublicKey,
+                  token.balance
+                );
+            transaction.add(burnInstruction);
+          }
+          
+          // Close the account
+          const closeInstruction = createCloseAccountInstruction(
+            token.account,
+            ownerPublicKey,
+            ownerPublicKey,
+            [],
+            token.programId
+          );
+          transaction.add(closeInstruction);
+        }
+        
+        // Estimate transaction fee for this batch
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = ownerPublicKey;
+        
+        let estimatedTxFeeLamports = 5000;
+        try {
+          const message = transaction.compileMessage();
+          const feeForMessage = await connection.getFeeForMessage(message);
+          if (feeForMessage.value) {
+            estimatedTxFeeLamports = feeForMessage.value;
+          }
+        } catch (error) {
+          console.log('Failed to estimate transaction fee, using default:', error);
+        }
+        
+        // Calculate fees for this batch
+        const safetyBufferLamports = 50000;
+        const requestedFeeLamports = Math.floor(batchRecoveredLamports * donationFactor);
+        const maxAllowedFeeLamports = Math.max(0, batchRecoveredLamports - estimatedTxFeeLamports - safetyBufferLamports);
+        const totalFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
+        
+        let batchReferralFeeLamports = 0;
+        let batchPlatformFeeLamports = totalFeeLamports;
+        
+        if (referralWalletExists && referralCodeData && totalFeeLamports > 0) {
+          const referrerFeeRates = getWalletFeeRates(referralCodeData.walletAddress);
+          const referrerSplitPercent = referrerFeeRates.referralPercent;
+          batchReferralFeeLamports = Math.floor(totalFeeLamports * (referrerSplitPercent / 100));
+          batchPlatformFeeLamports = totalFeeLamports - batchReferralFeeLamports;
+        }
+        
+        const batchNetLamports = Math.max(0, batchRecoveredLamports - totalFeeLamports);
+        
+        // Add fee transfer instructions
+        if (batchPlatformFeeLamports > 0) {
+          const feeCollectorPublicKey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+          transaction.add(SystemProgram.transfer({
+            fromPubkey: ownerPublicKey,
+            toPubkey: feeCollectorPublicKey,
+            lamports: batchPlatformFeeLamports,
+          }));
+        }
+        
+        if (batchReferralFeeLamports > 0 && referralCodeData && referralWalletExists) {
+          const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
+          transaction.add(SystemProgram.transfer({
+            fromPubkey: ownerPublicKey,
+            toPubkey: referralWalletPublicKey,
+            lamports: batchReferralFeeLamports,
+          }));
+        }
+        
+        // Serialize transaction
+        const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
+        
+        batches.push({
+          batchIndex,
+          totalBatches,
+          transaction: serializedTransaction.toString('base64'),
+          tokenMints: batchTokens.map(t => t.mint),
+          tokenCount: batchTokens.length,
+          solRecovered: batchRecoveredLamports / 1e9,
+          netAmount: batchNetLamports / 1e9,
+          feeAmount: totalFeeLamports / 1e9,
+          platformFee: batchPlatformFeeLamports / 1e9,
+          referralFee: batchReferralFeeLamports / 1e9
         });
         
-        transaction.add(platformFeeTransferInstruction);
-        console.log(`TOKEN BURN - Platform fee transfer added: ${platformFeeLamports} lamports`);
+        console.log(`TOKEN BURN - Batch ${batchIndex}/${totalBatches}: ${batchTokens.length} tokens, ${(batchRecoveredLamports / 1e9).toFixed(6)} SOL recovered`);
       }
       
-      // Add referral fee transfer only if referral wallet exists
-      if (referralFeeLamports > 0 && referralCodeData && referralWalletExists) {
-        const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
-        
-        const referralFeeTransferInstruction = SystemProgram.transfer({
-          fromPubkey: ownerPublicKey,
-          toPubkey: referralWalletPublicKey,
-          lamports: referralFeeLamports,
-        });
-        
-        transaction.add(referralFeeTransferInstruction);
-        console.log(`TOKEN BURN - Referral fee transfer added: ${referralFeeLamports} lamports to ${referralCodeData.walletAddress}`);
-      }
-      
-      // Serialize transaction
-      console.log(`📦 Transaction contains ${transaction.instructions.length} instructions (priority fee + burn/close + fee transfers)`);
-      const serializedTransaction = transaction.serialize({ requireAllSignatures: false });
-      const transactionBase64 = serializedTransaction.toString('base64');
-      
-      // Convert lamports to SOL for response
+      // Calculate totals across all batches
       const totalSolRecovered = totalRecoveredLamports / 1e9;
-      const totalFeeAmount = totalFeeLamports / 1e9;
-      const platformFeeAmount = platformFeeLamports / 1e9;
-      const referralFeeAmount = referralFeeLamports / 1e9;
-      const netAmount = netLamports / 1e9;
+      const totalFeeAmount = batches.reduce((sum, b) => sum + b.feeAmount, 0);
+      const totalNetAmount = batches.reduce((sum, b) => sum + b.netAmount, 0);
       
-      console.log(`Bulk token burn transaction prepared: ${validTokens.length} tokens, ${totalSolRecovered.toFixed(8)} SOL (${netAmount.toFixed(8)} net after ${totalFeeAmount.toFixed(8)} fee)`);
+      console.log(`TOKEN BURN - Prepared ${batches.length} batches for ${validTokens.length} tokens, ${totalSolRecovered.toFixed(8)} SOL total`);
       
       res.json({
-        transaction: transactionBase64,
-        tokensProcessed: validTokens.length,
-        solRecovered: totalSolRecovered.toFixed(8),
-        feeAmount: totalFeeAmount.toFixed(8),
-        platformFeeAmount: platformFeeAmount.toFixed(8),
-        referralFeeAmount: referralFeeAmount.toFixed(8),
-        netAmount: netAmount.toFixed(8),
+        success: true,
+        batches,
+        totalBatches: batches.length,
+        totalTokens: validTokens.length,
+        totalSolRecovered: totalSolRecovered.toFixed(8),
+        totalNetAmount: totalNetAmount.toFixed(8),
+        totalFeeAmount: totalFeeAmount.toFixed(8),
         referralCodeUsed: referralCode || null,
-        message: `Bulk burn transaction prepared for ${validTokens.length} tokens (${netAmount.toFixed(6)} SOL net after 15% fee)`,
-        feeCapInfo: {
-          requestedFeeLamports,
-          maxAllowedFeeLamports,
-          actualFeeLamports: totalFeeLamports,
-          estimatedTxFeeLamports,
-          safetyBufferLamports
-        }
+        message: `Prepared ${batches.length} batch${batches.length > 1 ? 'es' : ''} for ${validTokens.length} tokens (max 10 per signature)`
       });
       
     } catch (error) {
