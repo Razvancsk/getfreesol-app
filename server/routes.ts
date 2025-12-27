@@ -4427,8 +4427,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 🚀 CHUNK INTO BATCHES OF 10 NFTs MAX
-      const MAX_NFTS_PER_BATCH = 10;
+      // 🚀 CHUNK INTO BATCHES OF 5 NFTs MAX
+      const MAX_NFTS_PER_BATCH = 5;
       const batchChunks = [];
       for (let i = 0; i < validAssets.length; i += MAX_NFTS_PER_BATCH) {
         batchChunks.push(validAssets.slice(i, i + MAX_NFTS_PER_BATCH));
@@ -4650,7 +4650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       umi.use({ install: (ctx) => { ctx.identity = noopSigner; ctx.payer = noopSigner; }});
 
       // ✅ NEW: Implement chunking system for PNFTs (5 NFTs max per signature)
-      const MAX_NFTS_PER_BATCH = 10;
+      const MAX_NFTS_PER_BATCH = 5;
       const validNfts = [];
       const failedNfts = [];
       const connection = new Connection(rpcUrl, 'confirmed');
@@ -5021,7 +5021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       umi.use({ install: (ctx) => { ctx.identity = noopSigner; ctx.payer = noopSigner; }});
 
       // ✅ NEW: Implement chunking system for Standard NFTs (5 NFTs max per signature)
-      const MAX_NFTS_PER_BATCH = 10;
+      const MAX_NFTS_PER_BATCH = 5;
       const validNfts = [];
       const failedNfts = [];
       const connection = new Connection(rpcUrl, 'confirmed');
