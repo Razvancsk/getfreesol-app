@@ -2486,11 +2486,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               )
               .filter((asset: any) => {
                 const balance = asset.token_info?.balance || 0;
-                const decimals = asset.token_info?.decimals || 0;
-                const displayBalance = balance / Math.pow(10, decimals);
-                
-                // Only show tokens with meaningful balances (> 0.001) or empty accounts that can be closed
-                return displayBalance > 0.001 || balance === 0;
+                // Show ALL tokens with any balance (no minimum threshold) - let users burn dust tokens
+                return balance > 0;
               });
 
             console.log(`Found ${fungibleTokens.length} fungible tokens with meaningful balances`);
