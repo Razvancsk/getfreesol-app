@@ -60,6 +60,23 @@ function setCachedData(key: string, data: any): void {
   }
 }
 
+// Blockhash cache - reuse for 20 seconds to reduce getLatestBlockhash calls
+let cachedBlockhash: { blockhash: string; timestamp: number } | null = null;
+const BLOCKHASH_TTL = 20000; // 20 seconds (blockhash valid for ~60 seconds)
+
+async function getCachedBlockhash(connection: Connection): Promise<string> {
+  if (cachedBlockhash && Date.now() - cachedBlockhash.timestamp < BLOCKHASH_TTL) {
+    return cachedBlockhash.blockhash;
+  }
+  const { blockhash } = await connection.getLatestBlockhash();
+  cachedBlockhash = { blockhash, timestamp: Date.now() };
+  console.log('🔄 Refreshed blockhash cache');
+  return blockhash;
+}
+
+// Public RPC for non-critical operations (health checks, etc.) to save Helius credits
+const PUBLIC_RPC_URL = 'https://api.mainnet-beta.solana.com';
+
 // Extend global for temporary OAuth token storage
 declare global {
   var pendingOAuthTokens: Record<string, string>;
