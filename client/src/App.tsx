@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SolanaProvider } from "@/providers/SolanaProvider";
+import { ReownProvider } from "@/providers/ReownProvider";
 import { Snowfall } from "@/components/Snowfall";
 import ClaimSol from "@/pages/claim-sol";
 import Referrals from "@/pages/referrals";
@@ -39,13 +39,13 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SolanaProvider>
+      <ReownProvider>
         <TooltipProvider>
           <Snowfall />
           <Toaster />
           <Router />
         </TooltipProvider>
-      </SolanaProvider>
+      </ReownProvider>
     </QueryClientProvider>
   );
 }

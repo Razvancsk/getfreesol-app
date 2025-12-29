@@ -39,9 +39,8 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { VersionedTransaction, Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { useAppKit } from "@reown/appkit/react";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 import { SwapModal } from '@/components/SwapModal';
 import { SwapPanel } from '@/components/SwapPanel';
@@ -89,9 +88,7 @@ interface RefundStats {
 
 export default function SolRefund() {
   const queryClient = useQueryClient();
-  const wallet = useWallet();
-  const { signMessage } = wallet;
-  const { connection: rpcConnection } = useConnection();
+  const { open } = useAppKit();
   const isMobile = useIsMobile();
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
@@ -241,6 +238,7 @@ export default function SolRefund() {
     disconnect, 
     signTransaction, 
     signAllTransactions,
+    signMessage,
     walletName,
     connection,
     isMagicEdenAvailable,
@@ -250,6 +248,8 @@ export default function SolRefund() {
     setVisible,
     select
   } = useWalletAdapter();
+  
+  const rpcConnection = connection;
 
   // Points queries - need to be after publicKey is defined
   const pointsWalletAddress = publicKey?.toBase58();
@@ -1146,7 +1146,7 @@ export default function SolRefund() {
           try {
             console.log('🔥 Starting Core NFT burning with server-side UMI...');
             
-            if (!wallet.publicKey) {
+            if (!publicKey) {
               throw new Error('Wallet not connected');
             }
 
@@ -1157,7 +1157,7 @@ export default function SolRefund() {
             // Call server to prepare burn transactions (new batching API)
             const prepareResponseRaw = await apiRequest('POST', '/api/core-nfts/prepare-burn', { 
               coreNftIds,
-              walletAddress: wallet.publicKey.toString()
+              walletAddress: publicKey.toString()
             });
             const prepareResponse = await prepareResponseRaw.json();
 
@@ -1210,10 +1210,10 @@ export default function SolRefund() {
               const transaction = Transaction.from(transactionBuffer);
 
               // Sign this batch transaction
-              if (!wallet.signTransaction) {
+              if (!signTransaction) {
                 throw new Error('Wallet does not support transaction signing');
               }
-              const signedTransaction = await wallet.signTransaction(transaction);
+              const signedTransaction = await signTransaction(transaction);
               console.log(`✅ Batch ${batch.batchIndex} transaction signed for ${batch.nftCount} Core NFTs!`);
 
               // Submit the signed batch transaction via server relay
@@ -1243,7 +1243,7 @@ export default function SolRefund() {
                     feeAmount: (batch.platformFee + batch.referralFee) / batch.nftCount,
                     platformFeeAmount: batch.platformFee / batch.nftCount,
                     referralFeeAmount: batch.referralFee / batch.nftCount,
-                    walletAddress: wallet.publicKey.toString(),
+                    walletAddress: publicKey.toString(),
                     nftType: 'core',
                     success: true
                   });
@@ -1349,7 +1349,7 @@ export default function SolRefund() {
           try {
             console.log('🔥 Starting Programmable NFT burning with server-side UMI...');
             
-            if (!wallet.publicKey) {
+            if (!publicKey) {
               throw new Error('Wallet not connected');
             }
 
@@ -1360,7 +1360,7 @@ export default function SolRefund() {
             // Call server to prepare pNFT burn transactions
             const prepareResponseRaw = await apiRequest('POST', '/api/pnfts/prepare-burn', {
               pNftIds,
-              walletAddress: wallet.publicKey.toString()
+              walletAddress: publicKey.toString()
             });
             const prepareResponse = await prepareResponseRaw.json();
 
@@ -1429,7 +1429,7 @@ export default function SolRefund() {
                     signature,
                     nftMint: nftId,
                     rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent evenly
-                    walletAddress: wallet.publicKey.toString(),
+                    walletAddress: publicKey.toString(),
                     nftType: 'pnft',
                     success: true
                   });
@@ -1548,7 +1548,7 @@ export default function SolRefund() {
           try {
             console.log('🔥 Starting Traditional NFT burning with server-side UMI...');
             
-            if (!wallet.publicKey) {
+            if (!publicKey) {
               throw new Error('Wallet not connected');
             }
 
@@ -1559,7 +1559,7 @@ export default function SolRefund() {
             // Call server to prepare standard NFT burn transactions
             const prepareResponseRaw = await apiRequest('POST', '/api/standard-nfts/prepare-burn', {
               standardNftIds,
-              walletAddress: wallet.publicKey.toString()
+              walletAddress: publicKey.toString()
             });
             const prepareResponse = await prepareResponseRaw.json();
 
@@ -1628,7 +1628,7 @@ export default function SolRefund() {
                     signature,
                     nftMint: nftId,
                     rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent evenly
-                    walletAddress: wallet.publicKey.toString(),
+                    walletAddress: publicKey.toString(),
                     nftType: 'standard',
                     success: true
                   });
@@ -1738,7 +1738,7 @@ export default function SolRefund() {
             console.log('🔥 Starting Compressed NFT burning with Bubblegum...');
             console.log('⚠️ WARNING: cNFTs do NOT recover SOL - this is for cleanup only');
             
-            if (!wallet.publicKey) {
+            if (!publicKey) {
               throw new Error('Wallet not connected');
             }
 
@@ -1749,7 +1749,7 @@ export default function SolRefund() {
             // Call server to prepare cNFT burn transactions
             const prepareResponseRaw = await apiRequest('POST', '/api/cnfts/prepare-burn', {
               cnftIds,
-              walletAddress: wallet.publicKey.toString()
+              walletAddress: publicKey.toString()
             });
             const prepareResponse = await prepareResponseRaw.json();
 
@@ -1861,7 +1861,7 @@ export default function SolRefund() {
             console.log('🔥 Attempting direct Solana transaction approach for Core NFTs...');
 
             // Ensure wallet is properly connected with adapter
-            if (!wallet.wallet?.adapter || !wallet.publicKey) {
+            if (!publicKey) {
               throw new Error('Wallet adapter not properly connected for Core NFT burning');
             }
             console.log('✅ Wallet adapter validated');
@@ -1881,7 +1881,7 @@ export default function SolRefund() {
             
             // Core program constants (same as server)
             const CORE_PROGRAM_ID = new PublicKey('CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d');
-            const userPubkey = wallet.publicKey!;
+            const userPubkey = publicKey!;
             
             console.log('✅ Direct Solana transaction approach initialized');
             console.log('💰 User pubkey:', userPubkey.toString());
@@ -1941,7 +1941,7 @@ export default function SolRefund() {
                   Transaction.from(Buffer.from(tx.transaction, 'base64'))
                 );
                 
-                const signedTxs = await wallet.signAllTransactions!(unsignedTxs);
+                const signedTxs = await signAllTransactions(unsignedTxs);
                 
                 // Step 3: Serialize signed transactions for server
                 const signedTransactions = signedTxs.map(tx => 
@@ -2032,7 +2032,7 @@ export default function SolRefund() {
             const burnPrepResponse = await apiRequest('POST', '/api/nfts/burn', {
               nftMints: nftMints,
               nftType: 'core',
-              walletAddress: wallet.publicKey!.toString()
+              walletAddress: publicKey!.toString()
             });
 
             const burnPrepData = await burnPrepResponse.json();
@@ -2063,7 +2063,7 @@ export default function SolRefund() {
                 console.log('📝 Transaction decoded, requesting wallet signature...');
 
                 // Get user's balance before transaction
-                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
+                const balanceBefore = await rpcConnection.getBalance(publicKey!);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
 
                 // ❌ REMOVED: Frontend RPC calls cause 403 errors - hybrid approach handles this on server
@@ -2116,7 +2116,7 @@ export default function SolRefund() {
                 console.log('✅ Transaction confirmed on blockchain!');
 
                 // Check actual rent recovered
-                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
+                const balanceAfter = await rpcConnection.getBalance(publicKey!);
                 const txDetails = await rpcConnection.getTransaction(signature, {
                   commitment: 'confirmed',
                   maxSupportedTransactionVersion: 0
@@ -2180,10 +2180,10 @@ export default function SolRefund() {
                 const assetPublicKey = umiPublicKey(mintAddress);
 
                 console.log('🔥 Starting Core NFT burn for asset:', mintAddress);
-                console.log('💰 User wallet:', wallet.publicKey?.toString());
+                console.log('💰 User wallet:', publicKey?.toString());
 
                 // Get wallet balance before burn
-                const balanceBefore = await rpcConnection.getBalance(wallet.publicKey!);
+                const balanceBefore = await rpcConnection.getBalance(publicKey!);
                 console.log('💰 Balance before:', balanceBefore / 1e9, 'SOL');
 
                 // Try alternative approach: Use Raw Solana transaction
@@ -2240,7 +2240,7 @@ export default function SolRefund() {
                   console.warn('Could not fetch transaction details, using estimated fee');
                 }
 
-                const balanceAfter = await rpcConnection.getBalance(wallet.publicKey!);
+                const balanceAfter = await rpcConnection.getBalance(publicKey!);
                 const actualRentRecovered = (balanceAfter - balanceBefore + networkFee) / 1e9; // Accurate with fees
                 console.log('💰 Balance after:', balanceAfter / 1e9, 'SOL');
 
@@ -5388,8 +5388,8 @@ export default function SolRefund() {
                               const txBuffer = Buffer.from(base64Transaction, 'base64');
                               const transaction = VersionedTransaction.deserialize(txBuffer);
                               
-                              if ('signTransaction' in wallet && wallet.signTransaction) {
-                                const signedTx = await wallet.signTransaction(transaction);
+                              if (signTransaction) {
+                                const signedTx = await signTransaction(transaction);
                                 
                                 const signature = await connection.sendRawTransaction(signedTx.serialize(), {
                                   skipPreflight: false,
@@ -5783,8 +5783,8 @@ export default function SolRefund() {
                           const txBuffer = Buffer.from(base64Transaction, 'base64');
                           const transaction = VersionedTransaction.deserialize(txBuffer);
                           
-                          if ('signTransaction' in wallet && wallet.signTransaction) {
-                            const signedTx = await wallet.signTransaction(transaction);
+                          if (signTransaction) {
+                            const signedTx = await signTransaction(transaction);
                             
                             const signature = await connection.sendRawTransaction(signedTx.serialize(), {
                               skipPreflight: false,
