@@ -74,9 +74,6 @@ async function getCachedBlockhash(connection: Connection): Promise<string> {
   return blockhash;
 }
 
-// Public RPC for non-critical operations (health checks, etc.) to save Helius credits
-const PUBLIC_RPC_URL = 'https://api.mainnet-beta.solana.com';
-
 // Extend global for temporary OAuth token storage
 declare global {
   var pendingOAuthTokens: Record<string, string>;
