@@ -3057,8 +3057,7 @@ export default function SolRefund() {
                   }`}
                   data-testid="button-dex-tab"
                 >
-                  <BarChart3 className="h-5 w-5" />
-                  DEX
+                  <span className="text-lg">📊</span> DEX
                 </Button>
                 <Button
                   onClick={() => setActiveTab('reclaim')}
