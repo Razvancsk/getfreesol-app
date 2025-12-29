@@ -30,50 +30,6 @@ import cron from 'node-cron';
 import { backpackApiService } from './backpackApiService';
 import { backpackWebSocketService } from './backpackWebSocketService';
 
-// Simple in-memory cache to reduce Helius API calls
-// Cache entries expire after 30 seconds
-const apiCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 30000; // 30 seconds
-
-function getCachedData<T>(key: string): T | null {
-  const cached = apiCache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log(`📦 Cache HIT: ${key.substring(0, 50)}...`);
-    return cached.data as T;
-  }
-  if (cached) {
-    apiCache.delete(key); // Clean up expired entry
-  }
-  return null;
-}
-
-function setCachedData(key: string, data: any): void {
-  apiCache.set(key, { data, timestamp: Date.now() });
-  // Cleanup old entries if cache gets too large
-  if (apiCache.size > 100) {
-    const now = Date.now();
-    for (const [k, v] of apiCache.entries()) {
-      if (now - v.timestamp > CACHE_TTL) {
-        apiCache.delete(k);
-      }
-    }
-  }
-}
-
-// Blockhash cache - reuse for 20 seconds to reduce getLatestBlockhash calls
-let cachedBlockhash: { blockhash: string; timestamp: number } | null = null;
-const BLOCKHASH_TTL = 20000; // 20 seconds (blockhash valid for ~60 seconds)
-
-async function getCachedBlockhash(connection: Connection): Promise<string> {
-  if (cachedBlockhash && Date.now() - cachedBlockhash.timestamp < BLOCKHASH_TTL) {
-    return cachedBlockhash.blockhash;
-  }
-  const { blockhash } = await connection.getLatestBlockhash();
-  cachedBlockhash = { blockhash, timestamp: Date.now() };
-  console.log('🔄 Refreshed blockhash cache');
-  return blockhash;
-}
-
 // Extend global for temporary OAuth token storage
 declare global {
   var pendingOAuthTokens: Record<string, string>;
@@ -317,23 +273,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helius API - Get wallet token balances (CACHED for 30 seconds)
+  // Helius API - Get wallet token balances
   app.get("/api/tokens/holdings/:walletAddress", async (req, res) => {
     try {
       const { walletAddress } = req.params;
       
+      console.log('Fetching holdings for wallet:', walletAddress);
+      
       if (!walletAddress) {
         return res.status(400).json({ error: 'Wallet address is required' });
       }
-
-      // Check cache first to reduce Helius API calls
-      const cacheKey = `holdings:${walletAddress}`;
-      const cached = getCachedData<any>(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-      
-      console.log('Fetching holdings for wallet:', walletAddress);
 
       const heliusApiKey = process.env.HELIUS_API_KEY;
       if (!heliusApiKey) {
@@ -467,8 +416,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Found ${tokenList.length} tokens with balance for wallet ${walletAddress}`);
-      // Cache the result for 30 seconds
-      setCachedData(cacheKey, tokenList);
       res.json(tokenList);
     } catch (error) {
       console.error('Token holdings error:', error);
@@ -1355,13 +1302,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Check cache first to reduce Helius API calls (30 second TTL)
-      const cacheKey = `sol-scan:${address}`;
-      const cached = getCachedData<any>(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-
       // Get RPC endpoint with fallbacks
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcEndpoints = [
@@ -1465,8 +1405,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scannedAt: scanResult.scannedAt.toISOString()
       };
 
-      // Cache the result for 30 seconds
-      setCachedData(cacheKey, response);
       res.json(response);
     } catch (error) {
       console.error("Scan error:", error);
@@ -2475,13 +2413,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Check cache first to reduce Helius API calls (30 second TTL)
-      const cacheKey = `tokens-scan:${address}`;
-      const cached = getCachedData<any>(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       const rpcEndpoints = [
@@ -2749,8 +2680,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // No fallback - only use Helius DAS API results
       console.log(`Final token count: ${tokens.length}`);
 
-      // Cache the result for 30 seconds
-      setCachedData(cacheKey, tokens);
       res.json(tokens);
     } catch (error) {
       console.error('Error scanning tokens:', error);
@@ -3360,13 +3289,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Check cache first to reduce Helius API calls (30 second TTL)
-      const cacheKey = `nfts-scan:${address}:${type || 'all'}`;
-      const cached = getCachedData<any>(cacheKey);
-      if (cached) {
-        return res.json(cached);
-      }
-
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
       if (!heliusApiKey) {
@@ -3634,16 +3556,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return acc;
       }, {});
 
-      const response = {
+      res.json({
         success: true,
         nfts,
         counts,
         total: nfts.length
-      };
-      
-      // Cache the result for 30 seconds
-      setCachedData(cacheKey, response);
-      res.json(response);
+      });
     } catch (error) {
       console.error('Error scanning NFTs:', error);
       res.status(500).json({ error: "Failed to scan NFTs" });
