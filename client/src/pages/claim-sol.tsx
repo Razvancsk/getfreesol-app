@@ -3049,6 +3049,18 @@ export default function SolRefund() {
             <div className="flex justify-center py-2 px-2">
               <div className="flex items-center space-x-2">
                 <Button
+                  onClick={() => setActiveTab('dex')}
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
+                    activeTab === 'dex' 
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                  }`}
+                  data-testid="button-dex-tab"
+                >
+                  <TrendingUp className="h-5 w-5" />
+                  DEX
+                </Button>
+                <Button
                   onClick={() => setActiveTab('reclaim')}
                   className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'reclaim' 
@@ -3072,18 +3084,6 @@ export default function SolRefund() {
                   }`}
                 >
                   <span className="text-lg">🔥</span> Burn
-                </Button>
-                                <Button
-                  onClick={() => setActiveTab('dex')}
-                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
-                    activeTab === 'dex' 
-                      ? 'bg-purple-600 text-white border-purple-500' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
-                  }`}
-                  data-testid="button-dex-tab"
-                >
-                  <TrendingUp className="h-5 w-5" />
-                  DEX
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
