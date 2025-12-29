@@ -5331,8 +5331,8 @@ export default function SolRefund() {
                         <Button
                           onClick={async () => {
                             console.log('🚀 DEPOSIT BUTTON CLICKED - Starting deposit flow');
-                            if (!publicKey || !wallet || !selectedReserve || !depositAmount) {
-                              console.error('❌ Missing required fields:', { publicKey: !!publicKey, wallet: !!wallet, selectedReserve: !!selectedReserve, depositAmount });
+                            if (!publicKey || !isConnected || !selectedReserve || !depositAmount) {
+                              console.error('❌ Missing required fields:', { publicKey: !!publicKey, isConnected, selectedReserve: !!selectedReserve, depositAmount });
                               return;
                             }
                             
@@ -5726,8 +5726,8 @@ export default function SolRefund() {
                     <Button
                       onClick={async () => {
                         console.log('🚀 DIALOG DEPOSIT BUTTON CLICKED');
-                        if (!publicKey || !wallet || !selectedReserve || !depositAmount) {
-                          console.error('❌ Missing required fields:', { publicKey: !!publicKey, wallet: !!wallet, selectedReserve: !!selectedReserve, depositAmount });
+                        if (!publicKey || !isConnected || !selectedReserve || !depositAmount) {
+                          console.error('❌ Missing required fields:', { publicKey: !!publicKey, isConnected, selectedReserve: !!selectedReserve, depositAmount });
                           return;
                         }
                         

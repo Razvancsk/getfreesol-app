@@ -1,4 +1,4 @@
-import { useAppKit, useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
+import { useAppKit, useAppKitAccount, useAppKitProvider, useDisconnect } from "@reown/appkit/react";
 import { useCallback, useMemo } from "react";
 import { Connection, PublicKey, VersionedTransaction, Transaction } from "@solana/web3.js";
 import type { Provider } from "@reown/appkit-adapter-solana/react";
@@ -31,6 +31,7 @@ export const useReownWallet = (): ReownWalletHook => {
   const { open, close } = useAppKit();
   const { address, isConnected, status } = useAppKitAccount();
   const { walletProvider } = useAppKitProvider<Provider>("solana");
+  const { disconnect: appKitDisconnect } = useDisconnect();
 
   const heliusKey = import.meta.env.VITE_HELIUS_API_KEY;
   const rpcEndpoint = heliusKey 
@@ -55,8 +56,12 @@ export const useReownWallet = (): ReownWalletHook => {
   }, [open]);
 
   const handleDisconnect = useCallback(async () => {
-    await close();
-  }, [close]);
+    try {
+      await appKitDisconnect();
+    } catch (error) {
+      console.error('Disconnect error:', error);
+    }
+  }, [appKitDisconnect]);
 
   const signTransaction = useCallback(async (transaction: Transaction | VersionedTransaction) => {
     if (!walletProvider) {
