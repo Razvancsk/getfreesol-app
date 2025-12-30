@@ -9,7 +9,7 @@ import crypto from 'crypto';
 import axios from 'axios';
 import { db } from './db';
 import { Connection, PublicKey, Transaction, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction, ComputeBudgetProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, createBurnCheckedInstruction, createCloseAccountInstruction, createSetAuthorityInstruction, AuthorityType, getAccount, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT, getAssociatedTokenAddressSync, createTransferInstruction, getMint, getPermanentDelegate, ExtensionType, getExtensionData } from "@solana/spl-token";
 import { getDepositIx, getWithdrawIx } from "@jup-ag/lend/earn";
 import { BN } from "bn.js";
 // Metaplex Core burning - server-side UMI implementation
@@ -1379,6 +1379,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
+      let skippedNonClosable = 0;
+
+      // Track Token-2022 mints with permanent delegate extension (non-closable by owner)
+      const nonClosableMints = new Set<string>();
+      
+      // Check each Token-2022 mint for permanent delegate extension
+      for (const accountInfo of token2022Accounts.value) {
+        const parsedInfo = accountInfo.account.data.parsed.info;
+        const mintAddress = parsedInfo.mint;
+        
+        // Skip if we already checked this mint
+        if (nonClosableMints.has(mintAddress)) continue;
+        
+        try {
+          const mintPubkey = new PublicKey(mintAddress);
+          const mintInfo = await getMint(connection, mintPubkey, 'confirmed', TOKEN_2022_PROGRAM_ID);
+          
+          // Check for permanent delegate extension
+          const permanentDelegate = getPermanentDelegate(mintInfo);
+          if (permanentDelegate && permanentDelegate.delegate) {
+            console.log(`⚠️ Mint ${mintAddress.substring(0, 8)}... has permanent delegate: ${permanentDelegate.delegate.toString().substring(0, 8)}...`);
+            nonClosableMints.add(mintAddress);
+          }
+        } catch (error) {
+          // If we can't check, assume it's closable
+          console.log(`Could not check extensions for mint ${mintAddress.substring(0, 8)}...:`, (error as Error).message);
+        }
+      }
 
       for (const accountInfo of allTokenAccounts) {
         const account = accountInfo.account;
@@ -1386,6 +1414,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if account has zero balance
         if (parseFloat(parsedInfo.tokenAmount.amount) === 0) {
+          // Skip Token-2022 accounts with permanent delegate (non-closable by owner)
+          if (nonClosableMints.has(parsedInfo.mint)) {
+            console.log(`⏭️ Skipping non-closable account ${accountInfo.pubkey.toString().substring(0, 8)}... (permanent delegate)`);
+            skippedNonClosable++;
+            continue;
+          }
+          
+          
           const rentAmount = account.lamports / 1e9; // Convert lamports to SOL
           
           emptyAccounts.push({
@@ -1401,6 +1437,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           totalReclaimable += rentAmount;
         }
+      }
+      
+      if (skippedNonClosable > 0) {
+        console.log(`📊 Skipped ${skippedNonClosable} non-closable Token-2022 accounts (permanent delegate extension)`);
       }
 
       // Store scan result
@@ -1557,7 +1597,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Detect program ID
           let programId = TOKEN_PROGRAM_ID;
-          if (accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+          const isToken2022 = accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+          if (isToken2022) {
             programId = TOKEN_2022_PROGRAM_ID;
             console.log(`Account ${account.accountAddress.substring(0, 8)}... uses Token-2022`);
           } else if (!accountInfo.owner.equals(TOKEN_PROGRAM_ID)) {
@@ -1566,29 +1607,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           
-          // Parse token account data to validate ownership and balance
+          // Use getAccount for proper parsing (handles both Token and Token-2022)
           try {
-            const tokenAccountData = AccountLayout.decode(accountInfo.data);
-            const accountOwner = new PublicKey(tokenAccountData.owner);
-            const tokenBalance = Number(tokenAccountData.amount);
+            const tokenAccount = await getAccount(connection, accountPublicKey, 'confirmed', programId);
             
             // Verify the account owner matches the wallet
-            if (!accountOwner.equals(ownerPublicKey)) {
-              console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - owner mismatch (expected ${walletAddress.substring(0, 8)}..., got ${accountOwner.toString().substring(0, 8)}...)`);
+            if (!tokenAccount.owner.equals(ownerPublicKey)) {
+              console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - owner mismatch (expected ${walletAddress.substring(0, 8)}..., got ${tokenAccount.owner.toString().substring(0, 8)}...)`);
               skippedAccounts.push({ address: account.accountAddress, reason: 'Account owner does not match wallet' });
               continue;
             }
             
             // Verify balance is actually 0
-            if (tokenBalance !== 0) {
-              console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - balance is not 0 (has ${tokenBalance} tokens)`);
-              skippedAccounts.push({ address: account.accountAddress, reason: `Has ${tokenBalance} tokens, not empty` });
+            if (tokenAccount.amount !== BigInt(0)) {
+              console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - balance is not 0 (has ${tokenAccount.amount} tokens)`);
+              skippedAccounts.push({ address: account.accountAddress, reason: `Has ${tokenAccount.amount} tokens, not empty` });
+              continue;
+            }
+            
+            // For Token-2022, check if closeAuthority is different from owner
+            // If closeAuthority is set to someone else, the owner cannot close it
+            if (isToken2022 && tokenAccount.closeAuthority && !tokenAccount.closeAuthority.equals(ownerPublicKey)) {
+              console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - close authority is ${tokenAccount.closeAuthority.toString().substring(0, 8)}... (not owner)`);
+              skippedAccounts.push({ address: account.accountAddress, reason: 'Close authority is not the owner' });
               continue;
             }
             
             console.log(`✅ Validated ${account.accountAddress.substring(0, 8)}... - can be closed`);
-          } catch (parseError) {
-            console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - could not parse account data:`, parseError);
+          } catch (parseError: any) {
+            console.log(`⚠️ Skipping ${account.accountAddress.substring(0, 8)}... - could not parse account data:`, parseError.message);
             skippedAccounts.push({ address: account.accountAddress, reason: 'Invalid account data structure' });
             continue;
           }
@@ -1597,7 +1644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const closeInstruction = createCloseAccountInstruction(
             accountPublicKey,
             ownerPublicKey, // destination (user receives SOL)
-            ownerPublicKey, // owner
+            ownerPublicKey, // authority (owner or closeAuthority)
             [],             // no multisig
             programId       // correct program ID
           );
@@ -1605,8 +1652,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transaction.add(closeInstruction);
           validAccountsForTx.push(account);
           
-        } catch (error) {
-          console.log(`⚠️ Error validating ${account.accountAddress.substring(0, 8)}...:`, error);
+        } catch (error: any) {
+          console.log(`⚠️ Error validating ${account.accountAddress.substring(0, 8)}...:`, error.message);
           skippedAccounts.push({ address: account.accountAddress, reason: `Validation error: ${error.message}` });
         }
       }
