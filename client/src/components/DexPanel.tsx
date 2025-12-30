@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { VersionedTransaction } from '@solana/web3.js';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -441,8 +441,7 @@ export function DexPanel() {
   });
   const now = useLiveNow(1000); // Update every second for live age
   
-  const { publicKey, signTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey, signTransaction, connection } = useWalletAdapter();
   const { toast } = useToast();
 
   useEffect(() => {
