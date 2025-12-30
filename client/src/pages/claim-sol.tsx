@@ -2647,11 +2647,25 @@ export default function SolRefund() {
       queryClient.refetchQueries({ queryKey: ['/api/leaderboard'] });
     },
     onError: (error: any) => {
-      toast({
-        title: "Transaction Failed",
-        description: error.message || "Failed to process SOL refund transaction",
-        variant: "destructive",
-      });
+      const errorMsg = error.message || "Failed to process SOL refund transaction";
+      
+      // Check if accounts were already closed - prompt user to re-scan
+      if (errorMsg.includes('already closed') || errorMsg.includes('re-scan') || 
+          errorMsg.includes('AccountNotFound') || errorMsg.includes('ownership mismatch')) {
+        toast({
+          title: "Accounts Already Claimed",
+          description: "Some accounts may have been closed. Please re-scan your wallet to get fresh data.",
+          variant: "destructive",
+        });
+        // Reset scan result to force re-scan
+        setScanResult(null);
+      } else {
+        toast({
+          title: "Transaction Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
+      }
     },
   });
 

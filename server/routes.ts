@@ -1138,10 +1138,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const confirmation = await connection.confirmTransaction(signature, 'confirmed');
           
           if (confirmation.value.err) {
+            console.error('Transaction failed on-chain:', confirmation.value.err);
+            // Parse the error to give a more helpful message
+            let userMessage = "Transaction failed on blockchain";
+            const errStr = JSON.stringify(confirmation.value.err);
+            if (errStr.includes('AccountNotFound') || errStr.includes('InvalidAccountData')) {
+              userMessage = "Some accounts were already closed. Please re-scan your wallet to get fresh data.";
+            } else if (errStr.includes('InsufficientFunds')) {
+              userMessage = "Insufficient SOL for transaction fees. Please add more SOL to your wallet.";
+            } else if (errStr.includes('OwnerMismatch') || errStr.includes('InvalidOwner')) {
+              userMessage = "Account ownership mismatch. Please re-scan your wallet and try again.";
+            }
             return res.status(400).json({ 
-              error: "Transaction failed on blockchain",
+              error: userMessage,
               details: confirmation.value.err,
-              signature 
+              signature,
+              suggestion: "Try re-scanning your wallet to get the latest account data."
             });
           }
 
@@ -1195,10 +1207,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const confirmation = await connection.confirmTransaction(signature, 'confirmed');
       
       if (confirmation.value.err) {
+        console.error('Transaction failed on-chain:', confirmation.value.err);
+        // Parse the error to give a more helpful message
+        let userMessage = "Transaction failed on blockchain";
+        const errStr = JSON.stringify(confirmation.value.err);
+        if (errStr.includes('AccountNotFound') || errStr.includes('InvalidAccountData')) {
+          userMessage = "Some accounts were already closed. Please re-scan your wallet to get fresh data.";
+        } else if (errStr.includes('InsufficientFunds')) {
+          userMessage = "Insufficient SOL for transaction fees. Please add more SOL to your wallet.";
+        } else if (errStr.includes('OwnerMismatch') || errStr.includes('InvalidOwner')) {
+          userMessage = "Account ownership mismatch. Please re-scan your wallet and try again.";
+        }
         return res.status(400).json({ 
-          error: "Transaction failed on blockchain",
+          error: userMessage,
           details: confirmation.value.err,
-          signature 
+          signature,
+          suggestion: "Try re-scanning your wallet to get the latest account data."
         });
       }
 
