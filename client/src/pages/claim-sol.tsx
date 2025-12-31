@@ -2842,18 +2842,6 @@ export default function SolRefund() {
                 <span className="text-3xl">🎉</span>
               </div>
             )}
-            {/* Happy New Year Banner - Mobile */}
-            {activeTab !== 'docs' && (
-              <div className="lg:hidden flex justify-center w-full py-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🎉</span>
-                  <span className="text-white font-bold text-xl tracking-wide">
-                    Happy New Year 2025!
-                  </span>
-                  <span className="text-2xl">🎉</span>
-                </div>
-              </div>
-            )}
             {activeTab === 'docs' ? (
               /* Docs Mode Header - Logo only */
               <div className="flex items-center justify-between w-full">
@@ -3079,6 +3067,19 @@ export default function SolRefund() {
               </>
             )}
           </div>
+
+          {/* Happy New Year Banner - Mobile (above navigation buttons) */}
+          {activeTab !== 'docs' && (
+            <div className="lg:hidden flex justify-center w-full py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🎉</span>
+                <span className="text-white font-bold text-xl tracking-wide">
+                  Happy New Year 2025!
+                </span>
+                <span className="text-2xl">🎉</span>
+              </div>
+            </div>
+          )}
 
           {/* Center Navigation Buttons */}
           {isConnected && activeTab !== 'docs' && (
