@@ -2854,15 +2854,6 @@ export default function SolRefund() {
                     />
                   </div>
 
-                  {/* Happy New Year Banner - Center */}
-                  <div className="hidden lg:flex flex-1 items-center justify-center gap-3">
-                    <span className="text-3xl">🎊</span>
-                    <span className="text-white font-bold text-3xl tracking-wide">
-                      Happy New Year 2025!
-                    </span>
-                    <span className="text-3xl">🎊</span>
-                  </div>
-
                   {/* Mobile Wallet Connection */}
                   <div className="lg:hidden flex items-center space-x-2">
                 {/* Social Media Buttons */}
@@ -3066,6 +3057,19 @@ export default function SolRefund() {
               </>
             )}
           </div>
+
+          {/* Happy New Year Banner - Centered above tabs */}
+          {activeTab !== 'docs' && (
+            <div className="flex justify-center py-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🎊</span>
+                <span className="text-white font-bold text-3xl tracking-wide">
+                  Happy New Year 2025!
+                </span>
+                <span className="text-3xl">🎊</span>
+              </div>
+            </div>
+          )}
 
           {/* Center Navigation Buttons */}
           {isConnected && activeTab !== 'docs' && (
