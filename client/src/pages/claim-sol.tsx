@@ -2829,10 +2829,14 @@ export default function SolRefund() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Happy New Year Banner */}
-      <div className="w-full bg-gradient-to-r from-purple-600/80 via-pink-500/80 to-purple-600/80 py-2 text-center">
-        <span className="text-white font-bold text-lg tracking-wide animate-pulse">
-          🎉 Happy New Year 2025! 🎉
-        </span>
+      <div className="w-full bg-gradient-to-r from-purple-700 via-purple-600 to-purple-700 py-3 flex items-center justify-center border-b-2 border-purple-400/50 shadow-lg">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🎊</span>
+          <span className="text-white font-bold text-xl tracking-wide">
+            Happy New Year 2025!
+          </span>
+          <span className="text-xl">🎊</span>
+        </div>
       </div>
       <div className={`container mx-auto pt-1 pb-2 max-w-6xl ${activeTab === 'docs' ? 'px-0' : 'px-4'}`}>
         <div className="space-y-2">
