@@ -2839,7 +2839,7 @@ export default function SolRefund() {
               <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 pointer-events-none">
                 <span className="text-3xl">🎉</span>
                 <span className="text-white font-bold text-3xl tracking-wide">
-                  Happy New Year 2025!
+                  Happy New Year 2026!
                 </span>
                 <span className="text-3xl">🎉</span>
               </div>
@@ -3076,7 +3076,7 @@ export default function SolRefund() {
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🎉</span>
                 <span className="text-white font-bold text-xl tracking-wide">
-                  Happy New Year 2025!
+                  Happy New Year 2026!
                 </span>
                 <span className="text-2xl">🎉</span>
               </div>
