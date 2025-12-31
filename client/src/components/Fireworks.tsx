@@ -1,170 +1,128 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
-interface Particle {
-  id: number;
+const COLORS = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff69b4', '#ffd700', '#9333ea', '#ffffff'];
+
+interface Spark {
   x: number;
   y: number;
+  vx: number;
+  vy: number;
   color: string;
   size: number;
-  speedX: number;
-  speedY: number;
-  life: number;
+  opacity: number;
 }
-
-interface Firework {
-  id: number;
-  x: number;
-  y: number;
-  targetY: number;
-  color: string;
-  exploded: boolean;
-  particles: Particle[];
-}
-
-const COLORS = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff69b4', '#ffd700'];
 
 export function Fireworks() {
-  const [fireworks, setFireworks] = useState<Firework[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    const hasSeenFireworks = sessionStorage.getItem('seenFireworks');
-    if (hasSeenFireworks) {
-      setShow(false);
-      return;
-    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const createFirework = () => {
-      const id = Date.now() + Math.random();
-      const x = Math.random() * 100;
-      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-      
-      return {
-        id,
-        x,
-        y: 100,
-        targetY: 20 + Math.random() * 30,
-        color,
-        exploded: false,
-        particles: []
-      };
-    };
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const createParticles = (x: number, y: number, color: string): Particle[] => {
-      const particles: Particle[] = [];
-      const particleCount = 12 + Math.floor(Math.random() * 8);
-      
-      for (let i = 0; i < particleCount; i++) {
-        const angle = (Math.PI * 2 * i) / particleCount;
-        const speed = 2 + Math.random() * 3;
-        particles.push({
-          id: i,
-          x,
-          y,
-          color,
-          size: 3 + Math.random() * 3,
-          speedX: Math.cos(angle) * speed,
-          speedY: Math.sin(angle) * speed,
-          life: 1
-        });
-      }
-      return particles;
-    };
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
+    const sparks: Spark[] = [];
     let animationId: number;
     let launchCount = 0;
-    const maxLaunches = 8;
+    const maxLaunches = 10;
+
+    const createExplosion = (x: number, y: number) => {
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const sparkCount = 25 + Math.floor(Math.random() * 15);
+      
+      for (let i = 0; i < sparkCount; i++) {
+        const angle = (Math.PI * 2 * i) / sparkCount + Math.random() * 0.3;
+        const speed = 4 + Math.random() * 6;
+        sparks.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color,
+          size: 3 + Math.random() * 4,
+          opacity: 1
+        });
+      }
+    };
+
+    const launchFirework = () => {
+      if (launchCount >= maxLaunches) return;
+      
+      const x = Math.random() * canvas.width * 0.8 + canvas.width * 0.1;
+      const y = Math.random() * canvas.height * 0.5 + canvas.height * 0.1;
+      
+      createExplosion(x, y);
+      launchCount++;
+    };
 
     const launchInterval = setInterval(() => {
-      if (launchCount < maxLaunches) {
-        setFireworks(prev => [...prev, createFirework()]);
-        launchCount++;
-      }
+      launchFirework();
     }, 400);
 
     const animate = () => {
-      setFireworks(prev => {
-        return prev
-          .map(fw => {
-            if (!fw.exploded) {
-              const newY = fw.y - 2;
-              if (newY <= fw.targetY) {
-                return {
-                  ...fw,
-                  y: newY,
-                  exploded: true,
-                  particles: createParticles(fw.x, newY, fw.color)
-                };
-              }
-              return { ...fw, y: newY };
-            } else {
-              const updatedParticles = fw.particles
-                .map(p => ({
-                  ...p,
-                  x: p.x + p.speedX * 0.3,
-                  y: p.y + p.speedY * 0.3 + 0.1,
-                  speedY: p.speedY + 0.05,
-                  life: p.life - 0.02
-                }))
-                .filter(p => p.life > 0);
-              
-              return { ...fw, particles: updatedParticles };
-            }
-          })
-          .filter(fw => !fw.exploded || fw.particles.length > 0);
-      });
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const spark = sparks[i];
+        
+        spark.x += spark.vx;
+        spark.y += spark.vy;
+        spark.vy += 0.15;
+        spark.opacity -= 0.02;
+        spark.size *= 0.97;
+
+        if (spark.opacity <= 0) {
+          sparks.splice(i, 1);
+          continue;
+        }
+
+        ctx.beginPath();
+        ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
+        ctx.fillStyle = spark.color;
+        ctx.globalAlpha = spark.opacity;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = spark.color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.globalAlpha = 1;
       animationId = requestAnimationFrame(animate);
     };
 
+    launchFirework();
+    launchFirework();
     animate();
 
     const hideTimer = setTimeout(() => {
       setShow(false);
-      sessionStorage.setItem('seenFireworks', 'true');
     }, 5000);
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
 
     return () => {
       clearInterval(launchInterval);
       cancelAnimationFrame(animationId);
       clearTimeout(hideTimer);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {fireworks.map(fw => (
-        <div key={fw.id}>
-          {!fw.exploded && (
-            <div
-              className="absolute w-2 h-2 rounded-full animate-pulse"
-              style={{
-                left: `${fw.x}%`,
-                top: `${fw.y}%`,
-                backgroundColor: fw.color,
-                boxShadow: `0 0 10px ${fw.color}, 0 0 20px ${fw.color}`
-              }}
-            />
-          )}
-          {fw.particles.map(p => (
-            <div
-              key={`${fw.id}-${p.id}`}
-              className="absolute rounded-full"
-              style={{
-                left: `${p.x}%`,
-                top: `${p.y}%`,
-                width: p.size,
-                height: p.size,
-                backgroundColor: p.color,
-                opacity: p.life,
-                boxShadow: `0 0 ${p.size * 2}px ${p.color}`
-              }}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-50"
+    />
   );
 }
