@@ -2832,7 +2832,7 @@ export default function SolRefund() {
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            {/* Happy New Year Banner - Centered in header */}
+            {/* Happy New Year Banner - Desktop (Centered in header) */}
             {activeTab !== 'docs' && (
               <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 pointer-events-none">
                 <span className="text-3xl">🎉</span>
@@ -2840,6 +2840,18 @@ export default function SolRefund() {
                   Happy New Year 2025!
                 </span>
                 <span className="text-3xl">🎉</span>
+              </div>
+            )}
+            {/* Happy New Year Banner - Mobile */}
+            {activeTab !== 'docs' && (
+              <div className="lg:hidden flex justify-center w-full py-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🎉</span>
+                  <span className="text-white font-bold text-xl tracking-wide">
+                    Happy New Year 2025!
+                  </span>
+                  <span className="text-2xl">🎉</span>
+                </div>
               </div>
             )}
             {activeTab === 'docs' ? (
