@@ -2855,12 +2855,12 @@ export default function SolRefund() {
                   </div>
 
                   {/* Happy New Year Banner - Center */}
-                  <div className="hidden lg:flex items-center gap-2">
-                    <span className="text-xl">🎊</span>
-                    <span className="text-white font-bold text-xl tracking-wide">
+                  <div className="hidden lg:flex flex-1 items-center justify-center gap-3">
+                    <span className="text-3xl">🎊</span>
+                    <span className="text-white font-bold text-3xl tracking-wide">
                       Happy New Year 2025!
                     </span>
-                    <span className="text-xl">🎊</span>
+                    <span className="text-3xl">🎊</span>
                   </div>
 
                   {/* Mobile Wallet Connection */}
