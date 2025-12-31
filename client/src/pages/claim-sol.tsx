@@ -2835,11 +2835,11 @@ export default function SolRefund() {
             {/* Happy New Year Banner - Centered in header */}
             {activeTab !== 'docs' && (
               <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 pointer-events-none">
-                <span className="text-3xl">🎊</span>
+                <span className="text-3xl">🎆</span>
                 <span className="text-white font-bold text-3xl tracking-wide">
                   Happy New Year 2025!
                 </span>
-                <span className="text-3xl">🎊</span>
+                <span className="text-3xl">🎆</span>
               </div>
             )}
             {activeTab === 'docs' ? (
