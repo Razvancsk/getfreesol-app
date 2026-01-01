@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -415,7 +415,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
 }
 
 export default function XBotAdmin() {
-  const { publicKey, connected } = useWallet();
+  const { publicKey, connected } = useWalletAdapter();
   const [isPlatformWallet, setIsPlatformWallet] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
