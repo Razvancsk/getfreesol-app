@@ -11,6 +11,7 @@ import AdminSettings from "@/pages/admin-settings";
 import XBotAdmin from "@/pages/x-bot-admin";
 import XAdmin from "@/pages/x-admin";
 import ApiDocs from "@/pages/api-docs";
+import UserDocs from "@/pages/user-docs";
 import DeveloperDashboard from "@/pages/developer-dashboard";
 import AdminMigrate from "@/pages/admin-migrate";
 import ProfilePage from "@/pages/profile";
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/admin/x-bot" component={XBotAdmin} />
       <Route path="/x-admin" component={XAdmin} />
       <Route path="/admin/migrate" component={AdminMigrate} />
+      <Route path="/docs" component={UserDocs} />
       <Route path="/api-docs" component={ApiDocs} />
       <Route path="/profile" component={ProfilePage} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
