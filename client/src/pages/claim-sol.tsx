@@ -47,10 +47,9 @@ import { SwapPanel } from '@/components/SwapPanel';
 import { DexPanel } from '@/components/DexPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
-import logoImage from '@assets/image_1765419958982.png';
+import logoImage from '@assets/image_1757882056840.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
-import { Fireworks } from '@/components/Fireworks';
 
 interface EmptyTokenAccount {
   id: number;
@@ -2829,21 +2828,10 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Fireworks />
       <div className={`container mx-auto pt-1 pb-2 max-w-6xl ${activeTab === 'docs' ? 'px-0' : 'px-4'}`}>
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
-            {/* Happy New Year Banner - Desktop (Centered in header) */}
-            {activeTab !== 'docs' && (
-              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-3 pointer-events-none">
-                <span className="text-3xl">🎉</span>
-                <span className="text-white font-bold text-3xl tracking-wide">
-                  Happy New Year 2026!
-                </span>
-                <span className="text-3xl">🎉</span>
-              </div>
-            )}
             {activeTab === 'docs' ? (
               /* Docs Mode Header - Logo only */
               <div className="flex items-center justify-between w-full">
@@ -3069,19 +3057,6 @@ export default function SolRefund() {
               </>
             )}
           </div>
-
-          {/* Happy New Year Banner - Mobile (above navigation buttons) */}
-          {activeTab !== 'docs' && (
-            <div className="lg:hidden flex justify-center w-full py-2">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🎉</span>
-                <span className="text-white font-bold text-xl tracking-wide">
-                  Happy New Year 2026!
-                </span>
-                <span className="text-2xl">🎉</span>
-              </div>
-            </div>
-          )}
 
           {/* Center Navigation Buttons */}
           {isConnected && activeTab !== 'docs' && (
