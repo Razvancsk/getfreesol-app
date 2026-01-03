@@ -82,7 +82,7 @@ export default function ProfilePage() {
             </Button>
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/?tab=docs">
+            <Link href="/docs">
               <Button variant="ghost" className="text-purple-300 hover:text-white hover:bg-purple-800/30">
                 <BookOpen className="mr-2 h-4 w-4" />
                 Docs
