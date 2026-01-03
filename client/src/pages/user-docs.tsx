@@ -33,12 +33,6 @@ export default function UserDocs() {
                 </span>
               </div>
             </Link>
-            <Link href="/">
-              <button className="bg-purple-700/50 hover:bg-purple-600 text-white border border-purple-500/30 inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors">
-                <ArrowLeft className="h-4 w-4" />
-                Back to App
-              </button>
-            </Link>
           </div>
         </div>
       </header>
@@ -49,7 +43,18 @@ export default function UserDocs() {
           {/* Left Sidebar Navigation - Hidden on Mobile */}
           <div className="hidden lg:block lg:w-64 flex-shrink-0">
             <div className="lg:sticky top-20 space-y-4">
-              <h2 className="text-white text-lg font-semibold">Documentation</h2>
+              <div className="flex flex-col gap-3">
+                <Link href="/">
+                  <button
+                    className="bg-purple-700/50 hover:bg-purple-600 text-white border border-purple-500/30 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors w-fit"
+                    data-testid="button-back-from-docs"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </button>
+                </Link>
+                <h2 className="text-white text-lg font-semibold">Documentation</h2>
+              </div>
               <div className="space-y-1">
                 <button
                   onClick={() => setActiveDocSection('overview')}
@@ -60,7 +65,7 @@ export default function UserDocs() {
                   }`}
                   data-testid="docs-nav-overview"
                 >
-                  Overview
+                  📖 Overview
                 </button>
                 <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
                   Features
@@ -74,7 +79,7 @@ export default function UserDocs() {
                   }`}
                   data-testid="docs-nav-tokens"
                 >
-                  Burn Tokens
+                  🔥 Burn Tokens
                 </button>
                 <button
                   onClick={() => setActiveDocSection('burn-nfts')}
@@ -85,7 +90,7 @@ export default function UserDocs() {
                   }`}
                   data-testid="docs-nav-nfts"
                 >
-                  Burn NFTs
+                  🎨 Burn NFTs
                 </button>
                 <button
                   onClick={() => setActiveDocSection('referrals')}
@@ -96,7 +101,7 @@ export default function UserDocs() {
                   }`}
                   data-testid="docs-nav-referrals"
                 >
-                  Referral System
+                  💰 Referral System
                 </button>
                 <button
                   onClick={() => setActiveDocSection('points')}
@@ -107,7 +112,7 @@ export default function UserDocs() {
                   }`}
                   data-testid="docs-nav-points"
                 >
-                  Points System
+                  ⭐ Points System
                 </button>
                 <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
                   Developers
