@@ -182,27 +182,14 @@ export default function ApiDocs() {
           </div>
         </div>
 
-        {/* Show account creation form if no account exists */}
-        {!publicKey ? (
-          <div className="max-w-2xl mx-auto mt-12">
+        {/* Developer account section - only shown if wallet connected */}
+        {publicKey && !hasAccount && (
+          <div className="max-w-md mx-auto mb-8 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <h2 className="text-white text-2xl font-semibold text-center">Connect Wallet to Continue</h2>
-                <p className="text-purple-200 text-center">
-                  Connect your wallet to create a developer account and access API documentation
-                </p>
-              </div>
-              <div className="text-center text-purple-100">
-                <p>Please connect your Solana wallet using the button in the top right corner to get started.</p>
-              </div>
+              <h3 className="text-white text-lg font-semibold">Create Developer Account</h3>
+              <p className="text-sm text-purple-200">Create an account to earn fees from API integrations</p>
             </div>
-          </div>
-        ) : !hasAccount ? (
-          <div className="max-w-md mx-auto mt-12">
-            <div className="space-y-4">
-              <h2 className="text-white text-2xl font-semibold">Create API Account</h2>
-            </div>
-            <div className="space-y-4 mt-6">
+            <div className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="project-name" className="text-white">Project Name</Label>
                 <Input
@@ -214,11 +201,7 @@ export default function ApiDocs() {
                   maxLength={50}
                   className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
                 />
-                <p className="text-xs text-purple-300">
-                  A unique fee collection account will be created for your wallet
-                </p>
               </div>
-
               <Button
                 data-testid="button-create-account-docs"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
@@ -236,8 +219,10 @@ export default function ApiDocs() {
               </Button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-6">
+        )}
+
+        {/* Documentation content - always visible */}
+        <div className="space-y-6">
             {/* Introduction */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -774,7 +759,6 @@ console.log('Success! Transaction:', signature);`}
             </div>
           </div>
           </div>
-        )}
       </div>
     </div>
   );
