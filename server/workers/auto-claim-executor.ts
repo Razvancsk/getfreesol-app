@@ -7,7 +7,7 @@ const HELIUS_RPC = process.env.HELIUS_API_KEY
   ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
   : "https://api.mainnet-beta.solana.com";
 
-const PLATFORM_WALLET = "GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6";
+const PLATFORM_WALLET = "GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS";
 const PLATFORM_FEE_BPS = 1500; // 15%
 
 interface ExecutionResult {

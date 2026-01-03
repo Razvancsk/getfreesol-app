@@ -1790,7 +1790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add fee transfer instructions AFTER close instructions
       // Fees are paid from SOL recovered by closing accounts
       if (platformFeeLamports > 0) {
-        const feeCollectorPublicKey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+        const feeCollectorPublicKey = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
@@ -1927,7 +1927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Award points (20 points per account closed) - skip platform wallet
-      const PLATFORM_WALLET_POINTS = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const PLATFORM_WALLET_POINTS = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
       if (walletAddress !== PLATFORM_WALLET_POINTS) {
         await storage.awardPoints(walletAddress, accountsClosed);
       }
@@ -3018,7 +3018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Add fee transfer instructions
         if (batchPlatformFeeLamports > 0) {
-          const feeCollectorPublicKey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+          const feeCollectorPublicKey = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
           transaction.add(SystemProgram.transfer({
             fromPubkey: ownerPublicKey,
             toPubkey: feeCollectorPublicKey,
@@ -3267,7 +3267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Award points (20 points per token account closed) - skip platform wallet
-      const PLATFORM_WALLET_POINTS_TOKEN = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const PLATFORM_WALLET_POINTS_TOKEN = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
       if (walletAddress !== PLATFORM_WALLET_POINTS_TOKEN) {
         await storage.awardPoints(walletAddress, tokensProcessed);
       }
@@ -4088,7 +4088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`NFT BURN - Fee rates: ${nftBurnFeeRates.feePercent}% fee, ${nftBurnFeeRates.referralPercent}% referral`);
       
       // Add platform fee transfer
-      const platformWallet = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+      const platformWallet = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
       if (finalPlatformFeeAmount > 0.001) { // Only add if significant
         const platformFeeInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
@@ -4271,7 +4271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await storage.createTransactionLedgerEntry(transactionData);
           // Award points (20 points per NFT account closed) - skip platform wallet
-          const PLATFORM_WALLET_POINTS_NFT = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+          const PLATFORM_WALLET_POINTS_NFT = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
           if (walletAddress !== PLATFORM_WALLET_POINTS_NFT) {
             await storage.awardPoints(walletAddress, 1);
           }
@@ -4505,7 +4505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBurnTransactions = [];
-      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
       
       // All users: 15% platform fee, 50% referral commission
       const coreNftFeeRates = getWalletFeeRates(walletAddress);
@@ -4779,7 +4779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBatchTransactions = [];
-      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
@@ -5217,7 +5217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBatchTransactions = [];
-      const platformWalletAddress = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
@@ -5523,7 +5523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Platform wallet should always show 0 points (creator shouldn't earn points)
-      const PLATFORM_WALLET_STATS = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const PLATFORM_WALLET_STATS = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
       const displayPoints = walletAddress === PLATFORM_WALLET_STATS ? 0 : (points?.points || 0);
       
       res.json({
@@ -6870,7 +6870,7 @@ Claimer: ${walletAddress}`;
   // X (TWITTER) BOT API ENDPOINTS
   // ============================================
   
-  const PLATFORM_WALLET = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+  const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
   
   // Middleware to verify platform wallet signature (POST requests)
   const requirePlatformWallet = (req: any, res: any, next: any) => {
@@ -8026,7 +8026,7 @@ Claimer: ${walletAddress}`;
       const feeKeypair = keypairFromEncrypted(feeAccount.encryptedPrivateKey);
       
       // Platform wallet
-      const platformWallet = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+      const platformWallet = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
       const developerWallet = new PublicKey(walletAddress);
       
       // Create transaction to transfer WSOL
@@ -8459,7 +8459,7 @@ Claimer: ${walletAddress}`;
       
       // Setup pubkeys
       const developerPubkey = new PublicKey(walletAddress);
-      const platformPubkey = new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6');
+      const platformPubkey = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
       
       console.log(`📤 Sending claim transaction for ${walletAddress}...`);
       console.log(`   Developer (80%): ${(developerAmount / 1e9).toFixed(9)} SOL`);
@@ -8574,7 +8574,7 @@ Claimer: ${walletAddress}`;
       const { adminWallet, signature, message } = req.body;
       
       // Verify admin wallet
-      const PLATFORM_ADMIN = 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+      const PLATFORM_ADMIN = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
       if (adminWallet !== PLATFORM_ADMIN) {
         return res.status(403).json({ error: 'Unauthorized - admin only' });
       }
@@ -9145,7 +9145,7 @@ Claimer: ${walletAddress}`;
         transaction.add(
           SystemProgram.transfer({
             fromPubkey: new PublicKey(task.creatorWallet),
-            toPubkey: new PublicKey('GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'),
+            toPubkey: new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS'),
             lamports: platformFee
           })
         );
