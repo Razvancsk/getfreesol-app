@@ -27,7 +27,7 @@ function Router() {
       <Route path="/admin/x-bot" component={XBotAdmin} />
       <Route path="/x-admin" component={XAdmin} />
       <Route path="/admin/migrate" component={AdminMigrate} />
-      <Route path="/docs" component={ApiDocs} />
+      <Route path="/api-docs" component={ApiDocs} />
       <Route path="/profile" component={ProfilePage} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />
