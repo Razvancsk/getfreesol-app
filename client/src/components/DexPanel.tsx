@@ -606,11 +606,8 @@ export function DexPanel() {
       
       // Check if Jupiter returned a transaction
       if (!quote.transaction || !quote.requestId) {
-        // hasTransaction: false usually means the amount is too low or no route
-        if (quote.hasTransaction === false) {
-          throw new Error('Amount too small or no route available for this swap');
-        }
-        throw new Error('Invalid order: missing transaction');
+        // No transaction means Jupiter couldn't build the swap - amount too low or no route
+        throw new Error('Amount too small or no route available for this swap');
       }
 
       console.log('Signing swap transaction...');

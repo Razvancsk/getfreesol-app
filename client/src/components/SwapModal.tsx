@@ -402,7 +402,7 @@ export function SwapModal({ open, onOpenChange }: SwapModalProps) {
     try {
       // Ultra Swap: order already contains the transaction from getQuote
       if (!quote.transaction || !quote.requestId) {
-        throw new Error('Invalid order: missing transaction or requestId');
+        throw new Error('Amount too small or no route available for this swap');
       }
 
       console.log('🚀 Signing Ultra Swap transaction...');
