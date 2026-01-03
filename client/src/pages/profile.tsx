@@ -1,4 +1,4 @@
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ interface LeaderboardEntry {
 }
 
 export default function ProfilePage() {
-  const { publicKey } = useWallet();
+  const { publicKey } = useWalletAdapter();
   const { toast } = useToast();
 
   const { data: stats, isLoading } = useQuery<UserStats>({
