@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { ArrowLeft, Copy, Wallet, Trophy, Flame, Coins, BookOpen } from 'lucide-react';
+import { ArrowLeft, Copy, Wallet, Trophy, Flame, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import logoImage from '@assets/image_1757882056840.png';
 
@@ -81,17 +81,9 @@ export default function ProfilePage() {
               Back
             </Button>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/docs">
-              <Button variant="ghost" className="text-purple-300 hover:text-white hover:bg-purple-800/30">
-                <BookOpen className="mr-2 h-4 w-4" />
-                Docs
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <img src={logoImage} alt="Logo" className="h-8 w-8" />
-              <span className="text-white font-bold text-lg">Get Free Sol</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <img src={logoImage} alt="Logo" className="h-8 w-8" />
+            <span className="text-white font-bold text-lg">Get Free Sol</span>
           </div>
         </div>
 
