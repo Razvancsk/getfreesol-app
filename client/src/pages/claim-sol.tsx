@@ -575,10 +575,17 @@ export default function SolRefund() {
     }
   };
 
-  // Check for referral code in URL on mount - support both formats
+  // Check for referral code and tab in URL on mount
   useEffect(() => {
-    // Check for query parameter format: ?ref=CODE
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check for tab parameter: ?tab=docs
+    const tabParam = urlParams.get('tab');
+    if (tabParam === 'docs') {
+      setActiveTab('docs');
+    }
+    
+    // Check for query parameter format: ?ref=CODE
     const queryRefCode = urlParams.get('ref');
 
     // Check for path format: /CODE
