@@ -131,14 +131,6 @@ export default function Referrals() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Link href="/">
-              <div className="flex items-center space-x-3 cursor-pointer">
-                <img src={logoPath} alt="GetFreeSol Logo" className="h-8 w-8" />
-                <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  GetFreeSol
-                </span>
-              </div>
-            </Link>
-            <Link href="/">
               <Button
                 variant="outline"
                 className="bg-purple-700/50 hover:bg-purple-600 text-white border-purple-500/30"
@@ -147,6 +139,14 @@ export default function Referrals() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to App
               </Button>
+            </Link>
+            <Link href="/">
+              <div className="flex items-center space-x-3 cursor-pointer">
+                <img src={logoPath} alt="GetFreeSol Logo" className="h-8 w-8" />
+                <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  GetFreeSol
+                </span>
+              </div>
             </Link>
           </div>
         </div>
