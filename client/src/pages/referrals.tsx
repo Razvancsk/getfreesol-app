@@ -152,10 +152,10 @@ export default function Referrals() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-lg">
+      <div className="container mx-auto px-4 py-6 max-w-lg md:max-w-4xl">
         <div className="space-y-4">
           {!hasReferralCode ? (
-            <div className="bg-gradient-to-br from-purple-800/30 to-purple-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 space-y-4">
+            <div className="bg-gradient-to-br from-purple-800/30 to-purple-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 space-y-4 max-w-lg mx-auto">
               <h3 className="text-xl font-bold text-white">Create Your Referral Code</h3>
               <p className="text-purple-200 text-sm">Generate a unique referral code to start earning from referrals</p>
               <div className="space-y-2">
@@ -181,23 +181,26 @@ export default function Referrals() {
             </div>
           ) : (
             <>
-              {/* Total Earnings */}
-              <div className="bg-gradient-to-br from-purple-800/30 to-purple-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-1">
-                  {parseFloat(stats.totalEarnings).toFixed(9)} SOL
+              {/* Stats Row - side by side on desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Total Earnings */}
+                <div className="bg-gradient-to-br from-purple-800/30 to-purple-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {parseFloat(stats.totalEarnings).toFixed(9)} SOL
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                    Total Earnings
+                  </div>
                 </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  Total Earnings
-                </div>
-              </div>
 
-              {/* Total Referrals */}
-              <div className="bg-gradient-to-br from-purple-800/30 to-purple-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-1">
-                  {stats.totalReferrals}
-                </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  Total Referrals
+                {/* Total Referrals */}
+                <div className="bg-gradient-to-br from-purple-800/30 to-purple-900/40 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {stats.totalReferrals}
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                    Total Referrals
+                  </div>
                 </div>
               </div>
 
