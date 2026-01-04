@@ -68,20 +68,40 @@ export const useReownWallet = (): ReownWalletHook => {
       console.error("signTransaction failed: No wallet provider available");
       throw new Error("No wallet connected. Please reconnect your wallet.");
     }
+    
+    console.log("walletProvider available:", !!walletProvider);
+    console.log("walletProvider.signTransaction:", typeof walletProvider.signTransaction);
+    
     try {
       console.log("Requesting wallet signature...");
-      const signedTx = await walletProvider.signTransaction(transaction);
+      
+      // Add timeout to prevent infinite hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Wallet signing timed out after 60 seconds. Please check your wallet popup and try again."));
+        }, 60000);
+      });
+      
+      const signedTx = await Promise.race([
+        walletProvider.signTransaction(transaction),
+        timeoutPromise
+      ]);
+      
       console.log("Transaction signed successfully");
       return signedTx;
     } catch (error: any) {
       console.error("Wallet signing error:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       if (error?.message?.includes('rejected') || error?.code === 4001) {
         throw new Error("Transaction was rejected by user");
       }
       if (error?.message?.includes('not connected') || error?.message?.includes('disconnected')) {
         throw new Error("Wallet disconnected. Please reconnect and try again.");
       }
-      throw error;
+      if (error?.message?.includes('timed out')) {
+        throw error;
+      }
+      throw new Error(error?.message || "Failed to sign transaction. Please try again.");
     }
   }, [walletProvider]);
 
