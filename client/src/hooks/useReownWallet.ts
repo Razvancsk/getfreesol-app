@@ -64,6 +64,32 @@ export const useReownWallet = (): ReownWalletHook => {
   }, [appKitDisconnect]);
 
   const signTransaction = useCallback(async (transaction: Transaction | VersionedTransaction) => {
+    // Try to use injected wallet provider directly (Phantom, Backpack, etc.)
+    const injectedProviders = [
+      (window as any).phantom?.solana,
+      (window as any).backpack,
+      (window as any).solflare,
+      (window as any).solana
+    ].filter(Boolean);
+    
+    const connectedInjectedProvider = injectedProviders.find(p => p?.isConnected && p?.publicKey);
+    
+    if (connectedInjectedProvider) {
+      console.log("Using injected wallet provider directly");
+      try {
+        const signedTx = await connectedInjectedProvider.signTransaction(transaction);
+        console.log("Transaction signed successfully via injected provider");
+        return signedTx;
+      } catch (error: any) {
+        console.error("Injected provider signing error:", error);
+        if (error?.message?.includes('rejected') || error?.code === 4001) {
+          throw new Error("Transaction was rejected by user");
+        }
+        throw error;
+      }
+    }
+    
+    // Fallback to Reown provider
     if (!walletProvider) {
       console.error("signTransaction failed: No wallet provider available");
       throw new Error("No wallet connected. Please reconnect your wallet.");
@@ -73,7 +99,7 @@ export const useReownWallet = (): ReownWalletHook => {
     console.log("walletProvider.signTransaction:", typeof walletProvider.signTransaction);
     
     try {
-      console.log("Requesting wallet signature...");
+      console.log("Requesting wallet signature via Reown...");
       
       // Add timeout to prevent infinite hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
