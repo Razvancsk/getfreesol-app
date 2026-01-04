@@ -1759,12 +1759,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       else if (referralCodeData && totalFeeLamports > 0) {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         
-        // Check if referral wallet is a valid Solana address (can receive SOL)
+        // Check if referral wallet has SOL balance
         try {
           const referralBalance = await connection.getBalance(referralWalletPublicKey);
-          // Accept any valid wallet address (even with 0 balance) - they can still receive SOL
-          referralWalletExists = referralBalance >= 0;
-          console.log(`Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, valid: ${referralWalletExists}`);
+          // Only send referral commission if referrer has SOL in wallet
+          referralWalletExists = referralBalance > 0;
+          console.log(`Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
         } catch (error) {
           console.log('Failed to check referral wallet balance:', error);
           referralWalletExists = false;
@@ -2914,8 +2914,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const referralWalletPublicKey = new PublicKey(referralCodeData.walletAddress);
         try {
           const referralBalance = await connection.getBalance(referralWalletPublicKey);
-          referralWalletExists = referralBalance >= 0;
-          console.log(`TOKEN BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, valid: ${referralWalletExists}`);
+          referralWalletExists = referralBalance > 0;
+          console.log(`TOKEN BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
         } catch (error) {
           console.log('TOKEN BURN - Failed to check referral wallet balance:', error);
           referralWalletExists = false;
@@ -4497,8 +4497,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const connection = new Connection(rpcUrl, 'confirmed');
           
           const referralBalance = await connection.getBalance(referralPubkey);
-          referralWalletExists = referralBalance >= 0;
-          console.log(`CORE NFT BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, valid: ${referralWalletExists}`);
+          referralWalletExists = referralBalance > 0;
+          console.log(`CORE NFT BURN - Referral wallet ${referralCodeData.walletAddress} balance: ${referralBalance} lamports, exists: ${referralWalletExists}`);
         } catch (error) {
           console.log('CORE NFT BURN - Failed to check referral wallet:', error);
           referralWalletExists = false;
@@ -4771,8 +4771,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (referralCodeData) {
         try {
           const referralBalance = await connection.getBalance(new PublicKey(referralCodeData.walletAddress));
-          referralWalletExists = referralBalance >= 0;
-          console.log(`PROGRAMMABLE NFT BURN - Referral wallet ${referralCodeData.walletAddress} valid: ${referralWalletExists}`);
+          referralWalletExists = referralBalance > 0;
+          console.log(`PROGRAMMABLE NFT BURN - Referral wallet ${referralCodeData.walletAddress} exists: ${referralWalletExists}`);
         } catch (error) {
           console.log('PROGRAMMABLE NFT BURN - Failed to check referral wallet:', error);
           referralWalletExists = false;
@@ -5209,8 +5209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (referralCodeData) {
         try {
           const referralBalance = await connection.getBalance(new PublicKey(referralCodeData.walletAddress));
-          referralWalletExists = referralBalance >= 0;
-          console.log(`TRADITIONAL NFT BURN - Referral wallet ${referralCodeData.walletAddress} valid: ${referralWalletExists}`);
+          referralWalletExists = referralBalance > 0;
+          console.log(`TRADITIONAL NFT BURN - Referral wallet ${referralCodeData.walletAddress} exists: ${referralWalletExists}`);
         } catch (error) {
           console.log('TRADITIONAL NFT BURN - Failed to check referral wallet:', error);
           referralWalletExists = false;
