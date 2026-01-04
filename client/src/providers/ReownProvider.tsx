@@ -3,36 +3,30 @@ import { SolanaAdapter } from "@reown/appkit-adapter-solana/react";
 import { solana } from "@reown/appkit/networks";
 import type { ReactNode } from "react";
 
-// Project ID from Reown Cloud Dashboard
-const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || "30247a4ea78906563498c2736129d21f";
+const projectId = import.meta.env.VITE_REOWN_PROJECT_ID;
 
-// Set up Solana Adapter
-const solanaWeb3JsAdapter = new SolanaAdapter();
+if (!projectId) {
+  console.warn("VITE_REOWN_PROJECT_ID is not set - wallet connection will not work");
+}
 
-// Get current origin - for replit.dev domains during development
-const getCurrentOrigin = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-  return "https://getfreesol.xyz";
-};
+const solanaAdapter = new SolanaAdapter();
 
-// Metadata - URL must match domain configured in Reown Cloud
 const metadata = {
-  name: "GetFreeSol",
+  name: "Get Your SOL Back!",
   description: "Reclaim SOL from empty token accounts on Solana",
-  url: getCurrentOrigin(),
+  url: typeof window !== 'undefined' ? window.location.origin : "https://getfreesol.xyz",
   icons: ["https://getfreesol.xyz/favicon.ico"],
 };
 
-// Create modal
 createAppKit({
-  adapters: [solanaWeb3JsAdapter],
+  adapters: [solanaAdapter],
   networks: [solana],
-  projectId,
+  projectId: projectId || "",
   metadata,
   features: {
     analytics: true,
+    email: false,
+    socials: [],
   },
   themeMode: "dark",
   themeVariables: {

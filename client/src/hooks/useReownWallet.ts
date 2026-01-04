@@ -65,22 +65,9 @@ export const useReownWallet = (): ReownWalletHook => {
 
   const signTransaction = useCallback(async (transaction: Transaction | VersionedTransaction) => {
     if (!walletProvider) {
-      console.error("signTransaction failed: No wallet provider available");
-      throw new Error("No wallet connected. Please reconnect your wallet.");
+      throw new Error("No wallet connected");
     }
-    
-    try {
-      console.log("Requesting wallet signature...");
-      const signedTx = await walletProvider.signTransaction(transaction);
-      console.log("Transaction signed successfully");
-      return signedTx;
-    } catch (error: any) {
-      console.error("Wallet signing error:", error);
-      if (error?.message?.includes('rejected') || error?.code === 4001) {
-        throw new Error("Transaction was rejected by user");
-      }
-      throw new Error(error?.message || "Failed to sign transaction. Please try again.");
-    }
+    return await walletProvider.signTransaction(transaction);
   }, [walletProvider]);
 
   const signAllTransactions = useCallback(async (transactions: (Transaction | VersionedTransaction)[]) => {
