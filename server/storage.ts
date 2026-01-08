@@ -97,7 +97,7 @@ import {
   giveawayWinners
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, or, and } from "drizzle-orm";
+import { eq, desc, sql, or, and, ne } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -1314,17 +1314,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPointsLeaderboard(limit: number = 100): Promise<UserPoints[]> {
+    const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
     return await db
       .select()
       .from(userPoints)
+      .where(ne(userPoints.walletAddress, PLATFORM_WALLET))
       .orderBy(desc(userPoints.points))
       .limit(limit);
   }
 
   async getTop10Wallets(): Promise<string[]> {
+    const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
     const top10 = await db
       .select({ walletAddress: userPoints.walletAddress })
       .from(userPoints)
+      .where(ne(userPoints.walletAddress, PLATFORM_WALLET))
       .orderBy(desc(userPoints.points))
       .limit(10);
     return top10.map(entry => entry.walletAddress);
