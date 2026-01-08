@@ -1316,7 +1316,7 @@ export class DatabaseStorage implements IStorage {
   async getPointsLeaderboard(limit: number = 100): Promise<UserPoints[]> {
     const PLATFORM_WALLETS = [
       'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS',
-      'GETyEc6mVeymyH9tyTlxEW7j7thBrqSVFapHGP4Qkfq6'
+      'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
     ];
     return await db
       .select()
@@ -1332,7 +1332,7 @@ export class DatabaseStorage implements IStorage {
   async getTop10Wallets(): Promise<string[]> {
     const PLATFORM_WALLETS = [
       'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS',
-      'GETyEc6mVeymyH9tyTlxEW7j7thBrqSVFapHGP4Qkfq6'
+      'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
     ];
     const top10 = await db
       .select({ walletAddress: userPoints.walletAddress })
