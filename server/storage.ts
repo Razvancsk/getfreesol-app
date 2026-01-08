@@ -1314,21 +1314,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPointsLeaderboard(limit: number = 100): Promise<UserPoints[]> {
-    const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+    const PLATFORM_WALLETS = [
+      'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS',
+      'GETyEc6mVeymyH9tyTlxEW7j7thBrqSVFapHGP4Qkfq6'
+    ];
     return await db
       .select()
       .from(userPoints)
-      .where(ne(userPoints.walletAddress, PLATFORM_WALLET))
+      .where(and(
+        ne(userPoints.walletAddress, PLATFORM_WALLETS[0]),
+        ne(userPoints.walletAddress, PLATFORM_WALLETS[1])
+      ))
       .orderBy(desc(userPoints.points))
       .limit(limit);
   }
 
   async getTop10Wallets(): Promise<string[]> {
-    const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+    const PLATFORM_WALLETS = [
+      'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS',
+      'GETyEc6mVeymyH9tyTlxEW7j7thBrqSVFapHGP4Qkfq6'
+    ];
     const top10 = await db
       .select({ walletAddress: userPoints.walletAddress })
       .from(userPoints)
-      .where(ne(userPoints.walletAddress, PLATFORM_WALLET))
+      .where(and(
+        ne(userPoints.walletAddress, PLATFORM_WALLETS[0]),
+        ne(userPoints.walletAddress, PLATFORM_WALLETS[1])
+      ))
       .orderBy(desc(userPoints.points))
       .limit(10);
     return top10.map(entry => entry.walletAddress);
