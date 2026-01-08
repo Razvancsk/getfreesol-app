@@ -5446,6 +5446,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit);
       
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
       res.json({
         success: true,
         leaderboard: leaderboard.map((entry, index) => ({
