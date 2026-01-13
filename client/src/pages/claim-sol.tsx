@@ -3120,7 +3120,6 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white">Scan Results</h3>
-                <p className="text-purple-300 text-sm mt-1">Close empty accounts to recover rent</p>
               </div>
               {!scanResult ? (
                 <div className="text-center text-purple-300 py-12">
