@@ -3058,7 +3058,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-lg">🪙</span> Burn Tokens
+                  <span className="text-lg">🪙</span> Tokens
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
@@ -3068,7 +3068,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-lg">🖼️</span> Burn NFT
+                  <span className="text-lg">🖼️</span> NFT
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
