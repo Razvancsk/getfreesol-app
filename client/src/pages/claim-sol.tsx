@@ -47,7 +47,7 @@ import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
-import trojanBanner from '@assets/image_1768274996705.png';
+import flipggBanner from '@assets/flipgg-lg_(1)_1768276283543.mp4';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -3010,17 +3010,20 @@ export default function SolRefund() {
             )}
           </div>
 
-          {/* Trojan Sponsor Banner - Under Header */}
+          {/* Flip.gg Sponsor Banner - Under Header */}
           <a 
-            href="https://trojan.com/@GetFreeSol" 
+            href="https://flip.gg/a/getfreesol" 
             target="_blank" 
             rel="noopener noreferrer"
             className="block w-full max-w-md mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
-            data-testid="sponsor-trojan-banner"
+            data-testid="sponsor-flipgg-banner"
           >
-            <img 
-              src={trojanBanner} 
-              alt="Trojan - Your Ultimate Onchain Trading Experience" 
+            <video 
+              src={flipggBanner} 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
               className="w-full h-auto"
             />
           </a>
