@@ -2621,10 +2621,30 @@ export default function SolRefund() {
       }
     },
     onSuccess: (result: any) => {
-      // Show share modal with the claimed amount including any rebates
-      const totalWithRebate = result.totalReceived + (result.rebateAmount || 0);
-      setShareData({ solClaimed: totalWithRebate });
-      setIsShareModalOpen(true);
+      // Only show share modal for single transactions (not during batching)
+      // Batch processing shows the modal at the end with total amount
+      if (!isBatching) {
+        const totalWithRebate = result.totalReceived + (result.rebateAmount || 0);
+        setShareData({ solClaimed: totalWithRebate });
+        setIsShareModalOpen(true);
+        
+        // Reset form and immediately refresh statistics and transaction history
+        setScanResult(null);
+
+        // Invalidate and refetch all related queries for real-time updates
+        queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+        queryClient.refetchQueries({ queryKey: ['/api/sol-refund/stats'] });
+
+        // Invalidate user profile to update total points
+        if (publicKey) {
+          queryClient.invalidateQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
+          queryClient.refetchQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
+        }
+
+        // Also invalidate leaderboard to update rankings
+        queryClient.invalidateQueries({ queryKey: ['/api/leaderboard'] });
+        queryClient.refetchQueries({ queryKey: ['/api/leaderboard'] });
+      }
       
       // Show toast if there was a rebate
       if (result.rebateAmount > 0) {
@@ -2634,23 +2654,6 @@ export default function SolRefund() {
           className: "bg-green-600 text-white border-green-600",
         });
       }
-
-      // Reset form and immediately refresh statistics and transaction history
-      setScanResult(null);
-
-      // Invalidate and refetch all related queries for real-time updates
-      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
-      queryClient.refetchQueries({ queryKey: ['/api/sol-refund/stats'] });
-
-      // Invalidate user profile to update total points
-      if (publicKey) {
-        queryClient.invalidateQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
-        queryClient.refetchQueries({ queryKey: ['/api/user/profile', publicKey?.toString()] });
-      }
-
-      // Also invalidate leaderboard to update rankings
-      queryClient.invalidateQueries({ queryKey: ['/api/leaderboard'] });
-      queryClient.refetchQueries({ queryKey: ['/api/leaderboard'] });
     },
     onError: (error: any) => {
       const errorMsg = error.message || "Failed to process SOL refund transaction";
