@@ -3207,7 +3207,7 @@ export default function SolRefund() {
                 <div className="py-12 text-center">
                   <Layers className="h-12 w-12 text-purple-400 mx-auto mb-4 opacity-70" />
                   <h4 className="text-lg font-medium text-white mb-1">No empty accounts found</h4>
-                  <p className="text-purple-300 text-sm">
+                  <p className="text-white text-sm">
                     Your wallet is clean!
                   </p>
                 </div>
