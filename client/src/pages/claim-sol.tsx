@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3 } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3 } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -2863,62 +2863,64 @@ export default function SolRefund() {
                   {/* Mobile Wallet Connection */}
                   <div className="lg:hidden flex items-center space-x-2">
                 {isConnected && publicKey ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                  <>
+                    <Link href="/profile">
                       <Button
-                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white font-mono text-xs border border-purple-500/30 flex items-center space-x-1"
-                        data-testid="button-wallet-connected"
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center space-x-1"
+                        data-testid="button-profile"
                       >
-                        <span>{publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}</span>
-                        <ChevronDown className="h-3 w-3" />
+                        <User className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
-                      {publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' && (
-                        <>
-                          <Link href="/admin/x-bot">
-                            <DropdownMenuItem 
-                              className="text-white hover:bg-purple-600/40 cursor-pointer"
-                              data-testid="button-admin-xbot"
-                            >
-                              🤖 X Bot Admin
-                            </DropdownMenuItem>
-                          </Link>
-                          <Link href="/x-admin">
-                            <DropdownMenuItem 
-                              className="text-white hover:bg-purple-600/40 cursor-pointer"
-                              data-testid="button-x-admin"
-                            >
-                              🐦 X Account
-                            </DropdownMenuItem>
-                          </Link>
-                        </>
-                      )}
-                      <Link href="/profile">
-                        <DropdownMenuItem 
-                          className="text-white hover:bg-purple-600/40 cursor-pointer"
-                          data-testid="button-profile"
+                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white font-mono text-xs border border-purple-500/30 flex items-center space-x-1"
+                          data-testid="button-wallet-connected"
                         >
-                          👤 Profile
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/referrals">
+                          <span>{publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}</span>
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                        {publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' && (
+                          <>
+                            <Link href="/admin/x-bot">
+                              <DropdownMenuItem 
+                                className="text-white hover:bg-purple-600/40 cursor-pointer"
+                                data-testid="button-admin-xbot"
+                              >
+                                🤖 X Bot Admin
+                              </DropdownMenuItem>
+                            </Link>
+                            <Link href="/x-admin">
+                              <DropdownMenuItem 
+                                className="text-white hover:bg-purple-600/40 cursor-pointer"
+                                data-testid="button-x-admin"
+                              >
+                                🐦 X Account
+                              </DropdownMenuItem>
+                            </Link>
+                          </>
+                        )}
+                        <Link href="/referrals">
+                          <DropdownMenuItem 
+                            className="text-white hover:bg-purple-600/40 cursor-pointer"
+                            data-testid="button-referrals"
+                          >
+                            💰 Referrals
+                          </DropdownMenuItem>
+                        </Link>
                         <DropdownMenuItem 
+                          onClick={disconnectWallet}
                           className="text-white hover:bg-purple-600/40 cursor-pointer"
-                          data-testid="button-referrals"
+                          data-testid="button-disconnect"
                         >
-                          💰 Referrals
+                          Disconnect
                         </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuItem 
-                        onClick={disconnectWallet}
-                        className="text-white hover:bg-purple-600/40 cursor-pointer"
-                        data-testid="button-disconnect"
-                      >
-                        Disconnect
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
                 ) : (
                   <Button
                     onClick={() => {
@@ -2939,62 +2941,65 @@ export default function SolRefund() {
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
               {isConnected && publicKey ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <>
+                  <Link href="/profile">
                     <Button
-                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
-                      data-testid="button-wallet-connected-desktop"
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white text-sm border border-purple-500/30 flex items-center space-x-2"
+                      data-testid="button-profile-desktop"
                     >
-                      <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
-                      <ChevronDown className="h-4 w-4" />
+                      <User className="h-4 w-4" />
+                      <span>Profile</span>
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
-                    {publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' && (
-                      <>
-                        <Link href="/admin/x-bot">
-                          <DropdownMenuItem 
-                            className="text-white hover:bg-purple-600/40 cursor-pointer"
-                            data-testid="button-admin-xbot-desktop"
-                          >
-                            🤖 X Bot Admin
-                          </DropdownMenuItem>
-                        </Link>
-                        <Link href="/x-admin">
-                          <DropdownMenuItem 
-                            className="text-white hover:bg-purple-600/40 cursor-pointer"
-                            data-testid="button-x-admin-desktop"
-                          >
-                            🐦 X Account
-                          </DropdownMenuItem>
-                        </Link>
-                      </>
-                    )}
-                    <Link href="/profile">
-                      <DropdownMenuItem 
-                        className="text-white hover:bg-purple-600/40 cursor-pointer"
-                        data-testid="button-profile-desktop"
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                        data-testid="button-wallet-connected-desktop"
                       >
-                        👤 Profile
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/referrals">
+                        <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                      {publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' && (
+                        <>
+                          <Link href="/admin/x-bot">
+                            <DropdownMenuItem 
+                              className="text-white hover:bg-purple-600/40 cursor-pointer"
+                              data-testid="button-admin-xbot-desktop"
+                            >
+                              🤖 X Bot Admin
+                            </DropdownMenuItem>
+                          </Link>
+                          <Link href="/x-admin">
+                            <DropdownMenuItem 
+                              className="text-white hover:bg-purple-600/40 cursor-pointer"
+                              data-testid="button-x-admin-desktop"
+                            >
+                              🐦 X Account
+                            </DropdownMenuItem>
+                          </Link>
+                        </>
+                      )}
+                      <Link href="/referrals">
+                        <DropdownMenuItem 
+                          className="text-white hover:bg-purple-600/40 cursor-pointer"
+                          data-testid="button-referrals-desktop"
+                        >
+                          💰 Referrals
+                        </DropdownMenuItem>
+                      </Link>
                       <DropdownMenuItem 
+                        onClick={disconnectWallet}
                         className="text-white hover:bg-purple-600/40 cursor-pointer"
-                        data-testid="button-referrals-desktop"
+                        data-testid="button-disconnect-desktop"
                       >
-                        💰 Referrals
+                        Disconnect
                       </DropdownMenuItem>
-                    </Link>
-                    <DropdownMenuItem 
-                      onClick={disconnectWallet}
-                      className="text-white hover:bg-purple-600/40 cursor-pointer"
-                      data-testid="button-disconnect-desktop"
-                    >
-                      Disconnect
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               ) : (
                 <div className="flex flex-col items-center space-y-3">
                   <Button
