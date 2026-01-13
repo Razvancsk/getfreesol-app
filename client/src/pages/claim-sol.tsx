@@ -5800,7 +5800,7 @@ export default function SolRefund() {
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
           {activeTab === 'reclaim' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-6">
               {/* Total SOL Recovered */}
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                 <div className="text-3xl font-bold text-white mb-2">
