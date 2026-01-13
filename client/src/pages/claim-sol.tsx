@@ -3024,7 +3024,7 @@ export default function SolRefund() {
 
           {/* Description */}
           {activeTab !== 'docs' && (
-            <div className="text-center space-y-4 py-4">
+            <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
 {activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
               </p>
