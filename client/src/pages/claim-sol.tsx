@@ -3872,6 +3872,7 @@ export default function SolRefund() {
                     <Globe className="w-5 h-5" />
                     Your Referral Information
                   </h3>
+                  <p className="text-purple-300 text-sm mt-1">Earn 50% of the fees from referred users!</p>
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">
