@@ -2866,10 +2866,10 @@ export default function SolRefund() {
                   <>
                     <Link href="/profile">
                       <Button
-                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center space-x-1"
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-1.5 text-white text-xs border border-purple-500/30 flex items-center gap-1"
                         data-testid="button-profile"
                       >
-                        <User className="h-4 w-4" />
+                        <User className="h-3 w-3" />
                         <span>Profile</span>
                       </Button>
                     </Link>
@@ -2945,10 +2945,10 @@ export default function SolRefund() {
                 <>
                   <Link href="/profile">
                     <Button
-                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white text-sm border border-purple-500/30 flex items-center space-x-2"
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-1.5 text-white text-xs border border-purple-500/30 flex items-center gap-1"
                       data-testid="button-profile-desktop"
                     >
-                      <User className="h-4 w-4" />
+                      <User className="h-3 w-3" />
                       <span>Profile</span>
                     </Button>
                   </Link>
