@@ -3182,9 +3182,17 @@ export default function SolRefund() {
                 <div className="py-4 text-center">
                   <Layers className="h-8 w-8 text-purple-400 mx-auto mb-2 opacity-70" />
                   <h4 className="text-sm font-medium text-white mb-0.5">No empty accounts found</h4>
-                  <p className="text-white text-xs">
+                  <p className="text-white text-xs mb-3">
                     Your wallet is clean!
                   </p>
+                  <Button 
+                    onClick={handleScan}
+                    disabled={isScanning}
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2 h-auto"
+                  >
+                    <RefreshCw className={`h-3 w-3 mr-1 ${isScanning ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
                 </div>
               )}
                 </>
