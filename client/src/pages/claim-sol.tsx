@@ -3015,22 +3015,23 @@ export default function SolRefund() {
             href="https://flip.gg/a/getfreesol" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="block w-full max-w-2xl mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 bg-black relative"
+            className="block w-full max-w-2xl mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
             data-testid="sponsor-flipgg-banner"
           >
-            <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-lg z-0">
-              Flip.gg - Click to Play!
-            </div>
             <video 
-              src={flipggBanner} 
               autoPlay 
               loop 
               muted 
               playsInline
-              preload="auto"
-              className="w-full h-auto relative z-10"
-              style={{ display: 'block' }}
-            />
+              preload="metadata"
+              className="w-full h-auto block"
+              webkit-playsinline="true"
+              x5-playsinline="true"
+              x5-video-player-type="h5"
+              x5-video-player-fullscreen="true"
+            >
+              <source src={flipggBanner} type="video/mp4" />
+            </video>
           </a>
 
           {/* Description */}
