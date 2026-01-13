@@ -144,10 +144,11 @@ export default function ProfilePage() {
 
           {stats?.referralCode && (
             <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
-              <h3 className="text-white font-semibold text-lg flex items-center gap-2 mb-4">
+              <h3 className="text-white font-semibold text-lg flex items-center gap-2 mb-1">
                 <Trophy className="h-5 w-5 text-purple-400" />
                 Your Referral Information
               </h3>
+              <p className="text-purple-300 text-sm mb-4">Earn 50% of the fees from referred users!</p>
               <div className="space-y-4">
                 <div>
                   <p className="text-purple-300 text-sm mb-2">Referral Link</p>
