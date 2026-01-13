@@ -5918,8 +5918,8 @@ export default function SolRefund() {
           {activeTab === 'reclaim' && (
             <div className="space-y-3 mb-6">
               <Accordion type="single" collapsible className="space-y-3">
-                <AccordionItem value="safety" className="bg-slate-900/80 border border-slate-700/50 rounded-xl overflow-hidden">
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-slate-800/50">
+                <AccordionItem value="safety" className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl overflow-hidden">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-purple-700/30">
                     <span className="text-white font-medium text-left">Safety & Security</span>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-4">
@@ -5944,8 +5944,8 @@ export default function SolRefund() {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="rent" className="bg-slate-900/80 border border-slate-700/50 rounded-xl overflow-hidden">
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-slate-800/50">
+                <AccordionItem value="rent" className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl overflow-hidden">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-purple-700/30">
                     <span className="text-white font-medium text-left">What is this rent?</span>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-4">
