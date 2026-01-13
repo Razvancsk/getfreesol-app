@@ -3120,15 +3120,14 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
                   onClick={() => publicKey && scanMutation.mutate(publicKey)}
                   disabled={scanMutation.isPending}
-                  className="h-10 w-10 rounded-full bg-purple-600/30 border border-purple-500/50 text-purple-300 hover:text-white hover:bg-purple-500/40"
+                  className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                  title="Refresh"
                 >
-                  <RefreshCw className={`h-5 w-5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
-                </Button>
+                  <RefreshCw className={`h-6 w-6 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
               </div>
               {!scanResult ? (
                 <div className="text-center text-purple-300 py-12">
