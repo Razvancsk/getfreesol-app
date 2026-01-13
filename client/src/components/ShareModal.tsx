@@ -61,13 +61,9 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
       <DialogContent className="sm:max-w-md bg-[#1a1a1a] border-none p-0 rounded-xl overflow-hidden">
         {/* Main content area */}
         <div className="flex items-center gap-4 p-5 bg-[#1a1a1a]">
-          {/* Logo */}
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg flex items-center justify-center shrink-0">
-            <svg className="h-10 w-10" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
-              <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-              <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-              <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-            </svg>
+          {/* Logo - GET FREE SOL branding */}
+          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-700 rounded-lg flex items-center justify-center shrink-0">
+            <span className="text-white text-2xl font-bold">GFS</span>
           </div>
           
           {/* Text content */}
@@ -75,15 +71,29 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
             <span className="text-gray-300 text-lg font-mono">I just reclaimed</span>
             <span className="text-green-400 text-3xl font-bold font-mono">{solClaimed.toFixed(6)} SOL</span>
             <span className="text-gray-300 text-lg font-mono">
-              {accountsClosed > 0 ? `by closing ${accountsClosed} accounts!` : 'with SolRefund!'}
+              {accountsClosed > 0 ? `by closing ${accountsClosed} accounts!` : 'with GetFreeSOL!'}
             </span>
           </div>
         </div>
         
-        {/* Domain footer */}
+        {/* Domain footer with referral link */}
         <div className="bg-[#252525] border-t border-gray-700 px-5 py-3">
-          <span className="text-gray-400 text-xl font-mono">solrefund.com</span>
+          <a 
+            href={shareUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-green-400 text-xl font-mono hover:underline"
+          >
+            getfreesol.xyz
+          </a>
         </div>
+        
+        {/* Referral commission info */}
+        {referralCode && (
+          <div className="bg-[#1a1a1a] px-5 py-2 text-center">
+            <span className="text-green-400 text-sm">Earn 50% commission of every SOL your referrals claim!</span>
+          </div>
+        )}
         
         {/* Action buttons */}
         <div className="flex items-center justify-center gap-3 p-4 bg-[#1a1a1a]">
