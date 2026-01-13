@@ -3118,8 +3118,8 @@ export default function SolRefund() {
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold text-white">Scan Results</h3>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white">Scan Results</h3>
               </div>
               {!scanResult ? (
                 <div className="text-center text-purple-300 py-12">
@@ -3203,10 +3203,10 @@ export default function SolRefund() {
                   </Button>
                 </div>
               ) : (
-                <div className="py-6 text-center">
-                  <Layers className="h-10 w-10 text-purple-400 mx-auto mb-3 opacity-70" />
-                  <h4 className="text-base font-medium text-white mb-1">No empty accounts found</h4>
-                  <p className="text-white text-sm">
+                <div className="py-4 text-center">
+                  <Layers className="h-8 w-8 text-purple-400 mx-auto mb-2 opacity-70" />
+                  <h4 className="text-sm font-medium text-white mb-0.5">No empty accounts found</h4>
+                  <p className="text-white text-xs">
                     Your wallet is clean!
                   </p>
                 </div>
