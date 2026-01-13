@@ -3148,13 +3148,11 @@ export default function SolRefund() {
 
                     <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
                       {scanResult.accounts.map((account) => (
-                        <div key={account.accountAddress} className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded border border-slate-700/50">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-mono text-sm text-white truncate">
-                              {account.accountAddress}
-                            </div>
+                        <div key={account.accountAddress} className="flex items-center justify-between p-3 bg-slate-700/50 rounded border border-slate-700/50">
+                          <div className="font-mono text-xs text-white">
+                            {account.accountAddress.slice(0, 8)}...{account.accountAddress.slice(-8)}
                           </div>
-                          <div className="px-2 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded text-xs text-purple-400">
+                          <div className="px-2 py-1 bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded text-xs text-purple-400 ml-2 flex-shrink-0">
                             {account.rentAmount} SOL
                           </div>
                         </div>
