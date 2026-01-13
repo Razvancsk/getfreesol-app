@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Link, useLocation } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -5913,54 +5914,55 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Safety & Security Section - Only show on reclaim tab - Bottom of page */}
+          {/* FAQ Accordions - Only show on reclaim tab - Bottom of page */}
           {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
-              <div className="flex items-center mb-4">
-                <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
-                <h3 className="text-lg font-semibold text-white">Safety & Security</h3>
-              </div>
+            <div className="space-y-3 mb-6">
+              <Accordion type="single" collapsible className="space-y-3">
+                <AccordionItem value="safety" className="bg-slate-900/80 border border-slate-700/50 rounded-xl overflow-hidden">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-slate-800/50">
+                    <span className="text-white font-medium text-left">Safety & Security</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    <div className="space-y-3 text-purple-200">
+                      <div className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Only empty accounts (0 token balance) are eligible for closure</span>
+                      </div>
+                      <div className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Your tokens and active accounts are completely safe</span>
+                      </div>
+                      <div className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Transactions are processed on Solana mainnet</span>
+                      </div>
+                      <div className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">15% service fee supports platform maintenance and development</span>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
 
-              <div className="space-y-3 text-purple-200">
-                <div className="flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Only empty accounts (0 token balance) are eligible for closure</span>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Your tokens and active accounts are completely safe</span>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Transactions are processed on Solana mainnet</span>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">15% service fee supports platform maintenance and development</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* What is this rent? Section - Only show on reclaim tab - Bottom of page */}
-          {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
-              <div className="flex items-center mb-4">
-                <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
-                <h3 className="text-lg font-semibold text-white">What is this rent?</h3>
-              </div>
-
-              <div className="space-y-3 text-purple-200 text-sm">
-                <p>
-                  Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
-                </p>
-                <p>
-                  When you sell or transfer all tokens, the account becomes empty but the rent remains locked. Our tool safely closes these empty accounts and returns your SOL.
-                </p>
-                <p className="font-medium text-white">
-                  Only accounts with 0 tokens are eligible for closure - your funds are completely safe.
-                </p>
-              </div>
+                <AccordionItem value="rent" className="bg-slate-900/80 border border-slate-700/50 rounded-xl overflow-hidden">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-slate-800/50">
+                    <span className="text-white font-medium text-left">What is this rent?</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    <div className="space-y-3 text-purple-200 text-sm">
+                      <p>
+                        Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
+                      </p>
+                      <p>
+                        When you sell or transfer all tokens, the account becomes empty but the rent remains locked. Our tool safely closes these empty accounts and returns your SOL.
+                      </p>
+                      <p className="font-medium text-white">
+                        Only accounts with 0 tokens are eligible for closure - your funds are completely safe.
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           )}
         </div>
