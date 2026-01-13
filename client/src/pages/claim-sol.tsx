@@ -5804,7 +5804,7 @@ export default function SolRefund() {
               {/* Total SOL Recovered */}
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
                 <div className="text-3xl font-bold text-white mb-2">
-                  {stats ? stats.totalSolRecovered.toFixed(6) : '0.000000'}
+                  {stats ? stats.totalSolRecovered.toFixed(2) : '0.00'}
                 </div>
                 <div className="text-sm text-purple-200 uppercase tracking-wider">
                   TOTAL SOL RECOVERED
