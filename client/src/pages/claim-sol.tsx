@@ -139,7 +139,7 @@ export default function SolRefund() {
   
   // Share modal state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [shareData, setShareData] = useState<{ solClaimed: number; accountsClosed: number } | null>(null);
+  const [shareData, setShareData] = useState<{ solClaimed: number } | null>(null);
   
   // Batch processing state
   const [isBatching, setIsBatching] = useState(false);
@@ -2625,7 +2625,7 @@ export default function SolRefund() {
       // Batch processing shows the modal at the end with total amount
       if (!isBatching) {
         const totalWithRebate = result.totalReceived + (result.rebateAmount || 0);
-        setShareData({ solClaimed: totalWithRebate, accountsClosed: result.accountsClosed || 0 });
+        setShareData({ solClaimed: totalWithRebate });
         setIsShareModalOpen(true);
         
         // Reset form and immediately refresh statistics and transaction history
@@ -2746,7 +2746,7 @@ export default function SolRefund() {
       });
       
       // Show share modal with total results
-      setShareData({ solClaimed: totalSolRecovered, accountsClosed: totalAccountsClosed });
+      setShareData({ solClaimed: totalSolRecovered });
       setIsShareModalOpen(true);
       
       // Reset scan and refresh data
@@ -6011,7 +6011,6 @@ export default function SolRefund() {
           onClose={() => setIsShareModalOpen(false)} 
           solClaimed={shareData.solClaimed}
           referralCode={userReferralCode}
-          accountsClosed={shareData.accountsClosed}
         />
       )}
 

@@ -1,5 +1,6 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SiX } from "react-icons/si";
 import { Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -11,10 +12,9 @@ interface ShareModalProps {
   onClose: () => void;
   solClaimed: number;
   referralCode: string | null;
-  accountsClosed?: number;
 }
 
-export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 0 }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
   const [tweetText, setTweetText] = useState("");
   const { toast } = useToast();
@@ -24,6 +24,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
     ? `${baseUrl}?ref=${referralCode}&claimed=${Math.floor(solClaimed * 1e9)}`
     : `${baseUrl}?claimed=${Math.floor(solClaimed * 1e9)}`;
   
+  // Pick a NEW random message every time the modal opens
   useEffect(() => {
     if (isOpen) {
       const lamports = Math.floor(solClaimed * 1e9);
@@ -58,61 +59,56 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-[#1a1a1a] border-none p-0 rounded-xl overflow-hidden">
-        {/* Main content area */}
-        <div className="flex items-center gap-4 p-5 bg-[#1a1a1a]">
-          {/* Logo - GET FREE SOL branding */}
-          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-700 rounded-lg flex items-center justify-center shrink-0">
-            <span className="text-white text-2xl font-bold">GFS</span>
+      <DialogContent className="sm:max-w-sm bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30 p-5 rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-white">
+            Share
+          </DialogTitle>
+          <p className="text-sm text-purple-200 pt-1">
+            Invite friends to earn more $SOL
+          </p>
+        </DialogHeader>
+        
+        <div className="space-y-3.5 pt-2">
+          {/* Success Message */}
+          <p className="text-2xl font-bold text-green-400 text-center">
+            {solClaimed.toFixed(6)} SOL Claimed! 🎉
+          </p>
+          
+          {/* Social Share Button */}
+          <div className="flex justify-center">
+            <Button
+              onClick={handleShareOnX}
+              className="rounded-full w-12 h-12 bg-black hover:bg-black/80 text-white p-0"
+              data-testid="button-share-twitter"
+            >
+              <SiX className="w-5 h-5" />
+            </Button>
           </div>
           
-          {/* Text content */}
-          <div className="flex flex-col">
-            <span className="text-gray-300 text-lg font-mono">I just reclaimed</span>
-            <span className="text-green-400 text-3xl font-bold font-mono">{solClaimed.toFixed(6)} SOL</span>
-            <span className="text-gray-300 text-lg font-mono">
-              {accountsClosed > 0 ? `by closing ${accountsClosed} accounts!` : 'with GetFreeSOL!'}
-            </span>
+          {/* Shareable Link */}
+          <div className="flex gap-2">
+            <Input
+              value={shareUrl}
+              readOnly
+              className="bg-slate-800/50 border-purple-500/30 text-white text-sm flex-1 rounded-xl"
+              data-testid="input-share-link"
+            />
+            <Button
+              onClick={handleCopy}
+              className="bg-green-600 hover:bg-green-700 text-white px-5 shrink-0 rounded-xl"
+              data-testid="button-copy-link"
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </Button>
           </div>
-        </div>
-        
-        {/* Domain footer with referral link */}
-        <div className="bg-[#252525] border-t border-gray-700 px-5 py-3">
-          <a 
-            href={shareUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-green-400 text-xl font-mono hover:underline"
-          >
-            getfreesol.xyz
-          </a>
-        </div>
-        
-        {/* Referral commission info */}
-        {referralCode && (
-          <div className="bg-[#1a1a1a] px-5 py-2 text-center">
-            <span className="text-green-400 text-sm">Earn 50% commission of every SOL your referrals claim!</span>
-          </div>
-        )}
-        
-        {/* Action buttons */}
-        <div className="flex items-center justify-center gap-3 p-4 bg-[#1a1a1a]">
-          <Button
-            onClick={handleShareOnX}
-            className="rounded-full px-6 py-2 bg-black hover:bg-black/80 text-white flex items-center gap-2"
-            data-testid="button-share-twitter"
-          >
-            <SiX className="w-4 h-4" />
-            Share on X
-          </Button>
-          <Button
-            onClick={handleCopy}
-            className="rounded-full px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
-            data-testid="button-copy-link"
-          >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            Copy Link
-          </Button>
+          
+          {/* Commission Info */}
+          {referralCode && (
+            <p className="text-sm text-green-400 text-center">
+              Earn 50% commission of every SOL your referrals claim!
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
