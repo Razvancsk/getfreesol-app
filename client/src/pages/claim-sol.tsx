@@ -3144,8 +3144,6 @@ export default function SolRefund() {
 
                   {/* Empty Accounts List */}
                   <div className="space-y-4">
-                    <h4 className="text-base font-medium text-white">Empty Accounts Found ({scanResult.accounts.length})</h4>
-
                     <div className="max-h-64 overflow-y-auto space-y-2 border border-slate-600 rounded-lg p-3 bg-slate-900/30">
                       {scanResult.accounts.map((account) => (
                         <div key={account.accountAddress} className="flex items-center justify-between p-3 bg-slate-700/50 rounded border border-slate-700/50">
