@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3 } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers } from "lucide-react";
 import { SiX, SiDiscord } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -3117,33 +3117,17 @@ export default function SolRefund() {
 
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Scan Results</h3>
-                <button 
-                  onClick={() => {
-                    if (publicKey) {
-                      scanMutation.mutate(publicKey.toString());
-                    }
-                  }}
-                  disabled={scanMutation.isPending || !publicKey}
-                  className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
-                  data-testid="button-refresh-scan"
-                  title="Refresh"
-                >
-                  <RefreshCw className={`h-6 w-6 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
-                </button>
+            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-white">Scan Results</h3>
+                <p className="text-gray-400 text-sm mt-1">Close empty accounts to recover rent</p>
               </div>
               {!scanResult ? (
-                <div className="text-center text-purple-300 py-8">
+                <div className="text-center text-gray-400 py-12">
                   {scanMutation.isPending ? 'Scanning wallet...' : 'Connect wallet and scan to find empty accounts'}
                 </div>
               ) : (
                 <>
-                  <p className="text-white text-sm mb-6">
-                    Found {scanResult.emptyAccounts} empty token accounts
-                  </p>
-
                   {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
@@ -3220,10 +3204,10 @@ export default function SolRefund() {
                   </Button>
                 </div>
               ) : (
-                <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-8 text-center">
-                  <Coins className="h-10 w-10 text-purple-300 mx-auto mb-4 opacity-60" />
-                  <h4 className="text-lg font-medium text-white mb-1">No empty accounts found</h4>
-                  <p className="text-purple-300 text-sm">
+                <div className="py-12 text-center">
+                  <Layers className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-300 mb-1">No empty accounts found</h4>
+                  <p className="text-gray-500 text-sm">
                     Your wallet is clean!
                   </p>
                 </div>
