@@ -3118,8 +3118,17 @@ export default function SolRefund() {
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="mb-4">
+              <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => publicKey && scanMutation.mutate(publicKey)}
+                  disabled={scanMutation.isPending}
+                  className="h-8 w-8 text-purple-300 hover:text-white hover:bg-purple-500/20"
+                >
+                  <RefreshCw className={`h-4 w-4 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                </Button>
               </div>
               {!scanResult ? (
                 <div className="text-center text-purple-300 py-12">
@@ -3182,17 +3191,9 @@ export default function SolRefund() {
                 <div className="py-4 text-center">
                   <Layers className="h-8 w-8 text-purple-400 mx-auto mb-2 opacity-70" />
                   <h4 className="text-sm font-medium text-white mb-0.5">No empty accounts found</h4>
-                  <p className="text-white text-xs mb-3">
+                  <p className="text-white text-xs">
                     Your wallet is clean!
                   </p>
-                  <Button 
-                    onClick={() => publicKey && scanMutation.mutate(publicKey)}
-                    disabled={scanMutation.isPending}
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2 h-auto"
-                  >
-                    <RefreshCw className={`h-3 w-3 mr-1 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </Button>
                 </div>
               )}
                 </>
