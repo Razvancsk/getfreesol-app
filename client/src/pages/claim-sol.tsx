@@ -3220,11 +3220,11 @@ export default function SolRefund() {
                   </Button>
                 </div>
               ) : (
-                <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-6 text-center">
-                  <CheckCircle className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-purple-400 mb-2">Great news!</h4>
-                  <p className="text-white">
-                    Your wallet has no empty token accounts. All your accounts are either active or already closed.
+                <div className="bg-black/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-8 text-center">
+                  <Coins className="h-10 w-10 text-purple-300 mx-auto mb-4 opacity-60" />
+                  <h4 className="text-lg font-medium text-white mb-1">No empty accounts found</h4>
+                  <p className="text-purple-300 text-sm">
+                    Your wallet is clean!
                   </p>
                 </div>
               )}
