@@ -3186,11 +3186,11 @@ export default function SolRefund() {
                     Your wallet is clean!
                   </p>
                   <Button 
-                    onClick={handleScan}
-                    disabled={isScanning}
+                    onClick={() => publicKey && scanMutation.mutate(publicKey)}
+                    disabled={scanMutation.isPending}
                     className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2 h-auto"
                   >
-                    <RefreshCw className={`h-3 w-3 mr-1 ${isScanning ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-3 w-3 mr-1 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
                     Refresh
                   </Button>
                 </div>
