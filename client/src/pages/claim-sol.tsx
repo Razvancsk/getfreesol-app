@@ -3051,14 +3051,24 @@ export default function SolRefund() {
                   Claim
                 </Button>
                 <Button
-                  onClick={() => setActiveTab('burnTokens')}
+                  onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('tokens'); }}
                   className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
-                    activeTab === 'burnTokens' 
+                    activeTab === 'burnTokens' && burnSubTab === 'tokens'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-lg">🔥</span> Burn
+                  <span className="text-lg">🪙</span> Burn Tokens
+                </Button>
+                <Button
+                  onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
+                    activeTab === 'burnTokens' && burnSubTab === 'nft'
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                  }`}
+                >
+                  <span className="text-lg">🖼️</span> Burn NFT
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
@@ -3080,36 +3090,7 @@ export default function SolRefund() {
           )}
 
 
-          {/* Burn Sub-Tabs */}
-          {activeTab === 'burnTokens' && (
-            <div className="flex justify-center mb-6">
-              <div className="bg-purple-800/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1 flex space-x-1">
-                <button
-                  onClick={() => setBurnSubTab('tokens')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    burnSubTab === 'tokens' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-burn-tokens"
-                >
-                  🪙 Burn Tokens
-                </button>
-                <button
-                  onClick={() => setBurnSubTab('nft')}
-                  className={`px-4 py-2 text-sm font-medium rounded transition-all ${
-                    burnSubTab === 'nft' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-transparent text-purple-300 hover:bg-purple-600/60'
-                  }`}
-                  data-testid="button-burn-nft"
-                >
-                  🖼️ Burn NFT
-                </button>
-              </div>
-            </div>
-          )}
-
+          
 
 
 
