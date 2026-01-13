@@ -2838,23 +2838,6 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {/* Trojan Sponsor Banner - Top of Page */}
-      <div className="container mx-auto px-4 max-w-6xl pt-2">
-        <a 
-          href="https://trojan.com/@GetFreeSol" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="block w-full overflow-hidden rounded-xl border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
-          data-testid="sponsor-trojan-banner"
-        >
-          <img 
-            src={trojanBanner} 
-            alt="Trojan - Your Ultimate Onchain Trading Experience" 
-            className="w-full h-auto object-cover"
-          />
-        </a>
-      </div>
-
       <div className={`container mx-auto pt-1 pb-2 max-w-6xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'}`}>
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
@@ -3026,6 +3009,21 @@ export default function SolRefund() {
               </>
             )}
           </div>
+
+          {/* Trojan Sponsor Banner - Under Header */}
+          <a 
+            href="https://trojan.com/@GetFreeSol" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="block w-full overflow-hidden rounded-xl border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
+            data-testid="sponsor-trojan-banner"
+          >
+            <img 
+              src={trojanBanner} 
+              alt="Trojan - Your Ultimate Onchain Trading Experience" 
+              className="w-full h-auto object-cover"
+            />
+          </a>
 
           {/* Description */}
           {activeTab !== 'docs' && (
