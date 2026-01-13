@@ -44,7 +44,6 @@ import { useAppKit } from "@reown/appkit/react";
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 import { SwapModal } from '@/components/SwapModal';
 import { SwapPanel } from '@/components/SwapPanel';
-import { DexPanel } from '@/components/DexPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
@@ -3088,17 +3087,6 @@ export default function SolRefund() {
             <div className="flex justify-center py-2 px-2">
               <div className="flex items-center space-x-2">
                 <Button
-                  onClick={() => setActiveTab('dex')}
-                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
-                    activeTab === 'dex' 
-                      ? 'bg-purple-600 text-white border-purple-500' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
-                  }`}
-                  data-testid="button-dex-tab"
-                >
-                  <span className="text-lg">📊</span> DEX
-                </Button>
-                <Button
                   onClick={() => setActiveTab('reclaim')}
                   className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'reclaim' 
@@ -3146,7 +3134,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center space-y-4 py-4">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'dex' ? 'Discover trending & new tokens on Solana' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3920,12 +3908,6 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* DEX Tab Content */}
-          {activeTab === 'dex' && (
-            <div className="space-y-6 py-4">
-              <DexPanel />
-            </div>
-          )}
 
           {/* Referrals Tab Content */}
           {activeTab === 'referrals' && (
