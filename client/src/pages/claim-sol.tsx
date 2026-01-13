@@ -3117,13 +3117,13 @@ export default function SolRefund() {
 
           {/* Reclaim SOL Results */}
           {activeTab === 'reclaim' && (
-            <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white">Scan Results</h3>
-                <p className="text-gray-400 text-sm mt-1">Close empty accounts to recover rent</p>
+                <p className="text-purple-300 text-sm mt-1">Close empty accounts to recover rent</p>
               </div>
               {!scanResult ? (
-                <div className="text-center text-gray-400 py-12">
+                <div className="text-center text-purple-300 py-12">
                   {scanMutation.isPending ? 'Scanning wallet...' : 'Connect wallet and scan to find empty accounts'}
                 </div>
               ) : (
@@ -3205,9 +3205,9 @@ export default function SolRefund() {
                 </div>
               ) : (
                 <div className="py-12 text-center">
-                  <Layers className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-gray-300 mb-1">No empty accounts found</h4>
-                  <p className="text-gray-500 text-sm">
+                  <Layers className="h-12 w-12 text-purple-400 mx-auto mb-4 opacity-70" />
+                  <h4 className="text-lg font-medium text-white mb-1">No empty accounts found</h4>
+                  <p className="text-purple-300 text-sm">
                     Your wallet is clean!
                   </p>
                 </div>
