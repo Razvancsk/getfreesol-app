@@ -48,7 +48,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import flipggBanner from '@assets/flipgg-mobile.mp4';
-import flipggMobileImage from '@assets/image_1768280488185.png';
+import flipggMobileGif from '@assets/ezgif-53f817bd0e3ed32a_1768280738804.gif';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -3029,9 +3029,9 @@ export default function SolRefund() {
             >
               <source src={flipggBanner} type="video/mp4" />
             </video>
-            {/* Image for mobile */}
+            {/* GIF for mobile */}
             <img 
-              src={flipggMobileImage} 
+              src={flipggMobileGif} 
               alt="Flip.gg - Play crypto games" 
               className="w-full h-auto block md:hidden"
             />
