@@ -2870,6 +2870,7 @@ export default function SolRefund() {
                         data-testid="button-profile"
                       >
                         <User className="h-4 w-4" />
+                        <span>Profile</span>
                       </Button>
                     </Link>
                     <DropdownMenu>
