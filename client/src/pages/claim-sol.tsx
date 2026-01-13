@@ -3015,7 +3015,7 @@ export default function SolRefund() {
             href="https://flip.gg/a/getfreesol" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="block w-full max-w-md mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
+            className="block w-full max-w-2xl mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
             data-testid="sponsor-flipgg-banner"
           >
             <video 
