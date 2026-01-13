@@ -48,6 +48,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
 import flipggBanner from '@assets/flipgg-mobile.mp4';
+import flipggPoster from '@assets/flipgg-poster.jpg';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -3023,14 +3024,11 @@ export default function SolRefund() {
               loop 
               muted 
               playsInline
-              preload="metadata"
+              poster={flipggPoster}
               className="w-full h-auto block"
-              webkit-playsinline="true"
-              x5-playsinline="true"
-              x5-video-player-type="h5"
-              x5-video-player-fullscreen="true"
+              style={{ minHeight: '40px' }}
             >
-              <source src={flipggBanner} type="video/mp4" />
+              <source src={`${flipggBanner}?v=2`} type="video/mp4" />
             </video>
           </a>
 
