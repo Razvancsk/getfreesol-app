@@ -2862,39 +2862,6 @@ export default function SolRefund() {
 
                   {/* Mobile Wallet Connection */}
                   <div className="lg:hidden flex items-center space-x-2">
-                {/* Social Media Buttons */}
-                <div className="flex items-center space-x-1">
-                  <Link href="/docs">
-                    <Button
-                      className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                      data-testid="button-social-docs"
-                    >
-                      <Info className="h-4 w-4 text-white" />
-                      <span className="text-white text-xs font-medium">Docs</span>
-                    </Button>
-                  </Link>
-                  <a
-                    href="https://x.com/getfreesol_xyz"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-testid="button-social-x"
-                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                    title="Follow us on X (Twitter)"
-                  >
-                    <SiX className="h-4 w-4 text-white" />
-                  </a>
-                  <a
-                    href="https://discord.gg/tSBMgYcZaK"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-testid="button-social-discord"
-                    className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                    title="Join our Discord community"
-                  >
-                    <SiDiscord className="h-4 w-4 text-white" />
-                  </a>
-                </div>
-
                 {isConnected && publicKey ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -2971,39 +2938,6 @@ export default function SolRefund() {
 
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
-              {/* Social Media Buttons */}
-              <div className="flex items-center space-x-1">
-                <Link href="/docs">
-                  <Button
-                    className="flex items-center justify-center gap-1 px-2 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                    data-testid="button-social-docs-desktop"
-                  >
-                    <Info className="h-4 w-4 text-white" />
-                    <span className="text-white text-xs font-medium">Docs</span>
-                  </Button>
-                </Link>
-                <a
-                  href="https://x.com/getfreesol_xyz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-social-x-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  title="Follow us on X (Twitter)"
-                >
-                  <SiX className="h-4 w-4 text-white" />
-                </a>
-                <a
-                  href="https://discord.gg/tSBMgYcZaK"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-social-discord-desktop"
-                  className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  title="Join our Discord community"
-                >
-                  <SiDiscord className="h-4 w-4 text-white" />
-                </a>
-              </div>
-
               {isConnected && publicKey ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -6062,7 +5996,7 @@ export default function SolRefund() {
       {/* Footer */}
       <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <div className="flex flex-col items-center justify-center space-y-2">
+          <div className="flex flex-col items-center justify-center space-y-3">
             <div className="flex items-center space-x-3">
               <img 
                 src={logoImage}
@@ -6070,6 +6004,38 @@ export default function SolRefund() {
                 className="h-8 w-8"
               />
               <div className="text-white font-semibold text-lg">Get Free Sol</div>
+            </div>
+            {/* Social Links */}
+            <div className="flex items-center space-x-2">
+              <Link href="/docs">
+                <Button
+                  className="flex items-center justify-center gap-1 px-3 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                  data-testid="button-footer-docs"
+                >
+                  <Info className="h-4 w-4 text-white" />
+                  <span className="text-white text-xs font-medium">Docs</span>
+                </Button>
+              </Link>
+              <a
+                href="https://x.com/getfreesol_xyz"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="button-footer-x"
+                className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                title="Follow us on X (Twitter)"
+              >
+                <SiX className="h-4 w-4 text-white" />
+              </a>
+              <a
+                href="https://discord.gg/tSBMgYcZaK"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="button-footer-discord"
+                className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                title="Join our Discord community"
+              >
+                <SiDiscord className="h-4 w-4 text-white" />
+              </a>
             </div>
             <div className="text-purple-300 text-sm">2025 All rights reserved</div>
           </div>
