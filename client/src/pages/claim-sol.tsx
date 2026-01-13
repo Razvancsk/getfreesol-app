@@ -47,7 +47,7 @@ import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
-import flipggBanner from '@assets/flipgg-lg_(1)_1768276283543.mp4';
+import flipggBanner from '@assets/flipgg-mobile.mp4';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
