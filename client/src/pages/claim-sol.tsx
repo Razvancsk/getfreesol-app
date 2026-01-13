@@ -3052,23 +3052,23 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('tokens'); }}
-                  className={`px-4 py-2 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'burnTokens' && burnSubTab === 'tokens'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span>🪙</span> Tokens
+                  <span className="text-lg">🪙</span> Tokens
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
-                  className={`px-4 py-2 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
+                  className={`px-5 py-2.5 text-base font-medium rounded-full transition-all flex items-center gap-2 border ${
                     activeTab === 'burnTokens' && burnSubTab === 'nft'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span>🖼️</span> NFT
+                  <span className="text-lg">🖼️</span> NFT
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
