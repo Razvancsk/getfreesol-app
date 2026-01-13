@@ -3015,13 +3015,13 @@ export default function SolRefund() {
             href="https://trojan.com/@GetFreeSol" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="block w-full max-w-2xl mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
+            className="block w-full max-w-xl mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
             data-testid="sponsor-trojan-banner"
           >
             <img 
               src={trojanBanner} 
               alt="Trojan - Your Ultimate Onchain Trading Experience" 
-              className="w-full h-auto object-cover max-h-24"
+              className="w-full h-auto"
             />
           </a>
 
