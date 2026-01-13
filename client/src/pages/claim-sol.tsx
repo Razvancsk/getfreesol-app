@@ -3125,9 +3125,9 @@ export default function SolRefund() {
                   size="icon"
                   onClick={() => publicKey && scanMutation.mutate(publicKey)}
                   disabled={scanMutation.isPending}
-                  className="h-8 w-8 text-purple-300 hover:text-white hover:bg-purple-500/20"
+                  className="h-10 w-10 rounded-full bg-purple-600/30 border border-purple-500/50 text-purple-300 hover:text-white hover:bg-purple-500/40"
                 >
-                  <RefreshCw className={`h-4 w-4 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-5 w-5 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
                 </Button>
               </div>
               {!scanResult ? (
