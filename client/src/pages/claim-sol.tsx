@@ -47,6 +47,7 @@ import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
+import trojanBanner from '@assets/image_1768274996705.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -5916,6 +5917,23 @@ export default function SolRefund() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Trojan Sponsor Banner */}
+      <div className="container mx-auto px-4 max-w-6xl mb-4">
+        <a 
+          href="https://trojan.com/@GetFreeSol" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="block w-full overflow-hidden rounded-xl border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
+          data-testid="sponsor-trojan-banner"
+        >
+          <img 
+            src={trojanBanner} 
+            alt="Trojan - Your Ultimate Onchain Trading Experience" 
+            className="w-full h-auto object-cover"
+          />
+        </a>
       </div>
 
       {/* Footer */}
