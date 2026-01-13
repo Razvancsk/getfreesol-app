@@ -2448,7 +2448,7 @@ export default function SolRefund() {
   };
 
   const selectAllTokens = () => {
-    setSelectedTokens(new Set(tokenList.map(token => token.mint)));
+    setSelectedTokens(new Set(filteredTokenList.map(token => token.mint)));
   };
 
   const clearTokenSelection = () => {
@@ -3185,7 +3185,7 @@ export default function SolRefund() {
           )}
 
           {/* Burn Tokens Results */}
-          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length > 0 && (
+          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -3210,7 +3210,7 @@ export default function SolRefund() {
                 </button>
               </div>
 
-              {/* Value Filter Slider */}
+              {/* Value Filter Slider - Always visible */}
               <div className="mb-6 space-y-3">
                 <p className="text-sm text-green-400 font-medium">
                   {currentMaxTokenValue === null 
@@ -3244,16 +3244,26 @@ export default function SolRefund() {
                 </p>
               </div>
 
-              {/* Token Count */}
-              {filteredTokenList.length < tokenList.length && (
-                <p className="text-sm text-purple-300 mb-3">
-                  Showing {filteredTokenList.length} of {tokenList.length} tokens
-                </p>
-              )}
+              {tokenList.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="inline-block bg-purple-900/30 rounded-full p-4 mb-4">
+                    <Flame className="h-12 w-12 text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2">No Tokens Found</h3>
+                  <p className="text-purple-300 text-sm">Scan your wallet to find tokens available for burning.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Token Count */}
+                  {filteredTokenList.length < tokenList.length && (
+                    <p className="text-sm text-purple-300 mb-3">
+                      Showing {filteredTokenList.length} of {tokenList.length} tokens
+                    </p>
+                  )}
 
-              {/* Token List */}
-              <div className="max-h-96 overflow-y-auto space-y-3 mb-6">
-                {filteredTokenList.map((token, index) => (
+                  {/* Token List */}
+                  <div className="max-h-96 overflow-y-auto space-y-3 mb-6">
+                    {filteredTokenList.map((token, index) => (
                   <div 
                     key={index} 
                     className={`relative flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all ${
@@ -3399,35 +3409,8 @@ export default function SolRefund() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-
-
-          {/* Empty State Messages - Tokens */}
-          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && tokenList.length === 0 && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Token & NFT Scanner</h3>
-                <button 
-                  onClick={() => {
-                    if (publicKey) {
-                      scanTokensMutation.mutate(publicKey.toString());
-                    }
-                  }}
-                  disabled={scanTokensMutation.isPending || !publicKey}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-800/20 hover:bg-purple-700/30 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-lg text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50 text-sm"
-                  data-testid="button-refresh-tokens-empty"
-                >
-                  Click to Refresh
-                  <RefreshCw className={`h-3.5 w-3.5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-              <div className="text-center space-y-4">
-                <Flame className="h-12 w-12 text-purple-400 mx-auto" />
-                <h3 className="text-lg font-semibold text-white">No Tokens Found</h3>
-                <p className="text-purple-200">Scan your wallet to find tokens available for burning.</p>
-              </div>
+                </>
+              )}
             </div>
           )}
 
