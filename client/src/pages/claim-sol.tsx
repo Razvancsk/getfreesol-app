@@ -15,7 +15,7 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers } from "lucide-react";
-import { SiX, SiDiscord } from 'react-icons/si';
+import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5991,6 +5991,16 @@ export default function SolRefund() {
                 title="Join our Discord community"
               >
                 <SiDiscord className="h-4 w-4 text-white" />
+              </a>
+              <a
+                href="https://t.me/+KnCX8s7RoWo3OGI0"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="button-footer-telegram"
+                className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                title="Join our Telegram community"
+              >
+                <SiTelegram className="h-4 w-4 text-white" />
               </a>
             </div>
           </div>
