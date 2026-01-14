@@ -1,9 +1,7 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import OpenAI from 'openai';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // Track recently processed messages to prevent duplicates
 const processedMessages = new Set<string>();
@@ -43,24 +41,6 @@ async function scanWallet(walletAddress: string): Promise<{ emptyAccounts: numbe
     totalReclaimable
   };
 }
-
-// GetFreeSol knowledge base for AI responses
-const GETFREESOL_KNOWLEDGE = `
-You are the GetFreeSol Telegram Bot assistant. GetFreeSol.xyz helps Solana users reclaim SOL rent from empty token accounts.
-
-Key Features:
-- Reclaim SOL: Close empty token accounts to get back ~0.002 SOL rent per account
-- Burn Tokens: Burn unwanted tokens and NFTs
-- Token Swaps: Swap tokens using Jupiter with MEV rebates
-- Referral System: Earn 50% commission from referrals
-
-Commands:
-- /scan <wallet> - Check a wallet for claimable SOL rent
-- /help - Show available commands
-- Just send a wallet address to scan it
-
-Website: https://getfreesol.xyz
-`;
 
 // Global bot instance
 let botInstance: any = null;
@@ -174,14 +154,8 @@ export async function initializeTelegramBot() {
         await handleWalletScan(bot, chatId, walletMatch[1]);
         return;
       }
-
-      // AI chat for other messages (if OpenAI configured)
-      if (OPENAI_API_KEY && text.length > 3) {
-        processedMessages.add(messageId);
-        setTimeout(() => processedMessages.delete(messageId), 60000);
-        
-        await handleAIChat(bot, chatId, text);
-      }
+      
+      // Ignore all other messages - bot only scans wallets
     });
 
     console.log('🤖 Telegram bot is online and listening!');
@@ -235,35 +209,6 @@ async function handleWalletScan(bot: any, chatId: number, walletAddress: string)
     await bot.sendMessage(chatId,
       `❌ Invalid Solana wallet address or scan failed.\n\nPlease check the address and try again.`
     );
-  }
-}
-
-async function handleAIChat(bot: any, chatId: number, userMessage: string) {
-  try {
-    await bot.sendChatAction(chatId, 'typing');
-    
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-    
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: GETFREESOL_KNOWLEDGE },
-        { role: 'user', content: userMessage }
-      ],
-      max_tokens: 500,
-      temperature: 0.7
-    });
-
-    const response = completion.choices[0]?.message?.content || 
-      "I'm here to help with GetFreeSol! Try /help to see available commands.";
-    
-    await bot.sendMessage(chatId, response, { 
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true 
-    });
-    
-  } catch (error: any) {
-    console.error('❌ Telegram AI chat error:', error.message);
   }
 }
 
