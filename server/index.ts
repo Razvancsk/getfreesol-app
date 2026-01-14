@@ -211,6 +211,15 @@ function getStaticAssetsPath() {
       log(`Discord bot disabled in development mode to avoid double responses`);
     }
 
+    // Initialize Telegram bot for wallet scanning
+    try {
+      const { initializeTelegramBot } = await import('./telegramBot.js');
+      await initializeTelegramBot();
+    } catch (telegramError) {
+      log(`Telegram bot initialization failed: ${telegramError instanceof Error ? telegramError.message : String(telegramError)}`);
+      log(`Server will continue without Telegram bot functionality`);
+    }
+
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
