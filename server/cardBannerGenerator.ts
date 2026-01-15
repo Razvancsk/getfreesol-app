@@ -2218,30 +2218,28 @@ export async function generateDailyReportBanner(options: DailyReportOptions): Pr
     ctx.fillText('getfreesol.xyz', width - 80, height - 60);
 
   } else if (style === 3) {
-    // STYLE 3: Dark Mode with Neon Accents
-    ctx.fillStyle = '#0a0a0a';
+    // STYLE 3: Purple Gradient (matches website claim alert card)
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, '#7c3aed');
+    gradient.addColorStop(0.5, '#8b5cf6');
+    gradient.addColorStop(1, '#6d28d9');
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
-    drawGlowOrbs(ctx, width, height, ['rgba(139,92,246,0.3)', 'rgba(236,72,153,0.2)', 'rgba(52,211,153,0.2)']);
-    ctx.strokeStyle = '#8b5cf6';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(40, 40, width - 80, height - 80);
-    try { const logo = await loadImage(logoPath); ctx.drawImage(logo, width/2 - 50, 60, 100, 100); } catch (e) {}
+    try { const logo = await loadImage(logoPath); ctx.drawImage(logo, width - 180, height - 150, 130, 130); } catch (e) {}
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#8b5cf6';
-    ctx.font = 'bold 45px sans-serif';
-    ctx.fillText('GETFREESOL DAILY REPORT', width / 2, 210);
-    ctx.fillStyle = '#ec4899';
-    ctx.font = 'bold 120px sans-serif';
-    ctx.fillText(`${solValue} SOL`, width / 2, 350);
     ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 80px sans-serif';
-    ctx.fillText(`${accountsFormatted} ACCOUNTS`, width / 2, 460);
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 45px sans-serif';
-    ctx.fillText('CLAIM YOURS', width / 2, 550);
+    ctx.font = 'bold 55px sans-serif';
+    ctx.fillText('CLAIMED', width / 2, 120);
     ctx.fillStyle = '#ffffff';
-    ctx.font = '35px sans-serif';
-    ctx.fillText('getfreesol.xyz', width / 2, 600);
+    ctx.font = 'bold 140px sans-serif';
+    ctx.fillText(`+ ${solValue} SOL`, width / 2, 280);
+    ctx.fillStyle = '#e0e7ff';
+    ctx.font = '40px sans-serif';
+    ctx.fillText(`${accountsFormatted} accounts closed`, width / 2, 370);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.font = 'bold 50px sans-serif';
+    ctx.fillText('GET FREE SOL', width - 60, height - 60);
 
   } else if (style === 4) {
     // STYLE 4: Two Column Card Layout

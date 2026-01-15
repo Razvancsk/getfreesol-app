@@ -421,7 +421,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                   <p className="text-xs text-purple-400">
                     {dailyReportStyle === 1 && "Classic Purple with Stats Box"}
                     {dailyReportStyle === 2 && "Green Gradient Split Design"}
-                    {dailyReportStyle === 3 && "Dark Mode with Neon Accents"}
+                    {dailyReportStyle === 3 && "Purple Gradient (Claim Alert Style)"}
                     {dailyReportStyle === 4 && "Two Column Card Layout"}
                     {dailyReportStyle === 5 && "Bold Minimal Design"}
                   </p>
