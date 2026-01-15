@@ -2250,53 +2250,53 @@ export async function generateDailyReportBanner(options: DailyReportOptions): Pr
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     drawTriangles(ctx, width, height, 'rgba(255,255,255,0.05)');
-    try { const logo = await loadImage(logoPath); ctx.drawImage(logo, 50, 50, 70, 70); } catch (e) {}
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#a78bfa';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.fillText('GetFreeSol', 135, 95);
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '24px sans-serif';
-    ctx.fillText(`Daily Report • ${periodLabel}`, 135, 130);
+    try { const logo = await loadImage(logoPath); ctx.drawImage(logo, width/2 - 45, 30, 90, 90); } catch (e) {}
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 50px sans-serif';
+    ctx.fillText('GetFreeSol', width / 2, 165);
+    ctx.fillStyle = '#e0e7ff';
+    ctx.font = '32px sans-serif';
+    ctx.fillText(`Daily Report • ${periodLabel}`, width / 2, 210);
     // Left card - SOL (matches website: bg-gradient-to-br from-purple-800/20 to-purple-900/30)
-    const leftGrad = ctx.createLinearGradient(60, 180, 580, 530);
+    const leftGrad = ctx.createLinearGradient(60, 240, 580, 530);
     leftGrad.addColorStop(0, 'rgba(107, 33, 168, 0.25)');
     leftGrad.addColorStop(1, 'rgba(88, 28, 135, 0.35)');
     ctx.fillStyle = leftGrad;
-    roundRect(ctx, 60, 180, 520, 350, 20);
+    roundRect(ctx, 60, 240, 520, 300, 20);
     ctx.fill();
     ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
     ctx.lineWidth = 2;
-    roundRect(ctx, 60, 180, 520, 350, 20);
+    roundRect(ctx, 60, 240, 520, 300, 20);
     ctx.stroke();
     ctx.textAlign = 'center';
     ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 130px sans-serif';
-    ctx.fillText(solValue, 320, 380);
+    ctx.font = 'bold 120px sans-serif';
+    ctx.fillText(solValue, 320, 400);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 50px sans-serif';
-    ctx.fillText('SOL CLAIMED', 320, 460);
+    ctx.font = 'bold 45px sans-serif';
+    ctx.fillText('SOL CLAIMED', 320, 475);
     // Right card - Accounts (matches website: bg-gradient-to-br from-purple-800/20 to-purple-900/30)
-    const rightGrad = ctx.createLinearGradient(620, 180, 1140, 530);
+    const rightGrad = ctx.createLinearGradient(620, 240, 1140, 530);
     rightGrad.addColorStop(0, 'rgba(107, 33, 168, 0.25)');
     rightGrad.addColorStop(1, 'rgba(88, 28, 135, 0.35)');
     ctx.fillStyle = rightGrad;
-    roundRect(ctx, 620, 180, 520, 350, 20);
+    roundRect(ctx, 620, 240, 520, 300, 20);
     ctx.fill();
     ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
     ctx.lineWidth = 2;
-    roundRect(ctx, 620, 180, 520, 350, 20);
+    roundRect(ctx, 620, 240, 520, 300, 20);
     ctx.stroke();
     ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 130px sans-serif';
-    ctx.fillText(accountsFormatted, 880, 380);
+    ctx.font = 'bold 120px sans-serif';
+    ctx.fillText(accountsFormatted, 880, 400);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 50px sans-serif';
-    ctx.fillText('ACCOUNTS', 880, 460);
+    ctx.font = 'bold 45px sans-serif';
+    ctx.fillText('ACCOUNTS', 880, 475);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#c4b5fd';
+    ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 35px sans-serif';
-    ctx.fillText('Claim yours at getfreesol.xyz', width / 2, 580);
+    ctx.fillText('Claim yours at getfreesol.xyz', width / 2, 585);
 
   } else if (style === 5) {
     // STYLE 5: Bold Minimal with Gradient Text Effect
