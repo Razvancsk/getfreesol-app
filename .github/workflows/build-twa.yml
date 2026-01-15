@@ -1,0 +1,125 @@
+name: Build TWA APK for Solana dApp Store
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'client/public/site.webmanifest'
+      - '.github/workflows/build-twa.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Create TWA directory
+        run: mkdir -p twa-build
+
+      - name: Initialize Bubblewrap project
+        working-directory: twa-build
+        run: |
+          bubblewrap init --manifest ${{ secrets.PWA_MANIFEST_URL }} --directory . << EOF
+          y
+          y
+          y
+          EOF
+        env:
+          BUBBLEWRAP_ACCEPT_ANDROID_SDK_LICENSES: 'true'
+
+      - name: Create keystore
+        working-directory: twa-build
+        run: |
+          keytool -genkeypair \
+            -alias android \
+            -keypass ${{ secrets.KEYSTORE_PASSWORD }} \
+            -keystore android.keystore \
+            -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
+            -validity 10000 \
+            -keyalg RSA \
+            -keysize 2048 \
+            -dname "CN=GetFreeSol, OU=Development, O=GetFreeSol, L=Internet, ST=Web, C=US"
+
+      - name: Update twa-manifest.json with keystore
+        working-directory: twa-build
+        run: |
+          if [ -f twa-manifest.json ]; then
+            jq '.signingKey.path = "android.keystore" | .signingKey.alias = "android"' twa-manifest.json > tmp.json && mv tmp.json twa-manifest.json
+          fi
+
+      - name: Add supported languages
+        working-directory: twa-build
+        run: |
+          if [ -f app/build.gradle ]; then
+            sed -i '/defaultConfig {/a\        resConfigs "en"' app/build.gradle
+          fi
+
+      - name: Build signed APK
+        working-directory: twa-build
+        run: |
+          bubblewrap build --skipPwaValidation << EOF
+          ${{ secrets.KEYSTORE_PASSWORD }}
+          ${{ secrets.KEYSTORE_PASSWORD }}
+          EOF
+
+      - name: Get SHA256 fingerprint
+        working-directory: twa-build
+        run: |
+          keytool -list -v -keystore android.keystore -storepass ${{ secrets.KEYSTORE_PASSWORD }} | grep SHA256 | head -1 > sha256-fingerprint.txt
+          cat sha256-fingerprint.txt
+
+      - name: Generate assetlinks.json
+        working-directory: twa-build
+        run: |
+          FINGERPRINT=$(keytool -list -v -keystore android.keystore -storepass ${{ secrets.KEYSTORE_PASSWORD }} | grep "SHA256:" | head -1 | sed 's/.*SHA256: //')
+          cat > assetlinks.json << ASSETLINKS
+          [{
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+              "namespace": "android_app",
+              "package_name": "com.getfreesol.twa",
+              "sha256_cert_fingerprints": ["$FINGERPRINT"]
+            }
+          }]
+          ASSETLINKS
+          echo "Generated assetlinks.json:"
+          cat assetlinks.json
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: getfreesol-signed-apk
+          path: twa-build/app-release-signed.apk
+          if-no-files-found: warn
+
+      - name: Upload assetlinks.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: assetlinks-json
+          path: twa-build/assetlinks.json
+
+      - name: Upload SHA256 fingerprint
+        uses: actions/upload-artifact@v4
+        with:
+          name: sha256-fingerprint
+          path: twa-build/sha256-fingerprint.txt
