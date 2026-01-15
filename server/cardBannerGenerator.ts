@@ -2120,3 +2120,91 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
 
   return canvas.toBuffer('image/png');
 }
+
+// Daily Report Banner Generator
+export interface DailyReportOptions {
+  totalSolClaimed: string;
+  totalAccountsClosed: number;
+  periodLabel?: string; // "Daily", "Since Launch", etc.
+}
+
+export async function generateDailyReportBanner(options: DailyReportOptions): Promise<Buffer> {
+  const { totalSolClaimed, totalAccountsClosed, periodLabel = 'Since Launch' } = options;
+  
+  const width = 1200;
+  const height = 630;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  // Dark purple gradient background
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, '#1e1b4b');
+  gradient.addColorStop(0.5, '#312e81');
+  gradient.addColorStop(1, '#1e1b4b');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // Add decorative elements
+  drawGlowOrbs(ctx, width, height, ['rgba(52,211,153,0.2)', 'rgba(167,139,250,0.15)', 'rgba(251,191,36,0.1)']);
+  
+  // Border glow effect
+  ctx.strokeStyle = 'rgba(167,139,250,0.3)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(30, 30, width - 60, height - 60);
+
+  // Load and draw logo
+  try {
+    const logoPath = path.join(__dirname, '../attached_assets/Geometric _G_ in Gradient Colours_1762312635631.png');
+    const logo = await loadImage(logoPath);
+    ctx.drawImage(logo, 50, 50, 80, 80);
+  } catch (e) {
+    console.error('Failed to load logo for daily report:', e);
+  }
+
+  // Header - GetFreeSol branding
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#a78bfa';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.fillText('GetFreeSol', 145, 105);
+
+  // Main title
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 52px sans-serif';
+  ctx.fillText(`Daily Report (${periodLabel})`, width / 2, 190);
+
+  // Stats container background
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  roundRect(ctx, 80, 230, width - 160, 280, 20);
+  ctx.fill();
+
+  // SOL Claimed stat
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#34d399';
+  ctx.font = 'bold 90px sans-serif';
+  const solValue = parseFloat(totalSolClaimed).toFixed(2);
+  ctx.fillText(`${solValue} SOL`, width / 2, 340);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '32px sans-serif';
+  ctx.fillText('Total SOL Claimed', width / 2, 390);
+
+  // Accounts closed stat
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 70px sans-serif';
+  const accountsFormatted = totalAccountsClosed >= 1000 
+    ? `${(totalAccountsClosed / 1000).toFixed(1)}k` 
+    : totalAccountsClosed.toString();
+  ctx.fillText(accountsFormatted, width / 2, 475);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '32px sans-serif';
+  ctx.fillText('Accounts Closed', width / 2, 520);
+
+  // Call to action
+  ctx.fillStyle = '#c4b5fd';
+  ctx.font = 'bold 38px sans-serif';
+  ctx.fillText('Claim yours at getfreesol.xyz', width / 2, 590);
+
+  return canvas.toBuffer('image/png');
+}

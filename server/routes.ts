@@ -7448,34 +7448,39 @@ Claimer: ${walletAddress}`;
   // X BOT SCHEDULED POSTING SYSTEM
   // ============================================
   
-  async function generateDailyReportContent(): Promise<string> {
-    // Get yesterday's stats
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
+  async function generateDailyReportContent(): Promise<{ text: string; imageBuffer: Buffer | null }> {
+    // Get total stats (since launch)
+    const totalSolRecovered = await storage.getTotalSolRecovered();
+    const totalAccountsClosed = await storage.getTotalAccountsClaimed();
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const yesterdayTransactions = await db.select()
-      .from(transactionLedger)
-      .where(sql`${transactionLedger.processedAt} >= ${yesterday.toISOString()} AND ${transactionLedger.processedAt} < ${today.toISOString()}`);
-    
-    let accountsClosed = 0;
-    let solRecovered = 0;
-    
-    for (const tx of yesterdayTransactions) {
-      accountsClosed += tx.itemsProcessed;
-      solRecovered += parseFloat(tx.solRecovered.toString());
-    }
+    const solFormatted = totalSolRecovered.toFixed(2);
+    const accountsFormatted = totalAccountsClosed >= 1000 
+      ? `${(totalAccountsClosed / 1000).toFixed(1)}k` 
+      : totalAccountsClosed.toString();
     
     const messages = [
-      `📊 Daily Report\n\n${accountsClosed} accounts closed\n${solRecovered.toFixed(4)} SOL recovered\n\nReclaim your SOL: getyoursolback.app`,
-      `🔥 Yesterday's Impact\n\nHelped Solana users close ${accountsClosed} empty accounts\nRecovered ${solRecovered.toFixed(4)} SOL\n\n💰 Get yours: getyoursolback.app`,
-      `📈 Daily Stats\n\nAccounts processed: ${accountsClosed}\nSOL back to users: ${solRecovered.toFixed(4)}\n\nFree your locked SOL: getyoursolback.app`,
+      `Gn Solana fam 🌃\n\nHere is GetFreeSol Daily Report (since launch):\n\ni) ${solFormatted} SOL claimed\n\nii) ${accountsFormatted} accounts closed\n\niii) claim yours 👇\n\ngetfreesol.xyz`,
+      `📊 GetFreeSol Daily Report\n\n✅ ${solFormatted} SOL recovered\n✅ ${accountsFormatted} accounts closed\n\nReclaim your SOL rent 👇\ngetfreesol.xyz`,
+      `GM Solana! ☀️\n\nDaily stats update:\n\n💰 ${solFormatted} SOL claimed\n🗑️ ${accountsFormatted} empty accounts closed\n\nClaim yours: getfreesol.xyz`,
     ];
     
-    return messages[Math.floor(Math.random() * messages.length)];
+    const text = messages[Math.floor(Math.random() * messages.length)];
+    
+    // Generate banner image
+    let imageBuffer: Buffer | null = null;
+    try {
+      const { generateDailyReportBanner } = await import('./cardBannerGenerator.js');
+      imageBuffer = await generateDailyReportBanner({
+        totalSolClaimed: totalSolRecovered.toString(),
+        totalAccountsClosed,
+        periodLabel: 'Since Launch'
+      });
+      console.log('📊 Generated daily report banner image');
+    } catch (error) {
+      console.error('Failed to generate daily report banner:', error);
+    }
+    
+    return { text, imageBuffer };
   }
   
   function generatePromoContent(): string {
@@ -7559,12 +7564,23 @@ Claimer: ${walletAddress}`;
           .limit(1);
         
         if (schedule.length > 0 && schedule[0].isActive) {
-          console.log('📊 Posting daily report...');
-          const content = await generateDailyReportContent();
-          await xApiService.postTweet({ content, postType: 'daily_report' });
+          console.log('📊 Posting daily report with banner...');
+          const { text, imageBuffer } = await generateDailyReportContent();
+          
+          let mediaIds: string[] | undefined;
+          if (imageBuffer) {
+            const uploadResult = await xApiService.uploadMedia(imageBuffer);
+            if (uploadResult.success && uploadResult.mediaId) {
+              mediaIds = [uploadResult.mediaId];
+              console.log('📸 Daily report banner uploaded successfully');
+            }
+          }
+          
+          await xApiService.postTweet({ content: text, postType: 'daily_report', mediaIds });
           await db.update(xSchedules)
             .set({ lastRun: new Date() })
             .where(eq(xSchedules.scheduleType, 'daily_report'));
+          console.log('✅ Daily report posted with banner image');
         }
       } catch (error) {
         console.error('Failed to post daily report:', error);
