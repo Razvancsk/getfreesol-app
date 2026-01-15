@@ -2258,12 +2258,15 @@ export async function generateDailyReportBanner(options: DailyReportOptions): Pr
     ctx.fillStyle = '#6b7280';
     ctx.font = '24px sans-serif';
     ctx.fillText(`Daily Report • ${periodLabel}`, 135, 130);
-    // Left card - SOL (dark purple like website cards)
-    ctx.fillStyle = '#1e1b4b';
+    // Left card - SOL (matches website: bg-gradient-to-br from-purple-800/20 to-purple-900/30)
+    const leftGrad = ctx.createLinearGradient(60, 180, 580, 530);
+    leftGrad.addColorStop(0, 'rgba(107, 33, 168, 0.25)');
+    leftGrad.addColorStop(1, 'rgba(88, 28, 135, 0.35)');
+    ctx.fillStyle = leftGrad;
     roundRect(ctx, 60, 180, 520, 350, 20);
     ctx.fill();
-    ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+    ctx.lineWidth = 2;
     roundRect(ctx, 60, 180, 520, 350, 20);
     ctx.stroke();
     ctx.textAlign = 'center';
@@ -2273,12 +2276,15 @@ export async function generateDailyReportBanner(options: DailyReportOptions): Pr
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 50px sans-serif';
     ctx.fillText('SOL CLAIMED', 320, 460);
-    // Right card - Accounts (dark purple like website cards)
-    ctx.fillStyle = '#1e1b4b';
+    // Right card - Accounts (matches website: bg-gradient-to-br from-purple-800/20 to-purple-900/30)
+    const rightGrad = ctx.createLinearGradient(620, 180, 1140, 530);
+    rightGrad.addColorStop(0, 'rgba(107, 33, 168, 0.25)');
+    rightGrad.addColorStop(1, 'rgba(88, 28, 135, 0.35)');
+    ctx.fillStyle = rightGrad;
     roundRect(ctx, 620, 180, 520, 350, 20);
     ctx.fill();
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+    ctx.lineWidth = 2;
     roundRect(ctx, 620, 180, 520, 350, 20);
     ctx.stroke();
     ctx.fillStyle = '#fbbf24';
