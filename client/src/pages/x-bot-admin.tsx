@@ -97,9 +97,10 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [imageKey, setImageKey] = useState(Date.now());
   const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
   const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
+  const [dailyReportStyle, setDailyReportStyle] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   const postMutation = useMutation({
-    mutationFn: async ({ content, withImage, imgType }: { content: string; withImage: boolean; imgType: string }) => {
+    mutationFn: async ({ content, withImage, imgType, reportStyle }: { content: string; withImage: boolean; imgType: string; reportStyle?: number }) => {
       if (imgType === 'ai_meme') {
         const response = await apiRequest('POST', '/api/x-bot/post-ai-meme', { content });
         return response.json();
@@ -107,7 +108,8 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
       const response = await apiRequest('POST', '/api/x-bot/quick-post', { 
         content, 
         includeImage: withImage,
-        imageType: imgType 
+        imageType: imgType,
+        dailyReportStyle: reportStyle
       });
       return response.json();
     },
@@ -176,7 +178,12 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
       });
       return;
     }
-    postMutation.mutate({ content: postContent, withImage: includeImage, imgType: imageType });
+    postMutation.mutate({ 
+      content: postContent, 
+      withImage: includeImage, 
+      imgType: imageType,
+      reportStyle: imageType === 'daily_report' ? dailyReportStyle : undefined
+    });
   };
 
   const refreshImage = () => {
@@ -377,7 +384,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                 <img
                   key={imageKey}
                   src={imageType === 'daily_report' 
-                    ? `/api/x-bot/preview-daily-report?t=${imageKey}` 
+                    ? `/api/x-bot/preview-daily-report?style=${dailyReportStyle}&t=${imageKey}` 
                     : `/api/x/generate-card?type=${imageType}&t=${imageKey}`
                   }
                   alt="Post image preview"
@@ -388,6 +395,37 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                     (e.target as HTMLImageElement).src = `/api/x/generate-card?type=promo&t=${Date.now()}`;
                   }}
                 />
+              )}
+              {imageType === 'daily_report' && (
+                <div className="mt-3 space-y-2">
+                  <Label className="text-purple-200 text-sm">Choose Style:</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Button
+                        key={s}
+                        size="sm"
+                        variant={dailyReportStyle === s ? "default" : "outline"}
+                        onClick={() => {
+                          setDailyReportStyle(s as 1 | 2 | 3 | 4 | 5);
+                          setImageKey(Date.now());
+                        }}
+                        className={dailyReportStyle === s 
+                          ? "bg-green-600 hover:bg-green-700 text-white" 
+                          : "border-purple-500 text-purple-200 hover:bg-purple-700"
+                        }
+                      >
+                        Style {s}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-purple-400">
+                    {dailyReportStyle === 1 && "Classic Purple with Stats Box"}
+                    {dailyReportStyle === 2 && "Green Gradient Split Design"}
+                    {dailyReportStyle === 3 && "Dark Mode with Neon Accents"}
+                    {dailyReportStyle === 4 && "Two Column Card Layout"}
+                    {dailyReportStyle === 5 && "Bold Minimal Design"}
+                  </p>
+                </div>
               )}
               {imageType === 'ai_meme' && (
                 <div className="absolute top-4 right-4">

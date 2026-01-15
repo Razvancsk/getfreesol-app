@@ -7402,7 +7402,7 @@ Claimer: ${walletAddress}`;
   // Quick post endpoint (simpler auth - for admin dashboard)
   app.post("/api/x-bot/quick-post", async (req, res) => {
     try {
-      const { content, includeImage, imageType } = req.body;
+      const { content, includeImage, imageType, dailyReportStyle } = req.body;
       
       if (!content || content.trim().length === 0) {
         return res.status(400).json({ error: 'Content is required' });
@@ -7425,10 +7425,12 @@ Claimer: ${walletAddress}`;
             const { generateDailyReportBanner } = await import('./cardBannerGenerator.js');
             const totalSolRecovered = await storage.getTotalSolRecovered();
             const totalAccountsClosed = await storage.getTotalAccountsClaimed();
+            const style = Math.min(5, Math.max(1, dailyReportStyle || 1)) as 1 | 2 | 3 | 4 | 5;
             cardImage = await generateDailyReportBanner({
               totalSolClaimed: totalSolRecovered.toString(),
               totalAccountsClosed,
-              periodLabel: 'Since Launch'
+              periodLabel: 'Since Launch',
+              style
             });
           } else {
             const { generatePostCardBanner } = await import('./cardBannerGenerator.js');
