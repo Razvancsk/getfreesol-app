@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["imagemagick", "pkg-config", "openssl", "libudev-zero", "cairo", "pango", "libjpeg", "giflib", "librsvg", "pixman", "util-linux", "ffmpeg"]
+packages = ["imagemagick", "pkg-config", "openssl", "libudev-zero", "cairo", "pango", "libjpeg", "giflib", "librsvg", "pixman", "util-linux", "ffmpeg", "openjdk17", "android-tools"]
 
 [deployment]
 deploymentTarget = "autoscale"
