@@ -6997,6 +6997,28 @@ Claimer: ${walletAddress}`;
     return true;
   };
   
+  // Preview daily report banner (for testing)
+  app.get("/api/x-bot/preview-daily-report", async (req, res) => {
+    try {
+      const { generateDailyReportBanner } = await import('./cardBannerGenerator.js');
+      const totalSolRecovered = await storage.getTotalSolRecovered();
+      const totalAccountsClosed = await storage.getTotalAccountsClaimed();
+      
+      const imageBuffer = await generateDailyReportBanner({
+        totalSolClaimed: totalSolRecovered.toString(),
+        totalAccountsClosed,
+        periodLabel: 'Since Launch'
+      });
+      
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', 'inline; filename="daily-report.png"');
+      res.send(imageBuffer);
+    } catch (error: any) {
+      console.error("Daily report preview error:", error);
+      res.status(500).json({ error: "Failed to generate preview", details: error.message });
+    }
+  });
+
   // Get X bot status and stats
   app.get("/api/x-bot/status", async (req, res) => {
     try {
