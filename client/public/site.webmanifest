@@ -1,21 +1,49 @@
 {
-    "name": "Get your SOL back!",
-    "short_name": "SOL Recovery",
-    "description": "Reclaim SOL from empty token accounts",
+    "name": "GetFreeSol - Reclaim Your SOL",
+    "short_name": "GetFreeSol",
+    "description": "Reclaim SOL rent from empty token accounts on Solana. Recover hidden SOL with one click.",
+    "id": "/",
+    "scope": "/",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#a855f7",
+    "background_color": "#1a1a2e",
+    "categories": ["finance", "utilities"],
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "/android-chrome-512x512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ],
-    "theme_color": "#a855f7",
-    "background_color": "#1a1a2e",
-    "display": "standalone",
-    "start_url": "/"
+    "screenshots": [
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "form_factor": "narrow"
+        }
+    ],
+    "prefer_related_applications": false,
+    "related_applications": []
 }
