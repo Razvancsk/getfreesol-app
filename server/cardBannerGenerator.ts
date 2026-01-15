@@ -2242,13 +2242,14 @@ export async function generateDailyReportBanner(options: DailyReportOptions): Pr
     ctx.fillText('GET FREE SOL', width - 60, height - 60);
 
   } else if (style === 4) {
-    // STYLE 4: Two Column Card Layout
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, '#1f2937');
-    gradient.addColorStop(1, '#111827');
+    // STYLE 4: Two Column Card Layout (Purple background like website)
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, '#7c3aed');
+    gradient.addColorStop(0.5, '#6d28d9');
+    gradient.addColorStop(1, '#5b21b6');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
-    drawTriangles(ctx, width, height, 'rgba(167,139,250,0.08)');
+    drawTriangles(ctx, width, height, 'rgba(255,255,255,0.05)');
     try { const logo = await loadImage(logoPath); ctx.drawImage(logo, 50, 50, 70, 70); } catch (e) {}
     ctx.textAlign = 'left';
     ctx.fillStyle = '#a78bfa';
