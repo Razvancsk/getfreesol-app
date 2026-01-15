@@ -72,7 +72,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode }: ShareM
         <div className="space-y-3.5 pt-2">
           {/* Success Message */}
           <p className="text-2xl font-bold text-green-400 text-center">
-            {solClaimed.toFixed(6)} SOL Claimed! 🎉
+            {solClaimed.toFixed(5)} SOL Claimed! 🎉
           </p>
           
           {/* Social Share Button */}
