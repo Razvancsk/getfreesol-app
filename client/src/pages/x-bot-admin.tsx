@@ -93,7 +93,7 @@ const FUNNY_TEMPLATES = [
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas' | 'daily_report'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
   const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
   const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
@@ -129,7 +129,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas' | 'daily_report') => {
     setPostContent(template);
     setImageType(imgType);
     setAiMemePreview(null);
@@ -259,6 +259,14 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => handleQuickPost("Gn Solana fam 🌃\n\nHere is GetFreeSol Daily Report (since launch):\n\nClaim yours 👇\n\ngetfreesol.xyz\n\n#Solana #DeFi #GetFreeSol", 'daily_report')}
+              className="border-green-500 text-green-200 hover:bg-green-700"
+            >
+              📈 Daily Report
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handleQuickPost(FUNNY_TEMPLATES[Math.floor(Math.random() * FUNNY_TEMPLATES.length)], 'funny')}
               className="border-orange-500 text-orange-200 hover:bg-orange-700"
             >
@@ -368,7 +376,10 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
               ) : (
                 <img
                   key={imageKey}
-                  src={`/api/x/generate-card?type=${imageType}&t=${imageKey}`}
+                  src={imageType === 'daily_report' 
+                    ? `/api/x-bot/preview-daily-report?t=${imageKey}` 
+                    : `/api/x/generate-card?type=${imageType}&t=${imageKey}`
+                  }
                   alt="Post image preview"
                   className="w-full h-auto rounded"
                   style={{ maxWidth: '100%', display: 'block' }}

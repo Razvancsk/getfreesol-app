@@ -7415,8 +7415,22 @@ Claimer: ${walletAddress}`;
       
       if (includeImage) {
         try {
-          const { generatePostCardBanner } = await import('./cardBannerGenerator.js');
-          const cardImage = await generatePostCardBanner(imageType || 'promo');
+          let cardImage: Buffer;
+          
+          if (imageType === 'daily_report') {
+            // Use special daily report banner with real stats
+            const { generateDailyReportBanner } = await import('./cardBannerGenerator.js');
+            const totalSolRecovered = await storage.getTotalSolRecovered();
+            const totalAccountsClosed = await storage.getTotalAccountsClaimed();
+            cardImage = await generateDailyReportBanner({
+              totalSolClaimed: totalSolRecovered.toString(),
+              totalAccountsClosed,
+              periodLabel: 'Since Launch'
+            });
+          } else {
+            const { generatePostCardBanner } = await import('./cardBannerGenerator.js');
+            cardImage = await generatePostCardBanner(imageType || 'promo');
+          }
           
           const uploadResult = await xApiService.uploadMedia(cardImage);
           if (uploadResult.success && uploadResult.mediaId) {
