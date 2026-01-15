@@ -6997,17 +6997,20 @@ Claimer: ${walletAddress}`;
     return true;
   };
   
-  // Preview daily report banner (for testing)
+  // Preview daily report banner (for testing) - supports style=1,2,3,4,5
   app.get("/api/x-bot/preview-daily-report", async (req, res) => {
     try {
       const { generateDailyReportBanner } = await import('./cardBannerGenerator.js');
       const totalSolRecovered = await storage.getTotalSolRecovered();
       const totalAccountsClosed = await storage.getTotalAccountsClaimed();
+      const style = parseInt(req.query.style as string) || 1;
+      const validStyle = Math.min(5, Math.max(1, style)) as 1 | 2 | 3 | 4 | 5;
       
       const imageBuffer = await generateDailyReportBanner({
         totalSolClaimed: totalSolRecovered.toString(),
         totalAccountsClosed,
-        periodLabel: 'Since Launch'
+        periodLabel: 'Since Launch',
+        style: validStyle
       });
       
       res.setHeader('Content-Type', 'image/png');
