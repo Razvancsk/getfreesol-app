@@ -7500,9 +7500,9 @@ Claimer: ${walletAddress}`;
       : totalAccountsClosed.toString();
     
     const messages = [
-      `Gn Solana fam 🌃\n\nHere is GetFreeSol Daily Report (since launch):\n\ni) ${solFormatted} SOL claimed\n\nii) ${accountsFormatted} accounts closed\n\niii) claim yours 👇\n\ngetfreesol.xyz`,
-      `📊 GetFreeSol Daily Report\n\n✅ ${solFormatted} SOL recovered\n✅ ${accountsFormatted} accounts closed\n\nReclaim your SOL rent 👇\ngetfreesol.xyz`,
-      `GM Solana! ☀️\n\nDaily stats update:\n\n💰 ${solFormatted} SOL claimed\n🗑️ ${accountsFormatted} empty accounts closed\n\nClaim yours: getfreesol.xyz`,
+      `Gn Solana fam 🌃\n\nHere is GetFreeSol Daily Report (since launch):\n\ni) ${solFormatted} SOL claimed\n\nii) ${accountsFormatted} accounts closed\n\niii) claim yours 👇\n\ngetfreesol.xyz\n\n#ClaimSOL #Solana #DeFi #GetFreeSol`,
+      `📊 GetFreeSol Daily Report\n\n✅ ${solFormatted} SOL recovered\n✅ ${accountsFormatted} accounts closed\n\nReclaim your SOL rent 👇\ngetfreesol.xyz\n\n#ClaimSOL #Solana #DeFi #GetFreeSol`,
+      `GM Solana! ☀️\n\nDaily stats update:\n\n💰 ${solFormatted} SOL claimed\n🗑️ ${accountsFormatted} empty accounts closed\n\nClaim yours: getfreesol.xyz\n\n#ClaimSOL #Solana #DeFi #GetFreeSol`,
     ];
     
     const text = messages[Math.floor(Math.random() * messages.length)];
