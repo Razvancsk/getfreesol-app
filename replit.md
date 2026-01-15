@@ -88,3 +88,16 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Neon Database**: Serverless PostgreSQL provider.
 - **Drizzle Kit**: Database migration and schema management.
 - **node-cron**: For scheduling automated tasks.
+
+## Progressive Web App (PWA)
+The application is configured as a PWA for installation on mobile devices and publishing to the Solana Mobile dApp Store.
+
+### PWA Components
+- **Web Manifest**: `client/public/site.webmanifest` - App metadata, icons, theme colors
+- **Service Worker**: `client/public/sw.js` - Offline caching and network-first strategy
+- **Digital Asset Links**: `client/public/.well-known/assetlinks.json` - Android app verification
+
+### Solana Mobile dApp Store
+- **GitHub Actions Workflow**: `.github/workflows/build-twa.yml` - Automated APK builds
+- **Setup Guide**: `SOLANA_DAPP_STORE_SETUP.md` - Complete publishing instructions
+- **TWA (Trusted Web Activity)**: Wraps PWA as native Android app using Bubblewrap CLI
