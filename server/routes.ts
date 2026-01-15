@@ -6997,13 +6997,13 @@ Claimer: ${walletAddress}`;
     return true;
   };
   
-  // Preview daily report banner (for testing) - supports style=1,2,3,4,5
+  // Preview daily report banner (Style 4 is default)
   app.get("/api/x-bot/preview-daily-report", async (req, res) => {
     try {
       const { generateDailyReportBanner } = await import('./cardBannerGenerator.js');
       const totalSolRecovered = await storage.getTotalSolRecovered();
       const totalAccountsClosed = await storage.getTotalAccountsClaimed();
-      const style = parseInt(req.query.style as string) || 1;
+      const style = parseInt(req.query.style as string) || 4;
       const validStyle = Math.min(5, Math.max(1, style)) as 1 | 2 | 3 | 4 | 5;
       
       const imageBuffer = await generateDailyReportBanner({
@@ -7507,16 +7507,17 @@ Claimer: ${walletAddress}`;
     
     const text = messages[Math.floor(Math.random() * messages.length)];
     
-    // Generate banner image
+    // Generate banner image (Style 4 - Two Column Card Layout)
     let imageBuffer: Buffer | null = null;
     try {
       const { generateDailyReportBanner } = await import('./cardBannerGenerator.js');
       imageBuffer = await generateDailyReportBanner({
         totalSolClaimed: totalSolRecovered.toString(),
         totalAccountsClosed,
-        periodLabel: 'Since Launch'
+        periodLabel: 'Since Launch',
+        style: 4
       });
-      console.log('📊 Generated daily report banner image');
+      console.log('📊 Generated daily report banner image (Style 4)');
     } catch (error) {
       console.error('Failed to generate daily report banner:', error);
     }

@@ -97,7 +97,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [imageKey, setImageKey] = useState(Date.now());
   const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
   const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
-  const [dailyReportStyle, setDailyReportStyle] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [dailyReportStyle] = useState<1 | 2 | 3 | 4 | 5>(4);
 
   const postMutation = useMutation({
     mutationFn: async ({ content, withImage, imgType, reportStyle }: { content: string; withImage: boolean; imgType: string; reportStyle?: number }) => {
@@ -395,37 +395,6 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                     (e.target as HTMLImageElement).src = `/api/x/generate-card?type=promo&t=${Date.now()}`;
                   }}
                 />
-              )}
-              {imageType === 'daily_report' && (
-                <div className="mt-3 space-y-2">
-                  <Label className="text-purple-200 text-sm">Choose Style:</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Button
-                        key={s}
-                        size="sm"
-                        variant={dailyReportStyle === s ? "default" : "outline"}
-                        onClick={() => {
-                          setDailyReportStyle(s as 1 | 2 | 3 | 4 | 5);
-                          setImageKey(Date.now());
-                        }}
-                        className={dailyReportStyle === s 
-                          ? "bg-green-600 hover:bg-green-700 text-white" 
-                          : "border-purple-500 text-purple-200 hover:bg-purple-700"
-                        }
-                      >
-                        Style {s}
-                      </Button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-purple-400">
-                    {dailyReportStyle === 1 && "Classic Purple with Stats Box"}
-                    {dailyReportStyle === 2 && "Green Gradient Split Design"}
-                    {dailyReportStyle === 3 && "Purple Gradient (Claim Alert Style)"}
-                    {dailyReportStyle === 4 && "Two Column Card Layout"}
-                    {dailyReportStyle === 5 && "Bold Minimal Design"}
-                  </p>
-                </div>
               )}
               {imageType === 'ai_meme' && (
                 <div className="absolute top-4 right-4">
