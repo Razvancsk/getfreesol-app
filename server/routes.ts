@@ -7015,6 +7015,9 @@ Claimer: ${walletAddress}`;
       
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Content-Disposition', 'inline; filename="daily-report.png"');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.send(imageBuffer);
     } catch (error: any) {
       console.error("Daily report preview error:", error);
