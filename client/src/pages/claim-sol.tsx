@@ -3580,8 +3580,8 @@ export default function SolRefund() {
                               <Image className="h-8 w-8 text-purple-400" />
                             </div>
                             
-                            {/* FROZEN badge for frozen NFTs (top-right corner) */}
-                            {isFrozen && (
+                            {/* FROZEN badge for frozen NFTs (top-right corner) - NOT shown for pNFTs since they're always frozen by design */}
+                            {isFrozen && nft.type !== 'pnft' && (
                               <div className="absolute top-2 right-2 z-10">
                                 <Badge className="text-[10px] px-2 py-0.5 bg-blue-500/90 border-blue-400 flex items-center gap-1">
                                   ❄️ FROZEN
