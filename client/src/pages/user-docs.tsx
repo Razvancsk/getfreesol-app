@@ -25,14 +25,22 @@ export default function UserDocs() {
       <header className="sticky top-0 z-50 border-b border-purple-700/50 bg-slate-900/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Link href="/">
-              <div className="flex items-center space-x-3 cursor-pointer">
-                <img src={logoPath} alt="GetFreeSol Logo" className="h-8 w-8" />
-                <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  GetFreeSol
-                </span>
-              </div>
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Back button - visible on mobile */}
+              <Link href="/">
+                <button className="lg:hidden bg-purple-700/50 hover:bg-purple-600 text-white border border-purple-500/30 p-2 rounded-lg transition-colors">
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              </Link>
+              <Link href="/">
+                <div className="flex items-center space-x-3 cursor-pointer">
+                  <img src={logoPath} alt="GetFreeSol Logo" className="h-8 w-8" />
+                  <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    GetFreeSol
+                  </span>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -146,50 +154,7 @@ export default function UserDocs() {
                 <div className="space-y-6 text-white prose prose-invert max-w-none">
                   <div className="space-y-8">
                     <div className="space-y-4">
-                      <h3 className="text-xl font-semibold text-white mb-4">1. Find Our App</h3>
-                      <p className="text-purple-200 leading-relaxed mb-4">
-                        Open your <strong className="text-white">Phantom Wallet</strong> and use the Discovery feature to find GetFreeSol:
-                      </p>
-                      <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
-                        <li className="flex items-start gap-3">
-                          <span className="text-purple-400 mt-1">▸</span>
-                          <span>Tap the <strong className="text-white">Discovery (search)</strong> icon in Phantom</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <span className="text-purple-400 mt-1">▸</span>
-                          <span>Type <strong className="text-white">"Get Free Sol"</strong> in the search bar</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <span className="text-purple-400 mt-1">▸</span>
-                          <span>Select <strong className="text-white">"Get Free Sol"</strong> from the results (Tools category)</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <span className="text-purple-400 mt-1">▸</span>
-                          <span>Tap <strong className="text-white">"Open"</strong> to launch the app</span>
-                        </li>
-                      </ul>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <img 
-                            src={new URL('@assets/image_1763869158638.png', import.meta.url).href}
-                            alt="Phantom Discovery Search - Type 'Get Free Sol'" 
-                            className="rounded-lg border border-purple-500/50 w-full"
-                          />
-                          <p className="text-sm text-purple-300 text-center italic">Step 1: Search for "Get Free Sol"</p>
-                        </div>
-                        <div className="space-y-2">
-                          <img 
-                            src={new URL('@assets/image_1763869243474.png', import.meta.url).href}
-                            alt="Get Free Sol App Page - Tap Open" 
-                            className="rounded-lg border border-purple-500/50 w-full"
-                          />
-                          <p className="text-sm text-purple-300 text-center italic">Step 2: Tap "Open" to launch</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="text-xl font-semibold text-white mb-4">2. Connect Your Wallet</h3>
+                      <h3 className="text-xl font-semibold text-white mb-4">1. Connect Your Wallet</h3>
                       <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
                         <li className="flex items-start gap-3">
                           <span className="text-blue-400 mt-1">▸</span>
@@ -228,7 +193,7 @@ export default function UserDocs() {
                     </div>
                     
                     <div className="space-y-4">
-                      <h3 className="text-xl font-semibold text-white mb-4">3. Claim Your SOL</h3>
+                      <h3 className="text-xl font-semibold text-white mb-4">2. Claim Your SOL</h3>
                       <p className="text-purple-200 leading-relaxed mb-4">
                         After connecting your wallet, the app will <strong className="text-white">automatically scan and close all empty accounts</strong>. The process is fully automated:
                       </p>
