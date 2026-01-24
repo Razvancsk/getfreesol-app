@@ -3324,7 +3324,7 @@ export default function SolRefund() {
                         </div>
                       </div>
 
-                      <Button
+                      <Button 
                         onClick={async () => {
                           if (!publicKey || bufferAccounts.length === 0) return;
                           setBufferClosing(true);
@@ -3368,11 +3368,12 @@ export default function SolRefund() {
                           }
                         }}
                         disabled={bufferClosing || bufferAccounts.length === 0}
-                        className="w-full bg-green-600 hover:bg-green-500 text-white py-3"
+                        size="lg"
+                        className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
                       >
                         {bufferClosing ? (
                           <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            <RefreshCw className="h-5 w-5 animate-spin mr-2" />
                             Processing...
                           </>
                         ) : (
