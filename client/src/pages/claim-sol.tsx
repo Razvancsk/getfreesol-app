@@ -3197,7 +3197,7 @@ export default function SolRefund() {
                     </div>
                     <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
                       <div className="text-2xl font-bold text-green-400">+{(refundCalc.total * 0.85).toFixed(5)}</div>
-                      <div className="text-xs text-purple-200">Total Net</div>
+                      <div className="text-xs text-purple-200">To Claim</div>
                     </div>
                   </div>
 
