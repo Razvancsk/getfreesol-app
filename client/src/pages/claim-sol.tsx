@@ -6310,20 +6310,6 @@ export default function SolRefund() {
                 </Card>
               )}
 
-              {/* External Links */}
-              <div className="flex gap-2">
-                <a
-                  href={`https://solscan.io/account/${viewProfileWallet}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1"
-                >
-                  <Button variant="outline" className="w-full bg-purple-700/50 border-purple-500/30 text-white hover:bg-purple-600">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View on Solscan
-                  </Button>
-                </a>
-              </div>
             </div>
           ) : (
             <div className="text-center py-8 text-purple-300">

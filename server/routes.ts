@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
+import { transactionLedger } from '@shared/schema';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
 import axios from 'axios';
@@ -5742,6 +5743,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user points (includes totalSolClaimed and accountsClosed)
       const points = await storage.getUserPoints(walletAddress);
       
+      // Get SOL recovered from transaction ledger (more accurate than user_points)
+      const solReclaimResult = await db
+        .select({
+          totalSolRecovered: sql<string>`COALESCE(sum(${transactionLedger.netAmount}), 0)`
+        })
+        .from(transactionLedger)
+        .where(
+          and(
+            eq(transactionLedger.walletAddress, walletAddress),
+            eq(transactionLedger.transactionType, 'sol_reclaim')
+          )
+        );
+      const totalSolFromLedger = parseFloat(solReclaimResult[0]?.totalSolRecovered || '0');
+      
       // Get token burn count from transaction ledger
       const tokenBurnRecords = await storage.getTokenBurnRecordsByWallet(walletAddress);
       const totalTokensBurned = tokenBurnRecords.length;
@@ -5762,8 +5777,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const PLATFORM_WALLET_STATS = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
       const displayPoints = walletAddress === PLATFORM_WALLET_STATS ? 0 : (points?.points || 0);
       
+      // Use the higher value between user_points and transaction_ledger
+      const totalSolClaimed = Math.max(totalSolFromLedger, parseFloat(String(points?.totalSolClaimed || 0)));
+      
       res.json({
-        totalSolClaimed: points?.totalSolClaimed || 0,
+        totalSolClaimed,
         totalAccountsClosed: points?.accountsClosed || 0,
         totalTokensBurned,
         totalNftsBurned,
