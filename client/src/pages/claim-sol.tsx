@@ -338,33 +338,17 @@ export default function SolRefund() {
             try {
               const response = await fetch(`/api/buffer-accounts/scan/${publicKey}`);
               const data = await response.json();
-              if (data.success && data.bufferAccounts?.length > 0) {
-                setBufferAccounts(data.bufferAccounts);
-                setSelectedBuffers(new Set(data.bufferAccounts.map((b: any) => b.address)));
+              if (data.success) {
+                setBufferAccounts(data.bufferAccounts || []);
+                setSelectedBuffers(new Set(data.bufferAccounts?.map((b: any) => b.address) || []));
               } else {
-                // Demo/example data to show UI
-                const mockBuffers = [
-                  {
-                    address: 'BUFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-                    rentAmount: '0.8000',
-                    dataSize: 262144,
-                  }
-                ];
-                setBufferAccounts(mockBuffers);
-                setSelectedBuffers(new Set(mockBuffers.map(b => b.address)));
+                setBufferAccounts([]);
+                setSelectedBuffers(new Set());
               }
             } catch (error) {
               console.error('Buffer scan error:', error);
-              // Show demo data on error too
-              const mockBuffers = [
-                {
-                  address: 'BUFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-                  rentAmount: '0.8000',
-                  dataSize: 262144,
-                }
-              ];
-              setBufferAccounts(mockBuffers);
-              setSelectedBuffers(new Set(mockBuffers.map(b => b.address)));
+              setBufferAccounts([]);
+              setSelectedBuffers(new Set());
             } finally {
               setBufferScanning(false);
             }
@@ -3286,26 +3270,24 @@ export default function SolRefund() {
                         try {
                           const response = await fetch(`/api/buffer-accounts/scan/${publicKey}`);
                           const data = await response.json();
-                          if (data.success && data.bufferAccounts?.length > 0) {
-                            setBufferAccounts(data.bufferAccounts);
-                            setSelectedBuffers(new Set(data.bufferAccounts.map((b: any) => b.address)));
+                          if (data.success) {
+                            setBufferAccounts(data.bufferAccounts || []);
+                            setSelectedBuffers(new Set(data.bufferAccounts?.map((b: any) => b.address) || []));
                           } else {
-                            const mockBuffers = [{ address: 'BUFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', rentAmount: '0.8000', dataSize: 262144 }];
-                            setBufferAccounts(mockBuffers);
-                            setSelectedBuffers(new Set(mockBuffers.map(b => b.address)));
+                            setBufferAccounts([]);
+                            setSelectedBuffers(new Set());
                           }
                         } catch (error) {
                           console.error('Buffer scan error:', error);
-                          const mockBuffers = [{ address: 'BUFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', rentAmount: '0.8000', dataSize: 262144 }];
-                          setBufferAccounts(mockBuffers);
-                          setSelectedBuffers(new Set(mockBuffers.map(b => b.address)));
+                          setBufferAccounts([]);
+                          setSelectedBuffers(new Set());
                         } finally {
                           setBufferScanning(false);
                         }
                       }}
                       disabled={bufferScanning || !publicKey}
                       className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
-                      title="Scan for Buffer Accounts"
+                      title="Refresh"
                     >
                       <RefreshCw className={`h-6 w-6 ${bufferScanning ? 'animate-spin' : ''}`} />
                     </button>
