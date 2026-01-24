@@ -3446,9 +3446,6 @@ export default function SolRefund() {
                           </>
                         )}
                       </Button>
-                      <p className="text-purple-300 text-xs text-center">
-                        10% platform fee applies (matching industry standard)
-                      </p>
                     </div>
                   ) : (
                     <div className="text-center text-purple-300 py-12">
