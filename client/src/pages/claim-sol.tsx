@@ -3312,85 +3312,21 @@ export default function SolRefund() {
                   </div>
 
                   {bufferAccounts.length > 0 ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => {
-                              if (selectedBuffers.size === bufferAccounts.length) {
-                                setSelectedBuffers(new Set());
-                              } else {
-                                setSelectedBuffers(new Set(bufferAccounts.map(b => b.address)));
-                              }
-                            }}
-                            className="flex items-center gap-2 text-purple-200 hover:text-white"
-                          >
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              selectedBuffers.size === bufferAccounts.length
-                                ? 'bg-green-500 border-green-500'
-                                : 'bg-purple-900/50 border-purple-400'
-                            }`}>
-                              {selectedBuffers.size === bufferAccounts.length && <Check className="h-3 w-3 text-white" />}
-                            </div>
-                            Select All ({bufferAccounts.length})
-                          </button>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                          <div className="text-2xl font-bold text-white">{bufferAccounts.length}</div>
+                          <div className="text-xs text-purple-200">Buffer Accounts</div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-purple-200 text-sm">Total Recoverable</p>
-                          <p className="text-2xl font-bold text-green-400">
-                            {bufferAccounts.reduce((sum, b) => sum + parseFloat(b.rentAmount), 0).toFixed(4)} SOL
-                          </p>
+                        <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                          <div className="text-2xl font-bold text-green-400">+{(bufferAccounts.reduce((sum, b) => sum + parseFloat(b.rentAmount), 0) * 0.90).toFixed(5)}</div>
+                          <div className="text-xs text-purple-200">To Claim</div>
                         </div>
-                      </div>
-
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {bufferAccounts.map((buffer) => (
-                          <div
-                            key={buffer.address}
-                            onClick={() => {
-                              setSelectedBuffers(prev => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(buffer.address)) {
-                                  newSet.delete(buffer.address);
-                                } else {
-                                  newSet.add(buffer.address);
-                                }
-                                return newSet;
-                              });
-                            }}
-                            className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
-                              selectedBuffers.has(buffer.address)
-                                ? 'bg-green-900/20 border-green-500/50'
-                                : 'bg-purple-800/30 border-purple-500/30 hover:border-purple-400/50'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                selectedBuffers.has(buffer.address)
-                                  ? 'bg-green-500 border-green-500'
-                                  : 'bg-purple-900/50 border-purple-400'
-                              }`}>
-                                {selectedBuffers.has(buffer.address) && <Check className="h-3 w-3 text-white" />}
-                              </div>
-                              <div>
-                                <p className="text-white font-mono text-sm">
-                                  {buffer.address.slice(0, 8)}...{buffer.address.slice(-8)}
-                                </p>
-                                <p className="text-purple-300 text-xs">
-                                  Size: {(buffer.dataSize / 1024).toFixed(1)} KB
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-green-400 font-semibold">{buffer.rentAmount} SOL</p>
-                            </div>
-                          </div>
-                        ))}
                       </div>
 
                       <Button
                         onClick={async () => {
-                          if (!publicKey || selectedBuffers.size === 0) return;
+                          if (!publicKey || bufferAccounts.length === 0) return;
                           setBufferClosing(true);
                           try {
                             const response = await fetch('/api/buffer-accounts/prepare-close', {
@@ -3398,7 +3334,7 @@ export default function SolRefund() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
                                 walletAddress: publicKey,
-                                bufferAddresses: Array.from(selectedBuffers),
+                                bufferAddresses: bufferAccounts.map(b => b.address),
                                 referralCode: referralCode || undefined,
                               }),
                             });
@@ -3431,7 +3367,7 @@ export default function SolRefund() {
                             setBufferClosing(false);
                           }
                         }}
-                        disabled={bufferClosing || selectedBuffers.size === 0}
+                        disabled={bufferClosing || bufferAccounts.length === 0}
                         className="w-full bg-green-600 hover:bg-green-500 text-white py-3"
                       >
                         {bufferClosing ? (
@@ -3442,7 +3378,7 @@ export default function SolRefund() {
                         ) : (
                           <>
                             <Coins className="h-4 w-4 mr-2" />
-                            Close {selectedBuffers.size} Buffer{selectedBuffers.size !== 1 ? 's' : ''} & Recover SOL
+                            Close All & Recover SOL
                           </>
                         )}
                       </Button>
