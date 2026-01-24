@@ -5689,7 +5689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             COALESCE(SUM(sol_recovered), 0) as "totalSolClaimed",
             count(*)::int as "accountsClosed"
           FROM transaction_ledger
-          WHERE created_at >= ${weekAgo}
+          WHERE processed_at >= ${weekAgo}
           AND wallet_address NOT IN ('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6')
           GROUP BY wallet_address
           ORDER BY SUM(sol_recovered) DESC
