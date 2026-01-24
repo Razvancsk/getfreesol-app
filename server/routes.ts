@@ -5675,10 +5675,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get points leaderboard (must come before :walletAddress route)
   app.get("/api/points/leaderboard", async (req, res) => {
     try {
-      const { limit } = req.query;
+      const { limit, period = 'all' } = req.query;
       const leaderboardLimit = limit ? parseInt(limit as string) : 100;
       
-      const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit);
+      // Calculate timestamp based on period
+      let sinceTimestamp: Date | null = null;
+      const now = new Date();
+      
+      switch (period) {
+        case 'weekly':
+          sinceTimestamp = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'all':
+        default:
+          sinceTimestamp = null;
+          break;
+      }
+      
+      const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit, sinceTimestamp);
       
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.setHeader('Pragma', 'no-cache');

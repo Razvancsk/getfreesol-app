@@ -102,6 +102,7 @@ export default function SolRefund() {
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
+  const [pointsLeaderboardPeriod, setPointsLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -275,9 +276,9 @@ export default function SolRefund() {
   });
 
   const { data: pointsLeaderboard, isLoading: pointsLeaderboardLoading } = useQuery({
-    queryKey: ['/api/points/leaderboard'],
+    queryKey: ['/api/points/leaderboard', pointsLeaderboardPeriod],
     queryFn: async () => {
-      const response = await fetch('/api/points/leaderboard?limit=100');
+      const response = await fetch(`/api/points/leaderboard?limit=100&period=${pointsLeaderboardPeriod}`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -4273,12 +4274,32 @@ export default function SolRefund() {
                 {/* Leaderboard Card */}
                 <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
-                      Top 10 Leaders
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <Trophy className="w-5 h-5 text-yellow-400" />
+                        Top 10 Leaders
+                      </CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={pointsLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
+                          className={pointsLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                          onClick={() => setPointsLeaderboardPeriod('weekly')}
+                        >
+                          7 Days
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={pointsLeaderboardPeriod === 'all' ? 'default' : 'outline'}
+                          className={pointsLeaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                          onClick={() => setPointsLeaderboardPeriod('all')}
+                        >
+                          All Time
+                        </Button>
+                      </div>
+                    </div>
                     <CardDescription className="text-purple-200">
-                      Top 10 users with the most points
+                      {pointsLeaderboardPeriod === 'weekly' ? 'Active users in the last 7 days' : 'Top 10 users with the most points'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

@@ -97,7 +97,7 @@ import {
   giveawayWinners
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, or, and, ne } from "drizzle-orm";
+import { eq, desc, sql, or, and, ne, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -241,7 +241,7 @@ export interface IStorage {
   // User Points System
   getUserPoints(walletAddress: string): Promise<UserPoints | undefined>;
   awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
-  getPointsLeaderboard(limit?: number): Promise<UserPoints[]>;
+  getPointsLeaderboard(limit?: number, sinceTimestamp?: Date | null): Promise<UserPoints[]>;
   
   // Social Tasks System (Community Grow)
   createSocialTask(task: InsertSocialTask): Promise<SocialTask>;
@@ -1313,18 +1313,25 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPointsLeaderboard(limit: number = 100): Promise<UserPoints[]> {
+  async getPointsLeaderboard(limit: number = 100, sinceTimestamp?: Date | null): Promise<UserPoints[]> {
     const PLATFORM_WALLETS = [
       'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS',
       'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
     ];
+    
+    const conditions = [
+      ne(userPoints.walletAddress, PLATFORM_WALLETS[0]),
+      ne(userPoints.walletAddress, PLATFORM_WALLETS[1])
+    ];
+    
+    if (sinceTimestamp) {
+      conditions.push(gte(userPoints.lastUpdated, sinceTimestamp));
+    }
+    
     return await db
       .select()
       .from(userPoints)
-      .where(and(
-        ne(userPoints.walletAddress, PLATFORM_WALLETS[0]),
-        ne(userPoints.walletAddress, PLATFORM_WALLETS[1])
-      ))
+      .where(and(...conditions))
       .orderBy(desc(userPoints.points))
       .limit(limit);
   }
