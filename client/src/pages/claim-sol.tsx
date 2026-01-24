@@ -3133,7 +3133,7 @@ export default function SolRefund() {
                     }`}
                   >
                     <Wallet className="h-4 w-4 inline mr-2" />
-                    Empty Accounts
+                    Tokens
                   </button>
                   <button
                     onClick={() => setClaimSubTab('programs')}
