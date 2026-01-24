@@ -5679,31 +5679,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leaderboardLimit = limit ? parseInt(limit as string) : 100;
       
       if (period === 'weekly') {
-        // Calculate weekly points from transaction history
+        // Calculate weekly points from transaction history using raw SQL
         const now = new Date();
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const weekAgoISO = weekAgo.toISOString();
         
         // Get accounts closed per wallet in the last 7 days from transaction_ledger
         // Points: 20 per account closed
-        const weeklyPointsResult = await db
-          .select({
-            walletAddress: transactionLedger.walletAddress,
-            accountsClosed: sql<number>`count(*)::int`,
-          })
-          .from(transactionLedger)
-          .where(
-            and(
-              gte(transactionLedger.createdAt, weekAgo),
-              notInArray(transactionLedger.walletAddress, ['GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'])
-            )
-          )
-          .groupBy(transactionLedger.walletAddress)
-          .orderBy(sql`count(*) desc`)
-          .limit(leaderboardLimit);
+        const weeklyPointsResult = await db.execute(sql`
+          SELECT wallet_address as "walletAddress", count(*)::int as "accountsClosed"
+          FROM transaction_ledger
+          WHERE created_at >= ${weekAgo}
+          AND wallet_address NOT IN ('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6')
+          GROUP BY wallet_address
+          ORDER BY count(*) DESC
+          LIMIT ${leaderboardLimit}
+        `) as { rows: Array<{ walletAddress: string; accountsClosed: number }> };
         
         // Calculate points (20 points per account closed)
-        const weeklyLeaderboard = weeklyPointsResult.map((entry, index) => ({
+        const weeklyLeaderboard = weeklyPointsResult.rows.map((entry, index) => ({
           rank: index + 1,
           walletAddress: entry.walletAddress,
           points: entry.accountsClosed * 20,
