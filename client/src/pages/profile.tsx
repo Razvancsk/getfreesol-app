@@ -21,8 +21,7 @@ interface UserStats {
 interface LeaderboardEntry {
   rank: number;
   walletAddress: string;
-  points: number;
-  totalSolClaimed: string;
+  totalSolRecovered: string;
 }
 
 export default function ProfilePage() {
@@ -40,10 +39,11 @@ export default function ProfilePage() {
     enabled: !!publicKey,
   });
 
-  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery<{ leaderboard: LeaderboardEntry[] }>({
-    queryKey: ['/api/points/leaderboard', pointsLeaderboardPeriod],
+  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery<{ success: boolean; leaderboard: LeaderboardEntry[] }>({
+    queryKey: ['/api/statistics/leaderboard', pointsLeaderboardPeriod],
     queryFn: async () => {
-      const response = await fetch(`/api/points/leaderboard?limit=10&period=${pointsLeaderboardPeriod}`);
+      const period = pointsLeaderboardPeriod === 'weekly' ? 'weekly' : 'all';
+      const response = await fetch(`/api/statistics/leaderboard?period=${period}&limit=10`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -228,36 +228,39 @@ export default function ProfilePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {leaderboardData?.leaderboard?.map((entry, index) => (
-                      <tr 
-                        key={entry.walletAddress} 
-                        className="border-b border-purple-500/20 hover:bg-purple-900/20"
-                      >
-                        <td className="py-3 px-2">
-                          <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-xs font-bold ${
-                            entry.rank === 1 ? 'bg-yellow-500 text-black' :
-                            entry.rank === 2 ? 'bg-gray-300 text-black' :
-                            entry.rank === 3 ? 'bg-amber-600 text-white' :
-                            'bg-purple-700 text-white'
-                          }`}>
-                            #{entry.rank}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className="text-white font-mono text-sm hidden sm:inline">
-                            {entry.walletAddress}
-                          </span>
-                          <span className="text-white font-mono text-sm sm:hidden">
-                            {truncateWallet(entry.walletAddress)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <span className="text-green-400 font-medium">
-                            {parseFloat(entry.totalSolClaimed || '0').toFixed(4)} SOL
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {leaderboardData?.leaderboard?.map((entry, index) => {
+                      const rank = index + 1;
+                      return (
+                        <tr 
+                          key={entry.walletAddress} 
+                          className="border-b border-purple-500/20 hover:bg-purple-900/20"
+                        >
+                          <td className="py-3 px-2">
+                            <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-xs font-bold ${
+                              rank === 1 ? 'bg-yellow-500 text-black' :
+                              rank === 2 ? 'bg-gray-300 text-black' :
+                              rank === 3 ? 'bg-amber-600 text-white' :
+                              'bg-purple-700 text-white'
+                            }`}>
+                              #{rank}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2">
+                            <span className="text-white font-mono text-sm hidden sm:inline">
+                              {entry.walletAddress}
+                            </span>
+                            <span className="text-white font-mono text-sm sm:hidden">
+                              {truncateWallet(entry.walletAddress)}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <span className="text-green-400 font-medium">
+                              {parseFloat(entry.totalSolRecovered || '0').toFixed(4)} SOL
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
