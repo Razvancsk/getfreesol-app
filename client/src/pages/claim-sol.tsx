@@ -6234,7 +6234,7 @@ export default function SolRefund() {
 
       {/* User Profile Modal (Platform Wallet Only) */}
       <Dialog open={!!viewProfileWallet} onOpenChange={(open) => !open && setViewProfileWallet(null)}>
-        <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white max-w-lg">
+        <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white max-w-lg [&>button]:hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
               <User className="w-5 h-5 text-purple-400" />
