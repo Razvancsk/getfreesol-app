@@ -3377,7 +3377,7 @@ export default function SolRefund() {
                           </>
                         ) : (
                           <>
-                            <Coins className="h-4 w-4 mr-2" />
+                            <CheckCircle className="h-5 w-5 mr-2" />
                             CLAIM ALL
                           </>
                         )}
