@@ -111,6 +111,7 @@ export default function SolRefund() {
   const [referralCode, setReferralCode] = useState<string>('');
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
   const [enteringGiveaway, setEnteringGiveaway] = useState(false);
+  const [viewProfileWallet, setViewProfileWallet] = useState<string | null>(null);
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -206,6 +207,25 @@ export default function SolRefund() {
       return response.json();
     },
     enabled: activeTab === 'statistics',
+  });
+
+  // Query for user profile stats (platform wallet viewing other users)
+  const { data: viewProfileData, isLoading: loadingProfileData } = useQuery<{
+    totalSolClaimed: number;
+    totalAccountsClosed: number;
+    totalTokensBurned: number;
+    totalNftsBurned: number;
+    totalPoints: number;
+    referralCode: string | null;
+    referralEarnings: number;
+  }>({
+    queryKey: ['/api/user/stats', viewProfileWallet],
+    queryFn: async () => {
+      const response = await fetch(`/api/user/stats/${viewProfileWallet}`);
+      if (!response.ok) throw new Error('Failed to fetch user stats');
+      return response.json();
+    },
+    enabled: !!viewProfileWallet && isPlatformWallet,
   });
 
   // Clean up selected tokens when switching tabs or when token list changes
@@ -4487,15 +4507,25 @@ export default function SolRefund() {
                               {index > 2 && (
                                 <span className="text-purple-200 font-medium ml-2">#{index + 1}</span>
                               )}
-                              <a
-                                href={`https://solscan.io/account/${entry.walletAddress}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white hover:text-gray-200 underline font-mono text-sm"
-                                data-testid={`address-${index}`}
-                              >
-                                {entry.walletAddress}
-                              </a>
+                              {isPlatformWallet ? (
+                                <button
+                                  onClick={() => setViewProfileWallet(entry.walletAddress)}
+                                  className="text-white hover:text-green-300 underline font-mono text-sm cursor-pointer transition-colors"
+                                  data-testid={`address-${index}`}
+                                >
+                                  {entry.walletAddress}
+                                </button>
+                              ) : (
+                                <a
+                                  href={`https://solscan.io/account/${entry.walletAddress}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-white hover:text-gray-200 underline font-mono text-sm"
+                                  data-testid={`address-${index}`}
+                                >
+                                  {entry.walletAddress}
+                                </a>
+                              )}
                             </div>
                             <div className="text-right font-bold text-green-400" data-testid={`amount-${index}`}>
                               {formatSol(entry.totalSolRecovered)} SOL
@@ -6202,6 +6232,115 @@ export default function SolRefund() {
         />
       )}
 
+      {/* User Profile Modal (Platform Wallet Only) */}
+      <Dialog open={!!viewProfileWallet} onOpenChange={(open) => !open && setViewProfileWallet(null)}>
+        <DialogContent className="bg-gradient-to-br from-purple-900/95 to-purple-950/95 backdrop-blur-xl border-purple-500/30 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <User className="w-5 h-5 text-purple-400" />
+              User Profile
+            </DialogTitle>
+            <DialogDescription className="text-purple-200">
+              {viewProfileWallet && (
+                <span className="font-mono text-xs break-all">{viewProfileWallet}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingProfileData ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-purple-400" />
+            </div>
+          ) : viewProfileData ? (
+            <div className="space-y-4">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="bg-purple-800/40 border-purple-500/30">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-purple-200 text-sm">SOL Claimed</p>
+                    <p className="text-xl font-bold text-green-400">{viewProfileData.totalSolClaimed.toFixed(4)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-800/40 border-purple-500/30">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-purple-200 text-sm">Accounts Closed</p>
+                    <p className="text-xl font-bold text-white">{viewProfileData.totalAccountsClosed}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-800/40 border-purple-500/30">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-purple-200 text-sm">Tokens Burned</p>
+                    <p className="text-xl font-bold text-orange-400">{viewProfileData.totalTokensBurned}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-800/40 border-purple-500/30">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-purple-200 text-sm">NFTs Burned</p>
+                    <p className="text-xl font-bold text-pink-400">{viewProfileData.totalNftsBurned}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Points */}
+              <Card className="bg-purple-800/40 border-purple-500/30">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-400" />
+                    <span className="text-purple-200">Total Points</span>
+                  </div>
+                  <span className="text-xl font-bold text-yellow-400">{viewProfileData.totalPoints.toLocaleString()}</span>
+                </CardContent>
+              </Card>
+
+              {/* Referral Info */}
+              {viewProfileData.referralCode && (
+                <Card className="bg-purple-800/40 border-purple-500/30">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-400" />
+                      <span className="text-purple-200">Referral Code</span>
+                    </div>
+                    <p className="font-mono text-sm text-white bg-purple-900/50 px-3 py-1.5 rounded">
+                      {viewProfileData.referralCode}
+                    </p>
+                    <p className="text-sm text-purple-300">
+                      Earnings: <span className="text-green-400 font-bold">{viewProfileData.referralEarnings.toFixed(4)} SOL</span>
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* External Links */}
+              <div className="flex gap-2">
+                <a
+                  href={`https://solscan.io/account/${viewProfileWallet}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                >
+                  <Button variant="outline" className="w-full bg-purple-700/50 border-purple-500/30 text-white hover:bg-purple-600">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View on Solscan
+                  </Button>
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-purple-300">
+              No data available for this user
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setViewProfileWallet(null)}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         @keyframes spin-slow {
