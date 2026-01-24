@@ -3278,7 +3278,7 @@ export default function SolRefund() {
               {claimSubTab === 'programs' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-white">Program Buffer Accounts</h3>
+                    <h3 className="text-lg font-semibold text-white">Scan Results</h3>
                     <button
                       onClick={async () => {
                         if (!publicKey) return;
@@ -3373,12 +3373,12 @@ export default function SolRefund() {
                         {bufferClosing ? (
                           <>
                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Closing Buffers...
+                            Processing...
                           </>
                         ) : (
                           <>
                             <Coins className="h-4 w-4 mr-2" />
-                            Close All & Recover SOL
+                            CLAIM ALL
                           </>
                         )}
                       </Button>
