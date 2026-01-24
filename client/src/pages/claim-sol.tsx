@@ -97,7 +97,7 @@ export default function SolRefund() {
   const donationPercentage = 15; // Fixed 15% service fee
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'programs' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
@@ -148,6 +148,12 @@ export default function SolRefund() {
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
   const [batchResults, setBatchResults] = useState<{totalSol: number; totalAccounts: number}>({ totalSol: 0, totalAccounts: 0 });
+
+  // Buffer accounts (program deploys) state
+  const [bufferAccounts, setBufferAccounts] = useState<any[]>([]);
+  const [selectedBuffers, setSelectedBuffers] = useState<Set<string>>(new Set());
+  const [bufferScanning, setBufferScanning] = useState(false);
+  const [bufferClosing, setBufferClosing] = useState(false);
 
   // Statistics queries for time-filtered data (SOL recovered)
   const { data: stats24h } = useQuery<{ success: boolean; period: string; stats: { totalUsers: number; totalSolRecovered: string } }>({
@@ -3041,7 +3047,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : activeTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3084,6 +3090,16 @@ export default function SolRefund() {
                   }`}
                 >
                   <span className="text-sm">🖼️</span> NFT
+                </Button>
+                <Button
+                  onClick={() => setActiveTab('programs')}
+                  className={`min-w-[100px] px-4 py-2.5 text-sm font-medium rounded-full transition-all flex items-center justify-center gap-1.5 border ${
+                    activeTab === 'programs'
+                      ? 'bg-purple-600 text-white border-purple-500' 
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                  }`}
+                >
+                  <Cpu className="h-4 w-4" /> Programs
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
@@ -4130,6 +4146,220 @@ export default function SolRefund() {
               </div>
             );
           })()}
+
+          {/* Programs Tab Content - Buffer Accounts from Failed Deploys */}
+          {activeTab === 'programs' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                      <Cpu className="h-5 w-5 text-purple-400" />
+                      Program Buffer Accounts
+                    </h3>
+                    <p className="text-purple-200 text-sm mt-1">
+                      Recover SOL left behind from failed program deploys/upgrades
+                    </p>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      if (!publicKey) return;
+                      setBufferScanning(true);
+                      try {
+                        const response = await fetch(`/api/buffer-accounts/scan/${publicKey}`);
+                        const data = await response.json();
+                        if (data.success) {
+                          setBufferAccounts(data.bufferAccounts || []);
+                          setSelectedBuffers(new Set(data.bufferAccounts?.map((b: any) => b.address) || []));
+                        }
+                      } catch (error) {
+                        console.error('Buffer scan error:', error);
+                      } finally {
+                        setBufferScanning(false);
+                      }
+                    }}
+                    disabled={bufferScanning || !publicKey}
+                    className="bg-purple-600 hover:bg-purple-500 text-white"
+                  >
+                    {bufferScanning ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Scanning...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4 mr-2" />
+                        Scan for Buffers
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Info Alert */}
+                <Alert className="bg-blue-900/30 border-blue-500/30 mb-4">
+                  <Info className="h-4 w-4 text-blue-400" />
+                  <AlertDescription className="text-blue-200">
+                    <strong>Developer Feature:</strong> This scans for BPF Loader buffer accounts created during failed program deployments.
+                    Most users won't have any. Developers who deploy Solana programs may have significant SOL locked here.
+                  </AlertDescription>
+                </Alert>
+              </div>
+
+              {/* Buffer Accounts Results */}
+              {bufferAccounts.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => {
+                          if (selectedBuffers.size === bufferAccounts.length) {
+                            setSelectedBuffers(new Set());
+                          } else {
+                            setSelectedBuffers(new Set(bufferAccounts.map(b => b.address)));
+                          }
+                        }}
+                        className="flex items-center gap-2 text-purple-200 hover:text-white"
+                      >
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          selectedBuffers.size === bufferAccounts.length
+                            ? 'bg-green-500 border-green-500'
+                            : 'bg-purple-900/50 border-purple-400'
+                        }`}>
+                          {selectedBuffers.size === bufferAccounts.length && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        Select All ({bufferAccounts.length})
+                      </button>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-purple-200 text-sm">Total Recoverable</p>
+                      <p className="text-2xl font-bold text-green-400">
+                        {bufferAccounts.reduce((sum, b) => sum + parseFloat(b.rentAmount), 0).toFixed(4)} SOL
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Buffer Account List */}
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {bufferAccounts.map((buffer) => (
+                      <div
+                        key={buffer.address}
+                        onClick={() => {
+                          setSelectedBuffers(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(buffer.address)) {
+                              newSet.delete(buffer.address);
+                            } else {
+                              newSet.add(buffer.address);
+                            }
+                            return newSet;
+                          });
+                        }}
+                        className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
+                          selectedBuffers.has(buffer.address)
+                            ? 'bg-green-900/20 border-green-500/50'
+                            : 'bg-purple-800/30 border-purple-500/30 hover:border-purple-400/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            selectedBuffers.has(buffer.address)
+                              ? 'bg-green-500 border-green-500'
+                              : 'bg-purple-900/50 border-purple-400'
+                          }`}>
+                            {selectedBuffers.has(buffer.address) && <Check className="h-3 w-3 text-white" />}
+                          </div>
+                          <div>
+                            <p className="text-white font-mono text-sm">
+                              {buffer.address.slice(0, 8)}...{buffer.address.slice(-8)}
+                            </p>
+                            <p className="text-purple-300 text-xs">
+                              Size: {(buffer.dataSize / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-green-400 font-semibold">{buffer.rentAmount} SOL</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Close Buffers Button */}
+                  <Button
+                    onClick={async () => {
+                      if (!publicKey || selectedBuffers.size === 0) return;
+                      setBufferClosing(true);
+                      try {
+                        const response = await fetch('/api/buffer-accounts/prepare-close', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            walletAddress: publicKey,
+                            bufferAddresses: Array.from(selectedBuffers),
+                            referralCode: referralCode || undefined,
+                          }),
+                        });
+                        const data = await response.json();
+                        if (data.success && data.transaction) {
+                          const tx = Transaction.from(Buffer.from(data.transaction, 'base64'));
+                          const signed = await signTransaction(tx);
+                          const connection = new Connection(
+                            process.env.HELIUS_API_KEY
+                              ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+                              : 'https://api.mainnet-beta.solana.com'
+                          );
+                          const signature = await connection.sendRawTransaction(signed.serialize());
+                          await connection.confirmTransaction(signature, 'confirmed');
+                          toast({
+                            title: 'Buffer Accounts Closed!',
+                            description: `Recovered ${data.netRecovery} SOL`,
+                          });
+                          setBufferAccounts([]);
+                          setSelectedBuffers(new Set());
+                        }
+                      } catch (error: any) {
+                        console.error('Buffer close error:', error);
+                        toast({
+                          title: 'Error',
+                          description: error.message || 'Failed to close buffer accounts',
+                          variant: 'destructive',
+                        });
+                      } finally {
+                        setBufferClosing(false);
+                      }
+                    }}
+                    disabled={bufferClosing || selectedBuffers.size === 0}
+                    className="w-full bg-green-600 hover:bg-green-500 text-white py-3"
+                  >
+                    {bufferClosing ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Closing Buffers...
+                      </>
+                    ) : (
+                      <>
+                        <Coins className="h-4 w-4 mr-2" />
+                        Close {selectedBuffers.size} Buffer{selectedBuffers.size !== 1 ? 's' : ''} & Recover SOL
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-purple-300 text-xs text-center">
+                    10% platform fee applies (matching industry standard)
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Cpu className="h-16 w-16 mx-auto text-purple-400/50 mb-4" />
+                  <h4 className="text-lg font-semibold text-white mb-2">No Buffer Accounts Found</h4>
+                  <p className="text-purple-200 max-w-md mx-auto">
+                    {bufferScanning
+                      ? 'Scanning for buffer accounts...'
+                      : 'Click "Scan for Buffers" to check for recoverable SOL from failed program deploys.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Statistics Tab Content */}
           {activeTab === 'statistics' && (() => {

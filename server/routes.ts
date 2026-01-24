@@ -1463,6 +1463,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Scan wallet for program buffer accounts (failed deploys/upgrades)
+  app.get("/api/buffer-accounts/scan/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      // Validate address
+      try {
+        new PublicKey(address);
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid wallet address" });
+      }
+
+      // Get RPC endpoint
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcEndpoint = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+
+      const connection = new Connection(rpcEndpoint, 'confirmed');
+      const walletPublicKey = new PublicKey(address);
+      
+      // BPF Loader Upgradeable Program ID
+      const BPF_LOADER_UPGRADEABLE = new PublicKey('BPFLoaderUpgradeab1e11111111111111111111111');
+      
+      console.log(`🔍 Scanning for buffer accounts owned by: ${address}`);
+      
+      // Get all accounts owned by the BPF Loader Upgradeable program
+      // Filter by: Buffer state (discriminator [1,0,0,0]) and authority = wallet
+      const accounts = await connection.getProgramAccounts(BPF_LOADER_UPGRADEABLE, {
+        filters: [
+          {
+            // Buffer accounts have minimum size of 37 bytes (4 byte discriminator + 1 byte option + 32 byte pubkey)
+            // But typically larger for actual program data
+            dataSize: 37, // Minimum buffer metadata size (authority only, no data)
+          },
+          {
+            memcmp: {
+              offset: 0,
+              // Buffer state discriminator = 1 (little-endian u32)
+              bytes: 'WCa6jL', // bs58 encoded [1, 0, 0, 0, 1] - Buffer with Some(authority)
+            },
+          },
+          {
+            memcmp: {
+              offset: 5, // Authority pubkey starts after 4-byte discriminator + 1-byte option tag
+              bytes: walletPublicKey.toBase58(),
+            },
+          },
+        ],
+      });
+
+      // Also try to find larger buffer accounts (with program data)
+      // These won't match the dataSize: 37 filter, so we do a separate query
+      const largerAccounts = await connection.getProgramAccounts(BPF_LOADER_UPGRADEABLE, {
+        filters: [
+          {
+            memcmp: {
+              offset: 0,
+              bytes: 'WCa6jL', // Buffer with Some(authority)
+            },
+          },
+          {
+            memcmp: {
+              offset: 5,
+              bytes: walletPublicKey.toBase58(),
+            },
+          },
+        ],
+      });
+
+      // Deduplicate and combine results
+      const accountMap = new Map();
+      [...accounts, ...largerAccounts].forEach(acc => {
+        accountMap.set(acc.pubkey.toString(), acc);
+      });
+      
+      const allBufferAccounts = Array.from(accountMap.values());
+      
+      console.log(`📊 Found ${allBufferAccounts.length} buffer accounts for ${address}`);
+
+      const bufferAccounts = allBufferAccounts.map(({ pubkey, account }) => ({
+        address: pubkey.toString(),
+        lamports: account.lamports,
+        rentAmount: (account.lamports / 1e9).toFixed(6),
+        dataSize: account.data.length,
+      }));
+
+      const totalReclaimable = bufferAccounts.reduce((sum, acc) => sum + acc.lamports, 0) / 1e9;
+
+      res.json({
+        success: true,
+        walletAddress: address,
+        bufferAccounts,
+        totalAccounts: bufferAccounts.length,
+        totalReclaimable: totalReclaimable.toFixed(6),
+        scannedAt: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error("Buffer scan error:", error);
+      res.status(500).json({ error: "Failed to scan for buffer accounts" });
+    }
+  });
+
+  // Close buffer accounts to reclaim SOL
+  app.post("/api/buffer-accounts/prepare-close", async (req, res) => {
+    try {
+      const { walletAddress, bufferAddresses, referralCode } = req.body;
+
+      if (!walletAddress || !bufferAddresses || !Array.isArray(bufferAddresses) || bufferAddresses.length === 0) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Validate addresses
+      try {
+        new PublicKey(walletAddress);
+        bufferAddresses.forEach((addr: string) => new PublicKey(addr));
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid address format" });
+      }
+
+      // Get RPC endpoint
+      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
+      const rpcEndpoint = heliusApiKey 
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+        : 'https://api.mainnet-beta.solana.com';
+
+      const connection = new Connection(rpcEndpoint, 'confirmed');
+      const walletPubkey = new PublicKey(walletAddress);
+      const BPF_LOADER_UPGRADEABLE = new PublicKey('BPFLoaderUpgradeab1e11111111111111111111111');
+      
+      // Check referral for fee split
+      let referralCodeData = null;
+      const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
+      if (permanentAssociation) {
+        referralCodeData = await storage.getReferralCodeByCode(permanentAssociation.referralCode);
+      } else if (referralCode) {
+        referralCodeData = await storage.getReferralCodeByCode(referralCode);
+      }
+
+      // Platform wallet
+      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      
+      // Calculate total lamports to recover
+      let totalLamports = 0;
+      for (const bufferAddr of bufferAddresses) {
+        try {
+          const bufferPubkey = new PublicKey(bufferAddr);
+          const accountInfo = await connection.getAccountInfo(bufferPubkey);
+          if (accountInfo) {
+            totalLamports += accountInfo.lamports;
+          }
+        } catch (e) {
+          console.log(`Could not get info for buffer ${bufferAddr}`);
+        }
+      }
+
+      // Fee: 10% of recovered SOL (matching unclaimedsol.com)
+      const feePercentage = 0.10;
+      const totalFeeLamports = Math.floor(totalLamports * feePercentage);
+      
+      // Split: 50% platform, 50% referral (if exists)
+      const referralFeeLamports = referralCodeData ? Math.floor(totalFeeLamports * 0.5) : 0;
+      const platformFeeLamports = totalFeeLamports - referralFeeLamports;
+
+      // Build transaction
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      
+      const transaction = new Transaction();
+      transaction.recentBlockhash = blockhash;
+      transaction.lastValidBlockHeight = lastValidBlockHeight;
+      transaction.feePayer = walletPubkey;
+
+      // Add priority fee
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 })
+      );
+
+      // Add close instruction for each buffer account
+      // Close instruction = discriminator 5
+      for (const bufferAddr of bufferAddresses) {
+        const bufferPubkey = new PublicKey(bufferAddr);
+        
+        const closeInstruction = new TransactionInstruction({
+          keys: [
+            { pubkey: bufferPubkey, isSigner: false, isWritable: true },      // Buffer to close
+            { pubkey: walletPubkey, isSigner: false, isWritable: true },      // Recipient of lamports
+            { pubkey: walletPubkey, isSigner: true, isWritable: false },       // Authority (signer)
+          ],
+          programId: BPF_LOADER_UPGRADEABLE,
+          data: Buffer.from([5]), // Close instruction discriminator
+        });
+        
+        transaction.add(closeInstruction);
+      }
+
+      // Add platform fee transfer
+      if (platformFeeLamports > 0) {
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: walletPubkey,
+            toPubkey: new PublicKey(platformWalletAddress),
+            lamports: platformFeeLamports,
+          })
+        );
+      }
+
+      // Add referral fee transfer
+      if (referralFeeLamports > 0 && referralCodeData) {
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: walletPubkey,
+            toPubkey: new PublicKey(referralCodeData.walletAddress),
+            lamports: referralFeeLamports,
+          })
+        );
+      }
+
+      // Serialize transaction
+      const serializedTransaction = transaction.serialize({
+        requireAllSignatures: false,
+        verifySignatures: false,
+      });
+      const base64Transaction = serializedTransaction.toString('base64');
+
+      const netRecovery = (totalLamports - totalFeeLamports) / 1e9;
+
+      res.json({
+        success: true,
+        transaction: base64Transaction,
+        bufferCount: bufferAddresses.length,
+        totalRecoverable: (totalLamports / 1e9).toFixed(6),
+        platformFee: (platformFeeLamports / 1e9).toFixed(6),
+        referralFee: (referralFeeLamports / 1e9).toFixed(6),
+        netRecovery: netRecovery.toFixed(6),
+        feePercentage: '10%',
+      });
+
+    } catch (error) {
+      console.error("Buffer close error:", error);
+      res.status(500).json({ error: "Failed to prepare buffer close transaction" });
+    }
+  });
+
   // Prepare transaction for SOL refund
   app.post("/api/sol-refund/prepare-transaction", async (req, res) => {
     try {
