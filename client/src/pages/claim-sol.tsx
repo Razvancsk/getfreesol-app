@@ -3405,7 +3405,7 @@ export default function SolRefund() {
                     </div>
                   ) : (
                     <div className="text-center text-purple-300 py-12">
-                      {bufferScanning ? 'Scanning for buffer accounts...' : 'Connect wallet and scan to find buffer accounts from failed program deploys'}
+                      {bufferScanning ? 'Scanning for buffer accounts...' : (publicKey ? 'Click scan to find buffer accounts from failed program deploys' : 'Connect wallet and scan to find buffer accounts')}
                     </div>
                   )}
                 </div>
