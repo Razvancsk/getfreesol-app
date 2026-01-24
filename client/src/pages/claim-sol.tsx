@@ -3237,58 +3237,31 @@ export default function SolRefund() {
               {/* Programs Sub-tab Content */}
               {claimSubTab === 'programs' && (
                 <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                          <Cpu className="h-5 w-5 text-purple-400" />
-                          Program Buffer Accounts
-                        </h3>
-                        <p className="text-purple-200 text-sm mt-1">
-                          Recover SOL left behind from failed program deploys/upgrades
-                        </p>
-                      </div>
-                      <Button
-                        onClick={async () => {
-                          if (!publicKey) return;
-                          setBufferScanning(true);
-                          try {
-                            const response = await fetch(`/api/buffer-accounts/scan/${publicKey}`);
-                            const data = await response.json();
-                            if (data.success) {
-                              setBufferAccounts(data.bufferAccounts || []);
-                              setSelectedBuffers(new Set(data.bufferAccounts?.map((b: any) => b.address) || []));
-                            }
-                          } catch (error) {
-                            console.error('Buffer scan error:', error);
-                          } finally {
-                            setBufferScanning(false);
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-white">Program Buffer Accounts</h3>
+                    <button
+                      onClick={async () => {
+                        if (!publicKey) return;
+                        setBufferScanning(true);
+                        try {
+                          const response = await fetch(`/api/buffer-accounts/scan/${publicKey}`);
+                          const data = await response.json();
+                          if (data.success) {
+                            setBufferAccounts(data.bufferAccounts || []);
+                            setSelectedBuffers(new Set(data.bufferAccounts?.map((b: any) => b.address) || []));
                           }
-                        }}
-                        disabled={bufferScanning || !publicKey}
-                        className="bg-purple-600 hover:bg-purple-500 text-white"
-                      >
-                        {bufferScanning ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Scanning...
-                          </>
-                        ) : (
-                          <>
-                            <Search className="h-4 w-4 mr-2" />
-                            Scan for Buffers
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    <Alert className="bg-blue-900/30 border-blue-500/30 mb-4">
-                      <Info className="h-4 w-4 text-blue-400" />
-                      <AlertDescription className="text-blue-200">
-                        <strong>Developer Feature:</strong> This scans for BPF Loader buffer accounts created during failed program deployments.
-                        Most users won't have any. Developers who deploy Solana programs may have significant SOL locked here.
-                      </AlertDescription>
-                    </Alert>
+                        } catch (error) {
+                          console.error('Buffer scan error:', error);
+                        } finally {
+                          setBufferScanning(false);
+                        }
+                      }}
+                      disabled={bufferScanning || !publicKey}
+                      className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                      title="Scan for Buffer Accounts"
+                    >
+                      <RefreshCw className={`h-6 w-6 ${bufferScanning ? 'animate-spin' : ''}`} />
+                    </button>
                   </div>
 
                   {bufferAccounts.length > 0 ? (
@@ -3431,14 +3404,8 @@ export default function SolRefund() {
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <Cpu className="h-16 w-16 mx-auto text-purple-400/50 mb-4" />
-                      <h4 className="text-lg font-semibold text-white mb-2">No Buffer Accounts Found</h4>
-                      <p className="text-purple-200 max-w-md mx-auto">
-                        {bufferScanning
-                          ? 'Scanning for buffer accounts...'
-                          : 'Click "Scan for Buffers" to check for recoverable SOL from failed program deploys.'}
-                      </p>
+                    <div className="text-center text-purple-300 py-12">
+                      {bufferScanning ? 'Scanning for buffer accounts...' : 'Connect wallet and scan to find buffer accounts from failed program deploys'}
                     </div>
                   )}
                 </div>
