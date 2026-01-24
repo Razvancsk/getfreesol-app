@@ -197,16 +197,14 @@ export default function ProfilePage() {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant={pointsLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
-                  className={pointsLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                  className={pointsLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
                   onClick={() => setPointsLeaderboardPeriod('weekly')}
                 >
                   7 Days
                 </Button>
                 <Button
                   size="sm"
-                  variant={pointsLeaderboardPeriod === 'all' ? 'default' : 'outline'}
-                  className={pointsLeaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                  className={pointsLeaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
                   onClick={() => setPointsLeaderboardPeriod('all')}
                 >
                   All Time
