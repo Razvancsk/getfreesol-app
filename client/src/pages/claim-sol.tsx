@@ -329,7 +329,26 @@ export default function SolRefund() {
   useEffect(() => {
     if (isConnected && publicKey && activeTab !== 'referrals') {
       if (activeTab === 'reclaim') {
-        scanMutation.mutate(publicKey.toString());
+        if (claimSubTab === 'empty') {
+          scanMutation.mutate(publicKey.toString());
+        } else if (claimSubTab === 'programs') {
+          // Auto-scan for buffer accounts
+          (async () => {
+            setBufferScanning(true);
+            try {
+              const response = await fetch(`/api/buffer-accounts/scan/${publicKey}`);
+              const data = await response.json();
+              if (data.success) {
+                setBufferAccounts(data.bufferAccounts || []);
+                setSelectedBuffers(new Set(data.bufferAccounts?.map((b: any) => b.address) || []));
+              }
+            } catch (error) {
+              console.error('Buffer scan error:', error);
+            } finally {
+              setBufferScanning(false);
+            }
+          })();
+        }
       } else if (activeTab === 'burnTokens') {
         if (burnSubTab === 'tokens') {
           scanTokensMutation.mutate(publicKey.toString());
@@ -338,7 +357,7 @@ export default function SolRefund() {
         }
       }
     }
-  }, [isConnected, publicKey, activeTab, burnSubTab]);
+  }, [isConnected, publicKey, activeTab, burnSubTab, claimSubTab]);
 
   // Fetch lend statistics for platform wallet
   useEffect(() => {
@@ -3405,7 +3424,7 @@ export default function SolRefund() {
                     </div>
                   ) : (
                     <div className="text-center text-purple-300 py-12">
-                      {bufferScanning ? 'Scanning for buffer accounts...' : (publicKey ? 'Click scan to find buffer accounts from failed program deploys' : 'Connect wallet and scan to find buffer accounts')}
+                      {bufferScanning ? 'Scanning for buffer accounts...' : (publicKey ? 'No buffer accounts found - your wallet is clean!' : 'Connect wallet to scan for buffer accounts')}
                     </div>
                   )}
                 </div>
