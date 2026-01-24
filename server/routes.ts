@@ -5693,7 +5693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(transactionLedger)
           .where(
             and(
-              gte(transactionLedger.createdAt, weekAgo),
+              sql`${transactionLedger.createdAt} >= ${weekAgo.toISOString()}`,
               sql`${transactionLedger.walletAddress} NOT IN ('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6')`
             )
           )
