@@ -398,6 +398,10 @@ export default function SolRefund() {
     totalPoints: number;
     referralCode: string | null;
     referralEarnings: number;
+    weeklyRank: number | null;
+    weeklySol: number;
+    allTimeRank: number | null;
+    allTimeSol: number;
   }>({
     queryKey: ['/api/user/stats', viewProfileWallet],
     queryFn: async () => {
@@ -6289,6 +6293,54 @@ export default function SolRefund() {
                     <span className="text-purple-200">Total Points</span>
                   </div>
                   <span className="text-xl font-bold text-yellow-400">{viewProfileData.totalPoints.toLocaleString()}</span>
+                </CardContent>
+              </Card>
+
+              {/* Leaderboard Rankings */}
+              <Card className="bg-purple-800/40 border-purple-500/30">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-5 h-5 text-purple-400" />
+                    <span className="text-purple-200 font-medium">Leaderboard Rankings</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Weekly Rank */}
+                    <div className="bg-purple-900/50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-purple-300 mb-1">Weekly (7 days)</p>
+                      {viewProfileData.weeklyRank ? (
+                        <>
+                          <p className="text-lg font-bold text-white">
+                            {viewProfileData.weeklyRank <= 3 && (
+                              <span className={viewProfileData.weeklyRank === 1 ? 'text-yellow-400' : viewProfileData.weeklyRank === 2 ? 'text-gray-300' : 'text-orange-400'}>
+                                {viewProfileData.weeklyRank === 1 ? '🥇' : viewProfileData.weeklyRank === 2 ? '🥈' : '🥉'}
+                              </span>
+                            )} #{viewProfileData.weeklyRank}
+                          </p>
+                          <p className="text-xs text-green-400">{viewProfileData.weeklySol.toFixed(4)} SOL</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-purple-400">Not ranked</p>
+                      )}
+                    </div>
+                    {/* All Time Rank */}
+                    <div className="bg-purple-900/50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-purple-300 mb-1">All Time</p>
+                      {viewProfileData.allTimeRank ? (
+                        <>
+                          <p className="text-lg font-bold text-white">
+                            {viewProfileData.allTimeRank <= 3 && (
+                              <span className={viewProfileData.allTimeRank === 1 ? 'text-yellow-400' : viewProfileData.allTimeRank === 2 ? 'text-gray-300' : 'text-orange-400'}>
+                                {viewProfileData.allTimeRank === 1 ? '🥇' : viewProfileData.allTimeRank === 2 ? '🥈' : '🥉'}
+                              </span>
+                            )} #{viewProfileData.allTimeRank}
+                          </p>
+                          <p className="text-xs text-green-400">{viewProfileData.allTimeSol.toFixed(4)} SOL</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-purple-400">Not ranked</p>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 

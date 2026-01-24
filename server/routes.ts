@@ -5780,6 +5780,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the higher value between user_points and transaction_ledger
       const totalSolClaimed = Math.max(totalSolFromLedger, parseFloat(String(points?.totalSolClaimed || 0)));
       
+      // Get user's rank in weekly (7 days) and all-time leaderboards
+      const now = new Date();
+      const weeklyTimestamp = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      // Get weekly leaderboard (large limit to find user's position)
+      const weeklyLeaderboard = await storage.getLeaderboard(weeklyTimestamp, 1000);
+      const weeklyRankIndex = weeklyLeaderboard.findIndex(entry => entry.walletAddress === walletAddress);
+      const weeklyRank = weeklyRankIndex >= 0 ? weeklyRankIndex + 1 : null;
+      const weeklySol = weeklyRankIndex >= 0 ? parseFloat(weeklyLeaderboard[weeklyRankIndex].totalRecovered) : 0;
+      
+      // Get all-time leaderboard
+      const allTimeLeaderboard = await storage.getLeaderboard(null, 1000);
+      const allTimeRankIndex = allTimeLeaderboard.findIndex(entry => entry.walletAddress === walletAddress);
+      const allTimeRank = allTimeRankIndex >= 0 ? allTimeRankIndex + 1 : null;
+      const allTimeSol = allTimeRankIndex >= 0 ? parseFloat(allTimeLeaderboard[allTimeRankIndex].totalRecovered) : 0;
+      
       res.json({
         totalSolClaimed,
         totalAccountsClosed: points?.accountsClosed || 0,
@@ -5787,7 +5803,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalNftsBurned,
         totalPoints: displayPoints,
         referralCode: referralCode?.code || null,
-        referralEarnings
+        referralEarnings,
+        weeklyRank,
+        weeklySol,
+        allTimeRank,
+        allTimeSol
       });
     } catch (error) {
       console.error("Get user stats error:", error);
