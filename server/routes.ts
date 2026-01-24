@@ -1620,8 +1620,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fee: 10% of recovered SOL (matching unclaimedsol.com)
-      const feePercentage = 0.10;
+      // Fee: 15% of recovered SOL (matching claim page)
+      const feePercentage = 0.15;
       const totalFeeLamports = Math.floor(totalLamports * feePercentage);
       
       // Split: 50% platform, 50% referral (if exists)
