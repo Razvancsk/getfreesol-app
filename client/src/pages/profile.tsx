@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +28,7 @@ interface LeaderboardEntry {
 export default function ProfilePage() {
   const { publicKey } = useWalletAdapter();
   const { toast } = useToast();
+  const [pointsLeaderboardPeriod, setPointsLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
 
   const { data: stats, isLoading } = useQuery<UserStats>({
     queryKey: ['/api/user/stats', publicKey?.toString()],
@@ -39,9 +41,9 @@ export default function ProfilePage() {
   });
 
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery<{ leaderboard: LeaderboardEntry[] }>({
-    queryKey: ['/api/points/leaderboard'],
+    queryKey: ['/api/points/leaderboard', pointsLeaderboardPeriod],
     queryFn: async () => {
-      const response = await fetch('/api/points/leaderboard?limit=10');
+      const response = await fetch(`/api/points/leaderboard?limit=10&period=${pointsLeaderboardPeriod}`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
     },
@@ -187,11 +189,33 @@ export default function ProfilePage() {
 
           {/* Leaderboard */}
           <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
-            <h3 className="text-white font-semibold text-lg flex items-center gap-2 mb-2">
-              <Trophy className="h-5 w-5 text-yellow-400" />
-              Top 10 Leaders
-            </h3>
-            <p className="text-purple-300 text-sm mb-4">Top 10 users with the most points</p>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-400" />
+                Top 10 Leaders
+              </h3>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={pointsLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
+                  className={pointsLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                  onClick={() => setPointsLeaderboardPeriod('weekly')}
+                >
+                  7 Days
+                </Button>
+                <Button
+                  size="sm"
+                  variant={pointsLeaderboardPeriod === 'all' ? 'default' : 'outline'}
+                  className={pointsLeaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                  onClick={() => setPointsLeaderboardPeriod('all')}
+                >
+                  All Time
+                </Button>
+              </div>
+            </div>
+            <p className="text-purple-300 text-sm mb-4">
+              {pointsLeaderboardPeriod === 'weekly' ? 'Active users in the last 7 days' : 'Top 10 users with the most points'}
+            </p>
             
             {isLoadingLeaderboard ? (
               <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
