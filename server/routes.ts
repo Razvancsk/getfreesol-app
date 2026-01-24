@@ -1402,34 +1402,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const emptyAccounts = [];
       let totalReclaimable = 0;
-      let skippedNonClosable = 0;
 
-      // Track Token-2022 mints with permanent delegate extension (non-closable by owner)
-      const nonClosableMints = new Set<string>();
-      
-      // Check each Token-2022 mint for permanent delegate extension
-      for (const accountInfo of token2022Accounts.value) {
-        const parsedInfo = accountInfo.account.data.parsed.info;
-        const mintAddress = parsedInfo.mint;
-        
-        // Skip if we already checked this mint
-        if (nonClosableMints.has(mintAddress)) continue;
-        
-        try {
-          const mintPubkey = new PublicKey(mintAddress);
-          const mintInfo = await getMint(connection, mintPubkey, 'confirmed', TOKEN_2022_PROGRAM_ID);
-          
-          // Check for permanent delegate extension
-          const permanentDelegate = getPermanentDelegate(mintInfo);
-          if (permanentDelegate && permanentDelegate.delegate) {
-            console.log(`⚠️ Mint ${mintAddress.substring(0, 8)}... has permanent delegate: ${permanentDelegate.delegate.toString().substring(0, 8)}...`);
-            nonClosableMints.add(mintAddress);
-          }
-        } catch (error) {
-          // If we can't check, assume it's closable
-          console.log(`Could not check extensions for mint ${mintAddress.substring(0, 8)}...:`, (error as Error).message);
-        }
-      }
+      // Note: Permanent delegate extension only affects transfers/burns, NOT account closure
+      // The account owner can still close their own empty Token-2022 accounts
+      // So we include ALL empty accounts regardless of permanent delegate status
 
       for (const accountInfo of allTokenAccounts) {
         const account = accountInfo.account;
@@ -1437,14 +1413,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if account has zero balance
         if (parseFloat(parsedInfo.tokenAmount.amount) === 0) {
-          // Skip Token-2022 accounts with permanent delegate (non-closable by owner)
-          if (nonClosableMints.has(parsedInfo.mint)) {
-            console.log(`⏭️ Skipping non-closable account ${accountInfo.pubkey.toString().substring(0, 8)}... (permanent delegate)`);
-            skippedNonClosable++;
-            continue;
-          }
-          
-          
           const rentAmount = account.lamports / 1e9; // Convert lamports to SOL
           
           emptyAccounts.push({
@@ -1460,10 +1428,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           totalReclaimable += rentAmount;
         }
-      }
-      
-      if (skippedNonClosable > 0) {
-        console.log(`📊 Skipped ${skippedNonClosable} non-closable Token-2022 accounts (permanent delegate extension)`);
       }
 
       // Store scan result
