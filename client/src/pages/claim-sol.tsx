@@ -4299,7 +4299,7 @@ export default function SolRefund() {
                       </div>
                     </div>
                     <CardDescription className="text-purple-200">
-                      {pointsLeaderboardPeriod === 'weekly' ? 'Active users in the last 7 days' : 'Top 10 users with the most points'}
+                      {pointsLeaderboardPeriod === 'weekly' ? 'Points earned in the last 7 days' : 'Top 10 users with the most points'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

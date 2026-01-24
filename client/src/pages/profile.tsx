@@ -212,7 +212,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <p className="text-purple-300 text-sm mb-4">
-              {pointsLeaderboardPeriod === 'weekly' ? 'Active users in the last 7 days' : 'Top 10 users with the most points'}
+              {pointsLeaderboardPeriod === 'weekly' ? 'Points earned in the last 7 days' : 'Top 10 users with the most points'}
             </p>
             
             {isLoadingLeaderboard ? (

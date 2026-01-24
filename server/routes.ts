@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq, sql, and } from 'drizzle-orm';
+import { eq, sql, and, gte } from 'drizzle-orm';
 import { transactionLedger } from '@shared/schema';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
@@ -5678,36 +5678,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { limit, period = 'all' } = req.query;
       const leaderboardLimit = limit ? parseInt(limit as string) : 100;
       
-      // Calculate timestamp based on period
-      let sinceTimestamp: Date | null = null;
-      const now = new Date();
-      
-      switch (period) {
-        case 'weekly':
-          sinceTimestamp = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'all':
-        default:
-          sinceTimestamp = null;
-          break;
-      }
-      
-      const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit, sinceTimestamp);
-      
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.json({
-        success: true,
-        leaderboard: leaderboard.map((entry, index) => ({
+      if (period === 'weekly') {
+        // Calculate weekly points from transaction history
+        const now = new Date();
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        // Get accounts closed per wallet in the last 7 days from transaction_ledger
+        // Points: 20 per account closed
+        const weeklyPointsResult = await db
+          .select({
+            walletAddress: transactionLedger.walletAddress,
+            accountsClosed: sql<number>`count(*)::int`,
+          })
+          .from(transactionLedger)
+          .where(
+            and(
+              gte(transactionLedger.createdAt, weekAgo),
+              sql`${transactionLedger.walletAddress} NOT IN ('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6')`
+            )
+          )
+          .groupBy(transactionLedger.walletAddress)
+          .orderBy(sql`count(*) desc`)
+          .limit(leaderboardLimit);
+        
+        // Calculate points (20 points per account closed)
+        const weeklyLeaderboard = weeklyPointsResult.map((entry, index) => ({
           rank: index + 1,
           walletAddress: entry.walletAddress,
-          points: entry.points,
+          points: entry.accountsClosed * 20,
           accountsClosed: entry.accountsClosed,
-          totalSolClaimed: entry.totalSolClaimed,
-          lastUpdated: entry.lastUpdated
-        })),
-        total: leaderboard.length
-      });
+          totalSolClaimed: '0',
+          lastUpdated: new Date()
+        }));
+        
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.json({
+          success: true,
+          leaderboard: weeklyLeaderboard,
+          total: weeklyLeaderboard.length
+        });
+      } else {
+        // All-time points from user_points table
+        const leaderboard = await storage.getPointsLeaderboard(leaderboardLimit, null);
+        
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.json({
+          success: true,
+          leaderboard: leaderboard.map((entry, index) => ({
+            rank: index + 1,
+            walletAddress: entry.walletAddress,
+            points: entry.points,
+            accountsClosed: entry.accountsClosed,
+            totalSolClaimed: entry.totalSolClaimed,
+            lastUpdated: entry.lastUpdated
+          })),
+          total: leaderboard.length
+        });
+      }
     } catch (error) {
       console.error("Get points leaderboard error:", error);
       res.status(500).json({ error: "Failed to get points leaderboard" });
