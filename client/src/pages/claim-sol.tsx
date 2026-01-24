@@ -209,25 +209,6 @@ export default function SolRefund() {
     enabled: activeTab === 'statistics',
   });
 
-  // Query for user profile stats (platform wallet viewing other users)
-  const { data: viewProfileData, isLoading: loadingProfileData } = useQuery<{
-    totalSolClaimed: number;
-    totalAccountsClosed: number;
-    totalTokensBurned: number;
-    totalNftsBurned: number;
-    totalPoints: number;
-    referralCode: string | null;
-    referralEarnings: number;
-  }>({
-    queryKey: ['/api/user/stats', viewProfileWallet],
-    queryFn: async () => {
-      const response = await fetch(`/api/user/stats/${viewProfileWallet}`);
-      if (!response.ok) throw new Error('Failed to fetch user stats');
-      return response.json();
-    },
-    enabled: !!viewProfileWallet && isPlatformWallet,
-  });
-
   // Clean up selected tokens when switching tabs or when token list changes
   useEffect(() => {
     if (activeTab !== 'burnTokens') {
@@ -407,6 +388,25 @@ export default function SolRefund() {
 
   // Check if platform wallet
   const isPlatformWallet = publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+
+  // Query for user profile stats (platform wallet viewing other users)
+  const { data: viewProfileData, isLoading: loadingProfileData } = useQuery<{
+    totalSolClaimed: number;
+    totalAccountsClosed: number;
+    totalTokensBurned: number;
+    totalNftsBurned: number;
+    totalPoints: number;
+    referralCode: string | null;
+    referralEarnings: number;
+  }>({
+    queryKey: ['/api/user/stats', viewProfileWallet],
+    queryFn: async () => {
+      const response = await fetch(`/api/user/stats/${viewProfileWallet}`);
+      if (!response.ok) throw new Error('Failed to fetch user stats');
+      return response.json();
+    },
+    enabled: !!viewProfileWallet && isPlatformWallet,
+  });
 
   // Redirect from lend tab if not platform wallet
   useEffect(() => {
