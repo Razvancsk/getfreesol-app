@@ -6258,7 +6258,7 @@ export default function SolRefund() {
                 <Card className="bg-purple-800/40 border-purple-500/30">
                   <CardContent className="p-4 text-center">
                     <p className="text-purple-200 text-sm">SOL Claimed</p>
-                    <p className="text-xl font-bold text-green-400">{viewProfileData.totalSolClaimed.toFixed(4)}</p>
+                    <p className="text-xl font-bold text-green-400">{Number(viewProfileData.totalSolClaimed).toFixed(4)}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-purple-800/40 border-purple-500/30">
@@ -6304,7 +6304,7 @@ export default function SolRefund() {
                       {viewProfileData.referralCode}
                     </p>
                     <p className="text-sm text-purple-300">
-                      Earnings: <span className="text-green-400 font-bold">{viewProfileData.referralEarnings.toFixed(4)} SOL</span>
+                      Earnings: <span className="text-green-400 font-bold">{Number(viewProfileData.referralEarnings).toFixed(4)} SOL</span>
                     </p>
                   </CardContent>
                 </Card>
