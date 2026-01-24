@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { eq, sql, and, gte } from 'drizzle-orm';
+import { eq, sql, and, gte, notInArray } from 'drizzle-orm';
 import { transactionLedger } from '@shared/schema';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
@@ -5682,6 +5682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate weekly points from transaction history
         const now = new Date();
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const weekAgoISO = weekAgo.toISOString();
         
         // Get accounts closed per wallet in the last 7 days from transaction_ledger
         // Points: 20 per account closed
@@ -5693,8 +5694,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(transactionLedger)
           .where(
             and(
-              sql`${transactionLedger.createdAt} >= ${weekAgo.toISOString()}`,
-              sql`${transactionLedger.walletAddress} NOT IN ('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6')`
+              gte(transactionLedger.createdAt, weekAgo),
+              notInArray(transactionLedger.walletAddress, ['GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'])
             )
           )
           .groupBy(transactionLedger.walletAddress)
