@@ -5679,29 +5679,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leaderboardLimit = limit ? parseInt(limit as string) : 100;
       
       if (period === 'weekly') {
-        // Calculate weekly points from transaction history using raw SQL
+        // Get top SOL claimers in the last 7 days from transaction_ledger
         const now = new Date();
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         
-        // Get accounts closed per wallet in the last 7 days from transaction_ledger
-        // Points: 20 per account closed
-        const weeklyPointsResult = await db.execute(sql`
-          SELECT wallet_address as "walletAddress", count(*)::int as "accountsClosed"
+        const weeklyResult = await db.execute(sql`
+          SELECT 
+            wallet_address as "walletAddress", 
+            COALESCE(SUM(sol_recovered), 0) as "totalSolClaimed",
+            count(*)::int as "accountsClosed"
           FROM transaction_ledger
           WHERE created_at >= ${weekAgo}
           AND wallet_address NOT IN ('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS', 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6')
           GROUP BY wallet_address
-          ORDER BY count(*) DESC
+          ORDER BY SUM(sol_recovered) DESC
           LIMIT ${leaderboardLimit}
-        `) as { rows: Array<{ walletAddress: string; accountsClosed: number }> };
+        `) as { rows: Array<{ walletAddress: string; totalSolClaimed: string; accountsClosed: number }> };
         
-        // Calculate points (20 points per account closed)
-        const weeklyLeaderboard = weeklyPointsResult.rows.map((entry, index) => ({
+        const weeklyLeaderboard = weeklyResult.rows.map((entry, index) => ({
           rank: index + 1,
           walletAddress: entry.walletAddress,
           points: entry.accountsClosed * 20,
           accountsClosed: entry.accountsClosed,
-          totalSolClaimed: '0',
+          totalSolClaimed: entry.totalSolClaimed,
           lastUpdated: new Date()
         }));
         

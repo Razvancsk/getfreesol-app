@@ -4299,7 +4299,7 @@ export default function SolRefund() {
                       </div>
                     </div>
                     <CardDescription className="text-purple-200">
-                      {pointsLeaderboardPeriod === 'weekly' ? 'Points earned in the last 7 days' : 'Top 10 users with the most points'}
+                      {pointsLeaderboardPeriod === 'weekly' ? 'Top SOL claimers in the last 7 days' : 'Top 10 users with the most SOL recovered'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -4312,7 +4312,7 @@ export default function SolRefund() {
                             <TableRow className="border-purple-600 hover:bg-purple-700/50">
                               <TableHead className="text-purple-200 w-16">Rank</TableHead>
                               <TableHead className="text-purple-200">Wallet</TableHead>
-                              <TableHead className="text-purple-200 text-right">Points</TableHead>
+                              <TableHead className="text-purple-200 text-right">SOL Recovered</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -4336,8 +4336,8 @@ export default function SolRefund() {
                                     <Badge className="ml-1 bg-green-600 text-white text-xs px-1">You</Badge>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-right font-bold text-yellow-400 text-sm py-2" data-testid={`text-points-${entry.rank}`}>
-                                  {entry.points.toLocaleString()}
+                                <TableCell className="text-right font-bold text-green-400 text-sm py-2" data-testid={`text-sol-${entry.rank}`}>
+                                  {parseFloat(entry.totalSolClaimed || '0').toFixed(4)} SOL
                                 </TableCell>
                               </TableRow>
                             ))}
