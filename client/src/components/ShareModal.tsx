@@ -113,17 +113,21 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
           })
         ]);
         toast({
-          title: "Image copied!",
-          description: "Paste (Ctrl+V) the image into your tweet",
+          title: "✅ Image copied to clipboard!",
+          description: "Step 1: Press Ctrl+V (or Cmd+V on Mac) in the Twitter box to paste the image. Step 2: Then click Post.",
+          duration: 10000,
         });
       } catch (clipboardError) {
         console.error('Clipboard write failed:', clipboardError);
         toast({
-          title: "Opening Twitter",
-          description: "Right-click and save the card image to upload manually",
-          variant: "destructive"
+          title: "Could not copy image",
+          description: "Please screenshot the card and upload it manually to Twitter",
+          variant: "destructive",
+          duration: 8000,
         });
       }
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
       window.open(twitterUrl, '_blank', 'width=550,height=420');
