@@ -64,6 +64,84 @@ export async function generateClaimCardBanner(options: CardBannerOptions): Promi
   return canvas.toBuffer('image/png');
 }
 
+export interface ShareCardOptions {
+  solAmount: string;
+  itemCount: number;
+  claimType: 'accounts' | 'tokens' | 'nfts';
+}
+
+export async function generateShareCardStyle2(options: ShareCardOptions): Promise<Buffer> {
+  const { solAmount, itemCount, claimType } = options;
+  
+  const width = 1200;
+  const height = 675; // 16:9 aspect ratio
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  // Background gradient - Style 2 dark purple
+  const bgGradient = ctx.createLinearGradient(0, 0, width, 0);
+  bgGradient.addColorStop(0, '#1a0a2e');
+  bgGradient.addColorStop(0.5, '#2d1b4e');
+  bgGradient.addColorStop(1, '#1a0a2e');
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // Decorative diagonal
+  ctx.fillStyle = 'rgba(147, 51, 234, 0.3)';
+  ctx.beginPath();
+  ctx.moveTo(width * 0.6, 0);
+  ctx.lineTo(width, 0);
+  ctx.lineTo(width, height);
+  ctx.lineTo(width * 0.4, height);
+  ctx.closePath();
+  ctx.fill();
+
+  // Logo and branding
+  try {
+    const logoPath = path.join(__dirname, '../attached_assets/image_1757882056840.png');
+    const logo = await loadImage(logoPath);
+    ctx.drawImage(logo, 50, 40, 80, 80);
+  } catch (error) {
+    console.error('Failed to load logo:', error);
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('GET FREE SOL', 150, 95);
+
+  // CLAIMED text
+  ctx.fillStyle = '#4ade80'; // green-400
+  ctx.font = 'bold 72px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('CLAIMED', width / 2, 260);
+
+  // SOL amount
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 100px sans-serif';
+  ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 380);
+
+  // Claim type text
+  ctx.fillStyle = '#4ade80';
+  ctx.font = '32px monospace';
+  let claimText = '';
+  if (claimType === 'tokens') {
+    claimText = `by burning ${itemCount} token${itemCount > 1 ? 's' : ''}!`;
+  } else if (claimType === 'nfts') {
+    claimText = `by burning ${itemCount} NFT${itemCount > 1 ? 's' : ''}!`;
+  } else {
+    claimText = `by closing ${itemCount} empty account${itemCount > 1 ? 's' : ''}!`;
+  }
+  ctx.fillText(claimText, width / 2, 450);
+
+  // Website URL at bottom
+  ctx.fillStyle = '#a78bfa';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.fillText('getfreesol.xyz', width / 2, height - 40);
+
+  return canvas.toBuffer('image/png');
+}
+
 function drawGeometricGLogo(ctx: any, x: number, y: number) {
   const width = 90;
   const height = 80;

@@ -7767,6 +7767,25 @@ Claimer: ${walletAddress}`;
       res.status(500).json({ error: error.message || 'Failed to generate card' });
     }
   });
+
+  // Generate share card image for Twitter/X sharing
+  app.get("/api/share/card", async (req, res) => {
+    try {
+      const solAmount = (req.query.sol as string) || '0.0000';
+      const itemCount = parseInt(req.query.count as string) || 1;
+      const claimType = (req.query.type as 'accounts' | 'tokens' | 'nfts') || 'accounts';
+      
+      const { generateShareCardStyle2 } = await import('./cardBannerGenerator.js');
+      const cardImage = await generateShareCardStyle2({ solAmount, itemCount, claimType });
+      
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(cardImage);
+    } catch (error: any) {
+      console.error('Generate share card error:', error);
+      res.status(500).json({ error: error.message || 'Failed to generate share card' });
+    }
+  });
   
   // ============================================
   // X BOT SCHEDULED POSTING SYSTEM

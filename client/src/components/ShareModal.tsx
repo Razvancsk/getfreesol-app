@@ -1,6 +1,5 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
-import { getRandomShareMessage } from "@shared/shareMessages";
 import logoImage from "@assets/image_1757882056840.png";
 
 interface ShareModalProps {
@@ -16,9 +15,10 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
   const [tweetText, setTweetText] = useState("");
   
   const baseUrl = window.location.origin;
+  const lamports = Math.floor(solClaimed * 1e9);
   const shareUrl = referralCode 
-    ? `${baseUrl}?ref=${referralCode}&claimed=${Math.floor(solClaimed * 1e9)}`
-    : `${baseUrl}?claimed=${Math.floor(solClaimed * 1e9)}`;
+    ? `${baseUrl}?ref=${referralCode}&claimed=${lamports}&type=${claimType}&count=${accountsClosed}`
+    : `${baseUrl}?claimed=${lamports}&type=${claimType}&count=${accountsClosed}`;
   
   const getClaimText = () => {
     if (claimType === 'tokens') return `by burning ${accountsClosed} tokens!`;
@@ -28,9 +28,9 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
   
   useEffect(() => {
     if (isOpen) {
-      const lamports = Math.floor(solClaimed * 1e9);
-      const message = getRandomShareMessage(lamports);
-      setTweetText(`${message} ${shareUrl}`);
+      const formattedSol = solClaimed.toFixed(4);
+      const message = `I just reclaimed ${formattedSol} $SOL using @getfreesol_xyz\n\nReclaim your locked SOL 👇\n${shareUrl}`;
+      setTweetText(message);
     }
   }, [isOpen, solClaimed, shareUrl]);
   

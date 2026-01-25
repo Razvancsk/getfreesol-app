@@ -260,6 +260,13 @@ function getStaticAssetsPath() {
         const ogTitle = getShareTitle(lamports);
         const ogDescription = getShareMessage(lamports);
         const ogUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+        
+        // Get additional share parameters
+        const claimType = (req.query.type as string) || 'accounts';
+        const itemCount = parseInt(req.query.count as string) || 1;
+        
+        // Generate OG image URL
+        const ogImage = `${req.protocol}://${req.get('host')}/api/share/card?sol=${solAmount}&type=${claimType}&count=${itemCount}`;
 
         // Read the index.html template
         const staticPath = process.env.NODE_ENV === 'development' 
@@ -289,17 +296,29 @@ function getStaticAssetsPath() {
             `<meta property="og:url" content="${escapeHtml(ogUrl)}" id="og-url" />`
           )
           .replace(
+            /<meta property="og:image" content="[^"]*" id="og-image" \/>/,
+            `<meta property="og:image" content="${escapeHtml(ogImage)}" id="og-image" />`
+          )
+          .replace(
             /<meta name="twitter:title" content="[^"]*" id="twitter-title" \/>/,
             `<meta name="twitter:title" content="${escapeHtml(ogTitle)}" id="twitter-title" />`
           )
           .replace(
             /<meta name="twitter:description" content="[^"]*" id="twitter-description" \/>/,
             `<meta name="twitter:description" content="${escapeHtml(ogDescription)}" id="twitter-description" />`
+          )
+          .replace(
+            /<meta name="twitter:image" content="[^"]*" id="twitter-image" \/>/,
+            `<meta name="twitter:image" content="${escapeHtml(ogImage)}" id="twitter-image" />`
+          )
+          .replace(
+            /<meta name="twitter:card" content="[^"]*" id="twitter-card" \/>/,
+            `<meta name="twitter:card" content="summary_large_image" id="twitter-card" />`
           );
 
         res.setHeader('Content-Type', 'text/html');
         res.send(html);
-        log(`Injected dynamic OG tags for ${solAmount} SOL claim`);
+        log(`Injected dynamic OG tags for ${solAmount} SOL claim with image`);
       } catch (error) {
         log(`Error injecting OG tags: ${error instanceof Error ? error.message : String(error)}`);
         next();
