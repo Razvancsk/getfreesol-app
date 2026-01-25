@@ -220,7 +220,7 @@ Use \`/scan <wallet_address>\` to check how much SOL a wallet can reclaim withou
 
 ## X (Twitter) Integration
 
-The platform has automated X (Twitter) posting that announces when users claim significant amounts of SOL (NET amount >= 0.01 SOL after the 15% platform fee). Posts include custom purple gradient card banners with GetFreeSol branding.
+The platform has automated X (Twitter) posting that announces when users claim significant amounts of SOL (NET amount >= 0.10 SOL after the 15% platform fee). Posts include custom purple gradient card banners with GetFreeSol branding.
 
 ## Website & Social
 - **Website**: https://getfreesol.xyz
