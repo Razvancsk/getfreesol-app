@@ -147,82 +147,82 @@ function CardDesigner() {
         {/* Card Preview - Horizontal Banner Style */}
         <div className="flex justify-center">
           {cardStyle === 'style1' && (
-            <div className="w-full max-w-lg aspect-[2.5/1] bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 rounded-2xl p-5 border border-purple-400/30 shadow-2xl flex flex-col items-center justify-center text-center">
-              <p className="text-3xl md:text-4xl font-bold text-green-400">
+            <div className="w-full aspect-[16/9] bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 rounded-xl p-8 border border-purple-400/30 shadow-2xl flex flex-col items-center justify-center text-center">
+              <p className="text-4xl md:text-5xl font-bold text-green-400">
                 {solAmount} SOL Claimed! 🎉
               </p>
-              <p className="text-purple-200 mt-2">{accountsClosed} accounts closed</p>
-              <div className="flex items-center gap-3 mt-4">
-                <button className="bg-black rounded-full px-4 py-2 hover:bg-gray-800 transition-colors flex items-center gap-2">
-                  <XIcon className="h-4 w-4 text-white" />
-                  <span className="text-white font-medium text-sm">Share on X</span>
+              <p className="text-purple-200 text-lg mt-3">{accountsClosed} accounts closed</p>
+              <div className="flex items-center gap-4 mt-6">
+                <button className="bg-black rounded-full px-6 py-3 hover:bg-gray-800 transition-colors flex items-center gap-2">
+                  <XIcon className="h-5 w-5 text-white" />
+                  <span className="text-white font-medium">Share on X</span>
                 </button>
-                <span className="text-green-400 text-xs font-medium">50% referral commission</span>
+                <span className="text-green-400 text-sm font-medium">50% referral commission</span>
               </div>
             </div>
           )}
 
           {cardStyle === 'style2' && (
-            <div className="w-full max-w-lg aspect-[2.5/1] bg-black/80 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 shadow-2xl flex flex-col items-center justify-center text-center">
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full mb-3">
-                <Sparkles className="h-5 w-5 text-white" />
+            <div className="w-full aspect-[16/9] bg-black/80 backdrop-blur-xl rounded-xl p-8 border border-purple-500/20 shadow-2xl flex flex-col items-center justify-center text-center">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-full mb-4">
+                <Sparkles className="h-7 w-7 text-white" />
               </div>
-              <p className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+              <p className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
                 {solAmount}
               </p>
-              <p className="text-lg text-gray-400">SOL Claimed</p>
-              <p className="text-sm text-purple-300 mt-1">{accountsClosed} accounts closed</p>
-              <button className="mt-3 bg-white/10 hover:bg-white/20 rounded-full px-5 py-2 transition-colors flex items-center gap-2">
-                <XIcon className="h-4 w-4 text-white" />
-                <span className="text-white font-medium text-sm">Share & earn 50%</span>
+              <p className="text-xl text-gray-400 mt-1">SOL Claimed</p>
+              <p className="text-base text-purple-300 mt-2">{accountsClosed} accounts closed</p>
+              <button className="mt-5 bg-white/10 hover:bg-white/20 rounded-full px-6 py-3 transition-colors flex items-center gap-2">
+                <XIcon className="h-5 w-5 text-white" />
+                <span className="text-white font-medium">Share & earn 50%</span>
               </button>
             </div>
           )}
 
           {cardStyle === 'style3' && (
-            <div className="relative w-full max-w-lg aspect-[2.5/1]">
+            <div className="relative w-full aspect-[16/9]">
               <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-purple-500/30 blur-3xl" />
-              <div className="relative h-full bg-white/10 backdrop-blur-2xl rounded-2xl p-5 border border-white/20 shadow-2xl flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <Coins className="h-5 w-5 text-yellow-400" />
-                  <span className="text-base font-medium text-white/80">Success!</span>
+              <div className="relative h-full bg-white/10 backdrop-blur-2xl rounded-xl p-8 border border-white/20 shadow-2xl flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-2 mb-3">
+                  <Coins className="h-6 w-6 text-yellow-400" />
+                  <span className="text-lg font-medium text-white/80">Success!</span>
                 </div>
-                <p className="text-4xl md:text-5xl font-black text-white tracking-tight">
+                <p className="text-5xl md:text-6xl font-black text-white tracking-tight">
                   {solAmount}
                 </p>
-                <p className="text-lg font-semibold text-green-400">SOL Recovered</p>
-                <p className="text-sm text-white/60">{accountsClosed} accounts closed</p>
-                <button className="mt-3 bg-black rounded-full px-5 py-2 hover:bg-black/80 transition-colors flex items-center gap-2">
-                  <XIcon className="h-4 w-4 text-white" />
-                  <span className="text-white font-medium text-sm">Share on X</span>
+                <p className="text-xl font-semibold text-green-400 mt-1">SOL Recovered</p>
+                <p className="text-base text-white/60">{accountsClosed} accounts closed</p>
+                <button className="mt-5 bg-black rounded-full px-6 py-3 hover:bg-black/80 transition-colors flex items-center gap-2">
+                  <XIcon className="h-5 w-5 text-white" />
+                  <span className="text-white font-medium">Share on X</span>
                 </button>
-                <p className="text-green-400 text-xs mt-2">50% referral commission</p>
+                <p className="text-green-400 text-sm mt-3">50% referral commission</p>
               </div>
             </div>
           )}
 
           {cardStyle === 'style4' && (
-            <div className="w-full max-w-lg aspect-[2.5/1] bg-gradient-to-br from-green-500 via-emerald-600 to-green-700 rounded-2xl p-1 shadow-2xl">
-              <div className="h-full bg-gray-900 rounded-[14px] p-5 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="bg-green-500 rounded-lg p-1">
-                    <Zap className="h-3 w-3 text-white" />
+            <div className="w-full aspect-[16/9] bg-gradient-to-br from-green-500 via-emerald-600 to-green-700 rounded-xl p-1 shadow-2xl">
+              <div className="h-full bg-gray-900 rounded-[10px] p-8 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-green-500 rounded-lg p-1.5">
+                    <Zap className="h-4 w-4 text-white" />
                   </div>
-                  <span className="font-bold text-white text-sm">GetFreeSol</span>
-                  <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span className="font-bold text-white">GetFreeSol</span>
+                  <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium">
                     ✓ Confirmed
                   </span>
                 </div>
-                <p className="text-4xl md:text-5xl font-black text-white">
+                <p className="text-5xl md:text-6xl font-black text-white">
                   +{solAmount}
                 </p>
-                <p className="text-green-400 font-semibold">SOL CLAIMED</p>
-                <div className="flex items-center gap-4 mt-3 text-sm text-gray-400">
+                <p className="text-green-400 font-semibold text-xl">SOL CLAIMED</p>
+                <div className="flex items-center gap-6 mt-4 text-base text-gray-400">
                   <span><span className="text-white font-bold">{accountsClosed}</span> Accounts</span>
                   <span><span className="text-green-400 font-bold">50%</span> Commission</span>
                 </div>
-                <button className="mt-3 bg-white text-black rounded-full px-4 py-1.5 text-sm font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2">
-                  <XIcon className="h-3 w-3" />
+                <button className="mt-5 bg-white text-black rounded-full px-6 py-2.5 font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2">
+                  <XIcon className="h-4 w-4" />
                   Share on X
                 </button>
               </div>
