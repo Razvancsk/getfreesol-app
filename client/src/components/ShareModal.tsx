@@ -28,10 +28,10 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
       const formattedSol = solClaimed.toFixed(4);
       const lamports = Math.floor(solClaimed * 1e9);
       
-      // Share URL with params for OG image generation
+      // Share URL with params for OG image generation (v=2 for cache busting)
       const url = referralCode 
-        ? `${baseUrl}/share?ref=${referralCode}&sol=${lamports}&type=${claimType}&count=${accountsClosed}`
-        : `${baseUrl}/share?sol=${lamports}&type=${claimType}&count=${accountsClosed}`;
+        ? `${baseUrl}/share?ref=${referralCode}&sol=${lamports}&type=${claimType}&count=${accountsClosed}&v=2`
+        : `${baseUrl}/share?sol=${lamports}&type=${claimType}&count=${accountsClosed}&v=2`;
       
       setShareUrl(url);
       setTweetText(`I just reclaimed ${formattedSol} $SOL using @getfreesol_xyz\n\nReclaim your locked SOL 👇`);
