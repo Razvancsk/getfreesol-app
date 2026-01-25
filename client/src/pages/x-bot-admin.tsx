@@ -96,7 +96,7 @@ function CardDesigner() {
   const [solAmount, setSolAmount] = useState('0.0350');
   const [itemCount, setItemCount] = useState('2');
   const [claimType, setClaimType] = useState<'tokens' | 'nfts' | 'accounts'>('accounts');
-  const [cardStyle, setCardStyle] = useState<'style1' | 'style2' | 'style3' | 'style4'>('style1');
+  const [cardStyle, setCardStyle] = useState<'style1' | 'style2' | 'style3' | 'style4' | 'style5'>('style1');
 
   const getClaimText = () => {
     if (claimType === 'tokens') return `by burning ${itemCount} tokens!`;
@@ -165,7 +165,7 @@ function CardDesigner() {
           <div>
             <Label className="text-purple-200 mb-2 block">Card Style</Label>
             <div className="flex flex-wrap gap-2">
-              {(['style1', 'style2', 'style3', 'style4'] as const).map((style, i) => (
+              {(['style1', 'style2', 'style3', 'style4', 'style5'] as const).map((style, i) => (
                 <Button 
                   key={style}
                   onClick={() => setCardStyle(style)}
@@ -219,9 +219,8 @@ function CardDesigner() {
               </p>
               <p className="text-green-400 text-lg mt-4 z-10 font-mono">{getClaimText()}</p>
               {/* Share button */}
-              <button className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full px-6 py-2 flex items-center gap-2 transition-colors z-10">
-                <XIcon className="h-5 w-5 text-white" />
-                <span className="text-white font-medium">Share on X</span>
+              <button className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-8 py-3 transition-colors z-10">
+                <span className="text-black font-mono font-bold text-lg">Tweet It</span>
               </button>
             </div>
           )}
@@ -243,9 +242,8 @@ function CardDesigner() {
               </p>
               <p className="text-green-400 text-lg mt-4 z-10 font-mono">{getClaimText()}</p>
               {/* Share button */}
-              <button className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full px-6 py-2 flex items-center gap-2 transition-colors z-10">
-                <XIcon className="h-5 w-5 text-white" />
-                <span className="text-white font-medium">Share on X</span>
+              <button className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-8 py-3 transition-colors z-10">
+                <span className="text-black font-mono font-bold text-lg">Tweet It</span>
               </button>
             </div>
           )}
@@ -264,6 +262,29 @@ function CardDesigner() {
                 + {solAmount} SOL
               </p>
               <p className="text-white text-lg mt-4 font-mono">{getClaimText()}</p>
+              {/* Share button */}
+              <button className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-8 py-3 transition-colors">
+                <span className="text-black font-mono font-bold text-lg">Tweet It</span>
+              </button>
+            </div>
+          )}
+
+          {cardStyle === 'style5' && (
+            <div className="w-full aspect-[16/9] bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800 rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
+              {/* Decorative waves */}
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-cyan-400/20 to-transparent" />
+              {/* Logo top left */}
+              <div className="absolute top-6 left-6 flex items-center gap-4">
+                <img src={logoImage} alt="GetFreeSol" className="w-16 h-16" />
+                <span className="text-white font-bold text-2xl">GET FREE SOL</span>
+              </div>
+              <p className="text-3xl md:text-4xl font-black text-cyan-300 tracking-wide">
+                CLAIMED
+              </p>
+              <p className="text-5xl md:text-6xl font-black text-white mt-2">
+                + {solAmount} SOL
+              </p>
+              <p className="text-cyan-300 text-lg mt-4 font-mono">{getClaimText()}</p>
               {/* Share button */}
               <button className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-8 py-3 transition-colors">
                 <span className="text-black font-mono font-bold text-lg">Tweet It</span>
