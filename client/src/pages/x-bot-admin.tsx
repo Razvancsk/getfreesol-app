@@ -90,6 +90,8 @@ const FUNNY_TEMPLATES = [
   "you: wondering where your SOL went\n\nyour empty accounts: holding your rent hostage 👀\n\ngetfreesol.xyz\n\n#Solana",
 ];
 
+import logoImage from '@assets/image_1757882056840.png';
+
 function CardDesigner() {
   const [solAmount, setSolAmount] = useState('0.0350');
   const [itemCount, setItemCount] = useState('2');
@@ -183,7 +185,7 @@ function CardDesigner() {
             <div className="w-full aspect-[16/9] bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
               {/* Logo top left */}
               <div className="absolute top-4 left-4 flex items-center gap-2">
-                <img src="/logo.png" alt="GetFreeSol" className="w-8 h-8" />
+                <img src={logoImage} alt="GetFreeSol" className="w-8 h-8" />
                 <span className="text-white font-bold">GET FREE SOL</span>
               </div>
               <p className="text-4xl md:text-5xl font-black text-white tracking-wide">
@@ -202,7 +204,7 @@ function CardDesigner() {
               <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-br from-purple-600/40 to-purple-800/60" style={{ clipPath: 'polygon(40% 0, 100% 0, 100% 100%, 0 100%)' }} />
               {/* Logo top left */}
               <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-                <img src="/logo.png" alt="GetFreeSol" className="w-8 h-8" />
+                <img src={logoImage} alt="GetFreeSol" className="w-8 h-8" />
                 <span className="text-white font-bold">GET FREE SOL</span>
               </div>
               <p className="text-3xl md:text-4xl font-black text-green-400 tracking-wide z-10">
@@ -221,7 +223,7 @@ function CardDesigner() {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl" />
               {/* Logo top left */}
               <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-                <img src="/logo.png" alt="GetFreeSol" className="w-8 h-8" />
+                <img src={logoImage} alt="GetFreeSol" className="w-8 h-8" />
                 <span className="text-white font-bold">GET FREE SOL</span>
               </div>
               <p className="text-3xl md:text-4xl font-black text-purple-400 tracking-wide z-10">
@@ -238,7 +240,7 @@ function CardDesigner() {
             <div className="w-full aspect-[16/9] bg-gradient-to-br from-green-600 via-emerald-700 to-green-800 rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
               {/* Logo top left */}
               <div className="absolute top-4 left-4 flex items-center gap-2">
-                <img src="/logo.png" alt="GetFreeSol" className="w-8 h-8" />
+                <img src={logoImage} alt="GetFreeSol" className="w-8 h-8" />
                 <span className="text-white font-bold">GET FREE SOL</span>
               </div>
               <p className="text-3xl md:text-4xl font-black text-white tracking-wide">
