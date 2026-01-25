@@ -148,6 +148,13 @@ function CardDesigner() {
         <div className="flex justify-center">
           {cardStyle === 'style1' && (
             <div className="w-full aspect-[16/9] bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
+              {/* Logo top left */}
+              <div className="absolute top-4 left-4 flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">G</span>
+                </div>
+                <span className="text-white font-bold">GET FREE SOL</span>
+              </div>
               <p className="text-4xl md:text-5xl font-black text-white tracking-wide">
                 CLAIMED
               </p>
@@ -156,13 +163,6 @@ function CardDesigner() {
               </p>
               <p className="text-white/80 text-lg mt-6">Claimer:</p>
               <p className="text-white/60 text-sm">{walletAddress}</p>
-              {/* Logo bottom right */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">G</span>
-                </div>
-                <span className="text-white font-bold">GET FREE SOL</span>
-              </div>
             </div>
           )}
 
@@ -170,6 +170,13 @@ function CardDesigner() {
             <div className="w-full aspect-[16/9] bg-gradient-to-r from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
               {/* Decorative diagonal */}
               <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-br from-purple-600/40 to-purple-800/60" style={{ clipPath: 'polygon(40% 0, 100% 0, 100% 100%, 0 100%)' }} />
+              {/* Logo top left */}
+              <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">G</span>
+                </div>
+                <span className="text-white font-bold">GET FREE SOL</span>
+              </div>
               <p className="text-3xl md:text-4xl font-black text-green-400 tracking-wide z-10">
                 CLAIMED
               </p>
@@ -178,13 +185,6 @@ function CardDesigner() {
               </p>
               <p className="text-purple-300 text-lg mt-6 z-10">Claimer:</p>
               <p className="text-purple-400 text-sm z-10">{walletAddress}</p>
-              {/* Logo bottom right */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 z-10">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">G</span>
-                </div>
-                <span className="text-white font-bold">GET FREE SOL</span>
-              </div>
             </div>
           )}
 
@@ -192,6 +192,13 @@ function CardDesigner() {
             <div className="w-full aspect-[16/9] bg-black rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
               {/* Glow effect */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl" />
+              {/* Logo top left */}
+              <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">G</span>
+                </div>
+                <span className="text-white font-bold">GET FREE SOL</span>
+              </div>
               <p className="text-3xl md:text-4xl font-black text-purple-400 tracking-wide z-10">
                 CLAIMED
               </p>
@@ -200,18 +207,18 @@ function CardDesigner() {
               </p>
               <p className="text-gray-400 text-lg mt-6 z-10">Claimer:</p>
               <p className="text-gray-500 text-sm z-10">{walletAddress}</p>
-              {/* Logo bottom right */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 z-10">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">G</span>
-                </div>
-                <span className="text-white font-bold">GET FREE SOL</span>
-              </div>
             </div>
           )}
 
           {cardStyle === 'style4' && (
             <div className="w-full aspect-[16/9] bg-gradient-to-br from-green-600 via-emerald-700 to-green-800 rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
+              {/* Logo top left */}
+              <div className="absolute top-4 left-4 flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">G</span>
+                </div>
+                <span className="text-white font-bold">GET FREE SOL</span>
+              </div>
               <p className="text-3xl md:text-4xl font-black text-white tracking-wide">
                 CLAIMED
               </p>
@@ -220,13 +227,6 @@ function CardDesigner() {
               </p>
               <p className="text-green-200 text-lg mt-6">Claimer:</p>
               <p className="text-green-300/60 text-sm">{walletAddress}</p>
-              {/* Logo bottom right */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">G</span>
-                </div>
-                <span className="text-white font-bold">GET FREE SOL</span>
-              </div>
             </div>
           )}
         </div>
