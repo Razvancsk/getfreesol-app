@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowDownUp, Loader2, RefreshCw, Search, ChevronDown, X } from 'lucide-react';
@@ -161,8 +161,7 @@ function TokenSelector({
 }
 
 export function SwapPanel() {
-  const { publicKey, signTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey, signTransaction } = useWalletAdapter();
   const { toast } = useToast();
   
   const [fromToken, setFromToken] = useState<TokenInfo>(POPULAR_TOKENS[0]);
