@@ -102,59 +102,10 @@
   background: linear-gradient(135deg, hsl(240, 10%, 3.9%) 0%, hsl(271, 81%, 20%) 50%, hsl(240, 10%, 3.9%) 100%);
 }
 
-/* Light mode page background */
-.light-gradient-bg {
-  background: linear-gradient(135deg, hsl(270, 50%, 98%) 0%, hsl(271, 60%, 92%) 50%, hsl(270, 50%, 98%) 100%);
-}
-
-/* Theme-aware main background */
-.theme-bg {
-  background: linear-gradient(135deg, hsl(270, 50%, 98%) 0%, hsl(271, 60%, 92%) 50%, hsl(270, 50%, 98%) 100%);
-}
-.dark .theme-bg {
-  background: linear-gradient(135deg, hsl(240, 10%, 3.9%) 0%, hsl(271, 81%, 20%) 50%, hsl(240, 10%, 3.9%) 100%);
-}
-
-/* Light mode card styling */
-.theme-card {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  color: hsl(240, 10%, 20%);
-}
-.dark .theme-card {
-  background: rgba(30, 27, 75, 0.5);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: white;
-}
-
-/* Light mode text colors */
-.theme-text {
-  color: hsl(240, 10%, 20%);
-}
-.dark .theme-text {
-  color: white;
-}
-
-.theme-text-muted {
-  color: hsl(271, 40%, 40%);
-}
-.dark .theme-text-muted {
-  color: hsl(271, 60%, 70%);
-}
-
 .glass-morphism {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark .glass-morphism {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-:root .glass-morphism {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .glow-purple {
