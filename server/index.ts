@@ -269,9 +269,10 @@ function getStaticAssetsPath() {
         // Get additional share parameters
         const claimType = (req.query.type as string) || 'accounts';
         const itemCount = parseInt(req.query.count as string) || 1;
+        const cacheParam = req.query.t || Date.now();
         
-        // Generate OG image URL
-        const ogImage = `${req.protocol}://${req.get('host')}/api/share/card?sol=${solAmount}&type=${claimType}&count=${itemCount}`;
+        // Generate OG image URL with cache-busting parameter
+        const ogImage = `${req.protocol}://${req.get('host')}/api/share/card?sol=${solAmount}&type=${claimType}&count=${itemCount}&t=${cacheParam}`;
 
         // Read the index.html template
         const staticPath = process.env.NODE_ENV === 'development' 
