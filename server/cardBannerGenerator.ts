@@ -119,9 +119,9 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   ctx.textAlign = 'center';
   ctx.fillText('CLAIMED', width / 2, 280);
 
-  // SOL amount (white, large) - bold weight
+  // SOL amount (white, large) - extra bold weight (font-black = 900)
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 110px Arial, Helvetica, sans-serif';
+  ctx.font = '900 110px Arial, Helvetica, sans-serif';
   ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 410);
 
   // Claim type text (green, monospace style)
