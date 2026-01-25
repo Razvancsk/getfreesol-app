@@ -14,6 +14,7 @@ import UserDocs from "@/pages/user-docs";
 import DeveloperDashboard from "@/pages/developer-dashboard";
 import AdminMigrate from "@/pages/admin-migrate";
 import ProfilePage from "@/pages/profile";
+import SwapPage from "@/pages/swap";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/docs" component={UserDocs} />
       <Route path="/api-docs" component={ApiDocs} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/swap" component={SwapPage} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />
       <Route component={NotFound} />
