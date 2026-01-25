@@ -109,24 +109,24 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   }
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 42px sans-serif';
+  ctx.font = 'bold 42px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('GET FREE SOL', 160, 105);
 
-  // CLAIMED text (green)
+  // CLAIMED text (green) - using italic bold like website
   ctx.fillStyle = '#4ade80';
-  ctx.font = 'bold 80px sans-serif';
+  ctx.font = 'italic bold 72px Arial, Helvetica, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('CLAIMED', width / 2, 280);
 
-  // SOL amount (white, large)
+  // SOL amount (white, large) - bold weight
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 120px sans-serif';
-  ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 420);
+  ctx.font = 'bold 110px Arial, Helvetica, sans-serif';
+  ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 410);
 
-  // Claim type text (green, monospace)
+  // Claim type text (green, monospace style)
   ctx.fillStyle = '#4ade80';
-  ctx.font = '36px monospace';
+  ctx.font = '32px Courier New, monospace';
   let claimText = '';
   if (claimType === 'tokens') {
     claimText = `by burning ${itemCount} token${itemCount > 1 ? 's' : ''}!`;
