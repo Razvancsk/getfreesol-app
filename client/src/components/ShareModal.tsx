@@ -1,9 +1,5 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { getRandomShareMessage } from "@shared/shareMessages";
 import logoImage from "@assets/image_1757882056840.png";
 
@@ -17,9 +13,7 @@ interface ShareModalProps {
 }
 
 export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts' }: ShareModalProps) {
-  const [copied, setCopied] = useState(false);
   const [tweetText, setTweetText] = useState("");
-  const { toast } = useToast();
   
   const baseUrl = window.location.origin;
   const shareUrl = referralCode 
@@ -32,33 +26,13 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
     return `by closing ${accountsClosed} empty accounts!`;
   };
   
-  // Pick a NEW random message every time the modal opens
   useEffect(() => {
     if (isOpen) {
       const lamports = Math.floor(solClaimed * 1e9);
       const message = getRandomShareMessage(lamports);
-      const tweetText = `${message} ${shareUrl}`;
-      setTweetText(tweetText);
+      setTweetText(`${message} ${shareUrl}`);
     }
   }, [isOpen, solClaimed, shareUrl]);
-  
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast({
-        title: "Copied!",
-        description: "Link copied to clipboard",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast({
-        title: "Failed to copy",
-        description: "Please copy the link manually",
-        variant: "destructive",
-      });
-    }
-  };
   
   const handleShareOnX = () => {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
@@ -92,28 +66,6 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
             >
               <span className="text-black font-mono font-bold text-base">Tweet It</span>
             </button>
-          </div>
-          
-          {/* Shareable Link Section */}
-          <div className="bg-purple-900/90 rounded-xl p-4 border border-purple-500/30">
-            <p className="text-purple-200 text-sm mb-3 text-center">
-              Share your referral link to earn 50% commission!
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={shareUrl}
-                readOnly
-                className="bg-slate-800/50 border-purple-500/30 text-white text-sm flex-1 rounded-xl"
-                data-testid="input-share-link"
-              />
-              <Button
-                onClick={handleCopy}
-                className="bg-green-600 hover:bg-green-700 text-white px-5 shrink-0 rounded-xl"
-                data-testid="button-copy-link"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </Button>
-            </div>
           </div>
         </div>
       </DialogContent>
