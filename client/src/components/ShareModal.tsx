@@ -36,18 +36,12 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
   const handleShareOnX = async () => {
     setPosting(true);
     try {
-      const response = await apiRequest('/api/share/tweet', {
-        method: 'POST',
-        body: JSON.stringify({
-          solAmount: solClaimed,
-          itemCount: accountsClosed,
-          claimType,
-          walletAddress,
-          referralCode
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await apiRequest('POST', '/api/share/tweet', {
+        solAmount: solClaimed,
+        itemCount: accountsClosed,
+        claimType,
+        walletAddress,
+        referralCode
       });
       
       const data = await response.json();
