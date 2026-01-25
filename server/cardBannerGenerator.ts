@@ -78,12 +78,8 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  // Background gradient - dark purple matching website from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e]
-  const bgGradient = ctx.createLinearGradient(0, 0, width, 0);
-  bgGradient.addColorStop(0, '#1a0a2e');
-  bgGradient.addColorStop(0.5, '#2d1b4e');
-  bgGradient.addColorStop(1, '#1a0a2e');
-  ctx.fillStyle = bgGradient;
+  // Solid dark purple background
+  ctx.fillStyle = '#2d1b4e';
   ctx.fillRect(0, 0, width, height);
 
   // Decorative diagonal - purple accent matching website from-purple-600/40 to-purple-800/60
