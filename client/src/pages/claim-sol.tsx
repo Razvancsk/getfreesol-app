@@ -3156,6 +3156,18 @@ export default function SolRefund() {
                     Statistics
                   </Button>
                 )}
+                {/* Swap button - only visible to platform wallet */}
+                {isPlatformWallet && (
+                  <Link href="/swap">
+                    <Button
+                      className="px-5 py-2.5 text-base font-medium rounded-full transition-all items-center gap-2 border bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white border-green-500/50"
+                      data-testid="button-swap"
+                    >
+                      <ArrowRightLeft className="h-5 w-5" />
+                      Swap
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           )}
