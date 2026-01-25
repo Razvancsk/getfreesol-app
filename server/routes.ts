@@ -782,11 +782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Award points based on USD value (1 point per $0.01 = 100 points per $1)
-            let pointsAwarded = 0;
-            if (swapUsdValue > 0) {
-              pointsAwarded = await storage.awardSwapPoints(walletAddress, swapUsdValue);
-            }
+            // Points disabled for swaps
+            const pointsAwarded = 0;
             
             // Record the swap
             await storage.createSwapRecord({

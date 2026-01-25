@@ -397,9 +397,6 @@ export function SwapPanel() {
               {executeData.rebatesEnabled && (
                 <p className="text-cyan-300 font-semibold">💰 MEV rebates enabled - earning SOL!</p>
               )}
-              {executeData.pointsAwarded > 0 && (
-                <p className="text-yellow-300 font-semibold">+{executeData.pointsAwarded} points earned!</p>
-              )}
               <a 
                 href={`https://solscan.io/tx/${signature}`}
                 target="_blank"
