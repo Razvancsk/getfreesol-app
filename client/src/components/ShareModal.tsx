@@ -50,7 +50,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
       <DialogContent className="sm:max-w-lg bg-transparent border-0 p-0 [&>button]:hidden">
         <div className="space-y-4">
           <div 
-            className="w-full aspect-[16/9] bg-[#2d1b4e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden"
+            className="w-full aspect-[16/9] bg-gradient-to-r from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden"
           >
             <div className="absolute top-4 left-4 flex items-center gap-3 z-10">
               <img src={logoImage} alt="GetFreeSol" className="w-12 h-12" />
