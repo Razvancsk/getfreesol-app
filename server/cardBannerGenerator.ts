@@ -82,16 +82,16 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   ctx.fillStyle = '#1a0a2e';
   ctx.fillRect(0, 0, width, height);
 
-  // Decorative diagonal - darker purple accent matching website from-purple-600/40 to-purple-800/60
-  const diagonalGradient = ctx.createLinearGradient(width * 0.5, 0, width, height);
-  diagonalGradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
+  // Decorative diagonal - only on right side, purple-700/50 to purple-900/70
+  const diagonalGradient = ctx.createLinearGradient(width, 0, width * 0.5, height);
+  diagonalGradient.addColorStop(0, 'rgba(126, 34, 206, 0.5)');
   diagonalGradient.addColorStop(1, 'rgba(88, 28, 135, 0.7)');
   ctx.fillStyle = diagonalGradient;
   ctx.beginPath();
   ctx.moveTo(width * 0.6, 0);
   ctx.lineTo(width, 0);
   ctx.lineTo(width, height);
-  ctx.lineTo(width * 0.25, height);
+  ctx.lineTo(width * 0.35, height);
   ctx.closePath();
   ctx.fill();
 
