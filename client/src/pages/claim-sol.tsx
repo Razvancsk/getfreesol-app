@@ -3987,33 +3987,7 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Swap Tab Content */}
-          {activeTab === 'swap' && (
-            <div className="space-y-6 py-4">
-              <div className="flex justify-center">
-                <SwapPanel />
-              </div>
-              
-              {/* MEV Rebates Explanation */}
-              <div className="max-w-xl mx-auto space-y-4">
-                <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-white mb-2">What are MEV Rebates?</h4>
-                      <p className="text-sm text-purple-200 leading-relaxed">
-                        When you swap tokens, your trade may create arbitrage opportunities for MEV bots. Instead of losing this value, you earn <span className="text-green-400 font-semibold">50% of the MEV</span> your trade creates as a rebate — paid directly to your wallet in the same block.
-                      </p>
-                      <p className="text-sm text-purple-200 mt-2 leading-relaxed">
-                        <span className="font-medium text-white">Your swap is protected from toxic MEV. Your transaction executes first, then searchers can only backrun (not frontrun) your trade.</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
+          
 
           {/* Referrals Tab Content */}
           {activeTab === 'referrals' && (
