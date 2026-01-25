@@ -52,5 +52,12 @@ export function getRandomShareMessage(lamports: number | string): string {
  */
 export function getShareTitle(lamports: number | string): string {
   const sol = lamportsToSol(lamports);
-  return `Just claimed ${sol} $SOL I didn't even know I had! @getfreesol_xyz makes it super easy. Give it a shot!`;
+  return `I just reclaimed ${sol} $SOL using @getfreesol_xyz`;
+}
+
+/**
+ * Generate share description for OG meta tags
+ */
+export function getShareDescription(): string {
+  return `Reclaim your locked SOL from empty token accounts. Check how much hidden SOL you have!`;
 }

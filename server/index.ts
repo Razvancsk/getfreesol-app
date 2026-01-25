@@ -5,7 +5,7 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
-import { getShareMessage, getShareTitle, lamportsToSol } from "../shared/shareMessages";
+import { getShareTitle, getShareDescription, lamportsToSol } from "../shared/shareMessages";
 import cron from "node-cron";
 import { checkAllWalletAlerts } from "./services/alertService";
 
@@ -258,7 +258,7 @@ function getStaticAssetsPath() {
         // Generate dynamic OG content
         const solAmount = lamportsToSol(lamports);
         const ogTitle = getShareTitle(lamports);
-        const ogDescription = getShareMessage(lamports);
+        const ogDescription = getShareDescription();
         const ogUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
         
         // Get additional share parameters
