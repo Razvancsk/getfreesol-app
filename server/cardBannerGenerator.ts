@@ -124,9 +124,9 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   ctx.font = '900 110px Arial, Helvetica, sans-serif';
   ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 410);
 
-  // Claim type text (green, monospace style)
+  // Claim type text (green-400, font-mono)
   ctx.fillStyle = '#4ade80';
-  ctx.font = '32px Courier New, monospace';
+  ctx.font = '400 34px monospace';
   let claimText = '';
   if (claimType === 'tokens') {
     claimText = `by burning ${itemCount} token${itemCount > 1 ? 's' : ''}!`;
@@ -135,7 +135,7 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   } else {
     claimText = `by closing ${itemCount} empty account${itemCount > 1 ? 's' : ''}!`;
   }
-  ctx.fillText(claimText, width / 2, 510);
+  ctx.fillText(claimText, width / 2, 500);
 
   return canvas.toBuffer('image/png');
 }
