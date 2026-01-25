@@ -145,199 +145,136 @@ function CardDesigner() {
           </div>
         </div>
 
-        {/* Card Preview */}
+        {/* Card Preview - Horizontal Banner Style */}
         <div className="flex justify-center">
           {cardStyle === 'style1' && (
-            <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 rounded-2xl p-6 border border-purple-400/30 shadow-2xl max-w-md w-full">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-white">Share</h3>
-                <button className="text-purple-300 hover:text-white">
-                  <XIcon className="h-5 w-5" />
-                </button>
-              </div>
-              <p className="text-purple-200 mb-4">Invite friends to earn more $SOL</p>
+            <div className="relative w-full max-w-2xl aspect-[2/1] bg-gradient-to-br from-[#1a1040] via-[#2d1b69] to-[#1a1040] rounded-2xl overflow-hidden shadow-2xl">
+              {/* Diagonal accent */}
+              <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-br from-purple-600/50 to-purple-800/80" style={{ clipPath: 'polygon(30% 0, 100% 0, 100% 100%, 0 100%)' }} />
+              {/* Decorative triangles */}
+              <div className="absolute top-8 right-1/3 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-purple-900/50 transform rotate-12" />
+              <div className="absolute top-1/3 right-1/4 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-b-[26px] border-b-purple-800/40" />
+              <div className="absolute bottom-1/4 right-1/3 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-b-[20px] border-b-purple-700/30 transform -rotate-12" />
               
-              <div className="text-center py-6">
-                <p className="text-3xl font-bold text-green-400 mb-2">
-                  {solAmount} SOL Claimed! 🎉
+              {/* Logo */}
+              <div className="absolute top-6 left-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">G</span>
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="absolute left-6 bottom-6 top-20">
+                <h2 className="text-4xl md:text-5xl font-black">
+                  <span className="text-white">CLAIMED</span><br />
+                  <span className="text-yellow-400">{solAmount} SOL</span>
+                </h2>
+                <p className="text-purple-300 text-lg mt-3">
+                  {accountsClosed} accounts closed
+                </p>
+                <p className="text-white font-semibold mt-4">
+                  getfreesol.xyz
                 </p>
               </div>
-
-              <div className="flex justify-center mb-4">
-                <button className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors">
-                  <XIcon className="h-5 w-5 text-white" />
-                </button>
-              </div>
-
-              <div className="flex gap-2 mb-4">
-                <Input 
-                  value={referralLink}
-                  readOnly
-                  className="bg-purple-900/50 border-purple-400/30 text-purple-200 text-sm"
-                />
-                <Button className="bg-green-500 hover:bg-green-600">
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <p className="text-center text-green-400 text-sm font-medium">
-                Earn 50% commission of every SOL your referrals claim!
-              </p>
             </div>
           )}
 
           {cardStyle === 'style2' && (
-            <div className="bg-black/80 backdrop-blur-xl rounded-3xl p-8 border border-purple-500/20 shadow-2xl max-w-md w-full">
-              <div className="flex justify-end mb-2">
-                <button className="text-gray-500 hover:text-white">
-                  <XIcon className="h-5 w-5" />
-                </button>
+            <div className="relative w-full max-w-2xl aspect-[2/1] bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl overflow-hidden shadow-2xl">
+              {/* Dark section */}
+              <div className="absolute left-0 top-0 w-2/3 h-full bg-[#0a0a1a]" style={{ clipPath: 'polygon(0 0, 100% 0, 75% 100%, 0 100%)' }} />
+              
+              {/* Logo */}
+              <div className="absolute top-6 left-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">G</span>
+                </div>
               </div>
               
-              <div className="text-center space-y-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full">
-                  <Sparkles className="h-8 w-8 text-white" />
-                </div>
-                
-                <div>
-                  <p className="text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                    {solAmount}
-                  </p>
-                  <p className="text-xl text-gray-400 mt-1">SOL Claimed</p>
-                </div>
-
-                <div className="bg-purple-900/30 rounded-xl p-4">
-                  <p className="text-sm text-purple-300 mb-2">Share & earn 50% commission</p>
-                  <div className="flex gap-2">
-                    <Input 
-                      value={referralLink}
-                      readOnly
-                      className="bg-black/50 border-purple-500/20 text-white text-xs"
-                    />
-                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex justify-center gap-4">
-                  <button className="bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors">
-                    <XIcon className="h-5 w-5 text-white" />
-                  </button>
-                </div>
+              {/* Content */}
+              <div className="absolute left-6 bottom-6 top-20">
+                <h2 className="text-4xl md:text-5xl font-black text-white">
+                  SUCCESS!
+                </h2>
+                <p className="text-5xl md:text-6xl font-black text-green-400 mt-2">
+                  +{solAmount} SOL
+                </p>
+                <p className="text-gray-400 text-lg mt-3">
+                  {accountsClosed} accounts • 50% referral bonus
+                </p>
+                <p className="text-white font-semibold mt-4">
+                  getfreesol.xyz
+                </p>
               </div>
             </div>
           )}
 
           {cardStyle === 'style3' && (
-            <div className="relative max-w-md w-full">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-purple-500/30 blur-3xl" />
-              <div className="relative bg-white/10 backdrop-blur-2xl rounded-3xl p-8 border border-white/20 shadow-2xl">
-                <div className="flex justify-end">
-                  <button className="text-white/50 hover:text-white">
-                    <XIcon className="h-5 w-5" />
-                  </button>
+            <div className="relative w-full max-w-2xl aspect-[2/1] bg-gradient-to-br from-[#0f172a] to-[#1e1b4b] rounded-2xl overflow-hidden shadow-2xl">
+              {/* Glow effect */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
+              
+              {/* Logo */}
+              <div className="absolute top-6 left-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">G</span>
                 </div>
-                
-                <div className="text-center space-y-4">
-                  <div className="flex items-center justify-center gap-2">
-                    <Coins className="h-8 w-8 text-yellow-400" />
-                    <span className="text-lg font-medium text-white/80">Success!</span>
-                  </div>
-                  
-                  <div className="py-4">
-                    <p className="text-6xl font-black text-white tracking-tight">
-                      {solAmount}
-                    </p>
-                    <p className="text-xl font-semibold text-green-400 mt-2">SOL Recovered</p>
-                    <p className="text-sm text-white/60 mt-1">{accountsClosed} accounts closed</p>
-                  </div>
-
-                  <div className="bg-black/20 rounded-2xl p-4 space-y-3">
-                    <p className="text-white/80 text-sm font-medium">Share to earn more</p>
-                    <div className="flex gap-2">
-                      <Input 
-                        value={referralLink}
-                        readOnly
-                        className="bg-white/10 border-white/10 text-white text-sm"
-                      />
-                      <Button className="bg-green-500 hover:bg-green-600">
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-green-400 text-xs">50% referral commission</p>
-                  </div>
-
-                  <button className="bg-black rounded-full p-3 hover:bg-black/80 transition-colors">
-                    <XIcon className="h-5 w-5 text-white" />
-                  </button>
+              </div>
+              
+              {/* Content - centered */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <div className="inline-flex items-center gap-2 bg-green-500/20 px-4 py-2 rounded-full mb-4">
+                  <Sparkles className="h-5 w-5 text-green-400" />
+                  <span className="text-green-400 font-semibold">Transaction Confirmed</span>
                 </div>
+                <p className="text-6xl md:text-7xl font-black text-white">
+                  {solAmount}
+                </p>
+                <p className="text-2xl text-green-400 font-semibold mt-2">SOL CLAIMED</p>
+                <p className="text-purple-300 mt-2">{accountsClosed} accounts • 50% referral</p>
+              </div>
+              
+              {/* Website */}
+              <div className="absolute bottom-6 left-6">
+                <p className="text-white font-semibold">getfreesol.xyz</p>
               </div>
             </div>
           )}
 
           {cardStyle === 'style4' && (
-            <div className="bg-gradient-to-br from-green-500 via-emerald-600 to-green-700 rounded-3xl p-1 max-w-md w-full shadow-2xl">
-              <div className="bg-gray-900 rounded-[22px] p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-green-500 rounded-lg p-1.5">
-                      <Zap className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="font-bold text-white">GetFreeSol</span>
-                  </div>
-                  <button className="text-gray-500 hover:text-white">
-                    <XIcon className="h-5 w-5" />
-                  </button>
+            <div className="relative w-full max-w-2xl aspect-[2/1] rounded-2xl overflow-hidden shadow-2xl">
+              {/* Split background */}
+              <div className="absolute inset-0 bg-[#0a0a1a]" />
+              <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-br from-yellow-500 to-orange-500" style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0 100%)' }} />
+              
+              {/* Logo */}
+              <div className="absolute top-6 left-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">G</span>
                 </div>
-                
-                <div className="text-center space-y-4 py-4">
-                  <div className="inline-block bg-green-500/20 text-green-400 px-4 py-1 rounded-full text-sm font-medium">
-                    ✓ Transaction Confirmed
-                  </div>
-                  
-                  <div>
-                    <p className="text-5xl font-black text-white">
-                      +{solAmount}
-                    </p>
-                    <p className="text-green-400 font-semibold text-lg mt-1">SOL CLAIMED</p>
-                  </div>
-
-                  <div className="flex justify-center gap-6 text-sm text-gray-400">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-white">{accountsClosed}</p>
-                      <p>Accounts</p>
-                    </div>
-                    <div className="w-px bg-gray-700" />
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-400">50%</p>
-                      <p>Commission</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-800 rounded-xl p-4 mt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-gray-400 text-sm">Your referral link</span>
-                    <Share2 className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Input 
-                      value={referralLink}
-                      readOnly
-                      className="bg-gray-900 border-gray-700 text-white text-sm"
-                    />
-                    <Button className="bg-green-500 hover:bg-green-600 px-6">
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex justify-center mt-6">
-                  <button className="bg-white text-black rounded-full px-6 py-2 font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2">
-                    <XIcon className="h-4 w-4" />
-                    Share on X
-                  </button>
+              </div>
+              
+              {/* Left content */}
+              <div className="absolute left-6 bottom-6 top-20">
+                <h2 className="text-3xl md:text-4xl font-black text-white">
+                  SOL RECOVERED
+                </h2>
+                <p className="text-5xl md:text-6xl font-black text-yellow-400 mt-2">
+                  +{solAmount}
+                </p>
+                <p className="text-gray-400 text-lg mt-2">
+                  {accountsClosed} empty accounts closed
+                </p>
+                <p className="text-white font-semibold mt-4">
+                  getfreesol.xyz
+                </p>
+              </div>
+              
+              {/* Right badge */}
+              <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                <div className="bg-black/30 backdrop-blur-sm rounded-xl px-6 py-4 text-center">
+                  <p className="text-5xl font-black text-white">50%</p>
+                  <p className="text-white/80 font-medium">REFERRAL</p>
                 </div>
               </div>
             </div>
