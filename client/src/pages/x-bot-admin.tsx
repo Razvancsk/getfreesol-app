@@ -92,8 +92,15 @@ const FUNNY_TEMPLATES = [
 
 function CardDesigner() {
   const [solAmount, setSolAmount] = useState('0.0350');
-  const [walletAddress, setWalletAddress] = useState('ASq9Ponhu5jRc8Vuj6KefJ7Ud8thmUW2RqB4xTGEFEsB');
+  const [itemCount, setItemCount] = useState('2');
+  const [claimType, setClaimType] = useState<'tokens' | 'nfts' | 'accounts'>('accounts');
   const [cardStyle, setCardStyle] = useState<'style1' | 'style2' | 'style3' | 'style4'>('style1');
+
+  const getClaimText = () => {
+    if (claimType === 'tokens') return `by burning ${itemCount} tokens!`;
+    if (claimType === 'nfts') return `by burning ${itemCount} NFTs!`;
+    return `by closing ${itemCount} empty accounts!`;
+  };
 
   return (
     <Card className="bg-purple-800/50 border-purple-600">
@@ -108,7 +115,7 @@ function CardDesigner() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-purple-900/30 rounded-lg border border-purple-500/20">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-purple-900/30 rounded-lg border border-purple-500/20">
           <div>
             <Label className="text-purple-200 mb-2 block">SOL Amount</Label>
             <Input
@@ -119,13 +126,39 @@ function CardDesigner() {
             />
           </div>
           <div>
-            <Label className="text-purple-200 mb-2 block">Wallet Address</Label>
+            <Label className="text-purple-200 mb-2 block">Item Count</Label>
             <Input
               type="text"
-              value={walletAddress}
-              onChange={(e) => setWalletAddress(e.target.value)}
-              className="bg-purple-900/50 border-purple-500/30 text-white text-xs"
+              value={itemCount}
+              onChange={(e) => setItemCount(e.target.value)}
+              className="bg-purple-900/50 border-purple-500/30 text-white"
             />
+          </div>
+          <div>
+            <Label className="text-purple-200 mb-2 block">Claim Type</Label>
+            <div className="flex flex-wrap gap-1">
+              <Button 
+                onClick={() => setClaimType('accounts')}
+                size="sm"
+                className={claimType === 'accounts' ? 'bg-purple-600' : 'bg-purple-800/50 hover:bg-purple-700'}
+              >
+                Accounts
+              </Button>
+              <Button 
+                onClick={() => setClaimType('tokens')}
+                size="sm"
+                className={claimType === 'tokens' ? 'bg-purple-600' : 'bg-purple-800/50 hover:bg-purple-700'}
+              >
+                Tokens
+              </Button>
+              <Button 
+                onClick={() => setClaimType('nfts')}
+                size="sm"
+                className={claimType === 'nfts' ? 'bg-purple-600' : 'bg-purple-800/50 hover:bg-purple-700'}
+              >
+                NFTs
+              </Button>
+            </div>
           </div>
           <div>
             <Label className="text-purple-200 mb-2 block">Card Style</Label>
@@ -137,7 +170,7 @@ function CardDesigner() {
                   size="sm"
                   className={cardStyle === style ? 'bg-purple-600' : 'bg-purple-800/50 hover:bg-purple-700'}
                 >
-                  Style {i + 1}
+                  {i + 1}
                 </Button>
               ))}
             </div>
@@ -161,8 +194,7 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2">
                 + {solAmount} SOL
               </p>
-              <p className="text-white/80 text-lg mt-6">Claimer:</p>
-              <p className="text-white/60 text-sm">{walletAddress}</p>
+              <p className="text-green-400 text-lg mt-6 font-mono">{getClaimText()}</p>
             </div>
           )}
 
@@ -183,8 +215,7 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2 z-10">
                 + {solAmount} SOL
               </p>
-              <p className="text-purple-300 text-lg mt-6 z-10">Claimer:</p>
-              <p className="text-purple-400 text-sm z-10">{walletAddress}</p>
+              <p className="text-green-400 text-lg mt-6 z-10 font-mono">{getClaimText()}</p>
             </div>
           )}
 
@@ -205,8 +236,7 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2 z-10">
                 + {solAmount} SOL
               </p>
-              <p className="text-gray-400 text-lg mt-6 z-10">Claimer:</p>
-              <p className="text-gray-500 text-sm z-10">{walletAddress}</p>
+              <p className="text-green-400 text-lg mt-6 z-10 font-mono">{getClaimText()}</p>
             </div>
           )}
 
@@ -225,8 +255,7 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2">
                 + {solAmount} SOL
               </p>
-              <p className="text-green-200 text-lg mt-6">Claimer:</p>
-              <p className="text-green-300/60 text-sm">{walletAddress}</p>
+              <p className="text-white text-lg mt-6 font-mono">{getClaimText()}</p>
             </div>
           )}
         </div>
