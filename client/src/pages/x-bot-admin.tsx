@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft, Send, Loader2, Image, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertCircle, Twitter, Clock, TrendingUp, MessageSquare, Shield, Check, X as XIcon, ArrowLeft, Send, Loader2, Image, RefreshCw, Sparkles, Palette, Copy, Zap, Share2, Coins } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -89,6 +89,271 @@ const FUNNY_TEMPLATES = [
   "solana charges rent for every token account you create 💰\n\nclose the empty ones get it back\n\ngetfreesol.xyz\n\n#Solana",
   "you: wondering where your SOL went\n\nyour empty accounts: holding your rent hostage 👀\n\ngetfreesol.xyz\n\n#Solana",
 ];
+
+function CardDesigner() {
+  const [solAmount, setSolAmount] = useState('0.15234');
+  const [accountsClosed, setAccountsClosed] = useState('3');
+  const [cardStyle, setCardStyle] = useState<'style1' | 'style2' | 'style3' | 'style4'>('style1');
+  const referralLink = 'https://getfreesol.xyz/?ref=abc123';
+
+  return (
+    <Card className="bg-purple-800/50 border-purple-600">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <Palette className="h-5 w-5" />
+          Claim Card Designer
+        </CardTitle>
+        <CardDescription className="text-purple-200">
+          Preview and customize how the claim success card looks
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-purple-900/30 rounded-lg border border-purple-500/20">
+          <div>
+            <Label className="text-purple-200 mb-2 block">SOL Amount</Label>
+            <Input
+              type="text"
+              value={solAmount}
+              onChange={(e) => setSolAmount(e.target.value)}
+              className="bg-purple-900/50 border-purple-500/30 text-white"
+            />
+          </div>
+          <div>
+            <Label className="text-purple-200 mb-2 block">Accounts Closed</Label>
+            <Input
+              type="text"
+              value={accountsClosed}
+              onChange={(e) => setAccountsClosed(e.target.value)}
+              className="bg-purple-900/50 border-purple-500/30 text-white"
+            />
+          </div>
+          <div>
+            <Label className="text-purple-200 mb-2 block">Card Style</Label>
+            <div className="flex flex-wrap gap-2">
+              {(['style1', 'style2', 'style3', 'style4'] as const).map((style, i) => (
+                <Button 
+                  key={style}
+                  onClick={() => setCardStyle(style)}
+                  size="sm"
+                  className={cardStyle === style ? 'bg-purple-600' : 'bg-purple-800/50 hover:bg-purple-700'}
+                >
+                  Style {i + 1}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Card Preview */}
+        <div className="flex justify-center">
+          {cardStyle === 'style1' && (
+            <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 rounded-2xl p-6 border border-purple-400/30 shadow-2xl max-w-md w-full">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-bold text-white">Share</h3>
+                <button className="text-purple-300 hover:text-white">
+                  <XIcon className="h-5 w-5" />
+                </button>
+              </div>
+              <p className="text-purple-200 mb-4">Invite friends to earn more $SOL</p>
+              
+              <div className="text-center py-6">
+                <p className="text-3xl font-bold text-green-400 mb-2">
+                  {solAmount} SOL Claimed! 🎉
+                </p>
+              </div>
+
+              <div className="flex justify-center mb-4">
+                <button className="bg-black rounded-full p-3 hover:bg-gray-800 transition-colors">
+                  <XIcon className="h-5 w-5 text-white" />
+                </button>
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <Input 
+                  value={referralLink}
+                  readOnly
+                  className="bg-purple-900/50 border-purple-400/30 text-purple-200 text-sm"
+                />
+                <Button className="bg-green-500 hover:bg-green-600">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <p className="text-center text-green-400 text-sm font-medium">
+                Earn 50% commission of every SOL your referrals claim!
+              </p>
+            </div>
+          )}
+
+          {cardStyle === 'style2' && (
+            <div className="bg-black/80 backdrop-blur-xl rounded-3xl p-8 border border-purple-500/20 shadow-2xl max-w-md w-full">
+              <div className="flex justify-end mb-2">
+                <button className="text-gray-500 hover:text-white">
+                  <XIcon className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="text-center space-y-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full">
+                  <Sparkles className="h-8 w-8 text-white" />
+                </div>
+                
+                <div>
+                  <p className="text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                    {solAmount}
+                  </p>
+                  <p className="text-xl text-gray-400 mt-1">SOL Claimed</p>
+                </div>
+
+                <div className="bg-purple-900/30 rounded-xl p-4">
+                  <p className="text-sm text-purple-300 mb-2">Share & earn 50% commission</p>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={referralLink}
+                      readOnly
+                      className="bg-black/50 border-purple-500/20 text-white text-xs"
+                    />
+                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex justify-center gap-4">
+                  <button className="bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors">
+                    <XIcon className="h-5 w-5 text-white" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {cardStyle === 'style3' && (
+            <div className="relative max-w-md w-full">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-purple-500/30 blur-3xl" />
+              <div className="relative bg-white/10 backdrop-blur-2xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                <div className="flex justify-end">
+                  <button className="text-white/50 hover:text-white">
+                    <XIcon className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="text-center space-y-4">
+                  <div className="flex items-center justify-center gap-2">
+                    <Coins className="h-8 w-8 text-yellow-400" />
+                    <span className="text-lg font-medium text-white/80">Success!</span>
+                  </div>
+                  
+                  <div className="py-4">
+                    <p className="text-6xl font-black text-white tracking-tight">
+                      {solAmount}
+                    </p>
+                    <p className="text-xl font-semibold text-green-400 mt-2">SOL Recovered</p>
+                    <p className="text-sm text-white/60 mt-1">{accountsClosed} accounts closed</p>
+                  </div>
+
+                  <div className="bg-black/20 rounded-2xl p-4 space-y-3">
+                    <p className="text-white/80 text-sm font-medium">Share to earn more</p>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={referralLink}
+                        readOnly
+                        className="bg-white/10 border-white/10 text-white text-sm"
+                      />
+                      <Button className="bg-green-500 hover:bg-green-600">
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-green-400 text-xs">50% referral commission</p>
+                  </div>
+
+                  <button className="bg-black rounded-full p-3 hover:bg-black/80 transition-colors">
+                    <XIcon className="h-5 w-5 text-white" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {cardStyle === 'style4' && (
+            <div className="bg-gradient-to-br from-green-500 via-emerald-600 to-green-700 rounded-3xl p-1 max-w-md w-full shadow-2xl">
+              <div className="bg-gray-900 rounded-[22px] p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-green-500 rounded-lg p-1.5">
+                      <Zap className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="font-bold text-white">GetFreeSol</span>
+                  </div>
+                  <button className="text-gray-500 hover:text-white">
+                    <XIcon className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="text-center space-y-4 py-4">
+                  <div className="inline-block bg-green-500/20 text-green-400 px-4 py-1 rounded-full text-sm font-medium">
+                    ✓ Transaction Confirmed
+                  </div>
+                  
+                  <div>
+                    <p className="text-5xl font-black text-white">
+                      +{solAmount}
+                    </p>
+                    <p className="text-green-400 font-semibold text-lg mt-1">SOL CLAIMED</p>
+                  </div>
+
+                  <div className="flex justify-center gap-6 text-sm text-gray-400">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-white">{accountsClosed}</p>
+                      <p>Accounts</p>
+                    </div>
+                    <div className="w-px bg-gray-700" />
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-400">50%</p>
+                      <p>Commission</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-800 rounded-xl p-4 mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-gray-400 text-sm">Your referral link</span>
+                    <Share2 className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={referralLink}
+                      readOnly
+                      className="bg-gray-900 border-gray-700 text-white text-sm"
+                    />
+                    <Button className="bg-green-500 hover:bg-green-600 px-6">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex justify-center mt-6">
+                  <button className="bg-white text-black rounded-full px-6 py-2 font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2">
+                    <XIcon className="h-4 w-4" />
+                    Share on X
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Usage Notes */}
+        <div className="bg-purple-900/20 rounded-lg p-4 border border-purple-500/10">
+          <p className="text-purple-300 text-sm">
+            <strong className="text-white">Tip:</strong> Adjust the SOL amount and accounts closed above to preview different scenarios. Pick your preferred style to implement in the main app.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
@@ -570,6 +835,10 @@ export default function XBotAdmin() {
               <MessageSquare className="h-4 w-4 mr-2" />
               Engagement
             </TabsTrigger>
+            <TabsTrigger value="carddesigner" className="data-[state=active]:bg-purple-600">
+              <Palette className="h-4 w-4 mr-2" />
+              Card Designer
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -746,6 +1015,10 @@ export default function XBotAdmin() {
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="carddesigner">
+            <CardDesigner />
           </TabsContent>
         </Tabs>
       </div>
