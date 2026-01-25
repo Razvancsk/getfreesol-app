@@ -975,11 +975,17 @@ export default function SolRefund() {
       return { signature, solRecovered, rebateAmount };
     },
     onSuccess: (data) => {
+      const totalRecovered = parseFloat(data.solRecovered) + (data.rebateAmount || 0);
       const rebateText = data.rebateAmount > 0 ? ` + ${data.rebateAmount.toFixed(6)} SOL MEV rebate!` : '';
       toast({
         title: "Success!",
         description: `Token burned successfully! Recovered ${data.solRecovered} SOL${rebateText}`,
       });
+      
+      // Show share modal
+      setShareData({ solClaimed: totalRecovered, accountsClosed: 1, claimType: 'tokens' });
+      setIsShareModalOpen(true);
+      
       // Refresh token list
       if (publicKey) {
         scanTokensMutation.mutate(publicKey.toString());
@@ -1141,6 +1147,7 @@ export default function SolRefund() {
       };
     },
     onSuccess: (result) => {
+      const totalRecovered = result.netAmount + (result.rebateAmount || 0);
       const rebateText = result.rebateAmount > 0 ? ` + ${result.rebateAmount.toFixed(6)} SOL MEV rebate!` : '';
       const batchText = result.batchCount > 1 ? ` (${result.batchCount} batches)` : '';
       toast({
@@ -1148,6 +1155,11 @@ export default function SolRefund() {
         className: "bg-green-600 text-white border-green-600",
         action: <ToastAction altText="View transaction on Solscan" onClick={() => window.open(`https://solscan.io/tx/${result.signature}`, '_blank')}>View on Solscan</ToastAction>
       });
+      
+      // Show share modal
+      setShareData({ solClaimed: totalRecovered, accountsClosed: result.tokensProcessed, claimType: 'tokens' });
+      setIsShareModalOpen(true);
+      
       // Clear selections and refresh
       setSelectedTokens(new Set());
       if (publicKey) {
@@ -2444,8 +2456,9 @@ export default function SolRefund() {
     onSuccess: (results) => {
       if (!results) return;
       
-      // Calculate total rebates earned
+      // Calculate total rebates earned and SOL recovered
       const totalRebate = results.reduce((sum, r) => sum + (r.rebateAmount || 0), 0);
+      const totalSolRecovered = results.reduce((sum, r) => sum + (r.netAmount || 0), 0) + totalRebate;
       const rebateText = totalRebate > 0 ? ` + ${totalRebate.toFixed(6)} SOL MEV rebate!` : '';
       
       if (results.length > 0) {
@@ -2454,6 +2467,10 @@ export default function SolRefund() {
           title: `Successfully burned ${totalNfts} NFT${totalNfts > 1 ? 's' : ''}${rebateText}`,
           className: "bg-green-600 text-white border-green-600",
         });
+        
+        // Show share modal
+        setShareData({ solClaimed: totalSolRecovered, accountsClosed: totalNfts, claimType: 'nfts' });
+        setIsShareModalOpen(true);
       }
 
       // Clear selection but don't refresh immediately - let optimistic update handle UI state
