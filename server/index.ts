@@ -241,16 +241,21 @@ function getStaticAssetsPath() {
     // Dynamic Open Graph middleware for social sharing
     // This must be registered BEFORE static file serving or Vite setup
     app.use((req: Request, res: Response, next: NextFunction) => {
-      // Only handle HTML requests to root path
-      const isHtmlRequest = req.accepts('html') && (req.path === '/' || req.path === '/index.html');
+      // Handle /share path for Twitter card previews
+      const isSharePath = req.path === '/share';
+      // Only handle HTML requests to root path or /share path
+      const isHtmlRequest = req.accepts('html') && (req.path === '/' || req.path === '/index.html' || isSharePath);
       const claimedParam = req.query.claimed as string;
+      const solParam = req.query.sol as string; // For /share path
       
-      if (!isHtmlRequest || !claimedParam) {
+      // Need either claimed param (old format) or sol param (/share format)
+      if (!isHtmlRequest || (!claimedParam && !solParam)) {
         return next();
       }
 
       try {
-        const lamports = parseInt(claimedParam, 10);
+        // Support both formats: ?claimed=lamports (old) and ?sol=lamports (/share)
+        const lamports = parseInt(claimedParam || solParam, 10);
         if (isNaN(lamports) || lamports <= 0) {
           return next();
         }

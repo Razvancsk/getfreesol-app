@@ -1,7 +1,5 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import logoImage from "@assets/image_1757882056840.png";
 
 interface ShareModalProps {
@@ -14,11 +12,9 @@ interface ShareModalProps {
   walletAddress?: string;
 }
 
-export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts', walletAddress }: ShareModalProps) {
-  const [posting, setPosting] = useState(false);
-  const [posted, setPosted] = useState(false);
-  const [tweetUrl, setTweetUrl] = useState<string | null>(null);
-  const { toast } = useToast();
+export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts' }: ShareModalProps) {
+  const [tweetText, setTweetText] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
   
   const getClaimText = () => {
     if (claimType === 'tokens') return `by burning ${accountsClosed} token${accountsClosed > 1 ? 's' : ''}!`;
@@ -28,50 +24,25 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
 
   useEffect(() => {
     if (isOpen) {
-      setPosted(false);
-      setTweetUrl(null);
+      const baseUrl = window.location.origin;
+      const formattedSol = solClaimed.toFixed(4);
+      const lamports = Math.floor(solClaimed * 1e9);
+      
+      // Share URL with params for OG image generation
+      const url = referralCode 
+        ? `${baseUrl}/share?ref=${referralCode}&sol=${lamports}&type=${claimType}&count=${accountsClosed}`
+        : `${baseUrl}/share?sol=${lamports}&type=${claimType}&count=${accountsClosed}`;
+      
+      setShareUrl(url);
+      setTweetText(`I just reclaimed ${formattedSol} $SOL using @getfreesol_xyz\n\nReclaim your locked SOL 👇`);
     }
-  }, [isOpen]);
+  }, [isOpen, solClaimed, referralCode, accountsClosed, claimType]);
   
-  const handleShareOnX = async () => {
-    setPosting(true);
-    try {
-      const response = await apiRequest('POST', '/api/share/tweet', {
-        solAmount: solClaimed,
-        itemCount: accountsClosed,
-        claimType,
-        walletAddress,
-        referralCode
-      });
-      
-      const data = await response.json();
-      
-      if (data.success && data.tweetUrl) {
-        setPosted(true);
-        setTweetUrl(data.tweetUrl);
-        toast({
-          title: "Posted to X!",
-          description: "Your claim has been shared on @getfreesol_xyz",
-        });
-      } else {
-        throw new Error(data.error || 'Failed to post');
-      }
-    } catch (error: any) {
-      console.error('Error posting tweet:', error);
-      toast({
-        title: "Failed to post",
-        description: error.message || "Could not post to X. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setPosting(false);
-    }
-  };
-
-  const handleViewTweet = () => {
-    if (tweetUrl) {
-      window.open(tweetUrl, '_blank');
-    }
+  const handleShareOnX = () => {
+    // Open Twitter intent with text and URL
+    const fullText = `${tweetText}\n${shareUrl}`;
+    const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(fullText)}`;
+    window.open(twitterUrl, '_blank', 'width=550,height=420');
   };
   
   return (
@@ -94,24 +65,12 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
             </p>
             <p className="text-green-400 text-base mt-3 z-10 font-mono">{getClaimText()}</p>
             
-            {posted ? (
-              <button 
-                onClick={handleViewTweet}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-blue-500 hover:bg-blue-400 border-2 border-blue-400 rounded-lg px-6 py-2 transition-colors z-10"
-              >
-                <span className="text-white font-mono font-bold text-base">View Tweet</span>
-              </button>
-            ) : (
-              <button 
-                onClick={handleShareOnX}
-                disabled={posting}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors z-10 disabled:opacity-50"
-              >
-                <span className="text-black font-mono font-bold text-base">
-                  {posting ? "Posting..." : "Tweet It"}
-                </span>
-              </button>
-            )}
+            <button 
+              onClick={handleShareOnX}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors z-10"
+            >
+              <span className="text-black font-mono font-bold text-base">Tweet It</span>
+            </button>
           </div>
         </div>
       </DialogContent>
