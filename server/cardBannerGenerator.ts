@@ -78,24 +78,24 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  // Background gradient - Style 2 dark purple (matching frontend)
+  // Background gradient - darker purple matching website from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e]
   const bgGradient = ctx.createLinearGradient(0, 0, width, 0);
-  bgGradient.addColorStop(0, '#1a0a2e');
-  bgGradient.addColorStop(0.5, '#2d1b4e');
-  bgGradient.addColorStop(1, '#1a0a2e');
+  bgGradient.addColorStop(0, '#0f051a');
+  bgGradient.addColorStop(0.5, '#1a0a2e');
+  bgGradient.addColorStop(1, '#0f051a');
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
 
-  // Decorative diagonal (matching frontend clipPath)
-  const diagonalGradient = ctx.createLinearGradient(width * 0.6, 0, width, height);
-  diagonalGradient.addColorStop(0, 'rgba(147, 51, 234, 0.4)');
-  diagonalGradient.addColorStop(1, 'rgba(107, 33, 168, 0.6)');
+  // Decorative diagonal - darker purple accent matching website from-purple-600/40 to-purple-800/60
+  const diagonalGradient = ctx.createLinearGradient(width * 0.5, 0, width, height);
+  diagonalGradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
+  diagonalGradient.addColorStop(1, 'rgba(88, 28, 135, 0.7)');
   ctx.fillStyle = diagonalGradient;
   ctx.beginPath();
-  ctx.moveTo(width * 0.67, 0);
+  ctx.moveTo(width * 0.6, 0);
   ctx.lineTo(width, 0);
   ctx.lineTo(width, height);
-  ctx.lineTo(width * 0.33, height);
+  ctx.lineTo(width * 0.25, height);
   ctx.closePath();
   ctx.fill();
 
