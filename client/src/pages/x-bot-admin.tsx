@@ -94,7 +94,6 @@ function CardDesigner() {
   const [solAmount, setSolAmount] = useState('0.15234');
   const [accountsClosed, setAccountsClosed] = useState('3');
   const [cardStyle, setCardStyle] = useState<'style1' | 'style2' | 'style3' | 'style4'>('style1');
-  const referralLink = 'https://getfreesol.xyz/?ref=abc123';
 
   return (
     <Card className="bg-purple-800/50 border-purple-600">
@@ -156,28 +155,21 @@ function CardDesigner() {
                 </button>
               </div>
               
-              <div className="flex items-center justify-between flex-1">
-                <div className="text-left">
+              <div className="flex items-center justify-center flex-1">
+                <div className="text-center">
                   <p className="text-4xl md:text-5xl font-bold text-green-400">
                     {solAmount} SOL Claimed! 🎉
                   </p>
                   <p className="text-purple-200 mt-2">{accountsClosed} accounts closed</p>
                 </div>
-                <button className="bg-black rounded-full p-4 hover:bg-gray-800 transition-colors">
-                  <XIcon className="h-6 w-6 text-white" />
-                </button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Input 
-                  value={referralLink}
-                  readOnly
-                  className="bg-purple-900/50 border-purple-400/30 text-purple-200 text-sm flex-1"
-                />
-                <Button className="bg-green-500 hover:bg-green-600">
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <span className="text-green-400 text-sm font-medium whitespace-nowrap">50% commission</span>
+              <div className="flex items-center justify-center gap-4">
+                <button className="bg-black rounded-full p-4 hover:bg-gray-800 transition-colors flex items-center gap-2">
+                  <XIcon className="h-5 w-5 text-white" />
+                  <span className="text-white font-medium">Share on X</span>
+                </button>
+                <span className="text-green-400 text-sm font-medium">Earn 50% referral commission</span>
               </div>
             </div>
           )}
@@ -197,20 +189,11 @@ function CardDesigner() {
               </div>
 
               {/* Right side - Share */}
-              <div className="flex-1 flex flex-col justify-center pl-6 border-l border-purple-500/20">
-                <p className="text-lg text-purple-300 mb-3">Share & earn 50% commission</p>
-                <div className="flex gap-2 mb-4">
-                  <Input 
-                    value={referralLink}
-                    readOnly
-                    className="bg-black/50 border-purple-500/20 text-white text-sm"
-                  />
-                  <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <button className="bg-white/10 hover:bg-white/20 rounded-full p-3 w-fit transition-colors">
+              <div className="flex-1 flex flex-col justify-center items-center pl-6 border-l border-purple-500/20">
+                <p className="text-lg text-purple-300 mb-4">Share & earn 50% commission</p>
+                <button className="bg-white/10 hover:bg-white/20 rounded-full px-6 py-3 transition-colors flex items-center gap-2">
                   <XIcon className="h-5 w-5 text-white" />
+                  <span className="text-white font-medium">Share on X</span>
                 </button>
               </div>
             </div>
@@ -234,21 +217,12 @@ function CardDesigner() {
                 </div>
 
                 {/* Right side */}
-                <div className="flex-1 flex flex-col justify-center pl-6 border-l border-white/10">
+                <div className="flex-1 flex flex-col justify-center items-center pl-6 border-l border-white/10">
                   <p className="text-white/80 text-sm font-medium mb-3">Share to earn more</p>
-                  <div className="flex gap-2 mb-3">
-                    <Input 
-                      value={referralLink}
-                      readOnly
-                      className="bg-white/10 border-white/10 text-white text-sm"
-                    />
-                    <Button className="bg-green-500 hover:bg-green-600">
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-green-400 text-xs mb-3">50% referral commission</p>
-                  <button className="bg-black rounded-full p-2 w-fit hover:bg-black/80 transition-colors">
+                  <p className="text-green-400 text-xs mb-4">50% referral commission</p>
+                  <button className="bg-black rounded-full px-5 py-2 hover:bg-black/80 transition-colors flex items-center gap-2">
                     <XIcon className="h-4 w-4 text-white" />
+                    <span className="text-white font-medium">Share on X</span>
                   </button>
                 </div>
               </div>
@@ -276,7 +250,7 @@ function CardDesigner() {
                 </div>
 
                 {/* Right side */}
-                <div className="flex-1 flex flex-col justify-center pl-5 border-l border-gray-700">
+                <div className="flex-1 flex flex-col justify-center items-center pl-5 border-l border-gray-700">
                   <div className="flex justify-center gap-6 text-sm text-gray-400 mb-4">
                     <div className="text-center">
                       <p className="text-2xl font-bold text-white">{accountsClosed}</p>
@@ -285,18 +259,6 @@ function CardDesigner() {
                     <div className="text-center">
                       <p className="text-2xl font-bold text-green-400">50%</p>
                       <p>Commission</p>
-                    </div>
-                  </div>
-                  <div className="bg-gray-800 rounded-lg p-3">
-                    <div className="flex gap-2">
-                      <Input 
-                        value={referralLink}
-                        readOnly
-                        className="bg-gray-900 border-gray-700 text-white text-xs"
-                      />
-                      <Button size="sm" className="bg-green-500 hover:bg-green-600">
-                        <Copy className="h-3 w-3" />
-                      </Button>
                     </div>
                   </div>
                   <button className="mt-3 bg-white text-black rounded-full px-4 py-1.5 text-sm font-semibold hover:bg-gray-100 transition-colors flex items-center gap-2 w-fit mx-auto">
