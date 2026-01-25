@@ -194,7 +194,11 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2">
                 + {solAmount} SOL
               </p>
-              <p className="text-green-400 text-lg mt-6 font-mono">{getClaimText()}</p>
+              <p className="text-green-400 text-lg mt-4 font-mono">{getClaimText()}</p>
+              {/* Share button */}
+              <button className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-8 py-3 transition-colors">
+                <span className="text-black font-mono font-bold text-lg">Tweet It</span>
+              </button>
             </div>
           )}
 
@@ -213,7 +217,12 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2 z-10">
                 + {solAmount} SOL
               </p>
-              <p className="text-green-400 text-lg mt-6 z-10 font-mono">{getClaimText()}</p>
+              <p className="text-green-400 text-lg mt-4 z-10 font-mono">{getClaimText()}</p>
+              {/* Share button */}
+              <button className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full px-6 py-2 flex items-center gap-2 transition-colors z-10">
+                <XIcon className="h-5 w-5 text-white" />
+                <span className="text-white font-medium">Share on X</span>
+              </button>
             </div>
           )}
 
@@ -232,7 +241,12 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2 z-10">
                 + {solAmount} SOL
               </p>
-              <p className="text-green-400 text-lg mt-6 z-10 font-mono">{getClaimText()}</p>
+              <p className="text-green-400 text-lg mt-4 z-10 font-mono">{getClaimText()}</p>
+              {/* Share button */}
+              <button className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full px-6 py-2 flex items-center gap-2 transition-colors z-10">
+                <XIcon className="h-5 w-5 text-white" />
+                <span className="text-white font-medium">Share on X</span>
+              </button>
             </div>
           )}
 
@@ -249,7 +263,11 @@ function CardDesigner() {
               <p className="text-5xl md:text-6xl font-black text-white mt-2">
                 + {solAmount} SOL
               </p>
-              <p className="text-white text-lg mt-6 font-mono">{getClaimText()}</p>
+              <p className="text-white text-lg mt-4 font-mono">{getClaimText()}</p>
+              {/* Share button */}
+              <button className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-8 py-3 transition-colors">
+                <span className="text-black font-mono font-bold text-lg">Tweet It</span>
+              </button>
             </div>
           )}
         </div>
