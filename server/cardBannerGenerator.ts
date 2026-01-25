@@ -78,7 +78,7 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  // Background gradient - Style 2 dark purple
+  // Background gradient - Style 2 dark purple (matching frontend)
   const bgGradient = ctx.createLinearGradient(0, 0, width, 0);
   bgGradient.addColorStop(0, '#1a0a2e');
   bgGradient.addColorStop(0.5, '#2d1b4e');
@@ -86,44 +86,47 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
 
-  // Decorative diagonal
-  ctx.fillStyle = 'rgba(147, 51, 234, 0.3)';
+  // Decorative diagonal (matching frontend clipPath)
+  const diagonalGradient = ctx.createLinearGradient(width * 0.6, 0, width, height);
+  diagonalGradient.addColorStop(0, 'rgba(147, 51, 234, 0.4)');
+  diagonalGradient.addColorStop(1, 'rgba(107, 33, 168, 0.6)');
+  ctx.fillStyle = diagonalGradient;
   ctx.beginPath();
-  ctx.moveTo(width * 0.6, 0);
+  ctx.moveTo(width * 0.67, 0);
   ctx.lineTo(width, 0);
   ctx.lineTo(width, height);
-  ctx.lineTo(width * 0.4, height);
+  ctx.lineTo(width * 0.33, height);
   ctx.closePath();
   ctx.fill();
 
-  // Logo and branding
+  // Logo and branding (top left)
   try {
     const logoPath = path.join(__dirname, '../attached_assets/image_1757882056840.png');
     const logo = await loadImage(logoPath);
-    ctx.drawImage(logo, 50, 40, 80, 80);
+    ctx.drawImage(logo, 50, 45, 90, 90);
   } catch (error) {
     console.error('Failed to load logo:', error);
   }
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 36px sans-serif';
+  ctx.font = 'bold 42px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('GET FREE SOL', 150, 95);
+  ctx.fillText('GET FREE SOL', 160, 105);
 
-  // CLAIMED text
-  ctx.fillStyle = '#4ade80'; // green-400
-  ctx.font = 'bold 72px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('CLAIMED', width / 2, 260);
-
-  // SOL amount
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 100px sans-serif';
-  ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 380);
-
-  // Claim type text
+  // CLAIMED text (green)
   ctx.fillStyle = '#4ade80';
-  ctx.font = '32px monospace';
+  ctx.font = 'bold 80px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('CLAIMED', width / 2, 280);
+
+  // SOL amount (white, large)
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 120px sans-serif';
+  ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 420);
+
+  // Claim type text (green, monospace)
+  ctx.fillStyle = '#4ade80';
+  ctx.font = '36px monospace';
   let claimText = '';
   if (claimType === 'tokens') {
     claimText = `by burning ${itemCount} token${itemCount > 1 ? 's' : ''}!`;
@@ -132,12 +135,7 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   } else {
     claimText = `by closing ${itemCount} empty account${itemCount > 1 ? 's' : ''}!`;
   }
-  ctx.fillText(claimText, width / 2, 450);
-
-  // Website URL at bottom
-  ctx.fillStyle = '#a78bfa';
-  ctx.font = 'bold 28px sans-serif';
-  ctx.fillText('getfreesol.xyz', width / 2, height - 40);
+  ctx.fillText(claimText, width / 2, 510);
 
   return canvas.toBuffer('image/png');
 }
