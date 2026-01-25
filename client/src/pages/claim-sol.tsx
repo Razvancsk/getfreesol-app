@@ -6270,6 +6270,7 @@ export default function SolRefund() {
           referralCode={userReferralCode}
           accountsClosed={shareData.accountsClosed}
           claimType={shareData.claimType}
+          walletAddress={publicKey?.toBase58()}
         />
       )}
 

@@ -7787,6 +7787,67 @@ Claimer: ${walletAddress}`;
     }
   });
   
+  // Post user claim to X with image - posts from platform account
+  app.post("/api/share/tweet", async (req, res) => {
+    try {
+      const { solAmount, itemCount, claimType, walletAddress, referralCode } = req.body;
+      
+      if (!solAmount) {
+        return res.status(400).json({ error: 'solAmount is required' });
+      }
+      
+      const formattedSol = parseFloat(solAmount).toFixed(4);
+      const count = itemCount || 1;
+      const type = claimType || 'accounts';
+      
+      // Generate claim card image
+      const { generateShareCardStyle2 } = await import('./cardBannerGenerator.js');
+      const cardImage = await generateShareCardStyle2({ 
+        solAmount: formattedSol, 
+        itemCount: count, 
+        claimType: type 
+      });
+      
+      // Upload image to X
+      const uploadResult = await xApiService.uploadMedia(cardImage);
+      if (!uploadResult.success || !uploadResult.mediaId) {
+        return res.status(500).json({ error: 'Failed to upload image to X' });
+      }
+      
+      // Build tweet text
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : 'https://getfreesol.xyz';
+      const shareUrl = referralCode 
+        ? `${baseUrl}?ref=${referralCode}`
+        : baseUrl;
+      
+      const shortWallet = walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'A user';
+      
+      const tweetText = `${shortWallet} just reclaimed ${formattedSol} $SOL using @getfreesol_xyz\n\nReclaim your locked SOL 👇\n${shareUrl}`;
+      
+      // Post tweet with image
+      const result = await xApiService.postTweet({
+        content: tweetText,
+        postType: 'user_claim',
+        mediaIds: [uploadResult.mediaId]
+      });
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          tweetId: result.tweetId,
+          tweetUrl: `https://twitter.com/getfreesol_xyz/status/${result.tweetId}`
+        });
+      } else {
+        res.status(500).json({ error: result.error || 'Failed to post tweet' });
+      }
+    } catch (error: any) {
+      console.error('Share tweet error:', error);
+      res.status(500).json({ error: error.message || 'Failed to post tweet' });
+    }
+  });
+  
   // ============================================
   // X BOT SCHEDULED POSTING SYSTEM
   // ============================================

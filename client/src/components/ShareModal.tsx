@@ -1,6 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import logoImage from "@assets/image_1757882056840.png";
 
 interface ShareModalProps {
@@ -10,133 +11,72 @@ interface ShareModalProps {
   referralCode: string | null;
   accountsClosed?: number;
   claimType?: 'accounts' | 'tokens' | 'nfts';
+  walletAddress?: string;
 }
 
-export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts' }: ShareModalProps) {
-  const [tweetText, setTweetText] = useState("");
-  const [copying, setCopying] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts', walletAddress }: ShareModalProps) {
+  const [posting, setPosting] = useState(false);
+  const [posted, setPosted] = useState(false);
+  const [tweetUrl, setTweetUrl] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  const baseUrl = window.location.origin;
-  const lamports = Math.floor(solClaimed * 1e9);
-  const shareUrl = referralCode 
-    ? `${baseUrl}?ref=${referralCode}&claimed=${lamports}&type=${claimType}&count=${accountsClosed}`
-    : `${baseUrl}?claimed=${lamports}&type=${claimType}&count=${accountsClosed}`;
   
   const getClaimText = () => {
     if (claimType === 'tokens') return `by burning ${accountsClosed} token${accountsClosed > 1 ? 's' : ''}!`;
     if (claimType === 'nfts') return `by burning ${accountsClosed} NFT${accountsClosed > 1 ? 's' : ''}!`;
     return `by closing ${accountsClosed} empty account${accountsClosed > 1 ? 's' : ''}!`;
   };
-  
+
   useEffect(() => {
     if (isOpen) {
-      const formattedSol = solClaimed.toFixed(4);
-      const message = `I just reclaimed ${formattedSol} $SOL using @getfreesol_xyz\n\nReclaim your locked SOL 👇\n${shareUrl}`;
-      setTweetText(message);
+      setPosted(false);
+      setTweetUrl(null);
     }
-  }, [isOpen, solClaimed, shareUrl]);
-
-  const generateCardImage = async (): Promise<Blob> => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    const width = 1200;
-    const height = 675;
-    canvas.width = width;
-    canvas.height = height;
-
-    const bgGradient = ctx.createLinearGradient(0, 0, width, 0);
-    bgGradient.addColorStop(0, '#1a0a2e');
-    bgGradient.addColorStop(0.5, '#2d1b4e');
-    bgGradient.addColorStop(1, '#1a0a2e');
-    ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, width, height);
-
-    const diagonalGradient = ctx.createLinearGradient(width * 0.6, 0, width, height);
-    diagonalGradient.addColorStop(0, 'rgba(147, 51, 234, 0.4)');
-    diagonalGradient.addColorStop(1, 'rgba(107, 33, 168, 0.6)');
-    ctx.fillStyle = diagonalGradient;
-    ctx.beginPath();
-    ctx.moveTo(width * 0.67, 0);
-    ctx.lineTo(width, 0);
-    ctx.lineTo(width, height);
-    ctx.lineTo(width * 0.33, height);
-    ctx.closePath();
-    ctx.fill();
-
-    const logo = new Image();
-    logo.crossOrigin = 'anonymous';
-    await new Promise<void>((resolve) => {
-      logo.onload = () => resolve();
-      logo.onerror = () => resolve();
-      logo.src = logoImage;
-    });
-    if (logo.complete && logo.naturalWidth > 0) {
-      ctx.drawImage(logo, 50, 45, 90, 90);
-    }
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 42px Arial, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('GET FREE SOL', 160, 105);
-
-    ctx.fillStyle = '#4ade80';
-    ctx.font = 'bold 80px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('CLAIMED', width / 2, 280);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 120px Arial, sans-serif';
-    ctx.fillText(`+ ${solClaimed.toFixed(4)} SOL`, width / 2, 420);
-
-    ctx.fillStyle = '#4ade80';
-    ctx.font = '36px Courier New, monospace';
-    ctx.fillText(getClaimText(), width / 2, 510);
-
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve(blob!);
-      }, 'image/png');
-    });
-  };
+  }, [isOpen]);
   
   const handleShareOnX = async () => {
-    setCopying(true);
+    setPosting(true);
     try {
-      const imageBlob = await generateCardImage();
+      const response = await apiRequest('/api/share/tweet', {
+        method: 'POST',
+        body: JSON.stringify({
+          solAmount: solClaimed,
+          itemCount: accountsClosed,
+          claimType,
+          walletAddress,
+          referralCode
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'image/png': imageBlob
-          })
-        ]);
+      const data = await response.json();
+      
+      if (data.success && data.tweetUrl) {
+        setPosted(true);
+        setTweetUrl(data.tweetUrl);
         toast({
-          title: "✅ Image copied to clipboard!",
-          description: "Step 1: Press Ctrl+V (or Cmd+V on Mac) in the Twitter box to paste the image. Step 2: Then click Post.",
-          duration: 10000,
+          title: "Posted to X!",
+          description: "Your claim has been shared on @getfreesol_xyz",
         });
-      } catch (clipboardError) {
-        console.error('Clipboard write failed:', clipboardError);
-        toast({
-          title: "Could not copy image",
-          description: "Please screenshot the card and upload it manually to Twitter",
-          variant: "destructive",
-          duration: 8000,
-        });
+      } else {
+        throw new Error(data.error || 'Failed to post');
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-      window.open(twitterUrl, '_blank', 'width=550,height=420');
-    } catch (error) {
-      console.error('Error generating image:', error);
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-      window.open(twitterUrl, '_blank', 'width=550,height=420');
+    } catch (error: any) {
+      console.error('Error posting tweet:', error);
+      toast({
+        title: "Failed to post",
+        description: error.message || "Could not post to X. Please try again.",
+        variant: "destructive"
+      });
     } finally {
-      setCopying(false);
+      setPosting(false);
+    }
+  };
+
+  const handleViewTweet = () => {
+    if (tweetUrl) {
+      window.open(tweetUrl, '_blank');
     }
   };
   
@@ -145,7 +85,6 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
       <DialogContent className="sm:max-w-lg bg-transparent border-0 p-0 [&>button]:hidden">
         <div className="space-y-4">
           <div 
-            ref={cardRef}
             className="w-full aspect-[16/9] bg-gradient-to-r from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden"
           >
             <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-br from-purple-600/40 to-purple-800/60" style={{ clipPath: 'polygon(40% 0, 100% 0, 100% 100%, 0 100%)' }} />
@@ -160,15 +99,25 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
               + {solClaimed.toFixed(4)} SOL
             </p>
             <p className="text-green-400 text-base mt-3 z-10 font-mono">{getClaimText()}</p>
-            <button 
-              onClick={handleShareOnX}
-              disabled={copying}
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors z-10 disabled:opacity-50"
-            >
-              <span className="text-black font-mono font-bold text-base">
-                {copying ? "Copying..." : "Tweet It"}
-              </span>
-            </button>
+            
+            {posted ? (
+              <button 
+                onClick={handleViewTweet}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-blue-500 hover:bg-blue-400 border-2 border-blue-400 rounded-lg px-6 py-2 transition-colors z-10"
+              >
+                <span className="text-white font-mono font-bold text-base">View Tweet</span>
+              </button>
+            ) : (
+              <button 
+                onClick={handleShareOnX}
+                disabled={posting}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors z-10 disabled:opacity-50"
+              >
+                <span className="text-black font-mono font-bold text-base">
+                  {posting ? "Posting..." : "Tweet It"}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </DialogContent>
