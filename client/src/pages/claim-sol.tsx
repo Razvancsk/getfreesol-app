@@ -46,6 +46,7 @@ import { SwapModal } from '@/components/SwapModal';
 import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import logoImage from '@assets/image_1757882056840.png';
 import flipggBanner from '@assets/flipgg-mobile.mp4';
 import flipggMobileGif from '@assets/ezgif-53f817bd0e3ed32a_1768280738804.gif';
@@ -2894,7 +2895,7 @@ export default function SolRefund() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+    <div className="min-h-screen theme-bg flex flex-col">
       <div className={`container mx-auto pt-1 pb-2 max-w-6xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'}`}>
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
@@ -2923,6 +2924,7 @@ export default function SolRefund() {
 
                   {/* Mobile Wallet Connection */}
                   <div className="lg:hidden flex items-center space-x-2">
+                    <ThemeToggle />
                 {isConnected && publicKey ? (
                   <>
                     <Link href="/profile">
@@ -2994,6 +2996,7 @@ export default function SolRefund() {
 
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
+              <ThemeToggle />
               {isConnected && publicKey ? (
                 <>
                   <Link href="/profile">
