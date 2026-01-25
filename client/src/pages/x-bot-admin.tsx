@@ -204,8 +204,6 @@ function CardDesigner() {
 
           {cardStyle === 'style2' && (
             <div className="w-full aspect-[16/9] bg-[#2d1b4e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
-              {/* Decorative diagonal */}
-              <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-br from-purple-600/40 to-purple-800/60" style={{ clipPath: 'polygon(40% 0, 100% 0, 100% 100%, 0 100%)' }} />
               {/* Logo top left */}
               <div className="absolute top-6 left-6 flex items-center gap-4 z-10">
                 <img src={logoImage} alt="GetFreeSol" className="w-16 h-16" />

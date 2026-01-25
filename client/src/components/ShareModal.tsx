@@ -52,7 +52,6 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
           <div 
             className="w-full aspect-[16/9] bg-[#2d1b4e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden"
           >
-            <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-br from-purple-600/40 to-purple-800/60" style={{ clipPath: 'polygon(40% 0, 100% 0, 100% 100%, 0 100%)' }} />
             <div className="absolute top-4 left-4 flex items-center gap-3 z-10">
               <img src={logoImage} alt="GetFreeSol" className="w-12 h-12" />
               <span className="text-white font-bold text-xl">GET FREE SOL</span>

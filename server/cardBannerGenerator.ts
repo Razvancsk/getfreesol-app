@@ -78,22 +78,9 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  // Solid dark purple background
+  // Solid dark purple background - no diagonal
   ctx.fillStyle = '#2d1b4e';
   ctx.fillRect(0, 0, width, height);
-
-  // Decorative diagonal - purple accent matching website from-purple-600/40 to-purple-800/60
-  const diagonalGradient = ctx.createLinearGradient(width * 0.5, 0, width, height);
-  diagonalGradient.addColorStop(0, 'rgba(147, 51, 234, 0.4)');
-  diagonalGradient.addColorStop(1, 'rgba(107, 33, 168, 0.6)');
-  ctx.fillStyle = diagonalGradient;
-  ctx.beginPath();
-  ctx.moveTo(width * 0.6, 0);
-  ctx.lineTo(width, 0);
-  ctx.lineTo(width, height);
-  ctx.lineTo(width * 0.25, height);
-  ctx.closePath();
-  ctx.fill();
 
   // Logo and branding (top left)
   try {
