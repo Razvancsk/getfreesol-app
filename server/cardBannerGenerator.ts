@@ -124,8 +124,8 @@ export async function generateShareCardStyle2(options: ShareCardOptions): Promis
   ctx.font = '900 110px Arial, Helvetica, sans-serif';
   ctx.fillText(`+ ${parseFloat(solAmount).toFixed(4)} SOL`, width / 2, 410);
 
-  // Claim type text (green-400, font-mono)
-  ctx.fillStyle = '#4ade80';
+  // Claim type text (brighter green to match website render)
+  ctx.fillStyle = '#22c55e';
   ctx.font = '400 34px monospace';
   let claimText = '';
   if (claimType === 'tokens') {
