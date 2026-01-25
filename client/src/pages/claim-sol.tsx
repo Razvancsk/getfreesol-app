@@ -3103,7 +3103,7 @@ export default function SolRefund() {
           )}
 
           {/* Center Navigation Buttons */}
-          {isConnected && activeTab !== 'docs' && (
+          {activeTab !== 'docs' && (
             <div className="flex justify-center py-2 px-2">
               <div className="flex items-center space-x-2">
                 <Button
