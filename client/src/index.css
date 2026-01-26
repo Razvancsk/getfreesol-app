@@ -98,6 +98,13 @@
 }
 
 /* Night Mode - Complete Black UI/UX Design (Green outlined buttons) */
+/* Exclude elements with no-night-mode class from all night mode overrides */
+.night-mode .no-night-mode,
+.night-mode .no-night-mode * {
+  background: unset !important;
+  border-color: unset !important;
+}
+
 .night-mode {
   --background: #000000;
   --foreground: #ffffff;
