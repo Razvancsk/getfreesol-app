@@ -67,7 +67,8 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
             
             <button 
               onClick={handleShareOnX}
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors z-10"
+              className="no-night-mode absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors z-10"
+              style={{ backgroundColor: '#4ade80', borderColor: '#86efac' }}
             >
               <span className="text-black font-mono font-bold text-base">Tweet It</span>
             </button>
