@@ -370,31 +370,8 @@
   border-color: #2a2a2a !important;
 }
 
-/* Grid-based ledger rows - same gray as cards ALWAYS */
-.night-mode .grid-cols-4 {
-  background-color: #141414 !important;
-  border-radius: 8px !important;
-}
-
-.night-mode .grid-cols-4:hover {
-  background-color: #1e1e1e !important;
-}
-
-/* Target all elements with hover:bg-purple classes */
-.night-mode .hover\:bg-purple-800\/20 {
-  background-color: #141414 !important;
-}
-
-.night-mode .hover\:bg-purple-800\/20:hover {
-  background-color: #1e1e1e !important;
-}
-
-/* Any cursor-pointer grid rows */
-.night-mode .cursor-pointer.rounded-lg {
-  background-color: #141414 !important;
-}
-
-.night-mode .cursor-pointer.rounded-lg:hover {
+/* Grid-based ledger rows - only clickable rows get hover effect */
+.night-mode .cursor-pointer.grid-cols-4:hover {
   background-color: #1e1e1e !important;
 }
 
