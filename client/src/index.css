@@ -167,11 +167,28 @@
   border-color: #2a2a2a !important;
 }
 
-/* Cards and containers */
+/* Cards and containers - slightly lighter than background for visibility */
 .night-mode .bg-slate-800,
 .night-mode .bg-slate-900,
 .night-mode [class*="bg-slate"] {
-  background: #0a0a0a !important;
+  background: #141414 !important;
+  border-color: #2a2a2a !important;
+}
+
+/* Card containers with better contrast */
+.night-mode [class*="rounded-xl"][class*="border"],
+.night-mode [class*="rounded-lg"][class*="border"]:not(button) {
+  background: #141414 !important;
+  border: 1px solid #2a2a2a !important;
+}
+
+/* Inner cards/sections */
+.night-mode [class*="bg-purple-800"][class*="rounded"],
+.night-mode [class*="bg-purple-900"][class*="rounded"],
+.night-mode [class*="from-purple-800"][class*="rounded"],
+.night-mode [class*="from-purple-900"][class*="rounded"] {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
 }
 
 /* Text colors - all text white in night mode */
