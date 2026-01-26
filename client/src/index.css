@@ -98,11 +98,9 @@
 }
 
 /* Night Mode - Complete Black UI/UX Design (Green outlined buttons) */
-/* Exclude elements with no-night-mode class from all night mode overrides */
-.night-mode .no-night-mode,
-.night-mode .no-night-mode * {
-  background: unset !important;
-  border-color: unset !important;
+/* Exclude claim card from night mode - keep original purple gradient */
+.night-mode .no-night-mode {
+  background: linear-gradient(to right, #1a0a2e, #2d1b4e, #1a0a2e) !important;
 }
 
 .night-mode {
