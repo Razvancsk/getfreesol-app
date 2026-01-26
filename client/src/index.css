@@ -140,18 +140,18 @@
   background: #0a0a0a !important;
 }
 
-/* Buttons in night mode - Green border ONLY when active/selected */
+/* Buttons in night mode - default gray border */
 .night-mode .bg-purple-600,
 .night-mode .bg-purple-700 {
   background: transparent !important;
-  border: 2px solid #00ff88 !important;
+  border: 2px solid #333333 !important;
   color: #ffffff !important;
 }
 
 .night-mode .hover\:bg-purple-600:hover,
 .night-mode .hover\:bg-purple-700:hover {
-  background: rgba(0, 255, 136, 0.1) !important;
-  border: 2px solid #00ff88 !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 2px solid #555555 !important;
   color: #ffffff !important;
 }
 
@@ -229,24 +229,30 @@
 }
 
 /* Night mode outlined button style for navigation tabs */
-/* Inactive buttons: gray border, white text */
+/* ALL buttons default: gray border, white text */
 .night-mode button[class*="rounded-full"] {
   background: transparent !important;
   border: 2px solid #333333 !important;
   color: #ffffff !important;
 }
 
-/* Active/selected buttons: green border, white text */
-.night-mode button[class*="rounded-full"][class*="bg-purple-600"] {
+/* ONLY Active/selected button gets green border */
+/* Active state has border-purple-500 (not border-purple-500/30) */
+.night-mode button[class*="rounded-full"][class*="border-purple-500"]:not([class*="border-purple-500/"]) {
   background: transparent !important;
   border: 2px solid #00ff88 !important;
   color: #ffffff !important;
 }
 
-/* Hover: subtle highlight but no green border until clicked */
-.night-mode button[class*="rounded-full"]:hover:not([class*="bg-purple-600"]) {
-  border-color: #555555 !important;
+/* Hover: subtle highlight but no green border */
+.night-mode button[class*="rounded-full"]:hover {
+  border-color: #444444 !important;
   background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Keep active button green on hover too */
+.night-mode button[class*="rounded-full"][class*="border-purple-500"]:not([class*="border-purple-500/"]):hover {
+  border: 2px solid #00ff88 !important;
 }
 
 /* Tables */
