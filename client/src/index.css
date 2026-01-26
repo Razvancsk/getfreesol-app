@@ -308,19 +308,37 @@
   border-color: #16a34a !important;
 }
 
-/* Tables */
-.night-mode table,
-.night-mode th,
-.night-mode td {
-  border-color: #2a2a2a !important;
+/* Tables - clean ledger style */
+.night-mode table {
+  background: #0a0a0a !important;
+  border-color: #1a1a1a !important;
 }
 
 .night-mode th {
   background: #0a0a0a !important;
+  color: #888888 !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  border-bottom: 1px solid #1a1a1a !important;
+}
+
+.night-mode td {
+  border-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.night-mode tr {
+  border-bottom: 1px solid #1a1a1a !important;
 }
 
 .night-mode tr:hover {
-  background: #1a1a1a !important;
+  background: #141414 !important;
+}
+
+/* SOL amounts in green */
+.night-mode td[class*="text-green"],
+.night-mode span[class*="text-green"] {
+  color: #22c55e !important;
 }
 
 /* Scrollbars for night mode */
