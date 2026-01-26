@@ -97,71 +97,157 @@
   }
 }
 
-/* Night Mode - Black theme (keeps purple as default) */
+/* Night Mode - Complete Black UI/UX Design */
 .night-mode {
-  --night-bg: #000000;
-  --night-card: #0a0a0a;
-  --night-border: #1a1a1a;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0a0a0a;
+  --card-foreground: #ffffff;
+  --popover: #0a0a0a;
+  --popover-foreground: #ffffff;
+  --primary: #00ff88;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #888888;
+  --accent: #00ff88;
+  --accent-foreground: #000000;
+  --border: #2a2a2a;
+  --input: #1a1a1a;
+  --ring: #00ff88;
 }
 
-.night-mode .gradient-bg {
-  background: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #000000 100%) !important;
+/* Night mode body background */
+.night-mode body {
+  background: #000000 !important;
 }
 
-.night-mode .bg-gradient-to-b {
-  background: linear-gradient(to bottom, #000000, #0a0a0a) !important;
+/* All gradients become pure black */
+.night-mode .gradient-bg,
+.night-mode [class*="bg-gradient"] {
+  background: #000000 !important;
 }
 
-.night-mode .from-\[\#1a0a2e\],
-.night-mode .from-purple-900\/20,
-.night-mode .from-purple-900\/30,
-.night-mode .from-purple-900\/40,
-.night-mode .from-purple-900\/50,
-.night-mode .from-purple-900\/60 {
-  --tw-gradient-from: #000000 !important;
+/* All purple backgrounds become black/dark gray */
+.night-mode [class*="bg-purple"],
+.night-mode [class*="from-purple"],
+.night-mode [class*="via-purple"],
+.night-mode [class*="to-purple"],
+.night-mode [class*="from-\[#1a0a2e\]"],
+.night-mode [class*="via-\[#2d1b4e\]"],
+.night-mode [class*="to-\[#1a0a2e\]"] {
+  background: #0a0a0a !important;
 }
 
-.night-mode .via-\[\#2d1b4e\],
-.night-mode .via-purple-800\/20,
-.night-mode .via-purple-800\/30 {
-  --tw-gradient-via: #0a0a0a !important;
+/* Buttons in night mode */
+.night-mode .bg-purple-600,
+.night-mode .bg-purple-700,
+.night-mode .hover\:bg-purple-600:hover,
+.night-mode .hover\:bg-purple-700:hover {
+  background: #00ff88 !important;
+  color: #000000 !important;
 }
 
-.night-mode .to-\[\#1a0a2e\],
-.night-mode .to-purple-900\/20,
-.night-mode .to-purple-900\/30,
-.night-mode .to-purple-900\/40 {
-  --tw-gradient-to: #000000 !important;
-}
-
-.night-mode .bg-purple-900\/20,
-.night-mode .bg-purple-900\/30,
-.night-mode .bg-purple-900\/40,
-.night-mode .bg-purple-900\/50,
-.night-mode .bg-purple-900\/60 {
-  background-color: rgba(10, 10, 10, 0.8) !important;
-}
-
-.night-mode .bg-purple-800\/20,
-.night-mode .bg-purple-800\/30,
 .night-mode .bg-purple-800\/40,
-.night-mode .bg-purple-800\/50,
-.night-mode .bg-purple-800\/60 {
-  background-color: rgba(20, 20, 20, 0.8) !important;
+.night-mode .bg-purple-800\/60,
+.night-mode .bg-purple-900\/40,
+.night-mode .bg-purple-900\/60 {
+  background: rgba(30, 30, 30, 0.9) !important;
 }
 
-.night-mode .border-purple-500\/20,
-.night-mode .border-purple-500\/30,
-.night-mode .border-purple-600\/30,
-.night-mode .border-purple-600\/40,
-.night-mode .border-purple-600\/50 {
-  border-color: rgba(60, 60, 60, 0.5) !important;
+/* Borders become subtle gray */
+.night-mode [class*="border-purple"] {
+  border-color: #2a2a2a !important;
 }
 
-.night-mode .bg-slate-900\/80,
-.night-mode .bg-slate-900\/90,
-.night-mode .bg-slate-800 {
-  background-color: #0a0a0a !important;
+/* Cards and containers */
+.night-mode .bg-slate-800,
+.night-mode .bg-slate-900,
+.night-mode [class*="bg-slate"] {
+  background: #0a0a0a !important;
+}
+
+/* Text colors */
+.night-mode .text-purple-300,
+.night-mode .text-purple-400,
+.night-mode .text-purple-200 {
+  color: #cccccc !important;
+}
+
+.night-mode .text-purple-500,
+.night-mode .text-purple-600 {
+  color: #00ff88 !important;
+}
+
+/* Accent colors - green/cyan for night mode */
+.night-mode .text-green-400,
+.night-mode .text-green-500 {
+  color: #00ff88 !important;
+}
+
+/* Hover states */
+.night-mode .hover\:bg-purple-600\/60:hover,
+.night-mode .hover\:bg-purple-700\/60:hover {
+  background: rgba(0, 255, 136, 0.2) !important;
+}
+
+/* Main container background */
+.night-mode .min-h-screen {
+  background: #000000 !important;
+}
+
+/* Input fields */
+.night-mode input,
+.night-mode textarea,
+.night-mode select {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+  color: #ffffff !important;
+}
+
+/* Dropdowns and popovers */
+.night-mode [class*="DropdownMenuContent"],
+.night-mode [class*="PopoverContent"] {
+  background: #0a0a0a !important;
+  border-color: #2a2a2a !important;
+}
+
+/* Progress bars */
+.night-mode [class*="Progress"] {
+  background: #1a1a1a !important;
+}
+
+.night-mode [class*="Progress"] > div {
+  background: #00ff88 !important;
+}
+
+/* Tables */
+.night-mode table,
+.night-mode th,
+.night-mode td {
+  border-color: #2a2a2a !important;
+}
+
+.night-mode th {
+  background: #0a0a0a !important;
+}
+
+.night-mode tr:hover {
+  background: #1a1a1a !important;
+}
+
+/* Scrollbars for night mode */
+.night-mode ::-webkit-scrollbar-track {
+  background: #0a0a0a !important;
+}
+
+.night-mode ::-webkit-scrollbar-thumb {
+  background: #2a2a2a !important;
+}
+
+.night-mode ::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a !important;
 }
 
 /* Custom styles for the SOL Refund application */
