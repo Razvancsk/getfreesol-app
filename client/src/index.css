@@ -98,11 +98,6 @@
 }
 
 /* Night Mode - Complete Black UI/UX Design (Green outlined buttons) */
-/* Exclude claim card from night mode - keep original purple gradient */
-.night-mode .no-night-mode {
-  background: linear-gradient(to right, #1a0a2e, #2d1b4e, #1a0a2e) !important;
-}
-
 .night-mode {
   --background: #000000;
   --foreground: #ffffff;
@@ -397,6 +392,14 @@
 
 .night-mode ::-webkit-scrollbar-thumb:hover {
   background: #3a3a3a !important;
+}
+
+/* IMPORTANT: Keep claim card purple - must be at end to override other rules */
+.night-mode .no-night-mode.bg-gradient-to-r,
+.night-mode div.no-night-mode[class*="bg-gradient"],
+.night-mode .no-night-mode {
+  background: linear-gradient(to right, #1a0a2e, #2d1b4e, #1a0a2e) !important;
+  background-image: linear-gradient(to right, #1a0a2e, #2d1b4e, #1a0a2e) !important;
 }
 
 /* Custom styles for the SOL Refund application */
