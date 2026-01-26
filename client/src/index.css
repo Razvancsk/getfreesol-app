@@ -318,8 +318,13 @@
 
 .night-mode th,
 .night-mode thead th,
-.night-mode table th {
-  background: #1a1a1a !important;
+.night-mode table th,
+.night-mode thead,
+.night-mode table thead,
+.night-mode [class*="TableHead"],
+.night-mode [class*="TableHeader"] {
+  background: #141414 !important;
+  background-color: #141414 !important;
   color: #888888 !important;
   text-transform: uppercase !important;
   font-size: 0.75rem !important;
