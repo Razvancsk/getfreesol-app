@@ -3251,7 +3251,11 @@ export default function SolRefund() {
 
               {/* Empty Accounts Content */}
               {claimSubTab === 'empty' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className={`backdrop-blur-sm rounded-xl p-6 ${
+              isNightMode 
+                ? 'bg-[#141414] border border-[#2a2a2a]' 
+                : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+            }`}>
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Scan Results</h3>
                 <button
@@ -3336,7 +3340,11 @@ export default function SolRefund() {
 
               {/* Programs Sub-tab Content */}
               {claimSubTab === 'programs' && (
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <div className={`backdrop-blur-sm rounded-xl p-6 ${
+                  isNightMode 
+                    ? 'bg-[#141414] border border-[#2a2a2a]' 
+                    : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+                }`}>
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-white">Scan Results</h3>
                     <button
