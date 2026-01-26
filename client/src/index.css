@@ -308,31 +308,33 @@
   border-color: #16a34a !important;
 }
 
-/* Tables - clean ledger style */
+/* Tables - clean ledger style with gray background */
 .night-mode table {
-  background: #0a0a0a !important;
-  border-color: #1a1a1a !important;
+  background: #141414 !important;
+  border-color: #2a2a2a !important;
 }
 
 .night-mode th {
-  background: #0a0a0a !important;
+  background: #1a1a1a !important;
   color: #888888 !important;
   text-transform: uppercase !important;
   font-size: 0.75rem !important;
-  border-bottom: 1px solid #1a1a1a !important;
+  border-bottom: 1px solid #2a2a2a !important;
 }
 
 .night-mode td {
-  border-color: #1a1a1a !important;
+  background: #141414 !important;
+  border-color: #2a2a2a !important;
   color: #ffffff !important;
 }
 
 .night-mode tr {
-  border-bottom: 1px solid #1a1a1a !important;
+  background: #141414 !important;
+  border-bottom: 1px solid #2a2a2a !important;
 }
 
 .night-mode tr:hover {
-  background: #141414 !important;
+  background: #1e1e1e !important;
 }
 
 /* SOL amounts in green */
