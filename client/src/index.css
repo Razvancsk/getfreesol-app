@@ -371,31 +371,31 @@
 }
 
 /* Grid-based ledger rows - same gray as cards ALWAYS */
-.night-mode .grid[class*="grid-cols"] {
+.night-mode .grid-cols-4 {
   background-color: #141414 !important;
+  border-radius: 8px !important;
 }
 
-.night-mode .grid[class*="grid-cols"]:hover {
+.night-mode .grid-cols-4:hover {
   background-color: #1e1e1e !important;
 }
 
-/* All grid rows in ledger sections */
-.night-mode [class*="grid-cols-4"] {
+/* Target all elements with hover:bg-purple classes */
+.night-mode .hover\:bg-purple-800\/20 {
   background-color: #141414 !important;
 }
 
-.night-mode [class*="grid-cols-4"]:hover {
+.night-mode .hover\:bg-purple-800\/20:hover {
   background-color: #1e1e1e !important;
 }
 
-/* Any div with py-3 inside ledger containers */
-.night-mode div[class*="py-3"][class*="grid"] {
+/* Any cursor-pointer grid rows */
+.night-mode .cursor-pointer.rounded-lg {
   background-color: #141414 !important;
 }
 
-/* Force transparent backgrounds to gray */
-.night-mode [class*="hover:bg-purple-800"] {
-  background-color: #141414 !important;
+.night-mode .cursor-pointer.rounded-lg:hover {
+  background-color: #1e1e1e !important;
 }
 
 /* SOL amounts in green */
