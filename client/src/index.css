@@ -370,6 +370,25 @@
   border-color: #2a2a2a !important;
 }
 
+/* Grid-based ledger rows - same gray as cards */
+.night-mode .grid[class*="grid-cols"][class*="hover:bg-purple"] {
+  background: #141414 !important;
+}
+
+.night-mode .grid[class*="grid-cols"][class*="hover:bg-purple"]:hover {
+  background: #1e1e1e !important;
+}
+
+/* All grid rows in ledger sections */
+.night-mode [class*="grid-cols-4"][class*="gap-4"][class*="py-3"] {
+  background: #141414 !important;
+}
+
+.night-mode [class*="grid-cols-4"][class*="gap-4"][class*="py-3"]:hover {
+  background: #1e1e1e !important;
+  border-color: #00ff88 !important;
+}
+
 /* SOL amounts in green */
 .night-mode td[class*="text-green"],
 .night-mode span[class*="text-green"] {
