@@ -402,6 +402,14 @@
   background-image: linear-gradient(to right, #1a0a2e, #2d1b4e, #1a0a2e) !important;
 }
 
+/* Keep Tweet It button green in night mode */
+.night-mode button.no-night-mode,
+.night-mode .no-night-mode.bg-green-400 {
+  background: #4ade80 !important;
+  background-color: #4ade80 !important;
+  border-color: #86efac !important;
+}
+
 /* Custom styles for the SOL Refund application */
 .gradient-bg {
   background: linear-gradient(135deg, hsl(240, 10%, 3.9%) 0%, hsl(271, 81%, 20%) 50%, hsl(240, 10%, 3.9%) 100%);
