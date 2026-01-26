@@ -6072,7 +6072,11 @@ export default function SolRefund() {
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
           {activeTab === 'reclaim' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+            <div className={`backdrop-blur-sm rounded-xl p-6 mb-6 ${
+              isNightMode 
+                ? 'bg-[#141414] border border-[#2a2a2a]' 
+                : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+            }`}>
               <div className="flex items-center mb-6">
                 <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
               </div>
@@ -6080,17 +6084,17 @@ export default function SolRefund() {
               <div className="overflow-x-auto">
                 <div className="min-w-full">
                   {/* Header */}
-                  <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider">
+                  <div className={`grid grid-cols-4 gap-4 mb-4 pb-3 border-b ${isNightMode ? 'border-[#2a2a2a]' : 'border-purple-500/30'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
                       WALLET/TX
                     </div>
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
                       ACCTS
                     </div>
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
                       CLAIMED SOL
                     </div>
-                    <div className="text-sm font-semibold text-purple-200 uppercase tracking-wider text-center">
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
                       DATE
                     </div>
                   </div>
@@ -6109,10 +6113,10 @@ export default function SolRefund() {
                       allTransactions.map((tx, index) => (
                         <div key={tx.signature}>
                           <div 
-                            className={`grid grid-cols-4 gap-4 py-3 rounded-lg transition-colors cursor-pointer border border-transparent ${
+                            className={`grid grid-cols-4 gap-4 py-3 transition-colors cursor-pointer ${
                               isNightMode 
-                                ? 'bg-[#141414] hover:bg-[#1e1e1e] hover:border-green-500/30' 
-                                : 'hover:bg-purple-800/20 hover:border-purple-500/30'
+                                ? 'hover:bg-[#1a1a1a]' 
+                                : 'hover:bg-purple-800/20 rounded-lg border border-transparent hover:border-purple-500/30'
                             }`}
                             onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
                             title="Click to view transaction on Solscan"
@@ -6140,7 +6144,7 @@ export default function SolRefund() {
                           </div>
                           {/* Separator line between rows - don't show after last row */}
                           {index < allTransactions.length - 1 && (
-                            <div className="border-b border-purple-500/20 my-2"></div>
+                            <div className={`border-b my-2 ${isNightMode ? 'border-[#2a2a2a]' : 'border-purple-500/20'}`}></div>
                           )}
                         </div>
                       ))
