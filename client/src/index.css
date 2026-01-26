@@ -174,11 +174,15 @@
   background: #0a0a0a !important;
 }
 
-/* Text colors */
+/* Text colors - all text white in night mode */
 .night-mode .text-purple-300,
 .night-mode .text-purple-400,
-.night-mode .text-purple-200 {
-  color: #cccccc !important;
+.night-mode .text-purple-200,
+.night-mode .text-gray-400,
+.night-mode .text-gray-500,
+.night-mode .text-slate-400,
+.night-mode .text-slate-500 {
+  color: #ffffff !important;
 }
 
 .night-mode .text-purple-500,
