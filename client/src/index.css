@@ -309,12 +309,16 @@
 }
 
 /* Tables - clean ledger style with gray background */
-.night-mode table {
+.night-mode table,
+.night-mode table tbody,
+.night-mode table thead {
   background: #141414 !important;
   border-color: #2a2a2a !important;
 }
 
-.night-mode th {
+.night-mode th,
+.night-mode thead th,
+.night-mode table th {
   background: #1a1a1a !important;
   color: #888888 !important;
   text-transform: uppercase !important;
@@ -322,19 +326,43 @@
   border-bottom: 1px solid #2a2a2a !important;
 }
 
-.night-mode td {
+.night-mode td,
+.night-mode tbody td,
+.night-mode table td {
   background: #141414 !important;
   border-color: #2a2a2a !important;
   color: #ffffff !important;
 }
 
-.night-mode tr {
+.night-mode tr,
+.night-mode tbody tr,
+.night-mode table tr {
   background: #141414 !important;
   border-bottom: 1px solid #2a2a2a !important;
 }
 
-.night-mode tr:hover {
+.night-mode tr:hover,
+.night-mode tbody tr:hover {
   background: #1e1e1e !important;
+}
+
+/* Force all table cells gray */
+.night-mode [class*="TableRow"],
+.night-mode [data-state],
+.night-mode tbody > tr > td {
+  background-color: #141414 !important;
+}
+
+/* Override purple hover backgrounds in tables */
+.night-mode [class*="hover:bg-purple"],
+.night-mode .hover\:bg-purple-700\/50:hover,
+.night-mode .hover\:bg-purple-700\/30:hover {
+  background-color: #1e1e1e !important;
+}
+
+/* Override border-purple on table rows */
+.night-mode [class*="border-purple-600"] {
+  border-color: #2a2a2a !important;
 }
 
 /* SOL amounts in green */
