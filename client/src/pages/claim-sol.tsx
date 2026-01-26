@@ -3122,17 +3122,17 @@ export default function SolRefund() {
 
           {/* Center Navigation Buttons */}
           {activeTab !== 'docs' && (
-            <div className="flex justify-center py-3 px-2">
-              <div className="flex items-center space-x-3">
+            <div className="flex justify-center py-2 px-2">
+              <div className="flex items-center space-x-2">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`min-w-[130px] px-7 py-3.5 text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2.5 border ${
+                  className={`min-w-[100px] px-4 py-2.5 text-sm font-medium rounded-full transition-all flex items-center justify-center gap-1.5 border ${
                     activeTab === 'reclaim' 
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <svg className="h-6 w-6" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                  <svg className="h-4 w-4" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
@@ -3141,23 +3141,23 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('tokens'); }}
-                  className={`min-w-[130px] px-7 py-3.5 text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2.5 border ${
+                  className={`min-w-[100px] px-4 py-2.5 text-sm font-medium rounded-full transition-all flex items-center justify-center gap-1.5 border ${
                     activeTab === 'burnTokens' && burnSubTab === 'tokens'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-xl">🪙</span> Token
+                  <span className="text-sm">🪙</span> Token
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
-                  className={`min-w-[130px] px-7 py-3.5 text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2.5 border ${
+                  className={`min-w-[100px] px-4 py-2.5 text-sm font-medium rounded-full transition-all flex items-center justify-center gap-1.5 border ${
                     activeTab === 'burnTokens' && burnSubTab === 'nft'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-xl">🖼️</span> NFT
+                  <span className="text-sm">🖼️</span> NFT
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
