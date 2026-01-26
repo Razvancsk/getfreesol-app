@@ -370,23 +370,32 @@
   border-color: #2a2a2a !important;
 }
 
-/* Grid-based ledger rows - same gray as cards */
-.night-mode .grid[class*="grid-cols"][class*="hover:bg-purple"] {
-  background: #141414 !important;
+/* Grid-based ledger rows - same gray as cards ALWAYS */
+.night-mode .grid[class*="grid-cols"] {
+  background-color: #141414 !important;
 }
 
-.night-mode .grid[class*="grid-cols"][class*="hover:bg-purple"]:hover {
-  background: #1e1e1e !important;
+.night-mode .grid[class*="grid-cols"]:hover {
+  background-color: #1e1e1e !important;
 }
 
 /* All grid rows in ledger sections */
-.night-mode [class*="grid-cols-4"][class*="gap-4"][class*="py-3"] {
-  background: #141414 !important;
+.night-mode [class*="grid-cols-4"] {
+  background-color: #141414 !important;
 }
 
-.night-mode [class*="grid-cols-4"][class*="gap-4"][class*="py-3"]:hover {
-  background: #1e1e1e !important;
-  border-color: #00ff88 !important;
+.night-mode [class*="grid-cols-4"]:hover {
+  background-color: #1e1e1e !important;
+}
+
+/* Any div with py-3 inside ledger containers */
+.night-mode div[class*="py-3"][class*="grid"] {
+  background-color: #141414 !important;
+}
+
+/* Force transparent backgrounds to gray */
+.night-mode [class*="hover:bg-purple-800"] {
+  background-color: #141414 !important;
 }
 
 /* SOL amounts in green */
