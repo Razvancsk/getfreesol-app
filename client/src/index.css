@@ -241,18 +241,21 @@
 }
 
 /* ONLY Active/selected button gets green border */
-/* Active state has border-purple-500 (not border-purple-500/30) */
+/* Active state has border-purple-500 OR bg-purple-600 */
 .night-mode button[class*="rounded-full"][class*="border-purple-500"]:not([class*="border-purple-500/"]),
 .night-mode button[class*="rounded-lg"][class*="border-purple-500"]:not([class*="border-purple-500/"]),
-.night-mode button[class*="rounded-xl"][class*="border-purple-500"]:not([class*="border-purple-500/"]) {
+.night-mode button[class*="rounded-xl"][class*="border-purple-500"]:not([class*="border-purple-500/"]),
+.night-mode button[class*="rounded-full"].bg-purple-600,
+.night-mode button[class*="rounded-lg"].bg-purple-600,
+.night-mode button.bg-purple-600[class*="rounded-full"] {
   background: transparent !important;
   border: 2px solid #00ff88 !important;
   color: #ffffff !important;
 }
 
-/* Sub-tab buttons (Tokens, Programs, etc) */
-.night-mode button[class*="rounded-lg"],
-.night-mode button[class*="rounded-xl"] {
+/* Sub-tab buttons (Tokens, Programs, etc) - inactive state */
+.night-mode button[class*="rounded-lg"]:not(.bg-purple-600),
+.night-mode button[class*="rounded-xl"]:not(.bg-purple-600) {
   background: transparent !important;
   border: 2px solid #333333 !important;
   color: #ffffff !important;
