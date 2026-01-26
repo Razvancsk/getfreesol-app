@@ -6109,7 +6109,11 @@ export default function SolRefund() {
                       allTransactions.map((tx, index) => (
                         <div key={tx.signature}>
                           <div 
-                            className="grid grid-cols-4 gap-4 py-3 hover:bg-purple-800/20 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-purple-500/30"
+                            className={`grid grid-cols-4 gap-4 py-3 rounded-lg transition-colors cursor-pointer border border-transparent ${
+                              isNightMode 
+                                ? 'bg-[#141414] hover:bg-[#1e1e1e] hover:border-green-500/30' 
+                                : 'hover:bg-purple-800/20 hover:border-purple-500/30'
+                            }`}
                             onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
                             title="Click to view transaction on Solscan"
                           >
