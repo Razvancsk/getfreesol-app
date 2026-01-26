@@ -97,6 +97,73 @@
   }
 }
 
+/* Night Mode - Black theme (keeps purple as default) */
+.night-mode {
+  --night-bg: #000000;
+  --night-card: #0a0a0a;
+  --night-border: #1a1a1a;
+}
+
+.night-mode .gradient-bg {
+  background: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #000000 100%) !important;
+}
+
+.night-mode .bg-gradient-to-b {
+  background: linear-gradient(to bottom, #000000, #0a0a0a) !important;
+}
+
+.night-mode .from-\[\#1a0a2e\],
+.night-mode .from-purple-900\/20,
+.night-mode .from-purple-900\/30,
+.night-mode .from-purple-900\/40,
+.night-mode .from-purple-900\/50,
+.night-mode .from-purple-900\/60 {
+  --tw-gradient-from: #000000 !important;
+}
+
+.night-mode .via-\[\#2d1b4e\],
+.night-mode .via-purple-800\/20,
+.night-mode .via-purple-800\/30 {
+  --tw-gradient-via: #0a0a0a !important;
+}
+
+.night-mode .to-\[\#1a0a2e\],
+.night-mode .to-purple-900\/20,
+.night-mode .to-purple-900\/30,
+.night-mode .to-purple-900\/40 {
+  --tw-gradient-to: #000000 !important;
+}
+
+.night-mode .bg-purple-900\/20,
+.night-mode .bg-purple-900\/30,
+.night-mode .bg-purple-900\/40,
+.night-mode .bg-purple-900\/50,
+.night-mode .bg-purple-900\/60 {
+  background-color: rgba(10, 10, 10, 0.8) !important;
+}
+
+.night-mode .bg-purple-800\/20,
+.night-mode .bg-purple-800\/30,
+.night-mode .bg-purple-800\/40,
+.night-mode .bg-purple-800\/50,
+.night-mode .bg-purple-800\/60 {
+  background-color: rgba(20, 20, 20, 0.8) !important;
+}
+
+.night-mode .border-purple-500\/20,
+.night-mode .border-purple-500\/30,
+.night-mode .border-purple-600\/30,
+.night-mode .border-purple-600\/40,
+.night-mode .border-purple-600\/50 {
+  border-color: rgba(60, 60, 60, 0.5) !important;
+}
+
+.night-mode .bg-slate-900\/80,
+.night-mode .bg-slate-900\/90,
+.night-mode .bg-slate-800 {
+  background-color: #0a0a0a !important;
+}
+
 /* Custom styles for the SOL Refund application */
 .gradient-bg {
   background: linear-gradient(135deg, hsl(240, 10%, 3.9%) 0%, hsl(271, 81%, 20%) 50%, hsl(240, 10%, 3.9%) 100%);
