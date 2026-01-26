@@ -275,15 +275,20 @@
 /* Main action buttons (Claim All, Process, etc) - solid green with white text */
 .night-mode button[class*="bg-green"],
 .night-mode button[class*="from-green"],
-.night-mode .bg-gradient-to-br[class*="from-green"] {
+.night-mode .bg-gradient-to-br[class*="from-green"],
+.night-mode button[class*="bg-gradient"][class*="from-green"],
+.night-mode button[class*="rounded-lg"][class*="from-green"],
+.night-mode button[class*="w-full"][class*="from-green"],
+.night-mode button[class*="w-full"][class*="bg-green"] {
   background: #22c55e !important;
   color: #ffffff !important;
-  border-color: #22c55e !important;
+  border: 2px solid #22c55e !important;
 }
 
 .night-mode button[class*="bg-green"]:hover,
 .night-mode button[class*="from-green"]:hover {
   background: #16a34a !important;
+  border-color: #16a34a !important;
 }
 
 /* Tables */
