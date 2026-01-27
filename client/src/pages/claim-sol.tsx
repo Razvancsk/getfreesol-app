@@ -6388,7 +6388,7 @@ export default function SolRefund() {
                               </span>
                             )} #{viewProfileData.weeklyRank}
                           </p>
-                          <p className="text-xs text-green-400">{viewProfileData.weeklySol.toFixed(4)} SOL</p>
+                          <p className="text-xs text-green-400">{(viewProfileData.weeklySol ?? 0).toFixed(4)} SOL</p>
                         </>
                       ) : (
                         <p className="text-sm text-purple-400">Not ranked</p>
@@ -6406,7 +6406,7 @@ export default function SolRefund() {
                               </span>
                             )} #{viewProfileData.allTimeRank}
                           </p>
-                          <p className="text-xs text-green-400">{viewProfileData.allTimeSol.toFixed(4)} SOL</p>
+                          <p className="text-xs text-green-400">{(viewProfileData.allTimeSol ?? 0).toFixed(4)} SOL</p>
                         </>
                       ) : (
                         <p className="text-sm text-purple-400">Not ranked</p>
