@@ -3134,8 +3134,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No valid tokens found to burn" });
       }
 
-      // Batch tokens: max 10 per transaction
-      const TOKENS_PER_BATCH = 10;
+      // Batch tokens: max 15 per transaction
+      const TOKENS_PER_BATCH = 15;
       const batches: any[] = [];
       const { blockhash } = await connection.getLatestBlockhash();
       const { ComputeBudgetProgram } = await import('@solana/web3.js');

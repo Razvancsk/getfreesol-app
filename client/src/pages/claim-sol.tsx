@@ -1019,7 +1019,7 @@ export default function SolRefund() {
 
 
 
-  // Bulk Burn Tokens Mutation - Now with batching (max 10 tokens per signature)
+  // Bulk Burn Tokens Mutation - Now with batching (max 15 tokens per signature)
   const bulkBurnTokensMutation = useMutation({
     mutationFn: async (tokenMints: string[]) => {
       // Get batched transactions from backend
@@ -1043,7 +1043,7 @@ export default function SolRefund() {
         throw new Error('No burn batches prepared by server');
       }
 
-      console.log(`🔥 Processing ${prepareResponse.totalBatches} batches for ${prepareResponse.totalTokens} tokens (max 10 per signature)...`);
+      console.log(`🔥 Processing ${prepareResponse.totalBatches} batches for ${prepareResponse.totalTokens} tokens (max 15 per signature)...`);
 
       const { Transaction } = await import('@solana/web3.js');
       
