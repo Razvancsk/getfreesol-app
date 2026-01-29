@@ -6078,6 +6078,57 @@ export default function SolRefund() {
               </div>
             </div>
           )}
+
+          {/* Referral Program Section - Only show on reclaim tab - Bottom of page */}
+          {activeTab === 'reclaim' && (
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
+              <div className="flex items-center mb-4">
+                <Users className="h-5 w-5 text-purple-400 mr-2" />
+                <h3 className="text-lg font-semibold text-white">Referral Program</h3>
+              </div>
+
+              <div className="space-y-3 text-purple-200 text-sm">
+                <p>
+                  Share GetFreeSol with friends and earn <span className="text-green-400 font-semibold">50% of the platform fee</span> from every transaction they make!
+                </p>
+                <div className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>Platform takes 15% fee → You earn 7.5% of recovered SOL</span>
+                </div>
+                <div className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>Lifetime earnings from referred users</span>
+                </div>
+                <div className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span>Top 10 leaderboard users earn 70% commission (10.5%)</span>
+                </div>
+                
+                {publicKey && (
+                  <div className="mt-4 p-3 bg-purple-900/50 rounded-lg border border-purple-500/30">
+                    <p className="text-xs text-purple-300 mb-2">Your Referral Link:</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-xs bg-black/30 p-2 rounded text-green-400 overflow-x-auto">
+                        {`${window.location.origin}?ref=${publicKey.toString().slice(0, 8)}`}
+                      </code>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}?ref=${publicKey.toString().slice(0, 8)}`);
+                          toast({
+                            title: 'Copied!',
+                            description: 'Referral link copied to clipboard',
+                          });
+                        }}
+                        className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-white text-xs font-medium transition-colors"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
