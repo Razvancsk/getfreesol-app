@@ -3461,20 +3461,20 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-center gap-3">
                   {/* Burn/Swap Toggle Switch */}
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm md:text-base font-semibold ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
                     <button
                       onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
-                      className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                      className={`relative w-16 md:w-20 h-8 md:h-10 rounded-full transition-colors duration-200 ${
                         burnMode === 'swap' ? 'bg-green-600' : 'bg-red-600'
                       }`}
                       title={burnMode === 'burn' ? 'Switch to Swap' : 'Switch to Burn'}
                     >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
-                        burnMode === 'swap' ? 'translate-x-7' : 'translate-x-1'
+                      <div className={`absolute top-1.5 md:top-2 w-5 md:w-6 h-5 md:h-6 bg-white rounded-full transition-transform duration-200 shadow-md ${
+                        burnMode === 'swap' ? 'translate-x-9 md:translate-x-12' : 'translate-x-1.5 md:translate-x-2'
                       }`} />
                     </button>
-                    <span className={`text-xs font-medium ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
+                    <span className={`text-sm md:text-base font-semibold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
                   </div>
                   
                   {/* Refresh Button */}
