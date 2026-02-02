@@ -540,11 +540,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasTransaction: !!orderData.transaction
       });
 
-      // Add rent fee transfer to Jupiter's transaction
+      // Add close account + rent fee transfer to Jupiter's transaction
       if (addRentFee === 'true' && orderData.transaction && taker) {
         try {
           const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey, TransactionInstruction } = await import('@solana/web3.js');
           const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
+          const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
           
           const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
           const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
@@ -554,6 +555,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const message = jupiterTx.message;
           
           const takerPubkey = new SolanaPublicKey(taker as string);
+          const inputMintPubkey = new SolanaPublicKey(inputMint as string);
+          
+          // Get the user's token account (ATA)
+          const userTokenAccount = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
           
           // Get connection to fetch lookup tables
           const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
@@ -580,6 +585,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             addressLookupTableAccounts: lookupTableAccounts,
           });
           
+          // Check if Jupiter included a close account instruction (Token Program with close instruction)
+          const TOKEN_PROGRAM_STR = TOKEN_PROGRAM_ID.toString();
+          const hasCloseInstruction = decompiled.instructions.some(ix => {
+            return ix.programId.toString() === TOKEN_PROGRAM_STR && ix.data.length > 0 && ix.data[0] === 9; // 9 = CloseAccount
+          });
+          
+          // If no close instruction, add our own
+          if (!hasCloseInstruction) {
+            console.log('📦 Jupiter did not include close account, adding our own');
+            const closeInstruction = createCloseAccountInstruction(
+              userTokenAccount,
+              takerPubkey, // destination for rent
+              takerPubkey, // owner
+              [],
+              TOKEN_PROGRAM_ID
+            );
+            decompiled.instructions.push(closeInstruction);
+          } else {
+            console.log('✅ Jupiter already includes close account instruction');
+          }
+          
           // Add fee transfer instruction
           const feeInstruction = SystemProgram.transfer({
             fromPubkey: takerPubkey,
@@ -595,6 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderData.transaction = Buffer.from(newTx.serialize()).toString('base64');
           orderData.rentFeeAdded = true;
           orderData.rentFeeLamports = RENT_FEE_LAMPORTS;
+          orderData.closeAccountAdded = !hasCloseInstruction;
           
           console.log('💰 Added rent fee transfer to Jupiter transaction:', RENT_FEE_LAMPORTS / 1e9, 'SOL to', PLATFORM_WALLET.toString().slice(0, 8));
         } catch (modifyErr: any) {
