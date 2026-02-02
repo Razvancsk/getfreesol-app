@@ -1244,25 +1244,62 @@ export default function SolRefund() {
           const signedTx = await signTransaction(tx);
           console.log(`✅ Signed swap for ${token.symbol}`);
 
-          // Execute via backend with Helius Backrun Rebates
-          const executeResponse = await fetch('/api/jupiter/ultra/execute', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
-              requestId: orderData.requestId,
-              walletAddress: publicKey.toString(),
-              inputMint: token.mint,
-              outputMint: SOL_MINT,
-              inputAmount: rawAmount,
-              outputAmount: orderData.outAmount,
-              inputSymbol: token.symbol || 'Unknown',
-              outputSymbol: 'SOL',
-              usdValue: token.usdValue || 0,
-              platformFee: orderData.platformFee,
-              referralCode: referralCode || undefined
-            })
-          });
+          // Execute - if transaction was modified, send directly to network
+          let executeResponse;
+          if (orderData.rentFeeAdded) {
+            // Transaction was modified - send directly to Helius RPC
+            const { Connection } = await import('@solana/web3.js');
+            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+            
+            try {
+              const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                skipPreflight: false,
+                maxRetries: 3
+              });
+              
+              // Wait for confirmation
+              const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+              await connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+              });
+              
+              console.log(`✅ Modified swap transaction confirmed: ${signature}`);
+              
+              // Create fake response to match normal flow
+              executeResponse = {
+                ok: true,
+                json: async () => ({ signature, rebateAmount: 0 })
+              } as any;
+            } catch (sendErr) {
+              console.error(`Failed to send modified transaction:`, sendErr);
+              executeResponse = {
+                ok: false,
+                json: async () => ({ error: String(sendErr) })
+              } as any;
+            }
+          } else {
+            // Normal transaction - send via Jupiter execute
+            executeResponse = await fetch('/api/jupiter/ultra/execute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+                requestId: orderData.requestId,
+                walletAddress: publicKey.toString(),
+                inputMint: token.mint,
+                outputMint: SOL_MINT,
+                inputAmount: rawAmount,
+                outputAmount: orderData.outAmount,
+                inputSymbol: token.symbol || 'Unknown',
+                outputSymbol: 'SOL',
+                usdValue: token.usdValue || 0,
+                platformFee: orderData.platformFee,
+                referralCode: referralCode || undefined
+              })
+            });
+          }
 
           const executeResult = await executeResponse.json();
           
