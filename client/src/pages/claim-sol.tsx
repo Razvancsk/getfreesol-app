@@ -1209,9 +1209,13 @@ export default function SolRefund() {
         try {
           console.log(`🔄 Swapping ${token.symbol || token.mint.slice(0, 8)}...`);
           
+          // Get the raw amount in base units (token.amount is raw, token.balance is UI display)
+          const rawAmount = token.amount || Math.floor(token.balance * Math.pow(10, token.decimals || 6)).toString();
+          console.log(`💰 Token ${token.symbol}: balance=${token.balance}, rawAmount=${rawAmount}, decimals=${token.decimals}`);
+          
           // Get swap order from Jupiter Ultra
           const orderResponse = await fetch(
-            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${token.rawBalance || token.balance}&taker=${publicKey.toString()}`
+            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}`
           );
           
           if (!orderResponse.ok) {
@@ -1244,7 +1248,7 @@ export default function SolRefund() {
               walletAddress: publicKey.toString(),
               inputMint: token.mint,
               outputMint: SOL_MINT,
-              inputAmount: token.rawBalance || token.balance,
+              inputAmount: rawAmount,
               outputAmount: orderData.outAmount,
               inputSymbol: token.symbol || 'Unknown',
               outputSymbol: 'SOL',
