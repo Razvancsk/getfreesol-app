@@ -3459,19 +3459,39 @@ export default function SolRefund() {
                     <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
                   )}
                 </div>
-                <button 
-                  onClick={() => {
-                    if (publicKey) {
-                      scanTokensMutation.mutate(publicKey.toString());
-                    }
-                  }}
-                  disabled={scanTokensMutation.isPending || !publicKey}
-                  className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
-                  data-testid="button-refresh-tokens"
-                  title="Refresh"
-                >
-                  <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
-                </button>
+                <div className="flex items-center gap-3">
+                  {/* Burn/Swap Toggle Switch */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-medium ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
+                    <button
+                      onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
+                      className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                        burnMode === 'swap' ? 'bg-green-600' : 'bg-red-600'
+                      }`}
+                      title={burnMode === 'burn' ? 'Switch to Swap' : 'Switch to Burn'}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+                        burnMode === 'swap' ? 'translate-x-7' : 'translate-x-1'
+                      }`} />
+                    </button>
+                    <span className={`text-xs font-medium ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
+                  </div>
+                  
+                  {/* Refresh Button */}
+                  <button 
+                    onClick={() => {
+                      if (publicKey) {
+                        scanTokensMutation.mutate(publicKey.toString());
+                      }
+                    }}
+                    disabled={scanTokensMutation.isPending || !publicKey}
+                    className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                    data-testid="button-refresh-tokens"
+                    title="Refresh"
+                  >
+                    <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
               </div>
 
               {/* Value Filter Slider - Always visible */}
@@ -3668,14 +3688,6 @@ export default function SolRefund() {
                   )}
                 </Button>
                 
-                {/* Toggle to Swap link */}
-                <button
-                  onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
-                  className="w-full mt-2 text-center text-sm text-purple-300 hover:text-white transition-colors flex items-center justify-center gap-2"
-                >
-                  <ArrowRightLeft className="h-4 w-4" />
-                  {burnMode === 'burn' ? 'Or swap tokens to SOL instead' : 'Or burn tokens instead'}
-                </button>
               </div>
 
               {/* Instructions - Dynamic based on mode */}
