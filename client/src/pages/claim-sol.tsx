@@ -1266,7 +1266,8 @@ export default function SolRefund() {
             const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
             
             alert(`DEBUG 2b: Creating connection...`);
-            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+            // Use public Solana RPC (Helius key may be invalid from client)
+            const connection = new Connection('https://api.mainnet-beta.solana.com');
             
             alert(`DEBUG 2c: Getting ATA...`);
             const ata = getAssociatedTokenAddressSync(
