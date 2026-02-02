@@ -3453,13 +3453,14 @@ export default function SolRefund() {
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
-                  {scanTokensMutation.isPending && (
-                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
+                    {scanTokensMutation.isPending && (
+                      <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                    )}
+                  </div>
+                  
                   {/* Burn/Swap Toggle Switch */}
                   <div className="flex items-center gap-3">
                     <span className={`text-base font-bold ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
@@ -3476,22 +3477,22 @@ export default function SolRefund() {
                     </button>
                     <span className={`text-base font-bold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
                   </div>
-                  
-                  {/* Refresh Button */}
-                  <button 
-                    onClick={() => {
-                      if (publicKey) {
-                        scanTokensMutation.mutate(publicKey.toString());
-                      }
-                    }}
-                    disabled={scanTokensMutation.isPending || !publicKey}
-                    className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
-                    data-testid="button-refresh-tokens"
-                    title="Refresh"
-                  >
-                    <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
-                  </button>
                 </div>
+                  
+                {/* Refresh Button */}
+                <button 
+                  onClick={() => {
+                    if (publicKey) {
+                      scanTokensMutation.mutate(publicKey.toString());
+                    }
+                  }}
+                  disabled={scanTokensMutation.isPending || !publicKey}
+                  className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                  data-testid="button-refresh-tokens"
+                  title="Refresh"
+                >
+                  <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                </button>
               </div>
 
               {/* Value Filter Slider - Always visible */}
