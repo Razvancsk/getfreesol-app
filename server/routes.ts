@@ -660,8 +660,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔄 Legacy swap with fee:', { inputMint, outputMint, amount, taker });
 
-      // Call Jupiter v6 quote API
-      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps || 100}`;
+      // Call Jupiter v6 quote API (using api.jup.ag, quote-api is deprecated)
+      const quoteUrl = `https://api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps || 100}`;
       const quoteResponse = await fetch(quoteUrl);
       
       if (!quoteResponse.ok) {
@@ -677,8 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         priceImpactPct: quoteData.priceImpactPct 
       });
 
-      // Call Jupiter v6 swap API to get transaction
-      const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+      // Call Jupiter v6 swap API to get transaction (using api.jup.ag)
+      const swapResponse = await fetch('https://api.jup.ag/swap/v1/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
