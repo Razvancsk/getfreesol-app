@@ -1253,8 +1253,8 @@ export default function SolRefund() {
             continue;
           }
           
-          // Build close account + fee transaction  
-          const { Connection, Transaction, SystemProgram } = await import('@solana/web3.js');
+          // Build close account + fee transaction as VersionedTransaction (to match swap tx type)
+          const { Connection, TransactionMessage, SystemProgram } = await import('@solana/web3.js');
           const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
           const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
           
@@ -1266,22 +1266,27 @@ export default function SolRefund() {
           const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
           const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
           
-          const closeTx = new Transaction();
-          closeTx.add(
-            createCloseAccountInstruction(ata, publicKey, publicKey, [], TOKEN_PROGRAM_ID)
-          );
-          closeTx.add(
+          // Get recent blockhash
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+          
+          // Build instructions
+          const closeInstructions = [
+            createCloseAccountInstruction(ata, publicKey, publicKey, [], TOKEN_PROGRAM_ID),
             SystemProgram.transfer({
               fromPubkey: publicKey,
               toPubkey: PLATFORM_WALLET,
               lamports: RENT_FEE_LAMPORTS,
             })
-          );
+          ];
           
-          // Get recent blockhash for the close transaction
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-          closeTx.recentBlockhash = blockhash;
-          closeTx.feePayer = publicKey;
+          // Create as VersionedTransaction (V0) to match swap tx type
+          const closeMessage = new TransactionMessage({
+            payerKey: publicKey,
+            recentBlockhash: blockhash,
+            instructions: closeInstructions,
+          }).compileToV0Message();
+          
+          const closeTx = new VersionedTransaction(closeMessage);
           
           console.log(`📦 Built close+fee tx for ${token.symbol} (fee: ${RENT_FEE_LAMPORTS / 1e9} SOL)`);
           
