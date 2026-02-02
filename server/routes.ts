@@ -541,8 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Modify Jupiter's transaction to add close account + fee transfer (ONE TRANSACTION)
-      // TEMPORARILY DISABLED to test if basic swap works
-      if (false && addRentFee === 'true' && orderData.transaction && taker) {
+      if (addRentFee === 'true' && orderData.transaction && taker) {
         try {
           const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey, TransactionInstruction } = await import('@solana/web3.js');
           const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
@@ -1030,6 +1029,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const pointsAwarded = 0;
             
             // Record the swap
+            // platformFee might be an object from Jupiter, extract the fee amount
+            let feeAmount = "0";
+            if (platformFee) {
+              if (typeof platformFee === 'object' && platformFee.amount) {
+                feeAmount = platformFee.amount.toString();
+              } else if (typeof platformFee === 'number' || typeof platformFee === 'string') {
+                feeAmount = platformFee.toString();
+              }
+            }
+            
             await storage.createSwapRecord({
               walletAddress,
               txSignature: executeData.signature,
@@ -1041,7 +1050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               outputSymbol: outputSymbol || null,
               usdValue: swapUsdValue.toFixed(2),
               pointsAwarded,
-              platformFee: platformFee?.toString() || "0",
+              platformFee: feeAmount,
               referralCode: referralCode || null
             });
             
