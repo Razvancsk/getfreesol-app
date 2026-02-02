@@ -1298,93 +1298,53 @@ export default function SolRefund() {
         throw new Error('No swaps completed successfully');
       }
 
-      // STEP 2: Close empty token accounts and collect platform fee
-      if (accountsToClose.length > 0) {
-        console.log(`📦 Closing ${accountsToClose.length} empty accounts to reclaim rent with 15% fee...`);
+      // STEP 2: Collect platform fee for rent recovered (Jupiter already closed accounts)
+      // Jupiter swap closes the token account and returns rent to user, so we just transfer 15% fee
+      if (successfulSwaps.length > 0) {
+        const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports per token account
+        const totalRentLamports = rentPerAccount * successfulSwaps.length;
+        const platformFeeLamports = Math.floor(totalRentLamports * PLATFORM_FEE_PERCENT);
         
-        try {
-          // Wait for swap transactions to finalize
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        if (platformFeeLamports > 0) {
+          console.log(`💰 Collecting platform fee: ${platformFeeLamports / 1e9} SOL (15% of ${totalRentLamports / 1e9} SOL rent from ${successfulSwaps.length} accounts)`);
           
-          // Build close account transaction with platform fee transfer
-          const { Connection, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
-          const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
-          
-          // Get latest blockhash
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-          
-          const closeTx = new Transaction();
-          closeTx.recentBlockhash = blockhash;
-          closeTx.feePayer = publicKey;
-          
-          let totalRentLamports = 0;
-          
-          // Add close account instructions for each token account
-          for (const account of accountsToClose) {
-            const ataPublicKey = new SolanaPublicKey(account.ata);
+          try {
+            const { Connection, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
+            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
             
-            // Check if account still exists and has 0 balance
-            try {
-              const accountInfo = await connection.getAccountInfo(ataPublicKey);
-              if (accountInfo) {
-                totalRentLamports += accountInfo.lamports;
-                
-                // Add close account instruction
-                const closeInstruction = createCloseAccountInstruction(
-                  ataPublicKey,
-                  publicKey, // destination (rent goes to user)
-                  publicKey, // owner
-                  [],
-                  TOKEN_PROGRAM_ID
-                );
-                closeTx.add(closeInstruction);
-                console.log(`📦 Added close instruction for ${account.symbol} (${account.ata.slice(0, 8)}...)`);
-              } else {
-                console.log(`⚠️ Account ${account.ata.slice(0, 8)}... already closed`);
-              }
-            } catch (err) {
-              console.error(`Error checking account ${account.ata}:`, err);
-            }
-          }
-          
-          // Only proceed if we have accounts to close
-          if (closeTx.instructions.length > 0) {
-            // Calculate 15% platform fee from rent
-            const platformFeeLamports = Math.floor(totalRentLamports * PLATFORM_FEE_PERCENT);
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            
+            const feeTx = new Transaction();
+            feeTx.recentBlockhash = blockhash;
+            feeTx.feePayer = publicKey;
             
             // Add platform fee transfer
-            if (platformFeeLamports > 0) {
-              const feeTransfer = SystemProgram.transfer({
-                fromPubkey: publicKey,
-                toPubkey: PLATFORM_WALLET,
-                lamports: platformFeeLamports,
-              });
-              closeTx.add(feeTransfer);
-              console.log(`💰 Added platform fee transfer: ${platformFeeLamports / LAMPORTS_PER_SOL} SOL`);
-            }
+            feeTx.add(SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: PLATFORM_WALLET,
+              lamports: platformFeeLamports,
+            }));
             
             // Sign and send
-            const signedCloseTx = await signTransaction(closeTx);
-            const signature = await connection.sendRawTransaction(signedCloseTx.serialize(), {
+            const signedFeeTx = await signTransaction(feeTx);
+            const feeSignature = await connection.sendRawTransaction(signedFeeTx.serialize(), {
               skipPreflight: false,
               maxRetries: 3
             });
             
-            // Wait for confirmation
             await connection.confirmTransaction({
-              signature,
+              signature: feeSignature,
               blockhash,
               lastValidBlockHeight
             });
             
-            totalRentRecovered = (totalRentLamports - platformFeeLamports) / LAMPORTS_PER_SOL;
-            console.log(`✅ Closed ${closeTx.instructions.length - 1} accounts, recovered ${totalRentRecovered.toFixed(6)} SOL (after 15% fee)`);
-            console.log(`📝 Close transaction: ${signature}`);
-          } else {
-            console.log('⚠️ No accounts to close (all already closed by swap)');
+            totalRentRecovered = (totalRentLamports - platformFeeLamports) / 1e9;
+            console.log(`✅ Platform fee collected: ${platformFeeLamports / 1e9} SOL, user keeps: ${totalRentRecovered.toFixed(6)} SOL`);
+          } catch (feeErr) {
+            console.error('Error collecting platform fee:', feeErr);
+            // Still count the rent as recovered even if fee collection fails
+            totalRentRecovered = totalRentLamports / 1e9;
           }
-        } catch (closeErr) {
-          console.error('Error closing accounts after swap:', closeErr);
         }
       }
 
