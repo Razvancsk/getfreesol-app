@@ -3462,7 +3462,7 @@ export default function SolRefund() {
                 <div className="flex items-center gap-3">
                   {/* Burn/Swap Toggle Switch */}
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
+                    <span className={`text-sm font-semibold ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
                     <button
                       onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
                       className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
@@ -3474,7 +3474,7 @@ export default function SolRefund() {
                         burnMode === 'swap' ? 'translate-x-7' : 'translate-x-1'
                       }`} />
                     </button>
-                    <span className={`text-xs font-medium ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
+                    <span className={`text-sm font-semibold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
                   </div>
                   
                   {/* Refresh Button */}
