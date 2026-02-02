@@ -1219,9 +1219,9 @@ export default function SolRefund() {
           const rawAmount = token.amount || Math.floor(token.balance * Math.pow(10, token.decimals || 6)).toString();
           console.log(`💰 Token ${token.symbol}: balance=${token.balance}, rawAmount=${rawAmount}, decimals=${token.decimals}`);
           
-          // Use Legacy API - creates swap + close account + fee transfer in ONE transaction
+          // Use Ultra API with fee modification - creates swap + close account + fee in ONE transaction
           const orderResponse = await fetch(
-            `/api/jupiter/legacy/swap-with-fee?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}&slippageBps=100`
+            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}&addRentFee=true`
           );
           
           if (!orderResponse.ok) {
@@ -1238,6 +1238,7 @@ export default function SolRefund() {
 
           console.log(`📊 Got swap transaction for ${token.symbol}:`, {
             outAmount: orderData.outAmount,
+            rentFeeAdded: orderData.rentFeeAdded,
             rentFeeLamports: orderData.rentFeeLamports
           });
 
@@ -1247,49 +1248,87 @@ export default function SolRefund() {
           
           // Sign with wallet
           const signedTx = await signTransaction(tx);
-          console.log(`✅ Signed swap+close+fee transaction for ${token.symbol}`);
+          console.log(`✅ Signed swap transaction for ${token.symbol} (rentFeeAdded: ${orderData.rentFeeAdded})`);
 
-          // Send directly to Helius RPC (not through Jupiter execute since we modified the tx)
-          const { Connection } = await import('@solana/web3.js');
-          const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
-          
-          console.log(`📤 Sending swap+close+fee transaction to network...`);
-          
           let signature: string | null = null;
-          try {
-            signature = await connection.sendRawTransaction(signedTx.serialize(), {
-              skipPreflight: true,
-              maxRetries: 5
-            });
+          
+          if (orderData.rentFeeAdded) {
+            // Transaction was modified - send directly to Helius RPC (not Jupiter execute)
+            const { Connection } = await import('@solana/web3.js');
+            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
             
-            console.log(`📨 Transaction sent: ${signature}`);
+            console.log(`📤 Sending modified swap+close+fee transaction to network...`);
             
-            // Wait for confirmation with polling
-            let confirmed = false;
-            for (let i = 0; i < 30; i++) {
-              await new Promise(r => setTimeout(r, 1000));
-              try {
-                const status = await connection.getSignatureStatus(signature);
-                if (status.value?.confirmationStatus === 'confirmed' || 
-                    status.value?.confirmationStatus === 'finalized') {
-                  confirmed = true;
-                  console.log(`✅ Transaction confirmed: ${signature}`);
-                  break;
+            try {
+              signature = await connection.sendRawTransaction(signedTx.serialize(), {
+                skipPreflight: true,
+                maxRetries: 5
+              });
+              
+              console.log(`📨 Transaction sent: ${signature}`);
+              
+              // Wait for confirmation with polling
+              let confirmed = false;
+              for (let i = 0; i < 30; i++) {
+                await new Promise(r => setTimeout(r, 1000));
+                try {
+                  const status = await connection.getSignatureStatus(signature);
+                  if (status.value?.confirmationStatus === 'confirmed' || 
+                      status.value?.confirmationStatus === 'finalized') {
+                    confirmed = true;
+                    console.log(`✅ Transaction confirmed: ${signature}`);
+                    break;
+                  }
+                  if (status.value?.err) {
+                    throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
+                  }
+                } catch (statusErr) {
+                  // Continue waiting
                 }
-                if (status.value?.err) {
-                  throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
-                }
-              } catch (statusErr) {
-                // Continue waiting
               }
+              
+              if (!confirmed) {
+                console.log(`⏳ Confirmation timeout, but tx may still succeed: ${signature}`);
+              }
+            } catch (sendErr) {
+              console.error(`Failed to send modified transaction:`, sendErr);
+              continue;
             }
-            
-            if (!confirmed) {
-              console.log(`⏳ Confirmation timeout, but tx may still succeed: ${signature}`);
+          } else {
+            // Normal transaction - send via Jupiter execute
+            console.log(`📤 Sending swap transaction via Jupiter execute...`);
+            try {
+              const executeResponse = await fetch('/api/jupiter/ultra/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+                  requestId: orderData.requestId,
+                  walletAddress: publicKey.toString(),
+                  inputMint: token.mint,
+                  outputMint: SOL_MINT,
+                  inputAmount: rawAmount,
+                  outputAmount: orderData.outAmount,
+                  inputSymbol: token.symbol || 'Unknown',
+                  outputSymbol: 'SOL',
+                  usdValue: token.usdValue || 0,
+                  platformFee: orderData.platformFee,
+                  referralCode: referralCode || undefined
+                })
+              });
+              
+              const executeResult = await executeResponse.json();
+              if (executeResponse.ok && executeResult.signature) {
+                signature = executeResult.signature;
+                console.log(`✅ Jupiter execute succeeded: ${signature}`);
+              } else {
+                console.error(`Jupiter execute failed:`, executeResult.error);
+                continue;
+              }
+            } catch (execErr) {
+              console.error(`Failed to execute via Jupiter:`, execErr);
+              continue;
             }
-          } catch (sendErr) {
-            console.error(`Failed to send transaction:`, sendErr);
-            continue;
           }
 
           if (!signature) {
