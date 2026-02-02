@@ -1241,6 +1241,7 @@ export default function SolRefund() {
             rentFeeAdded: orderData.rentFeeAdded,
             rentFeeLamports: orderData.rentFeeLamports
           });
+          alert(`DEBUG 1: Got order for ${token.symbol}, about to deserialize`);
 
           // Deserialize swap transaction
           let swapTx;
@@ -1248,8 +1249,10 @@ export default function SolRefund() {
             const txBuffer = Buffer.from(orderData.transaction, 'base64');
             swapTx = VersionedTransaction.deserialize(txBuffer);
             console.log(`📦 Deserialized swap tx for ${token.symbol}`);
-          } catch (deserializeErr) {
+            alert(`DEBUG 2: Deserialized swap tx`);
+          } catch (deserializeErr: any) {
             console.error(`❌ Failed to deserialize swap tx for ${token.symbol}:`, deserializeErr);
+            alert(`DEBUG ERROR: Deserialize failed: ${deserializeErr.message}`);
             continue;
           }
           
@@ -1289,23 +1292,28 @@ export default function SolRefund() {
           const closeTx = new VersionedTransaction(closeMessage);
           
           console.log(`📦 Built close+fee tx for ${token.symbol} (fee: ${RENT_FEE_LAMPORTS / 1e9} SOL)`);
+          alert(`DEBUG 3: Built close tx, about to sign`);
           
           // Sign BOTH transactions in ONE popup using signAllTransactions
           let signedSwapTx, signedCloseTx;
           try {
             if (signAllTransactions) {
               console.log(`🖊️ Signing both transactions in one popup...`);
+              alert(`DEBUG 4: Calling signAllTransactions...`);
               const [signedSwap, signedClose] = await signAllTransactions([swapTx, closeTx]);
               signedSwapTx = signedSwap;
               signedCloseTx = signedClose;
               console.log(`✅ Signed both transactions in ONE popup!`);
+              alert(`DEBUG 5: Signed!`);
             } else {
               console.log(`🖊️ signAllTransactions not available, signing separately...`);
+              alert(`DEBUG ERROR: signAllTransactions not available!`);
               signedSwapTx = await signTransaction(swapTx);
               signedCloseTx = await signTransaction(closeTx);
             }
-          } catch (signErr) {
+          } catch (signErr: any) {
             console.error(`❌ Failed to sign transactions for ${token.symbol}:`, signErr);
+            alert(`DEBUG ERROR: Sign failed: ${signErr.message}`);
             continue;
           }
 
