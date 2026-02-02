@@ -1309,6 +1309,7 @@ export default function SolRefund() {
           totalRentRecovered += rentRecoveredForThisAccount;
 
           // Record the swap+close transaction to database for stats
+          // Only record the RENT recovered from closing the account, NOT the token swap value
           try {
             await fetch('/api/sol-refund/record-success', {
               method: 'POST',
@@ -1318,14 +1319,14 @@ export default function SolRefund() {
                 walletAddress: publicKey.toString(),
                 accountsClosed: 1,
                 solRecovered: rentPerAccount / 1e9,
-                netAmount: outputSol + rentRecoveredForThisAccount,
+                netAmount: rentRecoveredForThisAccount,
                 feeAmount: feeForThisAccount,
                 platformFeeAmount: feeForThisAccount
               })
             });
-            console.log(`📊 Recorded swap+close for ${token.symbol} to stats`);
+            console.log(`📊 Recorded rent recovery for ${token.symbol}: ${rentRecoveredForThisAccount.toFixed(6)} SOL (after 15% fee)`);
           } catch (recordErr) {
-            console.warn(`Could not record swap to stats:`, recordErr);
+            console.warn(`Could not record to stats:`, recordErr);
           }
 
           console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL + closed account`);
