@@ -500,43 +500,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create connection for RPC calls
       const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
 
-      // Step 1: Get quote from Jupiter
+      // Step 1: Get quote from Jupiter Swap API v1
       console.log(`🔄 Getting Jupiter quote for ${inputMint} -> ${outputMint}, amount: ${amount}`);
-      const quoteUrl = new URL('https://quote-api.jup.ag/v6/quote');
+      const quoteUrl = new URL('https://api.jup.ag/swap/v1/quote');
       quoteUrl.searchParams.append('inputMint', inputMint as string);
       quoteUrl.searchParams.append('outputMint', outputMint as string);
       quoteUrl.searchParams.append('amount', amount as string);
       quoteUrl.searchParams.append('slippageBps', '100'); // 1% slippage
+      quoteUrl.searchParams.append('restrictIntermediateTokens', 'true');
       
-      const quoteResponse = await fetch(quoteUrl.toString());
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (process.env.JUPITER_API_KEY) {
+        headers['x-api-key'] = process.env.JUPITER_API_KEY;
+      }
+      
+      const quoteResponse = await fetch(quoteUrl.toString(), { headers });
       if (!quoteResponse.ok) {
         const error = await quoteResponse.text();
         console.error('Quote failed:', error);
-        return res.status(400).json({ error: 'Failed to get quote' });
+        return res.status(400).json({ error: 'Failed to get quote: ' + error });
       }
       const quoteData = await quoteResponse.json();
       console.log(`✅ Got quote: ${quoteData.inAmount} -> ${quoteData.outAmount}`);
 
-      // Step 2: Get swap instructions from Jupiter Metis API
-      console.log(`🔄 Getting swap instructions from Jupiter Metis...`);
-      const swapInstructionsResponse = await fetch('https://quote-api.jup.ag/v6/swap-instructions', {
+      // Step 2: Get swap instructions from Jupiter Swap API v1
+      console.log(`🔄 Getting swap instructions from Jupiter...`);
+      const swapInstructionsResponse = await fetch('https://api.jup.ag/swap/v1/swap-instructions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           userPublicKey: taker,
           quoteResponse: quoteData,
           wrapAndUnwrapSol: true,
           dynamicComputeUnitLimit: true,
-          prioritizationFeeLamports: 'auto'
+          prioritizationFeeLamports: {
+            priorityLevelWithMaxLamports: {
+              maxLamports: 1000000,
+              priorityLevel: "veryHigh"
+            }
+          }
         })
       });
 
       if (!swapInstructionsResponse.ok) {
         const error = await swapInstructionsResponse.text();
         console.error('Swap instructions failed:', error);
-        return res.status(400).json({ error: 'Failed to get swap instructions' });
+        return res.status(400).json({ error: 'Failed to get swap instructions: ' + error });
       }
       const swapData = await swapInstructionsResponse.json();
+      
+      if (swapData.error) {
+        console.error('Swap instructions error:', swapData.error);
+        return res.status(400).json({ error: swapData.error });
+      }
       console.log(`✅ Got swap instructions`);
 
       // Step 3: Build transaction with swap + close account + fee transfer
