@@ -106,6 +106,7 @@ export default function SolRefund() {
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [pointsLeaderboardPeriod, setPointsLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
+  const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
   const [nftData, setNftData] = useState<any>(null);
@@ -3492,38 +3493,96 @@ export default function SolRefund() {
                   </div>
                 </div>
 
-                {/* Burn Button */}
+                {/* Burn/Swap Mode Toggle */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => setBurnMode('burn')}
+                    className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                      burnMode === 'burn'
+                        ? 'bg-red-600 text-white border-2 border-red-400'
+                        : 'bg-purple-900/40 text-purple-300 border border-purple-500/30 hover:bg-purple-800/50'
+                    }`}
+                  >
+                    <Flame className="h-4 w-4" />
+                    Burn
+                  </button>
+                  <button
+                    onClick={() => setBurnMode('swap')}
+                    className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+                      burnMode === 'swap'
+                        ? 'bg-green-600 text-white border-2 border-green-400'
+                        : 'bg-purple-900/40 text-purple-300 border border-purple-500/30 hover:bg-purple-800/50'
+                    }`}
+                  >
+                    <ArrowRightLeft className="h-4 w-4" />
+                    Swap
+                  </button>
+                </div>
+
+                {/* Action Button - Burn or Swap */}
                 <Button
-                  onClick={() => bulkBurnTokensMutation.mutate(Array.from(selectedTokens))}
+                  onClick={() => {
+                    if (burnMode === 'burn') {
+                      bulkBurnTokensMutation.mutate(Array.from(selectedTokens));
+                    } else {
+                      // TODO: Implement swap + close account transaction
+                      toast({
+                        title: 'Swap Coming Soon',
+                        description: 'Swap tokens to SOL and close accounts in one transaction',
+                      });
+                    }
+                  }}
                   disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`w-full py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    burnMode === 'burn'
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
                   data-testid="button-burn-selected-tokens"
                 >
                   {bulkBurnTokensMutation.isPending ? (
                     <>
                       <RefreshCw className="h-5 w-5 animate-spin" />
-                      Burning...
+                      {burnMode === 'burn' ? 'Burning...' : 'Swapping...'}
                     </>
-                  ) : (
+                  ) : burnMode === 'burn' ? (
                     <>
                       <Flame className="h-5 w-5" />
                       BURN
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="h-5 w-5" />
+                      SWAP
                     </>
                   )}
                 </Button>
               </div>
 
-              {/* Burn Instructions */}
+              {/* Instructions - Dynamic based on mode */}
               <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4 mt-4">
                 <div className="flex items-start space-x-3">
                   <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-purple-200">
-                    <p className="font-medium mb-2">About Token Burning:</p>
-                    <ul className="space-y-1 text-purple-300">
-                      <li>• Burn unwanted tokens and recover SOL rent deposits</li>
-                      <li>• Burning permanently destroys the tokens</li>
-                      <li>• Most tokens return ~0.002 SOL per account closed</li>
-                    </ul>
+                    {burnMode === 'burn' ? (
+                      <>
+                        <p className="font-medium mb-2">About Token Burning:</p>
+                        <ul className="space-y-1 text-purple-300">
+                          <li>• Burn unwanted tokens and recover SOL rent deposits</li>
+                          <li>• Burning permanently destroys the tokens</li>
+                          <li>• Most tokens return ~0.002 SOL per account closed</li>
+                        </ul>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium mb-2">About Token Swap:</p>
+                        <ul className="space-y-1 text-purple-300">
+                          <li>• Swap tokens to SOL before closing the account</li>
+                          <li>• Get the token value + rent deposit back</li>
+                          <li>• Swap and close account in a single transaction</li>
+                        </ul>
+                      </>
+                    )}
                   </div>
                 </div>
                 
@@ -3532,7 +3591,9 @@ export default function SolRefund() {
                   <div className="flex items-start space-x-2">
                     <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-yellow-200 font-semibold">
-                      Burning tokens can't be undone. By using GetFreeSOL, you agree it's on you — we're not responsible for mistakes or accidental burns.
+                      {burnMode === 'burn' 
+                        ? "Burning tokens can't be undone. By using GetFreeSOL, you agree it's on you — we're not responsible for mistakes or accidental burns."
+                        : "Swaps are executed at current market rates. Slippage may apply. By using GetFreeSOL, you agree it's on you."}
                     </p>
                   </div>
                 </div>
