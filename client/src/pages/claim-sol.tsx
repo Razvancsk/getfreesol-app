@@ -1262,14 +1262,10 @@ export default function SolRefund() {
           let lastValidBlockHeight: number;
           try {
             alert(`DEBUG 2a: Importing web3.js...`);
-            const { Connection, TransactionMessage, SystemProgram } = await import('@solana/web3.js');
+            const { TransactionMessage, SystemProgram } = await import('@solana/web3.js');
             const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
             
-            alert(`DEBUG 2b: Creating connection...`);
-            // Use public Solana RPC (Helius key may be invalid from client)
-            const connection = new Connection('https://api.mainnet-beta.solana.com');
-            
-            alert(`DEBUG 2c: Getting ATA...`);
+            alert(`DEBUG 2b: Getting ATA...`);
             const ata = getAssociatedTokenAddressSync(
               new SolanaPublicKey(token.mint),
               publicKey
@@ -1278,10 +1274,12 @@ export default function SolRefund() {
             const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
             const RENT_FEE_LAMPORTS = 305892;
             
-            alert(`DEBUG 2d: Getting blockhash...`);
-            const bhResult = await connection.getLatestBlockhash();
-            blockhash = bhResult.blockhash;
-            lastValidBlockHeight = bhResult.lastValidBlockHeight;
+            alert(`DEBUG 2c: Getting blockhash via server...`);
+            const bhResponse = await fetch('/api/rpc/blockhash');
+            const bhData = await bhResponse.json();
+            if (!bhData.success) throw new Error('Failed to get blockhash');
+            blockhash = bhData.blockhash;
+            lastValidBlockHeight = bhData.lastValidBlockHeight;
             
             alert(`DEBUG 2e: Building instructions...`);
             const closeInstructions = [

@@ -1358,6 +1358,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get latest blockhash via backend (avoids CORS issues)
+  app.get("/api/rpc/blockhash", async (req, res) => {
+    try {
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      res.json({ success: true, blockhash, lastValidBlockHeight });
+    } catch (error: any) {
+      console.error('Failed to get blockhash:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Send signed transaction via backend (keeps Helius key secure)
   // Supports Helius Backrun Rebates - users earn SOL from MEV their trades create
   app.post("/api/rpc/send-transaction", async (req, res) => {
