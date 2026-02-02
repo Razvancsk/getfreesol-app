@@ -1298,63 +1298,90 @@ export default function SolRefund() {
         throw new Error('No swaps completed successfully');
       }
 
-      // STEP 2: Close empty token accounts and collect platform fee (like normal claim)
+      // STEP 2: Close empty token accounts and collect platform fee
       if (accountsToClose.length > 0) {
         console.log(`📦 Closing ${accountsToClose.length} empty accounts to reclaim rent with 15% fee...`);
         
         try {
-          // Wait a bit for swap transactions to finalize
+          // Wait for swap transactions to finalize
           await new Promise(resolve => setTimeout(resolve, 2000));
           
-          // Build close account transaction with fee transfer
-          const closeResponse = await fetch('/api/sol-refund/build-transaction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              walletAddress: publicKey.toString(),
-              selectedAccounts: accountsToClose.map(a => a.ata),
-              referralCode: referralCode || undefined
-            })
-          });
-
-          if (closeResponse.ok) {
-            const closeData = await closeResponse.json();
+          // Build close account transaction with platform fee transfer
+          const { Connection, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
+          const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+          
+          // Get latest blockhash
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+          
+          const closeTx = new Transaction();
+          closeTx.recentBlockhash = blockhash;
+          closeTx.feePayer = publicKey;
+          
+          let totalRentLamports = 0;
+          
+          // Add close account instructions for each token account
+          for (const account of accountsToClose) {
+            const ataPublicKey = new SolanaPublicKey(account.ata);
             
-            if (closeData.transaction) {
-              // Sign and send the close account transaction
-              const closeTxBuffer = Buffer.from(closeData.transaction, 'base64');
-              const closeTx = Transaction.from(closeTxBuffer);
-              
-              const signedCloseTx = await signTransaction(closeTx);
-              
-              // Execute close transaction
-              const executeCloseResponse = await fetch('/api/sol-refund/execute-transaction', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  signedTransaction: signedCloseTx.serialize().toString('base64'),
-                  walletAddress: publicKey.toString(),
-                  selectedAccounts: accountsToClose.map(a => a.ata),
-                  accountsClosed: accountsToClose.length,
-                  solRecovered: closeData.totalRent,
-                  netAmount: closeData.netAmount,
-                  feeAmount: closeData.feeAmount,
-                  referralCodeUsed: referralCode || null,
-                  platformFeeAmount: closeData.platformFeeAmount || 0,
-                  referralFeeAmount: closeData.referralFeeAmount || 0
-                })
-              });
-
-              if (executeCloseResponse.ok) {
-                const closeResult = await executeCloseResponse.json();
-                totalRentRecovered = closeData.netAmount || (RENT_PER_ACCOUNT * accountsToClose.length * (1 - PLATFORM_FEE_PERCENT));
-                console.log(`✅ Closed ${accountsToClose.length} accounts, recovered ${totalRentRecovered.toFixed(6)} SOL (after 15% fee)`);
+            // Check if account still exists and has 0 balance
+            try {
+              const accountInfo = await connection.getAccountInfo(ataPublicKey);
+              if (accountInfo) {
+                totalRentLamports += accountInfo.lamports;
+                
+                // Add close account instruction
+                const closeInstruction = createCloseAccountInstruction(
+                  ataPublicKey,
+                  publicKey, // destination (rent goes to user)
+                  publicKey, // owner
+                  [],
+                  TOKEN_PROGRAM_ID
+                );
+                closeTx.add(closeInstruction);
+                console.log(`📦 Added close instruction for ${account.symbol} (${account.ata.slice(0, 8)}...)`);
               } else {
-                console.error('Failed to execute close transaction:', await executeCloseResponse.text());
+                console.log(`⚠️ Account ${account.ata.slice(0, 8)}... already closed`);
               }
+            } catch (err) {
+              console.error(`Error checking account ${account.ata}:`, err);
             }
+          }
+          
+          // Only proceed if we have accounts to close
+          if (closeTx.instructions.length > 0) {
+            // Calculate 15% platform fee from rent
+            const platformFeeLamports = Math.floor(totalRentLamports * PLATFORM_FEE_PERCENT);
+            
+            // Add platform fee transfer
+            if (platformFeeLamports > 0) {
+              const feeTransfer = SystemProgram.transfer({
+                fromPubkey: publicKey,
+                toPubkey: PLATFORM_WALLET,
+                lamports: platformFeeLamports,
+              });
+              closeTx.add(feeTransfer);
+              console.log(`💰 Added platform fee transfer: ${platformFeeLamports / LAMPORTS_PER_SOL} SOL`);
+            }
+            
+            // Sign and send
+            const signedCloseTx = await signTransaction(closeTx);
+            const signature = await connection.sendRawTransaction(signedCloseTx.serialize(), {
+              skipPreflight: false,
+              maxRetries: 3
+            });
+            
+            // Wait for confirmation
+            await connection.confirmTransaction({
+              signature,
+              blockhash,
+              lastValidBlockHeight
+            });
+            
+            totalRentRecovered = (totalRentLamports - platformFeeLamports) / LAMPORTS_PER_SOL;
+            console.log(`✅ Closed ${closeTx.instructions.length - 1} accounts, recovered ${totalRentRecovered.toFixed(6)} SOL (after 15% fee)`);
+            console.log(`📝 Close transaction: ${signature}`);
           } else {
-            console.error('Failed to build close transaction:', await closeResponse.text());
+            console.log('⚠️ No accounts to close (all already closed by swap)');
           }
         } catch (closeErr) {
           console.error('Error closing accounts after swap:', closeErr);
