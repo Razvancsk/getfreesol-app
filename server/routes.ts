@@ -541,7 +541,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Modify Jupiter's transaction to add close account + fee transfer (ONE TRANSACTION)
-      if (addRentFee === 'true' && orderData.transaction && taker) {
+      // TEMPORARILY DISABLED to test if basic swap works
+      if (false && addRentFee === 'true' && orderData.transaction && taker) {
         try {
           const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey, TransactionInstruction } = await import('@solana/web3.js');
           const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
