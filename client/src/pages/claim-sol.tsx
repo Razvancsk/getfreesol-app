@@ -3461,20 +3461,20 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-center gap-3">
                   {/* Burn/Swap Toggle Switch */}
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-base font-bold ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
                     <button
                       onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
-                      className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                      className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
                         burnMode === 'swap' ? 'bg-green-600' : 'bg-red-600'
                       }`}
                       title={burnMode === 'burn' ? 'Switch to Swap' : 'Switch to Burn'}
                     >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
-                        burnMode === 'swap' ? 'translate-x-7' : 'translate-x-1'
+                      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${
+                        burnMode === 'swap' ? 'translate-x-8' : 'translate-x-1'
                       }`} />
                     </button>
-                    <span className={`text-sm font-semibold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
+                    <span className={`text-base font-bold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
                   </div>
                   
                   {/* Refresh Button */}
