@@ -3486,11 +3486,11 @@ export default function SolRefund() {
                       }
                     }}
                     disabled={scanTokensMutation.isPending || !publicKey}
-                    className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                    className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
                     data-testid="button-refresh-tokens"
                     title="Refresh"
                   >
-                    <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-6 w-6 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
               </div>
