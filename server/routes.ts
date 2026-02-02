@@ -540,11 +540,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasTransaction: !!orderData.transaction
       });
 
-      // Flag that rent fee should be collected separately after swap
-      if (addRentFee === 'true') {
-        orderData.collectRentFee = true;
-        orderData.rentFeeLamports = 305892; // 15% of ~0.00203928 SOL rent
-        console.log('📌 Rent fee will be collected separately after swap');
+      // Add rent fee transfer to Jupiter's transaction
+      if (addRentFee === 'true' && orderData.transaction && taker) {
+        try {
+          const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey, TransactionInstruction } = await import('@solana/web3.js');
+          const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
+          
+          const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+          const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
+          
+          const txBuffer = Buffer.from(orderData.transaction, 'base64');
+          const jupiterTx = VersionedTransaction.deserialize(txBuffer);
+          const message = jupiterTx.message;
+          
+          const takerPubkey = new SolanaPublicKey(taker as string);
+          
+          // Get connection to fetch lookup tables
+          const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+          
+          // Fetch address lookup tables
+          const lookupTableAccounts: AddressLookupTableAccount[] = [];
+          for (const lookup of message.addressTableLookups) {
+            try {
+              const accountInfo = await connection.getAccountInfo(lookup.accountKey);
+              if (accountInfo) {
+                const state = AddressLookupTableAccount.deserialize(accountInfo.data);
+                lookupTableAccounts.push(new AddressLookupTableAccount({
+                  key: lookup.accountKey,
+                  state: state,
+                }));
+              }
+            } catch (e) {
+              console.warn('Could not fetch lookup table:', lookup.accountKey.toString());
+            }
+          }
+          
+          // Decompile to get instructions
+          const decompiled = TransactionMessage.decompile(message, {
+            addressLookupTableAccounts: lookupTableAccounts,
+          });
+          
+          // Add fee transfer instruction
+          const feeInstruction = SystemProgram.transfer({
+            fromPubkey: takerPubkey,
+            toPubkey: PLATFORM_WALLET,
+            lamports: RENT_FEE_LAMPORTS,
+          });
+          decompiled.instructions.push(feeInstruction);
+          
+          // Recompile with lookup tables
+          const newMessage = decompiled.compileToV0Message(lookupTableAccounts);
+          const newTx = new VersionedTransaction(newMessage);
+          
+          orderData.transaction = Buffer.from(newTx.serialize()).toString('base64');
+          orderData.rentFeeAdded = true;
+          orderData.rentFeeLamports = RENT_FEE_LAMPORTS;
+          
+          console.log('💰 Added rent fee transfer to Jupiter transaction:', RENT_FEE_LAMPORTS / 1e9, 'SOL to', PLATFORM_WALLET.toString().slice(0, 8));
+        } catch (modifyErr: any) {
+          console.error('⚠️ Could not add rent fee to transaction:', modifyErr.message);
+          orderData.rentFeeAdded = false;
+        }
       }
       
       res.json(orderData);

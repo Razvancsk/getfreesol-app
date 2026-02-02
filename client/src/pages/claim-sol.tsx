@@ -1298,52 +1298,11 @@ export default function SolRefund() {
         throw new Error('No swaps completed successfully');
       }
 
-      // STEP 2: Collect platform fee for closed accounts (separate transaction)
-      if (successfulSwaps.length > 0) {
-        const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports
-        const totalRentLamports = rentPerAccount * successfulSwaps.length;
-        const platformFeeLamports = Math.floor(totalRentLamports * PLATFORM_FEE_PERCENT);
-        
-        console.log(`💰 Collecting platform fee: ${platformFeeLamports / 1e9} SOL (15% of ${totalRentLamports / 1e9} SOL rent)`);
-        
-        try {
-          const { Connection } = await import('@solana/web3.js');
-          const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
-          
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-          
-          const feeTx = new Transaction();
-          feeTx.recentBlockhash = blockhash;
-          feeTx.feePayer = publicKey;
-          
-          // Add platform fee transfer
-          feeTx.add(SystemProgram.transfer({
-            fromPubkey: publicKey,
-            toPubkey: PLATFORM_WALLET,
-            lamports: platformFeeLamports,
-          }));
-          
-          // Sign and send
-          const signedFeeTx = await signTransaction(feeTx);
-          const feeSignature = await connection.sendRawTransaction(signedFeeTx.serialize(), {
-            skipPreflight: false,
-            maxRetries: 3
-          });
-          
-          await connection.confirmTransaction({
-            signature: feeSignature,
-            blockhash,
-            lastValidBlockHeight
-          });
-          
-          totalRentRecovered = (totalRentLamports - platformFeeLamports) / 1e9;
-          console.log(`✅ Platform fee collected: ${platformFeeLamports / 1e9} SOL, user net rent: ${totalRentRecovered.toFixed(6)} SOL`);
-        } catch (feeErr) {
-          console.error('Error collecting platform fee:', feeErr);
-          // User keeps full rent if fee collection fails
-          totalRentRecovered = totalRentLamports / 1e9;
-        }
-      }
+      // Platform fee is included in each swap transaction (added by backend)
+      // Calculate approximate rent recovered (net after 15% fee)
+      const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports
+      totalRentRecovered = (rentPerAccount * successfulSwaps.length * 0.85) / 1e9;
+      console.log(`💰 Rent recovered from ${successfulSwaps.length} accounts: ~${totalRentRecovered.toFixed(6)} SOL (after 15% fee included in swap tx)`);
 
 
       return {
