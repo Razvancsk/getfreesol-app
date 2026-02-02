@@ -1243,12 +1243,25 @@ export default function SolRefund() {
           });
 
           // Deserialize and sign the transaction
-          const txBuffer = Buffer.from(orderData.transaction, 'base64');
-          const tx = VersionedTransaction.deserialize(txBuffer);
+          let tx;
+          try {
+            const txBuffer = Buffer.from(orderData.transaction, 'base64');
+            tx = VersionedTransaction.deserialize(txBuffer);
+            console.log(`📦 Deserialized transaction for ${token.symbol}, message version:`, tx.message.version);
+          } catch (deserializeErr) {
+            console.error(`❌ Failed to deserialize transaction for ${token.symbol}:`, deserializeErr);
+            continue;
+          }
           
           // Sign with wallet
-          const signedTx = await signTransaction(tx);
-          console.log(`✅ Signed swap transaction for ${token.symbol} (rentFeeAdded: ${orderData.rentFeeAdded})`);
+          let signedTx;
+          try {
+            signedTx = await signTransaction(tx);
+            console.log(`✅ Signed swap transaction for ${token.symbol} (rentFeeAdded: ${orderData.rentFeeAdded})`);
+          } catch (signErr) {
+            console.error(`❌ Failed to sign transaction for ${token.symbol}:`, signErr);
+            continue;
+          }
 
           let signature: string | null = null;
           
