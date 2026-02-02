@@ -3628,63 +3628,54 @@ export default function SolRefund() {
                   </div>
                 </div>
 
-                {/* Action Button - Burn (click icon to toggle to Swap) */}
-                <div className="relative">
-                  <Button
-                    onClick={() => {
-                      if (burnMode === 'burn') {
-                        bulkBurnTokensMutation.mutate(Array.from(selectedTokens));
-                      } else {
-                        bulkSwapTokensMutation.mutate(Array.from(selectedTokens));
-                      }
-                    }}
-                    disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending || bulkSwapTokensMutation.isPending}
-                    className={`w-full py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                      burnMode === 'burn'
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
-                    data-testid="button-burn-selected-tokens"
-                  >
-                    {bulkBurnTokensMutation.isPending ? (
-                      <>
-                        <RefreshCw className="h-5 w-5 animate-spin" />
-                        Burning...
-                      </>
-                    ) : bulkSwapTokensMutation.isPending ? (
-                      <>
-                        <RefreshCw className="h-5 w-5 animate-spin" />
-                        Swapping...
-                      </>
-                    ) : burnMode === 'burn' ? (
-                      <>
-                        <Flame className="h-5 w-5" />
-                        BURN
-                      </>
-                    ) : (
-                      <>
-                        <ArrowRightLeft className="h-5 w-5" />
-                        SWAP
-                      </>
-                    )}
-                  </Button>
-                  
-                  {/* Toggle Mode Button - Small icon on the right */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setBurnMode(burnMode === 'burn' ? 'swap' : 'burn');
-                    }}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all duration-200 ${
-                      burnMode === 'burn'
-                        ? 'bg-red-700/50 hover:bg-red-700 text-white'
-                        : 'bg-green-700/50 hover:bg-green-700 text-white'
-                    }`}
-                    title={burnMode === 'burn' ? 'Switch to Swap mode' : 'Switch to Burn mode'}
-                  >
-                    <ArrowRightLeft className="h-4 w-4" />
-                  </button>
-                </div>
+                {/* Action Button - Burn or Swap */}
+                <Button
+                  onClick={() => {
+                    if (burnMode === 'burn') {
+                      bulkBurnTokensMutation.mutate(Array.from(selectedTokens));
+                    } else {
+                      bulkSwapTokensMutation.mutate(Array.from(selectedTokens));
+                    }
+                  }}
+                  disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending || bulkSwapTokensMutation.isPending}
+                  className={`w-full py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    burnMode === 'burn'
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                  data-testid="button-burn-selected-tokens"
+                >
+                  {bulkBurnTokensMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      Burning...
+                    </>
+                  ) : bulkSwapTokensMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      Swapping...
+                    </>
+                  ) : burnMode === 'burn' ? (
+                    <>
+                      <Flame className="h-5 w-5" />
+                      BURN
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="h-5 w-5" />
+                      SWAP
+                    </>
+                  )}
+                </Button>
+                
+                {/* Toggle to Swap link */}
+                <button
+                  onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
+                  className="w-full mt-2 text-center text-sm text-purple-300 hover:text-white transition-colors flex items-center justify-center gap-2"
+                >
+                  <ArrowRightLeft className="h-4 w-4" />
+                  {burnMode === 'burn' ? 'Or swap tokens to SOL instead' : 'Or burn tokens instead'}
+                </button>
               </div>
 
               {/* Instructions - Dynamic based on mode */}
