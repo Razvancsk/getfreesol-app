@@ -648,6 +648,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter Legacy API - Swap with Close Account + Platform Fee (ONE TRANSACTION)
+  // Uses v6 API which produces simpler transactions that can be modified
+  app.get('/api/jupiter/legacy/swap-with-fee', async (req, res) => {
+    try {
+      const { inputMint, outputMint, amount, taker, slippageBps } = req.query;
+      
+      if (!inputMint || !outputMint || !amount || !taker) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      console.log('🔄 Legacy swap with fee:', { inputMint, outputMint, amount, taker });
+
+      // Call Jupiter v6 quote API
+      const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps || 100}`;
+      const quoteResponse = await fetch(quoteUrl);
+      
+      if (!quoteResponse.ok) {
+        const errText = await quoteResponse.text();
+        console.error('Jupiter quote error:', errText);
+        return res.status(500).json({ error: 'Failed to get quote from Jupiter' });
+      }
+
+      const quoteData = await quoteResponse.json();
+      console.log('📊 Jupiter quote:', { 
+        inAmount: quoteData.inAmount, 
+        outAmount: quoteData.outAmount,
+        priceImpactPct: quoteData.priceImpactPct 
+      });
+
+      // Call Jupiter v6 swap API to get transaction
+      const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteResponse: quoteData,
+          userPublicKey: taker,
+          wrapAndUnwrapSol: true,
+          computeUnitPriceMicroLamports: 'auto',
+          dynamicComputeUnitLimit: true,
+        })
+      });
+
+      if (!swapResponse.ok) {
+        const errText = await swapResponse.text();
+        console.error('Jupiter swap error:', errText);
+        return res.status(500).json({ error: 'Failed to get swap transaction' });
+      }
+
+      const swapData = await swapResponse.json();
+      
+      // Now modify the transaction to add close account + fee transfer
+      const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey, ComputeBudgetProgram } = await import('@solana/web3.js');
+      const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
+      const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
+      
+      const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
+      
+      const txBuffer = Buffer.from(swapData.swapTransaction, 'base64');
+      const jupiterTx = VersionedTransaction.deserialize(txBuffer);
+      const message = jupiterTx.message;
+      
+      const takerPubkey = new SolanaPublicKey(taker as string);
+      const inputMintPubkey = new SolanaPublicKey(inputMint as string);
+      const userTokenAccount = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
+      
+      // Get connection to fetch lookup tables
+      const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+      
+      // Fetch address lookup tables if any
+      const lookupTableAccounts: AddressLookupTableAccount[] = [];
+      for (const lookup of message.addressTableLookups) {
+        try {
+          const accountInfo = await connection.getAccountInfo(lookup.accountKey);
+          if (accountInfo) {
+            const state = AddressLookupTableAccount.deserialize(accountInfo.data);
+            lookupTableAccounts.push(new AddressLookupTableAccount({
+              key: lookup.accountKey,
+              state: state,
+            }));
+          }
+        } catch (e) {
+          console.warn('Could not fetch lookup table:', lookup.accountKey.toString());
+        }
+      }
+      
+      // Decompile transaction to get instructions
+      const decompiled = TransactionMessage.decompile(message, {
+        addressLookupTableAccounts: lookupTableAccounts,
+      });
+      
+      // Check if Jupiter already included close account instruction
+      const TOKEN_PROGRAM_STR = TOKEN_PROGRAM_ID.toString();
+      const hasCloseInstruction = decompiled.instructions.some(ix => {
+        return ix.programId.toString() === TOKEN_PROGRAM_STR && ix.data.length > 0 && ix.data[0] === 9;
+      });
+      
+      // Add close account if not present
+      if (!hasCloseInstruction) {
+        console.log('📦 Adding close account instruction');
+        const closeInstruction = createCloseAccountInstruction(
+          userTokenAccount,
+          takerPubkey,
+          takerPubkey,
+          [],
+          TOKEN_PROGRAM_ID
+        );
+        decompiled.instructions.push(closeInstruction);
+      } else {
+        console.log('✅ Jupiter already includes close account');
+      }
+      
+      // Add platform fee transfer
+      console.log('💰 Adding platform fee transfer:', RENT_FEE_LAMPORTS / 1e9, 'SOL');
+      const feeInstruction = SystemProgram.transfer({
+        fromPubkey: takerPubkey,
+        toPubkey: PLATFORM_WALLET,
+        lamports: RENT_FEE_LAMPORTS,
+      });
+      decompiled.instructions.push(feeInstruction);
+      
+      // Increase compute budget to handle extra instructions
+      const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400000 });
+      decompiled.instructions.unshift(computeIx);
+      
+      // Get fresh blockhash
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      decompiled.recentBlockhash = blockhash;
+      
+      // Recompile transaction
+      const newMessage = decompiled.compileToV0Message(lookupTableAccounts);
+      const newTx = new VersionedTransaction(newMessage);
+      
+      const modifiedTxBase64 = Buffer.from(newTx.serialize()).toString('base64');
+      
+      console.log('✅ Created swap+close+fee transaction');
+      
+      res.json({
+        success: true,
+        transaction: modifiedTxBase64,
+        outAmount: quoteData.outAmount,
+        inAmount: quoteData.inAmount,
+        priceImpactPct: quoteData.priceImpactPct,
+        rentFeeLamports: RENT_FEE_LAMPORTS,
+        blockhash,
+        lastValidBlockHeight,
+      });
+    } catch (error: any) {
+      console.error('Legacy swap with fee error:', error);
+      res.status(500).json({ error: error.message || 'Failed to create swap transaction' });
+    }
+  });
+
   // Jupiter Legacy API - Get real network fee by simulating transaction
   app.get('/api/jupiter/legacy/get-fee', async (req, res) => {
     try {

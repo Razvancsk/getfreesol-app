@@ -1219,9 +1219,9 @@ export default function SolRefund() {
           const rawAmount = token.amount || Math.floor(token.balance * Math.pow(10, token.decimals || 6)).toString();
           console.log(`💰 Token ${token.symbol}: balance=${token.balance}, rawAmount=${rawAmount}, decimals=${token.decimals}`);
           
-          // Get swap order from Jupiter Ultra (with rent fee transfer included)
+          // Use Legacy API - creates swap + close account + fee transfer in ONE transaction
           const orderResponse = await fetch(
-            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}&addRentFee=true`
+            `/api/jupiter/legacy/swap-with-fee?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}&slippageBps=100`
           );
           
           if (!orderResponse.ok) {
@@ -1236,97 +1236,64 @@ export default function SolRefund() {
             continue;
           }
 
+          console.log(`📊 Got swap transaction for ${token.symbol}:`, {
+            outAmount: orderData.outAmount,
+            rentFeeLamports: orderData.rentFeeLamports
+          });
+
           // Deserialize and sign the transaction
           const txBuffer = Buffer.from(orderData.transaction, 'base64');
           const tx = VersionedTransaction.deserialize(txBuffer);
           
           // Sign with wallet
           const signedTx = await signTransaction(tx);
-          console.log(`✅ Signed swap for ${token.symbol}`);
+          console.log(`✅ Signed swap+close+fee transaction for ${token.symbol}`);
 
-          // Execute - if transaction was modified, send directly to network
-          let executeResponse;
-          if (orderData.rentFeeAdded) {
-            // Transaction was modified - send directly to Helius RPC
-            const { Connection } = await import('@solana/web3.js');
-            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
-            
-            console.log(`📤 Sending modified swap transaction directly to network...`);
-            
-            try {
-              const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-                skipPreflight: true,  // Skip preflight to avoid simulation issues
-                maxRetries: 5
-              });
-              
-              console.log(`📨 Transaction sent: ${signature}`);
-              
-              // Simple confirmation - just wait a few seconds and check status
-              let confirmed = false;
-              for (let i = 0; i < 30; i++) {
-                await new Promise(r => setTimeout(r, 1000));
-                try {
-                  const status = await connection.getSignatureStatus(signature);
-                  if (status.value?.confirmationStatus === 'confirmed' || 
-                      status.value?.confirmationStatus === 'finalized') {
-                    confirmed = true;
-                    break;
-                  }
-                  if (status.value?.err) {
-                    throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
-                  }
-                } catch (statusErr) {
-                  // Continue waiting
-                }
-              }
-              
-              if (confirmed) {
-                console.log(`✅ Modified swap transaction confirmed: ${signature}`);
-                executeResponse = {
-                  ok: true,
-                  json: async () => ({ signature, rebateAmount: 0 })
-                } as any;
-              } else {
-                console.log(`⏳ Transaction sent but confirmation timeout: ${signature}`);
-                // Still consider it potentially successful
-                executeResponse = {
-                  ok: true,
-                  json: async () => ({ signature, rebateAmount: 0 })
-                } as any;
-              }
-            } catch (sendErr) {
-              console.error(`Failed to send modified transaction:`, sendErr);
-              executeResponse = {
-                ok: false,
-                json: async () => ({ error: String(sendErr) })
-              } as any;
-            }
-          } else {
-            // Normal transaction - send via Jupiter execute
-            executeResponse = await fetch('/api/jupiter/ultra/execute', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
-                requestId: orderData.requestId,
-                walletAddress: publicKey.toString(),
-                inputMint: token.mint,
-                outputMint: SOL_MINT,
-                inputAmount: rawAmount,
-                outputAmount: orderData.outAmount,
-                inputSymbol: token.symbol || 'Unknown',
-                outputSymbol: 'SOL',
-                usdValue: token.usdValue || 0,
-                platformFee: orderData.platformFee,
-                referralCode: referralCode || undefined
-              })
+          // Send directly to Helius RPC (not through Jupiter execute since we modified the tx)
+          const { Connection } = await import('@solana/web3.js');
+          const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+          
+          console.log(`📤 Sending swap+close+fee transaction to network...`);
+          
+          let signature: string | null = null;
+          try {
+            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+              skipPreflight: true,
+              maxRetries: 5
             });
+            
+            console.log(`📨 Transaction sent: ${signature}`);
+            
+            // Wait for confirmation with polling
+            let confirmed = false;
+            for (let i = 0; i < 30; i++) {
+              await new Promise(r => setTimeout(r, 1000));
+              try {
+                const status = await connection.getSignatureStatus(signature);
+                if (status.value?.confirmationStatus === 'confirmed' || 
+                    status.value?.confirmationStatus === 'finalized') {
+                  confirmed = true;
+                  console.log(`✅ Transaction confirmed: ${signature}`);
+                  break;
+                }
+                if (status.value?.err) {
+                  throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
+                }
+              } catch (statusErr) {
+                // Continue waiting
+              }
+            }
+            
+            if (!confirmed) {
+              console.log(`⏳ Confirmation timeout, but tx may still succeed: ${signature}`);
+            }
+          } catch (sendErr) {
+            console.error(`Failed to send transaction:`, sendErr);
+            continue;
           }
 
-          const executeResult = await executeResponse.json();
-          
-          if (!executeResponse.ok || !executeResult.signature) {
-            console.error(`Swap execution failed for ${token.symbol}:`, executeResult.error);
+          if (!signature) {
+            console.error(`No signature for ${token.symbol}`);
             continue;
           }
 
