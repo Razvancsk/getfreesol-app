@@ -1257,41 +1257,58 @@ export default function SolRefund() {
           }
           
           // Build close account + fee transaction as VersionedTransaction (to match swap tx type)
-          const { Connection, TransactionMessage, SystemProgram } = await import('@solana/web3.js');
-          const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
-          const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+          let closeTx;
+          let blockhash: string;
+          let lastValidBlockHeight: number;
+          try {
+            alert(`DEBUG 2a: Importing web3.js...`);
+            const { Connection, TransactionMessage, SystemProgram } = await import('@solana/web3.js');
+            const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+            
+            alert(`DEBUG 2b: Creating connection...`);
+            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+            
+            alert(`DEBUG 2c: Getting ATA...`);
+            const ata = getAssociatedTokenAddressSync(
+              new SolanaPublicKey(token.mint),
+              publicKey
+            );
+            
+            const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+            const RENT_FEE_LAMPORTS = 305892;
+            
+            alert(`DEBUG 2d: Getting blockhash...`);
+            const bhResult = await connection.getLatestBlockhash();
+            blockhash = bhResult.blockhash;
+            lastValidBlockHeight = bhResult.lastValidBlockHeight;
+            
+            alert(`DEBUG 2e: Building instructions...`);
+            const closeInstructions = [
+              createCloseAccountInstruction(ata, publicKey, publicKey, [], TOKEN_PROGRAM_ID),
+              SystemProgram.transfer({
+                fromPubkey: publicKey,
+                toPubkey: PLATFORM_WALLET,
+                lamports: RENT_FEE_LAMPORTS,
+              })
+            ];
+            
+            alert(`DEBUG 2f: Compiling message...`);
+            const closeMessage = new TransactionMessage({
+              payerKey: publicKey,
+              recentBlockhash: blockhash,
+              instructions: closeInstructions,
+            }).compileToV0Message();
+            
+            alert(`DEBUG 2g: Creating VersionedTransaction...`);
+            closeTx = new VersionedTransaction(closeMessage);
+          } catch (buildErr: any) {
+            alert(`DEBUG ERROR: Build close tx failed: ${buildErr.message}`);
+            console.error(`Failed to build close tx:`, buildErr);
+            continue;
+          }
           
-          const ata = getAssociatedTokenAddressSync(
-            new SolanaPublicKey(token.mint),
-            publicKey
-          );
-          
-          const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
-          const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
-          
-          // Get recent blockhash
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-          
-          // Build instructions
-          const closeInstructions = [
-            createCloseAccountInstruction(ata, publicKey, publicKey, [], TOKEN_PROGRAM_ID),
-            SystemProgram.transfer({
-              fromPubkey: publicKey,
-              toPubkey: PLATFORM_WALLET,
-              lamports: RENT_FEE_LAMPORTS,
-            })
-          ];
-          
-          // Create as VersionedTransaction (V0) to match swap tx type
-          const closeMessage = new TransactionMessage({
-            payerKey: publicKey,
-            recentBlockhash: blockhash,
-            instructions: closeInstructions,
-          }).compileToV0Message();
-          
-          const closeTx = new VersionedTransaction(closeMessage);
-          
-          console.log(`📦 Built close+fee tx for ${token.symbol} (fee: ${RENT_FEE_LAMPORTS / 1e9} SOL)`);
+          const RENT_FEE_DISPLAY = 305892; // Same value for display
+          console.log(`📦 Built close+fee tx for ${token.symbol} (fee: ${RENT_FEE_DISPLAY / 1e9} SOL)`);
           alert(`DEBUG 3: Built close tx, about to sign`);
           
           // Sign BOTH transactions in ONE popup using signAllTransactions
