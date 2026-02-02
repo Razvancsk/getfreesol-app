@@ -546,7 +546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey } = await import('@solana/web3.js');
           const { Connection } = await import('@solana/web3.js');
           
-          const PLATFORM_WALLET = new SolanaPublicKey('GETjtcbMXBLSQe7WnKfwVbEZMVM4VTjpD7cHfYcdpump');
+          const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
           const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent = ~0.000306 SOL
           
           // Deserialize the Jupiter transaction
