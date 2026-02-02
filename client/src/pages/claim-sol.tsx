@@ -3452,31 +3452,12 @@ export default function SolRefund() {
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
-                    {scanTokensMutation.isPending && (
-                      <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
-                    )}
-                  </div>
-                  
-                  {/* Burn/Swap Toggle Switch */}
-                  <div className="flex items-center gap-3">
-                    <span className={`text-base font-bold ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
-                    <button
-                      onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
-                      className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
-                        burnMode === 'swap' ? 'bg-green-600' : 'bg-red-600'
-                      }`}
-                      title={burnMode === 'burn' ? 'Switch to Swap' : 'Switch to Burn'}
-                    >
-                      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${
-                        burnMode === 'swap' ? 'translate-x-8' : 'translate-x-1'
-                      }`} />
-                    </button>
-                    <span className={`text-base font-bold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
-                  </div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
+                  {scanTokensMutation.isPending && (
+                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                  )}
                 </div>
                   
                 {/* Refresh Button */}
@@ -3493,6 +3474,23 @@ export default function SolRefund() {
                 >
                   <RefreshCw className={`h-5 w-5 ${scanTokensMutation.isPending ? 'animate-spin' : ''}`} />
                 </button>
+              </div>
+              
+              {/* Burn/Swap Toggle Switch - Under header */}
+              <div className="flex items-center gap-3 mb-6">
+                <span className={`text-base font-bold ${burnMode === 'burn' ? 'text-red-400' : 'text-purple-400'}`}>Burn</span>
+                <button
+                  onClick={() => setBurnMode(burnMode === 'burn' ? 'swap' : 'burn')}
+                  className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+                    burnMode === 'swap' ? 'bg-green-600' : 'bg-red-600'
+                  }`}
+                  title={burnMode === 'burn' ? 'Switch to Swap' : 'Switch to Burn'}
+                >
+                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${
+                    burnMode === 'swap' ? 'translate-x-8' : 'translate-x-1'
+                  }`} />
+                </button>
+                <span className={`text-base font-bold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
               </div>
 
               {/* Value Filter Slider - Always visible */}
