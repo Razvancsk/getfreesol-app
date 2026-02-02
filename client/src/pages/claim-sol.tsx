@@ -1188,12 +1188,18 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      const { VersionedTransaction } = await import('@solana/web3.js');
+      const { VersionedTransaction, PublicKey: SolanaPublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
+      const { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddressSync } = await import('@solana/spl-token');
       const SOL_MINT = 'So11111111111111111111111111111111111111112';
+      const PLATFORM_WALLET = new SolanaPublicKey('GETjtcbMXBLSQe7WnKfwVbEZMVM4VTjpD7cHfYcdpump');
+      const RENT_PER_ACCOUNT = 0.00203928; // SOL rent per token account
+      const PLATFORM_FEE_PERCENT = 0.15; // 15% fee
       
       let totalSwapped = 0;
       let totalSolReceived = 0;
+      let totalRentRecovered = 0;
       const successfulSwaps: { signature: string; inputMint: string; outputAmount: number }[] = [];
+      const accountsToClose: { mint: string; ata: string; symbol: string }[] = [];
 
       // Find token data for selected mints
       const tokensToSwap = tokenList.filter(token => tokenMints.includes(token.mint));
@@ -1204,7 +1210,7 @@ export default function SolRefund() {
 
       console.log(`🔄 Swapping ${tokensToSwap.length} tokens to SOL...`);
 
-      // Process each token swap individually (one signature per swap)
+      // STEP 1: Process each token swap individually (one signature per swap)
       for (const token of tokensToSwap) {
         try {
           console.log(`🔄 Swapping ${token.symbol || token.mint.slice(0, 8)}...`);
@@ -1275,6 +1281,13 @@ export default function SolRefund() {
             outputAmount: outputSol
           });
 
+          // Track this account for closing (to reclaim rent with platform fee)
+          const ata = getAssociatedTokenAddressSync(
+            new SolanaPublicKey(token.mint),
+            publicKey
+          );
+          accountsToClose.push({ mint: token.mint, ata: ata.toString(), symbol: token.symbol || 'Unknown' });
+
           console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL`);
         } catch (err) {
           console.error(`Error swapping ${token.symbol}:`, err);
@@ -1285,9 +1298,73 @@ export default function SolRefund() {
         throw new Error('No swaps completed successfully');
       }
 
+      // STEP 2: Close empty token accounts and collect platform fee (like normal claim)
+      if (accountsToClose.length > 0) {
+        console.log(`📦 Closing ${accountsToClose.length} empty accounts to reclaim rent with 15% fee...`);
+        
+        try {
+          // Wait a bit for swap transactions to finalize
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Build close account transaction with fee transfer
+          const closeResponse = await fetch('/api/sol-refund/build-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              walletAddress: publicKey.toString(),
+              selectedAccounts: accountsToClose.map(a => a.ata),
+              referralCode: referralCode || undefined
+            })
+          });
+
+          if (closeResponse.ok) {
+            const closeData = await closeResponse.json();
+            
+            if (closeData.transaction) {
+              // Sign and send the close account transaction
+              const closeTxBuffer = Buffer.from(closeData.transaction, 'base64');
+              const closeTx = Transaction.from(closeTxBuffer);
+              
+              const signedCloseTx = await signTransaction(closeTx);
+              
+              // Execute close transaction
+              const executeCloseResponse = await fetch('/api/sol-refund/execute-transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  signedTransaction: signedCloseTx.serialize().toString('base64'),
+                  walletAddress: publicKey.toString(),
+                  selectedAccounts: accountsToClose.map(a => a.ata),
+                  accountsClosed: accountsToClose.length,
+                  solRecovered: closeData.totalRent,
+                  netAmount: closeData.netAmount,
+                  feeAmount: closeData.feeAmount,
+                  referralCodeUsed: referralCode || null,
+                  platformFeeAmount: closeData.platformFeeAmount || 0,
+                  referralFeeAmount: closeData.referralFeeAmount || 0
+                })
+              });
+
+              if (executeCloseResponse.ok) {
+                const closeResult = await executeCloseResponse.json();
+                totalRentRecovered = closeData.netAmount || (RENT_PER_ACCOUNT * accountsToClose.length * (1 - PLATFORM_FEE_PERCENT));
+                console.log(`✅ Closed ${accountsToClose.length} accounts, recovered ${totalRentRecovered.toFixed(6)} SOL (after 15% fee)`);
+              } else {
+                console.error('Failed to execute close transaction:', await executeCloseResponse.text());
+              }
+            }
+          } else {
+            console.error('Failed to build close transaction:', await closeResponse.text());
+          }
+        } catch (closeErr) {
+          console.error('Error closing accounts after swap:', closeErr);
+        }
+      }
+
       return {
         tokensSwapped: totalSwapped,
-        totalSolReceived,
+        totalSolReceived: totalSolReceived + totalRentRecovered,
+        rentRecovered: totalRentRecovered,
         signature: successfulSwaps[0]?.signature || '',
         allSignatures: successfulSwaps.map(s => s.signature)
       };
