@@ -3617,7 +3617,7 @@ export default function SolRefund() {
                         {token.symbol || token.name || 'Unknown Token'}
                       </div>
                       <div className="text-sm text-purple-200">
-                        Balance: {token.balance < 1000 ? token.balance.toFixed(token.balance < 1 ? 6 : 3) : token.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {token.symbol || ''}
+                        Balance: {token.balance < 1000 ? Number(token.balance.toFixed(6)) : token.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {token.symbol || ''}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-purple-300 font-mono truncate">
