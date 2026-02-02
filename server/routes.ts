@@ -540,8 +540,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasTransaction: !!orderData.transaction
       });
 
-      // Add close account + rent fee transfer to Jupiter's transaction
-      if (addRentFee === 'true' && orderData.transaction && taker) {
+      // Flag that rent fee should be collected after swap
+      // (we no longer modify Jupiter's transaction - instead we add a second transaction after swap)
+      if (addRentFee === 'true' && taker) {
+        orderData.collectRentFeeAfterSwap = true;
+        orderData.rentFeeLamports = 305892; // 15% of ~0.00203928 SOL rent
+        orderData.platformWallet = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+        orderData.tokenMint = inputMint;
+        console.log('📋 Rent fee collection flagged for after swap');
+      }
+      
+      // DISABLED: Transaction modification causes issues with Jupiter Ultra
+      // Instead we'll handle close account + fee in a separate transaction
+      if (false && addRentFee === 'true' && orderData.transaction && taker) {
         try {
           const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey, TransactionInstruction } = await import('@solana/web3.js');
           const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
