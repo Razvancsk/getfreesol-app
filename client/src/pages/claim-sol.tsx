@@ -1219,180 +1219,85 @@ export default function SolRefund() {
           const rawAmount = token.amount || Math.floor(token.balance * Math.pow(10, token.decimals || 6)).toString();
           console.log(`💰 Token ${token.symbol}: balance=${token.balance}, rawAmount=${rawAmount}, decimals=${token.decimals}`);
           
-          // Use Ultra API WITHOUT modification (modification causes serialization issues)
-          const orderResponse = await fetch(
-            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}`
+          // Use Metis API - builds swap + close + fee in ONE transaction on the server
+          console.log(`🔄 Getting swap+close transaction for ${token.symbol}...`);
+          const swapResponse = await fetch(
+            `/api/jupiter/swap-with-close?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}`
           );
           
-          if (!orderResponse.ok) {
-            console.error(`Failed to get swap order for ${token.symbol}: ${await orderResponse.text()}`);
+          if (!swapResponse.ok) {
+            const errorText = await swapResponse.text();
+            console.error(`Failed to get swap+close tx for ${token.symbol}: ${errorText}`);
             continue;
           }
-
-          const orderData = await orderResponse.json();
           
-          if (!orderData.transaction) {
-            console.error(`No transaction in order for ${token.symbol}`);
+          const swapData = await swapResponse.json();
+          if (!swapData.success || !swapData.transaction) {
+            console.error(`No transaction for ${token.symbol}:`, swapData.error);
             continue;
           }
 
-          console.log(`📊 Got swap transaction for ${token.symbol}:`, {
-            outAmount: orderData.outAmount,
-            rentFeeAdded: orderData.rentFeeAdded,
-            rentFeeLamports: orderData.rentFeeLamports
+          console.log(`📊 Got combined transaction for ${token.symbol}:`, {
+            outAmount: swapData.quoteData?.outAmount,
+            instructionCount: swapData.instructionCount,
+            rentFeeLamports: swapData.rentFeeLamports
           });
-          alert(`DEBUG 1: Got order for ${token.symbol}, about to deserialize`);
 
-          // Deserialize swap transaction
-          let swapTx;
+          // Deserialize the combined transaction
+          let tx;
           try {
-            const txBuffer = Buffer.from(orderData.transaction, 'base64');
-            swapTx = VersionedTransaction.deserialize(txBuffer);
-            console.log(`📦 Deserialized swap tx for ${token.symbol}`);
-            alert(`DEBUG 2: Deserialized swap tx`);
+            const txBuffer = Buffer.from(swapData.transaction, 'base64');
+            tx = VersionedTransaction.deserialize(txBuffer);
+            console.log(`📦 Deserialized combined tx for ${token.symbol}`);
           } catch (deserializeErr: any) {
-            console.error(`❌ Failed to deserialize swap tx for ${token.symbol}:`, deserializeErr);
-            alert(`DEBUG ERROR: Deserialize failed: ${deserializeErr.message}`);
+            console.error(`❌ Failed to deserialize tx for ${token.symbol}:`, deserializeErr);
             continue;
           }
           
-          // Build close account + fee transaction as VersionedTransaction (to match swap tx type)
-          let closeTx;
-          let blockhash: string;
-          let lastValidBlockHeight: number;
+          // Sign the ONE transaction (swap + close + fee all together)
+          let signedTx;
           try {
-            alert(`DEBUG 2a: Importing web3.js...`);
-            const { TransactionMessage, SystemProgram } = await import('@solana/web3.js');
-            const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
-            
-            alert(`DEBUG 2b: Getting ATA...`);
-            const ata = getAssociatedTokenAddressSync(
-              new SolanaPublicKey(token.mint),
-              publicKey
-            );
-            
-            const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
-            const RENT_FEE_LAMPORTS = 305892;
-            
-            alert(`DEBUG 2c: Getting blockhash via server...`);
-            const bhResponse = await fetch('/api/rpc/blockhash');
-            const bhData = await bhResponse.json();
-            if (!bhData.success) throw new Error('Failed to get blockhash');
-            blockhash = bhData.blockhash;
-            lastValidBlockHeight = bhData.lastValidBlockHeight;
-            
-            alert(`DEBUG 2e: Building instructions...`);
-            const closeInstructions = [
-              createCloseAccountInstruction(ata, publicKey, publicKey, [], TOKEN_PROGRAM_ID),
-              SystemProgram.transfer({
-                fromPubkey: publicKey,
-                toPubkey: PLATFORM_WALLET,
-                lamports: RENT_FEE_LAMPORTS,
-              })
-            ];
-            
-            alert(`DEBUG 2f: Compiling message...`);
-            const closeMessage = new TransactionMessage({
-              payerKey: publicKey,
-              recentBlockhash: blockhash,
-              instructions: closeInstructions,
-            }).compileToV0Message();
-            
-            alert(`DEBUG 2g: Creating VersionedTransaction...`);
-            closeTx = new VersionedTransaction(closeMessage);
-          } catch (buildErr: any) {
-            alert(`DEBUG ERROR: Build close tx failed: ${buildErr.message}`);
-            console.error(`Failed to build close tx:`, buildErr);
-            continue;
-          }
-          
-          const RENT_FEE_DISPLAY = 305892; // Same value for display
-          console.log(`📦 Built close+fee tx for ${token.symbol} (fee: ${RENT_FEE_DISPLAY / 1e9} SOL)`);
-          alert(`DEBUG 3: Built close tx, about to sign`);
-          
-          // Sign BOTH transactions in ONE popup using signAllTransactions
-          let signedSwapTx, signedCloseTx;
-          try {
-            if (signAllTransactions) {
-              console.log(`🖊️ Signing both transactions in one popup...`);
-              alert(`DEBUG 4: Calling signAllTransactions...`);
-              const [signedSwap, signedClose] = await signAllTransactions([swapTx, closeTx]);
-              signedSwapTx = signedSwap;
-              signedCloseTx = signedClose;
-              console.log(`✅ Signed both transactions in ONE popup!`);
-              alert(`DEBUG 5: Signed!`);
-            } else {
-              console.log(`🖊️ signAllTransactions not available, signing separately...`);
-              alert(`DEBUG ERROR: signAllTransactions not available!`);
-              signedSwapTx = await signTransaction(swapTx);
-              signedCloseTx = await signTransaction(closeTx);
-            }
+            console.log(`🖊️ Signing combined transaction...`);
+            signedTx = await signTransaction(tx);
+            console.log(`✅ Signed combined transaction for ${token.symbol}!`);
           } catch (signErr: any) {
-            console.error(`❌ Failed to sign transactions for ${token.symbol}:`, signErr);
-            alert(`DEBUG ERROR: Sign failed: ${signErr.message}`);
+            console.error(`❌ Failed to sign transaction for ${token.symbol}:`, signErr);
             continue;
           }
 
-          // Execute swap via Jupiter
-          let swapSignature: string | null = null;
-          console.log(`📤 Sending swap transaction via Jupiter execute...`);
+          // Send the signed transaction via backend RPC
+          let signature: string | null = null;
+          console.log(`📤 Sending combined swap+close+fee transaction...`);
           try {
-            const executeResponse = await fetch('/api/jupiter/ultra/execute', {
+            const sendResponse = await fetch('/api/rpc/send-transaction', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                signedTransaction: Buffer.from(signedSwapTx.serialize()).toString('base64'),
-                requestId: orderData.requestId,
-                walletAddress: publicKey.toString(),
-                inputMint: token.mint,
-                outputMint: SOL_MINT,
-                inputAmount: rawAmount,
-                outputAmount: orderData.outAmount,
-                inputSymbol: token.symbol || 'Unknown',
-                outputSymbol: 'SOL',
-                usdValue: token.usdValue || 0,
-                platformFee: orderData.platformFee,
-                referralCode: referralCode || undefined
+                signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+                rebateAddress: publicKey.toString()
               })
             });
             
-            const executeResult = await executeResponse.json();
-            if (executeResponse.ok && executeResult.signature) {
-              swapSignature = executeResult.signature;
-              console.log(`✅ Swap succeeded: ${swapSignature}`);
+            const sendResult = await sendResponse.json();
+            if (sendResponse.ok && sendResult.signature) {
+              signature = sendResult.signature;
+              console.log(`✅ Transaction confirmed: ${signature}`);
+              console.log(`   https://solscan.io/tx/${signature}`);
             } else {
-              console.error(`Swap failed:`, executeResult.error);
+              console.error(`Send failed:`, sendResult.error);
               continue;
             }
-          } catch (execErr) {
-            console.error(`Failed to execute swap:`, execErr);
+          } catch (sendErr) {
+            console.error(`Failed to send transaction:`, sendErr);
             continue;
           }
 
-          // Send close account + fee transaction
-          let closeSignature: string | null = null;
-          console.log(`📤 Sending close+fee transaction...`);
-          try {
-            closeSignature = await connection.sendRawTransaction(signedCloseTx.serialize(), {
-              skipPreflight: true,
-              maxRetries: 3
-            });
-            console.log(`✅ Close+fee tx sent: ${closeSignature}`);
-            
-            // Quick confirmation check
-            await connection.confirmTransaction({ signature: closeSignature, blockhash, lastValidBlockHeight }, 'confirmed');
-            console.log(`✅ Close+fee confirmed: ${closeSignature}`);
-          } catch (closeErr: any) {
-            console.log(`⚠️ Close+fee tx result: ${closeErr.message}`);
-            // Account may already be closed or tx may still land
-          }
-
-          const outputSol = Number(orderData.outAmount) / 1e9;
+          const outputSol = Number(swapData.quoteData?.outAmount || 0) / 1e9;
           totalSwapped++;
           totalSolReceived += outputSol;
           
           successfulSwaps.push({
-            signature: swapSignature,
+            signature: signature!,
             inputMint: token.mint,
             outputAmount: outputSol
           });

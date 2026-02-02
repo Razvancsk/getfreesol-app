@@ -482,6 +482,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Jupiter Metis Swap with Close Account + Fee - ONE TRANSACTION
+  // Uses /swap-instructions to get individual instructions, then adds close account + fee
+  app.get("/api/jupiter/swap-with-close", async (req, res) => {
+    try {
+      const { inputMint, outputMint, amount, taker } = req.query;
+      
+      if (!inputMint || !outputMint || !amount || !taker) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      const takerPubkey = new PublicKey(taker as string);
+      const inputMintPubkey = new PublicKey(inputMint as string);
+      const PLATFORM_WALLET = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
+      
+      // Create connection for RPC calls
+      const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+
+      // Step 1: Get quote from Jupiter
+      console.log(`🔄 Getting Jupiter quote for ${inputMint} -> ${outputMint}, amount: ${amount}`);
+      const quoteUrl = new URL('https://quote-api.jup.ag/v6/quote');
+      quoteUrl.searchParams.append('inputMint', inputMint as string);
+      quoteUrl.searchParams.append('outputMint', outputMint as string);
+      quoteUrl.searchParams.append('amount', amount as string);
+      quoteUrl.searchParams.append('slippageBps', '100'); // 1% slippage
+      
+      const quoteResponse = await fetch(quoteUrl.toString());
+      if (!quoteResponse.ok) {
+        const error = await quoteResponse.text();
+        console.error('Quote failed:', error);
+        return res.status(400).json({ error: 'Failed to get quote' });
+      }
+      const quoteData = await quoteResponse.json();
+      console.log(`✅ Got quote: ${quoteData.inAmount} -> ${quoteData.outAmount}`);
+
+      // Step 2: Get swap instructions from Jupiter Metis API
+      console.log(`🔄 Getting swap instructions from Jupiter Metis...`);
+      const swapInstructionsResponse = await fetch('https://quote-api.jup.ag/v6/swap-instructions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userPublicKey: taker,
+          quoteResponse: quoteData,
+          wrapAndUnwrapSol: true,
+          dynamicComputeUnitLimit: true,
+          prioritizationFeeLamports: 'auto'
+        })
+      });
+
+      if (!swapInstructionsResponse.ok) {
+        const error = await swapInstructionsResponse.text();
+        console.error('Swap instructions failed:', error);
+        return res.status(400).json({ error: 'Failed to get swap instructions' });
+      }
+      const swapData = await swapInstructionsResponse.json();
+      console.log(`✅ Got swap instructions`);
+
+      // Step 3: Build transaction with swap + close account + fee transfer
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      
+      // Helper to deserialize instruction from API response
+      const deserializeInstruction = (ix: any) => ({
+        programId: new PublicKey(ix.programId),
+        keys: ix.accounts.map((acc: any) => ({
+          pubkey: new PublicKey(acc.pubkey),
+          isSigner: acc.isSigner,
+          isWritable: acc.isWritable,
+        })),
+        data: Buffer.from(ix.data, 'base64'),
+      });
+
+      // Collect all instructions
+      const instructions: any[] = [];
+
+      // Add compute budget instructions
+      if (swapData.computeBudgetInstructions) {
+        for (const ix of swapData.computeBudgetInstructions) {
+          instructions.push(deserializeInstruction(ix));
+        }
+      }
+
+      // Add setup instructions (create ATAs if needed)
+      if (swapData.setupInstructions) {
+        for (const ix of swapData.setupInstructions) {
+          instructions.push(deserializeInstruction(ix));
+        }
+      }
+
+      // Add the main swap instruction
+      if (swapData.swapInstruction) {
+        instructions.push(deserializeInstruction(swapData.swapInstruction));
+      }
+
+      // Add cleanup instruction if present
+      if (swapData.cleanupInstruction) {
+        instructions.push(deserializeInstruction(swapData.cleanupInstruction));
+      }
+
+      // Step 4: Add close account instruction (reclaim rent)
+      const ata = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
+      instructions.push(
+        createCloseAccountInstruction(ata, takerPubkey, takerPubkey, [], TOKEN_PROGRAM_ID)
+      );
+      console.log(`📦 Added close account instruction for ATA: ${ata.toString()}`);
+
+      // Step 5: Add platform fee transfer (15% of rent)
+      instructions.push(
+        SystemProgram.transfer({
+          fromPubkey: takerPubkey,
+          toPubkey: PLATFORM_WALLET,
+          lamports: RENT_FEE_LAMPORTS,
+        })
+      );
+      console.log(`💰 Added fee transfer: ${RENT_FEE_LAMPORTS / 1e9} SOL to platform`);
+
+      // Step 6: Build the versioned transaction with lookup tables
+      let lookupTableAccounts: any[] = [];
+      if (swapData.addressLookupTableAddresses && swapData.addressLookupTableAddresses.length > 0) {
+        const lookupTablePromises = swapData.addressLookupTableAddresses.map(async (addr: string) => {
+          const result = await connection.getAddressLookupTable(new PublicKey(addr));
+          return result.value;
+        });
+        lookupTableAccounts = (await Promise.all(lookupTablePromises)).filter(Boolean);
+      }
+
+      const messageV0 = new TransactionMessage({
+        payerKey: takerPubkey,
+        recentBlockhash: blockhash,
+        instructions,
+      }).compileToV0Message(lookupTableAccounts);
+
+      const transaction = new VersionedTransaction(messageV0);
+      const serializedTx = Buffer.from(transaction.serialize()).toString('base64');
+
+      console.log(`✅ Built combined transaction: swap + close + fee (${instructions.length} instructions)`);
+
+      res.json({
+        success: true,
+        transaction: serializedTx,
+        blockhash,
+        lastValidBlockHeight,
+        quoteData: {
+          inAmount: quoteData.inAmount,
+          outAmount: quoteData.outAmount,
+          priceImpactPct: quoteData.priceImpactPct
+        },
+        rentFeeLamports: RENT_FEE_LAMPORTS,
+        instructionCount: instructions.length
+      });
+
+    } catch (error: any) {
+      console.error('Swap with close error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Jupiter Ultra Swap - Get Order endpoint (replaces quote + swap)
   app.get("/api/jupiter/ultra/order", async (req, res) => {
     try {
