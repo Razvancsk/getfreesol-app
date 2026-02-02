@@ -1199,7 +1199,7 @@ export default function SolRefund() {
       let totalSolReceived = 0;
       let totalRentRecovered = 0;
       const successfulSwaps: { signature: string; inputMint: string; outputAmount: number }[] = [];
-      const accountsToClose: { mint: string; ata: string; symbol: string }[] = [];
+      // Accounts are closed inline with each swap (one popup for both)
 
       // Find token data for selected mints
       const tokensToSwap = tokenList.filter(token => tokenMints.includes(token.mint));
@@ -1219,9 +1219,9 @@ export default function SolRefund() {
           const rawAmount = token.amount || Math.floor(token.balance * Math.pow(10, token.decimals || 6)).toString();
           console.log(`💰 Token ${token.symbol}: balance=${token.balance}, rawAmount=${rawAmount}, decimals=${token.decimals}`);
           
-          // Use Ultra API with fee modification - creates swap + close account + fee in ONE transaction
+          // Use Ultra API WITHOUT modification (modification causes serialization issues)
           const orderResponse = await fetch(
-            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}&addRentFee=true`
+            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}`
           );
           
           if (!orderResponse.ok) {
@@ -1242,111 +1242,120 @@ export default function SolRefund() {
             rentFeeLamports: orderData.rentFeeLamports
           });
 
-          // Deserialize and sign the transaction
-          let tx;
+          // Deserialize swap transaction
+          let swapTx;
           try {
             const txBuffer = Buffer.from(orderData.transaction, 'base64');
-            tx = VersionedTransaction.deserialize(txBuffer);
-            console.log(`📦 Deserialized transaction for ${token.symbol}, message version:`, tx.message.version);
+            swapTx = VersionedTransaction.deserialize(txBuffer);
+            console.log(`📦 Deserialized swap tx for ${token.symbol}`);
           } catch (deserializeErr) {
-            console.error(`❌ Failed to deserialize transaction for ${token.symbol}:`, deserializeErr);
+            console.error(`❌ Failed to deserialize swap tx for ${token.symbol}:`, deserializeErr);
             continue;
           }
           
-          // Sign with wallet
-          let signedTx;
+          // Build close account + fee transaction  
+          const { Connection, Transaction, SystemProgram } = await import('@solana/web3.js');
+          const { createCloseAccountInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+          const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+          
+          const ata = getAssociatedTokenAddressSync(
+            new SolanaPublicKey(token.mint),
+            publicKey
+          );
+          
+          const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+          const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
+          
+          const closeTx = new Transaction();
+          closeTx.add(
+            createCloseAccountInstruction(ata, publicKey, publicKey, [], TOKEN_PROGRAM_ID)
+          );
+          closeTx.add(
+            SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: PLATFORM_WALLET,
+              lamports: RENT_FEE_LAMPORTS,
+            })
+          );
+          
+          // Get recent blockhash for the close transaction
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+          closeTx.recentBlockhash = blockhash;
+          closeTx.feePayer = publicKey;
+          
+          console.log(`📦 Built close+fee tx for ${token.symbol} (fee: ${RENT_FEE_LAMPORTS / 1e9} SOL)`);
+          
+          // Sign BOTH transactions in ONE popup using signAllTransactions
+          let signedSwapTx, signedCloseTx;
           try {
-            signedTx = await signTransaction(tx);
-            console.log(`✅ Signed swap transaction for ${token.symbol} (rentFeeAdded: ${orderData.rentFeeAdded})`);
+            if (signAllTransactions) {
+              console.log(`🖊️ Signing both transactions in one popup...`);
+              const [signedSwap, signedClose] = await signAllTransactions([swapTx, closeTx]);
+              signedSwapTx = signedSwap;
+              signedCloseTx = signedClose;
+              console.log(`✅ Signed both transactions in ONE popup!`);
+            } else {
+              console.log(`🖊️ signAllTransactions not available, signing separately...`);
+              signedSwapTx = await signTransaction(swapTx);
+              signedCloseTx = await signTransaction(closeTx);
+            }
           } catch (signErr) {
-            console.error(`❌ Failed to sign transaction for ${token.symbol}:`, signErr);
+            console.error(`❌ Failed to sign transactions for ${token.symbol}:`, signErr);
             continue;
           }
 
-          let signature: string | null = null;
-          
-          if (orderData.rentFeeAdded) {
-            // Transaction was modified - send directly to Helius RPC (not Jupiter execute)
-            const { Connection } = await import('@solana/web3.js');
-            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
+          // Execute swap via Jupiter
+          let swapSignature: string | null = null;
+          console.log(`📤 Sending swap transaction via Jupiter execute...`);
+          try {
+            const executeResponse = await fetch('/api/jupiter/ultra/execute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                signedTransaction: Buffer.from(signedSwapTx.serialize()).toString('base64'),
+                requestId: orderData.requestId,
+                walletAddress: publicKey.toString(),
+                inputMint: token.mint,
+                outputMint: SOL_MINT,
+                inputAmount: rawAmount,
+                outputAmount: orderData.outAmount,
+                inputSymbol: token.symbol || 'Unknown',
+                outputSymbol: 'SOL',
+                usdValue: token.usdValue || 0,
+                platformFee: orderData.platformFee,
+                referralCode: referralCode || undefined
+              })
+            });
             
-            console.log(`📤 Sending modified swap+close+fee transaction to network...`);
-            
-            try {
-              signature = await connection.sendRawTransaction(signedTx.serialize(), {
-                skipPreflight: true,
-                maxRetries: 5
-              });
-              
-              console.log(`📨 Transaction sent: ${signature}`);
-              
-              // Wait for confirmation with polling
-              let confirmed = false;
-              for (let i = 0; i < 30; i++) {
-                await new Promise(r => setTimeout(r, 1000));
-                try {
-                  const status = await connection.getSignatureStatus(signature);
-                  if (status.value?.confirmationStatus === 'confirmed' || 
-                      status.value?.confirmationStatus === 'finalized') {
-                    confirmed = true;
-                    console.log(`✅ Transaction confirmed: ${signature}`);
-                    break;
-                  }
-                  if (status.value?.err) {
-                    throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
-                  }
-                } catch (statusErr) {
-                  // Continue waiting
-                }
-              }
-              
-              if (!confirmed) {
-                console.log(`⏳ Confirmation timeout, but tx may still succeed: ${signature}`);
-              }
-            } catch (sendErr) {
-              console.error(`Failed to send modified transaction:`, sendErr);
+            const executeResult = await executeResponse.json();
+            if (executeResponse.ok && executeResult.signature) {
+              swapSignature = executeResult.signature;
+              console.log(`✅ Swap succeeded: ${swapSignature}`);
+            } else {
+              console.error(`Swap failed:`, executeResult.error);
               continue;
             }
-          } else {
-            // Normal transaction - send via Jupiter execute
-            console.log(`📤 Sending swap transaction via Jupiter execute...`);
-            try {
-              const executeResponse = await fetch('/api/jupiter/ultra/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
-                  requestId: orderData.requestId,
-                  walletAddress: publicKey.toString(),
-                  inputMint: token.mint,
-                  outputMint: SOL_MINT,
-                  inputAmount: rawAmount,
-                  outputAmount: orderData.outAmount,
-                  inputSymbol: token.symbol || 'Unknown',
-                  outputSymbol: 'SOL',
-                  usdValue: token.usdValue || 0,
-                  platformFee: orderData.platformFee,
-                  referralCode: referralCode || undefined
-                })
-              });
-              
-              const executeResult = await executeResponse.json();
-              if (executeResponse.ok && executeResult.signature) {
-                signature = executeResult.signature;
-                console.log(`✅ Jupiter execute succeeded: ${signature}`);
-              } else {
-                console.error(`Jupiter execute failed:`, executeResult.error);
-                continue;
-              }
-            } catch (execErr) {
-              console.error(`Failed to execute via Jupiter:`, execErr);
-              continue;
-            }
+          } catch (execErr) {
+            console.error(`Failed to execute swap:`, execErr);
+            continue;
           }
 
-          if (!signature) {
-            console.error(`No signature for ${token.symbol}`);
-            continue;
+          // Send close account + fee transaction
+          let closeSignature: string | null = null;
+          console.log(`📤 Sending close+fee transaction...`);
+          try {
+            closeSignature = await connection.sendRawTransaction(signedCloseTx.serialize(), {
+              skipPreflight: true,
+              maxRetries: 3
+            });
+            console.log(`✅ Close+fee tx sent: ${closeSignature}`);
+            
+            // Quick confirmation check
+            await connection.confirmTransaction({ signature: closeSignature, blockhash, lastValidBlockHeight }, 'confirmed');
+            console.log(`✅ Close+fee confirmed: ${closeSignature}`);
+          } catch (closeErr: any) {
+            console.log(`⚠️ Close+fee tx result: ${closeErr.message}`);
+            // Account may already be closed or tx may still land
           }
 
           const outputSol = Number(orderData.outAmount) / 1e9;
@@ -1354,19 +1363,16 @@ export default function SolRefund() {
           totalSolReceived += outputSol;
           
           successfulSwaps.push({
-            signature: executeResult.signature,
+            signature: swapSignature,
             inputMint: token.mint,
             outputAmount: outputSol
           });
 
-          // Track this account for closing (to reclaim rent with platform fee)
-          const ata = getAssociatedTokenAddressSync(
-            new SolanaPublicKey(token.mint),
-            publicKey
-          );
-          accountsToClose.push({ mint: token.mint, ata: ata.toString(), symbol: token.symbol || 'Unknown' });
+          // Track rent recovered (85% goes to user, 15% fee already sent)
+          const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports
+          totalRentRecovered += (rentPerAccount * 0.85) / 1e9;
 
-          console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL`);
+          console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL + closed account`);
         } catch (err) {
           console.error(`Error swapping ${token.symbol}:`, err);
         }
@@ -1376,11 +1382,7 @@ export default function SolRefund() {
         throw new Error('No swaps completed successfully');
       }
 
-      // Platform fee is included in each swap transaction (added by backend)
-      // Calculate approximate rent recovered (net after 15% fee)
-      const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports
-      totalRentRecovered = (rentPerAccount * successfulSwaps.length * 0.85) / 1e9;
-      console.log(`💰 Rent recovered from ${successfulSwaps.length} accounts: ~${totalRentRecovered.toFixed(6)} SOL (after 15% fee included in swap tx)`);
+      console.log(`💰 Total rent recovered: ~${totalRentRecovered.toFixed(6)} SOL (after 15% fee)`);
 
 
       return {
