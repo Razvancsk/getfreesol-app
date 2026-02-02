@@ -1181,6 +1181,141 @@ export default function SolRefund() {
     },
   });
 
+  // Bulk Swap Tokens Mutation - Swap tokens to SOL and close accounts
+  const bulkSwapTokensMutation = useMutation({
+    mutationFn: async (tokenMints: string[]) => {
+      if (!isConnected || !publicKey) {
+        throw new Error('Wallet not connected');
+      }
+
+      const { VersionedTransaction } = await import('@solana/web3.js');
+      const SOL_MINT = 'So11111111111111111111111111111111111111112';
+      
+      let totalSwapped = 0;
+      let totalSolReceived = 0;
+      const successfulSwaps: { signature: string; inputMint: string; outputAmount: number }[] = [];
+
+      // Find token data for selected mints
+      const tokensToSwap = tokenList.filter(token => tokenMints.includes(token.mint));
+      
+      if (tokensToSwap.length === 0) {
+        throw new Error('No valid tokens selected for swap');
+      }
+
+      console.log(`🔄 Swapping ${tokensToSwap.length} tokens to SOL...`);
+
+      // Process each token swap individually (one signature per swap)
+      for (const token of tokensToSwap) {
+        try {
+          console.log(`🔄 Swapping ${token.symbol || token.mint.slice(0, 8)}...`);
+          
+          // Get swap order from Jupiter Ultra
+          const orderResponse = await fetch(
+            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${token.rawBalance || token.balance}&taker=${publicKey.toString()}`
+          );
+          
+          if (!orderResponse.ok) {
+            console.error(`Failed to get swap order for ${token.symbol}: ${await orderResponse.text()}`);
+            continue;
+          }
+
+          const orderData = await orderResponse.json();
+          
+          if (!orderData.transaction) {
+            console.error(`No transaction in order for ${token.symbol}`);
+            continue;
+          }
+
+          // Deserialize and sign the transaction
+          const txBuffer = Buffer.from(orderData.transaction, 'base64');
+          const tx = VersionedTransaction.deserialize(txBuffer);
+          
+          // Sign with wallet
+          const signedTx = await signTransaction(tx);
+          console.log(`✅ Signed swap for ${token.symbol}`);
+
+          // Execute via backend with Helius Backrun Rebates
+          const executeResponse = await fetch('/api/jupiter/ultra/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+              requestId: orderData.requestId,
+              walletAddress: publicKey.toString(),
+              inputMint: token.mint,
+              outputMint: SOL_MINT,
+              inputAmount: token.rawBalance || token.balance,
+              outputAmount: orderData.outAmount,
+              inputSymbol: token.symbol || 'Unknown',
+              outputSymbol: 'SOL',
+              usdValue: token.usdValue || 0,
+              platformFee: orderData.platformFee,
+              referralCode: referralCode || undefined
+            })
+          });
+
+          const executeResult = await executeResponse.json();
+          
+          if (!executeResponse.ok || !executeResult.signature) {
+            console.error(`Swap execution failed for ${token.symbol}:`, executeResult.error);
+            continue;
+          }
+
+          const outputSol = Number(orderData.outAmount) / 1e9;
+          totalSwapped++;
+          totalSolReceived += outputSol;
+          
+          successfulSwaps.push({
+            signature: executeResult.signature,
+            inputMint: token.mint,
+            outputAmount: outputSol
+          });
+
+          console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL`);
+        } catch (err) {
+          console.error(`Error swapping ${token.symbol}:`, err);
+        }
+      }
+
+      if (successfulSwaps.length === 0) {
+        throw new Error('No swaps completed successfully');
+      }
+
+      return {
+        tokensSwapped: totalSwapped,
+        totalSolReceived,
+        signature: successfulSwaps[0]?.signature || '',
+        allSignatures: successfulSwaps.map(s => s.signature)
+      };
+    },
+    onSuccess: (result) => {
+      toast({
+        title: `Successfully swapped ${result.tokensSwapped} token${result.tokensSwapped > 1 ? 's' : ''} to ${result.totalSolReceived.toFixed(4)} SOL`,
+        className: "bg-green-600 text-white border-green-600",
+        action: <ToastAction altText="View transaction on Solscan" onClick={() => window.open(`https://solscan.io/tx/${result.signature}`, '_blank')}>View on Solscan</ToastAction>
+      });
+      
+      // Show share modal
+      setShareData({ solClaimed: result.totalSolReceived, accountsClosed: result.tokensSwapped, claimType: 'tokens' });
+      setIsShareModalOpen(true);
+      
+      // Clear selections and refresh
+      setSelectedTokens(new Set());
+      if (publicKey) {
+        scanTokensMutation.mutate(publicKey.toString());
+      }
+      queryClient.invalidateQueries({ queryKey: ['/api/sol-refund/stats'] });
+    },
+    onError: (error) => {
+      console.error('Error bulk swapping tokens:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to swap tokens. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Burn NFTs mutation
   const burnNftsMutation = useMutation({
     mutationFn: async (selectedNftIds: string[]) => {
@@ -3525,14 +3660,10 @@ export default function SolRefund() {
                     if (burnMode === 'burn') {
                       bulkBurnTokensMutation.mutate(Array.from(selectedTokens));
                     } else {
-                      // TODO: Implement swap + close account transaction
-                      toast({
-                        title: 'Swap Coming Soon',
-                        description: 'Swap tokens to SOL and close accounts in one transaction',
-                      });
+                      bulkSwapTokensMutation.mutate(Array.from(selectedTokens));
                     }
                   }}
-                  disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending}
+                  disabled={selectedTokens.size === 0 || bulkBurnTokensMutation.isPending || bulkSwapTokensMutation.isPending}
                   className={`w-full py-4 text-lg font-bold rounded-xl transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
                     burnMode === 'burn'
                       ? 'bg-red-600 hover:bg-red-700 text-white'
@@ -3543,7 +3674,12 @@ export default function SolRefund() {
                   {bulkBurnTokensMutation.isPending ? (
                     <>
                       <RefreshCw className="h-5 w-5 animate-spin" />
-                      {burnMode === 'burn' ? 'Burning...' : 'Swapping...'}
+                      Burning...
+                    </>
+                  ) : bulkSwapTokensMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      Swapping...
                     </>
                   ) : burnMode === 'burn' ? (
                     <>
