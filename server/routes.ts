@@ -490,7 +490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Jupiter API key not configured' });
       }
 
-      const { inputMint, outputMint, amount, taker } = req.query;
+      const { inputMint, outputMint, amount, taker, addRentFee } = req.query;
       
       if (!inputMint || !outputMint || !amount) {
         return res.status(400).json({ error: 'Missing required parameters' });
@@ -539,6 +539,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         router: orderData.router,
         hasTransaction: !!orderData.transaction
       });
+
+      // If addRentFee is requested, modify the transaction to add platform fee transfer for rent
+      if (addRentFee === 'true' && orderData.transaction && taker) {
+        try {
+          const { VersionedTransaction, TransactionMessage, SystemProgram, PublicKey: SolanaPublicKey } = await import('@solana/web3.js');
+          const { Connection } = await import('@solana/web3.js');
+          
+          const PLATFORM_WALLET = new SolanaPublicKey('GETjtcbMXBLSQe7WnKfwVbEZMVM4VTjpD7cHfYcdpump');
+          const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent = ~0.000306 SOL
+          
+          // Deserialize the Jupiter transaction
+          const txBuffer = Buffer.from(orderData.transaction, 'base64');
+          const jupiterTx = VersionedTransaction.deserialize(txBuffer);
+          
+          // Get the compiled message
+          const message = jupiterTx.message;
+          
+          // Create fee transfer instruction
+          const takerPubkey = new SolanaPublicKey(taker as string);
+          const feeTransferInstruction = SystemProgram.transfer({
+            fromPubkey: takerPubkey,
+            toPubkey: PLATFORM_WALLET,
+            lamports: RENT_FEE_LAMPORTS,
+          });
+          
+          // Get connection for address lookup tables
+          const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+          
+          // Decompile the message to modify it
+          const addressLookupTableAccounts = await Promise.all(
+            message.addressTableLookups.map(async (lookup) => {
+              const accountInfo = await connection.getAccountInfo(lookup.accountKey);
+              if (!accountInfo) return null;
+              const { AddressLookupTableAccount } = await import('@solana/web3.js');
+              return new AddressLookupTableAccount({
+                key: lookup.accountKey,
+                state: AddressLookupTableAccount.deserialize(accountInfo.data),
+              });
+            })
+          );
+          
+          const validLookupTables = addressLookupTableAccounts.filter(Boolean) as any[];
+          
+          // Decompile the message
+          const decompiledMessage = TransactionMessage.decompile(message, {
+            addressLookupTableAccounts: validLookupTables,
+          });
+          
+          // Add the fee transfer instruction at the end
+          decompiledMessage.instructions.push(feeTransferInstruction);
+          
+          // Recompile the message
+          const newMessage = decompiledMessage.compileToV0Message(validLookupTables);
+          
+          // Create new versioned transaction
+          const newTx = new VersionedTransaction(newMessage);
+          
+          // Serialize and return
+          orderData.transaction = Buffer.from(newTx.serialize()).toString('base64');
+          orderData.rentFeeAdded = true;
+          orderData.rentFeeLamports = RENT_FEE_LAMPORTS;
+          
+          console.log('💰 Added rent fee transfer to Jupiter transaction:', RENT_FEE_LAMPORTS / 1e9, 'SOL');
+        } catch (modifyErr) {
+          console.error('⚠️ Could not add rent fee to Jupiter transaction:', modifyErr);
+          // Continue with original transaction - fee will be collected separately
+          orderData.rentFeeAdded = false;
+        }
+      }
       
       res.json(orderData);
     } catch (error) {

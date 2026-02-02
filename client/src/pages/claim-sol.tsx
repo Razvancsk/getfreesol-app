@@ -1219,9 +1219,9 @@ export default function SolRefund() {
           const rawAmount = token.amount || Math.floor(token.balance * Math.pow(10, token.decimals || 6)).toString();
           console.log(`💰 Token ${token.symbol}: balance=${token.balance}, rawAmount=${rawAmount}, decimals=${token.decimals}`);
           
-          // Get swap order from Jupiter Ultra
+          // Get swap order from Jupiter Ultra (with rent fee transfer included)
           const orderResponse = await fetch(
-            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}`
+            `/api/jupiter/ultra/order?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}&addRentFee=true`
           );
           
           if (!orderResponse.ok) {
@@ -1298,55 +1298,12 @@ export default function SolRefund() {
         throw new Error('No swaps completed successfully');
       }
 
-      // STEP 2: Collect platform fee for rent recovered (Jupiter already closed accounts)
-      // Jupiter swap closes the token account and returns rent to user, so we just transfer 15% fee
-      if (successfulSwaps.length > 0) {
-        const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports per token account
-        const totalRentLamports = rentPerAccount * successfulSwaps.length;
-        const platformFeeLamports = Math.floor(totalRentLamports * PLATFORM_FEE_PERCENT);
-        
-        if (platformFeeLamports > 0) {
-          console.log(`💰 Collecting platform fee: ${platformFeeLamports / 1e9} SOL (15% of ${totalRentLamports / 1e9} SOL rent from ${successfulSwaps.length} accounts)`);
-          
-          try {
-            const { Connection, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
-            const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=29e95e89-a99b-4b9f-b5a1-8e8d8873cbc5');
-            
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-            
-            const feeTx = new Transaction();
-            feeTx.recentBlockhash = blockhash;
-            feeTx.feePayer = publicKey;
-            
-            // Add platform fee transfer
-            feeTx.add(SystemProgram.transfer({
-              fromPubkey: publicKey,
-              toPubkey: PLATFORM_WALLET,
-              lamports: platformFeeLamports,
-            }));
-            
-            // Sign and send
-            const signedFeeTx = await signTransaction(feeTx);
-            const feeSignature = await connection.sendRawTransaction(signedFeeTx.serialize(), {
-              skipPreflight: false,
-              maxRetries: 3
-            });
-            
-            await connection.confirmTransaction({
-              signature: feeSignature,
-              blockhash,
-              lastValidBlockHeight
-            });
-            
-            totalRentRecovered = (totalRentLamports - platformFeeLamports) / 1e9;
-            console.log(`✅ Platform fee collected: ${platformFeeLamports / 1e9} SOL, user keeps: ${totalRentRecovered.toFixed(6)} SOL`);
-          } catch (feeErr) {
-            console.error('Error collecting platform fee:', feeErr);
-            // Still count the rent as recovered even if fee collection fails
-            totalRentRecovered = totalRentLamports / 1e9;
-          }
-        }
-      }
+      // Rent fee is now included in each swap transaction (added by backend)
+      // Calculate approximate rent recovered (net after 15% fee)
+      const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports
+      totalRentRecovered = (rentPerAccount * successfulSwaps.length * 0.85) / 1e9;
+      console.log(`💰 Rent recovered from ${successfulSwaps.length} accounts: ~${totalRentRecovered.toFixed(6)} SOL (after 15% fee)`);
+
 
       return {
         tokensSwapped: totalSwapped,
