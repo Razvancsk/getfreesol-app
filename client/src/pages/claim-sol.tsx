@@ -1304,7 +1304,29 @@ export default function SolRefund() {
 
           // Track rent recovered (85% goes to user, 15% fee already sent)
           const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports
-          totalRentRecovered += (rentPerAccount * 0.85) / 1e9;
+          const rentRecoveredForThisAccount = (rentPerAccount * 0.85) / 1e9;
+          const feeForThisAccount = (rentPerAccount * 0.15) / 1e9;
+          totalRentRecovered += rentRecoveredForThisAccount;
+
+          // Record the swap+close transaction to database for stats
+          try {
+            await fetch('/api/sol-refund/record-success', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                signature: signature!,
+                walletAddress: publicKey.toString(),
+                accountsClosed: 1,
+                solRecovered: rentPerAccount / 1e9,
+                netAmount: outputSol + rentRecoveredForThisAccount,
+                feeAmount: feeForThisAccount,
+                platformFeeAmount: feeForThisAccount
+              })
+            });
+            console.log(`📊 Recorded swap+close for ${token.symbol} to stats`);
+          } catch (recordErr) {
+            console.warn(`Could not record swap to stats:`, recordErr);
+          }
 
           console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL + closed account`);
         } catch (err) {
