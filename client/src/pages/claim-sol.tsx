@@ -6422,7 +6422,7 @@ export default function SolRefund() {
             {/* Social Links */}
             <div className="flex items-center space-x-2">
               <Link href="/docs">
-                <BookOpen className="h-5 w-5 text-purple-500 hover:text-purple-400 transition-colors" />
+                <BookOpen className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
               </Link>
               <a
                 href="https://x.com/getfreesol_xyz"
@@ -6432,7 +6432,7 @@ export default function SolRefund() {
                 className="flex items-center justify-center hover:opacity-70 transition-opacity"
                 title="Follow us on X (Twitter)"
               >
-                <SiX className="h-5 w-5 text-purple-500 hover:text-purple-400 transition-colors" />
+                <SiX className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
               </a>
               <a
                 href="https://t.me/+KnCX8s7RoWo3OGI0"
@@ -6442,7 +6442,7 @@ export default function SolRefund() {
                 className="flex items-center justify-center hover:opacity-70 transition-opacity"
                 title="Join our Telegram community"
               >
-                <SiTelegram className="h-5 w-5 text-purple-500 hover:text-purple-400 transition-colors" />
+                <SiTelegram className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
               </a>
               <a
                 href="https://discord.gg/tSBMgYcZaK"
@@ -6452,7 +6452,7 @@ export default function SolRefund() {
                 className="flex items-center justify-center hover:opacity-70 transition-opacity"
                 title="Join our Discord community"
               >
-                <SiDiscord className="h-5 w-5 text-purple-500 hover:text-purple-400 transition-colors" />
+                <SiDiscord className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
               </a>
             </div>
           </div>
