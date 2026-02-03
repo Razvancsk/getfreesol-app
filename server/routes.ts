@@ -5670,12 +5670,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Build the UMI transaction
               const builtTx = await transaction.buildWithLatestBlockhash(umi);
               
-              // Convert UMI transaction to web3.js VersionedTransaction for proper serialization
-              const { toWeb3JsTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
-              const web3JsTx = toWeb3JsTransaction(builtTx);
-              
-              // Serialize using web3.js for compatibility with frontend
-              const serializedTx = web3JsTx.serialize();
+              // Serialize directly using UMI (frontend will handle deserialization)
+              const serializedTx = umi.transactions.serialize(builtTx);
               const base64Tx = Buffer.from(serializedTx).toString('base64');
 
               allBatchTransactions.push({
@@ -5704,9 +5700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 singleTx = singleTx.add(burnInstruction);
                 
                 const builtSingleTx = await singleTx.buildWithLatestBlockhash(umi);
-                const { toWeb3JsTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
-                const web3JsSingleTx = toWeb3JsTransaction(builtSingleTx);
-                const serializedSingleTx = web3JsSingleTx.serialize();
+                const serializedSingleTx = umi.transactions.serialize(builtSingleTx);
                 const base64SingleTx = Buffer.from(serializedSingleTx).toString('base64');
 
                 allBatchTransactions.push({
