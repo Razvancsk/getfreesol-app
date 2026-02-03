@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun, BookOpen } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 import {
@@ -6426,7 +6426,7 @@ export default function SolRefund() {
                   className="flex items-center justify-center gap-1 px-3 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
                   data-testid="button-footer-docs"
                 >
-                  <Info className="h-4 w-4 text-white" />
+                  <BookOpen className="h-4 w-4 text-white" />
                   <span className="text-white text-xs font-medium">Docs</span>
                 </Button>
               </Link>
