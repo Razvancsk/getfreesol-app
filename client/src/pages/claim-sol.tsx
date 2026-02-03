@@ -6455,7 +6455,7 @@ export default function SolRefund() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="button-footer-telegram"
-                className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                className="flex items-center justify-center w-8 h-8 bg-[#0088cc]/80 hover:bg-[#0088cc] backdrop-blur-sm rounded-md transition-colors border border-[#0088cc]/50"
                 title="Join our Telegram community"
               >
                 <SiTelegram className="h-4 w-4 text-white" />
