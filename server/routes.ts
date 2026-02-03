@@ -5607,8 +5607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allBatchTransactions = [];
       const failedNfts = [];
-      // Max cNFTs per transaction - group by tree for efficiency
-      const CNFTS_PER_BATCH = 5;
+      // Max cNFTs per transaction - Merkle proofs are large, limit to 2 per tx
+      const CNFTS_PER_BATCH = 2;
 
       // First, fetch all proofs and group by tree
       const assetsByTree: Map<string, Array<{assetId: string, assetWithProof: any}>> = new Map();
