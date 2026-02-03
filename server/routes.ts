@@ -5607,8 +5607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allBatchTransactions = [];
       const failedNfts = [];
-      // Batch cNFTs - use 3 per transaction to balance size vs convenience
-      const CNFTS_PER_BATCH = 3;
+      // Batch cNFTs - 5 per transaction like Sol Incinerator
+      const CNFTS_PER_BATCH = 5;
 
       // Batch cNFTs (max 5 per transaction)
       for (let i = 0; i < cnftIds.length; i += CNFTS_PER_BATCH) {
