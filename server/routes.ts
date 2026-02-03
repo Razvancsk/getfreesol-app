@@ -5607,8 +5607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allBatchTransactions = [];
       const failedNfts = [];
-      // cNFTs have large Merkle proofs - limit to 1 per transaction to avoid size limits
-      const CNFTS_PER_BATCH = 1;
+      // Batch cNFTs - use 3 per transaction to balance size vs convenience
+      const CNFTS_PER_BATCH = 3;
 
       // Batch cNFTs (max 5 per transaction)
       for (let i = 0; i < cnftIds.length; i += CNFTS_PER_BATCH) {
@@ -5652,9 +5652,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           if (batchNftIds.length > 0) {
-            // Build and serialize the batch transaction
+            // Build the UMI transaction
             const builtTx = await transaction.buildWithLatestBlockhash(umi);
-            const serializedTx = umi.transactions.serialize(builtTx);
+            
+            // Convert UMI transaction to web3.js VersionedTransaction for proper serialization
+            const { toWeb3JsTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
+            const web3JsTx = toWeb3JsTransaction(builtTx);
+            
+            // Serialize using web3.js for compatibility with frontend
+            const serializedTx = web3JsTx.serialize();
             const base64Tx = Buffer.from(serializedTx).toString('base64');
 
             allBatchTransactions.push({
