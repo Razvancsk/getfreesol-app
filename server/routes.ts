@@ -5607,9 +5607,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allBatchTransactions = [];
       const failedNfts = [];
-      const allAssets: Array<{assetId: string, assetWithProof: any}> = [];
+      const assetsByTree: Map<string, Array<{assetId: string, assetWithProof: any}>> = new Map();
 
-      // Fetch all proofs first
+      // Fetch all proofs and group by Merkle tree
       for (const assetId of cnftIds) {
         try {
           console.log(`📦 Fetching proof for cNFT: ${assetId}`);
@@ -5618,10 +5618,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             truncateCanopy: true
           });
 
-          console.log(`✅ Got proof for cNFT ${assetId}`);
-          console.log(`   Tree: ${assetWithProof.merkleTree.toString()}`);
+          const treeKey = assetWithProof.merkleTree.toString();
+          console.log(`✅ Got proof for cNFT ${assetId} (tree: ${treeKey.slice(0,8)}...)`);
           
-          allAssets.push({ assetId, assetWithProof });
+          if (!assetsByTree.has(treeKey)) {
+            assetsByTree.set(treeKey, []);
+          }
+          assetsByTree.get(treeKey)!.push({ assetId, assetWithProof });
 
         } catch (error) {
           console.error(`❌ Failed to fetch proof for cNFT ${assetId}:`, error);
@@ -5632,25 +5635,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log(`📊 Fetched proofs for ${allAssets.length} cNFTs`);
+      console.log(`📊 Grouped ${cnftIds.length} cNFTs into ${assetsByTree.size} trees`);
 
-      // Build ONE transaction with ALL burn instructions
-      if (allAssets.length > 0) {
+      // Build ONE transaction per tree (same tree = shared accounts = smaller tx)
+      for (const [treeKey, assets] of assetsByTree.entries()) {
+        console.log(`🌳 Building transaction for tree ${treeKey.slice(0,8)}... with ${assets.length} cNFTs`);
+        
         try {
           let transaction = new TransactionBuilder()
             .add(setComputeUnitPrice(umi, { microLamports: 10000 }));
 
-          const allNftIds: string[] = [];
+          const treeNftIds: string[] = [];
 
-          for (const { assetId, assetWithProof } of allAssets) {
+          for (const { assetId, assetWithProof } of assets) {
             const burnInstruction = burn(umi, {
               ...assetWithProof,
               leafOwner: umiPublicKey(walletAddress)
             });
 
             transaction = transaction.add(burnInstruction);
-            allNftIds.push(assetId);
-            console.log(`✅ Added burn instruction for cNFT ${assetId}`);
+            treeNftIds.push(assetId);
+            console.log(`  ✅ Added burn for cNFT ${assetId}`);
           }
 
           // Build the UMI transaction
@@ -5662,18 +5667,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           allBatchTransactions.push({
             transaction: base64Tx,
-            nftIds: allNftIds,
+            nftIds: treeNftIds,
             expectedRentSol: 0,
             warning: 'Compressed NFTs do not recover SOL'
           });
 
-          console.log(`✅ Built ONE transaction with ${allNftIds.length} cNFT burn instructions`);
+          console.log(`✅ Built transaction with ${treeNftIds.length} cNFTs from tree ${treeKey.slice(0,8)}...`);
 
         } catch (error) {
-          console.error(`❌ Single transaction failed, error:`, error);
+          console.error(`❌ Tree batch failed for ${treeKey.slice(0,8)}, trying individually...`, error);
           
           // Fallback: try each cNFT individually
-          for (const { assetId, assetWithProof } of allAssets) {
+          for (const { assetId, assetWithProof } of assets) {
             try {
               let singleTx = new TransactionBuilder()
                 .add(setComputeUnitPrice(umi, { microLamports: 10000 }));
