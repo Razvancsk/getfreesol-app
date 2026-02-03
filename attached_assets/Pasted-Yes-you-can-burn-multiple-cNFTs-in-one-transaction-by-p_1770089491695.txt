@@ -1,0 +1,141 @@
+Yes, you can burn multiple cNFTs in one transaction by putting multiple Bubblegum “burn” instructions into the same Solana transaction and signing once.
+
+The reason you’ve been “burning 1 by 1” is usually just because the UI / script sends 1 tx per asset. Technically, Solana lets you bundle many instructions per tx.
+
+Metaplex docs confirm the Bubblegum Burn instruction is what permanently removes a cNFT from the Merkle tree.
+
+How to burn multiple cNFTs in one tx (JS/TS)
+What you’ll need per cNFT
+
+For each compressed NFT you burn, you must provide:
+
+the leaf owner / delegate signer
+
+the tree address
+
+the leaf index + nonce (depends on SDK)
+
+the Merkle proof (required for Bubblegum changes; proofs change when leaves change)
+
+So the flow is:
+
+Fetch each asset’s tree + leaf info
+
+Fetch each asset’s Merkle proof
+
+Create a burn instruction for each asset
+
+Add all burn instructions to one transaction
+
+Sign once + send
+
+Example skeleton (bundle burns)
+
+Below is a practical pattern (you’ll plug in “get asset + proof” from your indexer/RPC provider):
+
+import {
+  Connection,
+  Keypair,
+  TransactionMessage,
+  VersionedTransaction,
+  ComputeBudgetProgram,
+} from "@solana/web3.js";
+
+// Bubblegum SDK (exact imports vary by version)
+import { createBurnInstruction } from "@metaplex-foundation/mpl-bubblegum";
+
+type BurnItem = {
+  // fill these from DAS/indexer
+  tree: any;              // PublicKey
+  leafOwner: any;         // PublicKey
+  leafDelegate: any;      // PublicKey (or same as owner)
+  leafIndex: number;
+  // Merkle proof accounts for this leaf (array of PublicKey)
+  proof: any[];
+  // plus any other accounts required by your bubblegum version
+};
+
+export async function burnManyCnftsInOneTx(
+  connection: Connection,
+  payer: Keypair,
+  items: BurnItem[]
+) {
+  const ixs = [];
+
+  // (Optional) give yourself more compute if burning many
+  ixs.push(
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }) // priority fee (optional)
+  );
+
+  for (const item of items) {
+    ixs.push(
+      createBurnInstruction(
+        {
+          // accounts (names depend on SDK version)
+          merkleTree: item.tree,
+          leafOwner: item.leafOwner,
+          leafDelegate: item.leafDelegate,
+          // ...plus required programs/sysvars
+        },
+        {
+          // args (depend on SDK version)
+          leafIndex: item.leafIndex,
+        },
+        // some SDKs take proof separately, others as "remainingAccounts"
+      )
+    );
+
+    // If SDK expects proof as remaining accounts:
+    // burnIx.keys.push(...item.proof.map(p => ({ pubkey: p, isSigner:false, isWritable:false })));
+  }
+
+  const { blockhash } = await connection.getLatestBlockhash();
+
+  const msg = new TransactionMessage({
+    payerKey: payer.publicKey,
+    recentBlockhash: blockhash,
+    instructions: ixs,
+  }).compileToV0Message(); // v0 helps with more accounts, esp. proofs
+
+  const tx = new VersionedTransaction(msg);
+  tx.sign([payer]); // sign ONCE
+
+  const sig = await connection.sendTransaction(tx, { skipPreflight: false });
+  return sig;
+}
+
+
+Why v0 transactions?
+Because Merkle proofs add many account addresses. v0 transactions (and Address Lookup Tables if needed) help fit more accounts into one tx.
+
+Real-world limits (why “all in one tx” sometimes fails)
+
+Even though it’s “one signature”, you can hit constraints:
+
+Transaction size / account limit
+Each burn needs proof accounts, so bundling too many may exceed tx limits.
+
+Compute limit
+More burns = more compute. You often need setComputeUnitLimit (as above).
+
+Proof validity if multiple burns touch the same tree
+If you burn multiple leaves from the same tree in one tx, proofs are typically still fine because the program processes sequentially, but depending on how you obtained proofs and the exact Bubblegum version, you may sometimes need to ensure proofs and leaf indices are correct and current. (If you see errors like “invalid root recomputed from proof”, it’s usually stale/wrong proof data.)
+
+Practical advice (works reliably)
+
+Start with 2–5 burns per tx, then increase until you hit limits.
+
+If you have lots (50/100+), do it in chunks (e.g., 10–20 per tx).
+
+Use a DAS/indexer provider (Helius/Shyft/QuickNode DAS) to fetch:
+
+tree, leaf index/nonce, proof
+
+If you tell me these 3 things, I’ll tailor the exact code
+
+Are you using Helius DAS, Shyft, QuickNode DAS, or something else to fetch proofs?
+
+Are al
+
+1

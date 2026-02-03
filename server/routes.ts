@@ -5607,31 +5607,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allBatchTransactions = [];
       const failedNfts = [];
-      // Batch cNFTs - 5 per transaction like Sol Incinerator
+      // Max cNFTs per transaction - group by tree for efficiency
       const CNFTS_PER_BATCH = 5;
 
-      // Batch cNFTs (max 5 per transaction)
-      for (let i = 0; i < cnftIds.length; i += CNFTS_PER_BATCH) {
-        const batchIds = cnftIds.slice(i, i + CNFTS_PER_BATCH);
-        const batchNftIds: string[] = [];
-        
+      // First, fetch all proofs and group by tree
+      const assetsByTree: Map<string, Array<{assetId: string, assetWithProof: any}>> = new Map();
+      
+      for (const assetId of cnftIds) {
         try {
-          let transaction = new TransactionBuilder()
-            .add(setComputeUnitPrice(umi, { microLamports: 10000 }));
+          console.log(`📦 Fetching proof for cNFT: ${assetId}`);
+          
+          const assetWithProof = await getAssetWithProof(umi, umiPublicKey(assetId), {
+            truncateCanopy: true
+          });
 
-          for (const assetId of batchIds) {
-            try {
-              console.log(`📦 Fetching proof for cNFT: ${assetId}`);
-              
-              // Fetch asset with Merkle proof using Helius DAS API
-              const assetWithProof = await getAssetWithProof(umi, umiPublicKey(assetId), {
-                truncateCanopy: true // Reduces transaction size
-              });
+          const treeKey = assetWithProof.merkleTree.toString();
+          console.log(`✅ Got proof for cNFT ${assetId}`);
+          console.log(`   Tree: ${treeKey}`);
+          console.log(`   Leaf Owner: ${assetWithProof.leafOwner}`);
 
-              console.log(`✅ Got proof for cNFT ${assetId}`);
-              console.log(`   Tree: ${assetWithProof.merkleTree}`);
-              console.log(`   Leaf Owner: ${assetWithProof.leafOwner}`);
+          if (!assetsByTree.has(treeKey)) {
+            assetsByTree.set(treeKey, []);
+          }
+          assetsByTree.get(treeKey)!.push({ assetId, assetWithProof });
 
+        } catch (error) {
+          console.error(`❌ Failed to fetch proof for cNFT ${assetId}:`, error);
+          failedNfts.push({
+            assetId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      console.log(`📊 Grouped cNFTs into ${assetsByTree.size} trees`);
+
+      // Now build transactions - group by tree, max CNFTS_PER_BATCH per tx
+      for (const [treeKey, assets] of assetsByTree.entries()) {
+        console.log(`🌳 Processing tree ${treeKey} with ${assets.length} cNFTs`);
+        
+        // Batch assets from same tree
+        for (let i = 0; i < assets.length; i += CNFTS_PER_BATCH) {
+          const batchAssets = assets.slice(i, i + CNFTS_PER_BATCH);
+          const batchNftIds: string[] = [];
+          
+          try {
+            let transaction = new TransactionBuilder()
+              .add(setComputeUnitPrice(umi, { microLamports: 10000 }));
+
+            for (const { assetId, assetWithProof } of batchAssets) {
               const burnInstruction = burn(umi, {
                 ...assetWithProof,
                 leafOwner: umiPublicKey(walletAddress)
@@ -5639,47 +5663,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               transaction = transaction.add(burnInstruction);
               batchNftIds.push(assetId);
-
               console.log(`✅ Added burn instruction for cNFT ${assetId}`);
+            }
 
-            } catch (error) {
-              console.error(`❌ Failed to prepare cNFT ${assetId}:`, error);
+            if (batchNftIds.length > 0) {
+              // Build the UMI transaction
+              const builtTx = await transaction.buildWithLatestBlockhash(umi);
+              
+              // Convert UMI transaction to web3.js VersionedTransaction for proper serialization
+              const { toWeb3JsTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
+              const web3JsTx = toWeb3JsTransaction(builtTx);
+              
+              // Serialize using web3.js for compatibility with frontend
+              const serializedTx = web3JsTx.serialize();
+              const base64Tx = Buffer.from(serializedTx).toString('base64');
+
+              allBatchTransactions.push({
+                transaction: base64Tx,
+                nftIds: batchNftIds,
+                expectedRentSol: 0,
+                warning: 'Compressed NFTs do not recover SOL'
+              });
+
+              console.log(`✅ Built batch transaction for ${batchNftIds.length} cNFTs from tree ${treeKey.slice(0, 8)}...`);
+            }
+
+          } catch (error) {
+            console.error(`❌ Failed to build batch transaction for tree ${treeKey}:`, error);
+            for (const { assetId } of batchAssets) {
               failedNfts.push({
                 assetId,
-                error: error instanceof Error ? error.message : 'Unknown error'
+                error: error instanceof Error ? error.message : 'Batch transaction failed'
               });
             }
-          }
-
-          if (batchNftIds.length > 0) {
-            // Build the UMI transaction
-            const builtTx = await transaction.buildWithLatestBlockhash(umi);
-            
-            // Convert UMI transaction to web3.js VersionedTransaction for proper serialization
-            const { toWeb3JsTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
-            const web3JsTx = toWeb3JsTransaction(builtTx);
-            
-            // Serialize using web3.js for compatibility with frontend
-            const serializedTx = web3JsTx.serialize();
-            const base64Tx = Buffer.from(serializedTx).toString('base64');
-
-            allBatchTransactions.push({
-              transaction: base64Tx,
-              nftIds: batchNftIds,
-              expectedRentSol: 0, // cNFTs don't have rent deposits
-              warning: 'Compressed NFTs do not recover SOL'
-            });
-
-            console.log(`✅ Built batch transaction for ${batchNftIds.length} cNFTs`);
-          }
-
-        } catch (error) {
-          console.error(`❌ Failed to build batch transaction:`, error);
-          for (const assetId of batchIds) {
-            failedNfts.push({
-              assetId,
-              error: error instanceof Error ? error.message : 'Batch transaction failed'
-            });
           }
         }
       }
