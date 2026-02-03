@@ -6422,12 +6422,7 @@ export default function SolRefund() {
             {/* Social Links */}
             <div className="flex items-center space-x-2">
               <Link href="/docs">
-                <Button
-                  className="flex items-center justify-center gap-1 px-3 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                  data-testid="button-footer-docs"
-                >
-                  <BookOpen className="h-4 w-4 text-white" />
-                </Button>
+                <BookOpen className="h-5 w-5 text-purple-500 hover:text-purple-400 transition-colors" />
               </Link>
               <a
                 href="https://x.com/getfreesol_xyz"
