@@ -6435,30 +6435,30 @@ export default function SolRefund() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="button-footer-x"
-                className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
+                className="flex items-center justify-center hover:opacity-70 transition-opacity"
                 title="Follow us on X (Twitter)"
               >
-                <SiX className="h-4 w-4 text-white" />
-              </a>
-              <a
-                href="https://discord.gg/tSBMgYcZaK"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="button-footer-discord"
-                className="flex items-center justify-center w-8 h-8 bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md transition-colors border border-purple-500/30"
-                title="Join our Discord community"
-              >
-                <SiDiscord className="h-4 w-4 text-white" />
+                <SiX className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
               </a>
               <a
                 href="https://t.me/+KnCX8s7RoWo3OGI0"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="button-footer-telegram"
-                className="flex items-center justify-center w-8 h-8 bg-[#0088cc]/80 hover:bg-[#0088cc] backdrop-blur-sm rounded-md transition-colors border border-[#0088cc]/50"
+                className="flex items-center justify-center hover:opacity-70 transition-opacity"
                 title="Join our Telegram community"
               >
-                <SiTelegram className="h-4 w-4 text-white" />
+                <SiTelegram className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
+              </a>
+              <a
+                href="https://discord.gg/tSBMgYcZaK"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="button-footer-discord"
+                className="flex items-center justify-center hover:opacity-70 transition-opacity"
+                title="Join our Discord community"
+              >
+                <SiDiscord className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
               </a>
             </div>
           </div>
