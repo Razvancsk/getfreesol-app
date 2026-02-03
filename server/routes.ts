@@ -5607,7 +5607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allBatchTransactions = [];
       const failedNfts = [];
-      const CNFTS_PER_BATCH = 5;
+      // cNFTs have large Merkle proofs - limit to 1 per transaction to avoid size limits
+      const CNFTS_PER_BATCH = 1;
 
       // Batch cNFTs (max 5 per transaction)
       for (let i = 0; i < cnftIds.length; i += CNFTS_PER_BATCH) {
