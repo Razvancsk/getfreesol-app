@@ -2053,8 +2053,22 @@ export default function SolRefund() {
               }
 
               // Deserialize the transaction from base64
+              // UMI creates versioned transactions - use Uint8Array for proper deserialization
               const transactionBuffer = Buffer.from(batch.transaction, 'base64');
-              const transaction = VersionedTransaction.deserialize(transactionBuffer);
+              const transactionBytes = new Uint8Array(transactionBuffer);
+              
+              // Try to deserialize as VersionedTransaction (UMI format)
+              let transaction: VersionedTransaction | Transaction;
+              try {
+                transaction = VersionedTransaction.deserialize(transactionBytes);
+                console.log(`📦 Deserialized as VersionedTransaction`);
+              } catch (versionedError) {
+                // Fallback to legacy Transaction if versioned fails
+                console.log(`⚠️ VersionedTransaction failed, trying legacy Transaction...`);
+                const { Transaction } = await import('@solana/web3.js');
+                transaction = Transaction.from(transactionBuffer);
+                console.log(`📦 Deserialized as legacy Transaction`);
+              }
 
               // Sign the transaction
               const signedTransaction = await signTransaction(transaction);
