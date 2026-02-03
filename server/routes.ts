@@ -5607,138 +5607,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allBatchTransactions = [];
       const failedNfts = [];
+      const assetsByTree: Map<string, Array<{assetId: string, assetWithProof: any}>> = new Map();
 
-      // Use existing rpcUrl from above for Helius batch APIs
-
-      console.log(`📦 Fetching proofs and assets in batch for ${cnftIds.length} cNFTs...`);
-
-      // Batch fetch all proofs
-      const proofResponse = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 'proof-batch',
-          method: 'getAssetProofBatch',
-          params: { ids: cnftIds }
-        })
-      });
-      const proofData = await proofResponse.json();
-      const proofs = proofData.result || {};
-      console.log(`✅ Got proofs for ${Object.keys(proofs).length} cNFTs`);
-
-      // Batch fetch all assets
-      const assetResponse = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 'asset-batch',
-          method: 'getAssetBatch',
-          params: { ids: cnftIds }
-        })
-      });
-      const assetData = await assetResponse.json();
-      const assets = assetData.result || [];
-      console.log(`✅ Got asset data for ${assets.length} cNFTs`);
-
-      // Build burn instructions using @metaplex-foundation/mpl-bubblegum createBurnInstruction
-      const { createBurnInstruction } = await import('@metaplex-foundation/mpl-bubblegum');
-      const { PROGRAM_ID: BUBBLEGUM_PROGRAM_ID } = await import('@metaplex-foundation/mpl-bubblegum');
-      const { SPL_ACCOUNT_COMPRESSION_PROGRAM_ID, SPL_NOOP_PROGRAM_ID } = await import('@solana/spl-account-compression');
-      const { PublicKey, Transaction, ComputeBudgetProgram } = await import('@solana/web3.js');
-
-      const burnInstructions = [];
-      const successfulNftIds: string[] = [];
-
-      for (let i = 0; i < cnftIds.length; i++) {
-        const assetId = cnftIds[i];
-        const proof = proofs[assetId];
-        const asset = assets[i];
-
-        if (!proof || !asset) {
-          console.error(`❌ Missing proof or asset for ${assetId}`);
-          failedNfts.push({ assetId, error: 'Missing proof or asset data' });
-          continue;
-        }
-
+      // Fetch all proofs and group by Merkle tree using UMI
+      for (const assetId of cnftIds) {
         try {
-          // Parse proof data
-          const treeAccount = new PublicKey(proof.tree_id);
-          const root = Array.from(Buffer.from(proof.root.replace('0x', ''), 'hex'));
-          const dataHash = Array.from(Buffer.from(asset.compression.data_hash.replace('0x', ''), 'hex'));
-          const creatorHash = Array.from(Buffer.from(asset.compression.creator_hash.replace('0x', ''), 'hex'));
-          const leafIndex = asset.compression.leaf_id;
-          const proofPath = proof.proof.map((p: string) => new PublicKey(p));
+          console.log(`📦 Fetching proof for cNFT: ${assetId}`);
+          
+          const assetWithProof = await getAssetWithProof(umi, umiPublicKey(assetId), {
+            truncateCanopy: true
+          });
 
-          // Create burn instruction
-          const burnIx = createBurnInstruction(
-            {
-              treeAuthority: new PublicKey(proof.tree_id), // Will be derived
-              leafOwner: new PublicKey(walletAddress),
-              leafDelegate: new PublicKey(walletAddress),
-              merkleTree: treeAccount,
-              logWrapper: SPL_NOOP_PROGRAM_ID,
-              compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-              anchorRemainingAccounts: proofPath.map((pk: PublicKey) => ({
-                pubkey: pk,
-                isSigner: false,
-                isWritable: false
-              }))
-            },
-            {
-              root,
-              dataHash,
-              creatorHash,
-              nonce: BigInt(leafIndex),
-              index: leafIndex
-            }
-          );
+          const treeKey = assetWithProof.merkleTree.toString();
+          console.log(`✅ Got proof for cNFT ${assetId} (tree: ${treeKey.slice(0,8)}...)`);
+          
+          if (!assetsByTree.has(treeKey)) {
+            assetsByTree.set(treeKey, []);
+          }
+          assetsByTree.get(treeKey)!.push({ assetId, assetWithProof });
 
-          burnInstructions.push(burnIx);
-          successfulNftIds.push(assetId);
-          console.log(`  ✅ Created burn instruction for ${assetId}`);
         } catch (error) {
-          console.error(`❌ Failed to create burn instruction for ${assetId}:`, error);
-          failedNfts.push({ assetId, error: error instanceof Error ? error.message : 'Unknown error' });
+          console.error(`❌ Failed to fetch proof for cNFT ${assetId}:`, error);
+          failedNfts.push({
+            assetId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
       }
 
-      if (burnInstructions.length > 0) {
-        console.log(`📦 Adding ${burnInstructions.length} burn instructions to ONE transaction...`);
+      console.log(`📊 Grouped ${cnftIds.length} cNFTs into ${assetsByTree.size} trees`);
+      console.log(`⚠️ Note: cNFTs from different trees MUST be in separate transactions (Solana 1232-byte limit)`);
 
-        // Create transaction with all burn instructions
-        const transaction = new Transaction();
+      // Build ONE transaction per tree (same tree = shared accounts = smaller tx)
+      for (const [treeKey, assets] of assetsByTree.entries()) {
+        console.log(`🌳 Building transaction for tree ${treeKey.slice(0,8)}... with ${assets.length} cNFTs`);
         
-        // Add compute budget
-        transaction.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 }));
-        
-        // Add all burn instructions
-        for (const ix of burnInstructions) {
-          transaction.add(ix);
+        try {
+          let transaction = new TransactionBuilder()
+            .add(setComputeUnitPrice(umi, { microLamports: 10000 }));
+
+          const treeNftIds: string[] = [];
+
+          for (const { assetId, assetWithProof } of assets) {
+            const burnInstruction = burn(umi, {
+              ...assetWithProof,
+              leafOwner: umiPublicKey(walletAddress)
+            });
+
+            transaction = transaction.add(burnInstruction);
+            treeNftIds.push(assetId);
+            console.log(`  ✅ Added burn for cNFT ${assetId}`);
+          }
+
+          // Build the UMI transaction
+          const builtTx = await transaction.buildWithLatestBlockhash(umi);
+          
+          // Serialize directly using UMI
+          const serializedTx = umi.transactions.serialize(builtTx);
+          const base64Tx = Buffer.from(serializedTx).toString('base64');
+
+          allBatchTransactions.push({
+            transaction: base64Tx,
+            nftIds: treeNftIds,
+            expectedRentSol: 0,
+            warning: 'Compressed NFTs do not recover SOL'
+          });
+
+          console.log(`✅ Built transaction with ${treeNftIds.length} cNFTs from tree ${treeKey.slice(0,8)}...`);
+
+        } catch (error) {
+          console.error(`❌ Tree batch failed for ${treeKey.slice(0,8)}, trying individually...`, error);
+          
+          // Fallback: try each cNFT individually
+          for (const { assetId, assetWithProof } of assets) {
+            try {
+              let singleTx = new TransactionBuilder()
+                .add(setComputeUnitPrice(umi, { microLamports: 10000 }));
+              
+              const burnInstruction = burn(umi, {
+                ...assetWithProof,
+                leafOwner: umiPublicKey(walletAddress)
+              });
+              singleTx = singleTx.add(burnInstruction);
+              
+              const builtSingleTx = await singleTx.buildWithLatestBlockhash(umi);
+              const serializedSingleTx = umi.transactions.serialize(builtSingleTx);
+              const base64SingleTx = Buffer.from(serializedSingleTx).toString('base64');
+
+              allBatchTransactions.push({
+                transaction: base64SingleTx,
+                nftIds: [assetId],
+                expectedRentSol: 0,
+                warning: 'Compressed NFTs do not recover SOL'
+              });
+              console.log(`✅ Built single transaction for cNFT ${assetId}`);
+            } catch (singleError) {
+              console.error(`❌ Failed single cNFT ${assetId}:`, singleError);
+              failedNfts.push({
+                assetId,
+                error: singleError instanceof Error ? singleError.message : 'Single transaction failed'
+              });
+            }
+          }
         }
-
-        // Set fee payer
-        transaction.feePayer = new PublicKey(walletAddress);
-
-        // Get recent blockhash
-        const { Connection } = await import('@solana/web3.js');
-        const connection = new Connection(rpcUrl, 'confirmed');
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-
-        // Serialize transaction
-        const serializedTx = transaction.serialize({ requireAllSignatures: false });
-        const base64Tx = Buffer.from(serializedTx).toString('base64');
-
-        console.log(`✅ Built ONE transaction with ${burnInstructions.length} cNFT burn instructions (${serializedTx.length} bytes)`);
-
-        allBatchTransactions.push({
-          transaction: base64Tx,
-          nftIds: successfulNftIds,
-          expectedRentSol: 0,
-          warning: 'Compressed NFTs do not recover SOL'
-        });
       }
 
       const responseData = {
