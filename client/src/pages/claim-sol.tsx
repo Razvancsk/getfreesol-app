@@ -6427,7 +6427,6 @@ export default function SolRefund() {
                   data-testid="button-footer-docs"
                 >
                   <BookOpen className="h-4 w-4 text-white" />
-                  <span className="text-white text-xs font-medium">Docs</span>
                 </Button>
               </Link>
               <a
