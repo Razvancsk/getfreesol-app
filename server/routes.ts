@@ -5689,12 +5689,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
           } catch (error) {
-            console.error(`❌ Failed to build batch transaction for tree ${treeKey}:`, error);
-            for (const { assetId } of batchAssets) {
-              failedNfts.push({
-                assetId,
-                error: error instanceof Error ? error.message : 'Batch transaction failed'
-              });
+            console.error(`❌ Batch failed for tree ${treeKey}, trying one at a time...`);
+            
+            // Fallback: try each cNFT individually
+            for (const { assetId, assetWithProof } of batchAssets) {
+              try {
+                let singleTx = new TransactionBuilder()
+                  .add(setComputeUnitPrice(umi, { microLamports: 10000 }));
+                
+                const burnInstruction = burn(umi, {
+                  ...assetWithProof,
+                  leafOwner: umiPublicKey(walletAddress)
+                });
+                singleTx = singleTx.add(burnInstruction);
+                
+                const builtSingleTx = await singleTx.buildWithLatestBlockhash(umi);
+                const { toWeb3JsTransaction } = await import('@metaplex-foundation/umi-web3js-adapters');
+                const web3JsSingleTx = toWeb3JsTransaction(builtSingleTx);
+                const serializedSingleTx = web3JsSingleTx.serialize();
+                const base64SingleTx = Buffer.from(serializedSingleTx).toString('base64');
+
+                allBatchTransactions.push({
+                  transaction: base64SingleTx,
+                  nftIds: [assetId],
+                  expectedRentSol: 0,
+                  warning: 'Compressed NFTs do not recover SOL'
+                });
+                console.log(`✅ Built single transaction for cNFT ${assetId}`);
+              } catch (singleError) {
+                console.error(`❌ Failed single cNFT ${assetId}:`, singleError);
+                failedNfts.push({
+                  assetId,
+                  error: singleError instanceof Error ? singleError.message : 'Single transaction failed'
+                });
+              }
             }
           }
         }
