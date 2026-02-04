@@ -7,7 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Link } from 'wouter';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { ChevronDown, Wallet } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -17,7 +24,8 @@ import { Loader2 } from 'lucide-react';
 import bs58 from 'bs58';
 
 export default function ApiDocs() {
-  const { publicKey, signMessage } = useWallet();
+  const { publicKey, signMessage, disconnect } = useWallet();
+  const { setVisible } = useWalletModal();
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [feeWallet, setFeeWallet] = useState('');
@@ -182,7 +190,34 @@ export default function ApiDocs() {
               className="h-16 w-16"
             />
           </div>
-          <WalletMultiButton />
+          {publicKey ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
+                >
+                  <span>{publicKey.toString().slice(0, 4)}..{publicKey.toString().slice(-4)}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
+                <DropdownMenuItem 
+                  onClick={() => disconnect()}
+                  className="text-white hover:bg-purple-600/40 cursor-pointer"
+                >
+                  Disconnect
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              onClick={() => setVisible(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 font-medium border border-purple-500/30 flex items-center space-x-2"
+            >
+              <Wallet className="h-4 w-4" />
+              <span>Connect</span>
+            </Button>
+          )}
         </div>
 
         {/* Developer account section - shown if no account exists (regardless of wallet) */}
