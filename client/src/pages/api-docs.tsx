@@ -185,9 +185,9 @@ export default function ApiDocs() {
           <WalletMultiButton />
         </div>
 
-        {/* Developer account section - BLOCKS ACCESS - shown if no account exists (regardless of wallet) */}
+        {/* Developer account section - shown if no account exists (regardless of wallet) */}
         {!hasAccount && !isAccountLoading && (
-          <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="flex items-center justify-center pt-16">
             <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Create Referral Account
