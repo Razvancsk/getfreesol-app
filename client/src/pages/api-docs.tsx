@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Link } from 'wouter';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -180,9 +181,21 @@ export default function ApiDocs() {
               className="h-16 w-16"
             />
           </div>
+          <WalletMultiButton />
         </div>
 
-        {/* Developer account section - only shown if wallet connected */}
+        {/* Connect wallet prompt - shown if wallet not connected */}
+        {!publicKey && (
+          <div className="max-w-md mx-auto mb-8 p-6 bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-500/50 rounded-xl text-center">
+            <h3 className="text-white text-xl font-bold mb-3">🔐 Connect Your Wallet</h3>
+            <p className="text-purple-200 mb-4">
+              Connect your wallet to create a Developer API account and start earning fees from your integrations.
+            </p>
+            <WalletMultiButton />
+          </div>
+        )}
+
+        {/* Developer account section - only shown if wallet connected but no account */}
         {publicKey && !hasAccount && (
           <div className="max-w-md mx-auto mb-8 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
             <div className="space-y-4">
