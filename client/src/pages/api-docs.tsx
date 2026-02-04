@@ -480,15 +480,6 @@ export default function ApiDocs() {
               </div>
 
               {/* Important Note for Developers */}
-              {developer && (
-                <div className="p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg space-y-1">
-                  <p className="text-sm text-yellow-100 font-semibold">⚠️ Important: Activate Your PDA</p>
-                  <p className="text-xs text-yellow-200">
-                    To start receiving fees, you must first deposit at least <strong>0.001 SOL</strong> to your PDA address above. This activates the account on Solana and enables fee collection.
-                  </p>
-                </div>
-              )}
-
               {/* Fee Percentage */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
