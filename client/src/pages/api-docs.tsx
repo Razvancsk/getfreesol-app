@@ -213,21 +213,16 @@ export default function ApiDocs() {
                 <Button
                   data-testid="button-create-account-docs"
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                  onClick={() => {
-                    if (!publicKey) {
-                      // Trigger wallet connect
-                      document.querySelector<HTMLButtonElement>('.wallet-adapter-button')?.click();
-                    } else {
-                      createAccount.mutate();
-                    }
-                  }}
-                  disabled={!projectName.trim() || createAccount.isPending}
+                  onClick={() => createAccount.mutate()}
+                  disabled={!projectName.trim() || createAccount.isPending || !publicKey}
                 >
                   {createAccount.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating...
                     </>
+                  ) : !publicKey ? (
+                    "Connect wallet first ↑"
                   ) : (
                     "Create"
                   )}
