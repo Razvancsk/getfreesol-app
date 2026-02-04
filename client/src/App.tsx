@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ReownProvider } from "@/providers/ReownProvider";
+import { SolanaProvider } from "@/providers/SolanaProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ClaimSol from "@/pages/claim-sol";
 import Referrals from "@/pages/referrals";
@@ -46,12 +47,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <ReownProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </ReownProvider>
+        <SolanaProvider>
+          <ReownProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </ReownProvider>
+        </SolanaProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
