@@ -185,27 +185,8 @@ export default function ApiDocs() {
           <WalletMultiButton />
         </div>
 
-        {/* Connect wallet prompt - shown if wallet not connected */}
-        {!publicKey && (
-          <div className="max-w-md mx-auto mb-8 p-6 bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-500/50 rounded-xl text-center">
-            <h3 className="text-white text-xl font-bold mb-3">🔐 Connect Your Wallet</h3>
-            <p className="text-purple-200 mb-4">
-              Connect your wallet to create a Developer API account and start earning fees from your integrations.
-            </p>
-            <WalletMultiButton />
-          </div>
-        )}
-
-        {/* Loading state while checking account */}
-        {publicKey && isAccountLoading && (
-          <div className="max-w-md mx-auto mb-8 p-6 bg-purple-900/30 border border-purple-500/30 rounded-xl text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-400 mx-auto mb-3" />
-            <p className="text-purple-200">Checking your developer account...</p>
-          </div>
-        )}
-
-        {/* Developer account section - BLOCKS ACCESS - shown if wallet connected but no account */}
-        {publicKey && !isAccountLoading && !hasAccount && (
+        {/* Developer account section - BLOCKS ACCESS - shown if no account exists (regardless of wallet) */}
+        {!hasAccount && !isAccountLoading && (
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -232,7 +213,14 @@ export default function ApiDocs() {
                 <Button
                   data-testid="button-create-account-docs"
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                  onClick={() => createAccount.mutate()}
+                  onClick={() => {
+                    if (!publicKey) {
+                      // Trigger wallet connect
+                      document.querySelector<HTMLButtonElement>('.wallet-adapter-button')?.click();
+                    } else {
+                      createAccount.mutate();
+                    }
+                  }}
                   disabled={!projectName.trim() || createAccount.isPending}
                 >
                   {createAccount.isPending ? (
