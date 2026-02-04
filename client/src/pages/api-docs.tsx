@@ -65,31 +65,25 @@ export default function ApiDocs() {
     }
   }, [referralAccount, manuallyEditedWallet, manuallyEditedFee]);
 
-  // Create account mutation with 0.002 SOL transfer to PDA
+  // Create account mutation - ONE signature only (tx includes 0.002 SOL transfer)
   const createAccount = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !sendTransaction || !projectName.trim()) {
+      if (!publicKey || !sendTransaction || !projectName.trim()) {
         throw new Error("Missing wallet or project name");
       }
 
-      const message = `Create developer fee account for project: ${projectName}`;
-      const encodedMessage = new TextEncoder().encode(message);
-      const signature = await signMessage(encodedMessage);
-
-      // Step 1: Create the account and get PDA address
-      const result = await apiRequest('POST', '/api/referral/create-account', {
+      // Step 1: Get the PDA address from backend first (no signature needed)
+      const prepareResult = await apiRequest('POST', '/api/referral/prepare-account', {
         walletAddress: publicKey.toBase58(),
-        signature: bs58.encode(signature),
-        message,
         projectName: projectName.trim(),
       });
 
-      const pdaAddress = (result as any).account?.referralPda;
+      const pdaAddress = (prepareResult as any).pdaAddress;
       if (!pdaAddress) {
-        throw new Error("Failed to get PDA address from account creation");
+        throw new Error("Failed to get PDA address");
       }
 
-      // Step 2: Transfer 0.002 SOL to PDA to fund it for receiving fees
+      // Step 2: Build and send ONE transaction that transfers 0.002 SOL to PDA
       const FUNDING_AMOUNT = 0.002 * LAMPORTS_PER_SOL; // 0.002 SOL
       
       const transaction = new Transaction().add(
@@ -104,6 +98,7 @@ export default function ApiDocs() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
+      // ONE signature from user
       const txSignature = await sendTransaction(transaction, connection);
       
       // Wait for confirmation
@@ -111,6 +106,13 @@ export default function ApiDocs() {
         signature: txSignature,
         blockhash,
         lastValidBlockHeight,
+      });
+
+      // Step 3: Confirm account creation with tx signature as proof
+      const result = await apiRequest('POST', '/api/referral/confirm-account', {
+        walletAddress: publicKey.toBase58(),
+        txSignature,
+        projectName: projectName.trim(),
       });
 
       return { ...result, fundingTx: txSignature };

@@ -9107,7 +9107,144 @@ Claimer: ${walletAddress}`;
   // PDA-based Referral System (Jupiter-style)
   // ============================================================================
   
-  // Create referral account (PDA-based, no keypairs)
+  // Temporary storage for pending account creations (in-memory, expires after 10 min)
+  const pendingAccounts = new Map<string, { pdaAddress: string, encryptedPrivateKey: string, projectName: string, createdAt: number }>();
+  
+  // Step 1: Prepare account - generates PDA without requiring signature
+  app.post("/api/referral/prepare-account", async (req, res) => {
+    try {
+      const { walletAddress, projectName } = req.body;
+      
+      if (!walletAddress || !projectName) {
+        return res.status(400).json({ error: 'Missing walletAddress or projectName' });
+      }
+      
+      // Check if account already exists
+      const existing = await storage.getReferralAccountByWallet(walletAddress);
+      if (existing) {
+        return res.status(400).json({ 
+          error: 'Referral account already exists',
+          pdaAddress: existing.referralPda
+        });
+      }
+      
+      // Check if there's already a pending account for this wallet
+      const pendingKey = `${walletAddress}`;
+      if (pendingAccounts.has(pendingKey)) {
+        const pending = pendingAccounts.get(pendingKey)!;
+        // Return existing pending PDA
+        return res.json({ 
+          success: true, 
+          pdaAddress: pending.pdaAddress,
+          message: 'Pending account found, complete the transaction to activate'
+        });
+      }
+      
+      // Generate new keypair for the referral account
+      const { generateReferralKeypair } = await import('./pdaService.js');
+      const { publicKey, encryptedPrivateKey } = generateReferralKeypair();
+      
+      // Store pending account (expires after 10 minutes)
+      pendingAccounts.set(pendingKey, {
+        pdaAddress: publicKey,
+        encryptedPrivateKey,
+        projectName: projectName.trim(),
+        createdAt: Date.now()
+      });
+      
+      // Clean up expired pending accounts (older than 10 minutes)
+      const now = Date.now();
+      for (const [key, value] of pendingAccounts.entries()) {
+        if (now - value.createdAt > 10 * 60 * 1000) {
+          pendingAccounts.delete(key);
+        }
+      }
+      
+      console.log(`📝 Prepared referral account for ${walletAddress}`);
+      console.log(`   Pending PDA: ${publicKey}`);
+      
+      res.json({ 
+        success: true, 
+        pdaAddress: publicKey,
+        message: 'Send 0.002 SOL to this address to activate your account'
+      });
+    } catch (error: any) {
+      console.error('Prepare account error:', error);
+      res.status(500).json({ error: 'Failed to prepare account', details: error.message });
+    }
+  });
+  
+  // Step 2: Confirm account - verifies tx and creates the account
+  app.post("/api/referral/confirm-account", async (req, res) => {
+    try {
+      const { walletAddress, txSignature, projectName } = req.body;
+      
+      if (!walletAddress || !txSignature) {
+        return res.status(400).json({ error: 'Missing walletAddress or txSignature' });
+      }
+      
+      // Check if account already exists
+      const existing = await storage.getReferralAccountByWallet(walletAddress);
+      if (existing) {
+        return res.json({ 
+          success: true,
+          account: {
+            referralPda: existing.referralPda,
+            projectName: existing.projectName,
+            status: existing.status
+          }
+        });
+      }
+      
+      // Get pending account
+      const pendingKey = `${walletAddress}`;
+      const pending = pendingAccounts.get(pendingKey);
+      if (!pending) {
+        return res.status(400).json({ error: 'No pending account found. Please start the account creation process again.' });
+      }
+      
+      // Get project account
+      const project = await storage.getProjectAccount();
+      if (!project) {
+        return res.status(500).json({ error: 'Platform not initialized' });
+      }
+      
+      // Create the referral account
+      const account = await storage.createReferralAccount({
+        projectAccountId: project.id,
+        developerWallet: walletAddress,
+        referralPda: pending.pdaAddress,
+        encryptedPrivateKey: pending.encryptedPrivateKey,
+        bump: 0,
+        projectName: pending.projectName || projectName || 'Unnamed Project',
+        feePercentage: '0'
+      });
+      
+      // Remove from pending
+      pendingAccounts.delete(pendingKey);
+      
+      console.log(`✅ Confirmed referral account for ${walletAddress}`);
+      console.log(`   Referral Wallet: ${pending.pdaAddress}`);
+      console.log(`   Funding TX: ${txSignature}`);
+      
+      res.json({
+        success: true,
+        account: {
+          id: account.id,
+          referralPda: account.referralPda,
+          projectName: account.projectName,
+          feePercentage: account.feePercentage,
+          status: account.status,
+          createdAt: account.createdAt
+        }
+      });
+    } catch (error: any) {
+      console.error('Confirm account error:', error);
+      res.status(500).json({ error: 'Failed to confirm account', details: error.message });
+    }
+  });
+  
+  // Create referral account (legacy - PDA-based, no keypairs)
   app.post("/api/referral/create-account", async (req, res) => {
     try {
       const { walletAddress, signature, message, projectName } = req.body;
