@@ -73,12 +73,13 @@ export default function ApiDocs() {
       }
 
       // Step 1: Get the PDA address from backend first (no signature needed)
-      const prepareResult = await apiRequest('POST', '/api/referral/prepare-account', {
+      const prepareResponse = await apiRequest('POST', '/api/referral/prepare-account', {
         walletAddress: publicKey.toBase58(),
         projectName: projectName.trim(),
       });
+      const prepareResult = await prepareResponse.json();
 
-      const pdaAddress = (prepareResult as any).pdaAddress;
+      const pdaAddress = prepareResult.pdaAddress;
       if (!pdaAddress) {
         throw new Error("Failed to get PDA address");
       }
@@ -109,11 +110,12 @@ export default function ApiDocs() {
       });
 
       // Step 3: Confirm account creation with tx signature as proof
-      const result = await apiRequest('POST', '/api/referral/confirm-account', {
+      const confirmResponse = await apiRequest('POST', '/api/referral/confirm-account', {
         walletAddress: publicKey.toBase58(),
         txSignature,
         projectName: projectName.trim(),
       });
+      const result = await confirmResponse.json();
 
       return { ...result, fundingTx: txSignature };
     },
