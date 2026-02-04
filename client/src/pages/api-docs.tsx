@@ -32,7 +32,7 @@ export default function ApiDocs() {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [feeWallet, setFeeWallet] = useState('');
-  const [feePercentage, setFeePercentage] = useState('10');
+  const [feePercentage, setFeePercentage] = useState('4');
   const [manuallyEditedWallet, setManuallyEditedWallet] = useState(false);
   const [manuallyEditedFee, setManuallyEditedFee] = useState(false);
   
@@ -508,10 +508,10 @@ export default function ApiDocs() {
                   <Input
                     id="fee-percentage"
                     type="number"
-                    min="0"
+                    min="4"
                     max="10"
                     step="0.1"
-                    placeholder="10"
+                    placeholder="4"
                     value={feePercentage}
                     onChange={(e) => {
                       setFeePercentage(e.target.value);
@@ -522,13 +522,14 @@ export default function ApiDocs() {
                   />
                   <Button
                     onClick={handleSetFee}
-                    disabled={!feePercentage || parseFloat(feePercentage) <= 0}
+                    disabled={!feePercentage || parseFloat(feePercentage) < 4}
                     className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
                     data-testid="button-set-fee"
                   >
                     Set
                   </Button>
                 </div>
+                <p className="text-purple-300/70 text-xs">Minimum 4% fee required</p>
               </div>
 
               {/* Fee Breakdown */}

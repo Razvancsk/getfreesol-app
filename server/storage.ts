@@ -220,6 +220,7 @@ export interface IStorage {
   
   getReferralAccountByWallet(developerWallet: string): Promise<ReferralAccount | undefined>;
   getReferralAccountById(id: string): Promise<ReferralAccount | undefined>;
+  getReferralAccountByPda(referralPda: string): Promise<ReferralAccount | undefined>;
   createReferralAccount(account: InsertReferralAccount): Promise<ReferralAccount>;
   updateReferralAccountFee(id: string, feePercentage: string): Promise<void>;
   
@@ -1166,6 +1167,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(referralAccounts)
       .where(eq(referralAccounts.id, id));
+    return account || undefined;
+  }
+
+  async getReferralAccountByPda(referralPda: string): Promise<ReferralAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(referralAccounts)
+      .where(eq(referralAccounts.referralPda, referralPda));
     return account || undefined;
   }
 
