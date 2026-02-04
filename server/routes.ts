@@ -9290,7 +9290,8 @@ Claimer: ${walletAddress}`;
       
       const referralAccount = await storage.getReferralAccountByWallet(walletAddress);
       if (!referralAccount) {
-        return res.status(404).json({ error: 'Referral account not found' });
+        // Return 200 with success: false so frontend can handle gracefully
+        return res.json({ success: false, account: null, tokenAccounts: [] });
       }
       
       const tokenAccounts = await storage.getTokenAccountsByReferralId(referralAccount.id);
