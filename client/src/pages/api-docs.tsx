@@ -31,10 +31,11 @@ export default function ApiDocs() {
   const walletAddress = publicKey?.toBase58();
 
   // Fetch referral account (PDA-based)
-  const { data: accountData, refetch: refetchAccount } = useQuery<any>({
+  const { data: accountData, refetch: refetchAccount, isLoading: isAccountLoading } = useQuery<any>({
     queryKey: ["/api/referral/account", walletAddress],
     enabled: !!walletAddress,
     retry: false,
+    staleTime: 0, // Always refetch to ensure fresh data
     refetchInterval: 10000, // Auto-refresh every 10 seconds
     refetchOnMount: true, // Refresh when component mounts
     refetchOnWindowFocus: true, // Refresh when window gains focus
@@ -195,16 +196,26 @@ export default function ApiDocs() {
           </div>
         )}
 
-        {/* Developer account section - only shown if wallet connected but no account */}
-        {publicKey && !hasAccount && (
-          <div className="max-w-md mx-auto mb-8 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
-            <div className="space-y-4">
-              <h3 className="text-white text-lg font-semibold">Create Developer Account</h3>
-              <p className="text-sm text-purple-200">Create an account to earn fees from API integrations</p>
+        {/* Loading state while checking account */}
+        {publicKey && isAccountLoading && (
+          <div className="max-w-md mx-auto mb-8 p-6 bg-purple-900/30 border border-purple-500/30 rounded-xl text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-400 mx-auto mb-3" />
+            <p className="text-purple-200">Checking your developer account...</p>
+          </div>
+        )}
+
+        {/* Developer account section - PROMINENT - shown if wallet connected but no account */}
+        {publicKey && !isAccountLoading && !hasAccount && (
+          <div className="max-w-lg mx-auto mb-8 p-6 bg-gradient-to-br from-blue-900/50 to-purple-900/50 border-2 border-blue-500/50 rounded-xl shadow-lg shadow-blue-500/20">
+            <div className="text-center mb-6">
+              <h3 className="text-white text-2xl font-bold mb-2">🚀 Create Developer Account</h3>
+              <p className="text-purple-200">
+                Get your unique PDA wallet to earn fees from API integrations
+              </p>
             </div>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="project-name" className="text-white">Project Name</Label>
+                <Label htmlFor="project-name" className="text-white font-semibold">Project Name</Label>
                 <Input
                   id="project-name"
                   data-testid="input-project-name-docs"
@@ -212,24 +223,27 @@ export default function ApiDocs() {
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   maxLength={50}
-                  className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50"
+                  className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50 h-12 text-lg"
                 />
               </div>
               <Button
                 data-testid="button-create-account-docs"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 text-lg font-semibold"
                 onClick={() => createAccount.mutate()}
                 disabled={!projectName.trim() || createAccount.isPending}
               >
                 {createAccount.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Creating Your PDA Wallet...
                   </>
                 ) : (
-                  "Create Account"
+                  "Create Account & Get PDA Wallet"
                 )}
               </Button>
+              <p className="text-xs text-purple-300 text-center">
+                Sign with your wallet to create a unique PDA address for receiving fees
+              </p>
             </div>
           </div>
         )}
