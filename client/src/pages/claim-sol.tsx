@@ -4894,14 +4894,7 @@ export default function SolRefund() {
                         Developers
                       </div>
                       <button
-                        onClick={() => {
-                          // If no dev account, show modal first
-                          if (publicKey && !hasDevAccount && !isDevAccountLoading) {
-                            setShowDevAccountModal(true);
-                          } else {
-                            setActiveDocSection('developer-api');
-                          }
-                        }}
+                        onClick={() => setActiveDocSection('developer-api')}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'developer-api' 
                             ? 'bg-purple-600 text-white' 
@@ -5495,7 +5488,78 @@ export default function SolRefund() {
 
                   {activeDocSection === 'developer-api' && (
                     <div>
-                      <ApiDocs />
+                      {/* Show account creation card if no developer account */}
+                      {publicKey && !hasDevAccount && !isDevAccountLoading && (
+                        <div className="flex items-center justify-center min-h-[60vh]">
+                          <Card className="w-full max-w-md bg-white dark:bg-slate-900 border border-gray-200 dark:border-purple-500/30 shadow-lg">
+                            <CardHeader className="space-y-1">
+                              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+                                Create Referral Account
+                              </CardTitle>
+                              <CardDescription className="text-gray-600 dark:text-purple-200">
+                                Use your project name
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="dev-project-name-inline" className="text-gray-900 dark:text-white font-semibold">
+                                  Name
+                                </Label>
+                                <Input
+                                  id="dev-project-name-inline"
+                                  placeholder="E.g: Birdeye, Meteora, Solend"
+                                  value={devProjectName}
+                                  onChange={(e) => setDevProjectName(e.target.value)}
+                                  maxLength={50}
+                                  className="bg-white dark:bg-slate-800 border-gray-300 dark:border-purple-400/30 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-purple-300/50"
+                                  data-testid="input-dev-project-name-inline"
+                                />
+                              </div>
+                              <Button
+                                onClick={() => createDevAccountMutation.mutate()}
+                                disabled={!devProjectName.trim() || createDevAccountMutation.isPending}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                                data-testid="button-create-dev-account-inline"
+                              >
+                                {createDevAccountMutation.isPending ? (
+                                  <>
+                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                    Creating...
+                                  </>
+                                ) : (
+                                  "Create"
+                                )}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
+
+                      {/* Show loading state */}
+                      {publicKey && isDevAccountLoading && (
+                        <div className="flex items-center justify-center min-h-[60vh]">
+                          <RefreshCw className="h-8 w-8 animate-spin text-purple-400" />
+                        </div>
+                      )}
+
+                      {/* Show connect wallet prompt if not connected */}
+                      {!publicKey && (
+                        <div className="flex items-center justify-center min-h-[60vh]">
+                          <Card className="w-full max-w-md bg-white dark:bg-slate-900 border border-gray-200 dark:border-purple-500/30 shadow-lg text-center">
+                            <CardHeader>
+                              <CardTitle className="text-xl text-gray-900 dark:text-white">
+                                Connect Your Wallet
+                              </CardTitle>
+                              <CardDescription className="text-gray-600 dark:text-purple-200">
+                                Connect your wallet to create a developer account
+                              </CardDescription>
+                            </CardHeader>
+                          </Card>
+                        </div>
+                      )}
+
+                      {/* Show API docs only if account exists */}
+                      {hasDevAccount && <ApiDocs />}
                     </div>
                   )}
 
