@@ -204,51 +204,53 @@ export default function ApiDocs() {
           </div>
         )}
 
-        {/* Developer account section - PROMINENT - shown if wallet connected but no account */}
+        {/* Developer account section - BLOCKS ACCESS - shown if wallet connected but no account */}
         {publicKey && !isAccountLoading && !hasAccount && (
-          <div className="max-w-lg mx-auto mb-8 p-6 bg-gradient-to-br from-blue-900/50 to-purple-900/50 border-2 border-blue-500/50 rounded-xl shadow-lg shadow-blue-500/20">
-            <div className="text-center mb-6">
-              <h3 className="text-white text-2xl font-bold mb-2">🚀 Create Developer Account</h3>
-              <p className="text-purple-200">
-                Get your unique PDA wallet to earn fees from API integrations
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Create Referral Account
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Use your project name
               </p>
-            </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="project-name" className="text-white font-semibold">Project Name</Label>
-                <Input
-                  id="project-name"
-                  data-testid="input-project-name-docs"
-                  placeholder="E.g: Birdeye, Meteora, Solend"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  maxLength={50}
-                  className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50 h-12 text-lg"
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="project-name" className="text-gray-900 font-semibold">
+                    Name
+                  </Label>
+                  <Input
+                    id="project-name"
+                    data-testid="input-project-name-docs"
+                    placeholder="E.g: Birdeye, Meteora, Solend"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    maxLength={50}
+                    className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+                  />
+                </div>
+                <Button
+                  data-testid="button-create-account-docs"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                  onClick={() => createAccount.mutate()}
+                  disabled={!projectName.trim() || createAccount.isPending}
+                >
+                  {createAccount.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create"
+                  )}
+                </Button>
               </div>
-              <Button
-                data-testid="button-create-account-docs"
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 text-lg font-semibold"
-                onClick={() => createAccount.mutate()}
-                disabled={!projectName.trim() || createAccount.isPending}
-              >
-                {createAccount.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Creating Your PDA Wallet...
-                  </>
-                ) : (
-                  "Create Account & Get PDA Wallet"
-                )}
-              </Button>
-              <p className="text-xs text-purple-300 text-center">
-                Sign with your wallet to create a unique PDA address for receiving fees
-              </p>
             </div>
           </div>
         )}
 
-        {/* Documentation content - always visible */}
+        {/* Documentation content - ONLY visible when account exists */}
+        {hasAccount && (
         <div className="space-y-6">
             {/* Introduction */}
             <div className="space-y-4">
@@ -786,6 +788,7 @@ console.log('Success! Transaction:', signature);`}
             </div>
           </div>
           </div>
+        )}
       </div>
     </div>
   );
