@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import bs58 from "bs58";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -102,6 +103,8 @@ export default function SolRefund() {
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points'>('reclaim');
   const [claimSubTab, setClaimSubTab] = useState<'empty' | 'programs'>('empty');
   const [showDeveloper, setShowDeveloper] = useState(false);
+  const [showDevAccountModal, setShowDevAccountModal] = useState(false);
+  const [devProjectName, setDevProjectName] = useState('');
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [pointsLeaderboardPeriod, setPointsLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
@@ -491,6 +494,54 @@ export default function SolRefund() {
     onError: (error) => {
       console.error('Failed to create referral code:', error);
     }
+  });
+
+  // Developer API account query
+  const { data: devAccountData, isLoading: isDevAccountLoading } = useQuery<any>({
+    queryKey: ["/api/referral/account", publicKey?.toString()],
+    enabled: !!publicKey,
+    retry: false,
+    staleTime: 0,
+  });
+
+  const hasDevAccount = devAccountData?.success && devAccountData?.account;
+  const devAccount = devAccountData?.account;
+
+  // Create developer account mutation
+  const createDevAccountMutation = useMutation({
+    mutationFn: async () => {
+      if (!publicKey || !signMessage || !devProjectName.trim()) {
+        throw new Error("Missing wallet or project name");
+      }
+
+      const message = `Create developer fee account for project: ${devProjectName}`;
+      const encodedMessage = new TextEncoder().encode(message);
+      const signature = await signMessage(encodedMessage);
+
+      const response = await apiRequest('POST', '/api/referral/create-account', {
+        walletAddress: publicKey.toString(),
+        signature: bs58.encode(signature),
+        message,
+        projectName: devProjectName.trim(),
+      });
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referral/account", publicKey?.toString()] });
+      toast({
+        title: "Developer Account Created! 🎉",
+        description: `Your PDA wallet has been created for "${devProjectName.trim()}"`,
+      });
+      setDevProjectName("");
+      setShowDevAccountModal(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Clear referral code only when wallet disconnects, invalidate query when wallet changes  
@@ -4843,7 +4894,14 @@ export default function SolRefund() {
                         Developers
                       </div>
                       <button
-                        onClick={() => setActiveDocSection('developer-api')}
+                        onClick={() => {
+                          // If no dev account, show modal first
+                          if (publicKey && !hasDevAccount && !isDevAccountLoading) {
+                            setShowDevAccountModal(true);
+                          } else {
+                            setActiveDocSection('developer-api');
+                          }
+                        }}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'developer-api' 
                             ? 'bg-purple-600 text-white' 
@@ -4853,6 +4911,7 @@ export default function SolRefund() {
                       >
                         <Code className="w-4 h-4 inline mr-2" />
                         Developer API
+                        {hasDevAccount && <Check className="w-4 h-4 inline ml-2 text-green-400" />}
                       </button>
                     </div>
                   </div>
@@ -6630,6 +6689,72 @@ export default function SolRefund() {
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Developer Account Creation Modal */}
+      <Dialog open={showDevAccountModal} onOpenChange={setShowDevAccountModal}>
+        <DialogContent className="bg-gradient-to-br from-purple-900/95 to-blue-900/95 backdrop-blur-xl border-2 border-purple-500/50 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">
+              🚀 Create Developer Account
+            </DialogTitle>
+            <DialogDescription className="text-center text-purple-200">
+              Get your unique PDA wallet to start earning fees from your API integrations
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="dev-project-name" className="text-white font-semibold">
+                Project Name
+              </Label>
+              <Input
+                id="dev-project-name"
+                placeholder="E.g: MyApp, Birdeye, Meteora"
+                value={devProjectName}
+                onChange={(e) => setDevProjectName(e.target.value)}
+                maxLength={50}
+                className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50 h-12 text-lg"
+                data-testid="input-dev-project-name"
+              />
+            </div>
+
+            <div className="bg-blue-900/30 rounded-lg p-4 space-y-2">
+              <p className="text-sm text-blue-200 font-semibold">What you'll get:</p>
+              <ul className="text-sm text-blue-100 space-y-1">
+                <li>✅ Unique PDA wallet address</li>
+                <li>✅ Earn 80% of fees from your integrations</li>
+                <li>✅ Access to full API documentation</li>
+                <li>✅ Track your earnings in real-time</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col gap-2">
+            <Button
+              onClick={() => createDevAccountMutation.mutate()}
+              disabled={!devProjectName.trim() || createDevAccountMutation.isPending}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 text-lg font-semibold"
+              data-testid="button-create-dev-account"
+            >
+              {createDevAccountMutation.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                  Creating Your PDA Wallet...
+                </>
+              ) : (
+                "Create Account & Sign"
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setShowDevAccountModal(false)}
+              className="w-full text-purple-300 hover:text-white"
+            >
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
