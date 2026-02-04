@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Link } from 'wouter';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { ChevronDown, Wallet } from 'lucide-react';
 import {
   DropdownMenu,
@@ -24,7 +26,8 @@ import { Loader2 } from 'lucide-react';
 import bs58 from 'bs58';
 
 export default function ApiDocs() {
-  const { publicKey, signMessage, disconnect } = useWallet();
+  const { publicKey, signMessage, disconnect, sendTransaction } = useWallet();
+  const { connection } = useConnection();
   const { setVisible } = useWalletModal();
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -62,10 +65,10 @@ export default function ApiDocs() {
     }
   }, [referralAccount, manuallyEditedWallet, manuallyEditedFee]);
 
-  // Create account mutation
+  // Create account mutation with 0.002 SOL transfer to PDA
   const createAccount = useMutation({
     mutationFn: async () => {
-      if (!publicKey || !signMessage || !projectName.trim()) {
+      if (!publicKey || !signMessage || !sendTransaction || !projectName.trim()) {
         throw new Error("Missing wallet or project name");
       }
 
@@ -73,18 +76,65 @@ export default function ApiDocs() {
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await signMessage(encodedMessage);
 
-      return await apiRequest('POST', '/api/referral/create-account', {
+      // Step 1: Create the account and get PDA address
+      const result = await apiRequest('POST', '/api/referral/create-account', {
         walletAddress: publicKey.toBase58(),
         signature: bs58.encode(signature),
         message,
         projectName: projectName.trim(),
       });
+
+      const pdaAddress = (result as any).account?.referralPda;
+      if (!pdaAddress) {
+        throw new Error("Failed to get PDA address from account creation");
+      }
+
+      // Step 2: Transfer 0.002 SOL to PDA to fund it for receiving fees
+      const FUNDING_AMOUNT = 0.002 * LAMPORTS_PER_SOL; // 0.002 SOL
+      
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(pdaAddress),
+          lamports: FUNDING_AMOUNT,
+        })
+      );
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      const txSignature = await sendTransaction(transaction, connection);
+      
+      // Wait for confirmation
+      await connection.confirmTransaction({
+        signature: txSignature,
+        blockhash,
+        lastValidBlockHeight,
+      });
+
+      return { ...result, fundingTx: txSignature };
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/referral/account", walletAddress] });
       toast({
-        title: "Success!",
-        description: `Referral account created for "${projectName.trim()}". You can now access the API documentation.`,
+        title: "Success! 🎉",
+        description: (
+          <div className="space-y-1">
+            <p>Referral account created for "{projectName.trim()}"</p>
+            <p className="text-xs text-green-400">PDA funded with 0.002 SOL</p>
+            {data.fundingTx && (
+              <a 
+                href={`https://solscan.io/tx/${data.fundingTx}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+              >
+                View funding tx <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+        ),
       });
       setProjectName("");
     },
