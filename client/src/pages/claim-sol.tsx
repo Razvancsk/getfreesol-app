@@ -3667,7 +3667,7 @@ export default function SolRefund() {
                 
                 <p className="text-xs text-yellow-400 flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <span>This slider cannot be 100% accurate. Always double check the items you're about to burn.</span>
+                  <span>This slider cannot be 100% accurate. Always double check the items you're about to {burnMode === 'swap' ? 'swap' : 'burn'}.</span>
                 </p>
               </div>
 
@@ -3752,11 +3752,10 @@ export default function SolRefund() {
                       </div>
                     </div>
 
-                    {/* "MARKED FOR BURN" Badge - TOP RIGHT */}
                     {selectedTokens.has(token.mint) && (
                       <div className="absolute top-2 right-2">
-                        <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-md pointer-events-none whitespace-nowrap">
-                          MARKED FOR BURN
+                        <div className={`${burnMode === 'swap' ? 'bg-green-600' : 'bg-red-600'} text-white text-xs font-bold px-3 py-1 rounded-md pointer-events-none whitespace-nowrap`}>
+                          {burnMode === 'swap' ? 'MARKED FOR SWAP' : 'MARKED FOR BURN'}
                         </div>
                       </div>
                     )}
