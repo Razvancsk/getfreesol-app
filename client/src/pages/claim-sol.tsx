@@ -1238,151 +1238,137 @@ export default function SolRefund() {
       if (!isConnected || !publicKey) {
         throw new Error('Wallet not connected');
       }
+      if (!signAllTransactions) {
+        throw new Error('Wallet does not support batch signing');
+      }
 
-      const { VersionedTransaction, PublicKey: SolanaPublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
-      const { TOKEN_PROGRAM_ID, createCloseAccountInstruction, getAssociatedTokenAddressSync } = await import('@solana/spl-token');
+      const { VersionedTransaction } = await import('@solana/web3.js');
       const SOL_MINT = 'So11111111111111111111111111111111111111112';
-      const PLATFORM_WALLET = new SolanaPublicKey('GETjtcbMXBLSQe7WnKfwVbEZMVM4VTjpD7cHfYcdpump');
-      const RENT_PER_ACCOUNT = 0.00203928; // SOL rent per token account
-      const PLATFORM_FEE_PERCENT = 0.15; // 15% fee
-      
-      let totalSwapped = 0;
-      let totalSolReceived = 0;
-      let totalRentRecovered = 0;
-      const successfulSwaps: { signature: string; inputMint: string; outputAmount: number }[] = [];
-      // Accounts are closed inline with each swap (one popup for both)
 
-      // Find token data for selected mints
       const tokensToSwap = tokenList.filter(token => tokenMints.includes(token.mint));
-      
       if (tokensToSwap.length === 0) {
         throw new Error('No valid tokens selected for swap');
       }
 
-      console.log(`🔄 Swapping ${tokensToSwap.length} tokens to SOL...`);
+      console.log(`🔄 Preparing ${tokensToSwap.length} swap transactions in batch...`);
 
-      // STEP 1: Process each token swap individually (one signature per swap)
-      for (const token of tokensToSwap) {
+      // STEP 1: Fetch all swap transactions in parallel (no signing yet)
+      const txDataList: { token: any; swapData: any; tx: InstanceType<typeof VersionedTransaction> }[] = [];
+      
+      const fetchPromises = tokensToSwap.map(async (token) => {
         try {
-          console.log(`🔄 Swapping ${token.symbol || token.mint.slice(0, 8)}...`);
-          
-          // Get the raw amount in base units (token.amount is raw, token.balance is UI display)
           const rawAmount = token.amount || Math.floor(token.balance * Math.pow(10, token.decimals || 6)).toString();
-          console.log(`💰 Token ${token.symbol}: balance=${token.balance}, rawAmount=${rawAmount}, decimals=${token.decimals}`);
+          console.log(`🔄 Fetching swap tx for ${token.symbol || token.mint.slice(0, 8)}...`);
           
-          // Use Metis API - builds swap + close + fee in ONE transaction on the server
-          console.log(`🔄 Getting swap+close transaction for ${token.symbol}...`);
           const swapResponse = await fetch(
             `/api/jupiter/swap-with-close?inputMint=${token.mint}&outputMint=${SOL_MINT}&amount=${rawAmount}&taker=${publicKey.toString()}`
           );
           
           if (!swapResponse.ok) {
             const errorText = await swapResponse.text();
-            console.error(`Failed to get swap+close tx for ${token.symbol}: ${errorText}`);
-            continue;
+            console.error(`Failed to get swap tx for ${token.symbol}: ${errorText}`);
+            return null;
           }
           
           const swapData = await swapResponse.json();
           if (!swapData.success || !swapData.transaction) {
             console.error(`No transaction for ${token.symbol}:`, swapData.error);
-            continue;
+            return null;
           }
 
-          console.log(`📊 Got combined transaction for ${token.symbol}:`, {
-            outAmount: swapData.quoteData?.outAmount,
-            instructionCount: swapData.instructionCount,
-            rentFeeLamports: swapData.rentFeeLamports
-          });
-
-          // Deserialize the combined transaction
-          let tx;
-          try {
-            const txBuffer = Buffer.from(swapData.transaction, 'base64');
-            tx = VersionedTransaction.deserialize(txBuffer);
-            console.log(`📦 Deserialized combined tx for ${token.symbol}`);
-          } catch (deserializeErr: any) {
-            console.error(`❌ Failed to deserialize tx for ${token.symbol}:`, deserializeErr);
-            continue;
-          }
+          const txBuffer = Buffer.from(swapData.transaction, 'base64');
+          const tx = VersionedTransaction.deserialize(txBuffer);
+          console.log(`✅ Got swap tx for ${token.symbol} (${swapData.quoteData?.outAmount} lamports out)`);
           
-          // Sign the ONE transaction (swap + close + fee all together)
-          let signedTx;
-          try {
-            console.log(`🖊️ Signing combined transaction...`);
-            signedTx = await signTransaction(tx);
-            console.log(`✅ Signed combined transaction for ${token.symbol}!`);
-          } catch (signErr: any) {
-            console.error(`❌ Failed to sign transaction for ${token.symbol}:`, signErr);
-            continue;
-          }
-
-          // Send the signed transaction via backend RPC
-          let signature: string | null = null;
-          console.log(`📤 Sending combined swap+close+fee transaction...`);
-          try {
-            const sendResponse = await fetch('/api/rpc/send-transaction', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
-                rebateAddress: publicKey.toString()
-              })
-            });
-            
-            const sendResult = await sendResponse.json();
-            if (sendResponse.ok && sendResult.signature) {
-              signature = sendResult.signature;
-              console.log(`✅ Transaction confirmed: ${signature}`);
-              console.log(`   https://solscan.io/tx/${signature}`);
-            } else {
-              console.error(`Send failed:`, sendResult.error);
-              continue;
-            }
-          } catch (sendErr) {
-            console.error(`Failed to send transaction:`, sendErr);
-            continue;
-          }
-
-          const outputSol = Number(swapData.quoteData?.outAmount || 0) / 1e9;
-          totalSwapped++;
-          totalSolReceived += outputSol;
-          
-          successfulSwaps.push({
-            signature: signature!,
-            inputMint: token.mint,
-            outputAmount: outputSol
-          });
-
-          // Track rent recovered (85% goes to user, 15% fee already sent)
-          const rentPerAccount = 2039280; // ~0.00203928 SOL in lamports
-          const rentRecoveredForThisAccount = (rentPerAccount * 0.85) / 1e9;
-          const feeForThisAccount = (rentPerAccount * 0.15) / 1e9;
-          totalRentRecovered += rentRecoveredForThisAccount;
-
-          // Record the swap+close transaction to database for stats
-          // Only record the RENT recovered from closing the account, NOT the token swap value
-          try {
-            await fetch('/api/sol-refund/record-success', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                signature: signature!,
-                walletAddress: publicKey.toString(),
-                accountsClosed: 1,
-                solRecovered: rentPerAccount / 1e9,
-                netAmount: rentRecoveredForThisAccount,
-                feeAmount: feeForThisAccount,
-                platformFeeAmount: feeForThisAccount
-              })
-            });
-            console.log(`📊 Recorded rent recovery for ${token.symbol}: ${rentRecoveredForThisAccount.toFixed(6)} SOL (after 15% fee)`);
-          } catch (recordErr) {
-            console.warn(`Could not record to stats:`, recordErr);
-          }
-
-          console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL + closed account`);
+          return { token, swapData, tx };
         } catch (err) {
-          console.error(`Error swapping ${token.symbol}:`, err);
+          console.error(`Error preparing ${token.symbol}:`, err);
+          return null;
+        }
+      });
+
+      const results = await Promise.all(fetchPromises);
+      for (const r of results) {
+        if (r) txDataList.push(r);
+      }
+
+      if (txDataList.length === 0) {
+        throw new Error('Could not prepare any swap transactions');
+      }
+
+      console.log(`📦 Got ${txDataList.length} transactions ready. Requesting ONE signature approval...`);
+
+      // STEP 2: Sign ALL transactions at once (ONE wallet popup)
+      const unsignedTxs = txDataList.map(d => d.tx);
+      let signedTxs: InstanceType<typeof VersionedTransaction>[];
+      try {
+        signedTxs = await signAllTransactions(unsignedTxs);
+        console.log(`✅ All ${signedTxs.length} transactions signed in one popup!`);
+      } catch (signErr: any) {
+        console.error(`❌ User rejected batch signing:`, signErr);
+        throw new Error('Transaction signing was cancelled');
+      }
+
+      // STEP 3: Send all signed transactions
+      let totalSwapped = 0;
+      let totalSolReceived = 0;
+      let totalRentRecovered = 0;
+      const successfulSwaps: { signature: string; inputMint: string; outputAmount: number }[] = [];
+
+      for (let i = 0; i < signedTxs.length; i++) {
+        const signedTx = signedTxs[i];
+        const { token, swapData } = txDataList[i];
+        
+        try {
+          console.log(`📤 Sending tx ${i + 1}/${signedTxs.length} for ${token.symbol}...`);
+          const sendResponse = await fetch('/api/rpc/send-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              signedTransaction: Buffer.from(signedTx.serialize()).toString('base64'),
+              rebateAddress: publicKey.toString()
+            })
+          });
+          
+          const sendResult = await sendResponse.json();
+          if (sendResponse.ok && sendResult.signature) {
+            const signature = sendResult.signature;
+            console.log(`✅ Tx ${i + 1} confirmed: ${signature}`);
+            
+            const outputSol = Number(swapData.quoteData?.outAmount || 0) / 1e9;
+            totalSwapped++;
+            totalSolReceived += outputSol;
+            successfulSwaps.push({ signature, inputMint: token.mint, outputAmount: outputSol });
+
+            const rentPerAccount = 2039280;
+            const rentRecoveredForThisAccount = (rentPerAccount * 0.85) / 1e9;
+            const feeForThisAccount = (rentPerAccount * 0.15) / 1e9;
+            totalRentRecovered += rentRecoveredForThisAccount;
+
+            try {
+              await fetch('/api/sol-refund/record-success', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  signature,
+                  walletAddress: publicKey.toString(),
+                  accountsClosed: 1,
+                  solRecovered: rentPerAccount / 1e9,
+                  netAmount: rentRecoveredForThisAccount,
+                  feeAmount: feeForThisAccount,
+                  platformFeeAmount: feeForThisAccount
+                })
+              });
+            } catch (recordErr) {
+              console.warn(`Could not record stats:`, recordErr);
+            }
+
+            console.log(`✅ Swapped ${token.symbol} → ${outputSol.toFixed(6)} SOL + closed account`);
+          } else {
+            console.error(`Send failed for ${token.symbol}:`, sendResult.error);
+          }
+        } catch (sendErr) {
+          console.error(`Failed to send tx for ${token.symbol}:`, sendErr);
         }
       }
 
@@ -1390,8 +1376,7 @@ export default function SolRefund() {
         throw new Error('No swaps completed successfully');
       }
 
-      console.log(`💰 Total rent recovered: ~${totalRentRecovered.toFixed(6)} SOL (after 15% fee)`);
-
+      console.log(`💰 Total: ${totalSwapped} tokens swapped, ${totalRentRecovered.toFixed(6)} SOL rent recovered`);
 
       return {
         tokensSwapped: totalSwapped,
