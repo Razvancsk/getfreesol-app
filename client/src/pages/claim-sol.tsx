@@ -49,8 +49,6 @@ import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import logoImage from '@assets/image_1757882056840.png';
-import flipggBanner from '@assets/flipgg-mobile.mp4';
-import flipggMobileGif from '@assets/ezgif-53f817bd0e3ed32a_1768280738804.gif';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -3364,31 +3362,6 @@ export default function SolRefund() {
             )}
           </div>
 
-          {/* Flip.gg Sponsor Banner - Under Header */}
-          <a 
-            href="https://flip.gg/a/getfreesol" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="block w-full max-w-2xl mx-auto overflow-hidden rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
-            data-testid="sponsor-flipgg-banner"
-          >
-            {/* Video for desktop */}
-            <video 
-              autoPlay 
-              loop 
-              muted 
-              playsInline
-              className="w-full h-auto hidden md:block"
-            >
-              <source src={flipggBanner} type="video/mp4" />
-            </video>
-            {/* GIF for mobile */}
-            <img 
-              src={flipggMobileGif} 
-              alt="Flip.gg - Play crypto games" 
-              className="w-full h-auto block md:hidden"
-            />
-          </a>
 
           {/* Description */}
           {activeTab !== 'docs' && (
