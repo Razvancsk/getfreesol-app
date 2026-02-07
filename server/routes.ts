@@ -597,11 +597,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Step 4: Add close account instruction (reclaim rent)
-      const ata = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
+      // Detect if token is Token-2022 by checking mint account owner
+      let tokenProgramId = TOKEN_PROGRAM_ID;
+      try {
+        const mintInfo = await connection.getAccountInfo(inputMintPubkey);
+        if (mintInfo && mintInfo.owner.equals(TOKEN_2022_PROGRAM_ID)) {
+          tokenProgramId = TOKEN_2022_PROGRAM_ID;
+          console.log(`🔄 Detected Token-2022 program for ${inputMint}`);
+        }
+      } catch (e) {
+        console.log(`⚠️ Could not detect token program, defaulting to TOKEN_PROGRAM`);
+      }
+      
+      const ata = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey, false, tokenProgramId);
       instructions.push(
-        createCloseAccountInstruction(ata, takerPubkey, takerPubkey, [], TOKEN_PROGRAM_ID)
+        createCloseAccountInstruction(ata, takerPubkey, takerPubkey, [], tokenProgramId)
       );
-      console.log(`📦 Added close account instruction for ATA: ${ata.toString()}`);
+      console.log(`📦 Added close account instruction for ATA: ${ata.toString()} (program: ${tokenProgramId.equals(TOKEN_2022_PROGRAM_ID) ? 'Token-2022' : 'SPL Token'})`);
 
       // Step 5: Add platform fee transfer (15% of rent)
       instructions.push(
