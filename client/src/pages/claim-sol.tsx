@@ -1288,15 +1288,28 @@ export default function SolRefund() {
       });
 
       const results = await Promise.all(fetchPromises);
-      for (const r of results) {
-        if (r) txDataList.push(r);
+      const failedTokens: string[] = [];
+      for (let i = 0; i < results.length; i++) {
+        if (results[i]) {
+          txDataList.push(results[i]!);
+        } else {
+          failedTokens.push(tokensToSwap[i].symbol || tokensToSwap[i].mint.slice(0, 8));
+        }
       }
 
       if (txDataList.length === 0) {
-        throw new Error('Could not prepare any swap transactions');
+        throw new Error(`Could not prepare swap transactions. ${failedTokens.join(', ')} may not have swap routes available.`);
       }
 
-      console.log(`📦 Got ${txDataList.length} transactions ready. Requesting ONE signature approval...`);
+      if (failedTokens.length > 0) {
+        toast({
+          title: `${failedTokens.join(', ')} skipped - no swap route available`,
+          description: `Proceeding with ${txDataList.length} token${txDataList.length > 1 ? 's' : ''} that have valid routes.`,
+          className: "bg-yellow-600 text-white border-yellow-600",
+        });
+      }
+
+      console.log(`📦 Got ${txDataList.length}/${tokensToSwap.length} transactions ready. Requesting signature approval...`);
 
       // STEP 2: Sign ALL transactions at once (ONE wallet popup)
       const unsignedTxs = txDataList.map(d => d.tx);
