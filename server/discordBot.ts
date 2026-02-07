@@ -147,7 +147,6 @@ export async function initializeDiscordBot() {
           console.log(`✅ Discord: Text scan complete for ${validatedAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
         } catch (replyError: any) {
           console.error('❌ Failed to send scan result (missing permissions?):', replyError.message);
-          // Try sending without reply (just a message)
           try {
             if ('send' in message.channel) {
               await message.channel.send({ embeds: [embed] });
@@ -156,18 +155,6 @@ export async function initializeDiscordBot() {
           } catch (sendError: any) {
             console.error('❌ Failed to send message at all:', sendError.message);
           }
-        }
-        
-        // Send webhook alert
-        try {
-          const { sendWalletCheckAlert } = await import('./discordWebhookService.js');
-          await sendWalletCheckAlert({
-            walletAddress: validatedAddress,
-            emptyAccountsFound: scanResult.emptyAccounts,
-            estimatedSOL: parseFloat(scanResult.totalReclaimable)
-          });
-        } catch (webhookError) {
-          console.error('Failed to send Discord webhook alert:', webhookError);
         }
         
       } catch (error: any) {
@@ -314,18 +301,6 @@ export async function initializeDiscordBot() {
           await interaction.editReply({ embeds: [embed] });
 
           console.log(`✅ Discord: Scan complete for ${validatedAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
-
-          // Send webhook alert to Discord channel
-          try {
-            const { sendWalletCheckAlert } = await import('./discordWebhookService.js');
-            await sendWalletCheckAlert({
-              walletAddress: validatedAddress,
-              emptyAccountsFound: scanResult.emptyAccounts,
-              estimatedSOL: parseFloat(scanResult.totalReclaimable)
-            });
-          } catch (webhookError) {
-            console.error('Failed to send Discord webhook alert:', webhookError);
-          }
 
         } catch (error) {
           console.error('❌ Discord: Error scanning wallet:', error);
