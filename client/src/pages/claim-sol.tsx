@@ -3879,33 +3879,6 @@ export default function SolRefund() {
                 </button>
               </div>
 
-              {/* NFT Type Tabs - Filter between regular NFTs and Compressed NFTs */}
-              {nftData && nftData.nfts && nftData.nfts.length > 0 && (
-                <div className="flex items-center gap-2 mb-6">
-                  <button
-                    onClick={() => setNftTabView('nfts')}
-                    className={`flex-1 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 ${
-                      nftTabView === 'nfts'
-                        ? 'bg-purple-600 text-white border border-purple-500'
-                        : 'bg-black/40 text-purple-200 border border-purple-500/30 hover:border-purple-400/50 hover:bg-purple-800/20'
-                    }`}
-                    data-testid="tab-nfts"
-                  >
-                    NFTs ({nftData.nfts.filter((n: any) => n.type !== 'cnft').length})
-                  </button>
-                  <button
-                    onClick={() => setNftTabView('cnfts')}
-                    className={`flex-1 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 ${
-                      nftTabView === 'cnfts'
-                        ? 'bg-green-600 text-white border border-green-500'
-                        : 'bg-black/40 text-purple-200 border border-purple-500/30 hover:border-purple-400/50 hover:bg-purple-800/20'
-                    }`}
-                    data-testid="tab-cnfts"
-                  >
-                    cNFTs ({nftData.nfts.filter((n: any) => n.type === 'cnft').length})
-                  </button>
-                </div>
-              )}
 
               {/* Individual NFT Grid */}
               {scanNftsMutation.isPending ? (
@@ -3915,14 +3888,7 @@ export default function SolRefund() {
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
                 (() => {
-                  // Filter NFTs based on selected tab
-                  const filteredNfts = nftData.nfts.filter((nft: any) => {
-                    if (nftTabView === 'cnfts') {
-                      return nft.type === 'cnft';
-                    } else {
-                      return nft.type !== 'cnft'; // Show regular NFTs (core, pnft, standard)
-                    }
-                  });
+                  const filteredNfts = nftData.nfts.filter((nft: any) => nft.type !== 'cnft');
 
                   // Show empty state if no NFTs in current tab
                   if (filteredNfts.length === 0) {
@@ -4034,19 +4000,11 @@ export default function SolRefund() {
                                   nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
                                   nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
                                   nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
-                                  nft.type === 'cnft' ? 'bg-green-500/20 text-green-300' :
                                   'bg-gray-500/20 text-gray-300'
                                 }`}>
                                   {nft.type.toUpperCase()}
                                 </span>
                               </div>
-                              {/* Warning for cNFTs - no SOL recovery */}
-                              {nft.type === 'cnft' && (
-                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 bg-orange-600/90 border-orange-500 flex items-center gap-1">
-                                  <AlertTriangle className="h-2.5 w-2.5" />
-                                  No SOL
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -4059,28 +4017,13 @@ export default function SolRefund() {
                   <div className="space-y-4">
                     {/* Select All / Clear Selection Buttons - Only show if there are NFTs in current tab */}
                     {(() => {
-                      const visibleNfts = nftData.nfts.filter((nft: any) => {
-                        if (nftTabView === 'cnfts') {
-                          return nft.type === 'cnft';
-                        } else {
-                          return nft.type !== 'cnft';
-                        }
-                      });
+                      const visibleNfts = nftData.nfts.filter((nft: any) => nft.type !== 'cnft');
                       return visibleNfts.length > 0 ? (
                         <div className="flex gap-3">
                           <Button
                             onClick={() => {
-                              const allNfts = nftData.nfts;
-                              // Select all NFTs from the currently visible tab (including frozen)
-                              const selectableNfts = allNfts
-                                .filter((nft: any) => {
-                                  // Filter by current tab only
-                                  if (nftTabView === 'cnfts') {
-                                    return nft.type === 'cnft';
-                                  } else {
-                                    return nft.type !== 'cnft';
-                                  }
-                                })
+                              const selectableNfts = nftData.nfts
+                                .filter((nft: any) => nft.type !== 'cnft')
                                 .map((nft: any) => nft.mint || nft.id || nft.assetId)
                                 .filter(Boolean);
                               setSelectedNfts(new Set(selectableNfts));
@@ -4088,7 +4031,7 @@ export default function SolRefund() {
                             className="flex-1 bg-purple-900/60 hover:bg-purple-800/70 text-white border border-purple-600/40 rounded-xl py-3"
                             data-testid="button-select-all-nfts"
                           >
-                            Select All {nftTabView === 'cnfts' ? 'cNFTs' : 'NFTs'}
+                            Select All NFTs
                           </Button>
                           <Button
                             onClick={() => setSelectedNfts(new Set())}
