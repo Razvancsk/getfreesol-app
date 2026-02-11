@@ -1296,7 +1296,7 @@ export default function SolRefund() {
       }
 
       if (txDataList.length === 0) {
-        throw new Error(`Could not prepare swap transactions. ${failedTokens.join(', ')} may not have swap routes available.`);
+        throw new Error('No swap routes available');
       }
 
       if (failedTokens.length > 0) {
