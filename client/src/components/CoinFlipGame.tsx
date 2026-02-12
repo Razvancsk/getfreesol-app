@@ -196,7 +196,7 @@ export function CoinFlipGame() {
         </div>
 
         {showResult && flipResult && (
-          <div className={`text-2xl font-black uppercase tracking-wider animate-bounce ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
+          <div className={`text-2xl font-black uppercase tracking-wider ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
             {flipResult.won ? `+${flipResult.payoutAmount.toFixed(4)} SOL` : `RUGGED -${betAmount} SOL`}
           </div>
         )}
