@@ -6,7 +6,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
-const BET_AMOUNTS = [0.01, 0.05, 0.1, 0.25, 0.5, 1];
+const BET_AMOUNTS = [0.00176, 0.005, 0.01, 0.05, 0.1, 0.5];
 
 function timeAgo(date: string | Date) {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -22,7 +22,7 @@ export function CoinFlipGame() {
   const { publicKey, signTransaction, connected, connection } = useWalletAdapter();
   const { toast } = useToast();
   const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
-  const [betAmount, setBetAmount] = useState(0.01);
+  const [betAmount, setBetAmount] = useState(0.00176);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipResult, setFlipResult] = useState<{ result: string; won: boolean; payoutAmount: number } | null>(null);
   const [coinRotation, setCoinRotation] = useState(0);

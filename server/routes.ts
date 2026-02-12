@@ -10608,8 +10608,8 @@ Claimer: ${walletAddress}`;
       }
 
       const bet = parseFloat(betAmount);
-      if (isNaN(bet) || bet < 0.01 || bet > 5) {
-        return res.status(400).json({ error: 'Bet must be between 0.01 and 5 SOL' });
+      if (isNaN(bet) || bet < 0.001 || bet > 5) {
+        return res.status(400).json({ error: 'Bet must be between 0.001 and 5 SOL' });
       }
 
       const { coinFlips } = await import('@shared/schema');
