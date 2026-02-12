@@ -111,8 +111,6 @@ export function CoinFlipGame() {
         console.warn('Confirm warning (continuing):', confirmErr?.message);
       }
 
-      toast({ title: 'Bet placed! Flipping...', className: 'bg-purple-600 text-white border-purple-600 font-bold' });
-
       let rotations = 0;
       const spinInterval = setInterval(() => {
         rotations += 30;
