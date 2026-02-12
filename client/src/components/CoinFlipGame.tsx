@@ -194,8 +194,13 @@ export function CoinFlipGame() {
         </div>
 
         {showResult && flipResult && (
-          <div className={`text-2xl font-black uppercase tracking-wider ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
-            {flipResult.won ? `+${flipResult.payoutAmount.toFixed(4)} SOL` : `RUGGED -${betAmount} SOL`}
+          <div className="text-center space-y-1">
+            <div className={`text-2xl font-black uppercase tracking-wider ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
+              {flipResult.won ? 'YOU WON' : 'YOU LOST'}
+            </div>
+            <div className={`text-xl font-bold ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
+              {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `${betAmount} SOL`}
+            </div>
           </div>
         )}
       </div>
