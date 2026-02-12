@@ -3249,6 +3249,14 @@ export default function SolRefund() {
                                 🐦 X Account
                               </DropdownMenuItem>
                             </Link>
+                            <Link href="/admin/vault">
+                              <DropdownMenuItem 
+                                className="text-white hover:bg-purple-600/40 cursor-pointer"
+                                data-testid="button-vault-admin"
+                              >
+                                🏦 Vault Admin
+                              </DropdownMenuItem>
+                            </Link>
                           </>
                         )}
                         <DropdownMenuItem 

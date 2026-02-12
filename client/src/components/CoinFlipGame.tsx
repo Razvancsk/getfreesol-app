@@ -279,11 +279,11 @@ export function CoinFlipGame() {
             3% Platform Fee will be taken from your winnings.
           </p>
 
-          {vaultBalance > 0 && (
-            <div className="text-center text-xs text-purple-400 mt-1">
-              🏦 Vault: {vaultBalance.toFixed(4)} SOL
-            </div>
-          )}
+          <div className="text-center text-xs text-purple-400 mt-1">
+            🏦 Vault: {vaultBalance.toFixed(4)} SOL
+            {' · '}
+            <a href="/admin/vault" className="underline hover:text-purple-300">Manage</a>
+          </div>
         </div>
       </div>
 
