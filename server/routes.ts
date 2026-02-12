@@ -10537,6 +10537,19 @@ Claimer: ${walletAddress}`;
 
   // ============ COIN FLIP GAME ============
 
+  const { getVaultKeypair, getVaultAddress, getVaultBalance } = await import('./coinflipVault');
+
+  app.get("/api/coinflip/vault", async (_req, res) => {
+    try {
+      const address = getVaultAddress();
+      const balance = await getVaultBalance();
+      res.json({ success: true, address, balance });
+    } catch (error: any) {
+      console.error('Error fetching vault info:', error);
+      res.status(500).json({ error: 'Failed to fetch vault info' });
+    }
+  });
+
   app.post("/api/coinflip/play", async (req, res) => {
     try {
       const { walletAddress, betAmount, choice, betTxSignature } = req.body;
@@ -10570,7 +10583,7 @@ Claimer: ${walletAddress}`;
       }
 
       const PLATFORM_FEE_RATE = 0.03;
-      const PLATFORM_WALLET_ADDRESS = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const VAULT_ADDRESS = getVaultAddress();
       const rpcUrl = process.env.HELIUS_API_KEY 
         ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
         : 'https://api.mainnet-beta.solana.com';
@@ -10607,12 +10620,12 @@ Claimer: ${walletAddress}`;
 
       const preBalances = txInfo.meta.preBalances;
       const postBalances = txInfo.meta.postBalances;
-      const platformIndex = accountKeys.indexOf(PLATFORM_WALLET_ADDRESS);
-      if (platformIndex === -1) {
-        return res.status(400).json({ error: 'Transaction does not transfer to platform wallet' });
+      const vaultIndex = accountKeys.indexOf(VAULT_ADDRESS);
+      if (vaultIndex === -1) {
+        return res.status(400).json({ error: 'Transaction does not transfer to game vault' });
       }
 
-      const receivedLamports = postBalances[platformIndex] - preBalances[platformIndex];
+      const receivedLamports = postBalances[vaultIndex] - preBalances[vaultIndex];
       const expectedLamports = Math.floor(bet * LAMPORTS_PER_SOL);
       if (receivedLamports < expectedLamports * 0.99) {
         return res.status(400).json({ error: 'Transaction amount does not match bet amount' });
@@ -10634,27 +10647,21 @@ Claimer: ${walletAddress}`;
         platformFee = grossPayout * PLATFORM_FEE_RATE;
         payoutAmount = grossPayout - platformFee;
 
-        const platformPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
-        if (!platformPrivateKey) {
-          console.error('PLATFORM_PRIVATE_KEY not configured');
-          return res.status(500).json({ error: 'Platform wallet not configured for payouts' });
-        }
-
         try {
-          let secretKey: Uint8Array;
-          if (platformPrivateKey.startsWith('[')) {
-            secretKey = Uint8Array.from(JSON.parse(platformPrivateKey));
-          } else {
-            secretKey = bs58.decode(platformPrivateKey);
-          }
-          const platformKeypair = Keypair.fromSecretKey(secretKey);
+          const vaultKeypair = getVaultKeypair();
 
           const payoutLamports = Math.floor(payoutAmount * LAMPORTS_PER_SOL);
           const recipientPubkey = new PublicKey(walletAddress);
 
+          const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
+          if (vaultBalance < payoutLamports + 5000) {
+            console.error(`🎰 Vault balance too low: ${vaultBalance / LAMPORTS_PER_SOL} SOL, need ${payoutAmount} SOL`);
+            return res.status(500).json({ error: 'Game vault has insufficient funds for payout. Please try a smaller bet or try again later.' });
+          }
+
           const transaction = new Transaction().add(
             SystemProgram.transfer({
-              fromPubkey: platformKeypair.publicKey,
+              fromPubkey: vaultKeypair.publicKey,
               toPubkey: recipientPubkey,
               lamports: payoutLamports,
             })
@@ -10662,8 +10669,8 @@ Claimer: ${walletAddress}`;
 
           const { blockhash } = await connection.getLatestBlockhash('confirmed');
           transaction.recentBlockhash = blockhash;
-          transaction.feePayer = platformKeypair.publicKey;
-          transaction.sign(platformKeypair);
+          transaction.feePayer = vaultKeypair.publicKey;
+          transaction.sign(vaultKeypair);
 
           payoutTxSignature = await connection.sendRawTransaction(transaction.serialize(), {
             skipPreflight: false,

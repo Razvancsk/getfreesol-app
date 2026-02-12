@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
-const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
 const BET_AMOUNTS = [0.01, 0.05, 0.1];
 
 function timeAgo(date: string | Date) {
@@ -29,6 +28,14 @@ export function CoinFlipGame() {
   const [flipResult, setFlipResult] = useState<{ result: string; won: boolean; payoutAmount: number } | null>(null);
   const [coinRotation, setCoinRotation] = useState(0);
   const [showResult, setShowResult] = useState(false);
+
+  const vaultQuery = useQuery<{ success: boolean; address: string; balance: number }>({
+    queryKey: ['/api/coinflip/vault'],
+    refetchInterval: 30000,
+  });
+
+  const vaultAddress = (vaultQuery.data as any)?.address || '';
+  const vaultBalance = (vaultQuery.data as any)?.balance || 0;
 
   const recentFlipsQuery = useQuery({
     queryKey: ['/api/coinflip/recent'],
@@ -56,6 +63,11 @@ export function CoinFlipGame() {
       return;
     }
 
+    if (!vaultAddress) {
+      toast({ title: 'Game vault loading, please wait...', variant: 'destructive' });
+      return;
+    }
+
     setIsFlipping(true);
     setFlipResult(null);
     setShowResult(false);
@@ -65,7 +77,7 @@ export function CoinFlipGame() {
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: new PublicKey(PLATFORM_WALLET),
+          toPubkey: new PublicKey(vaultAddress),
           lamports,
         })
       );
@@ -126,7 +138,7 @@ export function CoinFlipGame() {
         variant: 'destructive',
       });
     }
-  }, [publicKey, connected, betAmount, choice, signTransaction, connection, toast, flipMutation]);
+  }, [publicKey, connected, betAmount, choice, signTransaction, connection, toast, flipMutation, vaultAddress]);
 
   const flips = (recentFlipsQuery.data as any)?.flips || [];
 
@@ -266,6 +278,12 @@ export function CoinFlipGame() {
           <p className="text-center text-xs text-gray-400">
             3% Platform Fee will be taken from your winnings.
           </p>
+
+          {vaultBalance > 0 && (
+            <div className="text-center text-xs text-purple-400 mt-1">
+              🏦 Vault: {vaultBalance.toFixed(4)} SOL
+            </div>
+          )}
         </div>
       </div>
 
