@@ -10537,7 +10537,7 @@ Claimer: ${walletAddress}`;
 
   // ============ COIN FLIP GAME ============
 
-  const { getVaultKeypair, getVaultAddress, getVaultBalance } = await import('./coinflipVault');
+  const { getVaultKeypair, getVaultAddress, getVaultBalance, getVaultPrivateKey, withdrawFromVault } = await import('./coinflipVault');
 
   app.get("/api/coinflip/vault", async (_req, res) => {
     try {
@@ -10547,6 +10547,51 @@ Claimer: ${walletAddress}`;
     } catch (error: any) {
       console.error('Error fetching vault info:', error);
       res.status(500).json({ error: 'Failed to fetch vault info' });
+    }
+  });
+
+  app.post("/api/coinflip/vault/export-key", async (req, res) => {
+    try {
+      const { adminSecret } = req.body;
+      const expectedSecret = process.env.VAULT_ADMIN_SECRET;
+      if (!expectedSecret) {
+        return res.status(503).json({ error: 'Vault admin secret not configured. Set VAULT_ADMIN_SECRET in environment.' });
+      }
+      if (!adminSecret || adminSecret !== expectedSecret) {
+        return res.status(403).json({ error: 'Invalid admin secret' });
+      }
+      const privateKey = getVaultPrivateKey();
+      const address = getVaultAddress();
+      res.json({ success: true, address, privateKey });
+    } catch (error: any) {
+      console.error('Error exporting vault key:', error);
+      res.status(500).json({ error: 'Failed to export vault key' });
+    }
+  });
+
+  app.post("/api/coinflip/vault/withdraw", async (req, res) => {
+    try {
+      const { adminSecret, destinationAddress, amount } = req.body;
+      const expectedSecret = process.env.VAULT_ADMIN_SECRET;
+      if (!expectedSecret) {
+        return res.status(503).json({ error: 'Vault admin secret not configured. Set VAULT_ADMIN_SECRET in environment.' });
+      }
+      if (!adminSecret || adminSecret !== expectedSecret) {
+        return res.status(403).json({ error: 'Invalid admin secret' });
+      }
+      if (!destinationAddress || !amount) {
+        return res.status(400).json({ error: 'Missing destinationAddress or amount' });
+      }
+      const amountSOL = parseFloat(amount);
+      if (isNaN(amountSOL) || amountSOL <= 0) {
+        return res.status(400).json({ error: 'Invalid amount' });
+      }
+      const signature = await withdrawFromVault(destinationAddress, amountSOL);
+      const balance = await getVaultBalance();
+      res.json({ success: true, signature, remainingBalance: balance });
+    } catch (error: any) {
+      console.error('Error withdrawing from vault:', error);
+      res.status(500).json({ error: error.message || 'Failed to withdraw from vault' });
     }
   });
 
