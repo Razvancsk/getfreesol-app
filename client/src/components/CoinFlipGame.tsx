@@ -300,7 +300,7 @@ export function CoinFlipGame() {
           </Button>
 
           <p className="text-center text-xs text-gray-400">
-            3% Platform Fee will be taken from your winnings.
+            50/50 odds. Win and double your SOL!
           </p>
 
           <div className="text-center text-xs text-purple-400 mt-1">
