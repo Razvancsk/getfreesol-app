@@ -153,25 +153,22 @@ export function CoinFlipGame() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'conic-gradient(from 0deg, #d4a017, #f5d442, #c49000, #f5d442, #d4a017, #a67c00, #f5d442, #d4a017)',
+                background: 'conic-gradient(from 0deg, #7c3aed, #a78bfa, #6d28d9, #a78bfa, #7c3aed, #5b21b6, #a78bfa, #7c3aed)',
                 backfaceVisibility: 'hidden',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(212, 160, 23, 0.3)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(124, 58, 237, 0.4)',
               }}
             >
-              {/* Outer rim highlight */}
               <div className="absolute inset-0 rounded-full" style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.35) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.3) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
               }} />
-              {/* Inner groove ring */}
               <div className="absolute rounded-full" style={{
                 inset: '10px',
-                background: 'conic-gradient(from 180deg, #c49000, #f5d442, #a67c00, #f5d442, #c49000, #d4a017, #f5d442, #c49000)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
+                background: 'conic-gradient(from 180deg, #6d28d9, #a78bfa, #5b21b6, #a78bfa, #6d28d9, #7c3aed, #a78bfa, #6d28d9)',
+                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
               }}>
-                {/* Inner face */}
                 <div className="absolute rounded-full flex items-center justify-center" style={{
                   inset: '6px',
-                  background: 'radial-gradient(ellipse at 40% 35%, #a78bfa 0%, #8b5cf6 35%, #7c3aed 60%, #6d28d9 100%)',
+                  background: 'radial-gradient(ellipse at 40% 35%, #c084fc 0%, #a855f7 30%, #8b5cf6 55%, #7c3aed 100%)',
                   boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.15), inset 0 -3px 8px rgba(0,0,0,0.25)',
                 }}>
                   <div className="absolute inset-0 rounded-full" style={{
@@ -189,23 +186,23 @@ export function CoinFlipGame() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'conic-gradient(from 0deg, #d4a017, #f5d442, #c49000, #f5d442, #d4a017, #a67c00, #f5d442, #d4a017)',
+                background: 'conic-gradient(from 0deg, #7c3aed, #a78bfa, #6d28d9, #a78bfa, #7c3aed, #5b21b6, #a78bfa, #7c3aed)',
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(212, 160, 23, 0.3)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(124, 58, 237, 0.4)',
               }}
             >
               <div className="absolute inset-0 rounded-full" style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.35) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.3) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
               }} />
               <div className="absolute rounded-full" style={{
                 inset: '10px',
-                background: 'conic-gradient(from 180deg, #c49000, #f5d442, #a67c00, #f5d442, #c49000, #d4a017, #f5d442, #c49000)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
+                background: 'conic-gradient(from 180deg, #6d28d9, #a78bfa, #5b21b6, #a78bfa, #6d28d9, #7c3aed, #a78bfa, #6d28d9)',
+                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
               }}>
                 <div className="absolute rounded-full flex items-center justify-center" style={{
                   inset: '6px',
-                  background: 'radial-gradient(ellipse at 40% 35%, #a78bfa 0%, #8b5cf6 35%, #7c3aed 60%, #6d28d9 100%)',
+                  background: 'radial-gradient(ellipse at 40% 35%, #c084fc 0%, #a855f7 30%, #8b5cf6 55%, #7c3aed 100%)',
                   boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.15), inset 0 -3px 8px rgba(0,0,0,0.25)',
                 }}>
                   <div className="absolute inset-0 rounded-full" style={{
