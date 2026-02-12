@@ -134,20 +134,6 @@ export function CoinFlipGame() {
       setFlipResult(result);
       setShowResult(true);
       setIsFlipping(false);
-
-      if (result.won) {
-        toast({
-          title: `YOU WON ${result.payoutAmount.toFixed(4)} SOL!`,
-          description: 'Double or nothing!',
-          className: 'bg-green-500 text-white border-green-500 font-bold',
-        });
-      } else {
-        toast({
-          title: 'RUGGED!',
-          description: `Coin landed on ${result.result}`,
-          className: 'bg-red-600 text-white border-red-600 font-bold',
-        });
-      }
     } catch (err: any) {
       console.error('Coin flip error:', err);
       setIsFlipping(false);
