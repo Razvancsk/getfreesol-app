@@ -82,13 +82,35 @@ export function CoinFlipGame() {
         })
       );
 
-      const { blockhash } = await connection.getLatestBlockhash('confirmed');
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      const signed = await signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signed.serialize());
+      console.log('🎰 Signing bet transaction to vault:', vaultAddress);
+      let signature: string;
+      try {
+        const signed = await signTransaction(transaction);
+        console.log('🎰 Transaction signed, sending...');
+        const serialized = signed.serialize();
+        signature = await connection.sendRawTransaction(serialized, {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        });
+      } catch (signErr: any) {
+        console.error('🎰 Sign/send error:', signErr);
+        if (signErr?.message?.includes('User rejected') || signErr?.message?.includes('cancelled')) {
+          throw new Error('Transaction cancelled by user');
+        }
+        throw new Error(signErr?.message || 'Failed to sign or send transaction');
+      }
       console.log(`🎰 Bet transaction sent: ${signature}`);
+      
+      try {
+        await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
+        console.log(`🎰 Bet transaction confirmed: ${signature}`);
+      } catch (confirmErr: any) {
+        console.warn('🎰 Confirm warning (continuing):', confirmErr?.message);
+      }
 
       toast({ title: 'Bet placed! Flipping coin...', className: 'bg-purple-600 text-white border-purple-600' });
 
@@ -132,9 +154,11 @@ export function CoinFlipGame() {
     } catch (err: any) {
       console.error('Coin flip error:', err);
       setIsFlipping(false);
+      const errorMsg = err?.message || 'Transaction failed';
+      const shortMsg = errorMsg.length > 120 ? errorMsg.substring(0, 120) + '...' : errorMsg;
       toast({
         title: 'Flip failed',
-        description: err.message || 'Transaction failed',
+        description: shortMsg,
         variant: 'destructive',
       });
     }
