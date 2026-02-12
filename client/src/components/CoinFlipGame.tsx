@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletAdapter } from '@/hooks/useWalletAdapter';
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
@@ -21,7 +21,7 @@ function timeAgo(date: string | Date) {
 }
 
 export function CoinFlipGame() {
-  const { publicKey, sendTransaction, connected } = useWallet();
+  const { publicKey, signTransaction, connected, connection } = useWalletAdapter();
   const { toast } = useToast();
   const [choice, setChoice] = useState<'heads' | 'tails'>('heads');
   const [betAmount, setBetAmount] = useState(0.01);
@@ -61,11 +61,6 @@ export function CoinFlipGame() {
     setShowResult(false);
 
     try {
-      const rpcUrl = import.meta.env.VITE_HELIUS_API_KEY
-        ? `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`
-        : 'https://api.mainnet-beta.solana.com';
-      const connection = new Connection(rpcUrl, 'confirmed');
-
       const lamports = Math.floor(betAmount * LAMPORTS_PER_SOL);
       const transaction = new Transaction().add(
         SystemProgram.transfer({
@@ -79,7 +74,8 @@ export function CoinFlipGame() {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      const signature = await sendTransaction(transaction, connection);
+      const signed = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signed.serialize());
       console.log(`🎰 Bet transaction sent: ${signature}`);
 
       toast({ title: 'Bet placed! Flipping coin...', className: 'bg-purple-600 text-white border-purple-600' });
@@ -130,7 +126,7 @@ export function CoinFlipGame() {
         variant: 'destructive',
       });
     }
-  }, [publicKey, connected, betAmount, choice, sendTransaction, toast, flipMutation]);
+  }, [publicKey, connected, betAmount, choice, signTransaction, connection, toast, flipMutation]);
 
   const flips = (recentFlipsQuery.data as any)?.flips || [];
 
