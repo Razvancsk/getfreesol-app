@@ -10627,7 +10627,7 @@ Claimer: ${walletAddress}`;
         });
       }
 
-      const PLATFORM_FEE_RATE = 0.03;
+      const PLATFORM_FEE_RATE = 0.035;
       const VAULT_ADDRESS = getVaultAddress();
       const rpcUrl = process.env.HELIUS_API_KEY 
         ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
