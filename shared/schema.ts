@@ -917,3 +917,25 @@ export type GiveawayEntry = typeof giveawayEntries.$inferSelect;
 export type InsertGiveawayEntry = z.infer<typeof insertGiveawayEntrySchema>;
 export type GiveawayWinner = typeof giveawayWinners.$inferSelect;
 export type InsertGiveawayWinner = z.infer<typeof insertGiveawayWinnerSchema>;
+
+export const coinFlips = pgTable("coin_flips", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  betAmount: decimal("bet_amount", { precision: 18, scale: 9 }).notNull(),
+  choice: text("choice").notNull(),
+  result: text("result").notNull(),
+  won: boolean("won").notNull(),
+  payoutAmount: decimal("payout_amount", { precision: 18, scale: 9 }),
+  platformFee: decimal("platform_fee", { precision: 18, scale: 9 }),
+  betTxSignature: text("bet_tx_signature").notNull(),
+  payoutTxSignature: text("payout_tx_signature"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCoinFlipSchema = createInsertSchema(coinFlips).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type CoinFlip = typeof coinFlips.$inferSelect;
+export type InsertCoinFlip = z.infer<typeof insertCoinFlipSchema>;
