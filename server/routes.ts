@@ -10641,7 +10641,12 @@ Claimer: ${walletAddress}`;
         }
 
         try {
-          const secretKey = Uint8Array.from(JSON.parse(platformPrivateKey));
+          let secretKey: Uint8Array;
+          if (platformPrivateKey.startsWith('[')) {
+            secretKey = Uint8Array.from(JSON.parse(platformPrivateKey));
+          } else {
+            secretKey = bs58.decode(platformPrivateKey);
+          }
           const platformKeypair = Keypair.fromSecretKey(secretKey);
 
           const payoutLamports = Math.floor(payoutAmount * LAMPORTS_PER_SOL);
