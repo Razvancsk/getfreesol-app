@@ -48,6 +48,7 @@ import { SwapModal } from '@/components/SwapModal';
 import { SwapPanel } from '@/components/SwapPanel';
 import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
+import { CoinFlipGame } from '@/components/CoinFlipGame';
 import logoImage from '@assets/image_1757882056840.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
@@ -98,7 +99,7 @@ export default function SolRefund() {
   const { isNightMode, toggleTheme } = useTheme();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points' | 'coinflip'>('reclaim');
   const [claimSubTab, setClaimSubTab] = useState<'empty' | 'programs'>('empty');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [showDevAccountModal, setShowDevAccountModal] = useState(false);
@@ -3367,7 +3368,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3441,6 +3442,17 @@ export default function SolRefund() {
                     Swap
                   </Button>
                 )}
+                <Button
+                  onClick={() => setActiveTab('coinflip')}
+                  className={`min-w-[100px] px-4 py-2.5 text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border ${
+                    activeTab === 'coinflip'
+                      ? 'bg-green-600 text-white border-green-500'
+                      : 'bg-purple-800/40 text-purple-300 hover:bg-green-600/60 border-purple-500/30'
+                  }`}
+                  data-testid="button-coinflip"
+                >
+                  <span className="text-xl">🪙</span> Flip
+                </Button>
               </div>
             </div>
           )}
@@ -4294,6 +4306,11 @@ export default function SolRefund() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Coin Flip Tab Content */}
+          {activeTab === 'coinflip' && (
+            <CoinFlipGame />
           )}
 
           {/* Points Tab Content */}

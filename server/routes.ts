@@ -10535,6 +10535,209 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // ============ COIN FLIP GAME ============
+
+  app.post("/api/coinflip/play", async (req, res) => {
+    try {
+      const { walletAddress, betAmount, choice, betTxSignature } = req.body;
+
+      if (!walletAddress || !betAmount || !choice || !betTxSignature) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      if (!['heads', 'tails'].includes(choice)) {
+        return res.status(400).json({ error: 'Choice must be heads or tails' });
+      }
+
+      const bet = parseFloat(betAmount);
+      if (isNaN(bet) || bet < 0.01 || bet > 5) {
+        return res.status(400).json({ error: 'Bet must be between 0.01 and 5 SOL' });
+      }
+
+      const { coinFlips } = await import('@shared/schema');
+      const existingFlip = await db.select().from(coinFlips).where(eq(coinFlips.betTxSignature, betTxSignature)).limit(1);
+      if (existingFlip.length > 0) {
+        return res.json({
+          success: true,
+          result: existingFlip[0].result,
+          won: existingFlip[0].won,
+          betAmount: parseFloat(existingFlip[0].betAmount),
+          payoutAmount: existingFlip[0].payoutAmount ? parseFloat(existingFlip[0].payoutAmount) : 0,
+          platformFee: existingFlip[0].platformFee ? parseFloat(existingFlip[0].platformFee) : 0,
+          payoutTxSignature: existingFlip[0].payoutTxSignature,
+          replay: true,
+        });
+      }
+
+      const PLATFORM_FEE_RATE = 0.03;
+      const PLATFORM_WALLET_ADDRESS = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const rpcUrl = process.env.HELIUS_API_KEY 
+        ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+        : 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl, 'confirmed');
+
+      let txInfo: any = null;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        try {
+          txInfo = await connection.getTransaction(betTxSignature, {
+            commitment: 'confirmed',
+            maxSupportedTransactionVersion: 0,
+          });
+          if (txInfo && !txInfo.meta?.err) {
+            break;
+          }
+          txInfo = null;
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      if (!txInfo) {
+        return res.status(400).json({ error: 'Could not confirm bet transaction on-chain' });
+      }
+
+      const accountKeys = txInfo.transaction.message.staticAccountKeys
+        ? txInfo.transaction.message.staticAccountKeys.map((k: any) => k.toBase58())
+        : txInfo.transaction.message.accountKeys.map((k: any) => k.toBase58());
+
+      const senderIndex = 0;
+      const senderAddress = accountKeys[senderIndex];
+      if (senderAddress !== walletAddress) {
+        return res.status(400).json({ error: 'Transaction sender does not match wallet address' });
+      }
+
+      const preBalances = txInfo.meta.preBalances;
+      const postBalances = txInfo.meta.postBalances;
+      const platformIndex = accountKeys.indexOf(PLATFORM_WALLET_ADDRESS);
+      if (platformIndex === -1) {
+        return res.status(400).json({ error: 'Transaction does not transfer to platform wallet' });
+      }
+
+      const receivedLamports = postBalances[platformIndex] - preBalances[platformIndex];
+      const expectedLamports = Math.floor(bet * LAMPORTS_PER_SOL);
+      if (receivedLamports < expectedLamports * 0.99) {
+        return res.status(400).json({ error: 'Transaction amount does not match bet amount' });
+      }
+
+      const txSlot = txInfo.slot;
+      const seedData = `${betTxSignature}:${txSlot}:${choice}`;
+      const hashBuffer = crypto.createHash('sha256').update(seedData).digest();
+      const hashValue = hashBuffer.readUInt32BE(0);
+      const result: 'heads' | 'tails' = hashValue % 2 === 0 ? 'heads' : 'tails';
+      const won = choice === result;
+
+      let payoutAmount = 0;
+      let platformFee = 0;
+      let payoutTxSignature: string | null = null;
+
+      if (won) {
+        const grossPayout = bet * 2;
+        platformFee = grossPayout * PLATFORM_FEE_RATE;
+        payoutAmount = grossPayout - platformFee;
+
+        const platformPrivateKey = process.env.PLATFORM_PRIVATE_KEY;
+        if (!platformPrivateKey) {
+          console.error('PLATFORM_PRIVATE_KEY not configured');
+          return res.status(500).json({ error: 'Platform wallet not configured for payouts' });
+        }
+
+        try {
+          const secretKey = Uint8Array.from(JSON.parse(platformPrivateKey));
+          const platformKeypair = Keypair.fromSecretKey(secretKey);
+
+          const payoutLamports = Math.floor(payoutAmount * LAMPORTS_PER_SOL);
+          const recipientPubkey = new PublicKey(walletAddress);
+
+          const transaction = new Transaction().add(
+            SystemProgram.transfer({
+              fromPubkey: platformKeypair.publicKey,
+              toPubkey: recipientPubkey,
+              lamports: payoutLamports,
+            })
+          );
+
+          const { blockhash } = await connection.getLatestBlockhash('confirmed');
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = platformKeypair.publicKey;
+          transaction.sign(platformKeypair);
+
+          payoutTxSignature = await connection.sendRawTransaction(transaction.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+          });
+
+          await connection.confirmTransaction(payoutTxSignature, 'confirmed');
+          console.log(`🎰 Coin flip WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
+        } catch (payoutError: any) {
+          console.error('❌ Coin flip payout failed:', payoutError);
+          return res.status(500).json({ error: 'Payout transaction failed. Please contact support.' });
+        }
+      } else {
+        console.log(`🎰 Coin flip LOSS: ${walletAddress} bet ${bet} SOL, result: ${result}`);
+      }
+
+      await db.insert(coinFlips).values({
+        walletAddress,
+        betAmount: bet.toString(),
+        choice,
+        result,
+        won,
+        payoutAmount: payoutAmount > 0 ? payoutAmount.toString() : null,
+        platformFee: platformFee > 0 ? platformFee.toString() : null,
+        betTxSignature,
+        payoutTxSignature,
+      });
+
+      res.json({
+        success: true,
+        result,
+        won,
+        betAmount: bet,
+        payoutAmount: won ? payoutAmount : 0,
+        platformFee: won ? platformFee : 0,
+        payoutTxSignature,
+      });
+    } catch (error: any) {
+      console.error('Error in coin flip:', error);
+      res.status(500).json({ error: 'Coin flip failed' });
+    }
+  });
+
+  app.get("/api/coinflip/recent", async (req, res) => {
+    try {
+      const { coinFlips } = await import('@shared/schema');
+      const { desc } = await import('drizzle-orm');
+      const recentFlips = await db.select().from(coinFlips).orderBy(desc(coinFlips.createdAt)).limit(20);
+      res.json({ success: true, flips: recentFlips });
+    } catch (error: any) {
+      console.error('Error fetching recent flips:', error);
+      res.status(500).json({ error: 'Failed to fetch recent flips' });
+    }
+  });
+
+  app.get("/api/coinflip/stats", async (req, res) => {
+    try {
+      const { coinFlips } = await import('@shared/schema');
+      const allFlips = await db.select().from(coinFlips);
+      const totalFlips = allFlips.length;
+      const totalWins = allFlips.filter(f => f.won).length;
+      const totalBet = allFlips.reduce((sum, f) => sum + parseFloat(f.betAmount), 0);
+      const totalPayout = allFlips.filter(f => f.won).reduce((sum, f) => sum + parseFloat(f.payoutAmount || '0'), 0);
+      
+      res.json({
+        success: true,
+        totalFlips,
+        totalWins,
+        totalLosses: totalFlips - totalWins,
+        totalBet: totalBet.toFixed(4),
+        totalPayout: totalPayout.toFixed(4),
+        houseEdge: totalBet > 0 ? ((totalBet - totalPayout) / totalBet * 100).toFixed(2) : '0',
+      });
+    } catch (error: any) {
+      console.error('Error fetching coin flip stats:', error);
+      res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
