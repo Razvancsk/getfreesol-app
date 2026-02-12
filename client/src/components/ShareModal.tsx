@@ -1,5 +1,6 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import logoImage from "@assets/image_1757882056840.png";
 
 interface ShareModalProps {
@@ -15,6 +16,7 @@ interface ShareModalProps {
 export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts' }: ShareModalProps) {
   const [tweetText, setTweetText] = useState("");
   const [shareUrl, setShareUrl] = useState("");
+  const [, navigate] = useLocation();
   
   const getClaimText = () => {
     if (claimType === 'tokens') return `by burning ${accountsClosed} token${accountsClosed > 1 ? 's' : ''}!`;
@@ -65,13 +67,22 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
             </p>
             <p className="text-green-400 text-base mt-3 z-10 font-mono">{getClaimText()}</p>
             
-            <button 
-              onClick={handleShareOnX}
-              className="no-night-mode absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors z-10"
-              style={{ backgroundColor: '#4ade80', borderColor: '#86efac' }}
-            >
-              <span className="text-black font-mono font-bold text-base">Tweet It</span>
-            </button>
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+              <button 
+                onClick={handleShareOnX}
+                className="no-night-mode bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors"
+                style={{ backgroundColor: '#4ade80', borderColor: '#86efac' }}
+              >
+                <span className="text-black font-mono font-bold text-base">Tweet It</span>
+              </button>
+              <button 
+                onClick={() => { onClose(); navigate('/coin-flip'); }}
+                className="no-night-mode bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg px-6 py-2 transition-colors"
+                style={{ backgroundColor: '#9333ea', borderColor: '#a855f7' }}
+              >
+                <span className="text-white font-mono font-bold text-base">Flip It</span>
+              </button>
+            </div>
           </div>
         </div>
       </DialogContent>
