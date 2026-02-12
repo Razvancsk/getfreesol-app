@@ -111,7 +111,7 @@ export function CoinFlipGame() {
         console.warn('Confirm warning (continuing):', confirmErr?.message);
       }
 
-      toast({ title: 'Bet placed! Flipping...', className: 'bg-yellow-500 text-black border-yellow-500 font-bold' });
+      toast({ title: 'Bet placed! Flipping...', className: 'bg-purple-600 text-white border-purple-600 font-bold' });
 
       let rotations = 0;
       const spinInterval = setInterval(() => {
@@ -139,8 +139,8 @@ export function CoinFlipGame() {
         if (result.won) {
           toast({
             title: `YOU WON ${result.payoutAmount.toFixed(4)} SOL!`,
-            description: 'Double or nothing baby!',
-            className: 'bg-green-500 text-black border-green-500 font-bold',
+            description: 'Double or nothing!',
+            className: 'bg-green-500 text-white border-green-500 font-bold',
           });
         } else {
           toast({
@@ -184,25 +184,29 @@ export function CoinFlipGame() {
             <div
               className="absolute inset-0 rounded-full flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, #FFD700, #FFA500, #FFD700)',
+                background: 'linear-gradient(135deg, #c084fc, #7c3aed, #a855f7)',
                 backfaceVisibility: 'hidden',
-                border: '4px solid #B8860B',
-                boxShadow: '0 0 30px rgba(255, 215, 0, 0.4), inset 0 2px 6px rgba(255,255,255,0.4)',
+                border: '4px solid #6d28d9',
+                boxShadow: '0 0 30px rgba(168, 85, 247, 0.5), inset 0 2px 6px rgba(255,255,255,0.2)',
               }}
             >
-              <span className="text-5xl">:)</span>
+              <svg className="w-16 h-16" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+              </svg>
             </div>
             <div
               className="absolute inset-0 rounded-full flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, #FFD700, #FFA500, #FFD700)',
+                background: 'linear-gradient(135deg, #a855f7, #6d28d9, #7c3aed)',
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
-                border: '4px solid #B8860B',
-                boxShadow: '0 0 30px rgba(255, 215, 0, 0.4), inset 0 2px 6px rgba(255,255,255,0.4)',
+                border: '4px solid #581c87',
+                boxShadow: '0 0 30px rgba(168, 85, 247, 0.5), inset 0 2px 6px rgba(255,255,255,0.2)',
               }}
             >
-              <span className="text-5xl">:(</span>
+              <span className="text-4xl font-black text-white/80">G</span>
             </div>
           </div>
         </div>
@@ -216,15 +220,15 @@ export function CoinFlipGame() {
 
       {/* I LIKE */}
       <div className="text-center">
-        <p className="text-white font-bold text-lg tracking-widest uppercase mb-3">I Like</p>
+        <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">I Like</p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => setChoice('heads')}
             disabled={isFlipping}
-            className={`px-8 py-3 rounded-lg font-black text-lg uppercase tracking-wider transition-all border-2 ${
+            className={`px-8 py-3 rounded-xl font-black text-lg uppercase tracking-wider transition-all border-2 ${
               choice === 'heads'
-                ? 'bg-yellow-400 text-black border-yellow-600 shadow-lg shadow-yellow-400/30'
-                : 'bg-transparent text-yellow-400 border-yellow-400/50 hover:bg-yellow-400/10'
+                ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
+                : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
             }`}
           >
             Heads
@@ -232,10 +236,10 @@ export function CoinFlipGame() {
           <button
             onClick={() => setChoice('tails')}
             disabled={isFlipping}
-            className={`px-8 py-3 rounded-lg font-black text-lg uppercase tracking-wider transition-all border-2 ${
+            className={`px-8 py-3 rounded-xl font-black text-lg uppercase tracking-wider transition-all border-2 ${
               choice === 'tails'
-                ? 'bg-yellow-400 text-black border-yellow-600 shadow-lg shadow-yellow-400/30'
-                : 'bg-transparent text-yellow-400 border-yellow-400/50 hover:bg-yellow-400/10'
+                ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
+                : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
             }`}
           >
             Tails
@@ -245,17 +249,17 @@ export function CoinFlipGame() {
 
       {/* FOR */}
       <div className="text-center">
-        <p className="text-white font-bold text-lg tracking-widest uppercase mb-3">For</p>
+        <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">For</p>
         <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
           {BET_AMOUNTS.map((amount) => (
             <button
               key={amount}
               onClick={() => setBetAmount(amount)}
               disabled={isFlipping}
-              className={`py-3 px-2 rounded-lg font-bold text-sm uppercase transition-all border-2 ${
+              className={`py-3 px-2 rounded-xl font-bold text-sm uppercase transition-all border-2 ${
                 betAmount === amount
-                  ? 'bg-yellow-400 text-black border-yellow-600 shadow-lg shadow-yellow-400/30'
-                  : 'bg-transparent text-yellow-400 border-yellow-400/50 hover:bg-yellow-400/10'
+                  ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
+                  : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
               }`}
             >
               {amount} SOL
@@ -269,11 +273,11 @@ export function CoinFlipGame() {
         <button
           onClick={handleFlip}
           disabled={isFlipping || !connected}
-          className={`w-full py-4 rounded-lg font-black text-xl uppercase tracking-wider transition-all border-2 ${
+          className={`w-full py-4 rounded-xl font-black text-xl uppercase tracking-wider transition-all border-2 ${
             isFlipping
-              ? 'bg-yellow-400/50 text-black/50 border-yellow-600/50 cursor-not-allowed'
+              ? 'bg-purple-600/50 text-white/50 border-purple-400/50 cursor-not-allowed'
               : connected
-              ? 'bg-yellow-400 text-black border-yellow-600 hover:bg-yellow-300 hover:shadow-lg hover:shadow-yellow-400/40 active:scale-[0.98]'
+              ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 hover:from-purple-500 hover:to-purple-400 hover:shadow-lg hover:shadow-purple-500/40 active:scale-[0.98]'
               : 'bg-gray-700 text-gray-400 border-gray-600 cursor-not-allowed'
           }`}
         >
@@ -300,16 +304,16 @@ export function CoinFlipGame() {
       </div>
 
       {/* Recent Flips */}
-      <div className="bg-black/30 rounded-xl border border-yellow-400/20 p-4">
-        <h3 className="text-sm font-bold text-yellow-400 uppercase tracking-wider mb-3">Recent Flips</h3>
+      <div className="bg-purple-900/20 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
+        <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider mb-3">Recent Flips</h3>
         {flips.length === 0 ? (
           <p className="text-gray-500 text-center py-3 text-sm">No flips yet. Be the first!</p>
         ) : (
           <div className="space-y-1.5 max-h-48 overflow-y-auto">
             {flips.map((flip: any) => (
-              <div key={flip.id} className="flex items-center justify-between py-1.5 border-b border-yellow-400/10 last:border-0">
+              <div key={flip.id} className="flex items-center justify-between py-1.5 border-b border-purple-500/10 last:border-0">
                 <div className="text-xs">
-                  <span className="text-gray-400 font-mono">
+                  <span className="text-purple-300 font-mono">
                     {flip.walletAddress.slice(0, 4)}...{flip.walletAddress.slice(-4)}
                   </span>
                   {' '}
