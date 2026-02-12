@@ -8,15 +8,6 @@ import { Loader2 } from 'lucide-react';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
-function timeAgo(date: string | Date) {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 export function CoinFlipGame() {
   const { publicKey, signTransaction, connected, connection } = useWalletAdapter();
@@ -36,10 +27,7 @@ export function CoinFlipGame() {
   const vaultAddress = (vaultQuery.data as any)?.address || '';
   const vaultBalance = (vaultQuery.data as any)?.balance || 0;
 
-  const recentFlipsQuery = useQuery({
-    queryKey: ['/api/coinflip/recent'],
-    refetchInterval: 10000,
-  });
+
 
   const flipMutation = useMutation({
     mutationFn: async ({ walletAddress, betAmount, choice, betTxSignature }: any) => {
@@ -144,8 +132,6 @@ export function CoinFlipGame() {
       });
     }
   }, [publicKey, connected, betAmount, choice, signTransaction, connection, toast, flipMutation, vaultAddress]);
-
-  const flips = (recentFlipsQuery.data as any)?.flips || [];
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
@@ -290,34 +276,6 @@ export function CoinFlipGame() {
         </p>
       </div>
 
-      {/* Recent Flips */}
-      <div className="bg-purple-900/20 backdrop-blur-sm rounded-xl border border-purple-500/20 p-4">
-        <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider mb-3">Recent Flips</h3>
-        {flips.length === 0 ? (
-          <p className="text-gray-500 text-center py-3 text-sm">No flips yet. Be the first!</p>
-        ) : (
-          <div className="space-y-1.5 max-h-48 overflow-y-auto">
-            {flips.map((flip: any) => (
-              <div key={flip.id} className="flex items-center justify-between py-1.5 border-b border-purple-500/10 last:border-0">
-                <div className="text-xs">
-                  <span className="text-purple-300 font-mono">
-                    {flip.walletAddress.slice(0, 4)}...{flip.walletAddress.slice(-4)}
-                  </span>
-                  {' '}
-                  <span className="text-white font-bold">{parseFloat(flip.betAmount).toFixed(2)} SOL</span>
-                  {' '}
-                  {flip.won ? (
-                    <span className="text-green-400 font-bold">WON</span>
-                  ) : (
-                    <span className="text-red-400 font-bold">LOST</span>
-                  )}
-                </div>
-                <span className="text-[10px] text-gray-600">{timeAgo(flip.createdAt)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
