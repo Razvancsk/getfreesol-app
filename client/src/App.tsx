@@ -15,6 +15,7 @@ import ApiDocs from "@/pages/api-docs";
 import UserDocs from "@/pages/user-docs";
 import DeveloperDashboard from "@/pages/developer-dashboard";
 import AdminMigrate from "@/pages/admin-migrate";
+import VaultAdmin from "@/pages/vault-admin";
 import ProfilePage from "@/pages/profile";
 import SwapPage from "@/pages/swap";
 import DesignPreview from "@/pages/design-preview";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/admin/x-bot" component={XBotAdmin} />
       <Route path="/x-admin" component={XAdmin} />
       <Route path="/admin/migrate" component={AdminMigrate} />
+      <Route path="/admin/vault" component={VaultAdmin} />
       <Route path="/docs" component={UserDocs} />
       <Route path="/api-docs" component={ApiDocs} />
       <Route path="/profile" component={ProfilePage} />
