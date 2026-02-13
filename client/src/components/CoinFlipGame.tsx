@@ -5,7 +5,6 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import coinImage from '@assets/HighRes_Image-03_1770945565468.jpg';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
@@ -152,24 +151,78 @@ export function CoinFlipGame() {
           >
             {/* HEADS */}
             <div
-              className="absolute inset-0 rounded-full overflow-hidden"
+              className="absolute inset-0 rounded-full"
               style={{
+                background: 'linear-gradient(145deg, #f0c040 0%, #d4a017 25%, #b8860b 50%, #d4a017 75%, #f0c040 100%)',
                 backfaceVisibility: 'hidden',
-                boxShadow: '0 8px 25px rgba(0,0,0,0.7), 0 0 40px rgba(255,215,0,0.3)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(255,215,0,0.25)',
               }}
             >
-              <img src={coinImage} alt="Heads" className="w-full h-full object-cover" />
+              {/* Light reflection */}
+              <div className="absolute inset-0 rounded-full" style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 50%)',
+              }} />
+              {/* Ridged inner ring */}
+              <div className="absolute rounded-full" style={{
+                inset: '6px',
+                background: 'repeating-conic-gradient(from 0deg, #c89520 0deg 3deg, #daa520 3deg 6deg)',
+                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.25)',
+              }}>
+                {/* Inner gold face */}
+                <div className="absolute rounded-full" style={{
+                  inset: '6px',
+                  background: 'linear-gradient(160deg, #f5d46a 0%, #daa520 35%, #c8961e 55%, #daa520 75%, #e8c24a 100%)',
+                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
+                }}>
+                  {/* Light sheen */}
+                  <div className="absolute inset-0 rounded-full" style={{
+                    background: 'linear-gradient(140deg, rgba(255,255,255,0.3) 0%, transparent 40%)',
+                  }} />
+                  {/* Purple G logo */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <svg className="w-16 h-16" viewBox="0 0 100 100" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
+                      <path d="M65 20 L30 20 Q15 20 15 35 L15 65 Q15 80 30 80 L65 80 Q80 80 80 65 L80 50 L55 50 L55 62 L67 62 L67 68 Q67 72 63 72 L37 72 Q33 72 33 68 L33 32 Q33 28 37 28 L63 28 Q67 28 67 32 L67 38 L80 38 L80 35 Q80 20 65 20 Z" fill="#8b6cf6" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
             {/* TAILS */}
             <div
-              className="absolute inset-0 rounded-full overflow-hidden"
+              className="absolute inset-0 rounded-full"
               style={{
+                background: 'linear-gradient(145deg, #f0c040 0%, #d4a017 25%, #b8860b 50%, #d4a017 75%, #f0c040 100%)',
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
-                boxShadow: '0 8px 25px rgba(0,0,0,0.7), 0 0 40px rgba(255,215,0,0.3)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(255,215,0,0.25)',
               }}
             >
-              <img src={coinImage} alt="Tails" className="w-full h-full object-cover" style={{ filter: 'hue-rotate(180deg) saturate(1.3)' }} />
+              <div className="absolute inset-0 rounded-full" style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 50%)',
+              }} />
+              <div className="absolute rounded-full" style={{
+                inset: '6px',
+                background: 'repeating-conic-gradient(from 0deg, #c89520 0deg 3deg, #daa520 3deg 6deg)',
+                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.25)',
+              }}>
+                <div className="absolute rounded-full" style={{
+                  inset: '6px',
+                  background: 'linear-gradient(160deg, #f5d46a 0%, #daa520 35%, #c8961e 55%, #daa520 75%, #e8c24a 100%)',
+                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
+                }}>
+                  <div className="absolute inset-0 rounded-full" style={{
+                    background: 'linear-gradient(140deg, rgba(255,255,255,0.3) 0%, transparent 40%)',
+                  }} />
+                  {/* Solana logo on tails */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <svg className="w-12 h-12" viewBox="0 0 397.7 311.7" style={{ fill: '#8b6cf6', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
+                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
