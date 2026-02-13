@@ -5,7 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import coinImage from '@assets/resizeplus_Transparent_Image_1770884961162.png';
+import coinImage from '@assets/HighRes_Image-03_1770945565468.jpg';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
