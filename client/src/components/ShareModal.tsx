@@ -76,7 +76,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
                 <span className="text-black font-mono font-bold text-base">Tweet It</span>
               </button>
               <button 
-                onClick={() => { onClose(); navigate('/coin-flip'); }}
+                onClick={() => { onClose(); setTimeout(() => navigate('/coin-flip'), 100); }}
                 className="no-night-mode bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg px-6 py-2 transition-colors"
                 style={{ backgroundColor: '#9333ea', borderColor: '#a855f7' }}
               >
