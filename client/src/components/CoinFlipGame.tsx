@@ -153,37 +153,32 @@ export function CoinFlipGame() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'linear-gradient(145deg, #f0c040 0%, #d4a017 25%, #b8860b 50%, #d4a017 75%, #f0c040 100%)',
+                background: 'conic-gradient(from 0deg, #7c3aed, #a78bfa, #6d28d9, #a78bfa, #7c3aed, #5b21b6, #a78bfa, #7c3aed)',
                 backfaceVisibility: 'hidden',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(255,215,0,0.25)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(124, 58, 237, 0.4)',
               }}
             >
-              {/* Light reflection */}
               <div className="absolute inset-0 rounded-full" style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 50%)',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.3) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
               }} />
-              {/* Ridged inner ring */}
               <div className="absolute rounded-full" style={{
-                inset: '6px',
-                background: 'repeating-conic-gradient(from 0deg, #c89520 0deg 3deg, #daa520 3deg 6deg)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.25)',
+                inset: '10px',
+                background: 'conic-gradient(from 180deg, #6d28d9, #a78bfa, #5b21b6, #a78bfa, #6d28d9, #7c3aed, #a78bfa, #6d28d9)',
+                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
               }}>
-                {/* Inner gold face */}
-                <div className="absolute rounded-full" style={{
+                <div className="absolute rounded-full flex items-center justify-center" style={{
                   inset: '6px',
-                  background: 'linear-gradient(160deg, #f5d46a 0%, #daa520 35%, #c8961e 55%, #daa520 75%, #e8c24a 100%)',
-                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
+                  background: 'radial-gradient(ellipse at 40% 35%, #c084fc 0%, #a855f7 30%, #8b5cf6 55%, #7c3aed 100%)',
+                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.15), inset 0 -3px 8px rgba(0,0,0,0.25)',
                 }}>
-                  {/* Light sheen */}
                   <div className="absolute inset-0 rounded-full" style={{
-                    background: 'linear-gradient(140deg, rgba(255,255,255,0.3) 0%, transparent 40%)',
+                    background: 'linear-gradient(150deg, rgba(255,255,255,0.2) 0%, transparent 45%)',
                   }} />
-                  {/* Purple G logo */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <svg className="w-16 h-16" viewBox="0 0 100 100" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
-                      <path d="M65 20 L30 20 Q15 20 15 35 L15 65 Q15 80 30 80 L65 80 Q80 80 80 65 L80 50 L55 50 L55 62 L67 62 L67 68 Q67 72 63 72 L37 72 Q33 72 33 68 L33 32 Q33 28 37 28 L63 28 Q67 28 67 32 L67 38 L80 38 L80 35 Q80 20 65 20 Z" fill="#8b6cf6" />
-                    </svg>
-                  </div>
+                  <svg className="w-14 h-14 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
+                    <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                    <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                    <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                  </svg>
                 </div>
               </div>
             </div>
@@ -191,36 +186,33 @@ export function CoinFlipGame() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'linear-gradient(145deg, #f0c040 0%, #d4a017 25%, #b8860b 50%, #d4a017 75%, #f0c040 100%)',
+                background: 'conic-gradient(from 0deg, #7c3aed, #a78bfa, #6d28d9, #a78bfa, #7c3aed, #5b21b6, #a78bfa, #7c3aed)',
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(255,215,0,0.25)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(124, 58, 237, 0.4)',
               }}
             >
               <div className="absolute inset-0 rounded-full" style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 50%)',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.3) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
               }} />
               <div className="absolute rounded-full" style={{
-                inset: '6px',
-                background: 'repeating-conic-gradient(from 0deg, #c89520 0deg 3deg, #daa520 3deg 6deg)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.25)',
+                inset: '10px',
+                background: 'conic-gradient(from 180deg, #6d28d9, #a78bfa, #5b21b6, #a78bfa, #6d28d9, #7c3aed, #a78bfa, #6d28d9)',
+                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
               }}>
-                <div className="absolute rounded-full" style={{
+                <div className="absolute rounded-full flex items-center justify-center" style={{
                   inset: '6px',
-                  background: 'linear-gradient(160deg, #f5d46a 0%, #daa520 35%, #c8961e 55%, #daa520 75%, #e8c24a 100%)',
-                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
+                  background: 'radial-gradient(ellipse at 40% 35%, #c084fc 0%, #a855f7 30%, #8b5cf6 55%, #7c3aed 100%)',
+                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.15), inset 0 -3px 8px rgba(0,0,0,0.25)',
                 }}>
                   <div className="absolute inset-0 rounded-full" style={{
-                    background: 'linear-gradient(140deg, rgba(255,255,255,0.3) 0%, transparent 40%)',
+                    background: 'linear-gradient(150deg, rgba(255,255,255,0.2) 0%, transparent 45%)',
                   }} />
-                  {/* Solana logo on tails */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <svg className="w-12 h-12" viewBox="0 0 397.7 311.7" style={{ fill: '#8b6cf6', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
-                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                    </svg>
-                  </div>
+                  <svg className="w-14 h-14 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#ef4444', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
+                    <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                    <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                    <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                  </svg>
                 </div>
               </div>
             </div>
