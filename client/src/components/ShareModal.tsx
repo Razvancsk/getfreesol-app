@@ -74,13 +74,15 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
               >
                 <span className="text-black font-mono font-bold text-base">Tweet It</span>
               </button>
+              {onFlip && (
               <button 
-                onClick={() => { onClose(); if (onFlip) onFlip(); }}
+                onClick={() => { onClose(); onFlip(); }}
                 className="no-night-mode bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg px-6 py-2 transition-colors"
                 style={{ backgroundColor: '#9333ea', borderColor: '#a855f7' }}
               >
                 <span className="text-white font-mono font-bold text-base">Flip It</span>
               </button>
+              )}
             </div>
           </div>
         </div>
