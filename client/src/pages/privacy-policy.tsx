@@ -35,7 +35,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">1. What We Collect</h2>
             <p className="mb-3">
-              When you connect your Solana wallet, we collect your public wallet address and record transaction data (account closures, burns, swaps, referral activities). We never have access to your private keys or seed phrases. All blockchain transactions are publicly visible on the Solana network.
+              When you connect your Solana wallet via Reown (our wallet connection provider), we collect your public wallet address and record transaction data (account closures, burns, swaps, referral activities). Reown handles the secure wallet connection — neither GetFreeSol nor Reown have access to your private keys, seed phrases, or the ability to move funds without your explicit approval. All blockchain transactions are publicly visible on the Solana network.
             </p>
           </section>
 

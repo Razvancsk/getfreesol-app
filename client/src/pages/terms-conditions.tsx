@@ -49,7 +49,7 @@ export default function TermsConditions() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">3. Wallet Security</h2>
             <p>
-              You must connect a Solana wallet to use the platform. You are responsible for your wallet security, private keys, and reviewing all transactions before signing. GetFreeSol will never ask for your private key or seed phrase.
+              You must connect a Solana wallet via Reown (our secure wallet connection provider) to use the platform. You are responsible for your wallet security, private keys, and reviewing all transactions before signing. Neither GetFreeSol nor Reown can access your private keys, seed phrases, or move funds without your explicit transaction approval.
             </p>
           </section>
 
