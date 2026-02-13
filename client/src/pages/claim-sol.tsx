@@ -6490,7 +6490,9 @@ export default function SolRefund() {
                 />
                 <div className="text-white font-semibold text-lg">Get Free Sol</div>
               </div>
-              <div className="text-purple-300 text-sm mt-1">2026 All rights reserved</div>
+              <div className="text-purple-300 text-sm mt-1">
+                2026 All rights reserved · <Link href="/privacy" className="text-purple-400 hover:text-purple-300 underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-purple-300 underline">Terms & Conditions</Link>
+              </div>
             </div>
             {/* Social Links */}
             <div className="flex items-center space-x-2">
