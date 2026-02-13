@@ -95,7 +95,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">6. Third-Party Services</h2>
             <p>
-              Our Service integrates with third-party services including Solana blockchain, Helius RPC, Jupiter Ultra API, Backpack Exchange, and X (Twitter). Each of these services has its own privacy policy. We encourage you to review their policies. We are not responsible for the privacy practices of these third-party services.
+              Our Service integrates with third-party services including Solana blockchain, Helius RPC, Jupiter Ultra API, and X (Twitter). Each of these services has its own privacy policy. We encourage you to review their policies. We are not responsible for the privacy practices of these third-party services.
             </p>
           </section>
 
