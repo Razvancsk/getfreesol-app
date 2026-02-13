@@ -39,15 +39,9 @@ export default function TermsConditions() {
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-bold text-white mb-3">2. Eligibility</h2>
-            <p>
-              You must be at least 18 years of age to use the Service. By using the Service, you represent and warrant that you are at least 18 years old and have the legal capacity to enter into these Terms. You are responsible for ensuring that your use of the Service complies with all laws and regulations applicable to you in your jurisdiction.
-            </p>
-          </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">3. Description of Service</h2>
+            <h2 className="text-xl font-bold text-white mb-3">2. Description of Service</h2>
             <p className="mb-3">GetFreeSol provides the following services on the Solana blockchain:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li><strong className="text-white">SOL Reclamation:</strong> Identifying and closing empty token accounts to recover SOL rent deposits.</li>
@@ -61,7 +55,7 @@ export default function TermsConditions() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">4. Wallet Connection and Security</h2>
+            <h2 className="text-xl font-bold text-white mb-3">3. Wallet Connection and Security</h2>
             <p className="mb-3">
               To use the Service, you must connect a compatible Solana wallet. You are solely responsible for:
             </p>
@@ -77,7 +71,7 @@ export default function TermsConditions() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">5. Fees</h2>
+            <h2 className="text-xl font-bold text-white mb-3">4. Fees</h2>
             <p className="mb-3">The Service charges the following fees:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li><strong className="text-white">Swap Rent Fee:</strong> 15% fee on rent recovered during swap operations.</li>
@@ -91,14 +85,14 @@ export default function TermsConditions() {
 
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">7. Transaction Finality</h2>
+            <h2 className="text-xl font-bold text-white mb-3">5. Transaction Finality</h2>
             <p>
               All transactions on the Solana blockchain are final and irreversible. Once a transaction is confirmed on-chain, it cannot be undone, reversed, or refunded. This includes account closures, token burns, NFT burns, and token swaps. You are responsible for carefully reviewing all transaction details before approving them in your wallet.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">8. Referral Program</h2>
+            <h2 className="text-xl font-bold text-white mb-3">6. Referral Program</h2>
             <p className="mb-3">The referral program allows users to earn commissions by referring others. Terms include:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>Referral commissions are earned when referred users complete eligible transactions</li>
@@ -109,7 +103,7 @@ export default function TermsConditions() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">9. Developer API</h2>
+            <h2 className="text-xl font-bold text-white mb-3">7. Developer API</h2>
             <p className="mb-3">Developers using the API agree to:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>Use the API in accordance with its documentation and rate limits</li>
@@ -120,7 +114,7 @@ export default function TermsConditions() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">10. Prohibited Activities</h2>
+            <h2 className="text-xl font-bold text-white mb-3">8. Prohibited Activities</h2>
             <p className="mb-3">You agree not to:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>Use the Service for any illegal purpose or in violation of any applicable laws</li>
@@ -135,28 +129,28 @@ export default function TermsConditions() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">11. Disclaimer of Warranties</h2>
+            <h2 className="text-xl font-bold text-white mb-3">9. Disclaimer of Warranties</h2>
             <p>
               THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE. WE DO NOT GUARANTEE ANY SPECIFIC RESULTS FROM THE USE OF THE SERVICE.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">12. Limitation of Liability</h2>
+            <h2 className="text-xl font-bold text-white mb-3">10. Limitation of Liability</h2>
             <p>
               TO THE MAXIMUM EXTENT PERMITTED BY LAW, GETFREESOL AND ITS OPERATORS, DEVELOPERS, AND AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF FUNDS, DATA, OR PROFITS, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICE. THIS INCLUDES BUT IS NOT LIMITED TO: LOSSES FROM BLOCKCHAIN TRANSACTIONS, WALLET COMPROMISES, SMART CONTRACT VULNERABILITIES, NETWORK FAILURES, OR ANY OTHER CAUSE RELATED TO THE USE OF THE SERVICE.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">13. Indemnification</h2>
+            <h2 className="text-xl font-bold text-white mb-3">11. Indemnification</h2>
             <p>
               You agree to indemnify, defend, and hold harmless GetFreeSol and its operators, developers, and affiliates from and against any claims, liabilities, damages, losses, and expenses arising out of or in connection with your use of the Service, your violation of these Terms, or your violation of any rights of a third party.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">14. Risks</h2>
+            <h2 className="text-xl font-bold text-white mb-3">12. Risks</h2>
             <p className="mb-3">By using the Service, you acknowledge the following risks:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>Cryptocurrency and DeFi activities carry inherent financial risks</li>
@@ -169,28 +163,28 @@ export default function TermsConditions() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">15. Modifications to Terms</h2>
+            <h2 className="text-xl font-bold text-white mb-3">13. Modifications to Terms</h2>
             <p>
               We reserve the right to modify these Terms at any time. Changes will be posted on this page with an updated "Last updated" date. Your continued use of the Service after any changes constitutes your acceptance of the revised Terms. It is your responsibility to review these Terms periodically.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">16. Termination</h2>
+            <h2 className="text-xl font-bold text-white mb-3">14. Termination</h2>
             <p>
               We reserve the right to suspend or terminate your access to the Service at any time, without notice, for any reason, including but not limited to violation of these Terms or suspected fraudulent activity. Upon termination, your right to use the Service will immediately cease.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">17. Governing Law</h2>
+            <h2 className="text-xl font-bold text-white mb-3">15. Governing Law</h2>
             <p>
               These Terms shall be governed by and construed in accordance with applicable laws, without regard to conflict of law principles. Any disputes arising from these Terms or the Service shall be resolved through binding arbitration.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-3">18. Contact</h2>
+            <h2 className="text-xl font-bold text-white mb-3">16. Contact</h2>
             <p>
               If you have any questions about these Terms, please contact us through our official channels on X (Twitter) at <a href="https://x.com/getfreesol_xyz" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 underline">@getfreesol_xyz</a>.
             </p>
