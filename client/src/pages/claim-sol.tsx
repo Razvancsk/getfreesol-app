@@ -3448,6 +3448,7 @@ export default function SolRefund() {
                     Swap
                   </Button>
                 )}
+                {isPlatformWallet && (
                 <Button
                   onClick={() => setActiveTab('coinflip')}
                   className={`min-w-[100px] px-4 py-2.5 text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border ${
@@ -3459,6 +3460,7 @@ export default function SolRefund() {
                 >
                   <span className="text-xl">🪙</span> Flip
                 </Button>
+                )}
               </div>
             </div>
           )}
@@ -4314,8 +4316,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Coin Flip Tab Content */}
-          {activeTab === 'coinflip' && (
+          {/* Coin Flip Tab Content - Platform wallet only */}
+          {activeTab === 'coinflip' && isPlatformWallet && (
             <CoinFlipGame />
           )}
 
@@ -6549,7 +6551,7 @@ export default function SolRefund() {
           accountsClosed={shareData.accountsClosed}
           claimType={shareData.claimType}
           walletAddress={publicKey?.toBase58()}
-          onFlip={() => setActiveTab('coinflip')}
+          onFlip={isPlatformWallet ? () => setActiveTab('coinflip') : undefined}
         />
       )}
 
