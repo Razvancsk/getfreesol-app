@@ -19,6 +19,8 @@ import VaultAdmin from "@/pages/vault-admin";
 import ProfilePage from "@/pages/profile";
 import SwapPage from "@/pages/swap";
 import DesignPreview from "@/pages/design-preview";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsConditions from "@/pages/terms-conditions";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -38,6 +40,8 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/swap" component={SwapPage} />
       <Route path="/design" component={DesignPreview} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsConditions} />
       {/* Catch-all route for referral codes - any single path segment should render ClaimSol */}
       <Route path="/:referralCode" component={ClaimSol} />
       <Route component={NotFound} />
