@@ -35,7 +35,7 @@ export default function TermsConditions() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using the GetFreeSol platform (the "Service"), you agree to be bound by these Terms and Conditions ("Terms"). If you do not agree to these Terms, do not use the Service. These Terms constitute a legally binding agreement between you and GetFreeSol ("we," "our," or "us").
+              By accessing or using the GetFreeSol platform (the "Service"), you agree to be bound by these Terms and Conditions ("Terms"). If you do not agree to these Terms, do not use the Service. These Terms constitute a legally binding agreement between you and GetFreeSol.
             </p>
           </section>
 
