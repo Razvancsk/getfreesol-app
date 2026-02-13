@@ -153,32 +153,38 @@ export function CoinFlipGame() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'conic-gradient(from 0deg, #7c3aed, #a78bfa, #6d28d9, #a78bfa, #7c3aed, #5b21b6, #a78bfa, #7c3aed)',
+                background: 'conic-gradient(from 0deg, #b8860b, #ffd700, #daa520, #fff8dc, #daa520, #b8860b, #cd853f, #ffd700, #b8860b)',
                 backfaceVisibility: 'hidden',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(124, 58, 237, 0.4)',
+                boxShadow: '0 8px 25px rgba(0,0,0,0.7), 0 0 40px rgba(255,215,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3)',
               }}
             >
               <div className="absolute inset-0 rounded-full" style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.3) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
+                background: 'linear-gradient(140deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 25%, transparent 45%, transparent 60%, rgba(0,0,0,0.25) 100%)',
               }} />
               <div className="absolute rounded-full" style={{
-                inset: '10px',
-                background: 'conic-gradient(from 180deg, #6d28d9, #a78bfa, #5b21b6, #a78bfa, #6d28d9, #7c3aed, #a78bfa, #6d28d9)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
+                inset: '8px',
+                background: 'conic-gradient(from 120deg, #daa520, #ffd700, #b8860b, #fff8dc, #b8860b, #ffd700, #daa520, #cd853f, #daa520)',
+                boxShadow: 'inset 0 2px 5px rgba(255,255,255,0.4), inset 0 -2px 5px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)',
               }}>
-                <div className="absolute rounded-full flex items-center justify-center" style={{
-                  inset: '6px',
-                  background: 'radial-gradient(ellipse at 40% 35%, #c084fc 0%, #a855f7 30%, #8b5cf6 55%, #7c3aed 100%)',
-                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.15), inset 0 -3px 8px rgba(0,0,0,0.25)',
+                <div className="absolute rounded-full" style={{
+                  inset: '4px',
+                  background: 'conic-gradient(from 240deg, #b8860b, #ffd700, #daa520, #ffd700, #b8860b, #cd853f, #ffd700, #b8860b)',
+                  boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.2), inset 0 -1px 3px rgba(0,0,0,0.2)',
                 }}>
-                  <div className="absolute inset-0 rounded-full" style={{
-                    background: 'linear-gradient(150deg, rgba(255,255,255,0.2) 0%, transparent 45%)',
-                  }} />
-                  <svg className="w-14 h-14 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
-                    <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                    <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                    <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                  </svg>
+                  <div className="absolute rounded-full flex items-center justify-center" style={{
+                    inset: '8px',
+                    background: 'radial-gradient(ellipse at 40% 35%, #a78bfa 0%, #8b5cf6 30%, #7c3aed 55%, #6d28d9 85%, #5b21b6 100%)',
+                    boxShadow: 'inset 0 4px 8px rgba(255,255,255,0.15), inset 0 -4px 10px rgba(0,0,0,0.35), 0 0 0 2px #8b6914',
+                  }}>
+                    <div className="absolute inset-0 rounded-full" style={{
+                      background: 'linear-gradient(145deg, rgba(255,255,255,0.25) 0%, transparent 40%)',
+                    }} />
+                    <svg className="w-14 h-14 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>
+                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -186,33 +192,39 @@ export function CoinFlipGame() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'conic-gradient(from 0deg, #7c3aed, #a78bfa, #6d28d9, #a78bfa, #7c3aed, #5b21b6, #a78bfa, #7c3aed)',
+                background: 'conic-gradient(from 0deg, #b8860b, #ffd700, #daa520, #fff8dc, #daa520, #b8860b, #cd853f, #ffd700, #b8860b)',
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(124, 58, 237, 0.4)',
+                boxShadow: '0 8px 25px rgba(0,0,0,0.7), 0 0 40px rgba(255,215,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3)',
               }}
             >
               <div className="absolute inset-0 rounded-full" style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.3) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.3) 100%)',
+                background: 'linear-gradient(140deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 25%, transparent 45%, transparent 60%, rgba(0,0,0,0.25) 100%)',
               }} />
               <div className="absolute rounded-full" style={{
-                inset: '10px',
-                background: 'conic-gradient(from 180deg, #6d28d9, #a78bfa, #5b21b6, #a78bfa, #6d28d9, #7c3aed, #a78bfa, #6d28d9)',
-                boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',
+                inset: '8px',
+                background: 'conic-gradient(from 120deg, #daa520, #ffd700, #b8860b, #fff8dc, #b8860b, #ffd700, #daa520, #cd853f, #daa520)',
+                boxShadow: 'inset 0 2px 5px rgba(255,255,255,0.4), inset 0 -2px 5px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5)',
               }}>
-                <div className="absolute rounded-full flex items-center justify-center" style={{
-                  inset: '6px',
-                  background: 'radial-gradient(ellipse at 40% 35%, #c084fc 0%, #a855f7 30%, #8b5cf6 55%, #7c3aed 100%)',
-                  boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.15), inset 0 -3px 8px rgba(0,0,0,0.25)',
+                <div className="absolute rounded-full" style={{
+                  inset: '4px',
+                  background: 'conic-gradient(from 240deg, #b8860b, #ffd700, #daa520, #ffd700, #b8860b, #cd853f, #ffd700, #b8860b)',
+                  boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.2), inset 0 -1px 3px rgba(0,0,0,0.2)',
                 }}>
-                  <div className="absolute inset-0 rounded-full" style={{
-                    background: 'linear-gradient(150deg, rgba(255,255,255,0.2) 0%, transparent 45%)',
-                  }} />
-                  <svg className="w-14 h-14 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#ef4444', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
-                    <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                    <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                    <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                  </svg>
+                  <div className="absolute rounded-full flex items-center justify-center" style={{
+                    inset: '8px',
+                    background: 'radial-gradient(ellipse at 40% 35%, #a78bfa 0%, #8b5cf6 30%, #7c3aed 55%, #6d28d9 85%, #5b21b6 100%)',
+                    boxShadow: 'inset 0 4px 8px rgba(255,255,255,0.15), inset 0 -4px 10px rgba(0,0,0,0.35), 0 0 0 2px #8b6914',
+                  }}>
+                    <div className="absolute inset-0 rounded-full" style={{
+                      background: 'linear-gradient(145deg, rgba(255,255,255,0.25) 0%, transparent 40%)',
+                    }} />
+                    <svg className="w-14 h-14 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#ef4444', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>
+                      <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                      <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                      <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
