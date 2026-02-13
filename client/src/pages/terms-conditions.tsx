@@ -49,7 +49,7 @@ export default function TermsConditions() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">3. Wallet Security</h2>
             <p>
-              You must connect a Solana wallet via Reown (our secure wallet connection provider) to use the platform. You are responsible for your wallet security, private keys, and reviewing all transactions before signing. GetFreeSol cannot access your private keys, seed phrases, or move funds without your explicit transaction approval.
+              GetFreeSol uses Reown, a trusted and safe wallet connection provider, to connect your Solana wallet. Reown ensures that nobody — not GetFreeSol, not Reown, not any third party — can ever see or access your private keys, seed phrases, or move your funds. You are responsible for reviewing all transactions before signing.
             </p>
           </section>
 
