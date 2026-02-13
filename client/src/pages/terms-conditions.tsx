@@ -54,7 +54,6 @@ export default function TermsConditions() {
               <li><strong className="text-white">Token Burning:</strong> Burning unwanted SPL tokens and recovering associated rent.</li>
               <li><strong className="text-white">NFT Burning:</strong> Burning unwanted NFTs and recovering associated rent.</li>
               <li><strong className="text-white">Token Swapping:</strong> Swapping tokens via Jupiter Ultra API integration with MEV rebate sharing.</li>
-              <li><strong className="text-white">Coin Flip:</strong> A 50/50 betting game where users can wager SOL on a coin flip outcome.</li>
               <li><strong className="text-white">Referral Program:</strong> Earning commissions by referring new users to the platform.</li>
               <li><strong className="text-white">Developer API:</strong> A platform for developers to integrate GetFreeSol services and earn referral fees.</li>
               <li><strong className="text-white">Points System:</strong> A rewards system that tracks user engagement and activities.</li>
@@ -83,7 +82,6 @@ export default function TermsConditions() {
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li><strong className="text-white">Swap Rent Fee:</strong> 15% fee on rent recovered during swap operations.</li>
               <li><strong className="text-white">Developer Claims Fee:</strong> 20% fee on developer referral earnings when claimed.</li>
-              <li><strong className="text-white">Coin Flip:</strong> 0% platform fee. Win = 2x your bet; loss = bet goes to vault.</li>
               <li><strong className="text-white">Network Fees:</strong> Standard Solana network transaction fees apply to all blockchain transactions and are paid by the user.</li>
             </ul>
             <p className="mt-3">
@@ -91,23 +89,11 @@ export default function TermsConditions() {
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-bold text-white mb-3">6. Coin Flip Game</h2>
-            <p className="mb-3">The Coin Flip feature is a 50/50 betting game. By using this feature, you acknowledge and agree that:</p>
-            <ul className="list-disc list-inside space-y-2 ml-2">
-              <li>You are wagering SOL with a 50% chance of winning and a 50% chance of losing</li>
-              <li>If you win, you receive 2x your bet amount; if you lose, your bet is forfeited to the vault</li>
-              <li>The outcome is determined using on-chain randomness derived from transaction signatures and slot hashes</li>
-              <li>You should only wager amounts you can afford to lose</li>
-              <li>Gambling may be restricted or illegal in your jurisdiction; it is your responsibility to comply with local laws</li>
-              <li>Payouts are subject to vault liquidity; if the vault has insufficient funds, payouts may be delayed</li>
-            </ul>
-          </section>
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">7. Transaction Finality</h2>
             <p>
-              All transactions on the Solana blockchain are final and irreversible. Once a transaction is confirmed on-chain, it cannot be undone, reversed, or refunded. This includes account closures, token burns, NFT burns, token swaps, and coin flip bets. You are responsible for carefully reviewing all transaction details before approving them in your wallet.
+              All transactions on the Solana blockchain are final and irreversible. Once a transaction is confirmed on-chain, it cannot be undone, reversed, or refunded. This includes account closures, token burns, NFT burns, and token swaps. You are responsible for carefully reviewing all transaction details before approving them in your wallet.
             </p>
           </section>
 
@@ -158,7 +144,7 @@ export default function TermsConditions() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">12. Limitation of Liability</h2>
             <p>
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, GETFREESOL AND ITS OPERATORS, DEVELOPERS, AND AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF FUNDS, DATA, OR PROFITS, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICE. THIS INCLUDES BUT IS NOT LIMITED TO: LOSSES FROM BLOCKCHAIN TRANSACTIONS, WALLET COMPROMISES, SMART CONTRACT VULNERABILITIES, COIN FLIP OUTCOMES, NETWORK FAILURES, OR ANY OTHER CAUSE RELATED TO THE USE OF THE SERVICE.
+              TO THE MAXIMUM EXTENT PERMITTED BY LAW, GETFREESOL AND ITS OPERATORS, DEVELOPERS, AND AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF FUNDS, DATA, OR PROFITS, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICE. THIS INCLUDES BUT IS NOT LIMITED TO: LOSSES FROM BLOCKCHAIN TRANSACTIONS, WALLET COMPROMISES, SMART CONTRACT VULNERABILITIES, NETWORK FAILURES, OR ANY OTHER CAUSE RELATED TO THE USE OF THE SERVICE.
             </p>
           </section>
 

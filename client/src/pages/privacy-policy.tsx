@@ -47,7 +47,7 @@ export default function PrivacyPolicy() {
             </p>
             <h3 className="text-lg font-semibold text-purple-300 mb-2">2.2 Transaction Data</h3>
             <p className="mb-3">
-              We record transaction data related to your use of the Service, including but not limited to: account closures, token burns, NFT burns, token swaps, coin flip bets, and referral activities. This data is stored in our database for providing the Service, displaying your history, and calculating points and rewards.
+              We record transaction data related to your use of the Service, including but not limited to: account closures, token burns, NFT burns, token swaps, and referral activities. This data is stored in our database for providing the Service, displaying your history, and calculating points and rewards.
             </p>
             <h3 className="text-lg font-semibold text-purple-300 mb-2">2.3 Blockchain Data</h3>
             <p className="mb-3">
@@ -63,7 +63,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-bold text-white mb-3">3. How We Use Your Information</h2>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>To provide, operate, and maintain the Service</li>
-              <li>To process transactions you initiate (account closures, burns, swaps, coin flips)</li>
+              <li>To process transactions you initiate (account closures, burns, swaps)</li>
               <li>To track and display your points, rewards, and transaction history</li>
               <li>To manage the referral program and calculate commissions</li>
               <li>To manage the Developer API platform and referral fee collection</li>
