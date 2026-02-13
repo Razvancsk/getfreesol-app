@@ -1,6 +1,5 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
 import logoImage from "@assets/image_1757882056840.png";
 
 interface ShareModalProps {
@@ -11,12 +10,12 @@ interface ShareModalProps {
   accountsClosed?: number;
   claimType?: 'accounts' | 'tokens' | 'nfts';
   walletAddress?: string;
+  onFlip?: () => void;
 }
 
-export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts' }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts', onFlip }: ShareModalProps) {
   const [tweetText, setTweetText] = useState("");
   const [shareUrl, setShareUrl] = useState("");
-  const [, navigate] = useLocation();
   
   const getClaimText = () => {
     if (claimType === 'tokens') return `by burning ${accountsClosed} token${accountsClosed > 1 ? 's' : ''}!`;
@@ -76,7 +75,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
                 <span className="text-black font-mono font-bold text-base">Tweet It</span>
               </button>
               <button 
-                onClick={() => { onClose(); setTimeout(() => navigate('/coin-flip'), 100); }}
+                onClick={() => { onClose(); if (onFlip) onFlip(); }}
                 className="no-night-mode bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg px-6 py-2 transition-colors"
                 style={{ backgroundColor: '#9333ea', borderColor: '#a855f7' }}
               >
