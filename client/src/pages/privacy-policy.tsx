@@ -35,7 +35,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">1. Introduction</h2>
             <p>
-              GetFreeSol operates the GetFreeSol platform (the "Service"), a decentralized application built on the Solana blockchain that helps users reclaim SOL from empty token accounts, burn unwanted tokens and NFTs, swap tokens, and participate in other blockchain-related activities. This Privacy Policy explains how information is collected, used, disclosed, and safeguarded when you use the Service.
+              GetFreeSol is a decentralized application built on the Solana blockchain that helps users reclaim SOL from empty token accounts, burn unwanted tokens and NFTs, swap tokens, and participate in other blockchain-related activities. This Privacy Policy explains how information is collected, used, disclosed, and safeguarded when you use GetFreeSol.
             </p>
           </section>
 
