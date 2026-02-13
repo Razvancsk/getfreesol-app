@@ -79,7 +79,7 @@ export default function PrivacyPolicy() {
             <p className="mb-3">We do not sell, trade, or rent your personal information to third parties. We may share information in the following circumstances:</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li><strong className="text-white">Blockchain:</strong> Transaction data is inherently public on the Solana blockchain.</li>
-              <li><strong className="text-white">Service Providers:</strong> We use third-party services such as Helius (RPC provider), Jupiter (swap aggregation), and Backpack Exchange (lending data) to operate the Service. These providers may process your wallet address and transaction data.</li>
+              <li><strong className="text-white">Service Providers:</strong> We use third-party services such as Helius (RPC provider) and Jupiter (swap aggregation) to operate the Service. These providers may process your wallet address and transaction data.</li>
               <li><strong className="text-white">Legal Requirements:</strong> We may disclose information if required by law, regulation, or legal process.</li>
               <li><strong className="text-white">Leaderboards:</strong> Your wallet address (truncated) and points may appear on public leaderboards within the Service.</li>
             </ul>
