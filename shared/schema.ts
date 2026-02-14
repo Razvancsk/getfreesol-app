@@ -939,3 +939,30 @@ export const insertCoinFlipSchema = createInsertSchema(coinFlips).omit({
 
 export type CoinFlip = typeof coinFlips.$inferSelect;
 export type InsertCoinFlip = z.infer<typeof insertCoinFlipSchema>;
+
+export const telegramAutoClaimSubscriptions = pgTable("telegram_auto_claim_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  telegramChatId: text("telegram_chat_id").notNull(),
+  telegramUsername: text("telegram_username"),
+  walletAddress: text("wallet_address").notNull(),
+  encryptedPrivateKey: text("encrypted_private_key").notNull(),
+  interval: text("interval").notNull().default("daily"),
+  isActive: boolean("is_active").notNull().default(true),
+  lastScanAt: timestamp("last_scan_at"),
+  lastClaimAt: timestamp("last_claim_at"),
+  totalClaimed: decimal("total_claimed", { precision: 18, scale: 9 }).notNull().default("0"),
+  totalAccountsClosed: integer("total_accounts_closed").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTelegramAutoClaimSchema = createInsertSchema(telegramAutoClaimSubscriptions).omit({
+  id: true,
+  lastScanAt: true,
+  lastClaimAt: true,
+  totalClaimed: true,
+  totalAccountsClosed: true,
+  createdAt: true,
+});
+
+export type TelegramAutoClaimSubscription = typeof telegramAutoClaimSubscriptions.$inferSelect;
+export type InsertTelegramAutoClaimSubscription = z.infer<typeof insertTelegramAutoClaimSchema>;
