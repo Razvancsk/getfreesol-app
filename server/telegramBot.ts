@@ -12,7 +12,7 @@ const PLATFORM_FEE_BPS = 1500;
 
 const processedMessages = new Set<string>();
 
-const APP_BASE_URL = 'https://getfreesol.xyz';
+const APP_BASE_URL = 'http://0.0.0.0:5000';
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY || '';
 const RPC_URL = HELIUS_API_KEY 
