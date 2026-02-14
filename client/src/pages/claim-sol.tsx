@@ -3564,17 +3564,33 @@ export default function SolRefund() {
             </div>
               )}
 
-              {/* Auto-Claim Telegram Bot text */}
+              {/* Auto-Claim Telegram Bot Banner */}
               <a
                 href="https://t.me/GetFreeSolXyzbot"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 mt-4 text-xs text-purple-300 hover:text-white transition-colors"
+                className={`block mt-4 rounded-xl p-4 transition-all duration-200 hover:scale-[1.01] ${
+                  isNightMode
+                    ? 'bg-[#141414] border border-[#2a2a2a] hover:border-[#3a3a3a]'
+                    : 'bg-gradient-to-r from-[#0088cc]/20 to-purple-800/20 border border-[#0088cc]/30 hover:border-[#0088cc]/50'
+                }`}
               >
-                <SiTelegram className="h-3.5 w-3.5 text-[#0088cc]" />
-                <Zap className="h-3 w-3 text-yellow-400" />
-                <span>Never miss free SOL again! Auto-claim rent 24/7 via our Telegram bot</span>
-                <span className="text-[10px] font-bold uppercase text-yellow-400">NEW</span>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-full ${isNightMode ? 'bg-[#0088cc]/20' : 'bg-[#0088cc]/30'}`}>
+                    <SiTelegram className="h-5 w-5 text-[#0088cc]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-semibold text-white">Auto-Claim Bot</h4>
+                      <Zap className="h-3.5 w-3.5 text-yellow-400" />
+                      <span className="text-[10px] font-bold uppercase text-yellow-400">NEW</span>
+                    </div>
+                    <p className="text-xs text-purple-300 mt-0.5">
+                      Never miss free SOL again! Our Telegram bot auto-claims rent from empty accounts 24/7 — just set your interval and relax.
+                    </p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-purple-400 flex-shrink-0" />
+                </div>
               </a>
             </div>
           )}
