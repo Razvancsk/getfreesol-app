@@ -279,7 +279,7 @@ export function CoinFlipGame() {
       {/* I LIKE */}
       <div className="text-center">
         <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">I Like</p>
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3 justify-center max-w-xs mx-auto">
           <button
             onClick={() => setChoice('heads')}
             disabled={isFlipping}
