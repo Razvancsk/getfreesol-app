@@ -520,12 +520,6 @@ export function CoinFlipGame() {
               {bonusTotalWon > 0 && (
                 <p className="text-green-400 font-bold">Free Spin Wins: {bonusTotalWon} SOL</p>
               )}
-              {bonusTotalWon > 0 && bonusPayoutTx && (
-                <a href={`https://solscan.io/tx/${bonusPayoutTx}`} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-purple-400 underline hover:text-purple-300 block">
-                  View free spin payout tx
-                </a>
-              )}
             </div>
             <div className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Total: {bonusInstantWin + bonusTotalWon} SOL
