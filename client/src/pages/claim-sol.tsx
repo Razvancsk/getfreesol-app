@@ -3389,7 +3389,7 @@ export default function SolRefund() {
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-[15px] md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'reclaim' 
                       ? 'bg-purple-600 text-white border-purple-500' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
                   <svg className="h-4 w-4 md:h-6 md:w-6 shrink-0" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
@@ -3404,7 +3404,7 @@ export default function SolRefund() {
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-[15px] md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'burnTokens' && burnSubTab === 'tokens'
                       ? 'bg-purple-600 text-white border-purple-500' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
                   <span className="text-base md:text-xl">🪙</span> Token
@@ -3414,7 +3414,7 @@ export default function SolRefund() {
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-[15px] md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'burnTokens' && burnSubTab === 'nft'
                       ? 'bg-purple-600 text-white border-purple-500' 
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
                   <span className="text-base md:text-xl">🖼️</span> NFT
@@ -3441,7 +3441,7 @@ export default function SolRefund() {
                     className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-[15px] md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                       activeTab === 'swap' 
                         ? 'bg-green-600 text-white border-green-500' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-green-600/60 border-purple-500/30'
+                        : 'bg-purple-800/40 text-white hover:bg-green-600/60 border-purple-500/30'
                     }`}
                     data-testid="button-swap"
                   >
@@ -3455,7 +3455,7 @@ export default function SolRefund() {
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-[15px] md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'coinflip'
                       ? 'bg-green-600 text-white border-green-500'
-                      : 'bg-purple-800/40 text-purple-300 hover:bg-green-600/60 border-purple-500/30'
+                      : 'bg-purple-800/40 text-white hover:bg-green-600/60 border-purple-500/30'
                   }`}
                   data-testid="button-coinflip"
                 >
