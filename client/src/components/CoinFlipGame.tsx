@@ -114,14 +114,14 @@ export function CoinFlipGame() {
 
       clearInterval(spinInterval);
 
+      setIsFlipping(false);
       const finalRotation = result.result === 'heads' ? 3600 : 3780;
       setCoinRotation(finalRotation);
 
-      await new Promise(r => setTimeout(r, 1800));
+      await new Promise(r => setTimeout(r, 2000));
 
       setFlipResult(result);
       setShowResult(true);
-      setIsFlipping(false);
     } catch (err: any) {
       console.error('Coin flip error:', err);
       setIsFlipping(false);
@@ -147,7 +147,7 @@ export function CoinFlipGame() {
             className="w-full h-full rounded-full relative"
             style={{
               transform: `rotateY(${coinRotation}deg)`,
-              transition: isFlipping ? 'none' : 'transform 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
+              transition: isFlipping ? 'none' : 'transform 2s cubic-bezier(0.22, 0.8, 0.36, 1)',
               transformStyle: 'preserve-3d',
             }}
           >
