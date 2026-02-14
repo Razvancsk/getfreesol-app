@@ -679,6 +679,23 @@ export function CoinFlipGame() {
               <a href="/admin/vault" className="underline hover:text-purple-300">Manage</a>
             </p>
           </div>
+
+          {/* Game info */}
+          <div className="mt-4 rounded-xl border border-purple-500/20 bg-purple-900/20 p-4 text-sm text-gray-300 space-y-2">
+            <p className="text-purple-300 font-bold uppercase tracking-wider text-xs">How It Works</p>
+            <ul className="space-y-1 list-disc list-inside text-gray-400">
+              <li>Pick <span className="text-green-400 font-bold">Green</span> or <span className="text-red-400 font-bold">Red</span>, place your bet, and flip.</li>
+              <li>Win = <span className="text-white font-bold">2x</span> your bet. Lose = you lose your bet.</li>
+              <li>Fair 50/50 odds on every flip.</li>
+            </ul>
+            <p className="text-yellow-300 font-bold uppercase tracking-wider text-xs pt-1">Bonus Round</p>
+            <ul className="space-y-1 list-disc list-inside text-gray-400">
+              <li>~8% chance to trigger a <span className="text-yellow-300 font-bold">Bonus Round</span> on any flip.</li>
+              <li>When bonus hits, you <span className="text-green-400 font-bold">instantly win 2x</span> your bet.</li>
+              <li>Plus you get <span className="text-yellow-300 font-bold">5 free spins</span> on a gold coin to win even more.</li>
+              <li>All free spin winnings are paid out at the end of the bonus.</li>
+            </ul>
+          </div>
         </>
       )}
 
