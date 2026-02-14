@@ -10705,6 +10705,15 @@ Claimer: ${walletAddress}`;
             return res.status(500).json({ error: 'Game vault has insufficient funds for payout. Please try a smaller bet or try again later.' });
           }
 
+          const heliusKey = process.env.HELIUS_API_KEY;
+          const payoutRpcUrl = heliusKey
+            ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+            : 'https://api.mainnet-beta.solana.com';
+          const payoutConnection = new Connection(payoutRpcUrl, {
+            commitment: 'confirmed',
+            confirmTransactionInitialTimeout: 30000,
+          });
+
           const maxRetries = 3;
           for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -10716,17 +10725,17 @@ Claimer: ${walletAddress}`;
                 })
               );
 
-              const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+              const { blockhash, lastValidBlockHeight } = await payoutConnection.getLatestBlockhash('confirmed');
               transaction.recentBlockhash = blockhash;
               transaction.feePayer = vaultKeypair.publicKey;
               transaction.sign(vaultKeypair);
 
-              payoutTxSignature = await connection.sendRawTransaction(transaction.serialize(), {
+              payoutTxSignature = await payoutConnection.sendRawTransaction(transaction.serialize(), {
                 skipPreflight: true,
-                preflightCommitment: 'finalized',
+                maxRetries: 3,
               });
 
-              await connection.confirmTransaction({
+              await payoutConnection.confirmTransaction({
                 signature: payoutTxSignature,
                 blockhash,
                 lastValidBlockHeight,
