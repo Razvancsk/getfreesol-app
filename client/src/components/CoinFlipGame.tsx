@@ -670,14 +670,28 @@ export function CoinFlipGame() {
             </button>
           </div>
 
-          {/* Vault info */}
-          <div className="text-center text-xs text-gray-400 space-y-0.5">
-            <p>50/50 odds. Win = 2x your bet.</p>
-            <p className="text-purple-400">
-              Vault: {vaultBalance.toFixed(4)} SOL
-              {' · '}
-              <a href="/admin/vault" className="underline hover:text-purple-300">Manage</a>
-            </p>
+          {/* Bankroll */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gray-300 font-bold text-sm">Total Bankroll Value</p>
+              <a href="/admin/vault" className="text-purple-400 text-sm font-bold hover:text-purple-300">Verify</a>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-[#1a1035] px-4 py-3">
+              <div className="w-8 h-8 rounded-md bg-purple-900/50 flex items-center justify-center">
+                <svg className="w-5 h-5" viewBox="0 0 397.7 311.7" style={{ fill: '#a78bfa' }}>
+                  <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                  <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                  <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                </svg>
+              </div>
+              <span className="text-white font-bold text-xl flex-1">{vaultBalance.toFixed(4)} SOL</span>
+              <svg className="w-6 h-6" viewBox="0 0 397.7 311.7" style={{ fill: '#14F195' }}>
+                <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+              </svg>
+            </div>
+            <p className="text-center text-xs text-gray-500 mt-2">50/50 odds · Win = 2x your bet</p>
           </div>
 
         </>
