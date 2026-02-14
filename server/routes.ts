@@ -10720,7 +10720,7 @@ Claimer: ${walletAddress}`;
       const bonusSeed = `${betTxSignature}:${txSlot}:bonus`;
       const bonusHash = crypto.createHash('sha256').update(bonusSeed).digest();
       const bonusValue = bonusHash.readUInt32BE(0) % 100;
-      const isBonus = bonusValue < 8;
+      const isBonus = true; // TEMP: 100% for testing (was bonusValue < 8)
 
       if (isBonus) {
         const bonusSessionId = crypto.randomBytes(16).toString('hex');
