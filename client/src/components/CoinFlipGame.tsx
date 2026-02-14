@@ -677,8 +677,8 @@ export function CoinFlipGame() {
               <a href="/admin/vault" className="text-purple-400 text-sm font-bold hover:text-purple-300">Verify</a>
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-[#1a1035] px-4 py-3">
-              <div className="w-8 h-8 rounded-md bg-purple-900/50 flex items-center justify-center">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-10 h-10 rounded-lg bg-purple-700 flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="3" y1="22" x2="21" y2="22" />
                   <line x1="6" y1="18" x2="6" y2="11" />
                   <line x1="10" y1="18" x2="10" y2="11" />
