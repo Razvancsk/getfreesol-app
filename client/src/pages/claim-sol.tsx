@@ -393,7 +393,7 @@ export default function SolRefund() {
   });
 
   // Check if platform wallet
-  const isPlatformWallet = publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
+  const isPlatformWallet = publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT' || publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
   // Query for user profile stats (platform wallet viewing other users)
   const { data: viewProfileData, isLoading: loadingProfileData } = useQuery<{
