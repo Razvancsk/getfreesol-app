@@ -3382,17 +3382,17 @@ export default function SolRefund() {
 
           {/* Center Navigation Buttons */}
           {activeTab !== 'docs' && (
-            <div className="py-3 px-2">
-              <div className="flex items-center gap-2 md:gap-3 md:justify-center w-full">
+            <div className="py-3 px-1 md:px-2">
+              <div className="flex items-center gap-1.5 md:gap-3 md:justify-center w-full">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-2.5 md:px-4 py-2.5 text-sm md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'reclaim' 
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <svg className="h-6 w-6" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                  <svg className="h-4 w-4 md:h-6 md:w-6 shrink-0" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
@@ -3401,23 +3401,23 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('tokens'); }}
-                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-2.5 md:px-4 py-2.5 text-sm md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'burnTokens' && burnSubTab === 'tokens'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-xl">🪙</span> Token
+                  <span className="text-base md:text-xl">🪙</span> Token
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
-                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-2.5 md:px-4 py-2.5 text-sm md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'burnTokens' && burnSubTab === 'nft'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-xl">🖼️</span> NFT
+                  <span className="text-base md:text-xl">🖼️</span> NFT
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
@@ -3438,28 +3438,28 @@ export default function SolRefund() {
                 {isPlatformWallet && (
                   <Button
                     onClick={() => setActiveTab('swap')}
-                    className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                    className={`flex-1 md:flex-none md:min-w-[100px] px-2.5 md:px-4 py-2.5 text-sm md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1 md:gap-2 border whitespace-nowrap ${
                       activeTab === 'swap' 
                         ? 'bg-green-600 text-white border-green-500' 
                         : 'bg-purple-800/40 text-purple-300 hover:bg-green-600/60 border-purple-500/30'
                     }`}
                     data-testid="button-swap"
                   >
-                    <ArrowRightLeft className="h-4 w-4 md:h-5 md:w-5" />
+                    <ArrowRightLeft className="h-3.5 w-3.5 md:h-5 md:w-5 shrink-0" />
                     Swap
                   </Button>
                 )}
                 {canFlip && (
                 <Button
                   onClick={() => setActiveTab('coinflip')}
-                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-2.5 md:px-4 py-2.5 text-sm md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'coinflip'
                       ? 'bg-green-600 text-white border-green-500'
                       : 'bg-purple-800/40 text-purple-300 hover:bg-green-600/60 border-purple-500/30'
                   }`}
                   data-testid="button-coinflip"
                 >
-                  <span className="text-lg md:text-xl">🪙</span> Flip
+                  <span className="text-base md:text-xl">🪙</span> Flip
                 </Button>
                 )}
               </div>
