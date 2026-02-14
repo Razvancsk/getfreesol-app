@@ -56,7 +56,6 @@ export function CoinFlipGame() {
   const [flipResult, setFlipResult] = useState<{ result: string; won: boolean; payoutAmount: number } | null>(null);
   const [coinRotation, setCoinRotation] = useState(0);
   const [showResult, setShowResult] = useState(false);
-  const [cooldown, setCooldown] = useState(false);
 
   const vaultQuery = useQuery<{ success: boolean; address: string; balance: number }>({
     queryKey: ['/api/coinflip/vault'],
@@ -84,11 +83,6 @@ export function CoinFlipGame() {
   });
 
   const handleFlip = useCallback(async () => {
-    if (cooldown) {
-      toast({ title: 'Please wait a few seconds between flips', variant: 'destructive' });
-      return;
-    }
-
     if (!publicKey || !connected) {
       toast({ title: 'Connect your wallet first', variant: 'destructive' });
       return;
@@ -169,9 +163,6 @@ export function CoinFlipGame() {
       const finalRotation = result.result === 'heads' ? 3600 : 3780;
       setCoinRotation(finalRotation);
 
-      setCooldown(true);
-      setTimeout(() => setCooldown(false), 5000);
-
       setTimeout(() => {
         if (result.won) {
           playWinSound();
@@ -184,8 +175,6 @@ export function CoinFlipGame() {
     } catch (err: any) {
       console.error('Coin flip error:', err);
       setIsFlipping(false);
-      setCooldown(true);
-      setTimeout(() => setCooldown(false), 3000);
       const errorMsg = err?.message || 'Transaction failed';
       const shortMsg = errorMsg.length > 120 ? errorMsg.substring(0, 120) + '...' : errorMsg;
       toast({
@@ -194,7 +183,7 @@ export function CoinFlipGame() {
         variant: 'destructive',
       });
     }
-  }, [publicKey, connected, betAmount, choice, signTransaction, connection, toast, flipMutation, vaultAddress, vaultBalance, cooldown]);
+  }, [publicKey, connected, betAmount, choice, signTransaction, connection, toast, flipMutation, vaultAddress]);
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
@@ -354,9 +343,9 @@ export function CoinFlipGame() {
       <div className="pt-2">
         <button
           onClick={handleFlip}
-          disabled={isFlipping || cooldown || !connected}
+          disabled={isFlipping || !connected}
           className={`w-full py-4 rounded-xl font-black text-xl uppercase tracking-wider transition-all border-2 ${
-            isFlipping || cooldown
+            isFlipping
               ? 'bg-purple-600/50 text-white/50 border-purple-400/50 cursor-not-allowed'
               : connected
               ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white border-purple-400 hover:from-purple-500 hover:to-purple-400 hover:shadow-lg hover:shadow-purple-500/40 active:scale-[0.98]'
