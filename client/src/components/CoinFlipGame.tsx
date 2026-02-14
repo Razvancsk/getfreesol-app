@@ -117,6 +117,8 @@ export function CoinFlipGame() {
       const finalRotation = result.result === 'heads' ? 3600 : 3780;
       setCoinRotation(finalRotation);
 
+      await new Promise(r => setTimeout(r, 1800));
+
       setFlipResult(result);
       setShowResult(true);
       setIsFlipping(false);
