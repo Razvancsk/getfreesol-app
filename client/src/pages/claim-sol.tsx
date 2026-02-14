@@ -3582,8 +3582,8 @@ export default function SolRefund() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-semibold text-white">Auto-Claim Bot</h4>
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full">New</span>
                       <Zap className="h-3.5 w-3.5 text-yellow-400" />
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full">New</span>
                     </div>
                     <p className="text-xs text-purple-300 mt-0.5">
                       Never miss free SOL again! Our Telegram bot auto-claims rent from empty accounts 24/7 — just set your interval and relax.
