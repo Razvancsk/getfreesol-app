@@ -2,7 +2,6 @@ import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction } from '@solana/spl-token';
 import { encryptPrivateKey, decryptPrivateKey } from './pdaService';
 import { db } from './db';
-import { storage } from './storage';
 import { telegramAutoClaimSubscriptions } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import bs58 from 'bs58';
@@ -12,6 +11,8 @@ const PLATFORM_WALLET = "GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS";
 const PLATFORM_FEE_BPS = 1500;
 
 const processedMessages = new Set<string>();
+
+const APP_BASE_URL = 'https://getfreesol.xyz';
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY || '';
 const RPC_URL = HELIUS_API_KEY 
@@ -57,123 +58,111 @@ const MAIN_MENU_KEYBOARD = {
   ]
 };
 
-async function scanWallet(walletAddress: string): Promise<{ emptyAccounts: number; totalReclaimable: string }> {
-  const pubkey = new PublicKey(walletAddress);
+async function scanWalletViaApi(walletAddress: string): Promise<{
+  emptyAccounts: number;
+  totalReclaimable: string;
+  accounts: { accountAddress: string; rentAmount: string }[];
+}> {
+  const response = await fetch(`${APP_BASE_URL}/api/sol-refund/scan/${walletAddress}`);
+  const data = await response.json();
   
-  const [tokenAccounts, token2022Accounts] = await Promise.all([
-    connection.getParsedTokenAccountsByOwner(pubkey, { programId: TOKEN_PROGRAM_ID }),
-    connection.getParsedTokenAccountsByOwner(pubkey, { programId: TOKEN_2022_PROGRAM_ID })
-  ]);
-
-  const allAccounts = [...tokenAccounts.value, ...token2022Accounts.value];
+  if (!response.ok || data.error) {
+    throw new Error(data.error || 'Scan failed');
+  }
   
-  const emptyAccounts = allAccounts.filter(account => {
-    const tokenAmount = account.account.data.parsed.info.tokenAmount;
-    return tokenAmount.uiAmount === 0 || tokenAmount.amount === '0';
-  });
-
-  const rentPerAccount = 0.00203928;
-  const totalReclaimable = (emptyAccounts.length * rentPerAccount).toFixed(6);
-
   return {
-    emptyAccounts: emptyAccounts.length,
-    totalReclaimable
+    emptyAccounts: data.emptyAccounts || 0,
+    totalReclaimable: data.totalReclaimable || '0',
+    accounts: data.accounts || []
   };
 }
 
+async function scanWallet(walletAddress: string): Promise<{ emptyAccounts: number; totalReclaimable: string }> {
+  const result = await scanWalletViaApi(walletAddress);
+  return { emptyAccounts: result.emptyAccounts, totalReclaimable: result.totalReclaimable };
+}
+
 async function scanWalletDetailed(walletAddress: string) {
-  const pubkey = new PublicKey(walletAddress);
-  
-  const [tokenAccounts, token2022Accounts] = await Promise.all([
-    connection.getParsedTokenAccountsByOwner(pubkey, { programId: TOKEN_PROGRAM_ID }),
-    connection.getParsedTokenAccountsByOwner(pubkey, { programId: TOKEN_2022_PROGRAM_ID })
-  ]);
-
-  const emptyAccounts: { address: string; programId: PublicKey; lamports: number }[] = [];
-
-  for (const { pubkey: accPubkey, account } of tokenAccounts.value) {
-    try {
-      const tokenAmount = account?.data?.parsed?.info?.tokenAmount;
-      if (!tokenAmount) continue;
-      if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
-        emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_PROGRAM_ID, lamports: account.lamports });
-      }
-    } catch (e) { continue; }
-  }
-
-  for (const { pubkey: accPubkey, account } of token2022Accounts.value) {
-    try {
-      const tokenAmount = account?.data?.parsed?.info?.tokenAmount;
-      if (!tokenAmount) continue;
-      if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
-        emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_2022_PROGRAM_ID, lamports: account.lamports });
-      }
-    } catch (e) { continue; }
-  }
-
-  return emptyAccounts;
+  const result = await scanWalletViaApi(walletAddress);
+  return result.accounts.map(acc => ({
+    address: acc.accountAddress,
+    rentAmount: acc.rentAmount
+  }));
 }
 
 async function executeClaimTransaction(
   walletKeypair: Keypair,
-  emptyAccounts: { address: string; programId: PublicKey; lamports: number }[]
+  emptyAccounts: { address: string; rentAmount: string }[]
 ): Promise<{ signature: string; accountsClosed: number; totalRecovered: number; platformFee: number; netAmount: number }> {
   const BATCH_SIZE = 20;
-  const walletPubkey = walletKeypair.publicKey;
-  const platformPubkey = new PublicKey(PLATFORM_WALLET);
+  const walletAddress = walletKeypair.publicKey.toBase58();
 
   let totalAccountsClosed = 0;
-  let totalLamportsRecovered = 0;
+  let totalSolRecovered = 0;
   let totalPlatformFee = 0;
+  let totalNetAmount = 0;
   let lastSignature = '';
 
   for (let i = 0; i < emptyAccounts.length; i += BATCH_SIZE) {
     const batch = emptyAccounts.slice(i, i + BATCH_SIZE);
-    const transaction = new Transaction();
-    let batchLamports = 0;
+    const selectedAccounts = batch.map(acc => acc.address);
 
-    for (const account of batch) {
-      const closeIx = createCloseAccountInstruction(
-        new PublicKey(account.address),
-        walletPubkey,
-        walletPubkey,
-        [],
-        account.programId
-      );
-      transaction.add(closeIx);
-      batchLamports += account.lamports;
+    const prepareResponse = await fetch(`${APP_BASE_URL}/api/sol-refund/prepare-transaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress, selectedAccounts }),
+    });
+    const prepareData = await prepareResponse.json();
+
+    if (!prepareResponse.ok || prepareData.error) {
+      throw new Error(prepareData.error || 'Failed to prepare transaction');
     }
 
-    const platformFeeLamports = Math.floor(batchLamports * PLATFORM_FEE_BPS / 10000);
-    
-    if (platformFeeLamports > 0) {
-      const { SystemProgram } = await import('@solana/web3.js');
-      transaction.add(
-        SystemProgram.transfer({
-          fromPubkey: walletPubkey,
-          toPubkey: platformPubkey,
-          lamports: platformFeeLamports,
-        })
-      );
-    }
+    const txBuffer = Buffer.from(prepareData.transaction, 'base64');
+    const transaction = Transaction.from(txBuffer);
 
-    const { blockhash } = await connection.getLatestBlockhash('confirmed');
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = walletPubkey;
-    
     transaction.sign(walletKeypair);
-    
+
     const rawTx = transaction.serialize();
     const signature = await connection.sendRawTransaction(rawTx, {
       skipPreflight: false,
       preflightCommitment: 'confirmed'
     });
-    
+
     await connection.confirmTransaction(signature, 'confirmed');
 
-    totalAccountsClosed += batch.length;
-    totalLamportsRecovered += batchLamports;
-    totalPlatformFee += platformFeeLamports;
+    const batchAccountsClosed = prepareData.accountsProcessed || batch.length;
+    const batchSolRecovered = prepareData.totalSolReclaimed || 0;
+    const batchPlatformFee = prepareData.platformFeeAmount || 0;
+    const batchNetAmount = prepareData.netAmount || 0;
+    const batchFeeAmount = prepareData.feeAmount || 0;
+
+    const recordResponse = await fetch(`${APP_BASE_URL}/api/sol-refund/record-success`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        signature,
+        walletAddress,
+        selectedAccounts,
+        accountsClosed: batchAccountsClosed,
+        solRecovered: batchSolRecovered,
+        netAmount: batchNetAmount,
+        feeAmount: batchFeeAmount,
+        platformFeeAmount: batchPlatformFee,
+        referralFeeAmount: prepareData.referralFeeAmount || 0,
+        source: 'auto',
+      }),
+    });
+
+    const recordData = await recordResponse.json();
+    if (!recordResponse.ok) {
+      console.error('Record-success error:', recordData?.error || 'Unknown');
+    }
+
+    totalAccountsClosed += batchAccountsClosed;
+    totalSolRecovered += batchSolRecovered;
+    totalPlatformFee += batchPlatformFee;
+    totalNetAmount += batchNetAmount;
     lastSignature = signature;
 
     if (i + BATCH_SIZE < emptyAccounts.length) {
@@ -181,14 +170,12 @@ async function executeClaimTransaction(
     }
   }
 
-  const netLamports = totalLamportsRecovered - totalPlatformFee;
-  
   return {
     signature: lastSignature,
     accountsClosed: totalAccountsClosed,
-    totalRecovered: totalLamportsRecovered / 1e9,
-    platformFee: totalPlatformFee / 1e9,
-    netAmount: netLamports / 1e9
+    totalRecovered: totalSolRecovered,
+    platformFee: totalPlatformFee,
+    netAmount: totalNetAmount
   };
 }
 
@@ -943,44 +930,6 @@ function startAutoClaimScheduler(bot: any) {
               totalAccountsClosed: newTotalClosed,
             })
             .where(eq(telegramAutoClaimSubscriptions.id, sub.id));
-
-          try {
-            await storage.createTransactionRecord({
-              signature: result.signature,
-              walletAddress: sub.walletAddress,
-              solRecovered: result.totalRecovered.toString(),
-              netAmount: result.netAmount.toString(),
-              feeAmount: result.platformFee.toString(),
-              accountsClosed: result.accountsClosed,
-            });
-          } catch (e: any) {
-            if (!e?.message?.includes('duplicate') && !e?.code?.includes('23505')) {
-              console.error('Failed to create transaction record:', e?.message);
-            }
-          }
-
-          try {
-            await storage.createTransactionLedgerEntry({
-              signature: result.signature,
-              walletAddress: sub.walletAddress,
-              transactionType: 'sol_reclaim',
-              source: 'auto',
-              solRecovered: result.totalRecovered.toString(),
-              netAmount: result.netAmount.toString(),
-              feeAmount: result.platformFee.toString(),
-              itemsProcessed: result.accountsClosed,
-            });
-          } catch (e: any) {
-            if (!e?.message?.includes('duplicate') && !e?.code?.includes('23505')) {
-              console.error('Failed to create ledger entry:', e?.message);
-            }
-          }
-
-          try {
-            await storage.awardPoints(sub.walletAddress, result.accountsClosed);
-          } catch (e: any) {
-            console.error('Failed to award points:', e?.message);
-          }
 
           const shortWallet = `${sub.walletAddress.slice(0, 4)}...${sub.walletAddress.slice(-4)}`;
 
