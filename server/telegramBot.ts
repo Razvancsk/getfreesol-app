@@ -73,38 +73,52 @@ export async function initializeTelegramBot() {
 
     console.log('🤖 Telegram bot is starting...');
 
+    bot.on('polling_error', (error: any) => {
+      if (error?.code === 'ETELEGRAM' && error?.message?.includes('409 Conflict')) {
+        return;
+      }
+      console.error('Telegram polling error:', error?.message || error);
+    });
+
     // Handle /start command
     bot.onText(/\/start/, async (msg: any) => {
       const chatId = msg.chat.id;
       const username = msg.from?.username || msg.from?.first_name || 'there';
       
-      await bot.sendMessage(chatId, 
-        `👋 Welcome to GetFreeSol Bot, ${username}!\n\n` +
-        `I help you find claimable SOL rent from empty token accounts on Solana.\n\n` +
-        `🔍 *Commands:*\n` +
-        `/scan <wallet> - Check a wallet for claimable rent\n` +
-        `/help - Show this help message\n\n` +
-        `Or just send me a Solana wallet address directly!\n\n` +
-        `🌐 Visit [GetFreeSol.xyz](https://getfreesol.xyz) to claim your SOL!`,
-        { parse_mode: 'Markdown', disable_web_page_preview: true }
-      );
+      try {
+        await bot.sendMessage(chatId, 
+          `👋 Welcome to GetFreeSol Bot, ${username}!\n\n` +
+          `I help you find claimable SOL rent from empty token accounts on Solana.\n\n` +
+          `🔍 Commands:\n` +
+          `/scan wallet_address - Check a wallet for claimable rent\n` +
+          `/help - Show this help message\n\n` +
+          `Or just send me a Solana wallet address directly!\n\n` +
+          `🌐 Visit getfreesol.xyz to claim your SOL!`,
+          { disable_web_page_preview: true }
+        );
+      } catch (err: any) {
+        console.error('Telegram /start error:', err?.message || err);
+      }
     });
 
     // Handle /help command
     bot.onText(/\/help/, async (msg: any) => {
       const chatId = msg.chat.id;
       
-      await bot.sendMessage(chatId,
-        `🔍 *GetFreeSol Bot Commands*\n\n` +
-        `/scan <wallet> - Scan a wallet for empty token accounts\n` +
-        `/help - Show this help message\n\n` +
-        `💡 *Tips:*\n` +
-        `• Just paste a wallet address to scan it\n` +
-        `• Each empty account holds ~0.002 SOL in rent\n` +
-        `• Visit GetFreeSol.xyz to claim your rent\n\n` +
-        `🌐 [GetFreeSol.xyz](https://getfreesol.xyz)`,
-        { parse_mode: 'Markdown', disable_web_page_preview: true }
-      );
+      try {
+        await bot.sendMessage(chatId,
+          `🔍 GetFreeSol Bot Commands\n\n` +
+          `/scan wallet_address - Scan a wallet for empty token accounts\n` +
+          `/help - Show this help message\n\n` +
+          `💡 Tips:\n` +
+          `• Just paste a wallet address to scan it\n` +
+          `• Each empty account holds ~0.002 SOL in rent\n` +
+          `• Visit getfreesol.xyz to claim your rent`,
+          { disable_web_page_preview: true }
+        );
+      } catch (err: any) {
+        console.error('Telegram /help error:', err?.message || err);
+      }
     });
 
     // Handle /scan command
@@ -118,16 +132,18 @@ export async function initializeTelegramBot() {
 
       const walletAddress = match?.[1]?.trim();
       
-      if (!walletAddress) {
-        await bot.sendMessage(chatId,
-          `❌ Please provide a wallet address.\n\n` +
-          `Example: \`/scan GnV7urSN5aiRWdioX5uRaYSoykWVJaKHwWGdb8BFH9Bm\``,
-          { parse_mode: 'Markdown' }
-        );
-        return;
-      }
+      try {
+        if (!walletAddress) {
+          await bot.sendMessage(chatId,
+            `Please provide a wallet address.\n\nExample: /scan GnV7urSN5aiRWdioX5uRaYSoykWVJaKHwWGdb8BFH9Bm`
+          );
+          return;
+        }
 
-      await handleWalletScan(bot, chatId, walletAddress);
+        await handleWalletScan(bot, chatId, walletAddress);
+      } catch (err: any) {
+        console.error('Telegram /scan error:', err?.message || err);
+      }
     });
 
     // Handle plain wallet addresses
