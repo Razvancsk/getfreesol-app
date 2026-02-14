@@ -435,7 +435,7 @@ export function CoinFlipGame() {
                   <div className="absolute inset-0 rounded-full" style={{
                     background: 'linear-gradient(150deg, rgba(255,255,255,0.2) 0%, transparent 45%)',
                   }} />
-                  <svg className="w-20 h-20 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: isGold ? '#1a0a00' : '#00FFA3', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
+                  <svg className="w-20 h-20 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
@@ -469,7 +469,7 @@ export function CoinFlipGame() {
                   <div className="absolute inset-0 rounded-full" style={{
                     background: 'linear-gradient(150deg, rgba(255,255,255,0.2) 0%, transparent 45%)',
                   }} />
-                  <svg className="w-20 h-20 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: isGold ? '#1a0a00' : '#ef4444', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
+                  <svg className="w-20 h-20 relative z-10" viewBox="0 0 397.7 311.7" style={{ fill: '#ef4444', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
                     <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
