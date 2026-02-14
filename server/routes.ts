@@ -10716,6 +10716,52 @@ Claimer: ${walletAddress}`;
       const seedData = `${betTxSignature}:${txSlot}:${choice}`;
       const hashBuffer = crypto.createHash('sha256').update(seedData).digest();
       const hashValue = hashBuffer.readUInt32BE(0);
+
+      const bonusSeed = `${betTxSignature}:${txSlot}:bonus`;
+      const bonusHash = crypto.createHash('sha256').update(bonusSeed).digest();
+      const bonusValue = bonusHash.readUInt32BE(0) % 100;
+      const isBonus = bonusValue < 8;
+
+      if (isBonus) {
+        const bonusSessionId = crypto.randomBytes(16).toString('hex');
+        const bonusSessions = (global as any).__bonusSessions || {};
+        bonusSessions[bonusSessionId] = {
+          walletAddress,
+          betAmount: bet,
+          spinsLeft: 5,
+          totalWon: 0,
+          betTxSignature,
+          createdAt: Date.now(),
+        };
+        (global as any).__bonusSessions = bonusSessions;
+
+        await db.insert(coinFlips).values({
+          walletAddress,
+          betAmount: bet.toString(),
+          choice,
+          result: 'bonus',
+          won: false,
+          payoutAmount: null,
+          platformFee: null,
+          betTxSignature,
+          payoutTxSignature: null,
+        });
+
+        console.log(`🎰✨ BONUS triggered for ${walletAddress}! bet ${bet} SOL, 5 free spins, session: ${bonusSessionId}`);
+        return res.json({
+          success: true,
+          result: 'bonus',
+          won: false,
+          bonus: true,
+          bonusSessionId,
+          freeSpins: 5,
+          betAmount: bet,
+          payoutAmount: 0,
+          platformFee: 0,
+          payoutTxSignature: null,
+        });
+      }
+
       const result: 'heads' | 'tails' = hashValue % 2 === 0 ? 'heads' : 'tails';
       const won = choice === result;
 
@@ -10801,6 +10847,112 @@ Claimer: ${walletAddress}`;
     } catch (error: any) {
       console.error('Error in coin flip:', error);
       res.status(500).json({ error: 'Coin flip failed' });
+    }
+  });
+
+  app.post("/api/coinflip/free-spin", async (req, res) => {
+    try {
+      const { bonusSessionId, choice, walletAddress } = req.body;
+      if (!bonusSessionId || !choice || !walletAddress || !['heads', 'tails'].includes(choice)) {
+        return res.status(400).json({ error: 'Missing bonusSessionId, walletAddress, or valid choice' });
+      }
+
+      const bonusSessions = (global as any).__bonusSessions || {};
+      const session = bonusSessions[bonusSessionId];
+      if (!session) {
+        return res.status(400).json({ error: 'Invalid or expired bonus session' });
+      }
+
+      if (session.walletAddress !== walletAddress) {
+        return res.status(403).json({ error: 'Wallet does not match bonus session' });
+      }
+
+      if (Date.now() - session.createdAt > 5 * 60 * 1000) {
+        delete bonusSessions[bonusSessionId];
+        return res.status(400).json({ error: 'Bonus session expired (5 min limit)' });
+      }
+
+      if (session.spinsLeft <= 0) {
+        return res.status(400).json({ error: 'No free spins remaining' });
+      }
+
+      const spinNumber = 6 - session.spinsLeft;
+      const spinSeed = `${session.betTxSignature}:${bonusSessionId}:spin${spinNumber}`;
+      const spinHash = crypto.createHash('sha256').update(spinSeed).digest();
+      const spinValue = spinHash.readUInt32BE(0);
+      const result: 'heads' | 'tails' = spinValue % 2 === 0 ? 'heads' : 'tails';
+      const won = choice === result;
+
+      let spinPayout = 0;
+      if (won) {
+        spinPayout = session.betAmount;
+        session.totalWon += spinPayout;
+      }
+      session.spinsLeft -= 1;
+
+      const isLastSpin = session.spinsLeft === 0;
+      let payoutTxSignature: string | null = null;
+      let payoutError: string | null = null;
+
+      if (isLastSpin && session.totalWon > 0) {
+        try {
+          const vaultKeypair = getVaultKeypair();
+          const totalPayoutLamports = Math.floor(session.totalWon * LAMPORTS_PER_SOL);
+          const recipientPubkey = new PublicKey(session.walletAddress);
+
+          const heliusKey = process.env.HELIUS_API_KEY;
+          const payoutRpcUrl = heliusKey
+            ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+            : 'https://api.mainnet-beta.solana.com';
+          const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
+
+          const vaultBalance = await payoutConnection.getBalance(vaultKeypair.publicKey);
+          if (vaultBalance >= totalPayoutLamports + 10000) {
+            const transaction = new Transaction().add(
+              SystemProgram.transfer({
+                fromPubkey: vaultKeypair.publicKey,
+                toPubkey: recipientPubkey,
+                lamports: totalPayoutLamports,
+              })
+            );
+            const { blockhash } = await payoutConnection.getLatestBlockhash('confirmed');
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = vaultKeypair.publicKey;
+            transaction.sign(vaultKeypair);
+            payoutTxSignature = await payoutConnection.sendRawTransaction(transaction.serialize(), {
+              skipPreflight: true,
+              maxRetries: 5,
+            });
+            console.log(`🎰✨ BONUS payout: ${session.walletAddress} won ${session.totalWon} SOL from free spins, tx: ${payoutTxSignature}`);
+          } else {
+            payoutError = 'Vault balance too low for bonus payout. Please contact support.';
+            console.error(`🎰✨ BONUS payout failed: vault too low (${vaultBalance / LAMPORTS_PER_SOL} SOL)`);
+          }
+        } catch (payoutErr: any) {
+          payoutError = 'Bonus payout transaction failed. Please contact support.';
+          console.error('❌ Bonus payout failed:', payoutErr.message);
+        }
+
+        delete bonusSessions[bonusSessionId];
+      }
+
+      console.log(`🎰✨ Free spin ${spinNumber}/5: ${session.walletAddress} chose ${choice}, result ${result}, ${won ? 'WIN' : 'miss'}, total: ${isLastSpin ? session.totalWon : (session as any).totalWon} SOL`);
+
+      res.json({
+        success: true,
+        result,
+        won,
+        spinPayout,
+        spinsLeft: isLastSpin ? 0 : session.spinsLeft,
+        totalWon: isLastSpin ? (session.totalWon || 0) : session.totalWon,
+        isLastSpin,
+        payoutTxSignature,
+        payoutError,
+        betAmount: session.betAmount,
+      });
+    } catch (error: any) {
+      console.error('Error in free spin:', error);
+      res.status(500).json({ error: 'Free spin failed' });
     }
   });
 
