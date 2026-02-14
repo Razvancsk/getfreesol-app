@@ -4349,18 +4349,18 @@ export default function SolRefund() {
           {activeTab === 'coinflip' && isPlatformWallet && (
             <>
               <CoinFlipGame />
-              <div className="mt-8 space-y-5">
+              <div className="mt-10 space-y-6">
                 <div>
-                  <p className="text-purple-300 font-bold uppercase tracking-wider text-base mb-3">How It Works</p>
-                  <ul className="space-y-2 list-disc list-inside text-gray-300 text-lg">
+                  <p className="text-purple-300 font-black uppercase tracking-wider text-xl mb-4">How It Works</p>
+                  <ul className="space-y-3 list-disc list-inside text-gray-300 text-xl">
                     <li>Pick <span className="text-green-400 font-bold">Green</span> or <span className="text-red-400 font-bold">Red</span>, place your bet, and flip.</li>
                     <li>Win = <span className="text-white font-bold">2x</span> your bet. Lose = you lose your bet.</li>
                     <li>Fair 50/50 odds on every flip.</li>
                   </ul>
                 </div>
                 <div>
-                  <p className="text-yellow-300 font-bold uppercase tracking-wider text-base mb-3">Bonus Round</p>
-                  <ul className="space-y-2 list-disc list-inside text-gray-300 text-lg">
+                  <p className="text-yellow-300 font-black uppercase tracking-wider text-xl mb-4">Bonus Round</p>
+                  <ul className="space-y-3 list-disc list-inside text-gray-300 text-xl">
                     <li>~8% chance to trigger a <span className="text-yellow-300 font-bold">Bonus Round</span> on any flip.</li>
                     <li>When bonus hits, you <span className="text-green-400 font-bold">instantly win 2x</span> your bet.</li>
                     <li>Plus you get <span className="text-yellow-300 font-bold">5 free spins</span> on a gold coin to win even more.</li>
