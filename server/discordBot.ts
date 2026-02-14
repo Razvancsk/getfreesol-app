@@ -396,32 +396,10 @@ async function scanWallet(walletAddress: string): Promise<{
   emptyAccounts: number;
   totalReclaimable: string;
 }> {
-  // Get RPC endpoint with fallbacks
-  const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-  const rpcEndpoints = [
-    heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
-    'https://api.mainnet-beta.solana.com',
-    'https://solana-api.projectserum.com',
-    'https://rpc.ankr.com/solana'
-  ].filter(Boolean);
-
-  let connection: Connection | null = null;
-
-  // Try each endpoint until one works
-  for (const endpoint of rpcEndpoints) {
-    try {
-      const testConnection = new Connection(endpoint as string, 'confirmed');
-      await testConnection.getLatestBlockhash();
-      connection = testConnection;
-      break;
-    } catch (error) {
-      console.log(`RPC endpoint failed, trying next...`);
-    }
-  }
-
-  if (!connection) {
-    throw new Error('All RPC endpoints are currently unavailable');
-  }
+  // Helius-only RPC
+  const heliusApiKey = process.env.HELIUS_API_KEY;
+  if (!heliusApiKey) throw new Error('HELIUS_API_KEY is required');
+  const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, 'confirmed');
 
   const walletPublicKey = new PublicKey(walletAddress);
 

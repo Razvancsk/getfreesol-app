@@ -40,9 +40,9 @@ export function getVaultPrivateKey(): string {
 }
 
 function getConnection(): Connection {
-  const rpcUrl = process.env.HELIUS_API_KEY
-    ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-    : 'https://api.mainnet-beta.solana.com';
+  const apiKey = process.env.HELIUS_API_KEY;
+  if (!apiKey) throw new Error('HELIUS_API_KEY is required');
+  const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
   return new Connection(rpcUrl, 'confirmed');
 }
 

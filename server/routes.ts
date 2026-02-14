@@ -31,6 +31,17 @@ import cron from 'node-cron';
 import { backpackApiService } from './backpackApiService';
 import { backpackWebSocketService } from './backpackWebSocketService';
 
+// Helius-only RPC helper - all Solana connections must use Helius
+function getHeliusRpcUrl(): string {
+  const key = process.env.HELIUS_API_KEY;
+  if (!key) throw new Error('HELIUS_API_KEY is required - all RPC calls must use Helius');
+  return `https://mainnet.helius-rpc.com/?api-key=${key}`;
+}
+
+function getHeliusConnection(commitment: 'confirmed' | 'finalized' | 'processed' = 'confirmed'): Connection {
+  return new Connection(getHeliusRpcUrl(), commitment);
+}
+
 // Extend global for temporary OAuth token storage
 declare global {
   var pendingOAuthTokens: Record<string, string>;
@@ -497,10 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const PLATFORM_WALLET = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
       const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
       
-      // Create connection for RPC calls
-      const heliusKey = process.env.HELIUS_API_KEY;
-      const rpcUrl = process.env.HELIUS_RPC_URL || (heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com');
-      const connection = new Connection(rpcUrl);
+      const connection = getHeliusConnection();
 
       // Step 1: Get quote from Jupiter Swap API v1
       console.log(`🔄 Getting Jupiter quote for ${inputMint} -> ${outputMint}, amount: ${amount}`);
@@ -746,10 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get the user's token account (ATA)
           const userTokenAccount = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
           
-          // Get connection to fetch lookup tables
-          const hKey = process.env.HELIUS_API_KEY;
-          const rUrl = process.env.HELIUS_RPC_URL || (hKey ? `https://mainnet.helius-rpc.com/?api-key=${hKey}` : 'https://api.mainnet-beta.solana.com');
-          const connection = new Connection(rUrl);
+          const connection = getHeliusConnection();
           
           // Fetch address lookup tables
           const lookupTableAccounts: AddressLookupTableAccount[] = [];
@@ -891,10 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inputMintPubkey = new SolanaPublicKey(inputMint as string);
       const userTokenAccount = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
       
-      // Get connection to fetch lookup tables
-      const hKey2 = process.env.HELIUS_API_KEY;
-      const rUrl2 = process.env.HELIUS_RPC_URL || (hKey2 ? `https://mainnet.helius-rpc.com/?api-key=${hKey2}` : 'https://api.mainnet-beta.solana.com');
-      const connection = new Connection(rUrl2);
+      const connection = getHeliusConnection();
       
       // Fetch address lookup tables if any
       const lookupTableAccounts: AddressLookupTableAccount[] = [];
@@ -1093,8 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const signature = heliusResult.result;
             console.log(`✅ Transaction sent via Helius with rebates: ${signature}`);
             
-            // Confirm transaction
-            const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, 'confirmed');
+            const connection = getHeliusConnection();
             
             // Poll for confirmation with timeout
             let confirmed = false;
@@ -1488,13 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fallback to RPC-based method
-      const heliusKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : 'https://api.mainnet-beta.solana.com';
-
-      const connection = new Connection(rpcUrl, 'confirmed');
+      const connection = getHeliusConnection();
       const walletPubkey = new PublicKey(address);
 
       // Check if it's SOL
@@ -1608,8 +1603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const signature = result.result;
           console.log(`✅ Transaction sent with rebates: ${signature}`);
           
-          // Confirm transaction
-          const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`, 'confirmed');
+          const connection = getHeliusConnection();
           const confirmation = await connection.confirmTransaction(signature, 'confirmed');
           
           if (confirmation.value.err) {
@@ -1644,32 +1638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fallback: standard transaction without rebates
-      const rpcEndpoints = [
-        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
-        'https://api.mainnet-beta.solana.com',
-        'https://solana-api.projectserum.com'
-      ].filter(Boolean);
-
-      let connection: Connection | null = null;
-      let workingEndpoint = '';
-
-      for (const endpoint of rpcEndpoints) {
-        try {
-          const testConnection = new Connection(endpoint as string, 'confirmed');
-          await testConnection.getLatestBlockhash();
-          connection = testConnection;
-          workingEndpoint = endpoint as string;
-          console.log(`Using RPC: ${workingEndpoint.includes('helius') ? 'Helius' : 'Public'}`);
-          break;
-        } catch (error) {
-          continue;
-        }
-      }
-
-      if (!connection) {
-        return res.status(503).json({ error: "All RPC endpoints failed" });
-      }
+      const connection = getHeliusConnection();
 
       // Send the signed transaction
       const txBuffer = Buffer.from(signedTransaction, 'base64');
@@ -1801,36 +1770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC endpoint with fallbacks
-      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcEndpoints = [
-        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
-        'https://api.mainnet-beta.solana.com',
-        'https://solana-api.projectserum.com',
-        'https://rpc.ankr.com/solana'
-      ].filter(Boolean);
-
-      let connection: Connection | null = null;
-      let workingEndpoint = '';
-
-      // Try each endpoint until one works
-      for (const endpoint of rpcEndpoints) {
-        try {
-          const testConnection = new Connection(endpoint as string, 'confirmed');
-          await testConnection.getLatestBlockhash();
-          connection = testConnection;
-          workingEndpoint = endpoint as string;
-          break;
-        } catch (error) {
-          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
-        }
-      }
-
-      if (!connection) {
-        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
-      }
-
-      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
+      const connection = getHeliusConnection();
 
       const walletPublicKey = new PublicKey(address);
       
@@ -1929,9 +1869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get RPC endpoint
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcEndpoint = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      const rpcEndpoint = getHeliusRpcUrl();
 
       const connection = new Connection(rpcEndpoint, 'confirmed');
       const walletPublicKey = new PublicKey(address);
@@ -2038,9 +1976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get RPC endpoint
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcEndpoint = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      const rpcEndpoint = getHeliusRpcUrl();
 
       const connection = new Connection(rpcEndpoint, 'confirmed');
       const walletPubkey = new PublicKey(walletAddress);
@@ -2223,9 +2159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get RPC connection
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
-        'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       
       const connection = new Connection(rpcUrl, 'confirmed');
 
@@ -2820,7 +2754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Analyze real transaction 
           const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-          const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+          const rpcUrl = getHeliusRpcUrl();
           const { Connection } = await import('@solana/web3.js');
           const connection = new Connection(rpcUrl, 'confirmed');
 
@@ -2935,7 +2869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Connect to RPC
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       const connection = new Connection(rpcUrl, 'confirmed');
 
       // Fetch the confirmed transaction
@@ -3192,47 +3126,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid wallet address" });
       }
 
-      // Get RPC connection
-      const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcEndpoints = [
-        heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : null,
-        'https://api.mainnet-beta.solana.com',
-        'https://solana-api.projectserum.com',
-        'https://rpc.ankr.com/solana'
-      ].filter(Boolean);
-
-      let connection: Connection | null = null;
-      let workingEndpoint = '';
-
-      for (const endpoint of rpcEndpoints) {
-        try {
-          const testConnection = new Connection(endpoint as string, 'confirmed');
-          await testConnection.getLatestBlockhash();
-          connection = testConnection;
-          workingEndpoint = endpoint as string;
-          break;
-        } catch (error) {
-          console.log(`RPC endpoint ${endpoint && endpoint.includes('api-key=') ? endpoint.replace(/api-key=[^&]*/, 'api-key=****') : endpoint} failed, trying next...`);
-        }
-      }
-
-      if (!connection) {
-        return res.status(503).json({ error: "All RPC endpoints are currently unavailable" });
-      }
-
-      console.log(`Using RPC endpoint: ${workingEndpoint.includes('api-key=') ? workingEndpoint.replace(/api-key=[^&]*/, `api-key=****${heliusApiKey ? heliusApiKey.slice(-4) : 'none'}`) : workingEndpoint}`);
+      const connection = getHeliusConnection();
 
       const walletPublicKey = new PublicKey(address);
 
       // Use Helius DAS API to get all assets with metadata
       let tokens: any[] = [];
-      if (!heliusApiKey) {
-        return res.status(500).json({ error: "Helius API key is required for token scanning" });
-      }
 
       try {
-        const heliusRpcUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-        const rpcUrl = heliusRpcUrl; // Make rpcUrl available in scope
+        const heliusRpcUrl = getHeliusRpcUrl();
         const heliusResponse = await fetch(heliusRpcUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3511,9 +3413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
-      const rpcUrl = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       
       console.log(`Creating bulk token burn transaction for ${tokenMints.length} tokens...`);
       console.log('Referral code data:', referralCodeData);
@@ -3799,9 +3699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use Helius RPC if available
       const heliusApiKey = process.env.HELIUS_API_KEY;
-      const rpcUrl = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       
       console.log('Creating token burn transaction...');
       
@@ -4380,7 +4278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get fresh blockhash for all transactions
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       const connection = new Connection(rpcUrl, 'confirmed');
       const { blockhash } = await connection.getLatestBlockhash();
       
@@ -4503,7 +4401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🚀 Submitting ${signedTransactions.length} signed Core NFT burn transactions`);
       
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       const connection = new Connection(rpcUrl, 'confirmed');
       
       const results = [];
@@ -4628,9 +4526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const heliusApiKey = process.env.HELIUS_API_KEY;
-      const rpcUrl = heliusApiKey 
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       
       
       const connection = new Connection(rpcUrl, 'confirmed');
@@ -4877,7 +4773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Connect to RPC for settlement analysis
           const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-          const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+          const rpcUrl = getHeliusRpcUrl();
           const { Connection } = await import('@solana/web3.js');
           const connection = new Connection(rpcUrl, 'confirmed');
 
@@ -5100,9 +4996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get RPC configuration
       const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = apiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
-        'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
 
       console.log(`🔥 Preparing ${coreNftIds.length} Core NFT burn transactions...`);
 
@@ -5199,7 +5093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           referralPubkey = new PublicKey(referralCodeData.walletAddress);
           const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-          const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+          const rpcUrl = getHeliusRpcUrl();
           const connection = new Connection(rpcUrl, 'confirmed');
           
           const referralBalance = await connection.getBalance(referralPubkey);
@@ -5392,9 +5286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get RPC configuration
       const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = apiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
-        'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
 
       console.log(`🔥 Preparing ${pNftIds.length} Programmable NFT burn transactions...`);
 
@@ -5636,7 +5528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { dasApi } = await import('@metaplex-foundation/digital-asset-standard-api');
       
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       
       const umi = createUmi(rpcUrl).use(dasApi());
 
@@ -5819,9 +5711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get RPC configuration
       const apiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = apiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${apiKey}` : 
-        'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
 
       console.log(`🔥 Preparing ${standardNftIds.length} Traditional NFT burn transactions...`);
 
@@ -6397,9 +6287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get server RPC connection with Helius API key
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
-        'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
 
       const connection = new Connection(rpcUrl, 'confirmed');
 
@@ -6770,9 +6658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const relayerPublicKey = relayerKeypair.publicKey.toBase58();
 
       // Connect to Solana
-      const heliusRpc = process.env.VITE_HELIUS_API_KEY 
-        ? `https://mainnet.helius-rpc.com/?api-key=${process.env.VITE_HELIUS_API_KEY}`
-        : "https://api.mainnet-beta.solana.com";
+      const heliusRpc = getHeliusRpcUrl();
       const connection = new Connection(heliusRpc, "confirmed");
 
       // Get user's token accounts (BOTH SPL and Token-2022)
@@ -9009,10 +8895,7 @@ Claimer: ${walletAddress}`;
       const platformWallet = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
       const developerWallet = new PublicKey(walletAddress);
       
-      // Create transaction to transfer WSOL
-      const hKey3 = process.env.HELIUS_API_KEY;
-      const rUrl3 = process.env.HELIUS_RPC_URL || (hKey3 ? `https://mainnet.helius-rpc.com/?api-key=${hKey3}` : 'https://api.mainnet-beta.solana.com');
-      const connection = new Connection(rUrl3, 'confirmed');
+      const connection = getHeliusConnection();
       
       const transaction = new Transaction();
       
@@ -9476,9 +9359,7 @@ Claimer: ${walletAddress}`;
       if (referralAccount.referralPda) {
         try {
           const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-          const rpcUrl = heliusApiKey ? 
-            `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
-            'https://api.mainnet-beta.solana.com';
+          const rpcUrl = getHeliusRpcUrl();
           const connection = new Connection(rpcUrl, 'confirmed');
           const pdaPubkey = new PublicKey(referralAccount.referralPda);
           const balance = await connection.getBalance(pdaPubkey);
@@ -9534,9 +9415,7 @@ Claimer: ${walletAddress}`;
       
       // Get fee collection wallet balance
       const heliusApiKey = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_API_KEY;
-      const rpcUrl = heliusApiKey ? 
-        `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}` : 
-        'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       const connection = new Connection(rpcUrl, 'confirmed');
       
       const feeWalletPubkey = new PublicKey(referralAccount.referralPda);
@@ -10651,9 +10530,7 @@ Claimer: ${walletAddress}`;
 
       const PLATFORM_FEE_RATE = 0;
       const VAULT_ADDRESS = getVaultAddress();
-      const rpcUrl = process.env.HELIUS_API_KEY 
-        ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-        : 'https://api.mainnet-beta.solana.com';
+      const rpcUrl = getHeliusRpcUrl();
       const connection = new Connection(rpcUrl, 'confirmed');
 
       let txInfo: any = null;
@@ -10703,9 +10580,7 @@ Claimer: ${walletAddress}`;
       const recipientPubkey = new PublicKey(walletAddress);
 
       const heliusKey = process.env.HELIUS_API_KEY;
-      const payoutRpcUrl = heliusKey
-        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-        : 'https://api.mainnet-beta.solana.com';
+      const payoutRpcUrl = getHeliusRpcUrl();
       const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
 
       const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
@@ -10754,9 +10629,7 @@ Claimer: ${walletAddress}`;
           const instantLamports = Math.floor(instantWin * LAMPORTS_PER_SOL);
           const recipientPubkey = new PublicKey(walletAddress);
           const heliusKey = process.env.HELIUS_API_KEY;
-          const payoutRpcUrl = heliusKey
-            ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-            : 'https://api.mainnet-beta.solana.com';
+          const payoutRpcUrl = getHeliusRpcUrl();
           const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
           const vaultBal = await payoutConnection.getBalance(vaultKeypair.publicKey);
           if (vaultBal >= instantLamports + 10000) {
@@ -10965,9 +10838,7 @@ Claimer: ${walletAddress}`;
           const recipientPubkey = new PublicKey(session.walletAddress);
 
           const heliusKey = process.env.HELIUS_API_KEY;
-          const payoutRpcUrl = heliusKey
-            ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-            : 'https://api.mainnet-beta.solana.com';
+          const payoutRpcUrl = getHeliusRpcUrl();
           const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
 
           const vaultBalance = await payoutConnection.getBalance(vaultKeypair.publicKey);
