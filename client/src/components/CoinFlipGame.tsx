@@ -240,22 +240,22 @@ export function CoinFlipGame() {
             disabled={isFlipping}
             className={`px-8 py-3 rounded-xl font-black text-lg uppercase tracking-wider transition-all border-2 ${
               choice === 'heads'
-                ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
-                : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
+                ? 'bg-green-600 text-white border-green-400 shadow-lg shadow-green-500/30'
+                : 'bg-green-900/30 text-green-300 border-green-500/30 hover:bg-green-800/40 hover:border-green-400/60'
             }`}
           >
-            Heads
+            Green
           </button>
           <button
             onClick={() => setChoice('tails')}
             disabled={isFlipping}
             className={`px-8 py-3 rounded-xl font-black text-lg uppercase tracking-wider transition-all border-2 ${
               choice === 'tails'
-                ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
-                : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
+                ? 'bg-red-600 text-white border-red-400 shadow-lg shadow-red-500/30'
+                : 'bg-red-900/30 text-red-300 border-red-500/30 hover:bg-red-800/40 hover:border-red-400/60'
             }`}
           >
-            Tails
+            Red
           </button>
         </div>
       </div>
