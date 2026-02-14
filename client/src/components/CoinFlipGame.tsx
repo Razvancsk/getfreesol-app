@@ -679,13 +679,12 @@ export function CoinFlipGame() {
             <div className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-[#1a1035] px-4 py-3">
               <div className="w-10 h-10 rounded-lg bg-purple-700 flex items-center justify-center shrink-0">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="3" y1="22" x2="21" y2="22" />
-                  <line x1="6" y1="18" x2="6" y2="11" />
-                  <line x1="10" y1="18" x2="10" y2="11" />
-                  <line x1="14" y1="18" x2="14" y2="11" />
-                  <line x1="18" y1="18" x2="18" y2="11" />
-                  <polygon points="12 2 20 7 4 7" />
-                  <line x1="2" y1="18" x2="22" y2="18" />
+                  <line x1="6" y1="20" x2="6" y2="10" />
+                  <line x1="10" y1="20" x2="10" y2="10" />
+                  <line x1="14" y1="20" x2="14" y2="10" />
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <polygon points="12 2 22 7 2 7" />
+                  <line x1="2" y1="20" x2="22" y2="20" />
                 </svg>
               </div>
               <span className="text-white font-bold text-xl flex-1">{vaultBalance.toFixed(4)} SOL</span>
