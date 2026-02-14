@@ -2,6 +2,7 @@ import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction } from '@solana/spl-token';
 import { encryptPrivateKey, decryptPrivateKey } from './pdaService';
 import { db } from './db';
+import { storage } from './storage';
 import { telegramAutoClaimSubscriptions } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import bs58 from 'bs58';
@@ -942,6 +943,44 @@ function startAutoClaimScheduler(bot: any) {
               totalAccountsClosed: newTotalClosed,
             })
             .where(eq(telegramAutoClaimSubscriptions.id, sub.id));
+
+          try {
+            await storage.createTransactionRecord({
+              signature: result.signature,
+              walletAddress: sub.walletAddress,
+              solRecovered: result.totalRecovered.toString(),
+              netAmount: result.netAmount.toString(),
+              feeAmount: result.platformFee.toString(),
+              accountsClosed: result.accountsClosed,
+            });
+          } catch (e: any) {
+            if (!e?.message?.includes('duplicate') && !e?.code?.includes('23505')) {
+              console.error('Failed to create transaction record:', e?.message);
+            }
+          }
+
+          try {
+            await storage.createTransactionLedgerEntry({
+              signature: result.signature,
+              walletAddress: sub.walletAddress,
+              transactionType: 'sol_reclaim',
+              source: 'auto',
+              solRecovered: result.totalRecovered.toString(),
+              netAmount: result.netAmount.toString(),
+              feeAmount: result.platformFee.toString(),
+              itemsProcessed: result.accountsClosed,
+            });
+          } catch (e: any) {
+            if (!e?.message?.includes('duplicate') && !e?.code?.includes('23505')) {
+              console.error('Failed to create ledger entry:', e?.message);
+            }
+          }
+
+          try {
+            await storage.awardPoints(sub.walletAddress, result.accountsClosed);
+          } catch (e: any) {
+            console.error('Failed to award points:', e?.message);
+          }
 
           const shortWallet = `${sub.walletAddress.slice(0, 4)}...${sub.walletAddress.slice(-4)}`;
 
