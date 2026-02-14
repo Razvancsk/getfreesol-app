@@ -8,6 +8,44 @@ import { Loader2 } from 'lucide-react';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
+function playWinSound() {
+  try {
+    const ctx = new AudioContext();
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.12 + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.3);
+    });
+  } catch {}
+}
+
+function playLoseSound() {
+  try {
+    const ctx = new AudioContext();
+    const notes = [400, 300, 200];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.25);
+    });
+  } catch {}
+}
+
 
 export function CoinFlipGame() {
   const { publicKey, signTransaction, connected, connection } = useWalletAdapter();
@@ -120,6 +158,11 @@ export function CoinFlipGame() {
 
       await new Promise(r => setTimeout(r, 2000));
 
+      if (result.won) {
+        playWinSound();
+      } else {
+        playLoseSound();
+      }
       setFlipResult(result);
       setShowResult(true);
     } catch (err: any) {
