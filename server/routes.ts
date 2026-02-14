@@ -10636,7 +10636,7 @@ Claimer: ${walletAddress}`;
       const connection = new Connection(rpcUrl, 'confirmed');
 
       let txInfo: any = null;
-      for (let attempt = 0; attempt < 8; attempt++) {
+      for (let attempt = 0; attempt < 10; attempt++) {
         try {
           txInfo = await connection.getTransaction(betTxSignature, {
             commitment: 'confirmed',
@@ -10647,7 +10647,7 @@ Claimer: ${walletAddress}`;
           }
           txInfo = null;
         } catch (e) {}
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 500));
       }
 
       if (!txInfo) {
