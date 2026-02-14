@@ -3576,25 +3576,16 @@ export default function SolRefund() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`relative p-2.5 rounded-full ${isNightMode ? 'bg-[#0088cc]/20' : 'bg-[#0088cc]/30'}`}>
+                  <div className={`p-2.5 rounded-full ${isNightMode ? 'bg-[#0088cc]/20' : 'bg-[#0088cc]/30'}`}>
                     <SiTelegram className="h-5 w-5 text-[#0088cc]" />
-                    <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                    </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-semibold text-white">Auto-Claim Bot</h4>
                       <Zap className="h-3.5 w-3.5 text-yellow-400" />
-                      <Clock className="h-3.5 w-3.5 text-purple-400" />
-                      <Shield className="h-3.5 w-3.5 text-green-400" />
                     </div>
                     <p className="text-xs text-purple-300 mt-0.5">
-                      <span className="inline-flex items-center gap-1">
-                        <Cpu className="h-3 w-3 text-purple-400" />
-                        Automatically claim SOL rent 24/7 via Telegram — set it and forget it!
-                      </span>
+                      Automatically claim SOL rent 24/7 via Telegram — set it and forget it!
                     </p>
                   </div>
                   <ExternalLink className="h-4 w-4 text-purple-400 flex-shrink-0" />
