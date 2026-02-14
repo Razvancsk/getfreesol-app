@@ -681,7 +681,7 @@ export function CoinFlipGame() {
           </div>
 
           {/* Game info */}
-          <div className="mt-4 rounded-xl border border-purple-500/20 bg-purple-900/20 p-4 text-sm text-gray-300 space-y-2">
+          <div className="mt-4 px-2 text-sm space-y-2">
             <p className="text-purple-300 font-bold uppercase tracking-wider text-xs">How It Works</p>
             <ul className="space-y-1 list-disc list-inside text-gray-400">
               <li>Pick <span className="text-green-400 font-bold">Green</span> or <span className="text-red-400 font-bold">Red</span>, place your bet, and flip.</li>
