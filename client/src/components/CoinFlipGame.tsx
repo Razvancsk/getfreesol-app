@@ -356,9 +356,7 @@ export function CoinFlipGame() {
   const coinShadow = isGold
     ? '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(255, 215, 0, 0.5)'
     : '0 6px 20px rgba(0,0,0,0.6), 0 0 30px rgba(124, 58, 237, 0.4)';
-  const coinShadowGlow = isGold
-    ? '0 0 40px rgba(255, 215, 0, 0.6), 0 0 80px rgba(255, 215, 0, 0.3)'
-    : '';
+  const coinShadowGlow = '';
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
@@ -400,7 +398,7 @@ export function CoinFlipGame() {
       <div className="flex flex-col items-center py-6">
         <div
           className="w-40 h-40 relative mb-4"
-          style={{ perspective: '600px', ...(isGold ? { filter: `drop-shadow(0 0 15px rgba(255,215,0,0.4))` } : {}) }}
+          style={{ perspective: '600px' }}
         >
           <div
             className="w-full h-full rounded-full relative"
