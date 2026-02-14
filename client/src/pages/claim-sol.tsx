@@ -393,7 +393,8 @@ export default function SolRefund() {
   });
 
   // Check if platform wallet
-  const isPlatformWallet = publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT' || publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
+  const isPlatformWallet = publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
+  const canFlip = isPlatformWallet || publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
   // Query for user profile stats (platform wallet viewing other users)
   const { data: viewProfileData, isLoading: loadingProfileData } = useQuery<{
@@ -3448,7 +3449,7 @@ export default function SolRefund() {
                     Swap
                   </Button>
                 )}
-                {isPlatformWallet && (
+                {canFlip && (
                 <Button
                   onClick={() => setActiveTab('coinflip')}
                   className={`min-w-[100px] px-4 py-2.5 text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-2 border ${
@@ -4346,7 +4347,7 @@ export default function SolRefund() {
           )}
 
           {/* Coin Flip Tab Content - Platform wallet only */}
-          {activeTab === 'coinflip' && isPlatformWallet && (
+          {activeTab === 'coinflip' && canFlip && (
             <>
               <CoinFlipGame />
               <div className="mt-10 space-y-6">
@@ -6601,7 +6602,7 @@ export default function SolRefund() {
           accountsClosed={shareData.accountsClosed}
           claimType={shareData.claimType}
           walletAddress={publicKey?.toBase58()}
-          onFlip={isPlatformWallet ? () => setActiveTab('coinflip') : undefined}
+          onFlip={canFlip ? () => setActiveTab('coinflip') : undefined}
         />
       )}
 
