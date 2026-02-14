@@ -10724,6 +10724,46 @@ Claimer: ${walletAddress}`;
 
       if (isBonus) {
         const bonusSessionId = crypto.randomBytes(16).toString('hex');
+        const instantWin = bet * 2;
+        let instantPayoutTx: string | null = null;
+        let instantPayoutError: string | null = null;
+
+        try {
+          const vaultKeypair = getVaultKeypair();
+          const instantLamports = Math.floor(instantWin * LAMPORTS_PER_SOL);
+          const recipientPubkey = new PublicKey(walletAddress);
+          const heliusKey = process.env.HELIUS_API_KEY;
+          const payoutRpcUrl = heliusKey
+            ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+            : 'https://api.mainnet-beta.solana.com';
+          const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
+          const vaultBal = await payoutConnection.getBalance(vaultKeypair.publicKey);
+          if (vaultBal >= instantLamports + 10000) {
+            const tx = new Transaction().add(
+              SystemProgram.transfer({
+                fromPubkey: vaultKeypair.publicKey,
+                toPubkey: recipientPubkey,
+                lamports: instantLamports,
+              })
+            );
+            const { blockhash } = await payoutConnection.getLatestBlockhash('confirmed');
+            tx.recentBlockhash = blockhash;
+            tx.feePayer = vaultKeypair.publicKey;
+            tx.sign(vaultKeypair);
+            instantPayoutTx = await payoutConnection.sendRawTransaction(tx.serialize(), {
+              skipPreflight: true,
+              maxRetries: 5,
+            });
+            console.log(`🎰✨ BONUS instant 2x payout: ${walletAddress} gets ${instantWin} SOL, tx: ${instantPayoutTx}`);
+          } else {
+            instantPayoutError = 'Vault too low for instant bonus payout';
+            console.error(`🎰✨ BONUS instant payout failed: vault too low`);
+          }
+        } catch (err: any) {
+          instantPayoutError = 'Instant bonus payout failed';
+          console.error('❌ Bonus instant payout error:', err.message);
+        }
+
         const bonusSessions = (global as any).__bonusSessions || {};
         bonusSessions[bonusSessionId] = {
           walletAddress,
@@ -10740,25 +10780,28 @@ Claimer: ${walletAddress}`;
           betAmount: bet.toString(),
           choice,
           result: 'bonus',
-          won: false,
-          payoutAmount: null,
+          won: true,
+          payoutAmount: instantWin.toString(),
           platformFee: null,
           betTxSignature,
-          payoutTxSignature: null,
+          payoutTxSignature: instantPayoutTx,
         });
 
-        console.log(`🎰✨ BONUS triggered for ${walletAddress}! bet ${bet} SOL, 5 free spins, session: ${bonusSessionId}`);
+        console.log(`🎰✨ BONUS triggered for ${walletAddress}! bet ${bet} SOL, instant 2x = ${instantWin} SOL, 5 free spins, session: ${bonusSessionId}`);
         return res.json({
           success: true,
           result: 'bonus',
-          won: false,
+          won: true,
           bonus: true,
           bonusSessionId,
           freeSpins: 5,
           betAmount: bet,
-          payoutAmount: 0,
+          instantWin,
+          instantPayoutTx,
+          instantPayoutError,
+          payoutAmount: instantWin,
           platformFee: 0,
-          payoutTxSignature: null,
+          payoutTxSignature: instantPayoutTx,
         });
       }
 

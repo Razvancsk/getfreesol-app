@@ -106,12 +106,14 @@ export function CoinFlipGame() {
   const [bonusSessionId, setBonusSessionId] = useState<string | null>(null);
   const [bonusSpinsLeft, setBonusSpinsLeft] = useState(0);
   const [bonusTotalWon, setBonusTotalWon] = useState(0);
+  const [bonusInstantWin, setBonusInstantWin] = useState(0);
   const [bonusBetAmount, setBonusBetAmount] = useState(0);
   const [bonusSpinResult, setBonusSpinResult] = useState<{ result: string; won: boolean; spinPayout: number } | null>(null);
   const [showBonusSpinResult, setShowBonusSpinResult] = useState(false);
   const [bonusComplete, setBonusComplete] = useState(false);
   const [bonusPayoutTx, setBonusPayoutTx] = useState<string | null>(null);
   const [isBonusSpinning, setIsBonusSpinning] = useState(false);
+  const [showBonusIntro, setShowBonusIntro] = useState(false);
   const spinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const vaultQuery = useQuery<{ success: boolean; address: string; balance: number }>({
@@ -219,9 +221,11 @@ export function CoinFlipGame() {
         setCoinRotation(0);
         playBonusSound();
         setBonusMode(true);
+        setShowBonusIntro(true);
         setBonusSessionId(result.bonusSessionId);
         setBonusSpinsLeft(result.freeSpins);
         setBonusTotalWon(0);
+        setBonusInstantWin(result.instantWin || 0);
         setBonusBetAmount(result.betAmount);
         setBonusComplete(false);
         setBonusPayoutTx(null);
@@ -326,10 +330,12 @@ export function CoinFlipGame() {
     setBonusSessionId(null);
     setBonusSpinsLeft(0);
     setBonusTotalWon(0);
+    setBonusInstantWin(0);
     setBonusComplete(false);
     setBonusPayoutTx(null);
     setBonusSpinResult(null);
     setShowBonusSpinResult(false);
+    setShowBonusIntro(false);
     setCoinRotation(0);
     setFlipResult(null);
     setShowResult(false);
@@ -363,12 +369,28 @@ export function CoinFlipGame() {
             style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', color: '#1a0a00', boxShadow: '0 0 20px rgba(255, 215, 0, 0.5)' }}>
             BONUS - FREE SPINS!
           </div>
+          {showBonusIntro && !showBonusSpinResult && bonusSpinsLeft === 5 && (
+            <div className="mt-2 space-y-1">
+              <p className="text-green-400 font-black text-xl">YOU WON {bonusInstantWin} SOL</p>
+              <p className="text-yellow-300 font-bold text-sm">+ 5 FREE SPINS!</p>
+            </div>
+          )}
           <p className="text-yellow-300 font-bold mt-2 text-lg">
             {bonusSpinsLeft} spin{bonusSpinsLeft !== 1 ? 's' : ''} left · Bet: {bonusBetAmount} SOL
           </p>
+          {bonusInstantWin > 0 && (
+            <p className="text-green-400 font-bold text-sm">
+              Instant Win: {bonusInstantWin} SOL
+            </p>
+          )}
           {bonusTotalWon > 0 && (
             <p className="text-green-400 font-bold text-lg">
-              Total Won: {bonusTotalWon.toFixed(4)} SOL
+              Free Spin Wins: {bonusTotalWon} SOL
+            </p>
+          )}
+          {(bonusInstantWin + bonusTotalWon) > 0 && (
+            <p className="text-yellow-300 font-black text-lg">
+              Total: {bonusInstantWin + bonusTotalWon} SOL
             </p>
           )}
         </div>
@@ -491,19 +513,24 @@ export function CoinFlipGame() {
               style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               BONUS COMPLETE!
             </div>
-            {bonusTotalWon > 0 ? (
-              <>
-                <div className="text-2xl font-bold text-green-400">
-                  Total Won: {bonusTotalWon.toFixed(4)} SOL
-                </div>
-                {bonusPayoutTx && (
-                  <a href={`https://solscan.io/tx/${bonusPayoutTx}`} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-purple-400 underline hover:text-purple-300">
-                    View payout transaction
-                  </a>
-                )}
-              </>
-            ) : (
+            <div className="space-y-1">
+              {bonusInstantWin > 0 && (
+                <p className="text-green-400 font-bold">Instant Win: {bonusInstantWin} SOL</p>
+              )}
+              {bonusTotalWon > 0 && (
+                <p className="text-green-400 font-bold">Free Spin Wins: {bonusTotalWon} SOL</p>
+              )}
+              {bonusTotalWon > 0 && bonusPayoutTx && (
+                <a href={`https://solscan.io/tx/${bonusPayoutTx}`} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-purple-400 underline hover:text-purple-300 block">
+                  View free spin payout tx
+                </a>
+              )}
+            </div>
+            <div className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Total: {bonusInstantWin + bonusTotalWon} SOL
+            </div>
+            {bonusInstantWin + bonusTotalWon === 0 && (
               <div className="text-xl font-bold text-gray-400">
                 No wins this time. Better luck next time!
               </div>
