@@ -10677,6 +10677,41 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'Transaction amount does not match bet amount' });
       }
 
+      const vaultKeypair = getVaultKeypair();
+      const maxPossiblePayout = Math.floor((bet * 2 * (1 - PLATFORM_FEE_RATE)) * LAMPORTS_PER_SOL);
+      const recipientPubkey = new PublicKey(walletAddress);
+
+      const heliusKey = process.env.HELIUS_API_KEY;
+      const payoutRpcUrl = heliusKey
+        ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
+        : 'https://api.mainnet-beta.solana.com';
+      const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
+
+      const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
+      if (vaultBalance < maxPossiblePayout + 10000) {
+        console.error(`🎰 Vault balance too low: ${vaultBalance / LAMPORTS_PER_SOL} SOL, need ${maxPossiblePayout / LAMPORTS_PER_SOL} SOL. Refunding bet.`);
+        try {
+          const refundLamports = Math.floor(bet * LAMPORTS_PER_SOL);
+          const refundTx = new Transaction().add(
+            SystemProgram.transfer({
+              fromPubkey: vaultKeypair.publicKey,
+              toPubkey: recipientPubkey,
+              lamports: refundLamports,
+            })
+          );
+          const { blockhash: refundBlockhash } = await payoutConnection.getLatestBlockhash('confirmed');
+          refundTx.recentBlockhash = refundBlockhash;
+          refundTx.feePayer = vaultKeypair.publicKey;
+          refundTx.sign(vaultKeypair);
+          const refundSig = await payoutConnection.sendRawTransaction(refundTx.serialize(), { skipPreflight: true, maxRetries: 5 });
+          console.log(`🎰 Refunded ${bet} SOL to ${walletAddress}, tx: ${refundSig}`);
+          return res.status(400).json({ error: `Vault balance too low for this bet. Your ${bet} SOL has been refunded.`, refundTx: refundSig });
+        } catch (refundErr: any) {
+          console.error('❌ Refund failed:', refundErr.message);
+          return res.status(500).json({ error: 'Vault balance too low and refund failed. Please contact support.' });
+        }
+      }
+
       const txSlot = txInfo.slot;
       const seedData = `${betTxSignature}:${txSlot}:${choice}`;
       const hashBuffer = crypto.createHash('sha256').update(seedData).digest();
@@ -10694,22 +10729,7 @@ Claimer: ${walletAddress}`;
         payoutAmount = grossPayout - platformFee;
 
         try {
-          const vaultKeypair = getVaultKeypair();
-
           const payoutLamports = Math.floor(payoutAmount * LAMPORTS_PER_SOL);
-          const recipientPubkey = new PublicKey(walletAddress);
-
-          const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
-          if (vaultBalance < payoutLamports + 5000) {
-            console.error(`🎰 Vault balance too low: ${vaultBalance / LAMPORTS_PER_SOL} SOL, need ${payoutAmount} SOL`);
-            return res.status(500).json({ error: 'Game vault has insufficient funds for payout. Please try a smaller bet or try again later.' });
-          }
-
-          const heliusKey = process.env.HELIUS_API_KEY;
-          const payoutRpcUrl = heliusKey
-            ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
-            : 'https://api.mainnet-beta.solana.com';
-          const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
 
           const transaction = new Transaction().add(
             SystemProgram.transfer({
@@ -10731,8 +10751,27 @@ Claimer: ${walletAddress}`;
 
           console.log(`🎰 Coin flip WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
         } catch (payoutError: any) {
-          console.error('❌ Coin flip payout failed after all retries:', payoutError);
-          return res.status(500).json({ error: 'Payout transaction failed. Please contact support.' });
+          console.error('❌ Coin flip payout failed:', payoutError.message);
+          try {
+            const refundLamports = Math.floor(bet * LAMPORTS_PER_SOL);
+            const refundTx = new Transaction().add(
+              SystemProgram.transfer({
+                fromPubkey: vaultKeypair.publicKey,
+                toPubkey: recipientPubkey,
+                lamports: refundLamports,
+              })
+            );
+            const { blockhash: rb } = await payoutConnection.getLatestBlockhash('confirmed');
+            refundTx.recentBlockhash = rb;
+            refundTx.feePayer = vaultKeypair.publicKey;
+            refundTx.sign(vaultKeypair);
+            const refundSig = await payoutConnection.sendRawTransaction(refundTx.serialize(), { skipPreflight: true, maxRetries: 5 });
+            console.log(`🎰 Payout failed, refunded ${bet} SOL to ${walletAddress}, tx: ${refundSig}`);
+            return res.status(500).json({ error: `Payout failed. Your ${bet} SOL has been refunded.`, refundTx: refundSig });
+          } catch (refundErr: any) {
+            console.error('❌ Refund after payout failure also failed:', refundErr.message);
+            return res.status(500).json({ error: 'Payout and refund both failed. Please contact support.' });
+          }
         }
       } else {
         console.log(`🎰 Coin flip LOSS: ${walletAddress} bet ${bet} SOL, result: ${result}`);
