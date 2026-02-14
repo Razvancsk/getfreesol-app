@@ -498,7 +498,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
       
       // Create connection for RPC calls
-      const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+      const heliusKey = process.env.HELIUS_API_KEY;
+      const rpcUrl = process.env.HELIUS_RPC_URL || (heliusKey ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.mainnet-beta.solana.com');
+      const connection = new Connection(rpcUrl);
 
       // Step 1: Get quote from Jupiter Swap API v1
       console.log(`🔄 Getting Jupiter quote for ${inputMint} -> ${outputMint}, amount: ${amount}`);
@@ -745,7 +747,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const userTokenAccount = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
           
           // Get connection to fetch lookup tables
-          const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+          const hKey = process.env.HELIUS_API_KEY;
+          const rUrl = process.env.HELIUS_RPC_URL || (hKey ? `https://mainnet.helius-rpc.com/?api-key=${hKey}` : 'https://api.mainnet-beta.solana.com');
+          const connection = new Connection(rUrl);
           
           // Fetch address lookup tables
           const lookupTableAccounts: AddressLookupTableAccount[] = [];
@@ -888,7 +892,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userTokenAccount = getAssociatedTokenAddressSync(inputMintPubkey, takerPubkey);
       
       // Get connection to fetch lookup tables
-      const connection = new Connection(process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com');
+      const hKey2 = process.env.HELIUS_API_KEY;
+      const rUrl2 = process.env.HELIUS_RPC_URL || (hKey2 ? `https://mainnet.helius-rpc.com/?api-key=${hKey2}` : 'https://api.mainnet-beta.solana.com');
+      const connection = new Connection(rUrl2);
       
       // Fetch address lookup tables if any
       const lookupTableAccounts: AddressLookupTableAccount[] = [];
@@ -9004,10 +9010,9 @@ Claimer: ${walletAddress}`;
       const developerWallet = new PublicKey(walletAddress);
       
       // Create transaction to transfer WSOL
-      const connection = new Connection(
-        process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com',
-        'confirmed'
-      );
+      const hKey3 = process.env.HELIUS_API_KEY;
+      const rUrl3 = process.env.HELIUS_RPC_URL || (hKey3 ? `https://mainnet.helius-rpc.com/?api-key=${hKey3}` : 'https://api.mainnet-beta.solana.com');
+      const connection = new Connection(rUrl3, 'confirmed');
       
       const transaction = new Transaction();
       
