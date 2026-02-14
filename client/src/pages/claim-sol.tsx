@@ -3382,11 +3382,11 @@ export default function SolRefund() {
 
           {/* Center Navigation Buttons */}
           {activeTab !== 'docs' && (
-            <div className="flex justify-center py-3 px-2 overflow-x-auto">
-              <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
+            <div className="py-3 px-2">
+              <div className="flex items-center gap-2 md:gap-3 md:justify-center w-full">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
-                  className={`min-w-[80px] md:min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'reclaim' 
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
@@ -3401,7 +3401,7 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('tokens'); }}
-                  className={`min-w-[80px] md:min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'burnTokens' && burnSubTab === 'tokens'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
@@ -3411,7 +3411,7 @@ export default function SolRefund() {
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); setBurnSubTab('nft'); }}
-                  className={`min-w-[80px] md:min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'burnTokens' && burnSubTab === 'nft'
                       ? 'bg-purple-600 text-white border-purple-500' 
                       : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
@@ -3438,7 +3438,7 @@ export default function SolRefund() {
                 {isPlatformWallet && (
                   <Button
                     onClick={() => setActiveTab('swap')}
-                    className={`min-w-[80px] md:min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                    className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                       activeTab === 'swap' 
                         ? 'bg-green-600 text-white border-green-500' 
                         : 'bg-purple-800/40 text-purple-300 hover:bg-green-600/60 border-purple-500/30'
@@ -3452,7 +3452,7 @@ export default function SolRefund() {
                 {canFlip && (
                 <Button
                   onClick={() => setActiveTab('coinflip')}
-                  className={`min-w-[80px] md:min-w-[100px] px-3 md:px-4 py-2 md:py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'coinflip'
                       ? 'bg-green-600 text-white border-green-500'
                       : 'bg-purple-800/40 text-purple-300 hover:bg-green-600/60 border-purple-500/30'
