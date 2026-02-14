@@ -1,4 +1,4 @@
-import { Connection, PublicKey, Keypair, Transaction, TransactionInstruction } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction } from '@solana/spl-token';
 import { encryptPrivateKey, decryptPrivateKey } from './pdaService';
 import { db } from './db';
@@ -27,6 +27,33 @@ interface PendingImport {
 }
 
 const pendingKeyImports = new Map<number, PendingImport>();
+const pendingScanWallet = new Set<number>();
+
+const INTERVAL_LABELS: Record<string, string> = {
+  'hourly': 'Every 1 Hour',
+  '6hours': 'Every 6 Hours',
+  '12hours': 'Every 12 Hours',
+  'daily': 'Daily',
+  'weekly': 'Weekly',
+  'monthly': 'Monthly'
+};
+
+const MAIN_MENU_KEYBOARD = {
+  inline_keyboard: [
+    [
+      { text: '🔍 Scan Wallet', callback_data: 'menu_scan' },
+      { text: '⚡ Auto-Claim', callback_data: 'menu_autoclaim' }
+    ],
+    [
+      { text: '📊 Status', callback_data: 'menu_status' },
+      { text: '🛑 Stop', callback_data: 'menu_stop' }
+    ],
+    [
+      { text: '❓ Help', callback_data: 'menu_help' },
+      { text: '🔄 Refresh', callback_data: 'menu_refresh' }
+    ]
+  ]
+};
 
 async function scanWallet(walletAddress: string): Promise<{ emptyAccounts: number; totalReclaimable: string }> {
   const pubkey = new PublicKey(walletAddress);
@@ -63,24 +90,16 @@ async function scanWalletDetailed(walletAddress: string) {
   const emptyAccounts: { address: string; programId: PublicKey; lamports: number }[] = [];
 
   for (const { pubkey: accPubkey, account } of tokenAccounts.value) {
-    const tokenAmount = account.data.parsed.info.tokenAmount;
+    const tokenAmount = account.account.data.parsed.info.tokenAmount;
     if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
-      emptyAccounts.push({
-        address: accPubkey.toBase58(),
-        programId: TOKEN_PROGRAM_ID,
-        lamports: account.lamports
-      });
+      emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_PROGRAM_ID, lamports: account.lamports });
     }
   }
 
   for (const { pubkey: accPubkey, account } of token2022Accounts.value) {
-    const tokenAmount = account.data.parsed.info.tokenAmount;
+    const tokenAmount = account.account.data.parsed.info.tokenAmount;
     if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
-      emptyAccounts.push({
-        address: accPubkey.toBase58(),
-        programId: TOKEN_2022_PROGRAM_ID,
-        lamports: account.lamports
-      });
+      emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_2022_PROGRAM_ID, lamports: account.lamports });
     }
   }
 
@@ -169,6 +188,42 @@ let botInstance: any = null;
 let isInitializing = false;
 let autoClaimTimer: NodeJS.Timeout | null = null;
 
+async function sendMainMenu(bot: any, chatId: number, username: string) {
+  const activeSub = await getActiveSubscription(chatId);
+  
+  let statusLine = '⚪ Auto-Claim: Inactive';
+  if (activeSub) {
+    const shortWallet = `${activeSub.walletAddress.slice(0, 4)}...${activeSub.walletAddress.slice(-4)}`;
+    statusLine = `🟢 Auto-Claim: Active\n` +
+      `👛 ${shortWallet}\n` +
+      `⏱ Interval: ${INTERVAL_LABELS[activeSub.interval] || activeSub.interval}\n` +
+      `💰 Total Claimed: ${parseFloat(activeSub.totalClaimed).toFixed(6)} SOL\n` +
+      `📦 Accounts Closed: ${activeSub.totalAccountsClosed}`;
+  }
+
+  await bot.sendMessage(chatId,
+    `👋 Welcome to GetFreeSol Bot, ${username}!\n\n` +
+    `Reclaim SOL rent from empty token accounts on Solana.\n\n` +
+    `${statusLine}\n\n` +
+    `🌐 getfreesol.xyz`,
+    {
+      reply_markup: MAIN_MENU_KEYBOARD,
+      disable_web_page_preview: true
+    }
+  );
+}
+
+async function getActiveSubscription(chatId: number) {
+  const subs = await db.select()
+    .from(telegramAutoClaimSubscriptions)
+    .where(and(
+      eq(telegramAutoClaimSubscriptions.telegramChatId, chatId.toString()),
+      eq(telegramAutoClaimSubscriptions.isActive, true)
+    ))
+    .limit(1);
+  return subs.length > 0 ? subs[0] : null;
+}
+
 export async function initializeTelegramBot() {
   if (!TELEGRAM_BOT_TOKEN) {
     console.log('TELEGRAM_BOT_TOKEN not configured - Telegram bot disabled');
@@ -205,43 +260,16 @@ export async function initializeTelegramBot() {
     bot.onText(/\/start/, async (msg: any) => {
       const chatId = msg.chat.id;
       const username = msg.from?.username || msg.from?.first_name || 'there';
-      
       try {
-        await bot.sendMessage(chatId, 
-          `Welcome to GetFreeSol Bot, ${username}!\n\n` +
-          `I help you find and claim SOL rent from empty token accounts on Solana.\n\n` +
-          `Commands:\n` +
-          `/scan <wallet> - Check wallet for claimable rent\n` +
-          `/autoclaim - Set up automatic rent claiming\n` +
-          `/status - Check your auto-claim status\n` +
-          `/stop - Stop auto-claiming\n` +
-          `/help - Show help\n\n` +
-          `Visit getfreesol.xyz to claim your SOL!`,
-          { disable_web_page_preview: true }
-        );
+        await sendMainMenu(bot, chatId, username);
       } catch (err: any) {
         console.error('Telegram /start error:', err?.message || err);
       }
     });
 
     bot.onText(/\/help/, async (msg: any) => {
-      const chatId = msg.chat.id;
-      
       try {
-        await bot.sendMessage(chatId,
-          `GetFreeSol Bot Commands\n\n` +
-          `/scan <wallet> - Scan a wallet for empty token accounts\n` +
-          `/autoclaim - Set up automatic rent claiming\n` +
-          `/status - Check your auto-claim subscription\n` +
-          `/stop - Stop auto-claiming\n` +
-          `/help - Show this help message\n\n` +
-          `Tips:\n` +
-          `- Just paste a wallet address to scan it\n` +
-          `- Each empty account holds ~0.002 SOL in rent\n` +
-          `- Auto-claim will scan and claim automatically\n` +
-          `- Visit getfreesol.xyz for the full app`,
-          { disable_web_page_preview: true }
-        );
+        await handleHelp(bot, msg.chat.id);
       } catch (err: any) {
         console.error('Telegram /help error:', err?.message || err);
       }
@@ -250,21 +278,20 @@ export async function initializeTelegramBot() {
     bot.onText(/\/scan(?:\s+(.+))?/, async (msg: any, match: any) => {
       const chatId = msg.chat.id;
       const messageId = `${chatId}-${msg.message_id}`;
-      
       if (processedMessages.has(messageId)) return;
       processedMessages.add(messageId);
       setTimeout(() => processedMessages.delete(messageId), 60000);
 
-      const walletAddress = match?.[1]?.trim();
-      
       try {
+        const walletAddress = match?.[1]?.trim();
         if (!walletAddress) {
+          pendingScanWallet.add(chatId);
           await bot.sendMessage(chatId,
-            `Please provide a wallet address.\n\nExample: /scan GnV7urSN5aiRWdioX5uRaYSoykWVJaKHwWGdb8BFH9Bm`
+            '🔍 Send me a Solana wallet address to scan:',
+            { reply_markup: { inline_keyboard: [[{ text: '❌ Cancel', callback_data: 'cancel_scan' }]] } }
           );
           return;
         }
-
         await handleWalletScan(bot, chatId, walletAddress);
       } catch (err: any) {
         console.error('Telegram /scan error:', err?.message || err);
@@ -274,125 +301,35 @@ export async function initializeTelegramBot() {
     bot.onText(/\/autoclaim/, async (msg: any) => {
       const chatId = msg.chat.id;
       const messageId = `${chatId}-${msg.message_id}`;
-      
       if (processedMessages.has(messageId)) return;
       processedMessages.add(messageId);
       setTimeout(() => processedMessages.delete(messageId), 60000);
-
       try {
-        if (msg.chat.type !== 'private') {
-          await bot.sendMessage(chatId,
-            'For security, auto-claim setup is only available in private messages. Please DM me directly to set it up.'
-          );
-          return;
-        }
-
-        const existing = await db.select()
-          .from(telegramAutoClaimSubscriptions)
-          .where(and(
-            eq(telegramAutoClaimSubscriptions.telegramChatId, chatId.toString()),
-            eq(telegramAutoClaimSubscriptions.isActive, true)
-          ))
-          .limit(1);
-
-        if (existing.length > 0) {
-          const sub = existing[0];
-          const shortWallet = `${sub.walletAddress.slice(0, 4)}...${sub.walletAddress.slice(-4)}`;
-          await bot.sendMessage(chatId,
-            `You already have auto-claim active!\n\n` +
-            `Wallet: ${shortWallet}\n` +
-            `Interval: ${sub.interval}\n` +
-            `Total Claimed: ${sub.totalClaimed} SOL\n` +
-            `Accounts Closed: ${sub.totalAccountsClosed}\n\n` +
-            `Use /stop to deactivate, then /autoclaim to set up again.`
-          );
-          return;
-        }
-
-        await bot.sendMessage(chatId,
-          `Auto-Claim Setup\n\n` +
-          `This feature will automatically scan your wallet and claim rent from empty token accounts at your chosen interval.\n\n` +
-          `How it works:\n` +
-          `1. You import your wallet private key\n` +
-          `2. Choose a scan interval\n` +
-          `3. Bot claims rent automatically when found\n\n` +
-          `Your private key is encrypted and stored securely. A 15% platform fee applies to claimed rent.\n\n` +
-          `Ready to start?`,
-          {
-            reply_markup: {
-              inline_keyboard: [[
-                { text: 'Import Wallet', callback_data: 'autoclaim_import' }
-              ], [
-                { text: 'Cancel', callback_data: 'autoclaim_cancel' }
-              ]]
-            }
-          }
-        );
+        await handleAutoClaimSetup(bot, chatId, msg);
       } catch (err: any) {
         console.error('Telegram /autoclaim error:', err?.message || err);
-        await bot.sendMessage(chatId, 'Something went wrong. Please try again.').catch(() => {});
       }
     });
 
     bot.onText(/\/status/, async (msg: any) => {
       const chatId = msg.chat.id;
       const messageId = `${chatId}-${msg.message_id}`;
-      
       if (processedMessages.has(messageId)) return;
       processedMessages.add(messageId);
       setTimeout(() => processedMessages.delete(messageId), 60000);
-
       try {
-        const subs = await db.select()
-          .from(telegramAutoClaimSubscriptions)
-          .where(eq(telegramAutoClaimSubscriptions.telegramChatId, chatId.toString()));
-
-        const activeSub = subs.find(s => s.isActive);
-
-        if (!activeSub) {
-          await bot.sendMessage(chatId,
-            `No active auto-claim subscription.\n\nUse /autoclaim to set one up!`
-          );
-          return;
-        }
-
-        const shortWallet = `${activeSub.walletAddress.slice(0, 4)}...${activeSub.walletAddress.slice(-4)}`;
-        const lastScan = activeSub.lastScanAt ? activeSub.lastScanAt.toLocaleString() : 'Never';
-        const lastClaim = activeSub.lastClaimAt ? activeSub.lastClaimAt.toLocaleString() : 'Never';
-
-        await bot.sendMessage(chatId,
-          `Auto-Claim Status\n\n` +
-          `Status: Active\n` +
-          `Wallet: ${shortWallet}\n` +
-          `Interval: ${activeSub.interval}\n` +
-          `Last Scan: ${lastScan}\n` +
-          `Last Claim: ${lastClaim}\n` +
-          `Total Claimed: ${activeSub.totalClaimed} SOL\n` +
-          `Accounts Closed: ${activeSub.totalAccountsClosed}`,
-          {
-            reply_markup: {
-              inline_keyboard: [[
-                { text: 'Change Interval', callback_data: 'change_interval' }
-              ], [
-                { text: 'Stop Auto-Claim', callback_data: 'autoclaim_stop_confirm' }
-              ]]
-            }
-          }
-        );
+        await handleStatus(bot, chatId);
       } catch (err: any) {
         console.error('Telegram /status error:', err?.message || err);
-        await bot.sendMessage(chatId, 'Something went wrong. Please try again.').catch(() => {});
       }
     });
 
     bot.onText(/\/stop/, async (msg: any) => {
       const chatId = msg.chat.id;
       const messageId = `${chatId}-${msg.message_id}`;
-      
       if (processedMessages.has(messageId)) return;
       processedMessages.add(messageId);
       setTimeout(() => processedMessages.delete(messageId), 60000);
-
       try {
         await handleStopAutoClaim(bot, chatId);
       } catch (err: any) {
@@ -403,26 +340,67 @@ export async function initializeTelegramBot() {
     bot.on('callback_query', async (query: any) => {
       const chatId = query.message.chat.id;
       const data = query.data;
+      const username = query.from?.username || query.from?.first_name || 'there';
 
       try {
         await bot.answerCallbackQuery(query.id);
 
-        if (data === 'autoclaim_import') {
+        if (data === 'menu_scan') {
+          pendingScanWallet.add(chatId);
+          await bot.sendMessage(chatId,
+            '🔍 Send me a Solana wallet address to scan:',
+            { reply_markup: { inline_keyboard: [[{ text: '❌ Cancel', callback_data: 'cancel_scan' }]] } }
+          );
+        } else if (data === 'cancel_scan') {
+          pendingScanWallet.delete(chatId);
+          await bot.sendMessage(chatId, 'Scan cancelled.');
+
+        } else if (data === 'menu_autoclaim') {
+          await handleAutoClaimSetup(bot, chatId, query.message);
+
+        } else if (data === 'menu_status') {
+          await handleStatus(bot, chatId);
+
+        } else if (data === 'menu_stop') {
+          await handleStopAutoClaim(bot, chatId);
+
+        } else if (data === 'menu_help') {
+          await handleHelp(bot, chatId);
+
+        } else if (data === 'menu_refresh') {
+          await sendMainMenu(bot, chatId, username);
+
+        } else if (data === 'back_to_menu') {
+          await sendMainMenu(bot, chatId, username);
+
+        } else if (data === 'autoclaim_import') {
+          if (query.message.chat.type !== 'private') {
+            await bot.sendMessage(chatId, '🔒 For security, please DM me to import your wallet.');
+            return;
+          }
           pendingKeyImports.set(chatId, { step: 'awaiting_key' });
           await bot.sendMessage(chatId,
-            `Please send your Solana wallet private key (base58 format).\n\n` +
-            `Your key will be encrypted and stored securely. The message will be deleted after import.\n\n` +
-            `Send /cancel to abort.`
+            '🔑 Send your Solana wallet private key (base58 format).\n\n' +
+            'Your key will be encrypted (AES-256-GCM) and stored securely.\n' +
+            'The message will be deleted immediately after import.',
+            { reply_markup: { inline_keyboard: [[{ text: '❌ Cancel', callback_data: 'autoclaim_cancel' }]] } }
           );
+
         } else if (data === 'autoclaim_cancel') {
           pendingKeyImports.delete(chatId);
-          await bot.sendMessage(chatId, 'Auto-claim setup cancelled.');
+          await bot.sendMessage(chatId, 'Setup cancelled.', {
+            reply_markup: { inline_keyboard: [[{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]] }
+          });
+
         } else if (data?.startsWith('interval_')) {
           await handleIntervalSelection(bot, chatId, data.replace('interval_', ''));
+
         } else if (data === 'change_interval') {
-          await showIntervalPicker(bot, chatId);
+          await showIntervalPicker(bot, chatId, 'change_to_');
+
         } else if (data?.startsWith('change_to_')) {
           await handleChangeInterval(bot, chatId, data.replace('change_to_', ''));
+
         } else if (data === 'autoclaim_stop_confirm') {
           await handleStopAutoClaim(bot, chatId);
         }
@@ -440,40 +418,50 @@ export async function initializeTelegramBot() {
       if (!text) return;
       if (processedMessages.has(messageId)) return;
       if (text.startsWith('/')) {
-        if (text === '/cancel' && pendingKeyImports.has(chatId)) {
+        if (text === '/cancel') {
           pendingKeyImports.delete(chatId);
+          pendingScanWallet.delete(chatId);
           processedMessages.add(messageId);
           setTimeout(() => processedMessages.delete(messageId), 60000);
-          await bot.sendMessage(chatId, 'Import cancelled.').catch(() => {});
+          await bot.sendMessage(chatId, 'Cancelled.', {
+            reply_markup: { inline_keyboard: [[{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]] }
+          }).catch(() => {});
         }
         return;
       }
 
+      processedMessages.add(messageId);
+      setTimeout(() => processedMessages.delete(messageId), 60000);
+
       const pending = pendingKeyImports.get(chatId);
       if (pending && pending.step === 'awaiting_key') {
-        processedMessages.add(messageId);
-        setTimeout(() => processedMessages.delete(messageId), 60000);
-
         if (msg.chat.type !== 'private') {
-          await bot.sendMessage(chatId, 'Please send your private key in a direct message to me, not in a group chat.').catch(() => {});
+          await bot.sendMessage(chatId, '🔒 Please send your private key in a DM, not in a group.').catch(() => {});
           pendingKeyImports.delete(chatId);
           return;
         }
-
         try {
           await bot.deleteMessage(chatId, msg.message_id).catch(() => {});
         } catch (e) {}
-
         await handlePrivateKeyImport(bot, chatId, text, msg.from?.username);
+        return;
+      }
+
+      if (pendingScanWallet.has(chatId)) {
+        pendingScanWallet.delete(chatId);
+        const walletMatch = text.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})$/);
+        if (walletMatch) {
+          await handleWalletScan(bot, chatId, walletMatch[1]);
+        } else {
+          await bot.sendMessage(chatId, '❌ Invalid wallet address. Please try again.', {
+            reply_markup: { inline_keyboard: [[{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]] }
+          });
+        }
         return;
       }
       
       const walletMatch = text.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})$/);
-      
       if (walletMatch) {
-        processedMessages.add(messageId);
-        setTimeout(() => processedMessages.delete(messageId), 60000);
-        
         await handleWalletScan(bot, chatId, walletMatch[1]);
         return;
       }
@@ -490,6 +478,122 @@ export async function initializeTelegramBot() {
   }
 }
 
+async function handleHelp(bot: any, chatId: number) {
+  await bot.sendMessage(chatId,
+    '❓ GetFreeSol Bot Help\n\n' +
+    '🔍 Scan Wallet - Check any wallet for claimable SOL rent\n' +
+    '⚡ Auto-Claim - Import wallet & auto-claim rent on a schedule\n' +
+    '📊 Status - View your auto-claim subscription details\n' +
+    '🛑 Stop - Deactivate auto-claiming\n' +
+    '🔄 Refresh - Reload the main menu\n\n' +
+    '💡 Tips:\n' +
+    '• Paste any Solana wallet address to scan it\n' +
+    '• Each empty token account holds ~0.002 SOL in rent\n' +
+    '• Auto-claim scans & claims automatically at your interval\n' +
+    '• 15% platform fee on claimed rent\n' +
+    '• Private keys are encrypted with AES-256-GCM\n\n' +
+    '🌐 getfreesol.xyz',
+    {
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]] },
+      disable_web_page_preview: true
+    }
+  );
+}
+
+async function handleAutoClaimSetup(bot: any, chatId: number, msg: any) {
+  if (msg.chat?.type !== 'private') {
+    await bot.sendMessage(chatId,
+      '🔒 For security, auto-claim is only available in private messages.\nPlease DM me directly.'
+    );
+    return;
+  }
+
+  const existing = await getActiveSubscription(chatId);
+
+  if (existing) {
+    const shortWallet = `${existing.walletAddress.slice(0, 4)}...${existing.walletAddress.slice(-4)}`;
+    await bot.sendMessage(chatId,
+      `⚡ Auto-Claim Already Active\n\n` +
+      `👛 Wallet: ${shortWallet}\n` +
+      `⏱ Interval: ${INTERVAL_LABELS[existing.interval] || existing.interval}\n` +
+      `💰 Claimed: ${parseFloat(existing.totalClaimed).toFixed(6)} SOL\n` +
+      `📦 Closed: ${existing.totalAccountsClosed} accounts`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '⏱ Change Interval', callback_data: 'change_interval' }],
+            [{ text: '🛑 Stop Auto-Claim', callback_data: 'autoclaim_stop_confirm' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
+    );
+    return;
+  }
+
+  await bot.sendMessage(chatId,
+    '⚡ Auto-Claim Setup\n\n' +
+    'Automatically scan your wallet and claim SOL rent from empty token accounts.\n\n' +
+    'How it works:\n' +
+    '1️⃣ Import your wallet private key\n' +
+    '2️⃣ Choose a scan interval\n' +
+    '3️⃣ Bot claims rent automatically\n\n' +
+    '🔒 Your key is encrypted (AES-256-GCM)\n' +
+    '💰 15% platform fee on claimed rent',
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🔑 Import Wallet', callback_data: 'autoclaim_import' }],
+          [{ text: '❌ Cancel', callback_data: 'autoclaim_cancel' }]
+        ]
+      }
+    }
+  );
+}
+
+async function handleStatus(bot: any, chatId: number) {
+  const activeSub = await getActiveSubscription(chatId);
+
+  if (!activeSub) {
+    await bot.sendMessage(chatId,
+      '📊 No active auto-claim subscription.',
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '⚡ Set Up Auto-Claim', callback_data: 'menu_autoclaim' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
+    );
+    return;
+  }
+
+  const shortWallet = `${activeSub.walletAddress.slice(0, 4)}...${activeSub.walletAddress.slice(-4)}`;
+  const lastScan = activeSub.lastScanAt ? activeSub.lastScanAt.toLocaleString() : 'Never';
+  const lastClaim = activeSub.lastClaimAt ? activeSub.lastClaimAt.toLocaleString() : 'Never';
+
+  await bot.sendMessage(chatId,
+    `📊 Auto-Claim Status\n\n` +
+    `🟢 Status: Active\n` +
+    `👛 Wallet: ${shortWallet}\n` +
+    `⏱ Interval: ${INTERVAL_LABELS[activeSub.interval] || activeSub.interval}\n` +
+    `🔍 Last Scan: ${lastScan}\n` +
+    `💸 Last Claim: ${lastClaim}\n` +
+    `💰 Total Claimed: ${parseFloat(activeSub.totalClaimed).toFixed(6)} SOL\n` +
+    `📦 Accounts Closed: ${activeSub.totalAccountsClosed}`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '⏱ Change Interval', callback_data: 'change_interval' }],
+          [{ text: '🛑 Stop Auto-Claim', callback_data: 'autoclaim_stop_confirm' }],
+          [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+        ]
+      }
+    }
+  );
+}
+
 async function handlePrivateKeyImport(bot: any, chatId: number, privateKeyText: string, username?: string) {
   try {
     pendingKeyImports.delete(chatId);
@@ -500,7 +604,11 @@ async function handlePrivateKeyImport(bot: any, chatId: number, privateKeyText: 
       keypair = Keypair.fromSecretKey(secretKey);
     } catch (e) {
       await bot.sendMessage(chatId,
-        'Invalid private key format. Please make sure you send a valid base58 Solana private key.\n\nUse /autoclaim to try again.'
+        '❌ Invalid private key format.\n\nPlease send a valid base58 Solana private key.',
+        { reply_markup: { inline_keyboard: [
+          [{ text: '🔑 Try Again', callback_data: 'autoclaim_import' }],
+          [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+        ] } }
       );
       return;
     }
@@ -508,45 +616,14 @@ async function handlePrivateKeyImport(bot: any, chatId: number, privateKeyText: 
     const walletAddress = keypair.publicKey.toBase58();
     const encryptedKey = encryptPrivateKey(keypair.secretKey);
 
-    const existing = await db.select()
-      .from(telegramAutoClaimSubscriptions)
-      .where(and(
-        eq(telegramAutoClaimSubscriptions.telegramChatId, chatId.toString()),
-        eq(telegramAutoClaimSubscriptions.isActive, true)
-      ))
-      .limit(1);
-
-    if (existing.length > 0) {
+    const existing = await getActiveSubscription(chatId);
+    if (existing) {
       await db.update(telegramAutoClaimSubscriptions)
         .set({ isActive: false })
-        .where(eq(telegramAutoClaimSubscriptions.id, existing[0].id));
+        .where(eq(telegramAutoClaimSubscriptions.id, existing.id));
     }
 
     const shortWallet = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
-
-    await bot.sendMessage(chatId,
-      `Wallet imported successfully!\n\n` +
-      `Wallet: ${shortWallet}\n\n` +
-      `Now choose how often to scan and claim:`,
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: 'Every 1 Hour', callback_data: 'interval_hourly' },
-              { text: 'Every 6 Hours', callback_data: 'interval_6hours' }
-            ],
-            [
-              { text: 'Every 12 Hours', callback_data: 'interval_12hours' },
-              { text: 'Daily', callback_data: 'interval_daily' }
-            ],
-            [
-              { text: 'Weekly', callback_data: 'interval_weekly' },
-              { text: 'Monthly', callback_data: 'interval_monthly' }
-            ]
-          ]
-        }
-      }
-    );
 
     pendingKeyImports.set(chatId, { 
       step: 'awaiting_interval',
@@ -555,81 +632,108 @@ async function handlePrivateKeyImport(bot: any, chatId: number, privateKeyText: 
       username
     });
 
+    await bot.sendMessage(chatId,
+      `✅ Wallet imported!\n\n` +
+      `👛 ${shortWallet}\n\n` +
+      `Now choose your scan interval:`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '⏱ 1 Hour', callback_data: 'interval_hourly' },
+              { text: '⏱ 6 Hours', callback_data: 'interval_6hours' }
+            ],
+            [
+              { text: '⏱ 12 Hours', callback_data: 'interval_12hours' },
+              { text: '⏱ Daily', callback_data: 'interval_daily' }
+            ],
+            [
+              { text: '⏱ Weekly', callback_data: 'interval_weekly' },
+              { text: '⏱ Monthly', callback_data: 'interval_monthly' }
+            ],
+            [{ text: '❌ Cancel', callback_data: 'autoclaim_cancel' }]
+          ]
+        }
+      }
+    );
   } catch (err: any) {
     console.error('Telegram import error:', err?.message || err);
-    await bot.sendMessage(chatId, 'Something went wrong during import. Please try again with /autoclaim').catch(() => {});
+    await bot.sendMessage(chatId, 'Something went wrong. Please try again.', {
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]] }
+    }).catch(() => {});
   }
 }
 
 async function handleIntervalSelection(bot: any, chatId: number, interval: string) {
   try {
-    const pendingData = (pendingKeyImports as any).get(chatId);
+    const pendingData = pendingKeyImports.get(chatId);
     
-    if (!pendingData || !pendingData.walletAddress) {
-      await bot.sendMessage(chatId, 'Session expired. Please start again with /autoclaim');
+    if (!pendingData || pendingData.step !== 'awaiting_interval' || !pendingData.walletAddress) {
+      await bot.sendMessage(chatId, 'Session expired. Please start again.', {
+        reply_markup: { inline_keyboard: [[{ text: '⚡ Set Up Auto-Claim', callback_data: 'menu_autoclaim' }]] }
+      });
       return;
     }
 
     const { walletAddress, encryptedKey, username } = pendingData;
     pendingKeyImports.delete(chatId);
 
-    const intervalLabels: Record<string, string> = {
-      'hourly': 'Every 1 Hour',
-      '6hours': 'Every 6 Hours',
-      '12hours': 'Every 12 Hours',
-      'daily': 'Daily',
-      'weekly': 'Weekly',
-      'monthly': 'Monthly'
-    };
-
     await db.insert(telegramAutoClaimSubscriptions).values({
       telegramChatId: chatId.toString(),
       telegramUsername: username || null,
-      walletAddress,
-      encryptedPrivateKey: encryptedKey,
+      walletAddress: walletAddress!,
+      encryptedPrivateKey: encryptedKey!,
       interval,
       isActive: true,
     });
 
-    const shortWallet = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
+    const shortWallet = `${walletAddress!.slice(0, 4)}...${walletAddress!.slice(-4)}`;
 
     await bot.sendMessage(chatId,
-      `Auto-Claim Activated!\n\n` +
-      `Wallet: ${shortWallet}\n` +
-      `Interval: ${intervalLabels[interval] || interval}\n` +
-      `Platform Fee: 15%\n\n` +
-      `The bot will scan your wallet and claim any rent from empty accounts automatically.\n\n` +
-      `Commands:\n` +
-      `/status - Check your subscription\n` +
-      `/stop - Stop auto-claiming`
+      `🎉 Auto-Claim Activated!\n\n` +
+      `👛 Wallet: ${shortWallet}\n` +
+      `⏱ Interval: ${INTERVAL_LABELS[interval] || interval}\n` +
+      `💰 Platform Fee: 15%\n\n` +
+      `The bot will scan and claim rent automatically.`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📊 View Status', callback_data: 'menu_status' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
     );
 
     console.log(`Auto-claim activated for ${shortWallet} (${interval})`);
 
   } catch (err: any) {
-    console.error('Telegram interval selection error:', err?.message || err);
-    await bot.sendMessage(chatId, 'Something went wrong. Please try again with /autoclaim').catch(() => {});
+    console.error('Telegram interval error:', err?.message || err);
+    await bot.sendMessage(chatId, 'Something went wrong. Please try again.', {
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]] }
+    }).catch(() => {});
   }
 }
 
-async function showIntervalPicker(bot: any, chatId: number) {
+async function showIntervalPicker(bot: any, chatId: number, prefix: string) {
   await bot.sendMessage(chatId,
-    'Choose a new scan interval:',
+    '⏱ Choose a new scan interval:',
     {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: 'Every 1 Hour', callback_data: 'change_to_hourly' },
-            { text: 'Every 6 Hours', callback_data: 'change_to_6hours' }
+            { text: '1 Hour', callback_data: `${prefix}hourly` },
+            { text: '6 Hours', callback_data: `${prefix}6hours` }
           ],
           [
-            { text: 'Every 12 Hours', callback_data: 'change_to_12hours' },
-            { text: 'Daily', callback_data: 'change_to_daily' }
+            { text: '12 Hours', callback_data: `${prefix}12hours` },
+            { text: 'Daily', callback_data: `${prefix}daily` }
           ],
           [
-            { text: 'Weekly', callback_data: 'change_to_weekly' },
-            { text: 'Monthly', callback_data: 'change_to_monthly' }
-          ]
+            { text: 'Weekly', callback_data: `${prefix}weekly` },
+            { text: 'Monthly', callback_data: `${prefix}monthly` }
+          ],
+          [{ text: '◀️ Back', callback_data: 'menu_status' }]
         ]
       }
     }
@@ -638,38 +742,33 @@ async function showIntervalPicker(bot: any, chatId: number) {
 
 async function handleChangeInterval(bot: any, chatId: number, newInterval: string) {
   try {
-    const subs = await db.select()
-      .from(telegramAutoClaimSubscriptions)
-      .where(and(
-        eq(telegramAutoClaimSubscriptions.telegramChatId, chatId.toString()),
-        eq(telegramAutoClaimSubscriptions.isActive, true)
-      ))
-      .limit(1);
+    const sub = await getActiveSubscription(chatId);
 
-    if (subs.length === 0) {
-      await bot.sendMessage(chatId, 'No active subscription found. Use /autoclaim to set one up.');
+    if (!sub) {
+      await bot.sendMessage(chatId, 'No active subscription.', {
+        reply_markup: { inline_keyboard: [[{ text: '⚡ Set Up Auto-Claim', callback_data: 'menu_autoclaim' }]] }
+      });
       return;
     }
 
-    const intervalLabels: Record<string, string> = {
-      'hourly': 'Every 1 Hour',
-      '6hours': 'Every 6 Hours',
-      '12hours': 'Every 12 Hours',
-      'daily': 'Daily',
-      'weekly': 'Weekly',
-      'monthly': 'Monthly'
-    };
-
     await db.update(telegramAutoClaimSubscriptions)
       .set({ interval: newInterval })
-      .where(eq(telegramAutoClaimSubscriptions.id, subs[0].id));
+      .where(eq(telegramAutoClaimSubscriptions.id, sub.id));
 
     await bot.sendMessage(chatId,
-      `Interval updated to: ${intervalLabels[newInterval] || newInterval}\n\nYour next scan will use the new interval.`
+      `✅ Interval updated to: ${INTERVAL_LABELS[newInterval] || newInterval}`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📊 View Status', callback_data: 'menu_status' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
     );
   } catch (err: any) {
     console.error('Telegram change interval error:', err?.message || err);
-    await bot.sendMessage(chatId, 'Something went wrong. Please try again.').catch(() => {});
+    await bot.sendMessage(chatId, 'Something went wrong.').catch(() => {});
   }
 }
 
@@ -683,7 +782,9 @@ async function handleStopAutoClaim(bot: any, chatId: number) {
       ));
 
     if (subs.length === 0) {
-      await bot.sendMessage(chatId, 'No active auto-claim subscription found.');
+      await bot.sendMessage(chatId, '⚪ No active auto-claim to stop.', {
+        reply_markup: { inline_keyboard: [[{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]] }
+      });
       return;
     }
 
@@ -694,12 +795,75 @@ async function handleStopAutoClaim(bot: any, chatId: number) {
     }
 
     await bot.sendMessage(chatId,
-      `Auto-claim has been stopped.\n\n` +
-      `Your encrypted key has been deactivated. Use /autoclaim to set up again.`
+      '🛑 Auto-claim stopped.\n\nYour encrypted key has been deactivated.',
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '⚡ Set Up Again', callback_data: 'menu_autoclaim' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
     );
   } catch (err: any) {
     console.error('Telegram stop error:', err?.message || err);
-    await bot.sendMessage(chatId, 'Something went wrong. Please try again.').catch(() => {});
+    await bot.sendMessage(chatId, 'Something went wrong.').catch(() => {});
+  }
+}
+
+async function handleWalletScan(bot: any, chatId: number, walletAddress: string) {
+  try {
+    const pubkey = new PublicKey(walletAddress);
+    const validatedAddress = pubkey.toString();
+    
+    await bot.sendChatAction(chatId, 'typing');
+    
+    const scanResult = await scanWallet(validatedAddress);
+    
+    const shortAddress = `${validatedAddress.slice(0, 4)}...${validatedAddress.slice(-4)}`;
+    
+    let message: string;
+    let buttons;
+    if (scanResult.emptyAccounts > 0) {
+      message = 
+        `💰 Claimable Rent Found!\n\n` +
+        `👛 Wallet: ${shortAddress}\n` +
+        `🗑 Empty Accounts: ${scanResult.emptyAccounts}\n` +
+        `💰 Claimable: ~${scanResult.totalReclaimable} SOL\n\n` +
+        `Claim at getfreesol.xyz or set up auto-claim!`;
+      buttons = [
+        [{ text: '⚡ Set Up Auto-Claim', callback_data: 'menu_autoclaim' }],
+        [{ text: '🔍 Scan Another', callback_data: 'menu_scan' }],
+        [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+      ];
+    } else {
+      message = 
+        `✅ No Claimable Rent\n\n` +
+        `👛 Wallet: ${shortAddress}\n` +
+        `🗑 Empty Accounts: 0\n\n` +
+        `No empty token accounts found.`;
+      buttons = [
+        [{ text: '🔍 Scan Another', callback_data: 'menu_scan' }],
+        [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+      ];
+    }
+    
+    await bot.sendMessage(chatId, message, { 
+      reply_markup: { inline_keyboard: buttons },
+      disable_web_page_preview: true 
+    });
+    
+    console.log(`Telegram: Scan complete for ${shortAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
+    
+  } catch (error: any) {
+    console.error('Telegram scan error:', error.message);
+    await bot.sendMessage(chatId,
+      '❌ Invalid wallet address or scan failed.\n\nPlease check the address and try again.',
+      { reply_markup: { inline_keyboard: [
+        [{ text: '🔍 Try Again', callback_data: 'menu_scan' }],
+        [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+      ] } }
+    );
   }
 }
 
@@ -743,9 +907,7 @@ function startAutoClaimScheduler(bot: any) {
 
           const emptyAccounts = await scanWalletDetailed(sub.walletAddress);
 
-          if (emptyAccounts.length === 0) {
-            continue;
-          }
+          if (emptyAccounts.length === 0) continue;
 
           const secretKey = decryptPrivateKey(sub.encryptedPrivateKey);
           const keypair = Keypair.fromSecretKey(secretKey);
@@ -766,16 +928,23 @@ function startAutoClaimScheduler(bot: any) {
           const shortWallet = `${sub.walletAddress.slice(0, 4)}...${sub.walletAddress.slice(-4)}`;
 
           await bot.sendMessage(parseInt(sub.telegramChatId),
-            `Auto-Claim Successful!\n\n` +
-            `Wallet: ${shortWallet}\n` +
-            `Accounts Closed: ${result.accountsClosed}\n` +
-            `SOL Recovered: ${result.totalRecovered.toFixed(6)} SOL\n` +
-            `Platform Fee (15%): ${result.platformFee.toFixed(6)} SOL\n` +
-            `Net Received: ${result.netAmount.toFixed(6)} SOL\n\n` +
-            `TX: ${result.signature.slice(0, 8)}...${result.signature.slice(-8)}\n\n` +
-            `Total Claimed: ${newTotalClaimed} SOL\n` +
-            `Total Accounts Closed: ${newTotalClosed}`,
-            { disable_web_page_preview: true }
+            `🎉 Auto-Claim Successful!\n\n` +
+            `👛 Wallet: ${shortWallet}\n` +
+            `📦 Accounts Closed: ${result.accountsClosed}\n` +
+            `💰 SOL Recovered: ${result.totalRecovered.toFixed(6)} SOL\n` +
+            `💸 Platform Fee (15%): ${result.platformFee.toFixed(6)} SOL\n` +
+            `✅ Net Received: ${result.netAmount.toFixed(6)} SOL\n\n` +
+            `🔗 TX: ${result.signature.slice(0, 8)}...${result.signature.slice(-8)}\n\n` +
+            `📊 Total Claimed: ${newTotalClaimed} SOL | Closed: ${newTotalClosed}`,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '📊 View Status', callback_data: 'menu_status' }],
+                  [{ text: '◀️ Menu', callback_data: 'back_to_menu' }]
+                ]
+              },
+              disable_web_page_preview: true
+            }
           ).catch(() => {});
 
           console.log(`Auto-claimed ${result.netAmount.toFixed(6)} SOL for ${shortWallet}`);
@@ -785,7 +954,10 @@ function startAutoClaimScheduler(bot: any) {
           
           if (err?.message?.includes('Attempt to debit') || err?.message?.includes('insufficient')) {
             await bot.sendMessage(parseInt(sub.telegramChatId),
-              `Auto-claim scan found empty accounts but your wallet doesn't have enough SOL for the transaction fee. Please add some SOL to cover network fees.`
+              '⚠️ Auto-claim found empty accounts but your wallet needs more SOL to cover the transaction fee.',
+              {
+                reply_markup: { inline_keyboard: [[{ text: '◀️ Menu', callback_data: 'back_to_menu' }]] }
+              }
             ).catch(() => {});
           }
         }
@@ -796,46 +968,6 @@ function startAutoClaimScheduler(bot: any) {
   }, CHECK_INTERVAL);
 
   console.log('Auto-claim scheduler started (checks every 5 minutes)');
-}
-
-async function handleWalletScan(bot: any, chatId: number, walletAddress: string) {
-  try {
-    const pubkey = new PublicKey(walletAddress);
-    const validatedAddress = pubkey.toString();
-    
-    await bot.sendChatAction(chatId, 'typing');
-    
-    const scanResult = await scanWallet(validatedAddress);
-    
-    let message: string;
-    if (scanResult.emptyAccounts > 0) {
-      message = 
-        `Claimable Rent Found!\n\n` +
-        `Wallet: ${validatedAddress}\n` +
-        `Empty Accounts: ${scanResult.emptyAccounts}\n` +
-        `Claimable SOL: ~${scanResult.totalReclaimable} SOL\n\n` +
-        `Claim at getfreesol.xyz or use /autoclaim for automatic claiming!`;
-    } else {
-      message = 
-        `No Claimable Rent\n\n` +
-        `Wallet: ${validatedAddress}\n` +
-        `Empty Accounts: 0\n\n` +
-        `This wallet has no empty token accounts to close.`;
-    }
-    
-    await bot.sendMessage(chatId, message, { 
-      disable_web_page_preview: true 
-    });
-    
-    const shortAddress = `${validatedAddress.slice(0, 4)}...${validatedAddress.slice(-4)}`;
-    console.log(`Telegram: Scan complete for ${shortAddress} - ${scanResult.emptyAccounts} accounts, ${scanResult.totalReclaimable} SOL`);
-    
-  } catch (error: any) {
-    console.error('Telegram scan error:', error.message);
-    await bot.sendMessage(chatId,
-      `Invalid Solana wallet address or scan failed.\n\nPlease check the address and try again.`
-    );
-  }
 }
 
 export function stopTelegramBot() {
