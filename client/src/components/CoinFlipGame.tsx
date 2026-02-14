@@ -675,7 +675,7 @@ export function CoinFlipGame() {
             <div className="flex items-center justify-between mb-2">
               <p className="text-gray-300 font-bold text-sm">Total Bankroll Value</p>
               {(publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT') && (
-                <a href="/admin/vault" className="text-purple-400 text-sm font-bold hover:text-purple-300">Verify</a>
+                <a href="/admin/vault" className="text-purple-400 text-sm font-bold hover:text-purple-300">Manage</a>
               )}
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-[#1a1035] px-4 py-3">
