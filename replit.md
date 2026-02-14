@@ -32,6 +32,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Backpack Exchange Borrow/Lend**: Displays borrow/lend markets from Backpack Exchange (view-only, requires Backpack account for deposits).
 - **Auto-Claim Feature**: Permit-based automated SOL reclamation from empty accounts, supporting both standard SPL and Token-2022 programs.
 - **Developer API Platform**: Jupiter-style developer platform with PDA-based referral fee collection. Developers create referral accounts via wallet signature, receive deterministic PDA addresses derived from [project_pda, developer_wallet] for secure fee collection without private key management. Supports multiple token mints (SOL, USDC, USDT, BONK, JUP, etc.) with separate token account tracking. Developers earn 80% of collected fees. API documentation is gated - requires account creation first.
+- **Telegram Bot Auto-Claim**: Users can import their private key (DM-only, AES-256-GCM encrypted) and set scan intervals (hourly, 6h, 12h, daily, weekly, monthly). Bot automatically scans and claims rent from empty accounts, batching up to 20 accounts per transaction. 15% platform fee applies. Commands: /autoclaim, /status, /stop, /scan.
 - **X (Twitter) Bot**: Automated social media marketing system for platform wallet with PIN-based OAuth 1.0a authentication (Desktop app flow), scheduled posting, and auto-engagement. Posts automatically when NET SOL >= 0.01 SOL for ALL transaction types (SOL reclaims, NFT burns, token burns) using centralized `announceTransactionOnX()` helper in xApiService.ts with defensive type coercion and custom purple gradient card banners.
 - **Discord Bot**: Multi-functional Discord integration with three key features:
   - **Wallet Scanning**: `/scan <wallet_address>` slash command for checking claimable SOL without connecting wallet
@@ -71,6 +72,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - `referral_claims`: Developer claims of accumulated referral fees.
 - `swap_records`: Records token swaps with USD value and points awarded.
 - `user_points`: Tracks wallet addresses, points, accounts closed, and total SOL claimed.
+- `telegram_auto_claim_subscriptions`: Telegram bot auto-claim user subscriptions with encrypted private keys and interval settings.
 
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.
