@@ -337,6 +337,7 @@ export async function initializeTelegramBot() {
       const username = query.from?.username || query.from?.first_name || 'there';
 
       bot.answerCallbackQuery(query.id).catch(() => {});
+      console.log(`Telegram callback: ${data} from chat ${chatId}`);
 
       try {
         if (data === 'menu_scan') {
