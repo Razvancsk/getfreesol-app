@@ -3564,6 +3564,18 @@ export default function SolRefund() {
             </div>
               )}
 
+              {/* Auto-Claim Telegram Bot text */}
+              <a
+                href="https://t.me/GetFreeSolXyzbot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 mt-4 text-xs text-purple-300 hover:text-white transition-colors"
+              >
+                <SiTelegram className="h-3.5 w-3.5 text-[#0088cc]" />
+                <Zap className="h-3 w-3 text-yellow-400" />
+                <span>Never miss free SOL again! Auto-claim rent 24/7 via our Telegram bot</span>
+                <span className="text-[10px] font-bold uppercase text-yellow-400">NEW</span>
+              </a>
             </div>
           )}
 
