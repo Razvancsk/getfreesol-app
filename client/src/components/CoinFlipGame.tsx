@@ -513,14 +513,6 @@ export function CoinFlipGame() {
               style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               BONUS COMPLETE!
             </div>
-            <div className="space-y-1">
-              {bonusInstantWin > 0 && (
-                <p className="text-green-400 font-bold">Instant Win: {bonusInstantWin} SOL</p>
-              )}
-              {bonusTotalWon > 0 && (
-                <p className="text-green-400 font-bold">Free Spin Wins: {bonusTotalWon} SOL</p>
-              )}
-            </div>
             <div className="text-2xl font-black" style={{ background: 'linear-gradient(135deg, #ffd700, #ff8c00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Total: {bonusInstantWin + bonusTotalWon} SOL
             </div>
