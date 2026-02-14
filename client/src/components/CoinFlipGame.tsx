@@ -93,6 +93,12 @@ export function CoinFlipGame() {
       return;
     }
 
+    const maxPayout = betAmount * 2;
+    if (vaultBalance < maxPayout) {
+      toast({ title: 'Vault balance too low for this bet', description: `Vault has ${vaultBalance.toFixed(4)} SOL but needs ${maxPayout.toFixed(4)} SOL to cover a win. Try a smaller bet.`, variant: 'destructive' });
+      return;
+    }
+
     setIsFlipping(true);
     setFlipResult(null);
     setShowResult(false);
@@ -310,20 +316,26 @@ export function CoinFlipGame() {
       <div className="text-center">
         <p className="text-gray-300 font-bold text-lg tracking-widest uppercase mb-3">For</p>
         <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
-          {BET_AMOUNTS.map((amount) => (
-            <button
-              key={amount}
-              onClick={() => setBetAmount(amount)}
-              disabled={isFlipping}
-              className={`py-3 px-2 rounded-xl font-bold text-sm uppercase transition-all border-2 ${
-                betAmount === amount
-                  ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
-                  : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
-              }`}
-            >
-              {amount} SOL
-            </button>
-          ))}
+          {BET_AMOUNTS.map((amount) => {
+            const tooHighForVault = vaultBalance > 0 && vaultBalance < amount * 2;
+            return (
+              <button
+                key={amount}
+                onClick={() => setBetAmount(amount)}
+                disabled={isFlipping || tooHighForVault}
+                className={`py-3 px-2 rounded-xl font-bold text-sm uppercase transition-all border-2 ${
+                  tooHighForVault
+                    ? 'bg-gray-800/50 text-gray-500 border-gray-600/30 cursor-not-allowed opacity-50'
+                    : betAmount === amount
+                    ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
+                    : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
+                }`}
+                title={tooHighForVault ? `Vault needs ${(amount * 2).toFixed(2)} SOL to cover this bet` : ''}
+              >
+                {amount} SOL
+              </button>
+            );
+          })}
         </div>
       </div>
 
