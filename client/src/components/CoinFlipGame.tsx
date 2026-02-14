@@ -130,25 +130,26 @@ export function CoinFlipGame() {
       }
       console.log(`Bet transaction sent: ${signature}`);
 
-      try {
-        await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
-        console.log(`Bet transaction confirmed: ${signature}`);
-      } catch (confirmErr: any) {
-        console.warn('Confirm warning (continuing):', confirmErr?.message);
-      }
-
       let rotations = 0;
       const spinInterval = setInterval(() => {
         rotations += 30;
         setCoinRotation(rotations);
       }, 50);
 
-      const result = await flipMutation.mutateAsync({
+      const resultPromise = flipMutation.mutateAsync({
         walletAddress: publicKey.toString(),
         betAmount,
         choice,
         betTxSignature: signature,
       });
+
+      const minAnimMs = 1500;
+      const animStart = Date.now();
+      const result = await resultPromise;
+      const elapsed = Date.now() - animStart;
+      if (elapsed < minAnimMs) {
+        await new Promise(r => setTimeout(r, minAnimMs - elapsed));
+      }
 
       clearInterval(spinInterval);
 
@@ -156,15 +157,15 @@ export function CoinFlipGame() {
       const finalRotation = result.result === 'heads' ? 3600 : 3780;
       setCoinRotation(finalRotation);
 
-      await new Promise(r => setTimeout(r, 2000));
-
-      if (result.won) {
-        playWinSound();
-      } else {
-        playLoseSound();
-      }
-      setFlipResult(result);
-      setShowResult(true);
+      setTimeout(() => {
+        if (result.won) {
+          playWinSound();
+        } else {
+          playLoseSound();
+        }
+        setFlipResult(result);
+        setShowResult(true);
+      }, 800);
     } catch (err: any) {
       console.error('Coin flip error:', err);
       setIsFlipping(false);
