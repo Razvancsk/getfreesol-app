@@ -32,7 +32,6 @@ const pendingKeyImports = new Map<number, PendingImport>();
 const pendingScanWallet = new Set<number>();
 
 const INTERVAL_LABELS: Record<string, string> = {
-  '1min': 'Every 1 Minute',
   'hourly': 'Every 1 Hour',
   '6hours': 'Every 6 Hours',
   '12hours': 'Every 12 Hours',
@@ -634,7 +633,6 @@ async function handlePrivateKeyImport(bot: any, chatId: number, privateKeyText: 
       {
         reply_markup: {
           inline_keyboard: [
-            [{ text: '⏱ 1 Minute (Test)', callback_data: 'interval_1min' }],
             [
               { text: '⏱ 1 Hour', callback_data: 'interval_hourly' },
               { text: '⏱ 6 Hours', callback_data: 'interval_6hours' }
@@ -717,7 +715,6 @@ async function showIntervalPicker(bot: any, chatId: number, prefix: string) {
     {
       reply_markup: {
         inline_keyboard: [
-          [{ text: '1 Minute (Test)', callback_data: `${prefix}1min` }],
           [
             { text: '1 Hour', callback_data: `${prefix}hourly` },
             { text: '6 Hours', callback_data: `${prefix}6hours` }
@@ -866,7 +863,6 @@ async function handleWalletScan(bot: any, chatId: number, walletAddress: string)
 
 function getIntervalMs(interval: string): number {
   switch (interval) {
-    case '1min': return 60 * 1000;
     case 'hourly': return 60 * 60 * 1000;
     case '6hours': return 6 * 60 * 60 * 1000;
     case '12hours': return 12 * 60 * 60 * 1000;
