@@ -27,13 +27,28 @@ export default function VaultAdmin() {
 
   const vaultData = vaultQuery.data as any;
 
-  const handleLogin = () => {
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const handleLogin = async () => {
     if (!adminSecret.trim()) {
       toast({ title: 'Enter your admin secret', variant: 'destructive' });
       return;
     }
-    setAuthenticated(true);
-    toast({ title: 'Authenticated', description: 'Vault controls unlocked' });
+    setIsLoggingIn(true);
+    try {
+      const res = await apiRequest('POST', '/api/coinflip/vault/verify', { adminSecret });
+      const data = await res.json();
+      if (data.success) {
+        setAuthenticated(true);
+        toast({ title: 'Authenticated', description: 'Vault controls unlocked' });
+      } else {
+        toast({ title: 'Wrong secret', description: data.error, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Wrong secret', description: 'The admin secret you entered is incorrect.', variant: 'destructive' });
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const handleExportKey = async () => {
@@ -155,9 +170,11 @@ export default function VaultAdmin() {
                   />
                   <Button
                     onClick={handleLogin}
+                    disabled={isLoggingIn}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                   >
-                    <Unlock className="w-4 h-4 mr-2" /> Unlock Vault
+                    {isLoggingIn ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}
+                    {isLoggingIn ? 'Verifying...' : 'Unlock Vault'}
                   </Button>
                 </div>
               </div>

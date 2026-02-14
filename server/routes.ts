@@ -10551,6 +10551,22 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  app.post("/api/coinflip/vault/verify", async (req, res) => {
+    try {
+      const { adminSecret } = req.body;
+      const expectedSecret = process.env.VAULT_ADMIN_SECRET;
+      if (!expectedSecret) {
+        return res.status(503).json({ error: 'Vault admin secret not configured' });
+      }
+      if (!adminSecret || adminSecret !== expectedSecret) {
+        return res.status(403).json({ error: 'Invalid admin secret' });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Verification failed' });
+    }
+  });
+
   app.post("/api/coinflip/vault/export-key", async (req, res) => {
     try {
       const { adminSecret } = req.body;
