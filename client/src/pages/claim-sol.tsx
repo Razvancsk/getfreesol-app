@@ -3382,8 +3382,8 @@ export default function SolRefund() {
 
           {/* Center Navigation Buttons */}
           {activeTab !== 'docs' && (
-            <div className="py-3 px-0 md:px-2">
-              <div className="flex items-center gap-2 md:gap-3 md:justify-center w-full px-1 md:px-0">
+            <div className="py-3 -mx-3 md:mx-0 md:px-2">
+              <div className="flex items-center gap-2 md:gap-3 md:justify-center w-full">
                 <Button
                   onClick={() => setActiveTab('reclaim')}
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-[15px] md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
