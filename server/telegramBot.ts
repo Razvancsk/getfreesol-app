@@ -91,17 +91,23 @@ async function scanWalletDetailed(walletAddress: string) {
   const emptyAccounts: { address: string; programId: PublicKey; lamports: number }[] = [];
 
   for (const { pubkey: accPubkey, account } of tokenAccounts.value) {
-    const tokenAmount = account.account.data.parsed.info.tokenAmount;
-    if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
-      emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_PROGRAM_ID, lamports: account.lamports });
-    }
+    try {
+      const tokenAmount = account?.data?.parsed?.info?.tokenAmount;
+      if (!tokenAmount) continue;
+      if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
+        emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_PROGRAM_ID, lamports: account.lamports });
+      }
+    } catch (e) { continue; }
   }
 
   for (const { pubkey: accPubkey, account } of token2022Accounts.value) {
-    const tokenAmount = account.account.data.parsed.info.tokenAmount;
-    if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
-      emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_2022_PROGRAM_ID, lamports: account.lamports });
-    }
+    try {
+      const tokenAmount = account?.data?.parsed?.info?.tokenAmount;
+      if (!tokenAmount) continue;
+      if (tokenAmount.uiAmount === 0 || tokenAmount.amount === '0') {
+        emptyAccounts.push({ address: accPubkey.toBase58(), programId: TOKEN_2022_PROGRAM_ID, lamports: account.lamports });
+      }
+    } catch (e) { continue; }
   }
 
   return emptyAccounts;
@@ -884,7 +890,7 @@ function getIntervalMs(interval: string): number {
 }
 
 function startAutoClaimScheduler(bot: any) {
-  const CHECK_INTERVAL = 5 * 60 * 1000;
+  const CHECK_INTERVAL = 60 * 1000;
 
   autoClaimTimer = setInterval(async () => {
     try {
@@ -911,7 +917,15 @@ function startAutoClaimScheduler(bot: any) {
 
           const emptyAccounts = await scanWalletDetailed(sub.walletAddress);
 
-          if (emptyAccounts.length === 0) continue;
+          console.log(`  Found ${emptyAccounts.length} empty accounts for ${sub.walletAddress.slice(0, 8)}...`);
+
+          if (emptyAccounts.length === 0) {
+            await bot.sendMessage(parseInt(sub.telegramChatId),
+              `🔍 Auto-scan complete - no empty accounts found right now.`,
+              { reply_markup: { inline_keyboard: [[{ text: '◀️ Menu', callback_data: 'back_to_menu' }]] } }
+            ).catch(() => {});
+            continue;
+          }
 
           const secretKey = decryptPrivateKey(sub.encryptedPrivateKey);
           const keypair = Keypair.fromSecretKey(secretKey);
@@ -971,7 +985,7 @@ function startAutoClaimScheduler(bot: any) {
     }
   }, CHECK_INTERVAL);
 
-  console.log('Auto-claim scheduler started (checks every 5 minutes)');
+  console.log('Auto-claim scheduler started (checks every 1 minute)');
 }
 
 export function stopTelegramBot() {
