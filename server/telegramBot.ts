@@ -337,9 +337,9 @@ export async function initializeTelegramBot() {
       const data = query.data;
       const username = query.from?.username || query.from?.first_name || 'there';
 
-      try {
-        await bot.answerCallbackQuery(query.id);
+      bot.answerCallbackQuery(query.id).catch(() => {});
 
+      try {
         if (data === 'menu_scan') {
           pendingScanWallet.add(chatId);
           await bot.sendMessage(chatId,
