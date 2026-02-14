@@ -3584,7 +3584,7 @@ export default function SolRefund() {
                       <h4 className="text-sm font-semibold text-white">Auto-Claim Bot</h4>
                       <Zap className="h-3.5 w-3.5 text-yellow-400" />
                     </div>
-                    <p className="text-xs text-purple-300 mt-0.5">
+                    <p className="text-xs text-white mt-0.5">
                       Automatically claim SOL rent 24/7 via Telegram — set it and forget it!
                     </p>
                   </div>
