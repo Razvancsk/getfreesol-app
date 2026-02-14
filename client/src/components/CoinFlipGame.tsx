@@ -678,13 +678,9 @@ export function CoinFlipGame() {
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-purple-500/30 bg-[#1a1035] px-4 py-3">
               <div className="w-10 h-10 rounded-lg bg-purple-700 flex items-center justify-center shrink-0">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="6" y1="20" x2="6" y2="10" />
-                  <line x1="10" y1="20" x2="10" y2="10" />
-                  <line x1="14" y1="20" x2="14" y2="10" />
-                  <line x1="18" y1="20" x2="18" y2="10" />
-                  <polygon points="12 2 22 7 2 7" />
-                  <line x1="2" y1="20" x2="22" y2="20" />
+                <svg className="w-5 h-5" viewBox="0 0 16 15" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 3.34646C0 3.13804 0.129286 2.95148 0.324438 2.8783L7.67842 0.120556C7.88683 0.0424007 8.11536 0.036013 8.32782 0.102405L15.6491 2.39032C15.8579 2.45555 16 2.64887 16 2.86756V4.49996C16 4.7761 15.7761 4.99996 15.5 4.99996H0.5C0.223858 4.99996 0 4.7761 0 4.49996V3.34646Z" />
+                  <path d="M9 7.49996C9 7.22382 9.22386 6.99996 9.5 6.99996H10.5C10.7761 6.99996 11 7.22382 11 7.49996V12H13V7.49996C13 7.22382 13.2239 6.99996 13.5 6.99996H14.5C14.7761 6.99996 15 7.22382 15 7.49996V13H15.5C15.7761 13 16 13.2238 16 13.5V14.5C16 14.7761 15.7761 15 15.5 15H0.5C0.223858 15 0 14.7761 0 14.5V13.5C0 13.2238 0.223858 13 0.5 13H1V7.49996C1 7.22382 1.22386 6.99996 1.5 6.99996H2.5C2.77614 6.99996 3 7.22382 3 7.49996V12H5V7.49996C5 7.22382 5.22386 6.99996 5.5 6.99996H6.5C6.77614 6.99996 7 7.22382 7 7.49996V12H9V7.49996Z" />
                 </svg>
               </div>
               <span className="text-white font-bold text-xl flex-1">{vaultBalance.toFixed(4)} SOL</span>
