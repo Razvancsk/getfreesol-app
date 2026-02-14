@@ -10636,7 +10636,7 @@ Claimer: ${walletAddress}`;
       const connection = new Connection(rpcUrl, 'confirmed');
 
       let txInfo: any = null;
-      for (let attempt = 0; attempt < 10; attempt++) {
+      for (let attempt = 0; attempt < 8; attempt++) {
         try {
           txInfo = await connection.getTransaction(betTxSignature, {
             commitment: 'confirmed',
@@ -10647,7 +10647,7 @@ Claimer: ${walletAddress}`;
           }
           txInfo = null;
         } catch (e) {}
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 1000));
       }
 
       if (!txInfo) {
@@ -10709,45 +10709,27 @@ Claimer: ${walletAddress}`;
           const payoutRpcUrl = heliusKey
             ? `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`
             : 'https://api.mainnet-beta.solana.com';
-          const payoutConnection = new Connection(payoutRpcUrl, {
-            commitment: 'confirmed',
-            confirmTransactionInitialTimeout: 30000,
+          const payoutConnection = new Connection(payoutRpcUrl, 'confirmed');
+
+          const transaction = new Transaction().add(
+            SystemProgram.transfer({
+              fromPubkey: vaultKeypair.publicKey,
+              toPubkey: recipientPubkey,
+              lamports: payoutLamports,
+            })
+          );
+
+          const { blockhash } = await payoutConnection.getLatestBlockhash('confirmed');
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = vaultKeypair.publicKey;
+          transaction.sign(vaultKeypair);
+
+          payoutTxSignature = await payoutConnection.sendRawTransaction(transaction.serialize(), {
+            skipPreflight: true,
+            maxRetries: 5,
           });
 
-          const maxRetries = 3;
-          for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-              const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                  fromPubkey: vaultKeypair.publicKey,
-                  toPubkey: recipientPubkey,
-                  lamports: payoutLamports,
-                })
-              );
-
-              const { blockhash, lastValidBlockHeight } = await payoutConnection.getLatestBlockhash('confirmed');
-              transaction.recentBlockhash = blockhash;
-              transaction.feePayer = vaultKeypair.publicKey;
-              transaction.sign(vaultKeypair);
-
-              payoutTxSignature = await payoutConnection.sendRawTransaction(transaction.serialize(), {
-                skipPreflight: true,
-                maxRetries: 3,
-              });
-
-              await payoutConnection.confirmTransaction({
-                signature: payoutTxSignature,
-                blockhash,
-                lastValidBlockHeight,
-              }, 'confirmed');
-              console.log(`🎰 Coin flip WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
-              break;
-            } catch (retryError: any) {
-              console.error(`❌ Coin flip payout attempt ${attempt}/${maxRetries} failed:`, retryError.message);
-              if (attempt === maxRetries) throw retryError;
-              await new Promise(r => setTimeout(r, 1000));
-            }
-          }
+          console.log(`🎰 Coin flip WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
         } catch (payoutError: any) {
           console.error('❌ Coin flip payout failed after all retries:', payoutError);
           return res.status(500).json({ error: 'Payout transaction failed. Please contact support.' });
