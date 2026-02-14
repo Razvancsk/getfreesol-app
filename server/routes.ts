@@ -10705,28 +10705,42 @@ Claimer: ${walletAddress}`;
             return res.status(500).json({ error: 'Game vault has insufficient funds for payout. Please try a smaller bet or try again later.' });
           }
 
-          const transaction = new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: vaultKeypair.publicKey,
-              toPubkey: recipientPubkey,
-              lamports: payoutLamports,
-            })
-          );
+          const maxRetries = 3;
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                  fromPubkey: vaultKeypair.publicKey,
+                  toPubkey: recipientPubkey,
+                  lamports: payoutLamports,
+                })
+              );
 
-          const { blockhash } = await connection.getLatestBlockhash('confirmed');
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = vaultKeypair.publicKey;
-          transaction.sign(vaultKeypair);
+              const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+              transaction.recentBlockhash = blockhash;
+              transaction.feePayer = vaultKeypair.publicKey;
+              transaction.sign(vaultKeypair);
 
-          payoutTxSignature = await connection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-          });
+              payoutTxSignature = await connection.sendRawTransaction(transaction.serialize(), {
+                skipPreflight: true,
+                preflightCommitment: 'finalized',
+              });
 
-          await connection.confirmTransaction(payoutTxSignature, 'confirmed');
-          console.log(`🎰 Coin flip WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
+              await connection.confirmTransaction({
+                signature: payoutTxSignature,
+                blockhash,
+                lastValidBlockHeight,
+              }, 'confirmed');
+              console.log(`🎰 Coin flip WIN: ${walletAddress} bet ${bet} SOL, payout ${payoutAmount} SOL, tx: ${payoutTxSignature}`);
+              break;
+            } catch (retryError: any) {
+              console.error(`❌ Coin flip payout attempt ${attempt}/${maxRetries} failed:`, retryError.message);
+              if (attempt === maxRetries) throw retryError;
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
         } catch (payoutError: any) {
-          console.error('❌ Coin flip payout failed:', payoutError);
+          console.error('❌ Coin flip payout failed after all retries:', payoutError);
           return res.status(500).json({ error: 'Payout transaction failed. Please contact support.' });
         }
       } else {
