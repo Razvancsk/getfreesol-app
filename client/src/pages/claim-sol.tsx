@@ -4359,15 +4359,6 @@ export default function SolRefund() {
                     <li>Fair 50/50 odds on every flip.</li>
                   </ul>
                 </div>
-                <div>
-                  <p className="text-yellow-300 font-black uppercase tracking-wider text-xl mb-4">Bonus Round</p>
-                  <ul className="space-y-3 list-disc list-inside text-gray-300 text-xl">
-                    <li>~8% chance to trigger a <span className="text-yellow-300 font-bold">Bonus Round</span> on any flip.</li>
-                    <li>When bonus hits, you <span className="text-green-400 font-bold">instantly win 2x</span> your bet.</li>
-                    <li>Plus you get <span className="text-yellow-300 font-bold">5 free spins</span> on a gold coin to win even more.</li>
-                    <li>All free spin winnings are paid out at the end of the bonus.</li>
-                  </ul>
-                </div>
               </div>
             </>
           )}
