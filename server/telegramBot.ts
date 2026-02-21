@@ -761,8 +761,11 @@ async function handleIntervalSelection(bot: any, chatId: number, interval: strin
     const pendingData = pendingKeyImports.get(chatId);
     
     if (!pendingData || pendingData.step !== 'awaiting_interval' || !pendingData.walletAddress) {
-      await bot.sendMessage(chatId, 'Session expired. Please start again.', {
-        reply_markup: { inline_keyboard: [[{ text: '⚡ Set Up Auto-Claim', callback_data: 'menu_autoclaim' }]] }
+      await bot.sendMessage(chatId, '⏳ Session expired (server was updated). Please import your wallet again - it only takes a moment!', {
+        reply_markup: { inline_keyboard: [
+          [{ text: '⚡ Set Up Auto-Claim', callback_data: 'menu_autoclaim' }],
+          [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+        ] }
       });
       return;
     }
