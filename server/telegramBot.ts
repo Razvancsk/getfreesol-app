@@ -920,6 +920,7 @@ async function handleReferralMenu(bot: any, chatId: number, username: string) {
           reply_markup: {
             inline_keyboard: [
               [{ text: '👛 Set Reward Wallet', callback_data: 'referral_set_wallet' }],
+              [{ text: '📊 My Referral Status', callback_data: 'referral_stats' }],
               [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
             ]
           }
