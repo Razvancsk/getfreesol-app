@@ -966,3 +966,43 @@ export const insertTelegramAutoClaimSchema = createInsertSchema(telegramAutoClai
 
 export type TelegramAutoClaimSubscription = typeof telegramAutoClaimSubscriptions.$inferSelect;
 export type InsertTelegramAutoClaimSubscription = z.infer<typeof insertTelegramAutoClaimSchema>;
+
+export const telegramReferrals = pgTable("telegram_referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  telegramChatId: text("telegram_chat_id").notNull().unique(),
+  telegramUsername: text("telegram_username"),
+  rewardWalletAddress: text("reward_wallet_address").notNull(),
+  referralCode: text("referral_code").notNull().unique(),
+  referredBy: text("referred_by"),
+  totalReferred: integer("total_referred").notNull().default(0),
+  totalEarnings: decimal("total_earnings", { precision: 18, scale: 9 }).notNull().default("0"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const telegramReferralEarnings = pgTable("telegram_referral_earnings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerChatId: text("referrer_chat_id").notNull(),
+  referredChatId: text("referred_chat_id").notNull(),
+  transactionSignature: text("transaction_signature").notNull(),
+  totalFeeAmount: decimal("total_fee_amount", { precision: 18, scale: 9 }).notNull(),
+  referralEarning: decimal("referral_earning", { precision: 18, scale: 9 }).notNull(),
+  earnedAt: timestamp("earned_at").notNull().defaultNow(),
+});
+
+export const insertTelegramReferralSchema = createInsertSchema(telegramReferrals).omit({
+  id: true,
+  totalReferred: true,
+  totalEarnings: true,
+  createdAt: true,
+});
+
+export const insertTelegramReferralEarningSchema = createInsertSchema(telegramReferralEarnings).omit({
+  id: true,
+  earnedAt: true,
+});
+
+export type TelegramReferral = typeof telegramReferrals.$inferSelect;
+export type InsertTelegramReferral = z.infer<typeof insertTelegramReferralSchema>;
+export type TelegramReferralEarning = typeof telegramReferralEarnings.$inferSelect;
+export type InsertTelegramReferralEarning = z.infer<typeof insertTelegramReferralEarningSchema>;

@@ -1,10 +1,11 @@
-import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, Transaction, SystemProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createCloseAccountInstruction } from '@solana/spl-token';
 import { encryptPrivateKey, decryptPrivateKey } from './pdaService';
 import { db } from './db';
-import { telegramAutoClaimSubscriptions } from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { telegramAutoClaimSubscriptions, telegramReferrals, telegramReferralEarnings } from '@shared/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import bs58 from 'bs58';
+import crypto from 'crypto';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const PLATFORM_WALLET = "GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS";
@@ -29,6 +30,29 @@ interface PendingImport {
 
 const pendingKeyImports = new Map<number, PendingImport>();
 const pendingScanWallet = new Set<number>();
+const pendingReferralWallet = new Set<number>();
+
+const BOT_USERNAME = 'GetFreeSolXyzbot';
+
+function generateReferralCode(): string {
+  return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+async function getTelegramReferral(chatId: number) {
+  const refs = await db.select()
+    .from(telegramReferrals)
+    .where(eq(telegramReferrals.telegramChatId, chatId.toString()))
+    .limit(1);
+  return refs.length > 0 ? refs[0] : null;
+}
+
+async function getReferralByCode(code: string) {
+  const refs = await db.select()
+    .from(telegramReferrals)
+    .where(eq(telegramReferrals.referralCode, code.toUpperCase()))
+    .limit(1);
+  return refs.length > 0 ? refs[0] : null;
+}
 
 const INTERVAL_LABELS: Record<string, string> = {
   'hourly': 'Every 1 Hour',
@@ -50,7 +74,10 @@ const MAIN_MENU_KEYBOARD = {
       { text: '🛑 Stop', callback_data: 'menu_stop' }
     ],
     [
-      { text: '❓ Help', callback_data: 'menu_help' },
+      { text: '🎁 Referral', callback_data: 'menu_referral' },
+      { text: '❓ Help', callback_data: 'menu_help' }
+    ],
+    [
       { text: '🔄 Refresh', callback_data: 'menu_refresh' }
     ]
   ]
@@ -250,10 +277,44 @@ export async function initializeTelegramBot() {
       console.error('Telegram polling error:', error?.message || error);
     });
 
-    bot.onText(/\/start/, async (msg: any) => {
+    bot.onText(/\/start(?:\s+(.+))?/, async (msg: any, match: any) => {
       const chatId = msg.chat.id;
       const username = msg.from?.username || msg.from?.first_name || 'there';
       try {
+        const param = match?.[1]?.trim();
+        if (param && param.startsWith('ref_')) {
+          const refCode = param.replace('ref_', '').toUpperCase();
+          const referrer = await getReferralByCode(refCode);
+          if (referrer && referrer.telegramChatId !== chatId.toString()) {
+            const existingRef = await getTelegramReferral(chatId);
+            if (!existingRef) {
+              await db.update(telegramReferrals)
+                .set({ totalReferred: sql`${telegramReferrals.totalReferred} + 1` })
+                .where(eq(telegramReferrals.id, referrer.id));
+
+              const newRefCode = generateReferralCode();
+              await db.insert(telegramReferrals).values({
+                telegramChatId: chatId.toString(),
+                telegramUsername: username !== 'there' ? username : null,
+                rewardWalletAddress: '',
+                referralCode: newRefCode,
+                referredBy: referrer.telegramChatId,
+                isActive: true,
+              }).onConflictDoNothing();
+
+              await bot.sendMessage(chatId,
+                `🎉 You joined via ${referrer.telegramUsername ? '@' + referrer.telegramUsername : 'a friend'}'s referral!\n\n` +
+                `They'll earn 50% of platform fees from your auto-claims.\n` +
+                `Set up your own referral to earn too!`
+              ).catch(() => {});
+
+              await bot.sendMessage(parseInt(referrer.telegramChatId),
+                `🎁 New referral! ${username !== 'there' ? '@' + username : 'A user'} joined via your link!\n` +
+                `Total referred: ${referrer.totalReferred + 1}`
+              ).catch(() => {});
+            }
+          }
+        }
         await sendMainMenu(bot, chatId, username);
       } catch (err: any) {
         console.error('Telegram /start error:', err?.message || err);
@@ -396,6 +457,26 @@ export async function initializeTelegramBot() {
 
         } else if (data === 'autoclaim_stop_confirm') {
           await handleStopAutoClaim(bot, chatId);
+
+        } else if (data === 'menu_referral') {
+          await handleReferralMenu(bot, chatId, username);
+
+        } else if (data === 'referral_set_wallet') {
+          pendingReferralWallet.add(chatId);
+          await bot.sendMessage(chatId,
+            '👛 Send your Solana wallet address to receive referral rewards:',
+            { reply_markup: { inline_keyboard: [[{ text: '❌ Cancel', callback_data: 'referral_cancel_wallet' }]] } }
+          );
+
+        } else if (data === 'referral_cancel_wallet') {
+          pendingReferralWallet.delete(chatId);
+          await handleReferralMenu(bot, chatId, username);
+
+        } else if (data === 'referral_my_link') {
+          await handleReferralLink(bot, chatId, username);
+
+        } else if (data === 'referral_stats') {
+          await handleReferralStats(bot, chatId);
         }
       } catch (err: any) {
         console.error('Telegram callback error:', err?.message || err);
@@ -440,6 +521,22 @@ export async function initializeTelegramBot() {
         return;
       }
 
+      if (pendingReferralWallet.has(chatId)) {
+        pendingReferralWallet.delete(chatId);
+        const walletMatch = text.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})$/);
+        if (walletMatch) {
+          await handleSetReferralWallet(bot, chatId, walletMatch[1], msg.from?.username);
+        } else {
+          await bot.sendMessage(chatId, '❌ Invalid wallet address. Please try again.', {
+            reply_markup: { inline_keyboard: [
+              [{ text: '👛 Try Again', callback_data: 'referral_set_wallet' }],
+              [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+            ] }
+          });
+        }
+        return;
+      }
+
       if (pendingScanWallet.has(chatId)) {
         pendingScanWallet.delete(chatId);
         const walletMatch = text.match(/^([1-9A-HJ-NP-Za-km-z]{32,44})$/);
@@ -477,6 +574,7 @@ async function handleHelp(bot: any, chatId: number) {
     '🔍 Scan Wallet - Check any wallet for claimable SOL rent\n' +
     '⚡ Auto-Claim - Import wallet & auto-claim rent on a schedule\n' +
     '📊 Status - View your auto-claim subscription details\n' +
+    '🎁 Referral - Invite friends & earn 50% of their platform fees\n' +
     '🛑 Stop - Deactivate auto-claiming\n' +
     '🔄 Refresh - Reload the main menu\n\n' +
     '💡 Tips:\n' +
@@ -484,6 +582,7 @@ async function handleHelp(bot: any, chatId: number) {
     '• Each empty token account holds ~0.002 SOL in rent\n' +
     '• Auto-claim scans & claims automatically at your interval\n' +
     '• 15% platform fee on claimed rent\n' +
+    '• Referrers earn 50% of platform fees from invited users\n' +
     '• Private keys are encrypted with AES-256-GCM\n\n' +
     '🌐 getfreesol.xyz',
     {
@@ -804,6 +903,218 @@ async function handleStopAutoClaim(bot: any, chatId: number) {
   }
 }
 
+async function handleReferralMenu(bot: any, chatId: number, username: string) {
+  try {
+    const referral = await getTelegramReferral(chatId);
+
+    if (!referral) {
+      await bot.sendMessage(chatId,
+        `🎁 Referral Program\n\n` +
+        `Earn 50% of platform fees from users you invite!\n\n` +
+        `How it works:\n` +
+        `1️⃣ Set your reward wallet address\n` +
+        `2️⃣ Share your invite link\n` +
+        `3️⃣ When invited users auto-claim, you earn 50% of fees\n\n` +
+        `Get started by setting your reward wallet:`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '👛 Set Reward Wallet', callback_data: 'referral_set_wallet' }],
+              [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+            ]
+          }
+        }
+      );
+      return;
+    }
+
+    const shortWallet = referral.rewardWalletAddress
+      ? `${referral.rewardWalletAddress.slice(0, 4)}...${referral.rewardWalletAddress.slice(-4)}`
+      : 'Not set';
+    const earnings = parseFloat(referral.totalEarnings).toFixed(6);
+
+    await bot.sendMessage(chatId,
+      `🎁 Referral Dashboard\n\n` +
+      `👛 Reward Wallet: ${shortWallet}\n` +
+      `🔗 Code: ${referral.referralCode}\n` +
+      `👥 Users Referred: ${referral.totalReferred}\n` +
+      `💰 Total Earnings: ${earnings} SOL\n\n` +
+      `Share your link to earn 50% of platform fees!`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔗 My Invite Link', callback_data: 'referral_my_link' }],
+            [{ text: '📊 Earnings Details', callback_data: 'referral_stats' }],
+            [{ text: '👛 Change Wallet', callback_data: 'referral_set_wallet' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
+    );
+  } catch (err: any) {
+    console.error('Telegram referral menu error:', err?.message || err);
+    await bot.sendMessage(chatId, 'Something went wrong. Please try again.').catch(() => {});
+  }
+}
+
+async function handleSetReferralWallet(bot: any, chatId: number, walletAddress: string, username?: string) {
+  try {
+    const pubkey = new PublicKey(walletAddress);
+    const validatedAddress = pubkey.toBase58();
+
+    const existing = await getTelegramReferral(chatId);
+
+    if (existing) {
+      await db.update(telegramReferrals)
+        .set({
+          rewardWalletAddress: validatedAddress,
+          telegramUsername: username || existing.telegramUsername,
+        })
+        .where(eq(telegramReferrals.id, existing.id));
+    } else {
+      const code = generateReferralCode();
+      await db.insert(telegramReferrals).values({
+        telegramChatId: chatId.toString(),
+        telegramUsername: username || null,
+        rewardWalletAddress: validatedAddress,
+        referralCode: code,
+        isActive: true,
+      });
+    }
+
+    const shortWallet = `${validatedAddress.slice(0, 4)}...${validatedAddress.slice(-4)}`;
+    const referral = await getTelegramReferral(chatId);
+
+    await bot.sendMessage(chatId,
+      `✅ Reward wallet set!\n\n` +
+      `👛 Wallet: ${shortWallet}\n` +
+      `🔗 Code: ${referral?.referralCode || 'N/A'}\n\n` +
+      `Share your invite link to start earning!`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔗 My Invite Link', callback_data: 'referral_my_link' }],
+            [{ text: '🎁 Referral Dashboard', callback_data: 'menu_referral' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
+    );
+  } catch (err: any) {
+    console.error('Telegram set referral wallet error:', err?.message || err);
+    await bot.sendMessage(chatId, '❌ Invalid wallet address. Please try again.', {
+      reply_markup: { inline_keyboard: [
+        [{ text: '👛 Try Again', callback_data: 'referral_set_wallet' }],
+        [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+      ] }
+    }).catch(() => {});
+  }
+}
+
+async function handleReferralLink(bot: any, chatId: number, username: string) {
+  try {
+    let referral = await getTelegramReferral(chatId);
+
+    if (!referral || !referral.rewardWalletAddress) {
+      await bot.sendMessage(chatId,
+        '👛 You need to set a reward wallet first before getting your referral link.',
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '👛 Set Reward Wallet', callback_data: 'referral_set_wallet' }],
+              [{ text: '◀️ Back', callback_data: 'menu_referral' }]
+            ]
+          }
+        }
+      );
+      return;
+    }
+
+    const inviteLink = `https://t.me/${BOT_USERNAME}?start=ref_${referral.referralCode}`;
+
+    await bot.sendMessage(chatId,
+      `🔗 Your Referral Invite Link:\n\n` +
+      `${inviteLink}\n\n` +
+      `Share this link with friends. When they use the bot and auto-claim SOL, you earn 50% of the platform fee!\n\n` +
+      `📋 Your Code: ${referral.referralCode}`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🎁 Referral Dashboard', callback_data: 'menu_referral' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        },
+        disable_web_page_preview: true
+      }
+    );
+  } catch (err: any) {
+    console.error('Telegram referral link error:', err?.message || err);
+    await bot.sendMessage(chatId, 'Something went wrong.').catch(() => {});
+  }
+}
+
+async function handleReferralStats(bot: any, chatId: number) {
+  try {
+    const referral = await getTelegramReferral(chatId);
+
+    if (!referral) {
+      await bot.sendMessage(chatId,
+        '🎁 No referral account yet. Set up your reward wallet to start!',
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '👛 Set Reward Wallet', callback_data: 'referral_set_wallet' }],
+              [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+            ]
+          }
+        }
+      );
+      return;
+    }
+
+    const recentEarnings = await db.select()
+      .from(telegramReferralEarnings)
+      .where(eq(telegramReferralEarnings.referrerChatId, chatId.toString()))
+      .orderBy(sql`${telegramReferralEarnings.earnedAt} DESC`)
+      .limit(5);
+
+    let earningsList = '';
+    if (recentEarnings.length > 0) {
+      earningsList = '\n📜 Recent Earnings:\n';
+      for (const e of recentEarnings) {
+        const sig = `${e.transactionSignature.slice(0, 6)}...${e.transactionSignature.slice(-6)}`;
+        earningsList += `  +${parseFloat(e.referralEarning).toFixed(6)} SOL (TX: ${sig})\n`;
+      }
+    } else {
+      earningsList = '\n📜 No earnings yet. Share your link to start earning!';
+    }
+
+    const shortWallet = referral.rewardWalletAddress
+      ? `${referral.rewardWalletAddress.slice(0, 4)}...${referral.rewardWalletAddress.slice(-4)}`
+      : 'Not set';
+
+    await bot.sendMessage(chatId,
+      `📊 Referral Earnings\n\n` +
+      `👛 Reward Wallet: ${shortWallet}\n` +
+      `👥 Total Referred: ${referral.totalReferred}\n` +
+      `💰 Total Earnings: ${parseFloat(referral.totalEarnings).toFixed(6)} SOL\n` +
+      earningsList,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔗 My Invite Link', callback_data: 'referral_my_link' }],
+            [{ text: '🎁 Referral Dashboard', callback_data: 'menu_referral' }],
+            [{ text: '◀️ Back to Menu', callback_data: 'back_to_menu' }]
+          ]
+        }
+      }
+    );
+  } catch (err: any) {
+    console.error('Telegram referral stats error:', err?.message || err);
+    await bot.sendMessage(chatId, 'Something went wrong.').catch(() => {});
+  }
+}
+
 async function handleWalletScan(bot: any, chatId: number, walletAddress: string) {
   try {
     const pubkey = new PublicKey(walletAddress);
@@ -928,13 +1239,86 @@ function startAutoClaimScheduler(bot: any) {
 
           const shortWallet = `${sub.walletAddress.slice(0, 4)}...${sub.walletAddress.slice(-4)}`;
 
-          await bot.sendMessage(parseInt(sub.telegramChatId),
+          let referralLine = '';
+          const chatIdNum = parseInt(sub.telegramChatId);
+          const userRef = await getTelegramReferral(chatIdNum);
+          if (userRef && userRef.referredBy) {
+            const referrer = await db.select()
+              .from(telegramReferrals)
+              .where(eq(telegramReferrals.telegramChatId, userRef.referredBy))
+              .limit(1);
+
+            if (referrer.length > 0 && referrer[0].rewardWalletAddress && referrer[0].isActive) {
+              const referralEarning = result.platformFee * 0.5;
+
+              if (referralEarning > 0.000001) {
+                try {
+                  const referrerShortWallet = `${referrer[0].rewardWalletAddress.slice(0, 4)}...${referrer[0].rewardWalletAddress.slice(-4)}`;
+                  const referrerTransferIx = SystemProgram.transfer({
+                    fromPubkey: keypair.publicKey,
+                    toPubkey: new PublicKey(referrer[0].rewardWalletAddress),
+                    lamports: Math.floor(referralEarning * 1e9),
+                  });
+
+                  const tx = new Transaction().add(referrerTransferIx);
+                  tx.feePayer = keypair.publicKey;
+                  const { blockhash } = await connection.getLatestBlockhash('confirmed');
+                  tx.recentBlockhash = blockhash;
+                  tx.sign(keypair);
+
+                  const refSig = await connection.sendRawTransaction(tx.serialize(), {
+                    skipPreflight: false,
+                    preflightCommitment: 'confirmed',
+                  });
+                  await connection.confirmTransaction(refSig, 'confirmed');
+
+                  await db.insert(telegramReferralEarnings).values({
+                    referrerChatId: referrer[0].telegramChatId,
+                    referredChatId: sub.telegramChatId,
+                    transactionSignature: refSig,
+                    totalFeeAmount: result.platformFee.toFixed(9),
+                    referralEarning: referralEarning.toFixed(9),
+                  });
+
+                  await db.update(telegramReferrals)
+                    .set({
+                      totalEarnings: sql`${telegramReferrals.totalEarnings} + ${referralEarning.toFixed(9)}::decimal`,
+                    })
+                    .where(eq(telegramReferrals.id, referrer[0].id));
+
+                  referralLine = `\n🎁 Referral reward: ${referralEarning.toFixed(6)} SOL sent to referrer`;
+
+                  await bot.sendMessage(parseInt(referrer[0].telegramChatId),
+                    `💰 Referral Earning!\n\n` +
+                    `A user you referred just auto-claimed!\n` +
+                    `🎁 Your reward: ${referralEarning.toFixed(6)} SOL\n` +
+                    `👛 Sent to: ${referrerShortWallet}\n` +
+                    `💰 Total Earnings: ${(parseFloat(referrer[0].totalEarnings) + referralEarning).toFixed(6)} SOL`,
+                    {
+                      reply_markup: {
+                        inline_keyboard: [
+                          [{ text: '🎁 Referral Dashboard', callback_data: 'menu_referral' }],
+                          [{ text: '◀️ Menu', callback_data: 'back_to_menu' }]
+                        ]
+                      }
+                    }
+                  ).catch(() => {});
+
+                  console.log(`Referral reward ${referralEarning.toFixed(6)} SOL sent to ${referrerShortWallet}`);
+                } catch (refErr: any) {
+                  console.error('Referral transfer failed:', refErr?.message || refErr);
+                }
+              }
+            }
+          }
+
+          await bot.sendMessage(chatIdNum,
             `🎉 Auto-Claim Successful!\n\n` +
             `👛 Wallet: ${shortWallet}\n` +
             `📦 Accounts Closed: ${result.accountsClosed}\n` +
             `💰 SOL Recovered: ${result.totalRecovered.toFixed(6)} SOL\n` +
             `💸 Platform Fee (15%): ${result.platformFee.toFixed(6)} SOL\n` +
-            `✅ Net Received: ${result.netAmount.toFixed(6)} SOL\n\n` +
+            `✅ Net Received: ${result.netAmount.toFixed(6)} SOL${referralLine}\n\n` +
             `🔗 TX: ${result.signature.slice(0, 8)}...${result.signature.slice(-8)}\n\n` +
             `📊 Total Claimed: ${newTotalClaimed} SOL | Closed: ${newTotalClosed}`,
             {
