@@ -10508,7 +10508,7 @@ Claimer: ${walletAddress}`;
   });
 
   app.post("/api/admin/activity-bot/start", async (req, res) => {
-    const { adminSecret, walletCount, solPerWallet, intervalSeconds } = req.body;
+    const { adminSecret, walletCount, solPerWallet, intervalSeconds, tokensPerCycle } = req.body;
     const expectedSecret = process.env.VAULT_ADMIN_SECRET;
     if (!expectedSecret || adminSecret !== expectedSecret) {
       return res.status(403).json({ error: 'Unauthorized' });
@@ -10516,7 +10516,8 @@ Claimer: ${walletAddress}`;
     const result = await startActivityBot(
       parseInt(walletCount) || 5,
       parseFloat(solPerWallet) || 0.02,
-      parseInt(intervalSeconds) || 60
+      parseInt(intervalSeconds) || 60,
+      parseInt(tokensPerCycle) || 20
     );
     res.json(result);
   });

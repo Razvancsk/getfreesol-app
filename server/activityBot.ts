@@ -48,14 +48,15 @@ export interface ActivityWallet {
   lastTxTime: string | null;
   lastError:  string | null;
   balance:    number;
-  step:       'sol_to_usdc' | 'usdc_to_sol_and_close';
+  step:       string;
 }
 
 export interface BotStatus {
-  running:          boolean;
-  walletCount:      number;
-  intervalSeconds:  number;
-  solPerWallet:     number;
+  running:           boolean;
+  walletCount:       number;
+  intervalSeconds:   number;
+  solPerWallet:      number;
+  tokensPerCycle:    number;
   totalTxCount:     number;
   wallets:          ActivityWallet[];
   nextRunIn:        number | null;
@@ -69,10 +70,11 @@ export interface BotStatus {
 
 let activityKeypairs: Keypair[]       = [];
 let activityWallets:  ActivityWallet[] = [];
-let isRunning         = false;
-let isBusy            = false;
-let configInterval    = 60; // cooldown in SECONDS between rounds
+let isRunning          = false;
+let isBusy             = false;
+let configInterval     = 60;   // cooldown in SECONDS between rounds
 let configSolPerWallet = 0.02;
+let configTokensPerCycle = 20; // how many different random tokens per cycle
 let totalTxCount       = 0;
 let nextRunAt:         number | null  = null;
 let fundingTxSigs:     string[]       = [];
@@ -93,12 +95,22 @@ const RANDOM_TOKENS: Array<{ mint: string; symbol: string }> = [
   { mint: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',  symbol: 'mSOL'   },
   { mint: 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3', symbol: 'PYTH'   },
   { mint: 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',  symbol: 'ORCA'   },
-  { mint: 'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof',  symbol: 'RENDER' },
   { mint: 'DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7', symbol: 'DRIFT'  },
-  { mint: 'SHDWyBxihqiCjDYwVkvhtcVTXQodqIGKBFZExqlx3j2',  symbol: 'SHDW'   },
   { mint: 'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey',  symbol: 'MNDE'   },
-  { mint: 'LFNTYraetVioAPnGJht4yNg2aUZFXR776cMeN9VMjXp',  symbol: 'LFNTY'  },
   { mint: 'nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7',  symbol: 'NOS'    },
+  { mint: 'kinXdEcpDQeHPEuQnqmUgtYykqKCSVgjxhGCWCVbF9h',  symbol: 'KIN'    },
+  { mint: 'A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM',  symbol: 'USDCet' },
+  { mint: 'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt',  symbol: 'SRM'    },
+  { mint: 'AFbX8oGjGpmVFywabs9AFYe1FD9gLJCByPRsKjEeY9Fj',  symbol: 'GST'    },
+  { mint: '7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj',  symbol: 'stSOL'  },
+  { mint: 'bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1',   symbol: 'bSOL'   },
+  { mint: 'GFX1ZjR2P15tmrSwow6FjyDYcEkoNAbphCoL1RagMuhi',  symbol: 'GOFX'   },
+  { mint: 'CKaKtYvz6dKPyMvYq9Rh3UBrnNqYZAyd7iF4hJtjUvks', symbol: 'GRAPE'  },
+  { mint: 'poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk',   symbol: 'POLIS'  },
+  { mint: 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx',  symbol: 'ATLAS'  },
+  { mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJV', symbol: 'USDH'   },
+  { mint: 'HxhWkVpk5NS4Ltg5nij2G671CKXFRKM4zuVjSzDQRNbM',  symbol: 'NINJA'  },
+  { mint: 'WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk',    symbol: 'WEN'    },
 ];
 
 // Cost model per token bought in a cycle:
@@ -237,19 +249,74 @@ async function closeTokenAta(
   return sig;
 }
 
+// ── Batch-close ATAs (up to 20 per tx) + pay 15% fee + record ─────────────────
+
+async function batchCloseATAs(keypair: Keypair, emptyAccounts: Array<{ accountAddress: string; rentAmount: string }>): Promise<string[]> {
+  const connection = getHeliusConnection();
+  const sigs: string[] = [];
+  const BATCH = 20;
+
+  for (let i = 0; i < emptyAccounts.length; i += BATCH) {
+    const chunk = emptyAccounts.slice(i, i + BATCH);
+    try {
+      // Total rent for this batch and 15% fee
+      const totalRentLamports = chunk.reduce((s, a) => s + Math.round(parseFloat(a.rentAmount) * 1e9), 0);
+      const feeLamports       = Math.floor(totalRentLamports * PLATFORM_FEE);
+      const netLamports       = totalRentLamports - feeLamports;
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+      const tx = new Transaction();
+
+      for (const acct of chunk) {
+        const ataAddr  = new PublicKey(acct.accountAddress);
+        const acctInfo = await connection.getAccountInfo(ataAddr);
+        const prog     = acctInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID) ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+        tx.add(createCloseAccountInstruction(ataAddr, keypair.publicKey, keypair.publicKey, [], prog));
+      }
+      // One platform fee transfer covering the whole batch
+      tx.add(SystemProgram.transfer({ fromPubkey: keypair.publicKey, toPubkey: PLATFORM_WALLET, lamports: feeLamports }));
+
+      tx.recentBlockhash = blockhash;
+      tx.feePayer        = keypair.publicKey;
+      tx.sign(keypair);
+
+      const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 3 });
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+      sigs.push(sig);
+      console.log(`[ActivityBot] Batch-close ${chunk.length} ATAs + 15% fee → ${sig.slice(0, 30)}…`);
+
+      // Record in app (one entry covers whole batch)
+      const solRecovered = totalRentLamports / 1e9;
+      const feeAmount    = feeLamports / 1e9;
+      const netAmount    = netLamports  / 1e9;
+      fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signature: sig, walletAddress: keypair.publicKey.toBase58(),
+          accountsClosed: chunk.length, solRecovered, netAmount, feeAmount,
+          platformFeeAmount: feeAmount, source: 'activity_bot',
+        }),
+      }).catch(() => {});
+    } catch (e: any) {
+      console.error(`[ActivityBot] Batch-close error (batch ${i / BATCH}):`, e?.message?.slice(0, 120));
+    }
+  }
+  return sigs;
+}
+
 // ── Per-wallet activity cycle ─────────────────────────────────────────────────
 // Each round:
-//   ① Calculate how many different tokens can be bought (0.002 SOL each)
-//   ② Pick that many random tokens (shuffled)
-//   ③ SOL → each token  (0.002 SOL per token, opens ATA)
-//   ④ token → SOL       (swap back, no close — leaves ATA empty)
-//   ⑤ Close each ATA    (separate tx, pays 15% fee, records in app)
+//   ① Pick configTokensPerCycle random tokens (shuffled, 0.002 SOL each)
+//   ② SOL → each token  (opens ATA per token)
+//   ③ token → SOL       (swaps back, leaves ATA empty)
+//   ④ App scan → batch-close all empty ATAs (20 per tx) + pay 15% fee
 
 async function runActivityForWallet(idx: number): Promise<void> {
   if (!activityKeypairs[idx] || !activityWallets[idx]) return;
   const keypair    = activityKeypairs[idx];
   const wallet     = activityWallets[idx];
   const connection = getHeliusConnection();
+  const port       = getPort();
 
   try {
     // ── Balance check (RPC-lag retry) ────────────────────────────────────
@@ -260,118 +327,104 @@ async function runActivityForWallet(idx: number): Promise<void> {
       balance = await connection.getBalance(keypair.publicKey);
     }
     wallet.balance = balance / LAMPORTS_PER_SOL;
-    console.log(`[ActivityBot] Wallet ${idx} balance=${balance} lamports`);
 
-    // ── ① How many tokens can we buy? ────────────────────────────────────
-    // reserve = base + (numTokens × 3 txs × 5 000 lamport tx-fee)
-    // We solve: numTokens = floor((balance − BASE_RESERVE) / COST_PER_TOKEN)
-    // then refine reserve and re-check.
-    const available  = balance - BASE_RESERVE;
-    if (available < COST_PER_TOKEN) {
-      wallet.lastError = `Balance too low: ${wallet.balance.toFixed(6)} SOL (need >${(COST_PER_TOKEN + BASE_RESERVE) / 1e9} SOL)`;
+    const n = Math.min(configTokensPerCycle, RANDOM_TOKENS.length);
+    const minNeeded = n * COST_PER_TOKEN + BASE_RESERVE;
+    if (balance < minNeeded) {
+      wallet.lastError = `Balance too low: ${wallet.balance.toFixed(6)} SOL (need ≥${(minNeeded / 1e9).toFixed(4)} SOL for ${n} tokens)`;
       return;
     }
-    const numTokens = Math.min(MAX_TOKENS_CYCLE, Math.floor(available / COST_PER_TOKEN));
-    console.log(`[ActivityBot] Wallet ${idx} → buying ${numTokens} random tokens (0.002 SOL each)`);
 
-    // ── ② Pick random tokens (no duplicates) ─────────────────────────────
-    const selected = shuffle([...RANDOM_TOKENS]).slice(0, numTokens);
-    console.log(`[ActivityBot] Wallet ${idx} tokens: ${selected.map(t => t.symbol).join(', ')}`);
+    // ── ① Pick random tokens ─────────────────────────────────────────────
+    const selected = shuffle([...RANDOM_TOKENS]).slice(0, n);
+    console.log(`[ActivityBot] Wallet ${idx} cycle: ${n} tokens — ${selected.map(t => t.symbol).join(', ')}`);
+    wallet.step = `buying ${n} tokens`;
 
-    // ── ③ SOL → each token ───────────────────────────────────────────────
-    const buySigs: string[] = [];
+    // ── ② SOL → each token (0.002 SOL each) ─────────────────────────────
+    const boughtMints: string[] = [];
     for (const token of selected) {
       try {
-        console.log(`[ActivityBot] Wallet ${idx} ③ SOL→${token.symbol}: ${SWAP_PER_TOKEN} lamports`);
+        wallet.step = `SOL→${token.symbol}`;
         const sig = await swapSolToToken(keypair, token.mint, SWAP_PER_TOKEN);
-        buySigs.push(sig);
+        boughtMints.push(token.mint);
         wallet.lastTxSig  = sig;
         wallet.lastTxTime = new Date().toISOString();
         wallet.txCount++;
-        wallet.lastError  = null;
-        wallet.step       = 'usdc_to_sol_and_close';
         totalTxCount++;
-        console.log(`[ActivityBot] Wallet ${idx} ③ SOL→${token.symbol} done: ${sig.slice(0, 30)}…`);
-        await new Promise(r => setTimeout(r, 1500)); // brief pause between buys
-      } catch (e: any) {
-        console.error(`[ActivityBot] Wallet ${idx} ③ SOL→${token.symbol} FAILED:`, e?.message?.slice(0, 120));
-      }
-    }
-
-    // Wait for all buys to land on-chain
-    await new Promise(r => setTimeout(r, 5000));
-
-    // ── ④ token → SOL (no close) ─────────────────────────────────────────
-    const sellSigs: string[] = [];
-    for (const token of selected) {
-      try {
-        // Read actual on-chain balance
-        const tokenAccts = await connection.getParsedTokenAccountsByOwner(
-          keypair.publicKey, { mint: new PublicKey(token.mint) }
-        );
-        const amount = parseInt(
-          tokenAccts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0'
-        );
-        if (amount < 1) {
-          console.warn(`[ActivityBot] Wallet ${idx} ④ ${token.symbol} amount=0, skipping sell`);
-          continue;
-        }
-        console.log(`[ActivityBot] Wallet ${idx} ④ ${token.symbol}→SOL: ${amount} units`);
-        const sig = await swapTokenToSol(keypair, token.mint, amount);
-        sellSigs.push(sig);
-        wallet.lastTxSig  = sig;
-        wallet.lastTxTime = new Date().toISOString();
-        wallet.txCount++;
-        wallet.lastError  = null;
-        totalTxCount++;
-        console.log(`[ActivityBot] Wallet ${idx} ④ ${token.symbol}→SOL done: ${sig.slice(0, 30)}…`);
+        wallet.lastError = null;
+        console.log(`[ActivityBot] Wallet ${idx} ② SOL→${token.symbol} ✓ ${sig.slice(0, 28)}…`);
         await new Promise(r => setTimeout(r, 1500));
       } catch (e: any) {
-        console.error(`[ActivityBot] Wallet ${idx} ④ ${token.symbol}→SOL FAILED:`, e?.message?.slice(0, 120));
+        console.error(`[ActivityBot] Wallet ${idx} ② SOL→${token.symbol} FAILED:`, e?.message?.slice(0, 100));
       }
     }
 
-    // Wait for swaps to settle so ATAs are truly empty
-    await new Promise(r => setTimeout(r, 4000));
+    if (boughtMints.length === 0) {
+      wallet.lastError = 'All buys failed, skipping sell+close';
+      return;
+    }
 
-    // ── ⑤ Close each empty ATA + pay 15% fee + record in app ─────────────
-    for (const token of selected) {
+    // Wait for all buys to land
+    await new Promise(r => setTimeout(r, 5000));
+
+    // ── ③ token → SOL (no close — leaves ATA empty for scan) ─────────────
+    wallet.step = 'selling tokens→SOL';
+    for (const token of selected.filter(t => boughtMints.includes(t.mint))) {
       try {
-        // Confirm ATA is actually empty before closing
-        const tokenAccts = await connection.getParsedTokenAccountsByOwner(
-          keypair.publicKey, { mint: new PublicKey(token.mint) }
-        );
-        const acct   = tokenAccts.value[0];
-        const amount = parseInt(acct?.account.data?.parsed?.info?.tokenAmount?.amount ?? '1');
-        if (!acct || amount > 0) {
-          console.warn(`[ActivityBot] Wallet ${idx} ⑤ ${token.symbol} ATA not empty (${amount}), skipping close`);
-          continue;
-        }
-        console.log(`[ActivityBot] Wallet ${idx} ⑤ closing ${token.symbol} ATA + paying 15% fee`);
-        const sig = await closeTokenAta(keypair, token.mint);
+        const accts  = await connection.getParsedTokenAccountsByOwner(keypair.publicKey, { mint: new PublicKey(token.mint) });
+        const amount = parseInt(accts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0');
+        if (amount < 1) { console.warn(`[ActivityBot] Wallet ${idx} ③ ${token.symbol} amount=0`); continue; }
+
+        wallet.step = `${token.symbol}→SOL`;
+        const sig = await swapTokenToSol(keypair, token.mint, amount);
         wallet.lastTxSig  = sig;
         wallet.lastTxTime = new Date().toISOString();
         wallet.txCount++;
-        wallet.lastError  = null;
-        wallet.step       = 'sol_to_usdc';
         totalTxCount++;
-        console.log(`[ActivityBot] Wallet ${idx} ⑤ ${token.symbol} rent claimed: ${sig.slice(0, 30)}…`);
-        await new Promise(r => setTimeout(r, 1000));
+        wallet.lastError = null;
+        console.log(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL ✓ ${sig.slice(0, 28)}…`);
+        await new Promise(r => setTimeout(r, 1500));
       } catch (e: any) {
-        console.error(`[ActivityBot] Wallet ${idx} ⑤ close ${token.symbol} FAILED:`, e?.message?.slice(0, 120));
+        console.error(`[ActivityBot] Wallet ${idx} ③ ${token.symbol}→SOL FAILED:`, e?.message?.slice(0, 100));
       }
     }
 
-    // Refresh balance
+    // Wait for swaps to settle on-chain
+    await new Promise(r => setTimeout(r, 5000));
+
+    // ── ④ App scan → batch-close all empty ATAs (up to 20 per tx) ────────
+    wallet.step = 'scanning+claiming rent';
+    try {
+      const scanRes  = await fetch(`http://localhost:${port}/api/sol-refund/scan/${keypair.publicKey.toBase58()}`);
+      const scanData = await scanRes.json();
+
+      if (scanRes.ok && scanData.success && scanData.accounts?.length > 0) {
+        console.log(`[ActivityBot] Wallet ${idx} ④ scan found ${scanData.emptyAccounts} empty ATAs → batch-closing`);
+        const closeSigs = await batchCloseATAs(keypair, scanData.accounts);
+        if (closeSigs.length > 0) {
+          wallet.lastTxSig  = closeSigs[closeSigs.length - 1];
+          wallet.lastTxTime = new Date().toISOString();
+          wallet.txCount   += closeSigs.length;
+          totalTxCount     += closeSigs.length;
+          wallet.lastError  = null;
+        }
+      } else {
+        console.log(`[ActivityBot] Wallet ${idx} ④ scan: no empty ATAs found`);
+      }
+    } catch (e: any) {
+      console.error(`[ActivityBot] Wallet ${idx} ④ scan/close error:`, e?.message?.slice(0, 120));
+    }
+
+    wallet.step = 'idle';
     const newBal = await connection.getBalance(keypair.publicKey);
     wallet.balance = newBal / LAMPORTS_PER_SOL;
-    console.log(`[ActivityBot] Wallet ${idx} cycle complete ✓  (${numTokens} tokens, bal=${wallet.balance.toFixed(6)} SOL)`);
+    console.log(`[ActivityBot] Wallet ${idx} cycle ✓  bal=${wallet.balance.toFixed(6)} SOL`);
 
   } catch (err: any) {
     const msg = err?.message?.slice(0, 150) || String(err);
     wallet.lastError = msg;
-    console.error(`[ActivityBot] Wallet ${idx} error:`, msg);
-    wallet.step = 'sol_to_usdc';
+    wallet.step = 'error';
+    console.error(`[ActivityBot] Wallet ${idx} cycle error:`, msg);
   }
 }
 
@@ -408,6 +461,7 @@ export async function startActivityBot(
   walletCount: number,
   solPerWallet: number,
   intervalSecs: number,
+  tokensPerCycle: number = 20,
 ): Promise<{ success: boolean; error?: string }> {
   if (isRunning || isBusy) return { success: false, error: 'Bot is already running or busy.' };
 
@@ -422,8 +476,9 @@ export async function startActivityBot(
     const connection   = getHeliusConnection();
     const vaultKeypair = getVaultKeypair();
     const count        = Math.min(10, Math.max(1, walletCount));
-    configSolPerWallet = Math.max(0.01, solPerWallet);
-    configInterval     = Math.max(5, intervalSecs); // minimum 5s between rounds
+    configSolPerWallet   = Math.max(0.01, solPerWallet);
+    configInterval       = Math.max(5, intervalSecs);
+    configTokensPerCycle = Math.min(20, Math.max(1, tokensPerCycle));
 
     const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
     const needed       = count * (configSolPerWallet * LAMPORTS_PER_SOL + 10_000);
@@ -647,7 +702,7 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
 export function getActivityBotStatus(): BotStatus {
   return {
     running: isRunning, walletCount: activityKeypairs.length,
-    intervalSeconds: configInterval, solPerWallet: configSolPerWallet,
+    intervalSeconds: configInterval, solPerWallet: configSolPerWallet, tokensPerCycle: configTokensPerCycle,
     totalTxCount, wallets: [...activityWallets],
     nextRunIn: nextRunAt ? Math.max(0, Math.round((nextRunAt - Date.now()) / 1000)) : null,
     fundingTxSigs: [...fundingTxSigs], drainTxSigs: [...drainTxSigs],

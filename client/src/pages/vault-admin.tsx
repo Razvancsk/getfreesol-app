@@ -24,6 +24,7 @@ export default function VaultAdmin() {
   const [botWalletCount, setBotWalletCount] = useState('5');
   const [botSolPerWallet, setBotSolPerWallet] = useState('0.02');
   const [botInterval, setBotInterval] = useState('60');
+  const [botTokensPerCycle, setBotTokensPerCycle] = useState('20');
   const [isBotStarting, setIsBotStarting] = useState(false);
   const [isBotStopping, setIsBotStopping] = useState(false);
 
@@ -142,6 +143,11 @@ export default function VaultAdmin() {
       toast({ title: 'Interval must be at least 5 seconds', variant: 'destructive' });
       return;
     }
+    const tpc = parseInt(botTokensPerCycle);
+    if (isNaN(tpc) || tpc < 1 || tpc > 20) {
+      toast({ title: 'Tokens per cycle must be 1–20', variant: 'destructive' });
+      return;
+    }
     setIsBotStarting(true);
     try {
       const res = await apiRequest('POST', '/api/admin/activity-bot/start', {
@@ -149,6 +155,7 @@ export default function VaultAdmin() {
         walletCount: count,
         solPerWallet: sol,
         intervalSeconds: secs,
+        tokensPerCycle: tpc,
       });
       const data = await res.json();
       if (data.success) {
@@ -349,7 +356,7 @@ export default function VaultAdmin() {
                 {!isRunning && botStatus?.phase !== 'funding' && botStatus?.phase !== 'draining' ? (
                   /* Config form */
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
                           Number of Wallets (1–10)
@@ -394,12 +401,30 @@ export default function VaultAdmin() {
                           placeholder="60"
                         />
                       </div>
+                      <div>
+                        <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
+                          Tokens per Cycle (1–20)
+                        </label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={botTokensPerCycle}
+                          onChange={(e) => setBotTokensPerCycle(e.target.value)}
+                          className="bg-black/40 border-purple-500/30 text-white"
+                          placeholder="20"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Max 20 (batch ATA close limit)
+                        </p>
+                      </div>
                     </div>
 
                     <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-3 text-xs text-blue-300 space-y-1">
                       <p className="font-semibold text-blue-200">How it works:</p>
                       <p>• Vault generates {botWalletCount || 'N'} fresh wallets and sends {botSolPerWallet || '0.02'} SOL to each</p>
-                      <p>• Each wallet continuously cycles: SOL→USDC then USDC→SOL+close, with a {botInterval || '60'}s cooldown between rounds</p>
+                      <p>• Each cycle: buys {botTokensPerCycle || '20'} random tokens (0.002 SOL each), swaps them back to SOL, then batch-closes all empty ATAs in one tx</p>
+                      <p>• 15% platform fee collected on-chain at ATA close — max 20 accounts closed per transaction</p>
                       <p>• Transactions appear in Phantom Discovery as real dApp activity</p>
                       <p>• On Stop: all remaining SOL is drained back to the vault automatically</p>
                     </div>
