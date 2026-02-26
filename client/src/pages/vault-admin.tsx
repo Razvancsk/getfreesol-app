@@ -23,7 +23,7 @@ export default function VaultAdmin() {
   // Activity bot config
   const [botWalletCount, setBotWalletCount] = useState('5');
   const [botSolPerWallet, setBotSolPerWallet] = useState('0.02');
-  const [botInterval, setBotInterval] = useState('10');
+  const [botInterval, setBotInterval] = useState('60');
   const [isBotStarting, setIsBotStarting] = useState(false);
   const [isBotStopping, setIsBotStopping] = useState(false);
 
@@ -129,7 +129,7 @@ export default function VaultAdmin() {
   const handleBotStart = async () => {
     const count = parseInt(botWalletCount);
     const sol = parseFloat(botSolPerWallet);
-    const mins = parseInt(botInterval);
+    const secs = parseInt(botInterval);
     if (isNaN(count) || count < 1 || count > 10) {
       toast({ title: 'Wallet count must be 1–10', variant: 'destructive' });
       return;
@@ -138,8 +138,8 @@ export default function VaultAdmin() {
       toast({ title: 'SOL per wallet must be at least 0.005', variant: 'destructive' });
       return;
     }
-    if (isNaN(mins) || mins < 1) {
-      toast({ title: 'Interval must be at least 1 minute', variant: 'destructive' });
+    if (isNaN(secs) || secs < 5) {
+      toast({ title: 'Interval must be at least 5 seconds', variant: 'destructive' });
       return;
     }
     setIsBotStarting(true);
@@ -148,7 +148,7 @@ export default function VaultAdmin() {
         adminSecret,
         walletCount: count,
         solPerWallet: sol,
-        intervalMinutes: mins,
+        intervalSeconds: secs,
       });
       const data = await res.json();
       if (data.success) {
@@ -383,15 +383,15 @@ export default function VaultAdmin() {
                       </div>
                       <div>
                         <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
-                          Interval (minutes)
+                          Cooldown (seconds)
                         </label>
                         <Input
                           type="number"
-                          min="1"
+                          min="5"
                           value={botInterval}
                           onChange={(e) => setBotInterval(e.target.value)}
                           className="bg-black/40 border-purple-500/30 text-white"
-                          placeholder="10"
+                          placeholder="60"
                         />
                       </div>
                     </div>
@@ -399,7 +399,7 @@ export default function VaultAdmin() {
                     <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-3 text-xs text-blue-300 space-y-1">
                       <p className="font-semibold text-blue-200">How it works:</p>
                       <p>• Vault generates {botWalletCount || 'N'} fresh wallets and sends {botSolPerWallet || '0.02'} SOL to each</p>
-                      <p>• Every {botInterval || '10'} minutes each wallet swaps SOL ↔ USDC via Jupiter</p>
+                      <p>• Each wallet continuously cycles: SOL→USDC then USDC→SOL+close, with a {botInterval || '60'}s cooldown between rounds</p>
                       <p>• Transactions appear in Phantom Discovery as real dApp activity</p>
                       <p>• On Stop: all remaining SOL is drained back to the vault automatically</p>
                     </div>
@@ -432,8 +432,8 @@ export default function VaultAdmin() {
                           <p className="text-xs text-gray-400 mt-1">Total Swaps</p>
                         </div>
                         <div className="bg-black/30 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-purple-400">{botStatus.intervalMinutes}m</p>
-                          <p className="text-xs text-gray-400 mt-1">Interval</p>
+                          <p className="text-2xl font-bold text-purple-400">{botStatus.intervalSeconds}s</p>
+                          <p className="text-xs text-gray-400 mt-1">Cooldown</p>
                         </div>
                         <div className="bg-black/30 rounded-lg p-3 text-center">
                           <p className="text-2xl font-bold text-yellow-400">

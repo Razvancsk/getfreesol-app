@@ -52,7 +52,7 @@ export interface ActivityWallet {
 export interface BotStatus {
   running:          boolean;
   walletCount:      number;
-  intervalMinutes:  number;
+  intervalSeconds:  number;
   solPerWallet:     number;
   totalTxCount:     number;
   wallets:          ActivityWallet[];
@@ -69,8 +69,7 @@ let activityKeypairs: Keypair[]       = [];
 let activityWallets:  ActivityWallet[] = [];
 let isRunning         = false;
 let isBusy            = false;
-let intervalHandle:   NodeJS.Timeout | null = null;
-let configInterval    = 10;
+let configInterval    = 60; // cooldown in SECONDS between rounds
 let configSolPerWallet = 0.02;
 let totalTxCount       = 0;
 let nextRunAt:         number | null  = null;
@@ -268,16 +267,31 @@ async function runActivityForWallet(idx: number): Promise<void> {
   }
 }
 
-// ── Scheduler ────────────────────────────────────────────────────────────────
+// ── Continuous loop ───────────────────────────────────────────────────────────
+// Runs all wallet cycles back-to-back forever until stopped.
+// configInterval = cooldown in SECONDS between each round.
 
-function scheduleNextRun(): void {
-  if (!isRunning) return;
-  nextRunAt      = Date.now() + configInterval * 60 * 1000;
-  intervalHandle = setTimeout(async () => {
-    if (!isRunning) return;
+async function runLoop(): Promise<void> {
+  while (isRunning) {
+    // Run one full cycle (SOL→USDC→SOL+close) for every wallet in parallel
     await Promise.allSettled(activityWallets.map((_, i) => runActivityForWallet(i)));
-    scheduleNextRun();
-  }, configInterval * 60 * 1000);
+
+    if (!isRunning) break;
+
+    // Short cooldown between rounds
+    const cooldownMs = configInterval * 1000;
+    nextRunAt        = Date.now() + cooldownMs;
+    console.log(`[ActivityBot] Round complete. Next round in ${configInterval}s…`);
+
+    // Sleep in small chunks so we can break early if stopped
+    const sliceMs = 500;
+    let elapsed   = 0;
+    while (elapsed < cooldownMs && isRunning) {
+      await new Promise(r => setTimeout(r, sliceMs));
+      elapsed += sliceMs;
+    }
+    nextRunAt = null;
+  }
 }
 
 // ── Start ────────────────────────────────────────────────────────────────────
@@ -285,7 +299,7 @@ function scheduleNextRun(): void {
 export async function startActivityBot(
   walletCount: number,
   solPerWallet: number,
-  intervalMins: number,
+  intervalSecs: number,
 ): Promise<{ success: boolean; error?: string }> {
   if (isRunning || isBusy) return { success: false, error: 'Bot is already running or busy.' };
 
@@ -301,7 +315,7 @@ export async function startActivityBot(
     const vaultKeypair = getVaultKeypair();
     const count        = Math.min(10, Math.max(1, walletCount));
     configSolPerWallet = Math.max(0.01, solPerWallet);
-    configInterval     = Math.max(1, intervalMins);
+    configInterval     = Math.max(5, intervalSecs); // minimum 5s between rounds
 
     const vaultBalance = await connection.getBalance(vaultKeypair.publicKey);
     const needed       = count * (configSolPerWallet * LAMPORTS_PER_SOL + 10_000);
@@ -343,12 +357,8 @@ export async function startActivityBot(
     phaseMessage = `${count} wallets active`;
     isBusy       = false;
 
-    // Wait for RPC to propagate funded balances before first run
-    setTimeout(async () => {
-      if (!isRunning) return;
-      await Promise.allSettled(activityWallets.map((_, i) => runActivityForWallet(i)));
-      scheduleNextRun();
-    }, 5000);
+    // Wait for RPC to propagate funded balances, then enter the continuous loop
+    setTimeout(() => { if (isRunning) runLoop(); }, 5000);
 
     return { success: true };
   } catch (err: any) {
@@ -363,9 +373,8 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
   if (!isRunning && activityKeypairs.length === 0) return { success: true, drainSigs: [] };
   if (isBusy) return { success: false, drainSigs: [], error: 'Bot is busy, try again shortly.' };
 
-  isRunning = false;
-  if (intervalHandle) { clearTimeout(intervalHandle); intervalHandle = null; }
-  nextRunAt    = null;
+  isRunning = false;  // loop checks this and exits
+  nextRunAt = null;
   phase        = 'draining';
   phaseMessage = 'Swapping all tokens → SOL then draining to vault...';
   isBusy       = true;
@@ -475,7 +484,7 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
 export function getActivityBotStatus(): BotStatus {
   return {
     running: isRunning, walletCount: activityKeypairs.length,
-    intervalMinutes: configInterval, solPerWallet: configSolPerWallet,
+    intervalSeconds: configInterval, solPerWallet: configSolPerWallet,
     totalTxCount, wallets: [...activityWallets],
     nextRunIn: nextRunAt ? Math.max(0, Math.round((nextRunAt - Date.now()) / 1000)) : null,
     fundingTxSigs: [...fundingTxSigs], drainTxSigs: [...drainTxSigs],
