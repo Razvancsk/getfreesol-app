@@ -20,8 +20,10 @@ import {
 } from '@solana/spl-token';
 import { getVaultKeypair } from './coinflipVault';
 
-const SOL_MINT  = 'So11111111111111111111111111111111111111112';
-const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+const SOL_MINT        = 'So11111111111111111111111111111111111111112';
+const USDC_MINT       = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+const PLATFORM_WALLET = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+const PLATFORM_FEE    = 0.15; // 15%
 
 function getPort() { return process.env.PORT || '5000'; }
 
@@ -176,43 +178,51 @@ async function swapUsdcToSol(keypair: Keypair, usdcAmount: number): Promise<stri
 
 // ── Step 3: Close USDC ATA (separate tx) → record in app ─────────────────────
 
+/** Close the USDC ATA and pay 15% of the recovered rent to the platform wallet
+ *  in the SAME transaction — identical behaviour to how regular users pay fees. */
 async function closeUsdcAta(keypair: Keypair): Promise<string> {
-  const connection  = getHeliusConnection();
-  const usdcMintPk  = new PublicKey(USDC_MINT);
-  const ata         = getAssociatedTokenAddressSync(usdcMintPk, keypair.publicKey, false, TOKEN_PROGRAM_ID);
+  const connection = getHeliusConnection();
+  const ata = getAssociatedTokenAddressSync(
+    new PublicKey(USDC_MINT), keypair.publicKey, false, TOKEN_PROGRAM_ID
+  );
+
+  // ATA rent = 2 039 280 lamports; 15 % goes to platform wallet on-chain
+  const rentLamports    = 2_039_280;
+  const feeLamports     = Math.floor(rentLamports * PLATFORM_FEE);  // 305 892
+  const netLamports     = rentLamports - feeLamports;               // 1 733 388
+  const solRecovered    = rentLamports / 1e9;
+  const feeAmount       = feeLamports  / 1e9;
+  const netAmount       = netLamports  / 1e9;
 
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-  const tx = new Transaction().add(
-    createCloseAccountInstruction(ata, keypair.publicKey, keypair.publicKey, [], TOKEN_PROGRAM_ID)
-  );
+  const tx = new Transaction()
+    // ① Close the ATA — rent returns to keypair.publicKey
+    .add(createCloseAccountInstruction(ata, keypair.publicKey, keypair.publicKey, [], TOKEN_PROGRAM_ID))
+    // ② Pay 15 % platform fee on-chain in the same tx
+    .add(SystemProgram.transfer({
+      fromPubkey: keypair.publicKey,
+      toPubkey:   PLATFORM_WALLET,
+      lamports:   feeLamports,
+    }));
   tx.recentBlockhash = blockhash;
   tx.feePayer        = keypair.publicKey;
   tx.sign(keypair);
 
   const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 3 });
   await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+  console.log(`[ActivityBot] ATA closed + 15% fee paid → ${sig.slice(0, 30)}…`);
 
-  // Record in app stats (this is the transaction shown in the ledger)
-  const rentLamports = 2039280;
-  const solRecovered = rentLamports / 1e9;
-  const feeAmount    = solRecovered * 0.15;
-  const netAmount    = solRecovered * 0.85;
+  // Record in app stats
   try {
     await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        signature:         sig,
-        walletAddress:     keypair.publicKey.toBase58(),
-        accountsClosed:    1,
-        solRecovered,
-        netAmount,
-        feeAmount,
-        platformFeeAmount: feeAmount,
-        source:            'activity_bot',
+        signature: sig, walletAddress: keypair.publicKey.toBase58(),
+        accountsClosed: 1, solRecovered, netAmount, feeAmount,
+        platformFeeAmount: feeAmount, source: 'activity_bot',
       }),
     });
-    console.log(`[ActivityBot] Rent claim recorded: ${sig.slice(0, 30)}…`);
   } catch (e: any) {
     console.warn(`[ActivityBot] record-success failed:`, e?.message);
   }
@@ -506,20 +516,30 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
               const prog     = acctInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
                                ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
 
+              // Rent the ATA holds; pay 15% to platform wallet on-chain (same as regular users)
+              const rentLamports = Math.round(parseFloat(acct.rentAmount) * 1e9);
+              const feeLamports  = Math.floor(rentLamports * PLATFORM_FEE);
+              const solRecovered = rentLamports / 1e9;
+              const feeAmount    = feeLamports  / 1e9;
+              const netAmount    = solRecovered - feeAmount;
+
               const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-              const closeTx = new Transaction().add(
-                createCloseAccountInstruction(ataAddr, kp.publicKey, kp.publicKey, [], prog)
-              );
+              const closeTx = new Transaction()
+                // ① Close ATA — rent returned to kp.publicKey
+                .add(createCloseAccountInstruction(ataAddr, kp.publicKey, kp.publicKey, [], prog))
+                // ② Pay 15% fee to platform wallet in same tx
+                .add(SystemProgram.transfer({
+                  fromPubkey: kp.publicKey,
+                  toPubkey:   PLATFORM_WALLET,
+                  lamports:   feeLamports,
+                }));
               closeTx.recentBlockhash = blockhash;
               closeTx.feePayer        = kp.publicKey;
               closeTx.sign(kp);
               const closeSig = await connection.sendRawTransaction(closeTx.serialize(), { skipPreflight: false, maxRetries: 3 });
               await connection.confirmTransaction({ signature: closeSig, blockhash, lastValidBlockHeight }, 'confirmed');
-              console.log(`[ActivityBot] Drain wallet ${i} ②: rent claimed → ${closeSig.slice(0,20)}…`);
+              console.log(`[ActivityBot] Drain wallet ${i} ②: rent claimed + 15% fee paid → ${closeSig.slice(0,20)}…`);
 
-              const solRecovered = parseFloat(acct.rentAmount);
-              const feeAmount    = solRecovered * 0.15;
-              const netAmount    = solRecovered * 0.85;
               await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
