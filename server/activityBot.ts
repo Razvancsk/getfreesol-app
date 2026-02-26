@@ -164,71 +164,81 @@ async function swapUsdcToSolAndClose(keypair: Keypair, usdcAmount: number): Prom
 }
 
 // ── Per-wallet activity cycle ─────────────────────────────────────────────────
+// Full round per interval: SOL→USDC, then immediately USDC→SOL+closeUsdcATA
 
 async function runActivityForWallet(idx: number): Promise<void> {
   if (!activityKeypairs[idx] || !activityWallets[idx]) return;
-  const keypair = activityKeypairs[idx];
-  const wallet  = activityWallets[idx];
+  const keypair    = activityKeypairs[idx];
+  const wallet     = activityWallets[idx];
   const connection = getHeliusConnection();
 
   try {
+    // ── Read balance (with RPC-lag retry) ────────────────────────────────
     let balance = await connection.getBalance(keypair.publicKey);
-    // If RPC returns 0 but we know this wallet was just funded, retry after a pause
     if (balance === 0 && wallet.balance > 0) {
       console.log(`[ActivityBot] Wallet ${idx} balance=0 (RPC lag), retrying in 4s...`);
       await new Promise(r => setTimeout(r, 4000));
       balance = await connection.getBalance(keypair.publicKey);
     }
     wallet.balance = balance / LAMPORTS_PER_SOL;
-    console.log(`[ActivityBot] Wallet ${idx} step=${wallet.step} balance=${balance} lamports`);
+    console.log(`[ActivityBot] Wallet ${idx} balance=${balance} lamports`);
 
-    if (wallet.step === 'sol_to_usdc') {
-      // Swap 30% of SOL → USDC (keep 80k lamports for fees)
-      const reserve    = 80_000;
-      const swapAmount = Math.floor((balance - reserve) * 0.3);
-      if (swapAmount < 500_000) {
-        wallet.lastError = `Balance too low to swap: ${wallet.balance.toFixed(6)} SOL (need > 0.006)`;
-        // Do NOT advance step — retry on next interval
-        return;
-      }
-      console.log(`[ActivityBot] Wallet ${idx}: SOL→USDC ${swapAmount} lamports`);
-      const sig = await swapSolToUsdc(keypair, swapAmount);
-      wallet.lastTxSig  = sig;
-      wallet.lastTxTime = new Date().toISOString();
-      wallet.txCount++;
-      wallet.lastError  = null;
-      wallet.step       = 'usdc_to_sol_and_close';
-      totalTxCount++;
-
-    } else {
-      // Get USDC balance on-chain
-      const tokenAccts = await connection.getParsedTokenAccountsByOwner(
-        keypair.publicKey, { mint: new PublicKey(USDC_MINT) }
-      );
-      const usdcAmount = parseInt(
-        tokenAccts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0'
-      );
-      if (usdcAmount < 100) {
-        // Nothing to swap — reset cycle
-        wallet.step      = 'sol_to_usdc';
-        wallet.lastError = null;
-        return;
-      }
-      console.log(`[ActivityBot] Wallet ${idx}: USDC→SOL+close ${usdcAmount} units`);
-      const sig = await swapUsdcToSolAndClose(keypair, usdcAmount);
-      wallet.lastTxSig  = sig;
-      wallet.lastTxTime = new Date().toISOString();
-      wallet.txCount++;
-      wallet.lastError  = null;
-      wallet.step       = 'sol_to_usdc';
-      totalTxCount++;
+    // ── STEP 1: SOL → USDC ───────────────────────────────────────────────
+    const reserve    = 120_000; // keep ~0.00012 SOL for two tx fees
+    const swapAmount = Math.floor((balance - reserve) * 0.3);
+    if (swapAmount < 500_000) {
+      wallet.lastError = `Balance too low: ${wallet.balance.toFixed(6)} SOL (need > 0.006)`;
+      return;
     }
+
+    console.log(`[ActivityBot] Wallet ${idx} ① SOL→USDC: ${swapAmount} lamports`);
+    const sig1 = await swapSolToUsdc(keypair, swapAmount);
+    wallet.lastTxSig  = sig1;
+    wallet.lastTxTime = new Date().toISOString();
+    wallet.txCount++;
+    wallet.lastError  = null;
+    wallet.step       = 'usdc_to_sol_and_close';
+    totalTxCount++;
+    console.log(`[ActivityBot] Wallet ${idx} ① done: ${sig1.slice(0, 30)}…`);
+
+    // Allow the SOL→USDC tx to land and USDC ATA balance to be visible
+    await new Promise(r => setTimeout(r, 5000));
+
+    // ── STEP 2: USDC → SOL + close USDC ATA ─────────────────────────────
+    // Fetch actual on-chain USDC balance
+    const tokenAccts = await connection.getParsedTokenAccountsByOwner(
+      keypair.publicKey, { mint: new PublicKey(USDC_MINT) }
+    );
+    const usdcAmount = parseInt(
+      tokenAccts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0'
+    );
+
+    if (usdcAmount < 100) {
+      console.warn(`[ActivityBot] Wallet ${idx} USDC balance=0 after SOL→USDC, skipping step 2`);
+      wallet.step = 'sol_to_usdc';
+      return;
+    }
+
+    console.log(`[ActivityBot] Wallet ${idx} ② USDC→SOL+closeATA: ${usdcAmount} units`);
+    const sig2 = await swapUsdcToSolAndClose(keypair, usdcAmount);
+    wallet.lastTxSig  = sig2;
+    wallet.lastTxTime = new Date().toISOString();
+    wallet.txCount++;
+    wallet.lastError  = null;
+    wallet.step       = 'sol_to_usdc';
+    totalTxCount++;
+    console.log(`[ActivityBot] Wallet ${idx} ② done: ${sig2.slice(0, 30)}…  Full cycle complete ✓`);
+
+    // Refresh balance display
+    const newBal = await connection.getBalance(keypair.publicKey);
+    wallet.balance = newBal / LAMPORTS_PER_SOL;
+
   } catch (err: any) {
     const msg = err?.message?.slice(0, 150) || String(err);
     wallet.lastError = msg;
-    console.error(`[ActivityBot] Wallet ${idx} error (${wallet.step}):`, msg);
-    // Advance step to avoid infinite retry on same failing step
-    wallet.step = wallet.step === 'sol_to_usdc' ? 'usdc_to_sol_and_close' : 'sol_to_usdc';
+    console.error(`[ActivityBot] Wallet ${idx} error (step=${wallet.step}):`, msg);
+    // Reset to start of cycle so next interval retries from SOL→USDC
+    wallet.step = 'sol_to_usdc';
   }
 }
 
