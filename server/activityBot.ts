@@ -85,6 +85,7 @@ let phaseMessage       = '';
 // ── Random token list ─────────────────────────────────────────────────────────
 // Liquid Solana tokens available on Jupiter — bot picks randomly each cycle
 
+// Only high-liquidity tokens confirmed active on Jupiter mainnet
 const RANDOM_TOKENS: Array<{ mint: string; symbol: string }> = [
   { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC'   },
   { mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', symbol: 'USDT'   },
@@ -98,19 +99,19 @@ const RANDOM_TOKENS: Array<{ mint: string; symbol: string }> = [
   { mint: 'DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7', symbol: 'DRIFT'  },
   { mint: 'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey',  symbol: 'MNDE'   },
   { mint: 'nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7',  symbol: 'NOS'    },
-  { mint: 'kinXdEcpDQeHPEuQnqmUgtYykqKCSVgjxhGCWCVbF9h',  symbol: 'KIN'    },
-  { mint: 'A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM',  symbol: 'USDCet' },
-  { mint: 'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt',  symbol: 'SRM'    },
-  { mint: 'AFbX8oGjGpmVFywabs9AFYe1FD9gLJCByPRsKjEeY9Fj',  symbol: 'GST'    },
   { mint: '7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj',  symbol: 'stSOL'  },
   { mint: 'bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1',   symbol: 'bSOL'   },
-  { mint: 'GFX1ZjR2P15tmrSwow6FjyDYcEkoNAbphCoL1RagMuhi',  symbol: 'GOFX'   },
-  { mint: 'CKaKtYvz6dKPyMvYq9Rh3UBrnNqYZAyd7iF4hJtjUvks', symbol: 'GRAPE'  },
-  { mint: 'poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk',   symbol: 'POLIS'  },
-  { mint: 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx',  symbol: 'ATLAS'  },
-  { mint: 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJV', symbol: 'USDH'   },
-  { mint: 'HxhWkVpk5NS4Ltg5nij2G671CKXFRKM4zuVjSzDQRNbM',  symbol: 'NINJA'  },
+  { mint: 'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn',  symbol: 'jitoSOL'},
   { mint: 'WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk',    symbol: 'WEN'    },
+  { mint: 'jtojtomepa8b1trahX9S2RmD79m37LjXBKKpGrBDzC',     symbol: 'JTO'    },
+  { mint: 'w1oKSHD3ZwGHbUWnAjt9koujJoXwKJnvHFZXFLwmYqT',   symbol: 'W'      },
+  { mint: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',   symbol: 'ETH'    },
+  { mint: 'MEFNBXixkEbait3xn9bkfu8xAN26sVgyvzzn6FCAgfY',    symbol: 'ME'     },
+  { mint: 'METAewgxyPbgwsseH8T16a39CQ5VyVxZi9zXiDPY18m',    symbol: 'META'   },
+  { mint: 'TNSRxcUxoT9xBG3de7A9Ed1RNYpzxhbTHfEVnBmakS7',   symbol: 'TNSR'   },
+  { mint: 'EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp',   symbol: 'FIDA'   },
+  { mint: 'So11111111111111111111111111111111111111112',      symbol: 'wSOL'   },
+  { mint: 'mb1eu7TzEc71KxDpsmsKoucSSuuoGLv1drys1oP2jh6',    symbol: 'MOBILE' },
 ];
 
 // Cost model per token bought in a cycle:
@@ -364,8 +365,8 @@ async function runActivityForWallet(idx: number): Promise<void> {
       return;
     }
 
-    // Wait for all buys to land
-    await new Promise(r => setTimeout(r, 5000));
+    // Wait for all buys to land on-chain (extra time to avoid RPC lag)
+    await new Promise(r => setTimeout(r, 8000));
 
     // ── ③ token → SOL (no close — leaves ATA empty for scan) ─────────────
     wallet.step = 'selling tokens→SOL';
@@ -389,8 +390,8 @@ async function runActivityForWallet(idx: number): Promise<void> {
       }
     }
 
-    // Wait for swaps to settle on-chain
-    await new Promise(r => setTimeout(r, 5000));
+    // Wait for sells to settle on-chain before scanning
+    await new Promise(r => setTimeout(r, 7000));
 
     // ── ④ App scan → batch-close all empty ATAs (up to 20 per tx) ────────
     wallet.step = 'scanning+claiming rent';
