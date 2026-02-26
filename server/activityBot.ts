@@ -80,30 +80,64 @@ let drainTxSigs:       string[]       = [];
 let phase:             BotStatus['phase'] = 'idle';
 let phaseMessage       = '';
 
-// ── Step 1: SOL → USDC  (standard Jupiter /swap/v1/swap) ─────────────────────
+// ── Random token list ─────────────────────────────────────────────────────────
+// Liquid Solana tokens available on Jupiter — bot picks randomly each cycle
 
-async function swapSolToUsdc(keypair: Keypair, lamports: number): Promise<string> {
+const RANDOM_TOKENS: Array<{ mint: string; symbol: string }> = [
+  { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC'   },
+  { mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', symbol: 'USDT'   },
+  { mint: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', symbol: 'BONK'   },
+  { mint: 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm', symbol: 'WIF'    },
+  { mint: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',  symbol: 'JUP'    },
+  { mint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', symbol: 'RAY'    },
+  { mint: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',  symbol: 'mSOL'   },
+  { mint: 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3', symbol: 'PYTH'   },
+  { mint: 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',  symbol: 'ORCA'   },
+  { mint: 'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof',  symbol: 'RENDER' },
+  { mint: 'DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7', symbol: 'DRIFT'  },
+  { mint: 'SHDWyBxihqiCjDYwVkvhtcVTXQodqIGKBFZExqlx3j2',  symbol: 'SHDW'   },
+  { mint: 'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey',  symbol: 'MNDE'   },
+  { mint: 'LFNTYraetVioAPnGJht4yNg2aUZFXR776cMeN9VMjXp',  symbol: 'LFNTY'  },
+  { mint: 'nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7',  symbol: 'NOS'    },
+];
+
+// Cost model per token bought in a cycle:
+//   0.002 SOL   → swap amount (fixed per token)
+//   0.00203928  → ATA creation rent (recovered when closed)
+// RESERVE kept for tx fees (≈ numTokens × 3 txs × 5000 lamports + padding)
+const SWAP_PER_TOKEN   = 2_000_000;   // 0.002 SOL
+const ATA_RENT         = 2_039_280;   // standard SPL ATA rent
+const COST_PER_TOKEN   = SWAP_PER_TOKEN + ATA_RENT; // ~0.00404 SOL
+const BASE_RESERVE     = 5_000_000;   // 0.005 SOL base fee reserve
+const MAX_TOKENS_CYCLE = 20;
+
+/** Shuffle array in-place (Fisher-Yates) */
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── Generic swap: SOL → any token ────────────────────────────────────────────
+
+async function swapSolToToken(keypair: Keypair, tokenMint: string, lamports: number): Promise<string> {
   const connection = getHeliusConnection();
   const headers    = jupiterHeaders();
 
-  // Quote
   const quoteRes = await fetch(
     `https://api.jup.ag/swap/v1/quote` +
-    `?inputMint=${SOL_MINT}&outputMint=${USDC_MINT}` +
-    `&amount=${lamports}&slippageBps=200&restrictIntermediateTokens=true`,
+    `?inputMint=${SOL_MINT}&outputMint=${tokenMint}` +
+    `&amount=${lamports}&slippageBps=300&restrictIntermediateTokens=true`,
     { headers }
   );
-  if (!quoteRes.ok) {
-    const t = await quoteRes.text();
-    throw new Error(`SOL→USDC quote failed (${quoteRes.status}): ${t.slice(0, 200)}`);
-  }
+  if (!quoteRes.ok) throw new Error(`SOL→${tokenMint.slice(0,8)} quote failed (${quoteRes.status}): ${(await quoteRes.text()).slice(0, 150)}`);
   const quote = await quoteRes.json();
-  if (quote.error) throw new Error(`SOL→USDC quote error: ${quote.error}`);
+  if (quote.error) throw new Error(`SOL→token quote error: ${quote.error}`);
 
-  // Full swap tx
   const swapRes = await fetch('https://api.jup.ag/swap/v1/swap', {
-    method: 'POST',
-    headers,
+    method: 'POST', headers,
     body: JSON.stringify({
       quoteResponse: quote,
       userPublicKey: keypair.publicKey.toBase58(),
@@ -112,45 +146,36 @@ async function swapSolToUsdc(keypair: Keypair, lamports: number): Promise<string
       prioritizationFeeLamports: 5000,
     }),
   });
-  if (!swapRes.ok) {
-    const t = await swapRes.text();
-    throw new Error(`SOL→USDC swap failed (${swapRes.status}): ${t.slice(0, 200)}`);
-  }
+  if (!swapRes.ok) throw new Error(`SOL→token swap failed (${swapRes.status}): ${(await swapRes.text()).slice(0, 150)}`);
   const swapData = await swapRes.json();
-  if (!swapData.swapTransaction)
-    throw new Error(`No swapTransaction: ${JSON.stringify(swapData).slice(0, 150)}`);
+  if (!swapData.swapTransaction) throw new Error(`No swapTransaction in response`);
 
   const tx = VersionedTransaction.deserialize(Buffer.from(swapData.swapTransaction, 'base64'));
   tx.sign([keypair]);
-
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
   const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 3 });
   await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
   return sig;
 }
 
-// ── Step 2: USDC → SOL  (regular swap, NO close instruction) ─────────────────
+// ── Generic swap: any token → SOL (NO close) ─────────────────────────────────
 
-async function swapUsdcToSol(keypair: Keypair, usdcAmount: number): Promise<string> {
+async function swapTokenToSol(keypair: Keypair, tokenMint: string, tokenAmount: number): Promise<string> {
   const connection = getHeliusConnection();
   const headers    = jupiterHeaders();
 
   const quoteRes = await fetch(
     `https://api.jup.ag/swap/v1/quote` +
-    `?inputMint=${USDC_MINT}&outputMint=${SOL_MINT}` +
-    `&amount=${usdcAmount}&slippageBps=200&restrictIntermediateTokens=true`,
+    `?inputMint=${tokenMint}&outputMint=${SOL_MINT}` +
+    `&amount=${tokenAmount}&slippageBps=300&restrictIntermediateTokens=true`,
     { headers }
   );
-  if (!quoteRes.ok) {
-    const t = await quoteRes.text();
-    throw new Error(`USDC→SOL quote failed (${quoteRes.status}): ${t.slice(0, 200)}`);
-  }
+  if (!quoteRes.ok) throw new Error(`token→SOL quote failed (${quoteRes.status}): ${(await quoteRes.text()).slice(0, 150)}`);
   const quote = await quoteRes.json();
-  if (quote.error) throw new Error(`USDC→SOL quote error: ${quote.error}`);
+  if (quote.error) throw new Error(`token→SOL quote error: ${quote.error}`);
 
   const swapRes = await fetch('https://api.jup.ag/swap/v1/swap', {
-    method: 'POST',
-    headers,
+    method: 'POST', headers,
     body: JSON.stringify({
       quoteResponse: quote,
       userPublicKey: keypair.publicKey.toBase58(),
@@ -159,51 +184,38 @@ async function swapUsdcToSol(keypair: Keypair, usdcAmount: number): Promise<stri
       prioritizationFeeLamports: 5000,
     }),
   });
-  if (!swapRes.ok) {
-    const t = await swapRes.text();
-    throw new Error(`USDC→SOL swap failed (${swapRes.status}): ${t.slice(0, 200)}`);
-  }
+  if (!swapRes.ok) throw new Error(`token→SOL swap failed (${swapRes.status}): ${(await swapRes.text()).slice(0, 150)}`);
   const swapData = await swapRes.json();
-  if (!swapData.swapTransaction)
-    throw new Error(`No swapTransaction: ${JSON.stringify(swapData).slice(0, 150)}`);
+  if (!swapData.swapTransaction) throw new Error(`No swapTransaction in response`);
 
   const tx = VersionedTransaction.deserialize(Buffer.from(swapData.swapTransaction, 'base64'));
   tx.sign([keypair]);
-
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
   const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 3 });
   await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
   return sig;
 }
 
-// ── Step 3: Close USDC ATA (separate tx) → record in app ─────────────────────
+// ── Generic close ATA + pay 15% platform fee in same tx ──────────────────────
 
-/** Close the USDC ATA and pay 15% of the recovered rent to the platform wallet
- *  in the SAME transaction — identical behaviour to how regular users pay fees. */
-async function closeUsdcAta(keypair: Keypair): Promise<string> {
+async function closeTokenAta(
+  keypair:   Keypair,
+  tokenMint: string,
+  prog:      PublicKey = TOKEN_PROGRAM_ID
+): Promise<string> {
   const connection = getHeliusConnection();
-  const ata = getAssociatedTokenAddressSync(
-    new PublicKey(USDC_MINT), keypair.publicKey, false, TOKEN_PROGRAM_ID
-  );
+  const ata = getAssociatedTokenAddressSync(new PublicKey(tokenMint), keypair.publicKey, false, prog);
 
-  // ATA rent = 2 039 280 lamports; 15 % goes to platform wallet on-chain
-  const rentLamports    = 2_039_280;
-  const feeLamports     = Math.floor(rentLamports * PLATFORM_FEE);  // 305 892
-  const netLamports     = rentLamports - feeLamports;               // 1 733 388
-  const solRecovered    = rentLamports / 1e9;
-  const feeAmount       = feeLamports  / 1e9;
-  const netAmount       = netLamports  / 1e9;
+  const feeLamports  = Math.floor(ATA_RENT * PLATFORM_FEE);   // 305 892
+  const netLamports  = ATA_RENT - feeLamports;
+  const solRecovered = ATA_RENT / 1e9;
+  const feeAmount    = feeLamports / 1e9;
+  const netAmount    = netLamports / 1e9;
 
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
   const tx = new Transaction()
-    // ① Close the ATA — rent returns to keypair.publicKey
-    .add(createCloseAccountInstruction(ata, keypair.publicKey, keypair.publicKey, [], TOKEN_PROGRAM_ID))
-    // ② Pay 15 % platform fee on-chain in the same tx
-    .add(SystemProgram.transfer({
-      fromPubkey: keypair.publicKey,
-      toPubkey:   PLATFORM_WALLET,
-      lamports:   feeLamports,
-    }));
+    .add(createCloseAccountInstruction(ata, keypair.publicKey, keypair.publicKey, [], prog))
+    .add(SystemProgram.transfer({ fromPubkey: keypair.publicKey, toPubkey: PLATFORM_WALLET, lamports: feeLamports }));
   tx.recentBlockhash = blockhash;
   tx.feePayer        = keypair.publicKey;
   tx.sign(keypair);
@@ -213,25 +225,25 @@ async function closeUsdcAta(keypair: Keypair): Promise<string> {
   console.log(`[ActivityBot] ATA closed + 15% fee paid → ${sig.slice(0, 30)}…`);
 
   // Record in app stats
-  try {
-    await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        signature: sig, walletAddress: keypair.publicKey.toBase58(),
-        accountsClosed: 1, solRecovered, netAmount, feeAmount,
-        platformFeeAmount: feeAmount, source: 'activity_bot',
-      }),
-    });
-  } catch (e: any) {
-    console.warn(`[ActivityBot] record-success failed:`, e?.message);
-  }
+  fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signature: sig, walletAddress: keypair.publicKey.toBase58(),
+      accountsClosed: 1, solRecovered, netAmount, feeAmount,
+      platformFeeAmount: feeAmount, source: 'activity_bot',
+    }),
+  }).catch(() => {});
 
   return sig;
 }
 
 // ── Per-wallet activity cycle ─────────────────────────────────────────────────
-// Full round per interval: SOL→USDC, then immediately USDC→SOL+closeUsdcATA
+// Each round:
+//   ① Calculate how many different tokens can be bought (0.002 SOL each)
+//   ② Pick that many random tokens (shuffled)
+//   ③ SOL → each token  (0.002 SOL per token, opens ATA)
+//   ④ token → SOL       (swap back, no close — leaves ATA empty)
+//   ⑤ Close each ATA    (separate tx, pays 15% fee, records in app)
 
 async function runActivityForWallet(idx: number): Promise<void> {
   if (!activityKeypairs[idx] || !activityWallets[idx]) return;
@@ -240,83 +252,125 @@ async function runActivityForWallet(idx: number): Promise<void> {
   const connection = getHeliusConnection();
 
   try {
-    // ── Read balance (with RPC-lag retry) ────────────────────────────────
+    // ── Balance check (RPC-lag retry) ────────────────────────────────────
     let balance = await connection.getBalance(keypair.publicKey);
     if (balance === 0 && wallet.balance > 0) {
-      console.log(`[ActivityBot] Wallet ${idx} balance=0 (RPC lag), retrying in 4s...`);
+      console.log(`[ActivityBot] Wallet ${idx} balance=0 (RPC lag), retrying 4s…`);
       await new Promise(r => setTimeout(r, 4000));
       balance = await connection.getBalance(keypair.publicKey);
     }
     wallet.balance = balance / LAMPORTS_PER_SOL;
     console.log(`[ActivityBot] Wallet ${idx} balance=${balance} lamports`);
 
-    // ── STEP 1: SOL → USDC ───────────────────────────────────────────────
-    const reserve    = 180_000; // keep SOL for 3 tx fees
-    const swapAmount = Math.floor((balance - reserve) * 0.3);
-    if (swapAmount < 500_000) {
-      wallet.lastError = `Balance too low: ${wallet.balance.toFixed(6)} SOL (need > 0.006)`;
+    // ── ① How many tokens can we buy? ────────────────────────────────────
+    // reserve = base + (numTokens × 3 txs × 5 000 lamport tx-fee)
+    // We solve: numTokens = floor((balance − BASE_RESERVE) / COST_PER_TOKEN)
+    // then refine reserve and re-check.
+    const available  = balance - BASE_RESERVE;
+    if (available < COST_PER_TOKEN) {
+      wallet.lastError = `Balance too low: ${wallet.balance.toFixed(6)} SOL (need >${(COST_PER_TOKEN + BASE_RESERVE) / 1e9} SOL)`;
       return;
     }
+    const numTokens = Math.min(MAX_TOKENS_CYCLE, Math.floor(available / COST_PER_TOKEN));
+    console.log(`[ActivityBot] Wallet ${idx} → buying ${numTokens} random tokens (0.002 SOL each)`);
 
-    console.log(`[ActivityBot] Wallet ${idx} ① SOL→USDC: ${swapAmount} lamports`);
-    const sig1 = await swapSolToUsdc(keypair, swapAmount);
-    wallet.lastTxSig  = sig1;
-    wallet.lastTxTime = new Date().toISOString();
-    wallet.txCount++;
-    wallet.lastError  = null;
-    wallet.step       = 'usdc_to_sol_and_close';
-    totalTxCount++;
-    console.log(`[ActivityBot] Wallet ${idx} ① done: ${sig1.slice(0, 30)}…`);
+    // ── ② Pick random tokens (no duplicates) ─────────────────────────────
+    const selected = shuffle([...RANDOM_TOKENS]).slice(0, numTokens);
+    console.log(`[ActivityBot] Wallet ${idx} tokens: ${selected.map(t => t.symbol).join(', ')}`);
 
-    // Wait for USDC to land
+    // ── ③ SOL → each token ───────────────────────────────────────────────
+    const buySigs: string[] = [];
+    for (const token of selected) {
+      try {
+        console.log(`[ActivityBot] Wallet ${idx} ③ SOL→${token.symbol}: ${SWAP_PER_TOKEN} lamports`);
+        const sig = await swapSolToToken(keypair, token.mint, SWAP_PER_TOKEN);
+        buySigs.push(sig);
+        wallet.lastTxSig  = sig;
+        wallet.lastTxTime = new Date().toISOString();
+        wallet.txCount++;
+        wallet.lastError  = null;
+        wallet.step       = 'usdc_to_sol_and_close';
+        totalTxCount++;
+        console.log(`[ActivityBot] Wallet ${idx} ③ SOL→${token.symbol} done: ${sig.slice(0, 30)}…`);
+        await new Promise(r => setTimeout(r, 1500)); // brief pause between buys
+      } catch (e: any) {
+        console.error(`[ActivityBot] Wallet ${idx} ③ SOL→${token.symbol} FAILED:`, e?.message?.slice(0, 120));
+      }
+    }
+
+    // Wait for all buys to land on-chain
     await new Promise(r => setTimeout(r, 5000));
 
-    // ── STEP 2: USDC → SOL  (regular swap, NO close) ─────────────────────
-    const tokenAccts = await connection.getParsedTokenAccountsByOwner(
-      keypair.publicKey, { mint: new PublicKey(USDC_MINT) }
-    );
-    const usdcAmount = parseInt(
-      tokenAccts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0'
-    );
-
-    if (usdcAmount < 100) {
-      console.warn(`[ActivityBot] Wallet ${idx} USDC=0 after step 1, skipping`);
-      wallet.step = 'sol_to_usdc';
-      return;
+    // ── ④ token → SOL (no close) ─────────────────────────────────────────
+    const sellSigs: string[] = [];
+    for (const token of selected) {
+      try {
+        // Read actual on-chain balance
+        const tokenAccts = await connection.getParsedTokenAccountsByOwner(
+          keypair.publicKey, { mint: new PublicKey(token.mint) }
+        );
+        const amount = parseInt(
+          tokenAccts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0'
+        );
+        if (amount < 1) {
+          console.warn(`[ActivityBot] Wallet ${idx} ④ ${token.symbol} amount=0, skipping sell`);
+          continue;
+        }
+        console.log(`[ActivityBot] Wallet ${idx} ④ ${token.symbol}→SOL: ${amount} units`);
+        const sig = await swapTokenToSol(keypair, token.mint, amount);
+        sellSigs.push(sig);
+        wallet.lastTxSig  = sig;
+        wallet.lastTxTime = new Date().toISOString();
+        wallet.txCount++;
+        wallet.lastError  = null;
+        totalTxCount++;
+        console.log(`[ActivityBot] Wallet ${idx} ④ ${token.symbol}→SOL done: ${sig.slice(0, 30)}…`);
+        await new Promise(r => setTimeout(r, 1500));
+      } catch (e: any) {
+        console.error(`[ActivityBot] Wallet ${idx} ④ ${token.symbol}→SOL FAILED:`, e?.message?.slice(0, 120));
+      }
     }
 
-    console.log(`[ActivityBot] Wallet ${idx} ② USDC→SOL: ${usdcAmount} units`);
-    const sig2 = await swapUsdcToSol(keypair, usdcAmount);
-    wallet.lastTxSig  = sig2;
-    wallet.lastTxTime = new Date().toISOString();
-    wallet.txCount++;
-    wallet.lastError  = null;
-    totalTxCount++;
-    console.log(`[ActivityBot] Wallet ${idx} ② done: ${sig2.slice(0, 30)}…`);
-
-    // Wait for swap to settle so the USDC ATA is truly empty
+    // Wait for swaps to settle so ATAs are truly empty
     await new Promise(r => setTimeout(r, 4000));
 
-    // ── STEP 3: Close empty USDC ATA (separate tx) → recorded in app ─────
-    console.log(`[ActivityBot] Wallet ${idx} ③ closing USDC ATA…`);
-    const sig3 = await closeUsdcAta(keypair);
-    wallet.lastTxSig  = sig3;   // show the RENT CLAIM tx in the status
-    wallet.lastTxTime = new Date().toISOString();
-    wallet.txCount++;
-    wallet.lastError  = null;
-    wallet.step       = 'sol_to_usdc';
-    totalTxCount++;
-    console.log(`[ActivityBot] Wallet ${idx} ③ rent claimed: ${sig3.slice(0, 30)}…  Full cycle ✓`);
+    // ── ⑤ Close each empty ATA + pay 15% fee + record in app ─────────────
+    for (const token of selected) {
+      try {
+        // Confirm ATA is actually empty before closing
+        const tokenAccts = await connection.getParsedTokenAccountsByOwner(
+          keypair.publicKey, { mint: new PublicKey(token.mint) }
+        );
+        const acct   = tokenAccts.value[0];
+        const amount = parseInt(acct?.account.data?.parsed?.info?.tokenAmount?.amount ?? '1');
+        if (!acct || amount > 0) {
+          console.warn(`[ActivityBot] Wallet ${idx} ⑤ ${token.symbol} ATA not empty (${amount}), skipping close`);
+          continue;
+        }
+        console.log(`[ActivityBot] Wallet ${idx} ⑤ closing ${token.symbol} ATA + paying 15% fee`);
+        const sig = await closeTokenAta(keypair, token.mint);
+        wallet.lastTxSig  = sig;
+        wallet.lastTxTime = new Date().toISOString();
+        wallet.txCount++;
+        wallet.lastError  = null;
+        wallet.step       = 'sol_to_usdc';
+        totalTxCount++;
+        console.log(`[ActivityBot] Wallet ${idx} ⑤ ${token.symbol} rent claimed: ${sig.slice(0, 30)}…`);
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e: any) {
+        console.error(`[ActivityBot] Wallet ${idx} ⑤ close ${token.symbol} FAILED:`, e?.message?.slice(0, 120));
+      }
+    }
 
-    // Refresh balance display
+    // Refresh balance
     const newBal = await connection.getBalance(keypair.publicKey);
     wallet.balance = newBal / LAMPORTS_PER_SOL;
+    console.log(`[ActivityBot] Wallet ${idx} cycle complete ✓  (${numTokens} tokens, bal=${wallet.balance.toFixed(6)} SOL)`);
 
   } catch (err: any) {
     const msg = err?.message?.slice(0, 150) || String(err);
     wallet.lastError = msg;
-    console.error(`[ActivityBot] Wallet ${idx} error (step=${wallet.step}):`, msg);
-    // Reset to start of cycle so next interval retries from SOL→USDC
+    console.error(`[ActivityBot] Wallet ${idx} error:`, msg);
     wallet.step = 'sol_to_usdc';
   }
 }
@@ -448,45 +502,29 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
       const kp      = activityKeypairs[i];
       const address = kp.publicKey.toBase58();
 
-      // ── ①: Sweep any remaining non-SOL token balances → SOL ───────────────
+      // ── ①: Swap ALL remaining non-SOL token balances → SOL ───────────────
+      //   Uses generic swapTokenToSol for any token the bot may have bought.
+      //   Leaves each ATA empty so step ② can scan and close them.
       try {
-        // USDC: swap → SOL (leaves ATA empty; scan step will close it)
-        const usdcAccts = await connection.getParsedTokenAccountsByOwner(
-          kp.publicKey, { mint: new PublicKey(USDC_MINT) }
+        const allAccts = await connection.getParsedTokenAccountsByOwner(
+          kp.publicKey, { programId: TOKEN_PROGRAM_ID }
         );
-        const usdcAmt = parseInt(
-          usdcAccts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0'
+        const all2022Accts = await connection.getParsedTokenAccountsByOwner(
+          kp.publicKey, { programId: TOKEN_2022_PROGRAM_ID }
         );
-        if (usdcAmt >= 100) {
-          console.log(`[ActivityBot] Drain wallet ${i} ①: USDC ${usdcAmt} → swap to SOL`);
-          await swapUsdcToSol(kp, usdcAmt);
-          await new Promise(r => setTimeout(r, 4000)); // wait for tx to land
-        }
+        const allTokenAccts = [...allAccts.value, ...all2022Accts.value];
 
-        // Other tokens: swap+close via our own route
-        const holdingsRes = await fetch(`https://api.jup.ag/ultra/v1/balances/${address}`);
-        if (holdingsRes.ok) {
-          const holdings = await holdingsRes.json();
-          for (const [mint, info] of Object.entries(holdings as Record<string, any>)) {
-            if (mint === SOL_MINT || mint === USDC_MINT) continue;
-            const amount = parseInt((info as any)?.amount ?? '0');
-            if (amount < 100) continue;
-            try {
-              console.log(`[ActivityBot] Drain wallet ${i} ①: token ${mint.slice(0,12)}… → swap+close`);
-              const url = `http://localhost:${port}/api/jupiter/swap-with-close` +
-                `?inputMint=${mint}&outputMint=${SOL_MINT}&amount=${amount}&taker=${address}`;
-              const res  = await fetch(url);
-              const data = await res.json();
-              if (res.ok && data.success && data.transaction) {
-                const tx = VersionedTransaction.deserialize(Buffer.from(data.transaction, 'base64'));
-                tx.sign([kp]);
-                const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 3 });
-                await connection.confirmTransaction(sig, 'confirmed');
-                console.log(`[ActivityBot] Drain wallet ${i}: swap+close ok`);
-              }
-            } catch (e: any) {
-              console.error(`[ActivityBot] Drain wallet ${i} swap+close error:`, e?.message);
-            }
+        for (const acct of allTokenAccts) {
+          const parsed = acct.account.data?.parsed?.info;
+          const mint   = parsed?.mint as string;
+          const amount = parseInt(parsed?.tokenAmount?.amount ?? '0');
+          if (!mint || amount < 1) continue;
+          try {
+            console.log(`[ActivityBot] Drain wallet ${i} ①: ${mint.slice(0,12)}… (${amount}) → swap to SOL`);
+            await swapTokenToSol(kp, mint, amount);
+            await new Promise(r => setTimeout(r, 2000));
+          } catch (e: any) {
+            console.error(`[ActivityBot] Drain wallet ${i} ① swap error (${mint.slice(0,8)}):`, e?.message?.slice(0, 100));
           }
         }
       } catch (e: any) {
