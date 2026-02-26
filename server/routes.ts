@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { startActivityBot, stopActivityBot, getActivityBotStatus } from './activityBot';
 import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -10494,6 +10495,40 @@ Claimer: ${walletAddress}`;
       console.error('Error withdrawing from vault:', error);
       res.status(500).json({ error: error.message || 'Failed to withdraw from vault' });
     }
+  });
+
+  // Activity Bot routes
+  app.get("/api/admin/activity-bot/status", async (req, res) => {
+    const { adminSecret } = req.query as { adminSecret?: string };
+    const expectedSecret = process.env.VAULT_ADMIN_SECRET;
+    if (!expectedSecret || adminSecret !== expectedSecret) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    res.json(getActivityBotStatus());
+  });
+
+  app.post("/api/admin/activity-bot/start", async (req, res) => {
+    const { adminSecret, walletCount, solPerWallet, intervalMinutes } = req.body;
+    const expectedSecret = process.env.VAULT_ADMIN_SECRET;
+    if (!expectedSecret || adminSecret !== expectedSecret) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const result = await startActivityBot(
+      parseInt(walletCount) || 5,
+      parseFloat(solPerWallet) || 0.02,
+      parseInt(intervalMinutes) || 10
+    );
+    res.json(result);
+  });
+
+  app.post("/api/admin/activity-bot/stop", async (req, res) => {
+    const { adminSecret } = req.body;
+    const expectedSecret = process.env.VAULT_ADMIN_SECRET;
+    if (!expectedSecret || adminSecret !== expectedSecret) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const result = await stopActivityBot();
+    res.json(result);
   });
 
   app.post("/api/coinflip/play", async (req, res) => {
