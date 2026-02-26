@@ -428,76 +428,95 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
     const connection   = getHeliusConnection();
     const vaultKeypair = getVaultKeypair();
 
-    // Step 1: For each wallet — claim rent then sweep tokens → SOL
+    // Step 1: Scan EVERY token account on each wallet (including empty ones).
+    //   • If it has balance  → swap to SOL first, then close ATA (claim rent)
+    //   • If it is empty     → close ATA immediately (claim rent)
+    //   All closes are recorded in the app.  Only AFTER this do we drain SOL.
     for (let i = 0; i < activityKeypairs.length; i++) {
       const kp = activityKeypairs[i];
-
-      // ── 1a: Handle USDC specifically (same 3-step logic as activity cycle) ──
       try {
-        const usdcAccts = await connection.getParsedTokenAccountsByOwner(
-          kp.publicKey, { mint: new PublicKey(USDC_MINT) }
+        // Get ALL token accounts, even those with 0 balance — they still hold rent
+        const allAccts = await connection.getParsedTokenAccountsByOwner(
+          kp.publicKey, { programId: TOKEN_PROGRAM_ID }
         );
-        const usdcAcct  = usdcAccts.value[0];
-        const usdcAmt   = parseInt(usdcAcct?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0');
+        const all2022 = await connection.getParsedTokenAccountsByOwner(
+          kp.publicKey, { programId: TOKEN_2022_PROGRAM_ID }
+        );
+        const tokenAccounts = [...allAccts.value, ...all2022.value];
+        console.log(`[ActivityBot] Drain wallet ${i}: found ${tokenAccounts.length} token accounts`);
 
-        if (usdcAmt >= 100) {
-          // Has USDC balance → swap to SOL first
-          console.log(`[ActivityBot] Drain ② USDC→SOL wallet ${i}: ${usdcAmt} units`);
-          await swapUsdcToSol(kp, usdcAmt);
-          await new Promise(r => setTimeout(r, 4000)); // settle
-        }
+        for (const acct of tokenAccounts) {
+          const parsed  = acct.account.data?.parsed?.info;
+          const mint    = parsed?.mint as string;
+          const amount  = parseInt(parsed?.tokenAmount?.amount ?? '0');
+          const prog    = acct.account.owner.equals(TOKEN_2022_PROGRAM_ID)
+                          ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+          const ataAddr = acct.pubkey;
 
-        // Close the USDC ATA if it still exists (claims rent, records in app)
-        if (usdcAcct) {
-          console.log(`[ActivityBot] Drain ③ close USDC ATA wallet ${i} (rent claim)`);
-          await closeUsdcAta(kp);
-        }
-      } catch (e: any) {
-        console.error(`[ActivityBot] Drain USDC step wallet ${i}:`, e?.message);
-      }
-
-      // ── 1b: Handle any other non-SOL tokens (swap-with-close) ─────────────
-      try {
-        const holdingsRes = await fetch(`https://api.jup.ag/ultra/v1/balances/${kp.publicKey.toBase58()}`);
-        if (holdingsRes.ok) {
-          const holdings = await holdingsRes.json();
-          for (const [mint, info] of Object.entries(holdings as Record<string, any>)) {
-            if (mint === SOL_MINT || mint === USDC_MINT) continue; // already handled
-            const amount = parseInt((info as any)?.amount ?? '0');
-            if (amount < 100) continue;
-            console.log(`[ActivityBot] Drain swap ${mint.slice(0,12)}… → SOL wallet ${i}`);
-            try {
-              const url = `http://localhost:${getPort()}/api/jupiter/swap-with-close` +
-                `?inputMint=${mint}&outputMint=${SOL_MINT}&amount=${amount}&taker=${kp.publicKey.toBase58()}`;
-              const res  = await fetch(url);
-              const data = await res.json();
-              if (res.ok && data.success && data.transaction) {
-                const tx = VersionedTransaction.deserialize(Buffer.from(data.transaction, 'base64'));
-                tx.sign([kp]);
-                const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 3 });
-                await connection.confirmTransaction(sig, 'confirmed');
-                console.log(`[ActivityBot] Drain swap ok wallet ${i}: ${sig.slice(0,20)}…`);
-              } else throw new Error(data.error || 'swap-with-close failed');
-            } catch (swapErr: any) {
-              console.error(`[ActivityBot] Drain other-token swap failed wallet ${i}:`, swapErr?.message);
-              // Fallback: close ATA directly to at least recover rent
-              try {
-                const mintPk = new PublicKey(mint);
-                const ata    = getAssociatedTokenAddressSync(mintPk, kp.publicKey, false, TOKEN_PROGRAM_ID);
-                const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-                const closeTx = new Transaction().add(
-                  createCloseAccountInstruction(ata, kp.publicKey, kp.publicKey, [], TOKEN_PROGRAM_ID)
-                );
-                closeTx.recentBlockhash = blockhash; closeTx.feePayer = kp.publicKey; closeTx.sign(kp);
-                const sig = await connection.sendRawTransaction(closeTx.serialize());
-                await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
-                console.log(`[ActivityBot] Drain close-only ok wallet ${i}`);
-              } catch (_) {}
+          try {
+            if (amount >= 100) {
+              // Has token balance — swap to SOL first
+              if (mint === USDC_MINT) {
+                console.log(`[ActivityBot] Drain wallet ${i}: USDC (${amount}) → swap to SOL`);
+                await swapUsdcToSol(kp, amount);
+                await new Promise(r => setTimeout(r, 4000));
+              } else {
+                // Other tokens: use swap-with-close (handles swap + close in one tx)
+                console.log(`[ActivityBot] Drain wallet ${i}: ${mint.slice(0,12)}… (${amount}) → swap+close`);
+                try {
+                  const url = `http://localhost:${getPort()}/api/jupiter/swap-with-close` +
+                    `?inputMint=${mint}&outputMint=${SOL_MINT}&amount=${amount}&taker=${kp.publicKey.toBase58()}`;
+                  const res  = await fetch(url);
+                  const data = await res.json();
+                  if (res.ok && data.success && data.transaction) {
+                    const tx = VersionedTransaction.deserialize(Buffer.from(data.transaction, 'base64'));
+                    tx.sign([kp]);
+                    const sig = await connection.sendTransaction(tx, { skipPreflight: false, maxRetries: 3 });
+                    await connection.confirmTransaction(sig, 'confirmed');
+                    console.log(`[ActivityBot] Drain wallet ${i}: swap+close ok`);
+                    continue; // ATA already closed by swap-with-close — skip individual close below
+                  }
+                } catch (_) { /* fall through to individual close */ }
+              }
             }
+
+            // Close ATA (empty or just-swapped), reclaim rent, record in app
+            console.log(`[ActivityBot] Drain wallet ${i}: closing ATA ${ataAddr.toBase58().slice(0,12)}… (rent claim)`);
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+            const closeTx = new Transaction().add(
+              createCloseAccountInstruction(ataAddr, kp.publicKey, kp.publicKey, [], prog)
+            );
+            closeTx.recentBlockhash = blockhash;
+            closeTx.feePayer        = kp.publicKey;
+            closeTx.sign(kp);
+            const closeSig = await connection.sendRawTransaction(closeTx.serialize(), { skipPreflight: false, maxRetries: 3 });
+            await connection.confirmTransaction({ signature: closeSig, blockhash, lastValidBlockHeight }, 'confirmed');
+            console.log(`[ActivityBot] Drain wallet ${i}: ATA closed → ${closeSig.slice(0,20)}…`);
+
+            // Record every rent claim in the app
+            const rentLamports = 2039280;
+            const solRecovered = rentLamports / 1e9;
+            const feeAmount    = solRecovered * 0.15;
+            const netAmount    = solRecovered * 0.85;
+            await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                signature:         closeSig,
+                walletAddress:     kp.publicKey.toBase58(),
+                accountsClosed:    1,
+                solRecovered, netAmount, feeAmount,
+                platformFeeAmount: feeAmount,
+                source:            'activity_bot',
+              }),
+            }).catch(() => {});
+
+          } catch (e: any) {
+            console.error(`[ActivityBot] Drain wallet ${i} ATA ${mint?.slice(0,12)}… error:`, e?.message);
           }
         }
       } catch (e: any) {
-        console.error(`[ActivityBot] Drain other-token scan wallet ${i}:`, e?.message);
+        console.error(`[ActivityBot] Drain wallet ${i} token scan error:`, e?.message);
       }
     }
 
