@@ -255,10 +255,13 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
           const holdings = await holdingsRes.json();
           const usdc = holdings[USDC_MINT];
           if (usdc && parseInt(usdc.amount) > 1000) {
+            console.log(`[ActivityBot] Swapping USDC back to SOL for wallet ${i}: ${usdc.amount} units`);
             await jupiterSwap(kp, USDC_MINT, SOL_MINT, parseInt(usdc.amount));
           }
         }
-      } catch (_) {}
+      } catch (err: any) {
+        console.error(`[ActivityBot] USDC swap-back failed for wallet ${i}:`, err?.message || err);
+      }
     }));
 
     // Drain all SOL back to vault
@@ -266,21 +269,51 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
       const kp = activityKeypairs[i];
       try {
         const balance = await connection.getBalance(kp.publicKey);
-        const feeBuffer = 10000;
-        if (balance <= feeBuffer) continue;
-        const tx = new Transaction().add(
+        console.log(`[ActivityBot] Wallet ${i} balance: ${balance} lamports`);
+        if (balance < 5001) {
+          console.log(`[ActivityBot] Wallet ${i} too low to drain (${balance} lamports), skipping`);
+          continue;
+        }
+
+        // Build a dummy tx to calculate the exact fee
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+        const feeTx = new Transaction().add(
           SystemProgram.transfer({
             fromPubkey: kp.publicKey,
             toPubkey: vaultKeypair.publicKey,
-            lamports: balance - feeBuffer,
+            lamports: balance - 5000,
           })
         );
-        const { blockhash } = await connection.getLatestBlockhash();
-        tx.recentBlockhash = blockhash;
-        tx.feePayer = kp.publicKey;
-        const sig = await sendAndConfirmTransaction(connection, tx, [kp], { commitment: 'confirmed' });
+        feeTx.recentBlockhash = blockhash;
+        feeTx.feePayer = kp.publicKey;
+        feeTx.sign(kp);
+
+        const feeResult = await connection.getFeeForMessage(feeTx.compileMessage(), 'confirmed');
+        const actualFee = feeResult.value ?? 5000;
+        const sendLamports = balance - actualFee;
+
+        console.log(`[ActivityBot] Draining wallet ${i}: ${sendLamports} lamports (fee: ${actualFee})`);
+        if (sendLamports <= 0) continue;
+
+        // Build final tx with correct amount
+        const drainTx = new Transaction().add(
+          SystemProgram.transfer({
+            fromPubkey: kp.publicKey,
+            toPubkey: vaultKeypair.publicKey,
+            lamports: sendLamports,
+          })
+        );
+        drainTx.recentBlockhash = blockhash;
+        drainTx.feePayer = kp.publicKey;
+        drainTx.sign(kp);
+
+        const sig = await connection.sendRawTransaction(drainTx.serialize(), { skipPreflight: false });
+        await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+        console.log(`[ActivityBot] Drained wallet ${i}: ${sig}`);
         drainTxSigs.push(sig);
-      } catch (_) {}
+      } catch (err: any) {
+        console.error(`[ActivityBot] Failed to drain wallet ${i}:`, err?.message || err);
+      }
     }
 
     activityKeypairs = [];
