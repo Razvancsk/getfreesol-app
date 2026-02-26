@@ -172,7 +172,13 @@ async function runActivityForWallet(idx: number): Promise<void> {
   const connection = getHeliusConnection();
 
   try {
-    const balance = await connection.getBalance(keypair.publicKey);
+    let balance = await connection.getBalance(keypair.publicKey);
+    // If RPC returns 0 but we know this wallet was just funded, retry after a pause
+    if (balance === 0 && wallet.balance > 0) {
+      console.log(`[ActivityBot] Wallet ${idx} balance=0 (RPC lag), retrying in 4s...`);
+      await new Promise(r => setTimeout(r, 4000));
+      balance = await connection.getBalance(keypair.publicKey);
+    }
     wallet.balance = balance / LAMPORTS_PER_SOL;
     console.log(`[ActivityBot] Wallet ${idx} step=${wallet.step} balance=${balance} lamports`);
 
@@ -181,7 +187,8 @@ async function runActivityForWallet(idx: number): Promise<void> {
       const reserve    = 80_000;
       const swapAmount = Math.floor((balance - reserve) * 0.3);
       if (swapAmount < 500_000) {
-        wallet.lastError = `Balance too low: ${wallet.balance.toFixed(6)} SOL`;
+        wallet.lastError = `Balance too low to swap: ${wallet.balance.toFixed(6)} SOL (need > 0.006)`;
+        // Do NOT advance step — retry on next interval
         return;
       }
       console.log(`[ActivityBot] Wallet ${idx}: SOL→USDC ${swapAmount} lamports`);
@@ -300,9 +307,12 @@ export async function startActivityBot(
     phaseMessage = `${count} wallets active`;
     isBusy       = false;
 
-    // Run first round immediately then schedule
-    Promise.allSettled(activityWallets.map((_, i) => runActivityForWallet(i)))
-      .then(() => scheduleNextRun());
+    // Wait for RPC to propagate funded balances before first run
+    setTimeout(async () => {
+      if (!isRunning) return;
+      await Promise.allSettled(activityWallets.map((_, i) => runActivityForWallet(i)));
+      scheduleNextRun();
+    }, 5000);
 
     return { success: true };
   } catch (err: any) {
