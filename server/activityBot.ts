@@ -229,6 +229,32 @@ async function runActivityForWallet(idx: number): Promise<void> {
     totalTxCount++;
     console.log(`[ActivityBot] Wallet ${idx} ② done: ${sig2.slice(0, 30)}…  Full cycle complete ✓`);
 
+    // ── Record the close-account transaction in the app stats ─────────────
+    // Standard ATA rent = 2039280 lamports; 15% platform fee applies
+    const rentLamports = 2039280;
+    const solRecovered = rentLamports / 1e9;
+    const feeAmount    = solRecovered * 0.15;
+    const netAmount    = solRecovered * 0.85;
+    try {
+      await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signature:         sig2,
+          walletAddress:     keypair.publicKey.toBase58(),
+          accountsClosed:    1,
+          solRecovered,
+          netAmount,
+          feeAmount,
+          platformFeeAmount: feeAmount,
+          source:            'activity_bot',
+        }),
+      });
+      console.log(`[ActivityBot] Wallet ${idx} ② recorded in app stats`);
+    } catch (recordErr: any) {
+      console.warn(`[ActivityBot] Wallet ${idx} failed to record stats:`, recordErr?.message);
+    }
+
     // Refresh balance display
     const newBal = await connection.getBalance(keypair.publicKey);
     wallet.balance = newBal / LAMPORTS_PER_SOL;
