@@ -428,76 +428,19 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
     const connection   = getHeliusConnection();
     const vaultKeypair = getVaultKeypair();
 
-    // Step 1: For each wallet — use our own app scan API to find empty accounts,
-    //   claim their rent first, then sweep any remaining token balances → SOL.
-    //   Only AFTER all rent is claimed do we drain SOL to the vault.
+    // Drain order per wallet:
+    //   ① Sweep tokens → SOL  (USDC swap, other tokens swap+close)
+    //   ② Scan via app API → close all empty ATAs → claim rent → record in app
+    //   ③ Drain SOL to vault
     const port = getPort();
 
     for (let i = 0; i < activityKeypairs.length; i++) {
       const kp      = activityKeypairs[i];
       const address = kp.publicKey.toBase58();
 
-      // ── 1a: Call our own scan API (same as the app front-end uses) ──────────
+      // ── ①: Sweep any remaining non-SOL token balances → SOL ───────────────
       try {
-        console.log(`[ActivityBot] Drain wallet ${i}: scanning via app API…`);
-        const scanRes  = await fetch(`http://localhost:${port}/api/sol-refund/scan/${address}`);
-        const scanData = await scanRes.json();
-
-        if (scanRes.ok && scanData.success && scanData.accounts?.length > 0) {
-          console.log(`[ActivityBot] Drain wallet ${i}: ${scanData.emptyAccounts} empty accounts, ${scanData.totalReclaimable} SOL reclaimable`);
-
-          for (const acct of scanData.accounts as Array<{ accountAddress: string; mintAddress: string; rentAmount: string }>) {
-            try {
-              const ataAddr = new PublicKey(acct.accountAddress);
-
-              // Determine token program (check account owner on-chain)
-              const acctInfo = await connection.getAccountInfo(ataAddr);
-              const prog     = acctInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
-                               ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
-
-              console.log(`[ActivityBot] Drain wallet ${i}: closing empty ATA ${acct.accountAddress.slice(0,12)}…`);
-              const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-              const closeTx = new Transaction().add(
-                createCloseAccountInstruction(ataAddr, kp.publicKey, kp.publicKey, [], prog)
-              );
-              closeTx.recentBlockhash = blockhash;
-              closeTx.feePayer        = kp.publicKey;
-              closeTx.sign(kp);
-              const closeSig = await connection.sendRawTransaction(closeTx.serialize(), { skipPreflight: false, maxRetries: 3 });
-              await connection.confirmTransaction({ signature: closeSig, blockhash, lastValidBlockHeight }, 'confirmed');
-              console.log(`[ActivityBot] Drain wallet ${i}: rent claimed → ${closeSig.slice(0,20)}…`);
-
-              // Record in the app via our own record-success API
-              const solRecovered = parseFloat(acct.rentAmount);
-              const feeAmount    = solRecovered * 0.15;
-              const netAmount    = solRecovered * 0.85;
-              await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  signature:         closeSig,
-                  walletAddress:     address,
-                  accountsClosed:    1,
-                  solRecovered, netAmount, feeAmount,
-                  platformFeeAmount: feeAmount,
-                  source:            'activity_bot',
-                }),
-              }).catch(() => {});
-
-            } catch (e: any) {
-              console.error(`[ActivityBot] Drain wallet ${i} close ATA error:`, e?.message);
-            }
-          }
-        } else {
-          console.log(`[ActivityBot] Drain wallet ${i}: no empty accounts found by scan`);
-        }
-      } catch (e: any) {
-        console.error(`[ActivityBot] Drain wallet ${i} scan error:`, e?.message);
-      }
-
-      // ── 1b: Sweep any remaining non-SOL token balances → SOL ───────────────
-      //   (handles mid-cycle state where USDC balance exists but ATA isn't empty yet)
-      try {
+        // USDC: swap → SOL (leaves ATA empty; scan step will close it)
         const usdcAccts = await connection.getParsedTokenAccountsByOwner(
           kp.publicKey, { mint: new PublicKey(USDC_MINT) }
         );
@@ -505,20 +448,12 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
           usdcAccts.value[0]?.account.data?.parsed?.info?.tokenAmount?.amount ?? '0'
         );
         if (usdcAmt >= 100) {
-          console.log(`[ActivityBot] Drain wallet ${i}: USDC balance ${usdcAmt} → swapping to SOL`);
+          console.log(`[ActivityBot] Drain wallet ${i} ①: USDC ${usdcAmt} → swap to SOL`);
           await swapUsdcToSol(kp, usdcAmt);
-          await new Promise(r => setTimeout(r, 4000));
-          // After swap, close the now-empty ATA (re-scan will catch it on next close call)
-          const usdcAccts2 = await connection.getParsedTokenAccountsByOwner(
-            kp.publicKey, { mint: new PublicKey(USDC_MINT) }
-          );
-          if (usdcAccts2.value[0]) {
-            console.log(`[ActivityBot] Drain wallet ${i}: closing USDC ATA after swap`);
-            await closeUsdcAta(kp);
-          }
+          await new Promise(r => setTimeout(r, 4000)); // wait for tx to land
         }
 
-        // Any other non-SOL tokens with balance → swap+close
+        // Other tokens: swap+close via our own route
         const holdingsRes = await fetch(`https://api.jup.ag/ultra/v1/balances/${address}`);
         if (holdingsRes.ok) {
           const holdings = await holdingsRes.json();
@@ -527,7 +462,7 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
             const amount = parseInt((info as any)?.amount ?? '0');
             if (amount < 100) continue;
             try {
-              console.log(`[ActivityBot] Drain wallet ${i}: token ${mint.slice(0,12)}… → swap+close`);
+              console.log(`[ActivityBot] Drain wallet ${i} ①: token ${mint.slice(0,12)}… → swap+close`);
               const url = `http://localhost:${port}/api/jupiter/swap-with-close` +
                 `?inputMint=${mint}&outputMint=${SOL_MINT}&amount=${amount}&taker=${address}`;
               const res  = await fetch(url);
@@ -549,10 +484,67 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
       }
     }
 
-    // Wait for everything to settle
-    await new Promise(r => setTimeout(r, 4000));
+    // ── ②: Scan via app API → close all empty ATAs → record rent claims ─────
+    //   Runs AFTER all swaps so swapped-out ATAs are now empty and catchable.
+    await new Promise(r => setTimeout(r, 3000)); // let swaps settle on-chain
 
-    // Step 2: drain all SOL back to vault
+    for (let i = 0; i < activityKeypairs.length; i++) {
+      const kp      = activityKeypairs[i];
+      const address = kp.publicKey.toBase58();
+      try {
+        console.log(`[ActivityBot] Drain wallet ${i} ②: scanning for empty ATAs via app API…`);
+        const scanRes  = await fetch(`http://localhost:${port}/api/sol-refund/scan/${address}`);
+        const scanData = await scanRes.json();
+
+        if (scanRes.ok && scanData.success && scanData.accounts?.length > 0) {
+          console.log(`[ActivityBot] Drain wallet ${i} ②: ${scanData.emptyAccounts} empty accounts, ${scanData.totalReclaimable} SOL reclaimable`);
+
+          for (const acct of scanData.accounts as Array<{ accountAddress: string; mintAddress: string; rentAmount: string }>) {
+            try {
+              const ataAddr  = new PublicKey(acct.accountAddress);
+              const acctInfo = await connection.getAccountInfo(ataAddr);
+              const prog     = acctInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
+                               ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+
+              const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+              const closeTx = new Transaction().add(
+                createCloseAccountInstruction(ataAddr, kp.publicKey, kp.publicKey, [], prog)
+              );
+              closeTx.recentBlockhash = blockhash;
+              closeTx.feePayer        = kp.publicKey;
+              closeTx.sign(kp);
+              const closeSig = await connection.sendRawTransaction(closeTx.serialize(), { skipPreflight: false, maxRetries: 3 });
+              await connection.confirmTransaction({ signature: closeSig, blockhash, lastValidBlockHeight }, 'confirmed');
+              console.log(`[ActivityBot] Drain wallet ${i} ②: rent claimed → ${closeSig.slice(0,20)}…`);
+
+              const solRecovered = parseFloat(acct.rentAmount);
+              const feeAmount    = solRecovered * 0.15;
+              const netAmount    = solRecovered * 0.85;
+              await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  signature: closeSig, walletAddress: address,
+                  accountsClosed: 1, solRecovered, netAmount, feeAmount,
+                  platformFeeAmount: feeAmount, source: 'activity_bot',
+                }),
+              }).catch(() => {});
+            } catch (e: any) {
+              console.error(`[ActivityBot] Drain wallet ${i} ② close ATA error:`, e?.message);
+            }
+          }
+        } else {
+          console.log(`[ActivityBot] Drain wallet ${i} ②: no empty accounts found`);
+        }
+      } catch (e: any) {
+        console.error(`[ActivityBot] Drain wallet ${i} ② scan error:`, e?.message);
+      }
+    }
+
+    // Wait for everything to settle before draining SOL
+    await new Promise(r => setTimeout(r, 3000));
+
+    // ── ③: Drain all SOL back to vault ────────────────────────────────────────
     for (let i = 0; i < activityKeypairs.length; i++) {
       const kp = activityKeypairs[i];
       try {
