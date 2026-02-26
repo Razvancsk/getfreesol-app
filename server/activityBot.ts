@@ -247,22 +247,32 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
     const connection = getHeliusConnection();
     const vaultKeypair = getVaultKeypair();
 
-    // First try to swap any USDC back to SOL in all wallets
-    await Promise.allSettled(activityKeypairs.map(async (kp, i) => {
+    // Swap ALL tokens back to SOL for every wallet (sequential per wallet to avoid blockhash expiry)
+    for (let i = 0; i < activityKeypairs.length; i++) {
+      const kp = activityKeypairs[i];
       try {
         const holdingsRes = await fetch(`https://api.jup.ag/ultra/v1/balances/${kp.publicKey.toBase58()}`);
-        if (holdingsRes.ok) {
-          const holdings = await holdingsRes.json();
-          const usdc = holdings[USDC_MINT];
-          if (usdc && parseInt(usdc.amount) > 1000) {
-            console.log(`[ActivityBot] Swapping USDC back to SOL for wallet ${i}: ${usdc.amount} units`);
-            await jupiterSwap(kp, USDC_MINT, SOL_MINT, parseInt(usdc.amount));
+        if (!holdingsRes.ok) continue;
+        const holdings = await holdingsRes.json();
+        // Swap every non-SOL token that has a balance
+        for (const [mint, info] of Object.entries(holdings as Record<string, any>)) {
+          if (mint === SOL_MINT) continue;
+          const amount = parseInt(info?.amount ?? '0');
+          if (amount < 100) continue; // dust, skip
+          try {
+            console.log(`[ActivityBot] Swapping token ${mint} → SOL for wallet ${i}: ${amount} units`);
+            await jupiterSwap(kp, mint, SOL_MINT, amount);
+          } catch (swapErr: any) {
+            console.error(`[ActivityBot] Swap ${mint}→SOL failed for wallet ${i}:`, swapErr?.message || swapErr);
           }
         }
       } catch (err: any) {
-        console.error(`[ActivityBot] USDC swap-back failed for wallet ${i}:`, err?.message || err);
+        console.error(`[ActivityBot] Token scan failed for wallet ${i}:`, err?.message || err);
       }
-    }));
+    }
+
+    // Brief pause so all swap confirmations settle before checking SOL balances
+    await new Promise(r => setTimeout(r, 3000));
 
     // Drain all SOL back to vault
     for (let i = 0; i < activityKeypairs.length; i++) {
