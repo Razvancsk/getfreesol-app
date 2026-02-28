@@ -6554,12 +6554,12 @@ export default function SolRefund() {
                 <SiX className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
               </a>
               <a
-                href="https://t.me/+KnCX8s7RoWo3OGI0"
+                href="https://t.me/GetFreeSolXyzbot"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="button-footer-telegram"
                 className="flex items-center justify-center hover:opacity-70 transition-opacity"
-                title="Join our Telegram community"
+                title="Open Telegram Bot — auto-claim SOL 24/7"
               >
                 <SiTelegram className="h-6 w-6 text-purple-500 hover:text-purple-400 transition-colors" />
               </a>
