@@ -3579,7 +3579,7 @@ export default function SolRefund() {
                     alt="SolPump — Open Daily Cases"
                     className="w-full h-auto object-cover"
                   />
-                  <div className="absolute top-0 right-0 bg-black/60 text-white text-[9px] md:text-[11px] font-semibold tracking-wider uppercase px-1.5 md:px-2 py-px rounded-bl">
+                  <div className="absolute top-0 right-0 bg-black/60 text-white text-[9px] md:text-sm font-semibold tracking-wider uppercase px-1.5 md:px-3 py-px md:py-1 rounded-bl">
                     SPONSORED
                   </div>
                   {/* Learn More — pill card, bottom center on hover */}
