@@ -50,6 +50,7 @@ import { ShareModal } from '@/components/ShareModal';
 import { LendPositions } from '@/components/LendPositions';
 import { CoinFlipGame } from '@/components/CoinFlipGame';
 import logoImage from '@assets/image_1757882056840.png';
+import solPumpBanner from '@assets/referral_1772323564346.png';
 import ApiDocs from './api-docs';
 import whalesMarketLogo from '@assets/image_1763213026376.png';
 
@@ -3592,6 +3593,21 @@ export default function SolRefund() {
                   </div>
                   <ExternalLink className="h-4 w-4 text-purple-400 flex-shrink-0" />
                 </div>
+              </a>
+
+              {/* SolPump Sponsor Banner */}
+              <a
+                href="https://solpump.io/a/GETFREESOL"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block mt-3 rounded-xl overflow-hidden hover:opacity-90 transition-opacity duration-200 hover:scale-[1.01] transform"
+                title="SolPump — Open Daily Cases, Unbox up to $1,250 Daily"
+              >
+                <img
+                  src={solPumpBanner}
+                  alt="SolPump — Open Daily Cases, Unbox up to $1,250 Daily"
+                  className="w-full h-auto object-cover"
+                />
               </a>
             </div>
           )}
