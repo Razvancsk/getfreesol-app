@@ -3582,10 +3582,10 @@ export default function SolRefund() {
                 <div className="absolute top-1.5 left-2 bg-black/60 text-white text-[9px] font-semibold tracking-widest uppercase px-1.5 py-0.5 rounded">
                   SPONSORED
                 </div>
-                {/* Hover overlay — only bottom strip with Learn More */}
-                <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1.5">
-                  <span className="text-white font-semibold text-xs">Learn More</span>
-                  <ExternalLink className="h-3.5 w-3.5 text-white" />
+                {/* Hover — small Learn More badge bottom-right */}
+                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs font-semibold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
+                  Learn More
+                  <ExternalLink className="h-3 w-3" />
                 </div>
               </a>
             </div>
