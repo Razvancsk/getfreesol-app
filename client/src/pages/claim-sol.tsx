@@ -3577,7 +3577,7 @@ export default function SolRefund() {
                   <img
                     src={solPumpBanner}
                     alt="SolPump — Open Daily Cases"
-                    className="w-full h-auto object-cover"
+                    className="w-full h-auto md:h-28 object-cover"
                   />
                   <div className="absolute top-0 right-0 bg-black/60 text-white text-[9px] font-semibold tracking-wider uppercase px-1.5 py-px rounded-bl">
                     SPONSORED
