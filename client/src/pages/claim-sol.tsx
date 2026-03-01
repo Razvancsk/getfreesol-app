@@ -3582,10 +3582,11 @@ export default function SolRefund() {
                   <div className="absolute top-1.5 left-2 bg-black/60 text-white text-[9px] font-semibold tracking-widest uppercase px-1.5 py-0.5 rounded">
                     SPONSORED
                   </div>
-                </div>
-                <div className="flex items-center justify-center gap-1.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <span className="text-white/80 text-xs font-medium">Learn More</span>
-                  <ExternalLink className="h-3 w-3 text-white/80" />
+                  {/* Learn More — on banner, no background, bottom center */}
+                  <div className="absolute bottom-2 left-0 right-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <span className="text-white text-xs font-semibold drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Learn More</span>
+                    <ExternalLink className="h-3 w-3 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]" />
+                  </div>
                 </div>
               </a>
             </div>
