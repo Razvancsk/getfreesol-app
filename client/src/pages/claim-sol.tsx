@@ -3571,14 +3571,22 @@ export default function SolRefund() {
                 href="https://solpump.io/a/GETFREESOL"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block mt-3 rounded-xl overflow-hidden hover:opacity-90 transition-opacity duration-200 hover:scale-[1.01] transform"
-                title="SolPump — Open Daily Cases, Unbox up to $1,250 Daily"
+                className="group block mt-3 rounded-xl overflow-hidden relative hover:scale-[1.01] transform transition-transform duration-200"
               >
                 <img
                   src={solPumpBanner}
-                  alt="SolPump — Open Daily Cases, Unbox up to $1,250 Daily"
+                  alt="SolPump — Open Daily Cases"
                   className="w-full h-auto object-cover"
                 />
+                {/* SPONSORED badge */}
+                <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded">
+                  SPONSORED
+                </div>
+                {/* Hover overlay with Learn More */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                  <span className="text-white font-semibold text-sm">Learn More</span>
+                  <ExternalLink className="h-4 w-4 text-white" />
+                </div>
               </a>
             </div>
           )}
