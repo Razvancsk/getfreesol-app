@@ -3578,14 +3578,14 @@ export default function SolRefund() {
                   alt="SolPump — Open Daily Cases"
                   className="w-full h-auto object-cover"
                 />
-                {/* SPONSORED badge */}
-                <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded">
+                {/* SPONSORED badge — top left, small, unobtrusive */}
+                <div className="absolute top-1.5 left-2 bg-black/60 text-white text-[9px] font-semibold tracking-widest uppercase px-1.5 py-0.5 rounded">
                   SPONSORED
                 </div>
-                {/* Hover overlay with Learn More */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
-                  <span className="text-white font-semibold text-sm">Learn More</span>
-                  <ExternalLink className="h-4 w-4 text-white" />
+                {/* Hover overlay — only bottom strip with Learn More */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1.5">
+                  <span className="text-white font-semibold text-xs">Learn More</span>
+                  <ExternalLink className="h-3.5 w-3.5 text-white" />
                 </div>
               </a>
             </div>
