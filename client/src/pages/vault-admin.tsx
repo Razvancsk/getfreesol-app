@@ -128,13 +128,8 @@ export default function VaultAdmin() {
   };
 
   const handleBotStart = async () => {
-    const count = parseInt(botWalletCount);
     const sol = parseFloat(botSolPerWallet);
     const secs = parseInt(botInterval);
-    if (isNaN(count) || count < 1 || count > 10) {
-      toast({ title: 'Wallet count must be 1–10', variant: 'destructive' });
-      return;
-    }
     if (isNaN(sol) || sol < 0.005) {
       toast({ title: 'SOL per wallet must be at least 0.005', variant: 'destructive' });
       return;
@@ -152,14 +147,14 @@ export default function VaultAdmin() {
     try {
       const res = await apiRequest('POST', '/api/admin/activity-bot/start', {
         adminSecret,
-        walletCount: count,
+        walletCount: 1,
         solPerWallet: sol,
         intervalSeconds: secs,
         tokensPerCycle: tpc,
       });
       const data = await res.json();
       if (data.success) {
-        toast({ title: 'Activity bot started!', description: `${count} wallets funded and running swaps.` });
+        toast({ title: 'Activity bot started!', description: 'Wallet funded and running swaps.' });
         botStatusQuery.refetch();
       } else {
         toast({ title: 'Failed to start bot', description: data.error, variant: 'destructive' });
@@ -356,21 +351,7 @@ export default function VaultAdmin() {
                 {!isRunning && botStatus?.phase !== 'funding' && botStatus?.phase !== 'draining' ? (
                   /* Config form */
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div>
-                        <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
-                          Number of Wallets (1–10)
-                        </label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={botWalletCount}
-                          onChange={(e) => setBotWalletCount(e.target.value)}
-                          className="bg-black/40 border-purple-500/30 text-white"
-                          placeholder="5"
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">
                           SOL per Wallet
@@ -385,7 +366,7 @@ export default function VaultAdmin() {
                           placeholder="0.02"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Total: ~{(parseFloat(botSolPerWallet || '0') * parseInt(botWalletCount || '0')).toFixed(3)} SOL
+                          ~{parseFloat(botSolPerWallet || '0').toFixed(3)} SOL total
                         </p>
                       </div>
                       <div>
@@ -422,7 +403,7 @@ export default function VaultAdmin() {
 
                     <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-3 text-xs text-blue-300 space-y-1">
                       <p className="font-semibold text-blue-200">How it works:</p>
-                      <p>• Vault generates {botWalletCount || 'N'} fresh wallets and sends {botSolPerWallet || '0.02'} SOL to each</p>
+                      <p>• Vault generates a fresh wallet and sends {botSolPerWallet || '0.02'} SOL to it</p>
                       <p>• Each cycle: buys {botTokensPerCycle || '20'} random tokens (0.002 SOL each), swaps them back to SOL, then batch-closes all empty ATAs in one tx</p>
                       <p>• 15% platform fee collected on-chain at ATA close — max 20 accounts closed per transaction</p>
                       <p>• Transactions appear in Phantom Discovery as real dApp activity</p>
