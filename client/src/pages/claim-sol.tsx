@@ -2801,7 +2801,7 @@ export default function SolRefund() {
 
   // Process SOL refund (15% service fee)
   const refundMutation = useMutation({
-    mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string }) => {
+    mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string; skipXPost?: boolean }) => {
       // Get transaction (15% service fee)
       const response = await fetch('/api/sol-refund/prepare-transaction', {
         method: 'POST',
@@ -2886,14 +2886,15 @@ export default function SolRefund() {
         const recordData = {
           signature,
           walletAddress: data.walletAddress,
-          selectedAccounts: data.selectedAccounts, // Account addresses that were closed
-          accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
+          selectedAccounts: data.selectedAccounts,
+          accountsClosed: data.selectedAccounts.length,
           solRecovered: totalSolReclaimed,
           netAmount: netAmount,
           feeAmount: feeAmount,
           referralCodeUsed: referralCodeUsed,
           platformFeeAmount: platformFeeAmount || feeAmount,
-          referralFeeAmount: referralFeeAmount || 0
+          referralFeeAmount: referralFeeAmount || 0,
+          skipXPost: data.skipXPost || false
         };
 
         // Retry up to 3 times with exponential backoff
@@ -3038,6 +3039,7 @@ export default function SolRefund() {
     
     let totalSolRecovered = 0;
     let totalAccountsClosed = 0;
+    let lastSignature = '';
     const failedBatches: number[] = [];
     
     for (let i = 0; i < batches.length; i++) {
@@ -3051,11 +3053,13 @@ export default function SolRefund() {
           selectedAccounts: batches[i],
           donationPercentage,
           referralCode: referralCode || undefined,
+          skipXPost: true,
         });
         
         // Accumulate results
         totalSolRecovered += result.totalReceived || 0;
         totalAccountsClosed += batches[i].length;
+        if (result.signature) lastSignature = result.signature;
         setBatchResults({ totalSol: totalSolRecovered, totalAccounts: totalAccountsClosed });
         
       } catch (error) {
@@ -3076,6 +3080,24 @@ export default function SolRefund() {
     setCurrentBatch(0);
     setTotalBatches(0);
     
+    // Post total to X after all batches (one combined post)
+    if (failedBatches.length === 0 && lastSignature && totalSolRecovered > 0) {
+      try {
+        await fetch('/api/sol-refund/post-batch-to-x', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: publicKey?.toString() || '',
+            totalNetAmount: totalSolRecovered,
+            totalAccountsClosed,
+            signature: lastSignature
+          })
+        });
+      } catch (e) {
+        console.warn('Could not post batch total to X:', e);
+      }
+    }
+
     // Show final summary
     if (failedBatches.length === 0) {
       toast({

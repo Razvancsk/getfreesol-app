@@ -2520,7 +2520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Record successful transaction
   app.post("/api/sol-refund/record-success", async (req, res) => {
     try {
-      const { signature, walletAddress, selectedAccounts, accountsClosed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount, source } = req.body;
+      const { signature, walletAddress, selectedAccounts, accountsClosed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount, source, skipXPost } = req.body;
 
       // Validate required fields
       if (!signature || !walletAddress || !accountsClosed || !solRecovered) {
@@ -2611,7 +2611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Post to X (Twitter) using centralized helper
       let xPostId: string | null = null;
-      try {
+      if (!skipXPost) try {
         const xResult = await xApiService.announceTransactionOnX({
           transactionType: 'sol_reclaim',
           netAmount,
@@ -2639,6 +2639,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Record success error:", error);
       res.status(500).json({ error: "Failed to record transaction" });
+    }
+  });
+
+  // Post batch-claim total to X (Twitter) — called after all batches complete
+  app.post("/api/sol-refund/post-batch-to-x", async (req, res) => {
+    try {
+      const { walletAddress, totalNetAmount, totalAccountsClosed, signature } = req.body;
+      if (!walletAddress || !totalNetAmount || !signature) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const xResult = await xApiService.announceTransactionOnX({
+        transactionType: 'sol_reclaim',
+        netAmount: Number(totalNetAmount),
+        walletAddress,
+        signature,
+        itemsProcessed: Number(totalAccountsClosed) || 1
+      });
+      if (xResult.success && xResult.postId) {
+        await storage.markTransactionPostedToX(signature, xResult.postId);
+      }
+      res.json({ success: xResult.success, postId: xResult.postId, error: xResult.error });
+    } catch (error: any) {
+      console.error("post-batch-to-x error:", error);
+      res.status(500).json({ error: "Failed to post to X" });
     }
   });
 

@@ -299,8 +299,8 @@ export class XApiService {
         };
       }
 
-      // Threshold check (0.10 SOL minimum for all types)
-      const MIN_CLAIM_FOR_POST = 0.10;
+      // Threshold check (0.02 SOL minimum for all types)
+      const MIN_CLAIM_FOR_POST = 0.02;
       if (netAmount < MIN_CLAIM_FOR_POST) {
         return { 
           success: false, 

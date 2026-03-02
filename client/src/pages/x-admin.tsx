@@ -190,7 +190,7 @@ export default function XAdmin() {
               X Account Connection
             </CardTitle>
             <CardDescription>
-              Connect your X account to automatically post claim alerts for SOL claims ≥ 0.01 SOL
+              Connect your X account to automatically post claim alerts for SOL claims ≥ 0.02 SOL
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -293,7 +293,7 @@ export default function XAdmin() {
                     <div className="flex items-start gap-2">
                       <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                       <p className="text-sm">
-                        Posts are automatically sent when users claim <strong>0.01 SOL or more</strong>
+                        Posts are automatically sent when users claim <strong>0.02 SOL or more</strong>
                       </p>
                     </div>
                     <div className="flex items-start gap-2">
