@@ -3490,7 +3490,7 @@ export default function SolRefund() {
               rel="noopener noreferrer"
               className="block w-full overflow-hidden rounded-2xl hover:opacity-90 transition-opacity duration-200"
             >
-              <img src={gfsBanner} alt="GFS Token is Live — Buy GFS" className="w-full h-auto max-h-28 object-contain" />
+              <img src={gfsBanner} alt="GFS Token is Live — Buy GFS" className="w-full h-auto max-h-16 object-contain" />
             </a>
           )}
 
