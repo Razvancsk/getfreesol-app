@@ -299,12 +299,12 @@ export class XApiService {
         };
       }
 
-      // Threshold check (0.02 SOL minimum for all types)
-      const MIN_CLAIM_FOR_POST = 0.02;
-      if (netAmount < MIN_CLAIM_FOR_POST) {
+      // Threshold check: 0.02 SOL minimum for all transaction types
+      const MIN_FOR_POST = 0.02;
+      if (netAmount < MIN_FOR_POST) {
         return { 
           success: false, 
-          error: `Amount ${netAmount} SOL is below posting threshold of ${MIN_CLAIM_FOR_POST} SOL` 
+          error: `Amount ${netAmount} SOL is below posting threshold of ${MIN_FOR_POST} SOL` 
         };
       }
 
