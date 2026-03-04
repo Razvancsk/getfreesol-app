@@ -3286,21 +3286,6 @@ export default function SolRefund() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       <div className={`container mx-auto pt-1 pb-2 max-w-6xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'}`}>
         <div className="space-y-2">
-          {/* Token Launch Banner */}
-          <a
-            href="https://pump.fun/coin/6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-3 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 via-violet-500/80 to-blue-600/80 border border-purple-400/40 hover:from-purple-500/90 hover:via-violet-400/90 hover:to-blue-500/90 transition-all duration-200 backdrop-blur-sm group"
-          >
-            <img src={tokenLogo} alt="GET token" className="h-7 w-7 rounded-full flex-shrink-0" />
-            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 text-center sm:text-left">
-              <span className="text-white font-bold text-sm">🚀 We launched our token! Check it on Pump.fun</span>
-              <span className="text-purple-200/80 text-xs font-mono truncate max-w-[180px] sm:max-w-none">6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump</span>
-            </div>
-            <ExternalLink className="h-4 w-4 text-purple-200 flex-shrink-0 group-hover:text-white transition-colors" />
-          </a>
-
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
             {activeTab === 'docs' ? (
@@ -3495,6 +3480,23 @@ export default function SolRefund() {
             )}
           </div>
 
+
+          {/* Token Launch Banner */}
+          {activeTab !== 'docs' && (
+            <a
+              href="https://pump.fun/coin/6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 via-violet-500/80 to-blue-600/80 border border-purple-400/40 hover:from-purple-500/90 hover:via-violet-400/90 hover:to-blue-500/90 transition-all duration-200 backdrop-blur-sm group"
+            >
+              <img src={tokenLogo} alt="GET token" className="h-7 w-7 rounded-full flex-shrink-0" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 text-center sm:text-left">
+                <span className="text-white font-bold text-sm">🚀 We launched our token! Check it on Pump.fun</span>
+                <span className="text-purple-200/80 text-xs font-mono truncate max-w-[180px] sm:max-w-none">6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump</span>
+              </div>
+              <ExternalLink className="h-4 w-4 text-purple-200 flex-shrink-0 group-hover:text-white transition-colors" />
+            </a>
+          )}
 
           {/* Description */}
           {activeTab !== 'docs' && (
