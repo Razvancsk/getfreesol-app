@@ -1150,7 +1150,7 @@ export default function SolRefund() {
           }
         }
 
-        // Record the batch success
+        // Record the batch success — skip individual X post, batch total posted at end
         const recordResponse = await fetch('/api/tokens/record-burn-success', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1164,7 +1164,8 @@ export default function SolRefund() {
             feeAmount: batch.feeAmount,
             referralCodeUsed: prepareResponse.referralCodeUsed || null,
             platformFeeAmount: batch.platformFee || 0,
-            referralFeeAmount: batch.referralFee || 0
+            referralFeeAmount: batch.referralFee || 0,
+            skipXPost: true
           })
         });
 
@@ -1188,6 +1189,26 @@ export default function SolRefund() {
       }
 
       console.log(`🎉 Successfully burned ${totalTokensProcessed} tokens in ${prepareResponse.totalBatches} batches!`);
+
+      // Post combined total to X after all batches complete
+      if (totalNetAmount > 0 && allBatchResults.length > 0) {
+        try {
+          const lastSig = allBatchResults[allBatchResults.length - 1]?.signature;
+          await fetch('/api/sol-refund/post-batch-to-x', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              walletAddress: publicKey?.toString(),
+              totalNetAmount,
+              totalAccountsClosed: totalTokensProcessed,
+              signature: lastSig,
+              transactionType: 'token_burn'
+            })
+          });
+        } catch (xError) {
+          console.warn('Failed to post token burn total to X:', xError);
+        }
+      }
 
       return { 
         tokensProcessed: totalTokensProcessed, 
@@ -1556,7 +1577,7 @@ export default function SolRefund() {
               const signature = relayResponse.signature;
               console.log(`🚀 Batch ${batch.batchIndex} confirmed: ${signature}`);
 
-              // Record each NFT burn in the database for this batch
+              // Record each NFT burn in the database for this batch — skip X post, batch total posted at end
               for (const nftId of batch.nftIds) {
                 try {
                   await apiRequest('POST', '/api/nfts/burn/record', {
@@ -1569,7 +1590,8 @@ export default function SolRefund() {
                     referralFeeAmount: batch.referralFee / batch.nftCount,
                     walletAddress: publicKey.toString(),
                     nftType: 'core',
-                    success: true
+                    success: true,
+                    skipXPost: true
                   });
                   console.log(`✅ Core NFT burn recorded in database: ${nftId}`);
                   
@@ -1597,6 +1619,26 @@ export default function SolRefund() {
 
             console.log(`🎉 Successfully burned ${totalBurned} Core NFTs across ${prepareResponse.totalBatches} batches!`);
             console.log(`💰 Total net amount received: ${totalNetAmount} SOL after fees`);
+
+            // Post combined total to X after all Core NFT batches complete
+            if (totalNetAmount > 0 && allBatchResults.length > 0) {
+              try {
+                const lastSig = allBatchResults[allBatchResults.length - 1]?.signature;
+                await fetch('/api/sol-refund/post-batch-to-x', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    walletAddress: publicKey.toString(),
+                    totalNetAmount,
+                    totalAccountsClosed: totalBurned,
+                    signature: lastSig,
+                    transactionType: 'nft_burn'
+                  })
+                });
+              } catch (xError) {
+                console.warn('Failed to post Core NFT burn total to X:', xError);
+              }
+            }
 
             // Show any failed NFTs as warnings
             if (prepareResponse.failedNfts && prepareResponse.failedNfts.length > 0) {
@@ -1755,7 +1797,8 @@ export default function SolRefund() {
                     rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent evenly
                     walletAddress: publicKey.toString(),
                     nftType: 'pnft',
-                    success: true
+                    success: true,
+                    skipXPost: true
                   });
                 } catch (recordError) {
                   console.warn(`⚠️ Failed to record PNFT burn for ${nftId}:`, recordError);
@@ -1784,6 +1827,27 @@ export default function SolRefund() {
 
             console.log(`🎉 Successfully burned ${totalBurned} Programmable NFTs in ${allBatchResults.length} batches!`);
             console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+
+            // Post combined total to X after all pNFT batches complete
+            const pNftTotalNetAmount = allBatchResults.reduce((sum: number, b: any) => sum + (b.netAmount || 0), 0);
+            if (pNftTotalNetAmount > 0 && allBatchResults.length > 0) {
+              try {
+                const lastSig = allBatchResults[allBatchResults.length - 1]?.signature;
+                await fetch('/api/sol-refund/post-batch-to-x', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    walletAddress: publicKey.toString(),
+                    totalNetAmount: pNftTotalNetAmount,
+                    totalAccountsClosed: totalBurned,
+                    signature: lastSig,
+                    transactionType: 'nft_burn'
+                  })
+                });
+              } catch (xError) {
+                console.warn('Failed to post pNFT burn total to X:', xError);
+              }
+            }
 
             // Optimistically remove burned pNFTs from local state immediately
             const burnedIds = allBatchResults.flatMap(batch => batch.nftIds);
@@ -1954,7 +2018,8 @@ export default function SolRefund() {
                     rentRecovered: batch.expectedRent / batch.nftCount, // Split batch rent evenly
                     walletAddress: publicKey.toString(),
                     nftType: 'standard',
-                    success: true
+                    success: true,
+                    skipXPost: true
                   });
                 } catch (recordError) {
                   console.warn(`⚠️ Failed to record Traditional NFT burn for ${nftId}:`, recordError);
@@ -1983,6 +2048,27 @@ export default function SolRefund() {
 
             console.log(`🎉 Successfully burned ${totalBurned} Traditional NFTs in ${allBatchResults.length} batches!`);
             console.log(`💰 Total rent recovered: ${totalRentRecovered} SOL`);
+
+            // Post combined total to X after all Traditional NFT batches complete
+            const tradNftTotalNetAmount = allBatchResults.reduce((sum: number, b: any) => sum + (b.netAmount || 0), 0);
+            if (tradNftTotalNetAmount > 0 && allBatchResults.length > 0) {
+              try {
+                const lastSig = allBatchResults[allBatchResults.length - 1]?.signature;
+                await fetch('/api/sol-refund/post-batch-to-x', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    walletAddress: publicKey.toString(),
+                    totalNetAmount: tradNftTotalNetAmount,
+                    totalAccountsClosed: totalBurned,
+                    signature: lastSig,
+                    transactionType: 'nft_burn'
+                  })
+                });
+              } catch (xError) {
+                console.warn('Failed to post Traditional NFT burn total to X:', xError);
+              }
+            }
 
             // Optimistically remove burned Traditional NFTs from local state immediately
             const burnedIds = allBatchResults.flatMap(batch => batch.nftIds);

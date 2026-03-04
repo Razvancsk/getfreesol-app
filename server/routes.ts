@@ -2645,12 +2645,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Post batch-claim total to X (Twitter) — called after all batches complete
   app.post("/api/sol-refund/post-batch-to-x", async (req, res) => {
     try {
-      const { walletAddress, totalNetAmount, totalAccountsClosed, signature } = req.body;
+      const { walletAddress, totalNetAmount, totalAccountsClosed, signature, transactionType } = req.body;
       if (!walletAddress || !totalNetAmount || !signature) {
         return res.status(400).json({ error: "Missing required fields" });
       }
+      const txType = (transactionType === 'token_burn' || transactionType === 'nft_burn') ? transactionType : 'sol_reclaim';
       const xResult = await xApiService.announceTransactionOnX({
-        transactionType: 'sol_reclaim',
+        transactionType: txType,
         netAmount: Number(totalNetAmount),
         walletAddress,
         signature,
@@ -3857,7 +3858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Record successful token burn transaction
   app.post("/api/tokens/record-burn-success", async (req, res) => {
     try {
-      const { signature, walletAddress, tokenMints, tokensProcessed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount } = req.body;
+      const { signature, walletAddress, tokenMints, tokensProcessed, solRecovered, netAmount, feeAmount, referralCodeUsed, platformFeeAmount, referralFeeAmount, skipXPost } = req.body;
 
       // Validate required fields
       if (!signature || !walletAddress || !tokenMints || !tokensProcessed || !solRecovered) {
@@ -3948,8 +3949,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send Discord token burn alert:', discordError);
       }
 
-      // Post to X (Twitter) using centralized helper
-      try {
+      // Post to X (Twitter) using centralized helper — skipped if caller will post batch total
+      if (!skipXPost) try {
         const netAmountNumber = Number(netAmount || 0);
         const xResult = await xApiService.announceTransactionOnX({
           transactionType: 'token_burn',
@@ -4780,11 +4781,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         walletAddress: z.string().min(1, "Wallet address is required"),
         nftType: z.string().min(1, "NFT type is required"),
         error: z.string().optional(),
-        success: z.boolean().default(true)
+        success: z.boolean().default(true),
+        skipXPost: z.boolean().optional().default(false)
       });
 
       const validatedData = burnRecordSchema.parse(req.body);
-      const { signature, nftMint, rentRecovered, netAmount, feeAmount, platformFeeAmount, referralFeeAmount, walletAddress, nftType, error, success } = validatedData;
+      const { signature, nftMint, rentRecovered, netAmount, feeAmount, platformFeeAmount, referralFeeAmount, walletAddress, nftType, error, success, skipXPost } = validatedData;
 
       // Record the NFT burn transaction in our ledger
       if (success && signature) {
@@ -4947,8 +4949,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Failed to send Discord NFT burn alert:', discordError);
         }
 
-        // Post to X (Twitter) using centralized helper
-        try {
+        // Post to X (Twitter) using centralized helper — skipped if caller will post batch total
+        if (!skipXPost) try {
           const xResult = await xApiService.announceTransactionOnX({
             transactionType: 'nft_burn',
             netAmount: realNetAmount,
