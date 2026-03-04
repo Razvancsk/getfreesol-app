@@ -3482,17 +3482,6 @@ export default function SolRefund() {
           </div>
 
 
-          {/* Token Launch Banner */}
-          {activeTab !== 'docs' && (
-            <a
-              href="https://pump.fun/coin/6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full overflow-hidden rounded-2xl hover:opacity-90 transition-opacity duration-200"
-            >
-              <img src={gfsBanner} alt="GFS Token is Live — Buy GFS" className="w-full h-auto max-h-20 object-contain" />
-            </a>
-          )}
 
           {/* Description */}
           {activeTab !== 'docs' && (
@@ -3688,7 +3677,17 @@ export default function SolRefund() {
             </div>
               )}
 
-              {/* SolPump Sponsor Banner */}
+              {/* GFS Token Banner — temporary replacement for sponsor slot */}
+              <a
+                href="https://pump.fun/coin/6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block mt-3 w-full overflow-hidden rounded-2xl hover:opacity-90 transition-opacity duration-200"
+              >
+                <img src={gfsBanner} alt="GFS Token is Live — Buy GFS" className="w-full h-auto max-h-20 object-contain" />
+              </a>
+
+              {/* SPONSOR CARD — saved for later restoration
               <a
                 href="https://solpump.io/a/GETFREESOL"
                 target="_blank"
@@ -3704,7 +3703,6 @@ export default function SolRefund() {
                   <div className="absolute top-0 right-0 bg-black/60 text-white text-[9px] md:text-sm font-semibold tracking-wider uppercase px-1.5 md:px-3 py-px md:py-1 rounded-bl">
                     SPONSORED
                   </div>
-                  {/* Learn More — pill card, bottom center on hover */}
                   <div className="absolute bottom-2 left-0 right-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <div className="flex items-center gap-1.5 bg-black/70 text-white text-xs font-semibold px-3 py-1 rounded-full">
                       Learn More
@@ -3713,6 +3711,7 @@ export default function SolRefund() {
                   </div>
                 </div>
               </a>
+              */}
             </div>
           )}
 
