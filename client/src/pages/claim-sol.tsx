@@ -3684,7 +3684,7 @@ export default function SolRefund() {
                 rel="noopener noreferrer"
                 className="block mt-3 w-full overflow-hidden rounded-2xl hover:opacity-90 transition-opacity duration-200"
               >
-                <img src={gfsBanner} alt="GFS Token is Live — Buy GFS" className="w-full object-cover max-h-24" />
+                <img src={gfsBanner} alt="GFS Token is Live — Buy GFS" className="w-full object-cover max-h-16" />
               </a>
 
               {/* SPONSOR CARD — saved for later restoration
