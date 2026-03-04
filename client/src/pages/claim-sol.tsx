@@ -6639,6 +6639,46 @@ export default function SolRefund() {
               </div>
             </div>
           )}
+
+          {/* $GFS Token Benefits Section */}
+          {activeTab === 'reclaim' && (
+            <a
+              href="https://pump.fun/coin/6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-gradient-to-br from-violet-900/40 to-purple-900/40 backdrop-blur-sm rounded-xl border border-violet-500/40 p-6 mb-6 hover:border-violet-400/60 transition-all duration-200 group"
+            >
+              <div className="flex items-center mb-4">
+                <img src={tokenLogo} alt="$GFS" className="h-6 w-6 rounded-full mr-2 flex-shrink-0" />
+                <h3 className="text-lg font-semibold text-white">Benefits of Holding <span className="text-violet-300">$GFS</span></h3>
+                <ExternalLink className="h-4 w-4 text-violet-400 ml-auto group-hover:text-violet-300 transition-colors" />
+              </div>
+
+              <p className="text-purple-200 text-sm mb-4">
+                Top holders holding <span className="text-white font-semibold">1,000,000+ $GFS</span> unlock exclusive platform perks:
+              </p>
+
+              <div className="space-y-3 text-purple-200">
+                <div className="flex items-start">
+                  <Star className="h-4 w-4 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm"><span className="text-white font-semibold">50% bonus</span> on eligible fee refunds — get more SOL back on every claim</span>
+                </div>
+                <div className="flex items-start">
+                  <Star className="h-4 w-4 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm"><span className="text-white font-semibold">Share 50% of platform revenue</span> — earn passive income from platform activity</span>
+                </div>
+                <div className="flex items-start">
+                  <Star className="h-4 w-4 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm"><span className="text-white font-semibold">Early access</span> to new features and priority support</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-violet-500/20 flex items-center gap-2">
+                <span className="text-violet-300 text-xs font-medium">Buy $GFS on Pump.fun</span>
+                <span className="text-purple-400 text-xs font-mono">6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump</span>
+              </div>
+            </a>
+          )}
         </div>
       </div>
 
