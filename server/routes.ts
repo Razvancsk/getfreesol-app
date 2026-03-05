@@ -6280,12 +6280,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return tiers[tiers.length - 1].sol;
   }
 
-  function calcLevel(points: number): number {
-    return Math.min(100, Math.floor(points / 500) + 1);
-  }
+  // Milestone table: how many total points to REACH each milestone level
+  const LEVEL_MILESTONES = [
+    { level: 1,   points: 0 },
+    { level: 11,  points: 6340 },
+    { level: 21,  points: 43940 },
+    { level: 31,  points: 278940 },
+    { level: 41,  points: 1730360 },
+    { level: 51,  points: 10999940 },
+    { level: 61,  points: 21999940 },
+    { level: 71,  points: 43999940 },
+    { level: 81,  points: 89999940 },
+    { level: 91,  points: 179999940 },
+    { level: 101, points: 360000000 }, // sentinel for levels 91-100
+  ];
 
   function pointsForLevel(level: number): number {
-    return (level - 1) * 500;
+    if (level <= 1) return 0;
+    if (level > 100) return LEVEL_MILESTONES[LEVEL_MILESTONES.length - 1].points;
+    for (let i = 0; i < LEVEL_MILESTONES.length - 1; i++) {
+      const start = LEVEL_MILESTONES[i];
+      const end = LEVEL_MILESTONES[i + 1];
+      if (level >= start.level && level < end.level) {
+        const pointsPerLevel = (end.points - start.points) / (end.level - start.level);
+        return Math.round(start.points + (level - start.level) * pointsPerLevel);
+      }
+    }
+    return LEVEL_MILESTONES[LEVEL_MILESTONES.length - 1].points;
+  }
+
+  function calcLevel(points: number): number {
+    if (points <= 0) return 1;
+    for (let i = 0; i < LEVEL_MILESTONES.length - 1; i++) {
+      const start = LEVEL_MILESTONES[i];
+      const end = LEVEL_MILESTONES[i + 1];
+      if (points >= start.points && points < end.points) {
+        const pointsPerLevel = (end.points - start.points) / (end.level - start.level);
+        const levelsGained = Math.floor((points - start.points) / pointsPerLevel);
+        return Math.min(100, start.level + levelsGained);
+      }
+    }
+    return 100;
   }
 
   app.get("/api/crates/status/:walletAddress", async (req, res) => {
