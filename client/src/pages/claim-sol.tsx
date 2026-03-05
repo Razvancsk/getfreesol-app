@@ -3635,7 +3635,7 @@ export default function SolRefund() {
                 </Button>
                 )}
                 <div className="relative flex-1 md:flex-none">
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 text-[10px] bg-green-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-none pointer-events-none">NEW</span>
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 text-xs bg-green-500 text-white font-bold px-2 py-0.5 rounded-full leading-none pointer-events-none">NEW</span>
                   <Button
                     onClick={() => setActiveTab('crates')}
                     className={`w-full md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
