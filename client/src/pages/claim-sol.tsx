@@ -18,16 +18,6 @@ import { ToastAction } from "@/components/ui/toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun, BookOpen } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
-import crateGenesisImg from "@assets/image_1772669859423.png";
-import cratePulseImg from "@assets/image_1772669888467.png";
-import crateOrbitImg from "@assets/image_1772669918839.png";
-import crateVertexImg from "@assets/image_1772669947185.png";
-import cratePrismImg from "@assets/image_1772669975842.png";
-import crateNovaImg from "@assets/image_1772670005013.png";
-import crateSpectraImg from "@assets/image_1772670033527.png";
-import crateQuantumImg from "@assets/image_1772670054867.png";
-import crateEclipseImg from "@assets/image_1772670074915.png";
-import crateApexImg from "@assets/image_1772670102875.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,10 +129,9 @@ export default function SolRefund() {
   const [crateError, setCrateError] = useState<string | null>(null);
   const [cratePreviewId, setCratePreviewId] = useState<string | null>(null);
 
-  const CRATE_IMAGES: Record<string, string> = {
-    genesis: crateGenesisImg, pulse: cratePulseImg, orbit: crateOrbitImg,
-    vertex: crateVertexImg, prism: cratePrismImg, nova: crateNovaImg,
-    spectra: crateSpectraImg, quantum: crateQuantumImg, eclipse: crateEclipseImg, apex: crateApexImg,
+  const CRATE_EMOJIS: Record<string, string> = {
+    genesis: '🌱', pulse: '❤️', orbit: '🪐', vertex: '📐',
+    prism: '🔷', nova: '🔭', spectra: '🧬', quantum: '🔥', eclipse: '🕶️', apex: '🦅',
   };
 
   // Selection states for bulk burning
@@ -4774,26 +4763,26 @@ export default function SolRefund() {
               {/* Win Result Modal */}
               {crateShowResult && crateResult && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm" onClick={() => setCrateShowResult(false)}>
-                  <div className="relative bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <img src={CRATE_IMAGES[crateResult.crateType]} alt={crateResult.crateName} className="w-28 h-28 mx-auto mb-4 rounded-2xl object-cover shadow-lg" />
-                    <h2 className="text-2xl font-bold text-gray-900 mb-1">{crateResult.crateName} Crate</h2>
-                    <p className="text-gray-500 mb-4 text-sm">You opened a crate!</p>
-                    <div className="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200">
-                      <p className="text-gray-500 text-sm mb-1">You won</p>
+                  <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 border border-violet-400/50 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="text-7xl mb-4 animate-bounce">{CRATE_EMOJIS[crateResult.crateType] || '📦'}</div>
+                    <h2 className="text-2xl font-bold text-white mb-1">{crateResult.crateName} Crate</h2>
+                    <p className="text-violet-300 mb-4 text-sm">You opened a crate!</p>
+                    <div className="bg-black/30 rounded-xl p-4 mb-5 border border-violet-500/20">
+                      <p className="text-violet-300 text-sm mb-1">You won</p>
                       {crateResult.solWon > 0 ? (
                         <>
-                          <p className="text-4xl font-bold text-green-600">+{crateResult.solWon} SOL</p>
-                          <p className="text-gray-400 text-xs mt-2">Sent to your wallet</p>
+                          <p className="text-4xl font-bold text-green-400">+{crateResult.solWon} SOL</p>
+                          <p className="text-violet-400 text-xs mt-2">Sent to your wallet</p>
                         </>
                       ) : (
                         <>
                           <p className="text-4xl font-bold text-gray-400">0 SOL</p>
-                          <p className="text-gray-400 text-xs mt-2">Better luck next time!</p>
+                          <p className="text-violet-400 text-xs mt-2">Better luck next time!</p>
                         </>
                       )}
                     </div>
                     {crateResult.signature && (
-                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:text-violet-500 text-xs underline block mb-4">View on Solscan ↗</a>
+                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline block mb-4">View on Solscan ↗</a>
                     )}
                     <button onClick={() => setCrateShowResult(false)} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-3 rounded-xl transition-colors">
                       {crateResult.solWon > 0 ? 'Awesome! 🎉' : 'Try Again Tomorrow'}
@@ -4811,9 +4800,11 @@ export default function SolRefund() {
                       <h2 className="text-xl font-bold text-gray-900">{previewCrate.name} Crate</h2>
                       <button onClick={() => setCratePreviewId(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
                     </div>
-                    {/* Image */}
+                    {/* Emoji */}
                     <div className="flex justify-center pt-5 pb-2">
-                      <img src={CRATE_IMAGES[previewCrate.id]} alt={previewCrate.name} className="w-32 h-32 rounded-2xl object-cover shadow-lg" />
+                      <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-6xl shadow-md">
+                        {CRATE_EMOJIS[previewCrate.id] || '📦'}
+                      </div>
                     </div>
                     <p className="text-center text-gray-700 font-semibold text-base mb-4">{previewCrate.name} Crate Preview</p>
 
@@ -4928,7 +4919,9 @@ export default function SolRefund() {
                         onClick={() => { setCrateError(null); setCratePreviewId(crate.id); }}
                         className={`relative rounded-xl p-3 bg-black/20 border border-violet-500/20 backdrop-blur-sm flex flex-col items-center gap-2 transition-all hover:border-violet-400/50 hover:bg-black/30 text-left ${!crate.unlocked ? 'opacity-60' : ''}`}
                       >
-                        <img src={CRATE_IMAGES[crate.id]} alt={crate.name} className="w-16 h-16 rounded-xl object-cover shadow-md" />
+                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-800/60 to-purple-900/60 flex items-center justify-center text-4xl shadow-md">
+                          {CRATE_EMOJIS[crate.id] || '📦'}
+                        </div>
                         <div className="text-center w-full">
                           <p className="text-white font-semibold text-sm">{crate.name}</p>
                           <p className="text-violet-300 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
@@ -4954,7 +4947,9 @@ export default function SolRefund() {
                         {crateHistory.history.slice(0, 10).map((h: any, i: number) => (
                           <div key={i} className="flex items-center justify-between py-2 border-b border-violet-500/10 last:border-0">
                             <div className="flex items-center gap-2">
-                              <img src={CRATE_IMAGES[h.crateType]} alt={h.crateType} className="w-8 h-8 rounded-lg object-cover" />
+                              <div className="w-8 h-8 rounded-lg bg-violet-900/50 flex items-center justify-center text-xl">
+                                {CRATE_EMOJIS[h.crateType] || '📦'}
+                              </div>
                               <div>
                                 <p className="text-white text-sm font-medium capitalize">{h.crateType} Crate</p>
                                 <p className="text-violet-400 text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
