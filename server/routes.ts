@@ -6219,17 +6219,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===================== CRATE SYSTEM =====================
   const CRATE_TYPES = [
-    { id: 'genesis', name: 'Genesis', minLevel: 1,  maxLevel: 10,  emoji: '🌱', minSol: 0.001, maxSol: 0.020 },
-    { id: 'link',    name: 'Link',    minLevel: 11, maxLevel: 20,  emoji: '🔗', minSol: 0.005, maxSol: 0.050 },
-    { id: 'orbit',   name: 'Orbit',   minLevel: 21, maxLevel: 30,  emoji: '🪐', minSol: 0.010, maxSol: 0.100 },
-    { id: 'vertex',  name: 'Vertex',  minLevel: 31, maxLevel: 40,  emoji: '🔺', minSol: 0.025, maxSol: 0.250 },
-    { id: 'prism',   name: 'Prism',   minLevel: 41, maxLevel: 50,  emoji: '💎', minSol: 0.050, maxSol: 0.500 },
-    { id: 'nova',    name: 'Nova',    minLevel: 51, maxLevel: 60,  emoji: '⭐', minSol: 0.100, maxSol: 1.000 },
-    { id: 'spectra', name: 'Spectra', minLevel: 61, maxLevel: 70,  emoji: '🌈', minSol: 0.250, maxSol: 2.500 },
-    { id: 'quantum', name: 'Quantum', minLevel: 71, maxLevel: 80,  emoji: '⚛️', minSol: 0.500, maxSol: 5.000 },
-    { id: 'eclipse', name: 'Eclipse', minLevel: 81, maxLevel: 90,  emoji: '🌑', minSol: 1.000, maxSol: 10.000 },
-    { id: 'apex',    name: 'Apex',    minLevel: 91, maxLevel: 100, emoji: '👑', minSol: 2.000, maxSol: 20.000 },
+    { id: 'genesis', name: 'Genesis', minLevel: 1,  maxLevel: 10,  emoji: '🌱',
+      tiers: [
+        { sol: 0,     prob: 29.20 }, { sol: 0.001, prob: 53.98 }, { sol: 0.002, prob: 15.00 },
+        { sol: 0.003, prob: 1.00  }, { sol: 0.004, prob: 0.75  }, { sol: 0.005, prob: 0.04  },
+        { sol: 0.01,  prob: 0.02  }, { sol: 0.02,  prob: 0.01  },
+      ]},
+    { id: 'pulse',   name: 'Pulse',   minLevel: 11, maxLevel: 20,  emoji: '❤️',
+      tiers: [
+        { sol: 0.005, prob: 33.27 }, { sol: 0.01,  prob: 52.00 }, { sol: 0.02,  prob: 13.00 },
+        { sol: 0.03,  prob: 1.00  }, { sol: 0.05,  prob: 0.70  }, { sol: 0.25,  prob: 0.02  },
+        { sol: 1,     prob: 0.01  },
+      ]},
+    { id: 'orbit',   name: 'Orbit',   minLevel: 21, maxLevel: 30,  emoji: '🪐',
+      tiers: [
+        { sol: 0.025, prob: 66.78 }, { sol: 0.05,  prob: 30.10 }, { sol: 0.1,   prob: 1.00  },
+        { sol: 0.2,   prob: 1.70  }, { sol: 0.5,   prob: 0.28  }, { sol: 1,     prob: 0.10  },
+        { sol: 5,     prob: 0.03  }, { sol: 10,    prob: 0.01  },
+      ]},
+    { id: 'vertex',  name: 'Vertex',  minLevel: 31, maxLevel: 40,  emoji: '📐',
+      tiers: [
+        { sol: 0.1,   prob: 64.44 }, { sol: 0.15,  prob: 23.00 }, { sol: 0.25,  prob: 6.80  },
+        { sol: 0.5,   prob: 3.40  }, { sol: 1,     prob: 1.40  }, { sol: 2.5,   prob: 0.35  },
+        { sol: 5,     prob: 0.24  }, { sol: 10,    prob: 0.12  }, { sol: 25,    prob: 0.05  },
+      ]},
+    { id: 'prism',   name: 'Prism',   minLevel: 41, maxLevel: 50,  emoji: '🔷',
+      tiers: [
+        { sol: 0.2,   prob: 68.08 }, { sol: 0.3,   prob: 24.70 }, { sol: 0.5,   prob: 5.00  },
+        { sol: 1.23,  prob: 1.10  }, { sol: 2,     prob: 0.48  }, { sol: 3,     prob: 0.30  },
+        { sol: 5.55,  prob: 0.15  }, { sol: 10,    prob: 0.12  }, { sol: 25,    prob: 0.07  },
+      ]},
+    { id: 'nova',    name: 'Nova',    minLevel: 51, maxLevel: 60,  emoji: '🔭',
+      tiers: [
+        { sol: 0.5,   prob: 69.22 }, { sol: 0.75,  prob: 25.00 }, { sol: 1,     prob: 5.00  },
+        { sol: 1.5,   prob: 2.10  }, { sol: 2.5,   prob: 1.10  }, { sol: 5,     prob: 0.36  },
+        { sol: 10,    prob: 0.15  }, { sol: 25,    prob: 0.04  }, { sol: 35,    prob: 0.02  },
+        { sol: 50,    prob: 0.01  },
+      ]},
+    { id: 'spectra', name: 'Spectra', minLevel: 61, maxLevel: 70,  emoji: '🧬',
+      tiers: [
+        { sol: 1,     prob: 68.85 }, { sol: 1.5,   prob: 20.70 }, { sol: 2,     prob: 6.00  },
+        { sol: 2.5,   prob: 2.50  }, { sol: 3.5,   prob: 1.10  }, { sol: 5,     prob: 0.52  },
+        { sol: 10,    prob: 0.21  }, { sol: 25,    prob: 0.05  }, { sol: 50,    prob: 0.05  },
+        { sol: 100,   prob: 0.02  },
+      ]},
+    { id: 'quantum', name: 'Quantum', minLevel: 71, maxLevel: 80,  emoji: '🔥',
+      tiers: [
+        { sol: 2,     prob: 69.00 }, { sol: 3,     prob: 14.00 }, { sol: 5,     prob: 10.00 },
+        { sol: 10,    prob: 3.70  }, { sol: 15,    prob: 1.50  }, { sol: 25,    prob: 0.88  },
+        { sol: 35,    prob: 0.46  }, { sol: 50,    prob: 0.22  }, { sol: 75,    prob: 0.10  },
+        { sol: 100,   prob: 0.14  },
+      ]},
+    { id: 'eclipse', name: 'Eclipse', minLevel: 81, maxLevel: 90,  emoji: '🕶️',
+      tiers: [
+        { sol: 5,     prob: 68.50 }, { sol: 10,    prob: 20.00 }, { sol: 15,    prob: 8.00  },
+        { sol: 25,    prob: 2.50  }, { sol: 50,    prob: 0.70  }, { sol: 75,    prob: 0.20  },
+        { sol: 100,   prob: 0.08  }, { sol: 150,   prob: 0.02  },
+      ]},
+    { id: 'apex',    name: 'Apex',    minLevel: 91, maxLevel: 100, emoji: '🦅',
+      tiers: [
+        { sol: 10,    prob: 65.00 }, { sol: 25,    prob: 20.00 }, { sol: 50,    prob: 10.00 },
+        { sol: 100,   prob: 3.50  }, { sol: 200,   prob: 1.00  }, { sol: 300,   prob: 0.30  },
+        { sol: 400,   prob: 0.15  }, { sol: 500,   prob: 0.05  },
+      ]},
   ];
+
+  function pickCrateTier(tiers: { sol: number; prob: number }[]): number {
+    const total = tiers.reduce((s, t) => s + t.prob, 0);
+    let rand = Math.random() * total;
+    for (const tier of tiers) {
+      rand -= tier.prob;
+      if (rand <= 0) return tier.sol;
+    }
+    return tiers[tiers.length - 1].sol;
+  }
 
   function calcLevel(points: number): number {
     return Math.min(100, Math.floor(Math.sqrt(points / 5)) + 1);
@@ -6294,38 +6357,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate random SOL reward (weighted toward lower end)
-      const rand = Math.random();
-      const weighted = rand * rand; // Square to weight toward lower values
-      const solWon = parseFloat((crate.minSol + weighted * (crate.maxSol - crate.minSol)).toFixed(6));
+      // Pick SOL reward from discrete probability tiers
+      const solWon = pickCrateTier(crate.tiers);
 
-      // Send SOL from relayer wallet
+      // Send SOL from relayer wallet (skip if 0 SOL reward)
       let signature: string | null = null;
-      const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
-      if (relayerPrivateKey) {
-        try {
-          const { Keypair, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } = await import("@solana/web3.js");
-          const connection = getHeliusConnection();
-          const secretKey = bs58.decode(relayerPrivateKey);
-          const relayerKeypair = Keypair.fromSecretKey(secretKey);
-          const recipientPubkey = new PublicKey(walletAddress);
-          const lamports = Math.floor(solWon * LAMPORTS_PER_SOL);
+      if (solWon > 0) {
+        const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
+        if (relayerPrivateKey) {
+          try {
+            const { Keypair, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } = await import("@solana/web3.js");
+            const connection = getHeliusConnection();
+            const secretKey = bs58.decode(relayerPrivateKey);
+            const relayerKeypair = Keypair.fromSecretKey(secretKey);
+            const recipientPubkey = new PublicKey(walletAddress);
+            const lamports = Math.floor(solWon * LAMPORTS_PER_SOL);
 
-          const tx = new Transaction().add(
-            SystemProgram.transfer({ fromPubkey: relayerKeypair.publicKey, toPubkey: recipientPubkey, lamports })
-          );
-          const { blockhash } = await connection.getLatestBlockhash('confirmed');
-          tx.recentBlockhash = blockhash;
-          tx.feePayer = relayerKeypair.publicKey;
-          tx.sign(relayerKeypair);
-          signature = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
-          console.log(`🎁 Crate ${crateType} opened by ${walletAddress}: ${solWon} SOL sent, sig: ${signature}`);
-        } catch (sendErr) {
-          console.error("Failed to send crate SOL reward:", sendErr);
-          return res.status(500).json({ error: "Failed to send SOL reward. Please try again." });
+            const tx = new Transaction().add(
+              SystemProgram.transfer({ fromPubkey: relayerKeypair.publicKey, toPubkey: recipientPubkey, lamports })
+            );
+            const { blockhash } = await connection.getLatestBlockhash('confirmed');
+            tx.recentBlockhash = blockhash;
+            tx.feePayer = relayerKeypair.publicKey;
+            tx.sign(relayerKeypair);
+            signature = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
+            console.log(`🎁 Crate ${crateType} opened by ${walletAddress}: ${solWon} SOL sent, sig: ${signature}`);
+          } catch (sendErr) {
+            console.error("Failed to send crate SOL reward:", sendErr);
+            return res.status(500).json({ error: "Failed to send SOL reward. Please try again." });
+          }
+        } else {
+          return res.status(500).json({ error: "Relayer not configured" });
         }
-      } else {
-        return res.status(500).json({ error: "Relayer not configured" });
       }
 
       const record = await storage.recordCrateOpen({ walletAddress, crateType, solWon: solWon.toString(), signature });

@@ -18,6 +18,16 @@ import { ToastAction } from "@/components/ui/toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun, BookOpen } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
+import crateGenesisImg from "@assets/image_1772669859423.png";
+import cratePulseImg from "@assets/image_1772669888467.png";
+import crateOrbitImg from "@assets/image_1772669918839.png";
+import crateVertexImg from "@assets/image_1772669947185.png";
+import cratePrismImg from "@assets/image_1772669975842.png";
+import crateNovaImg from "@assets/image_1772670005013.png";
+import crateSpectraImg from "@assets/image_1772670033527.png";
+import crateQuantumImg from "@assets/image_1772670054867.png";
+import crateEclipseImg from "@assets/image_1772670074915.png";
+import crateApexImg from "@assets/image_1772670102875.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -124,9 +134,16 @@ export default function SolRefund() {
 
   // Crate system state
   const [crateOpening, setCrateOpening] = useState<string | null>(null);
-  const [crateResult, setCrateResult] = useState<{ solWon: number; crateType: string; crateName: string; emoji: string; signature: string } | null>(null);
+  const [crateResult, setCrateResult] = useState<{ solWon: number; crateType: string; crateName: string; emoji: string; signature: string | null } | null>(null);
   const [crateShowResult, setCrateShowResult] = useState(false);
   const [crateError, setCrateError] = useState<string | null>(null);
+  const [cratePreviewId, setCratePreviewId] = useState<string | null>(null);
+
+  const CRATE_IMAGES: Record<string, string> = {
+    genesis: crateGenesisImg, pulse: cratePulseImg, orbit: crateOrbitImg,
+    vertex: crateVertexImg, prism: cratePrismImg, nova: crateNovaImg,
+    spectra: crateSpectraImg, quantum: crateQuantumImg, eclipse: crateEclipseImg, apex: crateApexImg,
+  };
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -4749,31 +4766,108 @@ export default function SolRefund() {
           )}
 
           {/* Crates Tab Content */}
-          {activeTab === 'crates' && (
+          {activeTab === 'crates' && (() => {
+            const previewCrate = crateStatus?.crates?.find((c: any) => c.id === cratePreviewId);
+
+            return (
             <div className="space-y-6">
-              {/* Result Modal */}
+              {/* Win Result Modal */}
               {crateShowResult && crateResult && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setCrateShowResult(false)}>
-                  <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 border border-violet-400/50 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <div className="text-7xl mb-4 animate-bounce">{crateResult.emoji}</div>
-                    <h2 className="text-2xl font-bold text-white mb-1">{crateResult.crateName} Crate</h2>
-                    <p className="text-violet-300 mb-4 text-sm">You opened a crate!</p>
-                    <div className="bg-black/30 rounded-xl p-4 mb-6">
-                      <p className="text-violet-300 text-sm mb-1">You won</p>
-                      <p className="text-4xl font-bold text-green-400">+{crateResult.solWon.toFixed(6)} SOL</p>
-                      <p className="text-violet-400 text-xs mt-2">Sent to your wallet</p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm" onClick={() => setCrateShowResult(false)}>
+                  <div className="relative bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <img src={CRATE_IMAGES[crateResult.crateType]} alt={crateResult.crateName} className="w-28 h-28 mx-auto mb-4 rounded-2xl object-cover shadow-lg" />
+                    <h2 className="text-2xl font-bold text-gray-900 mb-1">{crateResult.crateName} Crate</h2>
+                    <p className="text-gray-500 mb-4 text-sm">You opened a crate!</p>
+                    <div className="bg-gray-50 rounded-xl p-4 mb-5 border border-gray-200">
+                      <p className="text-gray-500 text-sm mb-1">You won</p>
+                      {crateResult.solWon > 0 ? (
+                        <>
+                          <p className="text-4xl font-bold text-green-600">+{crateResult.solWon} SOL</p>
+                          <p className="text-gray-400 text-xs mt-2">Sent to your wallet</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-4xl font-bold text-gray-400">0 SOL</p>
+                          <p className="text-gray-400 text-xs mt-2">Better luck next time!</p>
+                        </>
+                      )}
                     </div>
                     {crateResult.signature && (
-                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline block mb-4">View on Solscan ↗</a>
+                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:text-violet-500 text-xs underline block mb-4">View on Solscan ↗</a>
                     )}
-                    <button onClick={() => setCrateShowResult(false)} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-3 rounded-xl transition-colors">Awesome!</button>
+                    <button onClick={() => setCrateShowResult(false)} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-3 rounded-xl transition-colors">
+                      {crateResult.solWon > 0 ? 'Awesome! 🎉' : 'Try Again Tomorrow'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Crate Preview Modal */}
+              {cratePreviewId && previewCrate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCratePreviewId(null)}>
+                  <div className="relative bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 pt-5 pb-0">
+                      <h2 className="text-xl font-bold text-gray-900">{previewCrate.name} Crate</h2>
+                      <button onClick={() => setCratePreviewId(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    {/* Image */}
+                    <div className="flex justify-center pt-5 pb-2">
+                      <img src={CRATE_IMAGES[previewCrate.id]} alt={previewCrate.name} className="w-32 h-32 rounded-2xl object-cover shadow-lg" />
+                    </div>
+                    <p className="text-center text-gray-700 font-semibold text-base mb-4">{previewCrate.name} Crate Preview</p>
+
+                    {/* Rewards Grid */}
+                    <div className="mx-4 mb-4 rounded-xl bg-gray-50 border border-gray-200 p-4">
+                      <p className="text-center text-gray-700 font-semibold mb-3">Possible Rewards:</p>
+                      <div className="grid grid-cols-3 gap-2 max-h-52 overflow-y-auto">
+                        {(previewCrate.tiers as any[]).map((tier: any, i: number) => (
+                          <div key={i} className="rounded-xl border border-violet-200 bg-white py-2.5 px-2 text-center">
+                            <p className="font-bold text-gray-900 text-sm leading-tight">{tier.sol} SOL</p>
+                            <p className="text-violet-500 text-xs mt-0.5">{tier.prob}%</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Action Footer */}
+                    <div className="mx-4 mb-5 rounded-xl border border-gray-200 p-4 text-center bg-gray-50">
+                      {!publicKey ? (
+                        <p className="text-gray-500 text-sm">Connect your wallet to open crates</p>
+                      ) : !previewCrate.unlocked ? (
+                        <>
+                          <p className="text-gray-700 font-medium text-sm">🔒 You can't open this crate yet</p>
+                          <p className="text-gray-400 text-xs mt-1">You don't own this crate. Requires level {previewCrate.minLevel}.</p>
+                        </>
+                      ) : !previewCrate.canOpen ? (
+                        <>
+                          <p className="text-gray-700 font-medium text-sm">⏳ On cooldown</p>
+                          <p className="text-gray-400 text-xs mt-1">Come back in {previewCrate.hoursLeft}h</p>
+                        </>
+                      ) : crateError ? (
+                        <>
+                          <p className="text-red-500 text-sm mb-2">⚠️ {crateError}</p>
+                          <button onClick={() => { setCrateError(null); openCrate(previewCrate.id).then(() => setCratePreviewId(null)); }} disabled={crateOpening !== null} className="w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-300 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
+                            {crateOpening === previewCrate.id ? 'Opening...' : 'Try Again 🎁'}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => { openCrate(previewCrate.id).then(() => setCratePreviewId(null)); }}
+                          disabled={crateOpening !== null}
+                          className="w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-300 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                        >
+                          {crateOpening === previewCrate.id ? '🎁 Opening...' : '🎁 Open Crate'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Header */}
-              <div className="backdrop-blur-sm rounded-xl p-6 bg-gradient-to-br from-violet-900/40 to-purple-900/30 border border-violet-500/20">
-                <div className="flex items-center gap-3 mb-2">
+              <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-violet-900/40 to-purple-900/30 border border-violet-500/20">
+                <div className="flex items-center gap-3">
                   <span className="text-3xl">📦</span>
                   <div>
                     <h2 className="text-xl font-bold text-white">Crates & Levels</h2>
@@ -4805,7 +4899,7 @@ export default function SolRefund() {
                         <p className="text-violet-100 font-bold text-xl">{crateStatus.points.toLocaleString()}</p>
                       </div>
                     </div>
-                    {crateStatus.level < 100 && (
+                    {crateStatus.level < 100 ? (
                       <div>
                         <div className="flex justify-between text-xs text-violet-400 mb-1.5">
                           <span>Level {crateStatus.level}</span>
@@ -4818,8 +4912,7 @@ export default function SolRefund() {
                           {crateStatus.nextLevelPoints - crateStatus.points} points to next level
                         </p>
                       </div>
-                    )}
-                    {crateStatus.level === 100 && (
+                    ) : (
                       <p className="text-center text-yellow-400 font-bold">👑 MAX LEVEL REACHED</p>
                     )}
                     <div className="mt-4 p-3 rounded-lg bg-violet-900/30 border border-violet-500/20">
@@ -4827,64 +4920,30 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Error Display */}
-                  {crateError && (
-                    <div className="bg-red-900/30 border border-red-500/40 rounded-xl p-4 text-red-300 text-sm">
-                      ⚠️ {crateError}
-                    </div>
-                  )}
-
-                  {/* Crate Grid */}
+                  {/* Crate Grid — click to open preview */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {(crateStatus.crates as any[]).map((crate: any) => {
-                      const isOpening = crateOpening === crate.id;
-                      const tierColors: Record<string, string> = {
-                        genesis: 'from-green-900/60 to-emerald-900/40 border-green-500/30',
-                        link: 'from-blue-900/60 to-cyan-900/40 border-blue-500/30',
-                        orbit: 'from-purple-900/60 to-violet-900/40 border-purple-500/30',
-                        vertex: 'from-cyan-900/60 to-teal-900/40 border-cyan-500/30',
-                        prism: 'from-pink-900/60 to-rose-900/40 border-pink-500/30',
-                        nova: 'from-yellow-900/60 to-amber-900/40 border-yellow-500/30',
-                        spectra: 'from-indigo-900/60 to-purple-900/40 border-indigo-500/30',
-                        quantum: 'from-emerald-900/60 to-green-900/40 border-emerald-500/30',
-                        eclipse: 'from-slate-900/80 to-gray-900/60 border-slate-500/30',
-                        apex: 'from-yellow-900/80 to-orange-900/60 border-yellow-400/40',
-                      };
-                      const colors = tierColors[crate.id] || 'from-violet-900/60 to-purple-900/40 border-violet-500/30';
-                      return (
-                        <div key={crate.id} className={`relative rounded-xl p-4 bg-gradient-to-br ${colors} border backdrop-blur-sm flex flex-col items-center gap-2 transition-all ${!crate.unlocked ? 'opacity-50' : ''}`}>
-                          {!crate.unlocked && (
-                            <div className="absolute inset-0 rounded-xl flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                              <div className="text-center">
-                                <div className="text-2xl">🔒</div>
-                                <p className="text-white/70 text-xs mt-1">Lv {crate.minLevel}</p>
-                              </div>
-                            </div>
-                          )}
-                          <div className="text-4xl">{crate.emoji}</div>
-                          <div className="text-center">
-                            <p className="text-white font-bold text-sm">{crate.name}</p>
-                            <p className="text-white/60 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
-                            <p className="text-green-400 text-xs font-medium mt-0.5">{crate.minSol}–{crate.maxSol} SOL</p>
-                          </div>
-                          {crate.unlocked && (
+                    {(crateStatus.crates as any[]).map((crate: any) => (
+                      <button
+                        key={crate.id}
+                        onClick={() => { setCrateError(null); setCratePreviewId(crate.id); }}
+                        className={`relative rounded-xl p-3 bg-black/20 border border-violet-500/20 backdrop-blur-sm flex flex-col items-center gap-2 transition-all hover:border-violet-400/50 hover:bg-black/30 text-left ${!crate.unlocked ? 'opacity-60' : ''}`}
+                      >
+                        <img src={CRATE_IMAGES[crate.id]} alt={crate.name} className="w-16 h-16 rounded-xl object-cover shadow-md" />
+                        <div className="text-center w-full">
+                          <p className="text-white font-semibold text-sm">{crate.name}</p>
+                          <p className="text-violet-300 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
+                          {crate.unlocked ? (
                             crate.canOpen ? (
-                              <button
-                                onClick={() => openCrate(crate.id)}
-                                disabled={isOpening || crateOpening !== null}
-                                className="mt-1 w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-800 text-white text-xs font-semibold py-2 rounded-lg transition-colors"
-                              >
-                                {isOpening ? '🎁 Opening...' : '🎁 Open'}
-                              </button>
+                              <span className="mt-1 inline-block text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full font-medium">Ready!</span>
                             ) : (
-                              <div className="mt-1 w-full text-center">
-                                <p className="text-orange-300 text-xs font-medium">⏳ {crate.hoursLeft}h cooldown</p>
-                              </div>
+                              <span className="mt-1 inline-block text-xs text-orange-300 font-medium">⏳ {crate.hoursLeft}h</span>
                             )
+                          ) : (
+                            <span className="mt-1 inline-block text-xs text-white/50">🔒 Lv {crate.minLevel}</span>
                           )}
                         </div>
-                      );
-                    })}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Recent History */}
@@ -4895,14 +4954,16 @@ export default function SolRefund() {
                         {crateHistory.history.slice(0, 10).map((h: any, i: number) => (
                           <div key={i} className="flex items-center justify-between py-2 border-b border-violet-500/10 last:border-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-lg">{h.crateType === 'genesis' ? '🌱' : h.crateType === 'link' ? '🔗' : h.crateType === 'orbit' ? '🪐' : h.crateType === 'vertex' ? '🔺' : h.crateType === 'prism' ? '💎' : h.crateType === 'nova' ? '⭐' : h.crateType === 'spectra' ? '🌈' : h.crateType === 'quantum' ? '⚛️' : h.crateType === 'eclipse' ? '🌑' : '👑'}</span>
+                              <img src={CRATE_IMAGES[h.crateType]} alt={h.crateType} className="w-8 h-8 rounded-lg object-cover" />
                               <div>
                                 <p className="text-white text-sm font-medium capitalize">{h.crateType} Crate</p>
                                 <p className="text-violet-400 text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-green-400 font-bold text-sm">+{parseFloat(h.solWon).toFixed(6)} SOL</p>
+                              <p className={`font-bold text-sm ${parseFloat(h.solWon) > 0 ? 'text-green-400' : 'text-gray-400'}`}>
+                                {parseFloat(h.solWon) > 0 ? `+${parseFloat(h.solWon)} SOL` : '0 SOL'}
+                              </p>
                               {h.signature && (
                                 <a href={`https://solscan.io/tx/${h.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline">tx ↗</a>
                               )}
@@ -4917,7 +4978,8 @@ export default function SolRefund() {
                 <div className="text-center py-16 text-violet-300">Failed to load crate status. Please try again.</div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Statistics Tab Content */}
           {activeTab === 'statistics' && (() => {
