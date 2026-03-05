@@ -3634,16 +3634,19 @@ export default function SolRefund() {
                   <span className="text-base md:text-xl">🪙</span> Flip
                 </Button>
                 )}
-                <Button
-                  onClick={() => setActiveTab('crates')}
-                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
-                    activeTab === 'crates'
-                      ? 'bg-purple-600 text-white border-purple-500'
-                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
-                  }`}
-                >
-                  <span className="text-base md:text-xl">🎁</span> Crates <span className="ml-1 text-[10px] bg-green-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-none">NEW</span>
-                </Button>
+                <div className="relative flex-1 md:flex-none">
+                  <span className="absolute -top-2 -right-1 z-10 text-[10px] bg-green-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-none pointer-events-none">NEW</span>
+                  <Button
+                    onClick={() => setActiveTab('crates')}
+                    className={`w-full md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                      activeTab === 'crates'
+                        ? 'bg-purple-600 text-white border-purple-500'
+                        : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
+                    }`}
+                  >
+                    <span className="text-base md:text-xl">🎁</span> Crates
+                  </Button>
+                </div>
               </div>
             </div>
           )}
