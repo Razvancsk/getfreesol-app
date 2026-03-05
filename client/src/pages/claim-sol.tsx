@@ -3638,8 +3638,8 @@ export default function SolRefund() {
                   onClick={() => setActiveTab('crates')}
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'crates'
-                      ? 'bg-violet-600 text-white border-violet-500'
-                      : 'bg-purple-800/40 text-white hover:bg-violet-600/60 border-purple-500/30'
+                      ? 'bg-purple-600 text-white border-purple-500'
+                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
                   <span className="text-base md:text-xl">🎁</span> Crates
