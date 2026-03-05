@@ -3763,17 +3763,7 @@ export default function SolRefund() {
             </div>
               )}
 
-              {/* GFS Token Banner — temporary replacement for sponsor slot */}
-              <a
-                href="https://pump.fun/coin/6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block mt-3 w-full overflow-hidden rounded-2xl hover:opacity-90 transition-opacity duration-200"
-              >
-                <img src={gfsBanner} alt="GFS Token is Live — Buy GFS" className="w-full object-cover" style={{ maxHeight: '300px' }} />
-              </a>
-
-              {/* SPONSOR CARD — saved for later restoration
+              {/* SPONSOR CARD */}
               <a
                 href="https://solpump.io/a/GETFREESOL"
                 target="_blank"
@@ -3797,7 +3787,6 @@ export default function SolRefund() {
                   </div>
                 </div>
               </a>
-              */}
             </div>
           )}
 
