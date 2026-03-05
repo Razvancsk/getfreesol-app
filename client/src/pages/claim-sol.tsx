@@ -129,10 +129,23 @@ export default function SolRefund() {
   const [crateError, setCrateError] = useState<string | null>(null);
   const [cratePreviewId, setCratePreviewId] = useState<string | null>(null);
 
-  const CRATE_EMOJIS: Record<string, string> = {
-    genesis: '⚪', pulse: '🟢', orbit: '🔵', vertex: '🟣',
-    prism: '🟡', nova: '🔴', spectra: '🟠', quantum: '✨', eclipse: '🌌', apex: '👑',
+  const CRATE_COLORS: Record<string, string> = {
+    genesis: 'from-gray-300 to-gray-500',
+    pulse:   'from-green-400 to-green-600',
+    orbit:   'from-blue-400 to-blue-600',
+    vertex:  'from-purple-400 to-purple-600',
+    prism:   'from-yellow-300 to-yellow-500',
+    nova:    'from-red-400 to-red-600',
+    spectra: 'from-orange-400 to-orange-500',
+    quantum: 'from-slate-100 to-white',
+    eclipse: 'from-indigo-500 to-blue-900',
+    apex:    'from-yellow-300 to-amber-500',
   };
+  const CrateGiftIcon = ({ crateId, className = '' }: { crateId: string; className?: string }) => (
+    <div className={`bg-gradient-to-br ${CRATE_COLORS[crateId] || 'from-gray-400 to-gray-600'} rounded-xl flex items-center justify-center shadow-lg ${className}`}>
+      🎁
+    </div>
+  );
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -4767,7 +4780,7 @@ export default function SolRefund() {
               {crateShowResult && crateResult && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm" onClick={() => setCrateShowResult(false)}>
                   <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 border border-violet-400/50 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <div className="text-7xl mb-4 animate-bounce">{CRATE_EMOJIS[crateResult.crateType] || '📦'}</div>
+                    <div className="mb-4 flex justify-center animate-bounce"><CrateGiftIcon crateId={crateResult.crateType} className="w-24 h-24 text-5xl" /></div>
                     <h2 className="text-2xl font-bold text-white mb-1">{crateResult.crateName} Crate</h2>
                     <p className="text-white mb-4 text-sm">You opened a crate!</p>
                     <div className="bg-black/30 rounded-xl p-4 mb-5 border border-violet-500/20">
@@ -4805,9 +4818,7 @@ export default function SolRefund() {
                     </div>
                     {/* Emoji */}
                     <div className="flex justify-center pt-5 pb-2">
-                      <div className="w-24 h-24 rounded-2xl bg-purple-700/40 border border-purple-500/30 flex items-center justify-center text-5xl">
-                        {CRATE_EMOJIS[previewCrate.id] || '📦'}
-                      </div>
+                      <CrateGiftIcon crateId={previewCrate.id} className="w-24 h-24 text-5xl" />
                     </div>
                     <p className="text-center text-white font-semibold text-sm mb-4">{previewCrate.name} Crate Preview</p>
 
@@ -4922,9 +4933,7 @@ export default function SolRefund() {
                         onClick={() => { setCrateError(null); setCratePreviewId(crate.id); }}
                         className={`relative rounded-xl p-3 backdrop-blur-sm bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 flex flex-col items-center gap-2 transition-all hover:border-purple-400/50 hover:from-purple-800/30 text-left ${!crate.unlocked ? 'opacity-50' : ''}`}
                       >
-                        <div className="w-16 h-16 rounded-xl bg-purple-700/40 border border-purple-500/20 flex items-center justify-center text-4xl">
-                          {CRATE_EMOJIS[crate.id] || '📦'}
-                        </div>
+                        <CrateGiftIcon crateId={crate.id} className="w-16 h-16 text-3xl" />
                         <div className="text-center w-full">
                           <p className="text-white font-semibold text-sm">{crate.name}</p>
                           <p className="text-white text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
@@ -4950,9 +4959,7 @@ export default function SolRefund() {
                         {crateHistory.history.slice(0, 10).map((h: any, i: number) => (
                           <div key={i} className="flex items-center justify-between py-2 border-b border-purple-500/10 last:border-0">
                             <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-purple-800/50 flex items-center justify-center text-xl">
-                                {CRATE_EMOJIS[h.crateType] || '📦'}
-                              </div>
+                              <CrateGiftIcon crateId={h.crateType} className="w-8 h-8 text-base" />
                               <div>
                                 <p className="text-white text-sm font-medium capitalize">{h.crateType} Crate</p>
                                 <p className="text-white text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
