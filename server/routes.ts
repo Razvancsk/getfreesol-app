@@ -6241,46 +6241,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       tiers: [
         { sol: 0.1,   prob: 64.44 }, { sol: 0.15,  prob: 23.00 }, { sol: 0.25,  prob: 6.80  },
         { sol: 0.5,   prob: 3.40  }, { sol: 1,     prob: 1.40  }, { sol: 2.5,   prob: 0.35  },
-        { sol: 5,     prob: 0.24  }, { sol: 10,    prob: 0.12  }, { sol: 25,    prob: 0.05  },
+        { sol: 5,     prob: 0.24  }, { sol: 10,    prob: 0.17  },
       ]},
     { id: 'prism',   name: 'Prism',   minLevel: 41, maxLevel: 50,  emoji: '🔷',
       tiers: [
         { sol: 0.2,   prob: 68.08 }, { sol: 0.3,   prob: 24.70 }, { sol: 0.5,   prob: 5.00  },
         { sol: 1.23,  prob: 1.10  }, { sol: 2,     prob: 0.48  }, { sol: 3,     prob: 0.30  },
-        { sol: 5.55,  prob: 0.15  }, { sol: 10,    prob: 0.12  }, { sol: 25,    prob: 0.07  },
+        { sol: 5.55,  prob: 0.15  }, { sol: 10,    prob: 0.19  },
       ]},
     { id: 'nova',    name: 'Nova',    minLevel: 51, maxLevel: 60,  emoji: '🔭',
       tiers: [
         { sol: 0.5,   prob: 69.22 }, { sol: 0.75,  prob: 25.00 }, { sol: 1,     prob: 5.00  },
         { sol: 1.5,   prob: 2.10  }, { sol: 2.5,   prob: 1.10  }, { sol: 5,     prob: 0.36  },
-        { sol: 10,    prob: 0.15  }, { sol: 25,    prob: 0.04  }, { sol: 35,    prob: 0.02  },
-        { sol: 50,    prob: 0.01  },
+        { sol: 10,    prob: 0.22  },
       ]},
     { id: 'spectra', name: 'Spectra', minLevel: 61, maxLevel: 70,  emoji: '🧬',
       tiers: [
         { sol: 1,     prob: 68.85 }, { sol: 1.5,   prob: 20.70 }, { sol: 2,     prob: 6.00  },
         { sol: 2.5,   prob: 2.50  }, { sol: 3.5,   prob: 1.10  }, { sol: 5,     prob: 0.52  },
-        { sol: 10,    prob: 0.21  }, { sol: 25,    prob: 0.05  }, { sol: 50,    prob: 0.05  },
-        { sol: 100,   prob: 0.02  },
+        { sol: 10,    prob: 0.33  },
       ]},
     { id: 'quantum', name: 'Quantum', minLevel: 71, maxLevel: 80,  emoji: '🔥',
       tiers: [
         { sol: 2,     prob: 69.00 }, { sol: 3,     prob: 14.00 }, { sol: 5,     prob: 10.00 },
-        { sol: 10,    prob: 3.70  }, { sol: 15,    prob: 1.50  }, { sol: 25,    prob: 0.88  },
-        { sol: 35,    prob: 0.46  }, { sol: 50,    prob: 0.22  }, { sol: 75,    prob: 0.10  },
-        { sol: 100,   prob: 0.14  },
+        { sol: 10,    prob: 7.00  },
       ]},
     { id: 'eclipse', name: 'Eclipse', minLevel: 81, maxLevel: 90,  emoji: '🕶️',
       tiers: [
-        { sol: 5,     prob: 68.50 }, { sol: 10,    prob: 20.00 }, { sol: 15,    prob: 8.00  },
-        { sol: 25,    prob: 2.50  }, { sol: 50,    prob: 0.70  }, { sol: 75,    prob: 0.20  },
-        { sol: 100,   prob: 0.08  }, { sol: 150,   prob: 0.02  },
+        { sol: 5,     prob: 68.50 }, { sol: 10,    prob: 31.50 },
       ]},
     { id: 'apex',    name: 'Apex',    minLevel: 91, maxLevel: 100, emoji: '🦅',
       tiers: [
-        { sol: 10,    prob: 65.00 }, { sol: 25,    prob: 20.00 }, { sol: 50,    prob: 10.00 },
-        { sol: 100,   prob: 3.50  }, { sol: 200,   prob: 1.00  }, { sol: 300,   prob: 0.30  },
-        { sol: 400,   prob: 0.15  }, { sol: 500,   prob: 0.05  },
+        { sol: 5,     prob: 20.00 }, { sol: 7,     prob: 50.00 }, { sol: 10,    prob: 30.00 },
       ]},
   ];
 
