@@ -3642,7 +3642,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-white hover:bg-violet-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-base md:text-xl">📦</span> Crates
+                  <span className="text-base md:text-xl">🎁</span> Crates
                 </Button>
               </div>
             </div>
@@ -4859,7 +4859,7 @@ export default function SolRefund() {
               {/* Header */}
               <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">📦</span>
+                  <span className="text-3xl">🎁</span>
                   <div>
                     <h2 className="text-xl font-bold text-white">Crates & Levels</h2>
                     <p className="text-white text-sm">Earn points by reclaiming SOL. Reach each level milestone to open its crate once and win SOL!</p>
