@@ -3642,7 +3642,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <span className="text-base md:text-xl">🎁</span> Crates
+                  <span className="text-base md:text-xl">🎁</span> Crates <span className="ml-1 text-[10px] bg-green-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-none">NEW</span>
                 </Button>
               </div>
             </div>
