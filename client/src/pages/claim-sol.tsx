@@ -130,8 +130,8 @@ export default function SolRefund() {
   const [cratePreviewId, setCratePreviewId] = useState<string | null>(null);
 
   const CRATE_EMOJIS: Record<string, string> = {
-    genesis: '🌱', pulse: '❤️', orbit: '🪐', vertex: '📐',
-    prism: '🔷', nova: '🔭', spectra: '🧬', quantum: '🔥', eclipse: '🕶️', apex: '🦅',
+    genesis: '⚪', pulse: '🟢', orbit: '🔵', vertex: '🟣',
+    prism: '🟡', nova: '🔴', spectra: '🟠', quantum: '✨', eclipse: '🌌', apex: '👑',
   };
 
   // Selection states for bulk burning
