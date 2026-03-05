@@ -967,6 +967,19 @@ export const insertTelegramAutoClaimSchema = createInsertSchema(telegramAutoClai
 export type TelegramAutoClaimSubscription = typeof telegramAutoClaimSubscriptions.$inferSelect;
 export type InsertTelegramAutoClaimSubscription = z.infer<typeof insertTelegramAutoClaimSchema>;
 
+export const crateOpens = pgTable("crate_opens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull(),
+  crateType: text("crate_type").notNull(),
+  solWon: decimal("sol_won", { precision: 18, scale: 9 }).notNull(),
+  signature: text("signature"),
+  openedAt: timestamp("opened_at").notNull().defaultNow(),
+});
+
+export const insertCrateOpenSchema = createInsertSchema(crateOpens).omit({ id: true, openedAt: true });
+export type CrateOpen = typeof crateOpens.$inferSelect;
+export type InsertCrateOpen = z.infer<typeof insertCrateOpenSchema>;
+
 export const telegramReferrals = pgTable("telegram_referrals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   telegramChatId: text("telegram_chat_id").notNull().unique(),

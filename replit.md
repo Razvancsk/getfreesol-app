@@ -43,6 +43,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - **Ledger Hardware Support**: Secure cold storage wallet integration with transaction confirmation.
 - **Jupiter Ultra Swap Integration**: Advanced token swapping using Jupiter Ultra API with referral fee collection. Records all swaps and awards points.
 - **Helius Backrun Rebates**: MEV rebate system that pays users 50% of arbitrage profits their swaps create. Transactions are sent via Helius RPC with `rebate-address` parameter, enabling private order-flow auction where KYC'd searchers bid to backrun trades. Rebates paid automatically in SOL in the same block.
+- **Crates & Levels System**: Mini-game where users earn levels from their points and open tiered crates every 24 hours to win SOL. Level formula: `min(100, floor(sqrt(points/5)) + 1)`. 10 crate tiers (Genesis→Apex) unlock every 10 levels. SOL rewards are sent from RELAYER_PRIVATE_KEY wallet. Rewards weighted toward lower end of range. Routes: `GET /api/crates/status/:wallet`, `POST /api/crates/open`, `GET /api/crates/history/:wallet`. Data in `crate_opens` table.
 - **Points Reward System**: User engagement rewards calculated based on actions:
   - **Account Closures**: 20 points per account closed (rent claims, token burns, NFT burns)
   - **Swaps**: 100 points per $1 USD swapped (calculated server-side via Jupiter Price API)
@@ -73,6 +74,7 @@ The application uses a monorepo structure with a React 18 (Vite, Radix UI, shadc
 - `swap_records`: Records token swaps with USD value and points awarded.
 - `user_points`: Tracks wallet addresses, points, accounts closed, and total SOL claimed.
 - `telegram_auto_claim_subscriptions`: Telegram bot auto-claim user subscriptions with encrypted private keys and interval settings.
+- `crate_opens`: Records of crate opens including wallet, crate type, SOL won, and transaction signature.
 
 ## External Dependencies
 - **Solana RPC**: Primary connection to Solana mainnet.

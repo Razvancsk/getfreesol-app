@@ -6217,6 +6217,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===================== CRATE SYSTEM =====================
+  const CRATE_TYPES = [
+    { id: 'genesis', name: 'Genesis', minLevel: 1,  maxLevel: 10,  emoji: '🌱', minSol: 0.001, maxSol: 0.020 },
+    { id: 'link',    name: 'Link',    minLevel: 11, maxLevel: 20,  emoji: '🔗', minSol: 0.005, maxSol: 0.050 },
+    { id: 'orbit',   name: 'Orbit',   minLevel: 21, maxLevel: 30,  emoji: '🪐', minSol: 0.010, maxSol: 0.100 },
+    { id: 'vertex',  name: 'Vertex',  minLevel: 31, maxLevel: 40,  emoji: '🔺', minSol: 0.025, maxSol: 0.250 },
+    { id: 'prism',   name: 'Prism',   minLevel: 41, maxLevel: 50,  emoji: '💎', minSol: 0.050, maxSol: 0.500 },
+    { id: 'nova',    name: 'Nova',    minLevel: 51, maxLevel: 60,  emoji: '⭐', minSol: 0.100, maxSol: 1.000 },
+    { id: 'spectra', name: 'Spectra', minLevel: 61, maxLevel: 70,  emoji: '🌈', minSol: 0.250, maxSol: 2.500 },
+    { id: 'quantum', name: 'Quantum', minLevel: 71, maxLevel: 80,  emoji: '⚛️', minSol: 0.500, maxSol: 5.000 },
+    { id: 'eclipse', name: 'Eclipse', minLevel: 81, maxLevel: 90,  emoji: '🌑', minSol: 1.000, maxSol: 10.000 },
+    { id: 'apex',    name: 'Apex',    minLevel: 91, maxLevel: 100, emoji: '👑', minSol: 2.000, maxSol: 20.000 },
+  ];
+
+  function calcLevel(points: number): number {
+    return Math.min(100, Math.floor(Math.sqrt(points / 5)) + 1);
+  }
+
+  function pointsForLevel(level: number): number {
+    return 5 * (level - 1) * (level - 1);
+  }
+
+  app.get("/api/crates/status/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const userPts = await storage.getUserPoints(walletAddress);
+      const points = Number(userPts?.points || 0);
+      const level = calcLevel(points);
+      const nextLevel = Math.min(100, level + 1);
+      const currentLevelPoints = pointsForLevel(level);
+      const nextLevelPoints = pointsForLevel(nextLevel);
+      const progress = nextLevelPoints > currentLevelPoints
+        ? Math.round(((points - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100)
+        : 100;
+
+      const now = new Date();
+      const cratesWithStatus = await Promise.all(CRATE_TYPES.map(async (crate) => {
+        const lastOpen = await storage.getCrateLastOpen(walletAddress, crate.id);
+        const unlocked = level >= crate.minLevel;
+        const hoursLeft = lastOpen
+          ? Math.max(0, 24 - (now.getTime() - new Date(lastOpen.openedAt).getTime()) / 3600000)
+          : 0;
+        const canOpen = unlocked && hoursLeft === 0;
+        return { ...crate, unlocked, canOpen, hoursLeft: Math.ceil(hoursLeft), lastOpenedAt: lastOpen?.openedAt || null };
+      }));
+
+      res.json({ success: true, level, points, progress, nextLevelPoints, currentLevelPoints, crates: cratesWithStatus });
+    } catch (error) {
+      console.error("Crate status error:", error);
+      res.status(500).json({ error: "Failed to get crate status" });
+    }
+  });
+
+  app.post("/api/crates/open", async (req, res) => {
+    try {
+      const { walletAddress, crateType } = req.body;
+      if (!walletAddress || !crateType) return res.status(400).json({ error: "Missing walletAddress or crateType" });
+
+      const crate = CRATE_TYPES.find(c => c.id === crateType);
+      if (!crate) return res.status(400).json({ error: "Invalid crate type" });
+
+      const userPts = await storage.getUserPoints(walletAddress);
+      const points = Number(userPts?.points || 0);
+      const level = calcLevel(points);
+
+      if (level < crate.minLevel) {
+        return res.status(403).json({ error: `Requires level ${crate.minLevel}. You are level ${level}.` });
+      }
+
+      const lastOpen = await storage.getCrateLastOpen(walletAddress, crateType);
+      if (lastOpen) {
+        const hoursLeft = 24 - (Date.now() - new Date(lastOpen.openedAt).getTime()) / 3600000;
+        if (hoursLeft > 0) {
+          return res.status(429).json({ error: `Crate on cooldown. Try again in ${Math.ceil(hoursLeft)}h.`, hoursLeft: Math.ceil(hoursLeft) });
+        }
+      }
+
+      // Generate random SOL reward (weighted toward lower end)
+      const rand = Math.random();
+      const weighted = rand * rand; // Square to weight toward lower values
+      const solWon = parseFloat((crate.minSol + weighted * (crate.maxSol - crate.minSol)).toFixed(6));
+
+      // Send SOL from relayer wallet
+      let signature: string | null = null;
+      const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY;
+      if (relayerPrivateKey) {
+        try {
+          const { Keypair, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } = await import("@solana/web3.js");
+          const connection = getHeliusConnection();
+          const secretKey = bs58.decode(relayerPrivateKey);
+          const relayerKeypair = Keypair.fromSecretKey(secretKey);
+          const recipientPubkey = new PublicKey(walletAddress);
+          const lamports = Math.floor(solWon * LAMPORTS_PER_SOL);
+
+          const tx = new Transaction().add(
+            SystemProgram.transfer({ fromPubkey: relayerKeypair.publicKey, toPubkey: recipientPubkey, lamports })
+          );
+          const { blockhash } = await connection.getLatestBlockhash('confirmed');
+          tx.recentBlockhash = blockhash;
+          tx.feePayer = relayerKeypair.publicKey;
+          tx.sign(relayerKeypair);
+          signature = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
+          console.log(`🎁 Crate ${crateType} opened by ${walletAddress}: ${solWon} SOL sent, sig: ${signature}`);
+        } catch (sendErr) {
+          console.error("Failed to send crate SOL reward:", sendErr);
+          return res.status(500).json({ error: "Failed to send SOL reward. Please try again." });
+        }
+      } else {
+        return res.status(500).json({ error: "Relayer not configured" });
+      }
+
+      const record = await storage.recordCrateOpen({ walletAddress, crateType, solWon: solWon.toString(), signature });
+
+      res.json({ success: true, solWon, signature, crateType, crateName: crate.name, emoji: crate.emoji });
+    } catch (error) {
+      console.error("Crate open error:", error);
+      res.status(500).json({ error: "Failed to open crate" });
+    }
+  });
+
+  app.get("/api/crates/history/:walletAddress", async (req, res) => {
+    try {
+      const history = await storage.getCrateHistory(req.params.walletAddress, 20);
+      res.json({ success: true, history });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get crate history" });
+    }
+  });
+  // ===================== END CRATE SYSTEM =====================
+
   // Get comprehensive user stats by wallet address
   app.get("/api/user/stats/:walletAddress", async (req, res) => {
     try {

@@ -94,7 +94,10 @@ import {
   swapRecords,
   giveaways,
   giveawayEntries,
-  giveawayWinners
+  giveawayWinners,
+  crateOpens,
+  type CrateOpen,
+  type InsertCrateOpen
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and, ne, gte } from "drizzle-orm";
@@ -271,6 +274,11 @@ export interface IStorage {
   getSwapRecordsByWallet(walletAddress: string, limit?: number): Promise<SwapRecord[]>;
   getSwapRecordBySignature(txSignature: string): Promise<SwapRecord | undefined>;
   awardSwapPoints(walletAddress: string, usdValue: number): Promise<number>;
+
+  // Crate System
+  getCrateLastOpen(walletAddress: string, crateType: string): Promise<CrateOpen | undefined>;
+  recordCrateOpen(data: InsertCrateOpen): Promise<CrateOpen>;
+  getCrateHistory(walletAddress: string, limit?: number): Promise<CrateOpen[]>;
   
   // Giveaway System
   createGiveaway(giveaway: InsertGiveaway): Promise<Giveaway>;
@@ -1600,6 +1608,31 @@ export class DatabaseStorage implements IStorage {
     }
     
     return pointsToAward;
+  }
+
+  // Crate System Implementation
+  async getCrateLastOpen(walletAddress: string, crateType: string): Promise<CrateOpen | undefined> {
+    const [record] = await db
+      .select()
+      .from(crateOpens)
+      .where(and(eq(crateOpens.walletAddress, walletAddress), eq(crateOpens.crateType, crateType)))
+      .orderBy(desc(crateOpens.openedAt))
+      .limit(1);
+    return record;
+  }
+
+  async recordCrateOpen(data: InsertCrateOpen): Promise<CrateOpen> {
+    const [created] = await db.insert(crateOpens).values(data).returning();
+    return created;
+  }
+
+  async getCrateHistory(walletAddress: string, limit: number = 20): Promise<CrateOpen[]> {
+    return db
+      .select()
+      .from(crateOpens)
+      .where(eq(crateOpens.walletAddress, walletAddress))
+      .orderBy(desc(crateOpens.openedAt))
+      .limit(limit);
   }
 
   // Giveaway System Implementation

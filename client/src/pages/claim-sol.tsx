@@ -102,7 +102,7 @@ export default function SolRefund() {
   const { isNightMode, toggleTheme } = useTheme();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points' | 'coinflip'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points' | 'coinflip' | 'crates'>('reclaim');
   const [claimSubTab, setClaimSubTab] = useState<'empty' | 'programs'>('empty');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [showDevAccountModal, setShowDevAccountModal] = useState(false);
@@ -121,6 +121,12 @@ export default function SolRefund() {
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
   const [enteringGiveaway, setEnteringGiveaway] = useState(false);
   const [viewProfileWallet, setViewProfileWallet] = useState<string | null>(null);
+
+  // Crate system state
+  const [crateOpening, setCrateOpening] = useState<string | null>(null);
+  const [crateResult, setCrateResult] = useState<{ solWon: number; crateType: string; crateName: string; emoji: string; signature: string } | null>(null);
+  const [crateShowResult, setCrateShowResult] = useState(false);
+  const [crateError, setCrateError] = useState<string | null>(null);
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -292,6 +298,54 @@ export default function SolRefund() {
     },
     enabled: activeTab === 'points',
   });
+
+  const { data: crateStatus, isLoading: crateStatusLoading, refetch: refetchCrateStatus } = useQuery({
+    queryKey: ['/api/crates/status', pointsWalletAddress],
+    queryFn: async () => {
+      if (!pointsWalletAddress) throw new Error('Wallet required');
+      const response = await fetch(`/api/crates/status/${pointsWalletAddress}`);
+      if (!response.ok) throw new Error('Failed to fetch crate status');
+      return response.json();
+    },
+    enabled: activeTab === 'crates' && !!pointsWalletAddress,
+    refetchInterval: activeTab === 'crates' ? 30000 : false,
+  });
+
+  const { data: crateHistory, refetch: refetchCrateHistory } = useQuery({
+    queryKey: ['/api/crates/history', pointsWalletAddress],
+    queryFn: async () => {
+      if (!pointsWalletAddress) throw new Error('Wallet required');
+      const response = await fetch(`/api/crates/history/${pointsWalletAddress}`);
+      if (!response.ok) throw new Error('Failed to fetch crate history');
+      return response.json();
+    },
+    enabled: activeTab === 'crates' && !!pointsWalletAddress,
+  });
+
+  async function openCrate(crateTypeId: string) {
+    if (!publicKey) return;
+    setCrateOpening(crateTypeId);
+    setCrateError(null);
+    try {
+      const response = await fetch('/api/crates/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: publicKey.toBase58(), crateType: crateTypeId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setCrateError(data.error || 'Failed to open crate');
+      } else {
+        setCrateResult(data);
+        setCrateShowResult(true);
+        await Promise.all([refetchCrateStatus(), refetchCrateHistory()]);
+      }
+    } catch (err) {
+      setCrateError('Network error. Please try again.');
+    } finally {
+      setCrateOpening(null);
+    }
+  }
 
   // Function to fetch wallet balance for a specific token (for Lend deposit dialog)
   const fetchTokenBalance = async (tokenMint: string) => {
@@ -3487,7 +3541,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'crates' ? 'Level up. Unlock crates. Win SOL.' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3574,6 +3628,16 @@ export default function SolRefund() {
                   <span className="text-base md:text-xl">🪙</span> Flip
                 </Button>
                 )}
+                <Button
+                  onClick={() => setActiveTab('crates')}
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                    activeTab === 'crates'
+                      ? 'bg-violet-600 text-white border-violet-500'
+                      : 'bg-purple-800/40 text-white hover:bg-violet-600/60 border-purple-500/30'
+                  }`}
+                >
+                  <span className="text-base md:text-xl">📦</span> Crates
+                </Button>
               </div>
             </div>
           )}
@@ -4681,6 +4745,177 @@ export default function SolRefund() {
           {activeTab === 'swap' && isPlatformWallet && (
             <div className="py-4">
               <SwapPanel />
+            </div>
+          )}
+
+          {/* Crates Tab Content */}
+          {activeTab === 'crates' && (
+            <div className="space-y-6">
+              {/* Result Modal */}
+              {crateShowResult && crateResult && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setCrateShowResult(false)}>
+                  <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 border border-violet-400/50 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="text-7xl mb-4 animate-bounce">{crateResult.emoji}</div>
+                    <h2 className="text-2xl font-bold text-white mb-1">{crateResult.crateName} Crate</h2>
+                    <p className="text-violet-300 mb-4 text-sm">You opened a crate!</p>
+                    <div className="bg-black/30 rounded-xl p-4 mb-6">
+                      <p className="text-violet-300 text-sm mb-1">You won</p>
+                      <p className="text-4xl font-bold text-green-400">+{crateResult.solWon.toFixed(6)} SOL</p>
+                      <p className="text-violet-400 text-xs mt-2">Sent to your wallet</p>
+                    </div>
+                    {crateResult.signature && (
+                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline block mb-4">View on Solscan ↗</a>
+                    )}
+                    <button onClick={() => setCrateShowResult(false)} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-3 rounded-xl transition-colors">Awesome!</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Header */}
+              <div className="backdrop-blur-sm rounded-xl p-6 bg-gradient-to-br from-violet-900/40 to-purple-900/30 border border-violet-500/20">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">📦</span>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Crates & Levels</h2>
+                    <p className="text-violet-300 text-sm">Earn points by reclaiming SOL. Unlock crates and win SOL every 24 hours!</p>
+                  </div>
+                </div>
+              </div>
+
+              {!publicKey ? (
+                <div className="text-center py-16 text-violet-300">Connect your wallet to access Crates</div>
+              ) : crateStatusLoading ? (
+                <div className="text-center py-16 text-violet-300">Loading your crates...</div>
+              ) : crateStatus ? (
+                <>
+                  {/* Level Card */}
+                  <div className="backdrop-blur-sm rounded-xl p-6 bg-gradient-to-br from-violet-900/40 to-indigo-900/30 border border-violet-500/20">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                          {crateStatus.level}
+                        </div>
+                        <div>
+                          <p className="text-violet-300 text-sm">Your Level</p>
+                          <p className="text-white font-bold text-xl">Level {crateStatus.level}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-violet-300 text-sm">Total Points</p>
+                        <p className="text-violet-100 font-bold text-xl">{crateStatus.points.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {crateStatus.level < 100 && (
+                      <div>
+                        <div className="flex justify-between text-xs text-violet-400 mb-1.5">
+                          <span>Level {crateStatus.level}</span>
+                          <span>{crateStatus.progress}% to Level {crateStatus.level + 1}</span>
+                        </div>
+                        <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full transition-all duration-700" style={{ width: `${crateStatus.progress}%` }} />
+                        </div>
+                        <p className="text-violet-400 text-xs mt-1.5 text-right">
+                          {crateStatus.nextLevelPoints - crateStatus.points} points to next level
+                        </p>
+                      </div>
+                    )}
+                    {crateStatus.level === 100 && (
+                      <p className="text-center text-yellow-400 font-bold">👑 MAX LEVEL REACHED</p>
+                    )}
+                    <div className="mt-4 p-3 rounded-lg bg-violet-900/30 border border-violet-500/20">
+                      <p className="text-violet-300 text-xs">💡 Earn points by reclaiming SOL, burning tokens & NFTs, and swapping. Higher level = better crates!</p>
+                    </div>
+                  </div>
+
+                  {/* Error Display */}
+                  {crateError && (
+                    <div className="bg-red-900/30 border border-red-500/40 rounded-xl p-4 text-red-300 text-sm">
+                      ⚠️ {crateError}
+                    </div>
+                  )}
+
+                  {/* Crate Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {(crateStatus.crates as any[]).map((crate: any) => {
+                      const isOpening = crateOpening === crate.id;
+                      const tierColors: Record<string, string> = {
+                        genesis: 'from-green-900/60 to-emerald-900/40 border-green-500/30',
+                        link: 'from-blue-900/60 to-cyan-900/40 border-blue-500/30',
+                        orbit: 'from-purple-900/60 to-violet-900/40 border-purple-500/30',
+                        vertex: 'from-cyan-900/60 to-teal-900/40 border-cyan-500/30',
+                        prism: 'from-pink-900/60 to-rose-900/40 border-pink-500/30',
+                        nova: 'from-yellow-900/60 to-amber-900/40 border-yellow-500/30',
+                        spectra: 'from-indigo-900/60 to-purple-900/40 border-indigo-500/30',
+                        quantum: 'from-emerald-900/60 to-green-900/40 border-emerald-500/30',
+                        eclipse: 'from-slate-900/80 to-gray-900/60 border-slate-500/30',
+                        apex: 'from-yellow-900/80 to-orange-900/60 border-yellow-400/40',
+                      };
+                      const colors = tierColors[crate.id] || 'from-violet-900/60 to-purple-900/40 border-violet-500/30';
+                      return (
+                        <div key={crate.id} className={`relative rounded-xl p-4 bg-gradient-to-br ${colors} border backdrop-blur-sm flex flex-col items-center gap-2 transition-all ${!crate.unlocked ? 'opacity-50' : ''}`}>
+                          {!crate.unlocked && (
+                            <div className="absolute inset-0 rounded-xl flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                              <div className="text-center">
+                                <div className="text-2xl">🔒</div>
+                                <p className="text-white/70 text-xs mt-1">Lv {crate.minLevel}</p>
+                              </div>
+                            </div>
+                          )}
+                          <div className="text-4xl">{crate.emoji}</div>
+                          <div className="text-center">
+                            <p className="text-white font-bold text-sm">{crate.name}</p>
+                            <p className="text-white/60 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
+                            <p className="text-green-400 text-xs font-medium mt-0.5">{crate.minSol}–{crate.maxSol} SOL</p>
+                          </div>
+                          {crate.unlocked && (
+                            crate.canOpen ? (
+                              <button
+                                onClick={() => openCrate(crate.id)}
+                                disabled={isOpening || crateOpening !== null}
+                                className="mt-1 w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-800 text-white text-xs font-semibold py-2 rounded-lg transition-colors"
+                              >
+                                {isOpening ? '🎁 Opening...' : '🎁 Open'}
+                              </button>
+                            ) : (
+                              <div className="mt-1 w-full text-center">
+                                <p className="text-orange-300 text-xs font-medium">⏳ {crate.hoursLeft}h cooldown</p>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Recent History */}
+                  {crateHistory?.history && crateHistory.history.length > 0 && (
+                    <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-violet-900/20 to-purple-900/20 border border-violet-500/20">
+                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><span>📜</span> Recent Opens</h3>
+                      <div className="space-y-2">
+                        {crateHistory.history.slice(0, 10).map((h: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between py-2 border-b border-violet-500/10 last:border-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{h.crateType === 'genesis' ? '🌱' : h.crateType === 'link' ? '🔗' : h.crateType === 'orbit' ? '🪐' : h.crateType === 'vertex' ? '🔺' : h.crateType === 'prism' ? '💎' : h.crateType === 'nova' ? '⭐' : h.crateType === 'spectra' ? '🌈' : h.crateType === 'quantum' ? '⚛️' : h.crateType === 'eclipse' ? '🌑' : '👑'}</span>
+                              <div>
+                                <p className="text-white text-sm font-medium capitalize">{h.crateType} Crate</p>
+                                <p className="text-violet-400 text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-green-400 font-bold text-sm">+{parseFloat(h.solWon).toFixed(6)} SOL</p>
+                              {h.signature && (
+                                <a href={`https://solscan.io/tx/${h.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline">tx ↗</a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-16 text-violet-300">Failed to load crate status. Please try again.</div>
+              )}
             </div>
           )}
 
