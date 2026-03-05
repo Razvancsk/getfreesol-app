@@ -6219,52 +6219,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===================== CRATE SYSTEM =====================
   const CRATE_TYPES = [
-    { id: 'genesis', name: 'Genesis', minLevel: 2,  maxLevel: 10,  emoji: '🌱',
+    { id: 'genesis', name: 'Common',       minLevel: 2,  maxLevel: 10,  emoji: '⚪',
       tiers: [
         { sol: 0,     prob: 29.20 }, { sol: 0.001, prob: 53.98 }, { sol: 0.002, prob: 15.00 },
         { sol: 0.003, prob: 1.00  }, { sol: 0.004, prob: 0.75  }, { sol: 0.005, prob: 0.04  },
         { sol: 0.01,  prob: 0.02  }, { sol: 0.02,  prob: 0.01  },
       ]},
-    { id: 'pulse',   name: 'Pulse',   minLevel: 11, maxLevel: 20,  emoji: '❤️',  // max 0.05 SOL
+    { id: 'pulse',   name: 'Uncommon',     minLevel: 11, maxLevel: 20,  emoji: '🟢',  // max 0.05 SOL
       tiers: [
         { sol: 0.005, prob: 33.27 }, { sol: 0.01,  prob: 52.00 }, { sol: 0.02,  prob: 13.00 },
         { sol: 0.03,  prob: 1.00  }, { sol: 0.05,  prob: 0.73  },
       ]},
-    { id: 'orbit',   name: 'Orbit',   minLevel: 21, maxLevel: 30,  emoji: '🪐',  // max 0.5 SOL
+    { id: 'orbit',   name: 'Rare',         minLevel: 21, maxLevel: 30,  emoji: '🔵',  // max 0.5 SOL
       tiers: [
         { sol: 0.025, prob: 66.78 }, { sol: 0.05,  prob: 30.10 }, { sol: 0.1,   prob: 1.00  },
         { sol: 0.2,   prob: 1.70  }, { sol: 0.5,   prob: 0.42  },
       ]},
-    { id: 'vertex',  name: 'Vertex',  minLevel: 31, maxLevel: 40,  emoji: '📐',  // max 1 SOL
+    { id: 'vertex',  name: 'Epic',         minLevel: 31, maxLevel: 40,  emoji: '🟣',  // max 1 SOL
       tiers: [
         { sol: 0.1,   prob: 64.44 }, { sol: 0.15,  prob: 23.00 }, { sol: 0.25,  prob: 6.80  },
         { sol: 0.5,   prob: 3.40  }, { sol: 1,     prob: 2.36  },
       ]},
-    { id: 'prism',   name: 'Prism',   minLevel: 41, maxLevel: 50,  emoji: '🔷',  // max 2 SOL
+    { id: 'prism',   name: 'Legendary',    minLevel: 41, maxLevel: 50,  emoji: '🟡',  // max 2 SOL
       tiers: [
         { sol: 0.2,   prob: 68.08 }, { sol: 0.3,   prob: 24.70 }, { sol: 0.5,   prob: 5.00  },
         { sol: 1,     prob: 1.10  }, { sol: 2,     prob: 1.12  },
       ]},
-    { id: 'nova',    name: 'Nova',    minLevel: 51, maxLevel: 60,  emoji: '🔭',  // max 3 SOL
+    { id: 'nova',    name: 'Mythic',       minLevel: 51, maxLevel: 60,  emoji: '🔴',  // max 3 SOL
       tiers: [
         { sol: 0.5,   prob: 69.22 }, { sol: 0.75,  prob: 25.00 }, { sol: 1,     prob: 5.00  },
         { sol: 1.5,   prob: 2.10  }, { sol: 2.5,   prob: 1.10  }, { sol: 3,     prob: 0.58  },
       ]},
-    { id: 'spectra', name: 'Spectra', minLevel: 61, maxLevel: 70,  emoji: '🧬',  // max 5 SOL
+    { id: 'spectra', name: 'Exotic',       minLevel: 61, maxLevel: 70,  emoji: '🟠',  // max 5 SOL
       tiers: [
         { sol: 1,     prob: 68.85 }, { sol: 1.5,   prob: 20.70 }, { sol: 2,     prob: 6.00  },
         { sol: 2.5,   prob: 2.50  }, { sol: 3.5,   prob: 1.10  }, { sol: 5,     prob: 0.85  },
       ]},
-    { id: 'quantum', name: 'Quantum', minLevel: 71, maxLevel: 80,  emoji: '🔥',  // max 7 SOL
+    { id: 'quantum', name: 'Transcendent', minLevel: 71, maxLevel: 80,  emoji: '✨',  // max 7 SOL
       tiers: [
         { sol: 2,     prob: 69.00 }, { sol: 3,     prob: 14.00 }, { sol: 5,     prob: 10.00 },
         { sol: 7,     prob: 7.00  },
       ]},
-    { id: 'eclipse', name: 'Eclipse', minLevel: 81, maxLevel: 90,  emoji: '🕶️',  // max 8 SOL
+    { id: 'eclipse', name: 'Celestial',    minLevel: 81, maxLevel: 90,  emoji: '🌌',  // max 8 SOL
       tiers: [
         { sol: 3,     prob: 45.00 }, { sol: 5,     prob: 40.00 }, { sol: 8,     prob: 15.00 },
       ]},
-    { id: 'apex',    name: 'Apex',    minLevel: 91, maxLevel: 100, emoji: '🦅',  // max 10 SOL
+    { id: 'apex',    name: 'Divine',       minLevel: 91, maxLevel: 100, emoji: '👑',  // max 10 SOL
       tiers: [
         { sol: 5,     prob: 20.00 }, { sol: 7,     prob: 50.00 }, { sol: 10,    prob: 30.00 },
       ]},
