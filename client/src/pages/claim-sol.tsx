@@ -314,7 +314,7 @@ export default function SolRefund() {
       return response.json();
     },
     enabled: activeTab === 'crates' && !!pointsWalletAddress,
-    refetchInterval: activeTab === 'crates' ? 30000 : false,
+    refetchInterval: 5000,
   });
 
   const { data: crateHistory, refetch: refetchCrateHistory } = useQuery({
