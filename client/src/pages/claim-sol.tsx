@@ -4830,10 +4830,10 @@ export default function SolRefund() {
                           <p className="text-gray-700 font-medium text-sm">🔒 You can't open this crate yet</p>
                           <p className="text-gray-400 text-xs mt-1">You don't own this crate. Requires level {previewCrate.minLevel}.</p>
                         </>
-                      ) : !previewCrate.canOpen ? (
+                      ) : previewCrate.alreadyOpened ? (
                         <>
-                          <p className="text-gray-700 font-medium text-sm">⏳ On cooldown</p>
-                          <p className="text-gray-400 text-xs mt-1">Come back in {previewCrate.hoursLeft}h</p>
+                          <p className="text-gray-700 font-medium text-sm">✅ Already Opened</p>
+                          <p className="text-gray-400 text-xs mt-1">Level up to unlock your next crate!</p>
                         </>
                       ) : crateError ? (
                         <>
@@ -4862,7 +4862,7 @@ export default function SolRefund() {
                   <span className="text-3xl">📦</span>
                   <div>
                     <h2 className="text-xl font-bold text-white">Crates & Levels</h2>
-                    <p className="text-violet-300 text-sm">Earn points by reclaiming SOL. Unlock crates and win SOL every 24 hours!</p>
+                    <p className="text-violet-300 text-sm">Earn points by reclaiming SOL. Reach each level milestone to open its crate once and win SOL!</p>
                   </div>
                 </div>
               </div>
@@ -4907,7 +4907,7 @@ export default function SolRefund() {
                       <p className="text-center text-yellow-400 font-bold">👑 MAX LEVEL REACHED</p>
                     )}
                     <div className="mt-4 p-3 rounded-lg bg-violet-900/30 border border-violet-500/20">
-                      <p className="text-violet-300 text-xs">💡 Earn points by reclaiming SOL, burning tokens & NFTs, and swapping. Higher level = better crates!</p>
+                      <p className="text-violet-300 text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
                     </div>
                   </div>
 
@@ -4926,10 +4926,10 @@ export default function SolRefund() {
                           <p className="text-white font-semibold text-sm">{crate.name}</p>
                           <p className="text-violet-300 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
                           {crate.unlocked ? (
-                            crate.canOpen ? (
-                              <span className="mt-1 inline-block text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full font-medium">Ready!</span>
+                            crate.alreadyOpened ? (
+                              <span className="mt-1 inline-block text-xs text-green-400 font-medium">✅ Opened</span>
                             ) : (
-                              <span className="mt-1 inline-block text-xs text-orange-300 font-medium">⏳ {crate.hoursLeft}h</span>
+                              <span className="mt-1 inline-block text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full font-medium">Ready!</span>
                             )
                           ) : (
                             <span className="mt-1 inline-block text-xs text-white/50">🔒 Lv {crate.minLevel}</span>

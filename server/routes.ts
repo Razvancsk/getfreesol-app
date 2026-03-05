@@ -6301,15 +6301,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? Math.round(((points - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100)
         : 100;
 
-      const now = new Date();
       const cratesWithStatus = await Promise.all(CRATE_TYPES.map(async (crate) => {
         const lastOpen = await storage.getCrateLastOpen(walletAddress, crate.id);
         const unlocked = level >= crate.minLevel;
-        const hoursLeft = lastOpen
-          ? Math.max(0, 24 - (now.getTime() - new Date(lastOpen.openedAt).getTime()) / 3600000)
-          : 0;
-        const canOpen = unlocked && hoursLeft === 0;
-        return { ...crate, unlocked, canOpen, hoursLeft: Math.ceil(hoursLeft), lastOpenedAt: lastOpen?.openedAt || null };
+        const alreadyOpened = !!lastOpen;
+        const canOpen = unlocked && !alreadyOpened;
+        return { ...crate, unlocked, canOpen, alreadyOpened, openedAt: lastOpen?.openedAt || null };
       }));
 
       res.json({ success: true, level, points, progress, nextLevelPoints, currentLevelPoints, crates: cratesWithStatus });
@@ -6337,10 +6334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const lastOpen = await storage.getCrateLastOpen(walletAddress, crateType);
       if (lastOpen) {
-        const hoursLeft = 24 - (Date.now() - new Date(lastOpen.openedAt).getTime()) / 3600000;
-        if (hoursLeft > 0) {
-          return res.status(429).json({ error: `Crate on cooldown. Try again in ${Math.ceil(hoursLeft)}h.`, hoursLeft: Math.ceil(hoursLeft) });
-        }
+        return res.status(409).json({ error: `You already opened this crate. Reach level ${crate.minLevel + 10} to unlock the next one!` });
       }
 
       // Pick SOL reward from discrete probability tiers
