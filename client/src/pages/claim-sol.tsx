@@ -4881,25 +4881,25 @@ export default function SolRefund() {
                           {crateStatus.level}
                         </div>
                         <div>
-                          <p className="text-white/70 text-sm">Your Level</p>
+                          <p className="text-white text-sm">Your Level</p>
                           <p className="text-white font-bold text-xl">Level {crateStatus.level}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-white/70 text-sm">Total Points</p>
+                        <p className="text-white text-sm">Total Points</p>
                         <p className="text-white font-bold text-xl">{crateStatus.points.toLocaleString()}</p>
                       </div>
                     </div>
                     {crateStatus.level < 100 ? (
                       <div>
-                        <div className="flex justify-between text-xs text-white/70 mb-1.5">
+                        <div className="flex justify-between text-xs text-white mb-1.5">
                           <span>Level {crateStatus.level}</span>
                           <span>{crateStatus.progress}% to Level {crateStatus.level + 1}</span>
                         </div>
                         <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden">
                           <div className="h-full bg-purple-500 rounded-full transition-all duration-700" style={{ width: `${crateStatus.progress}%` }} />
                         </div>
-                        <p className="text-white/70 text-xs mt-1.5 text-right">
+                        <p className="text-white text-xs mt-1.5 text-right">
                           {crateStatus.nextLevelPoints - crateStatus.points} points to next level
                         </p>
                       </div>
@@ -4907,7 +4907,7 @@ export default function SolRefund() {
                       <p className="text-center text-yellow-400 font-bold">👑 MAX LEVEL REACHED</p>
                     )}
                     <div className="mt-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20">
-                      <p className="text-white/70 text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
+                      <p className="text-white text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
                     </div>
                   </div>
 
