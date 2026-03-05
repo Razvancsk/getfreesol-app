@@ -4857,12 +4857,12 @@ export default function SolRefund() {
               )}
 
               {/* Header */}
-              <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-violet-900/40 to-purple-900/30 border border-violet-500/20">
+              <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">📦</span>
                   <div>
                     <h2 className="text-xl font-bold text-white">Crates & Levels</h2>
-                    <p className="text-violet-300 text-sm">Earn points by reclaiming SOL. Reach each level milestone to open its crate once and win SOL!</p>
+                    <p className="text-purple-300 text-sm">Earn points by reclaiming SOL. Reach each level milestone to open its crate once and win SOL!</p>
                   </div>
                 </div>
               </div>
@@ -4874,40 +4874,40 @@ export default function SolRefund() {
               ) : crateStatus ? (
                 <>
                   {/* Level Card */}
-                  <div className="backdrop-blur-sm rounded-xl p-6 bg-gradient-to-br from-violet-900/40 to-indigo-900/30 border border-violet-500/20">
+                  <div className="backdrop-blur-sm rounded-xl p-6 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                        <div className="w-14 h-14 rounded-full bg-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
                           {crateStatus.level}
                         </div>
                         <div>
-                          <p className="text-violet-300 text-sm">Your Level</p>
+                          <p className="text-purple-300 text-sm">Your Level</p>
                           <p className="text-white font-bold text-xl">Level {crateStatus.level}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-violet-300 text-sm">Total Points</p>
-                        <p className="text-violet-100 font-bold text-xl">{crateStatus.points.toLocaleString()}</p>
+                        <p className="text-purple-300 text-sm">Total Points</p>
+                        <p className="text-white font-bold text-xl">{crateStatus.points.toLocaleString()}</p>
                       </div>
                     </div>
                     {crateStatus.level < 100 ? (
                       <div>
-                        <div className="flex justify-between text-xs text-violet-400 mb-1.5">
+                        <div className="flex justify-between text-xs text-purple-400 mb-1.5">
                           <span>Level {crateStatus.level}</span>
                           <span>{crateStatus.progress}% to Level {crateStatus.level + 1}</span>
                         </div>
-                        <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full transition-all duration-700" style={{ width: `${crateStatus.progress}%` }} />
+                        <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden">
+                          <div className="h-full bg-purple-500 rounded-full transition-all duration-700" style={{ width: `${crateStatus.progress}%` }} />
                         </div>
-                        <p className="text-violet-400 text-xs mt-1.5 text-right">
+                        <p className="text-purple-400 text-xs mt-1.5 text-right">
                           {crateStatus.nextLevelPoints - crateStatus.points} points to next level
                         </p>
                       </div>
                     ) : (
                       <p className="text-center text-yellow-400 font-bold">👑 MAX LEVEL REACHED</p>
                     )}
-                    <div className="mt-4 p-3 rounded-lg bg-violet-900/30 border border-violet-500/20">
-                      <p className="text-violet-300 text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
+                    <div className="mt-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20">
+                      <p className="text-purple-300 text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
                     </div>
                   </div>
 
@@ -4917,22 +4917,22 @@ export default function SolRefund() {
                       <button
                         key={crate.id}
                         onClick={() => { setCrateError(null); setCratePreviewId(crate.id); }}
-                        className={`relative rounded-xl p-3 bg-black/20 border border-violet-500/20 backdrop-blur-sm flex flex-col items-center gap-2 transition-all hover:border-violet-400/50 hover:bg-black/30 text-left ${!crate.unlocked ? 'opacity-60' : ''}`}
+                        className={`relative rounded-xl p-3 backdrop-blur-sm bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 flex flex-col items-center gap-2 transition-all hover:border-purple-400/50 hover:from-purple-800/30 text-left ${!crate.unlocked ? 'opacity-50' : ''}`}
                       >
-                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-800/60 to-purple-900/60 flex items-center justify-center text-4xl shadow-md">
+                        <div className="w-16 h-16 rounded-xl bg-purple-700/40 border border-purple-500/20 flex items-center justify-center text-4xl">
                           {CRATE_EMOJIS[crate.id] || '📦'}
                         </div>
                         <div className="text-center w-full">
                           <p className="text-white font-semibold text-sm">{crate.name}</p>
-                          <p className="text-violet-300 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
+                          <p className="text-purple-300 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
                           {crate.unlocked ? (
                             crate.alreadyOpened ? (
                               <span className="mt-1 inline-block text-xs text-green-400 font-medium">✅ Opened</span>
                             ) : (
-                              <span className="mt-1 inline-block text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full font-medium">Ready!</span>
+                              <span className="mt-1 inline-block text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-medium">Ready!</span>
                             )
                           ) : (
-                            <span className="mt-1 inline-block text-xs text-white/50">🔒 Lv {crate.minLevel}</span>
+                            <span className="mt-1 inline-block text-xs text-purple-400">🔒 Lv {crate.minLevel}</span>
                           )}
                         </div>
                       </button>
@@ -4941,18 +4941,18 @@ export default function SolRefund() {
 
                   {/* Recent History */}
                   {crateHistory?.history && crateHistory.history.length > 0 && (
-                    <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-violet-900/20 to-purple-900/20 border border-violet-500/20">
+                    <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20">
                       <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><span>📜</span> Recent Opens</h3>
                       <div className="space-y-2">
                         {crateHistory.history.slice(0, 10).map((h: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between py-2 border-b border-violet-500/10 last:border-0">
+                          <div key={i} className="flex items-center justify-between py-2 border-b border-purple-500/10 last:border-0">
                             <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-violet-900/50 flex items-center justify-center text-xl">
+                              <div className="w-8 h-8 rounded-lg bg-purple-800/50 flex items-center justify-center text-xl">
                                 {CRATE_EMOJIS[h.crateType] || '📦'}
                               </div>
                               <div>
                                 <p className="text-white text-sm font-medium capitalize">{h.crateType} Crate</p>
-                                <p className="text-violet-400 text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
+                                <p className="text-purple-400 text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
                               </div>
                             </div>
                             <div className="text-right">
@@ -4960,7 +4960,7 @@ export default function SolRefund() {
                                 {parseFloat(h.solWon) > 0 ? `+${parseFloat(h.solWon)} SOL` : '0 SOL'}
                               </p>
                               {h.signature && (
-                                <a href={`https://solscan.io/tx/${h.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline">tx ↗</a>
+                                <a href={`https://solscan.io/tx/${h.signature}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 text-xs underline">tx ↗</a>
                               )}
                             </div>
                           </div>
