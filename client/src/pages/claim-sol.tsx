@@ -4785,7 +4785,7 @@ export default function SolRefund() {
                       <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline block mb-4">View on Solscan ↗</a>
                     )}
                     <button onClick={() => setCrateShowResult(false)} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-3 rounded-xl transition-colors">
-                      {crateResult.solWon > 0 ? 'Awesome! 🎉' : 'Try Again Tomorrow'}
+                      {crateResult.solWon > 0 ? 'Awesome! 🎉' : 'Level Up for Next Crate!'}
                     </button>
                   </div>
                 </div>
@@ -4793,52 +4793,52 @@ export default function SolRefund() {
 
               {/* Crate Preview Modal */}
               {cratePreviewId && previewCrate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setCratePreviewId(null)}>
-                  <div className="relative bg-white rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setCratePreviewId(null)}>
+                  <div className="relative bg-gradient-to-br from-[#1a0a2e] to-[#12062a] border border-violet-500/30 rounded-2xl w-full max-w-md mx-4 shadow-2xl shadow-violet-900/40 overflow-hidden" onClick={e => e.stopPropagation()}>
                     {/* Header */}
                     <div className="flex items-center justify-between px-5 pt-5 pb-0">
-                      <h2 className="text-xl font-bold text-gray-900">{previewCrate.name} Crate</h2>
-                      <button onClick={() => setCratePreviewId(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                      <h2 className="text-xl font-bold text-white">{previewCrate.name} Crate</h2>
+                      <button onClick={() => setCratePreviewId(null)} className="text-violet-400 hover:text-white text-2xl leading-none transition-colors">&times;</button>
                     </div>
                     {/* Emoji */}
                     <div className="flex justify-center pt-5 pb-2">
-                      <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-6xl shadow-md">
+                      <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-violet-700/50 to-purple-900/60 border border-violet-500/30 flex items-center justify-center text-6xl shadow-lg shadow-violet-900/40">
                         {CRATE_EMOJIS[previewCrate.id] || '📦'}
                       </div>
                     </div>
-                    <p className="text-center text-gray-700 font-semibold text-base mb-4">{previewCrate.name} Crate Preview</p>
+                    <p className="text-center text-violet-300 font-semibold text-base mb-4">{previewCrate.name} Crate Preview</p>
 
                     {/* Rewards Grid */}
-                    <div className="mx-4 mb-4 rounded-xl bg-gray-50 border border-gray-200 p-4">
-                      <p className="text-center text-gray-700 font-semibold mb-3">Possible Rewards:</p>
+                    <div className="mx-4 mb-4 rounded-xl bg-violet-900/20 border border-violet-500/20 p-4">
+                      <p className="text-center text-violet-200 font-semibold mb-3">Possible Rewards:</p>
                       <div className="grid grid-cols-3 gap-2 max-h-52 overflow-y-auto">
                         {(previewCrate.tiers as any[]).map((tier: any, i: number) => (
-                          <div key={i} className="rounded-xl border border-violet-200 bg-white py-2.5 px-2 text-center">
-                            <p className="font-bold text-gray-900 text-sm leading-tight">{tier.sol} SOL</p>
-                            <p className="text-violet-500 text-xs mt-0.5">{tier.prob}%</p>
+                          <div key={i} className="rounded-xl border border-violet-500/25 bg-violet-800/20 py-2.5 px-2 text-center">
+                            <p className="font-bold text-white text-sm leading-tight">{tier.sol} SOL</p>
+                            <p className="text-violet-400 text-xs mt-0.5">{tier.prob}%</p>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     {/* Action Footer */}
-                    <div className="mx-4 mb-5 rounded-xl border border-gray-200 p-4 text-center bg-gray-50">
+                    <div className="mx-4 mb-5 rounded-xl border border-violet-500/20 p-4 text-center bg-violet-900/20">
                       {!publicKey ? (
-                        <p className="text-gray-500 text-sm">Connect your wallet to open crates</p>
+                        <p className="text-violet-400 text-sm">Connect your wallet to open crates</p>
                       ) : !previewCrate.unlocked ? (
                         <>
-                          <p className="text-gray-700 font-medium text-sm">🔒 You can't open this crate yet</p>
-                          <p className="text-gray-400 text-xs mt-1">You don't own this crate. Requires level {previewCrate.minLevel}.</p>
+                          <p className="text-violet-300 font-medium text-sm">🔒 You can't open this crate yet</p>
+                          <p className="text-violet-500 text-xs mt-1">Requires level {previewCrate.minLevel}.</p>
                         </>
                       ) : previewCrate.alreadyOpened ? (
                         <>
-                          <p className="text-gray-700 font-medium text-sm">✅ Already Opened</p>
-                          <p className="text-gray-400 text-xs mt-1">Level up to unlock your next crate!</p>
+                          <p className="text-green-400 font-medium text-sm">✅ Already Opened</p>
+                          <p className="text-violet-400 text-xs mt-1">Level up to unlock your next crate!</p>
                         </>
                       ) : crateError ? (
                         <>
-                          <p className="text-red-500 text-sm mb-2">⚠️ {crateError}</p>
-                          <button onClick={() => { setCrateError(null); openCrate(previewCrate.id).then(() => setCratePreviewId(null)); }} disabled={crateOpening !== null} className="w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-300 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
+                          <p className="text-red-400 text-sm mb-2">⚠️ {crateError}</p>
+                          <button onClick={() => { setCrateError(null); openCrate(previewCrate.id).then(() => setCratePreviewId(null)); }} disabled={crateOpening !== null} className="w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-800 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
                             {crateOpening === previewCrate.id ? 'Opening...' : 'Try Again 🎁'}
                           </button>
                         </>
@@ -4846,7 +4846,7 @@ export default function SolRefund() {
                         <button
                           onClick={() => { openCrate(previewCrate.id).then(() => setCratePreviewId(null)); }}
                           disabled={crateOpening !== null}
-                          className="w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-300 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                          className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-violet-900/40"
                         >
                           {crateOpening === previewCrate.id ? '🎁 Opening...' : '🎁 Open Crate'}
                         </button>
