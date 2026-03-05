@@ -6219,7 +6219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===================== CRATE SYSTEM =====================
   const CRATE_TYPES = [
-    { id: 'genesis', name: 'Genesis', minLevel: 1,  maxLevel: 10,  emoji: '🌱',
+    { id: 'genesis', name: 'Genesis', minLevel: 2,  maxLevel: 10,  emoji: '🌱',
       tiers: [
         { sol: 0,     prob: 29.20 }, { sol: 0.001, prob: 53.98 }, { sol: 0.002, prob: 15.00 },
         { sol: 0.003, prob: 1.00  }, { sol: 0.004, prob: 0.75  }, { sol: 0.005, prob: 0.04  },
