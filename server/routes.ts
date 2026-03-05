@@ -6295,11 +6295,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   function calcLevel(points: number): number {
-    return Math.min(100, Math.floor(Math.sqrt(points / 5)) + 1);
+    return Math.min(100, Math.floor(points / 500) + 1);
   }
 
   function pointsForLevel(level: number): number {
-    return 5 * (level - 1) * (level - 1);
+    return (level - 1) * 500;
   }
 
   app.get("/api/crates/status/:walletAddress", async (req, res) => {
