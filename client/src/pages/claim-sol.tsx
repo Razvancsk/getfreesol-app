@@ -4766,23 +4766,23 @@ export default function SolRefund() {
                   <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 border border-violet-400/50 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
                     <div className="text-7xl mb-4 animate-bounce">{CRATE_EMOJIS[crateResult.crateType] || '📦'}</div>
                     <h2 className="text-2xl font-bold text-white mb-1">{crateResult.crateName} Crate</h2>
-                    <p className="text-violet-300 mb-4 text-sm">You opened a crate!</p>
+                    <p className="text-white mb-4 text-sm">You opened a crate!</p>
                     <div className="bg-black/30 rounded-xl p-4 mb-5 border border-violet-500/20">
-                      <p className="text-violet-300 text-sm mb-1">You won</p>
+                      <p className="text-white text-sm mb-1">You won</p>
                       {crateResult.solWon > 0 ? (
                         <>
                           <p className="text-4xl font-bold text-green-400">+{crateResult.solWon} SOL</p>
-                          <p className="text-violet-400 text-xs mt-2">Sent to your wallet</p>
+                          <p className="text-white/70 text-xs mt-2">Sent to your wallet</p>
                         </>
                       ) : (
                         <>
-                          <p className="text-4xl font-bold text-gray-400">0 SOL</p>
-                          <p className="text-violet-400 text-xs mt-2">Better luck next time!</p>
+                          <p className="text-4xl font-bold text-white">0 SOL</p>
+                          <p className="text-white/70 text-xs mt-2">Better luck next time!</p>
                         </>
                       )}
                     </div>
                     {crateResult.signature && (
-                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 text-xs underline block mb-4">View on Solscan ↗</a>
+                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white text-xs underline block mb-4">View on Solscan ↗</a>
                     )}
                     <button onClick={() => setCrateShowResult(false)} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-3 rounded-xl transition-colors">
                       {crateResult.solWon > 0 ? 'Awesome! 🎉' : 'Level Up for Next Crate!'}
@@ -4798,7 +4798,7 @@ export default function SolRefund() {
                     {/* Header */}
                     <div className="flex items-center justify-between px-5 pt-5 pb-0">
                       <h2 className="text-lg font-semibold text-white">{previewCrate.name} Crate</h2>
-                      <button onClick={() => setCratePreviewId(null)} className="text-purple-300 hover:text-white text-2xl leading-none transition-colors">&times;</button>
+                      <button onClick={() => setCratePreviewId(null)} className="text-white/70 hover:text-white text-2xl leading-none transition-colors">&times;</button>
                     </div>
                     {/* Emoji */}
                     <div className="flex justify-center pt-5 pb-2">
@@ -4806,7 +4806,7 @@ export default function SolRefund() {
                         {CRATE_EMOJIS[previewCrate.id] || '📦'}
                       </div>
                     </div>
-                    <p className="text-center text-purple-200 font-semibold text-sm mb-4">{previewCrate.name} Crate Preview</p>
+                    <p className="text-center text-white font-semibold text-sm mb-4">{previewCrate.name} Crate Preview</p>
 
                     {/* Rewards Grid */}
                     <div className="mx-4 mb-4 rounded-xl bg-purple-900/40 border border-purple-500/20 p-4">
@@ -4824,16 +4824,16 @@ export default function SolRefund() {
                     {/* Action Footer */}
                     <div className="mx-4 mb-5 rounded-xl border border-purple-500/20 p-4 text-center bg-purple-900/40">
                       {!publicKey ? (
-                        <p className="text-purple-300 text-sm">Connect your wallet to open crates</p>
+                        <p className="text-white/70 text-sm">Connect your wallet to open crates</p>
                       ) : !previewCrate.unlocked ? (
                         <>
-                          <p className="text-purple-200 font-medium text-sm">🔒 You can't open this crate yet</p>
-                          <p className="text-purple-400 text-xs mt-1">Requires level {previewCrate.minLevel}.</p>
+                          <p className="text-white font-medium text-sm">🔒 You can't open this crate yet</p>
+                          <p className="text-white/60 text-xs mt-1">Requires level {previewCrate.minLevel}.</p>
                         </>
                       ) : previewCrate.alreadyOpened ? (
                         <>
                           <p className="text-green-400 font-medium text-sm">✅ Already Opened</p>
-                          <p className="text-purple-300 text-xs mt-1">Level up to unlock your next crate!</p>
+                          <p className="text-white/70 text-xs mt-1">Level up to unlock your next crate!</p>
                         </>
                       ) : crateError ? (
                         <>
@@ -4862,15 +4862,15 @@ export default function SolRefund() {
                   <span className="text-3xl">📦</span>
                   <div>
                     <h2 className="text-xl font-bold text-white">Crates & Levels</h2>
-                    <p className="text-purple-300 text-sm">Earn points by reclaiming SOL. Reach each level milestone to open its crate once and win SOL!</p>
+                    <p className="text-white/70 text-sm">Earn points by reclaiming SOL. Reach each level milestone to open its crate once and win SOL!</p>
                   </div>
                 </div>
               </div>
 
               {!publicKey ? (
-                <div className="text-center py-16 text-violet-300">Connect your wallet to access Crates</div>
+                <div className="text-center py-16 text-white">Connect your wallet to access Crates</div>
               ) : crateStatusLoading ? (
-                <div className="text-center py-16 text-violet-300">Loading your crates...</div>
+                <div className="text-center py-16 text-white">Loading your crates...</div>
               ) : crateStatus ? (
                 <>
                   {/* Level Card */}
@@ -4881,25 +4881,25 @@ export default function SolRefund() {
                           {crateStatus.level}
                         </div>
                         <div>
-                          <p className="text-purple-300 text-sm">Your Level</p>
+                          <p className="text-white/70 text-sm">Your Level</p>
                           <p className="text-white font-bold text-xl">Level {crateStatus.level}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-purple-300 text-sm">Total Points</p>
+                        <p className="text-white/70 text-sm">Total Points</p>
                         <p className="text-white font-bold text-xl">{crateStatus.points.toLocaleString()}</p>
                       </div>
                     </div>
                     {crateStatus.level < 100 ? (
                       <div>
-                        <div className="flex justify-between text-xs text-purple-400 mb-1.5">
+                        <div className="flex justify-between text-xs text-white/70 mb-1.5">
                           <span>Level {crateStatus.level}</span>
                           <span>{crateStatus.progress}% to Level {crateStatus.level + 1}</span>
                         </div>
                         <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden">
                           <div className="h-full bg-purple-500 rounded-full transition-all duration-700" style={{ width: `${crateStatus.progress}%` }} />
                         </div>
-                        <p className="text-purple-400 text-xs mt-1.5 text-right">
+                        <p className="text-white/70 text-xs mt-1.5 text-right">
                           {crateStatus.nextLevelPoints - crateStatus.points} points to next level
                         </p>
                       </div>
@@ -4907,7 +4907,7 @@ export default function SolRefund() {
                       <p className="text-center text-yellow-400 font-bold">👑 MAX LEVEL REACHED</p>
                     )}
                     <div className="mt-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20">
-                      <p className="text-purple-300 text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
+                      <p className="text-white/70 text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
                     </div>
                   </div>
 
@@ -4924,7 +4924,7 @@ export default function SolRefund() {
                         </div>
                         <div className="text-center w-full">
                           <p className="text-white font-semibold text-sm">{crate.name}</p>
-                          <p className="text-purple-300 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
+                          <p className="text-white/60 text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
                           {crate.unlocked ? (
                             crate.alreadyOpened ? (
                               <span className="mt-1 inline-block text-xs text-green-400 font-medium">✅ Opened</span>
@@ -4932,7 +4932,7 @@ export default function SolRefund() {
                               <span className="mt-1 inline-block text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-medium">Ready!</span>
                             )
                           ) : (
-                            <span className="mt-1 inline-block text-xs text-purple-400">🔒 Lv {crate.minLevel}</span>
+                            <span className="mt-1 inline-block text-xs text-white/50">🔒 Lv {crate.minLevel}</span>
                           )}
                         </div>
                       </button>
@@ -4952,15 +4952,15 @@ export default function SolRefund() {
                               </div>
                               <div>
                                 <p className="text-white text-sm font-medium capitalize">{h.crateType} Crate</p>
-                                <p className="text-purple-400 text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
+                                <p className="text-white/60 text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className={`font-bold text-sm ${parseFloat(h.solWon) > 0 ? 'text-green-400' : 'text-gray-400'}`}>
+                              <p className={`font-bold text-sm ${parseFloat(h.solWon) > 0 ? 'text-green-400' : 'text-white/60'}`}>
                                 {parseFloat(h.solWon) > 0 ? `+${parseFloat(h.solWon)} SOL` : '0 SOL'}
                               </p>
                               {h.signature && (
-                                <a href={`https://solscan.io/tx/${h.signature}`} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 text-xs underline">tx ↗</a>
+                                <a href={`https://solscan.io/tx/${h.signature}`} target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white text-xs underline">tx ↗</a>
                               )}
                             </div>
                           </div>
@@ -4970,7 +4970,7 @@ export default function SolRefund() {
                   )}
                 </>
               ) : (
-                <div className="text-center py-16 text-violet-300">Failed to load crate status. Please try again.</div>
+                <div className="text-center py-16 text-white">Failed to load crate status. Please try again.</div>
               )}
             </div>
             );
