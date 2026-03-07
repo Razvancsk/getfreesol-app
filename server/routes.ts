@@ -100,27 +100,64 @@ async function checkGfsHolder(walletAddress: string): Promise<boolean> {
 
 const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
 
-async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Promise<void> {
+async function getGfsPriceInSol(): Promise<number | null> {
+  // Try DexScreener first (most reliable for new tokens)
   try {
-    if (!walletAddress || walletAddress === PLATFORM_WALLET) return;
-    if (feeAmountSol <= 0) return;
-
-    // Fetch GFS + SOL price from Jupiter
-    const priceRes = await fetch(
-      `https://lite-api.jup.ag/price/v2?ids=${GFS_MINT},So11111111111111111111111111111111111111112`
+    const res = await fetch(
+      `https://api.dexscreener.com/tokens/v1/solana/${GFS_MINT}`,
+      { headers: { 'Accept': 'application/json' } }
     );
-    const priceData = await priceRes.json();
-    const gfsPriceUsd: number = priceData?.data?.[GFS_MINT]?.price;
-    const solPriceUsd: number = priceData?.data?.['So11111111111111111111111111111111111111112']?.price;
+    const data = await res.json();
+    const pairs: any[] = data?.pairs || data;
+    if (Array.isArray(pairs) && pairs.length > 0) {
+      const sorted = pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+      const priceNative = parseFloat(sorted[0]?.priceNative);
+      if (priceNative > 0) return priceNative; // price in SOL
+    }
+  } catch (e: any) {
+    console.log('[GFS Cashback] DexScreener error:', e.message?.slice(0, 60));
+  }
 
-    if (!gfsPriceUsd || !solPriceUsd || gfsPriceUsd <= 0 || solPriceUsd <= 0) {
-      console.log('[GFS Cashback] Could not get token price, skipping');
+  // Fallback: Jupiter Price API v3
+  try {
+    const WSOL = 'So11111111111111111111111111111111111111112';
+    const res = await fetch(`https://api.jup.ag/price/v3?ids=${GFS_MINT},${WSOL}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await res.json();
+    const gfsUsd: number = data?.data?.[GFS_MINT]?.price;
+    const solUsd: number = data?.data?.[WSOL]?.price;
+    if (gfsUsd > 0 && solUsd > 0) return gfsUsd / solUsd;
+  } catch (e: any) {
+    console.log('[GFS Cashback] Jupiter price error:', e.message?.slice(0, 60));
+  }
+
+  return null;
+}
+
+async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Promise<void> {
+  console.log(`[GFS Cashback] Starting for ${walletAddress?.slice(0, 8)}… fee=${feeAmountSol}`);
+  try {
+    if (!walletAddress || walletAddress === PLATFORM_WALLET) {
+      console.log('[GFS Cashback] Skipped: platform wallet or missing address');
+      return;
+    }
+    const fee = Number(feeAmountSol);
+    if (!fee || fee <= 0 || isNaN(fee)) {
+      console.log(`[GFS Cashback] Skipped: fee is zero/invalid (${feeAmountSol})`);
       return;
     }
 
-    // 30% of fee (SOL) → converted to USD → converted to GFS
-    const cashbackUsd = feeAmountSol * solPriceUsd * 0.30;
-    const gfsAmount = cashbackUsd / gfsPriceUsd;
+    const gfsPriceInSol = await getGfsPriceInSol();
+    if (!gfsPriceInSol || gfsPriceInSol <= 0) {
+      console.log('[GFS Cashback] Could not get GFS price from any source, skipping');
+      return;
+    }
+    console.log(`[GFS Cashback] GFS price: ${gfsPriceInSol} SOL/GFS`);
+
+    // 30% of fee in SOL → converted to GFS
+    const cashbackSol = fee * 0.30;
+    const gfsAmount = cashbackSol / gfsPriceInSol;
     const GFS_DECIMALS = 6;
     const gfsAmountRaw = Math.floor(gfsAmount * Math.pow(10, GFS_DECIMALS));
 
@@ -128,6 +165,7 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
       console.log(`[GFS Cashback] Amount too small (${gfsAmount.toFixed(6)} GFS), skipping`);
       return;
     }
+    console.log(`[GFS Cashback] Sending ${gfsAmount.toFixed(2)} $GFS (${cashbackSol.toFixed(6)} SOL value, 30% of ${fee.toFixed(6)} SOL fee)`);
 
     const { Connection, Keypair, PublicKey, Transaction } = await import('@solana/web3.js');
     const { getAssociatedTokenAddressSync, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
@@ -135,7 +173,7 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
     const heliusKey = process.env.HELIUS_API_KEY;
     const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, 'confirmed');
     const relayerKey = process.env.RELAYER_PRIVATE_KEY;
-    if (!relayerKey) { console.log('[GFS Cashback] No RELAYER_PRIVATE_KEY'); return; }
+    if (!relayerKey) { console.log('[GFS Cashback] No RELAYER_PRIVATE_KEY set'); return; }
 
     const senderKeypair = Keypair.fromSecretKey(bs58.decode(relayerKey));
     const mintPubkey = new PublicKey(GFS_MINT);
@@ -149,6 +187,7 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
     try {
       await getAccount(connection, recipientAta);
     } catch {
+      console.log('[GFS Cashback] Creating recipient ATA...');
       tx.add(createAssociatedTokenAccountInstruction(senderKeypair.publicKey, recipientAta, userPubkey, mintPubkey));
     }
 
@@ -162,9 +201,9 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
     const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
     await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
 
-    console.log(`[GFS Cashback] ✅ Sent ${gfsAmount.toFixed(2)} $GFS to ${walletAddress.slice(0, 8)}… (30% of ${feeAmountSol.toFixed(6)} SOL fee) tx=${sig.slice(0, 20)}…`);
+    console.log(`[GFS Cashback] ✅ Sent ${gfsAmount.toFixed(2)} $GFS to ${walletAddress.slice(0, 8)}… tx=${sig.slice(0, 20)}…`);
   } catch (e: any) {
-    console.error(`[GFS Cashback] ❌ Failed for ${walletAddress}:`, e.message?.slice(0, 120));
+    console.error(`[GFS Cashback] ❌ Error for ${walletAddress?.slice(0, 8)}:`, e.message?.slice(0, 200));
   }
 }
 
