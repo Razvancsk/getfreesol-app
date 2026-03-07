@@ -101,35 +101,60 @@ async function checkGfsHolder(walletAddress: string): Promise<boolean> {
 const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
 
 async function getGfsPriceInSol(): Promise<number | null> {
-  // Try DexScreener first (most reliable for new tokens)
+  // 1) DexScreener (works after token graduates to Raydium)
   try {
-    const res = await fetch(
-      `https://api.dexscreener.com/tokens/v1/solana/${GFS_MINT}`,
-      { headers: { 'Accept': 'application/json' } }
-    );
-    const data = await res.json();
-    const pairs: any[] = data?.pairs || data;
-    if (Array.isArray(pairs) && pairs.length > 0) {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${GFS_MINT}`);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    const pairs: any[] = data?.pairs || [];
+    if (pairs.length > 0) {
       const sorted = pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
       const priceNative = parseFloat(sorted[0]?.priceNative);
-      if (priceNative > 0) return priceNative; // price in SOL
+      if (priceNative > 0) {
+        console.log(`[GFS Cashback] DexScreener price: ${priceNative} SOL/GFS`);
+        return priceNative;
+      }
     }
+    console.log('[GFS Cashback] DexScreener: no pairs found');
   } catch (e: any) {
-    console.log('[GFS Cashback] DexScreener error:', e.message?.slice(0, 60));
+    console.log('[GFS Cashback] DexScreener error:', e.message?.slice(0, 80));
   }
 
-  // Fallback: Jupiter Price API v3
+  // 2) Pump.fun API (works while token is on bonding curve)
+  try {
+    const res = await fetch(`https://frontend-api.pump.fun/coins/${GFS_MINT}`);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    // market_cap_sol and total_supply give us price in SOL
+    const usdMarketCap: number = data?.usd_market_cap;
+    const solPrice: number = data?.sol_price_usd; // SOL price in USD from pump.fun
+    const totalSupply = 1_000_000_000; // pump.fun tokens always have 1B supply
+    if (usdMarketCap > 0 && solPrice > 0) {
+      const priceUsd = usdMarketCap / totalSupply;
+      const priceInSol = priceUsd / solPrice;
+      console.log(`[GFS Cashback] Pump.fun price: ${priceInSol} SOL/GFS (mcap=$${usdMarketCap})`);
+      return priceInSol;
+    }
+    console.log('[GFS Cashback] Pump.fun: no price data');
+  } catch (e: any) {
+    console.log('[GFS Cashback] Pump.fun error:', e.message?.slice(0, 80));
+  }
+
+  // 3) Jupiter Price API v3
   try {
     const WSOL = 'So11111111111111111111111111111111111111112';
-    const res = await fetch(`https://api.jup.ag/price/v3?ids=${GFS_MINT},${WSOL}`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    const data = await res.json();
+    const res = await fetch(`https://api.jup.ag/price/v3?ids=${GFS_MINT},${WSOL}`);
+    const text = await res.text();
+    const data = JSON.parse(text);
     const gfsUsd: number = data?.data?.[GFS_MINT]?.price;
     const solUsd: number = data?.data?.[WSOL]?.price;
-    if (gfsUsd > 0 && solUsd > 0) return gfsUsd / solUsd;
+    if (gfsUsd > 0 && solUsd > 0) {
+      console.log(`[GFS Cashback] Jupiter price: gfs=$${gfsUsd} sol=$${solUsd}`);
+      return gfsUsd / solUsd;
+    }
+    console.log('[GFS Cashback] Jupiter: GFS not priced');
   } catch (e: any) {
-    console.log('[GFS Cashback] Jupiter price error:', e.message?.slice(0, 60));
+    console.log('[GFS Cashback] Jupiter price error:', e.message?.slice(0, 80));
   }
 
   return null;
@@ -167,11 +192,10 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
     }
     console.log(`[GFS Cashback] Sending ${gfsAmount.toFixed(2)} $GFS (${cashbackSol.toFixed(6)} SOL value, 30% of ${fee.toFixed(6)} SOL fee)`);
 
-    const { Connection, Keypair, PublicKey, Transaction } = await import('@solana/web3.js');
+    const { Keypair, PublicKey, Transaction } = await import('@solana/web3.js');
     const { getAssociatedTokenAddressSync, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
 
-    const heliusKey = process.env.HELIUS_API_KEY;
-    const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, 'confirmed');
+    const connection = getHeliusConnection('confirmed');
     const relayerKey = process.env.RELAYER_PRIVATE_KEY;
     if (!relayerKey) { console.log('[GFS Cashback] No RELAYER_PRIVATE_KEY set'); return; }
 
