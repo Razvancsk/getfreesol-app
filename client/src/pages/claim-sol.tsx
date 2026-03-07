@@ -98,7 +98,6 @@ export default function SolRefund() {
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
-  const donationPercentage = effectiveFeePercent; // 7.5% for GFS holders (1M+ tokens), 15% otherwise
   const { isNightMode, toggleTheme } = useTheme();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -309,6 +308,7 @@ export default function SolRefund() {
   });
   const isGfsHolder = gfsDiscountData?.isGfsHolder ?? false;
   const effectiveFeePercent = isGfsHolder ? 7.5 : 15;
+  const donationPercentage = effectiveFeePercent;
 
   const { data: userPoints, isLoading: userPointsLoading } = useQuery({
     queryKey: ['/api/points', pointsWalletAddress],
