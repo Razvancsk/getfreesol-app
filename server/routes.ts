@@ -193,7 +193,8 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
     console.log(`[GFS Cashback] Sending ${gfsAmount.toFixed(2)} $GFS (${cashbackSol.toFixed(6)} SOL value, 30% of ${fee.toFixed(6)} SOL fee)`);
 
     const { Keypair, PublicKey, Transaction } = await import('@solana/web3.js');
-    const { getAssociatedTokenAddressSync, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+    const splToken = await import('@solana/spl-token');
+    const { getAssociatedTokenAddressSync, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } = splToken;
 
     const connection = getHeliusConnection('confirmed');
     const relayerKey = process.env.RELAYER_PRIVATE_KEY;
@@ -202,20 +203,28 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
     const senderKeypair = Keypair.fromSecretKey(bs58.decode(relayerKey));
     const mintPubkey = new PublicKey(GFS_MINT);
     const userPubkey = new PublicKey(walletAddress);
-    const senderAta = getAssociatedTokenAddressSync(mintPubkey, senderKeypair.publicKey);
-    const recipientAta = getAssociatedTokenAddressSync(mintPubkey, userPubkey);
+
+    // Detect whether GFS uses Token or Token-2022 program
+    const mintAccountInfo = await connection.getAccountInfo(mintPubkey);
+    const tokenProgramId = mintAccountInfo?.owner.toBase58() === TOKEN_2022_PROGRAM_ID.toBase58()
+      ? TOKEN_2022_PROGRAM_ID
+      : TOKEN_PROGRAM_ID;
+    console.log(`[GFS Cashback] Token program: ${tokenProgramId.toBase58() === TOKEN_2022_PROGRAM_ID.toBase58() ? 'Token-2022' : 'SPL Token'}`);
+
+    const senderAta = getAssociatedTokenAddressSync(mintPubkey, senderKeypair.publicKey, false, tokenProgramId);
+    const recipientAta = getAssociatedTokenAddressSync(mintPubkey, userPubkey, false, tokenProgramId);
 
     const tx = new Transaction();
 
     // Create recipient ATA if it doesn't exist yet
     try {
-      await getAccount(connection, recipientAta);
+      await getAccount(connection, recipientAta, 'confirmed', tokenProgramId);
     } catch {
       console.log('[GFS Cashback] Creating recipient ATA...');
-      tx.add(createAssociatedTokenAccountInstruction(senderKeypair.publicKey, recipientAta, userPubkey, mintPubkey));
+      tx.add(createAssociatedTokenAccountInstruction(senderKeypair.publicKey, recipientAta, userPubkey, mintPubkey, tokenProgramId));
     }
 
-    tx.add(createTransferInstruction(senderAta, recipientAta, senderKeypair.publicKey, gfsAmountRaw, [], TOKEN_PROGRAM_ID));
+    tx.add(createTransferInstruction(senderAta, recipientAta, senderKeypair.publicKey, gfsAmountRaw, [], tokenProgramId));
 
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
     tx.recentBlockhash = blockhash;
