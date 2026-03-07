@@ -98,7 +98,7 @@ export default function SolRefund() {
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
-  const donationPercentage = 15; // Fixed 15% service fee
+  const donationPercentage = effectiveFeePercent; // 7.5% for GFS holders (1M+ tokens), 15% otherwise
   const { isNightMode, toggleTheme } = useTheme();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -296,7 +296,20 @@ export default function SolRefund() {
 
   // Points queries - need to be after publicKey is defined
   const pointsWalletAddress = publicKey?.toBase58();
-  
+
+  const { data: gfsDiscountData } = useQuery({
+    queryKey: ['/api/user/gfs-discount', pointsWalletAddress],
+    queryFn: async () => {
+      if (!pointsWalletAddress) throw new Error('No wallet');
+      const res = await fetch(`/api/user/gfs-discount/${pointsWalletAddress}`);
+      return res.json();
+    },
+    enabled: !!pointsWalletAddress,
+    staleTime: 60000,
+  });
+  const isGfsHolder = gfsDiscountData?.isGfsHolder ?? false;
+  const effectiveFeePercent = isGfsHolder ? 7.5 : 15;
+
   const { data: userPoints, isLoading: userPointsLoading } = useQuery({
     queryKey: ['/api/points', pointsWalletAddress],
     queryFn: async () => {
@@ -2953,10 +2966,10 @@ export default function SolRefund() {
     setSelectedTokens(new Set());
   };
 
-  // Calculate total SOL to recover (net after 15% fee)
+  // Calculate total SOL to recover (net after fee)
   const calculateTotalSOL = (count: number) => {
     const grossAmount = count * 0.00203928;
-    const netAmount = grossAmount * 0.85; // 15% fee deducted
+    const netAmount = grossAmount * (1 - effectiveFeePercent / 100);
     return `${netAmount.toFixed(6)}`;
   };
 
@@ -3347,8 +3360,8 @@ export default function SolRefund() {
     if (!scanResult) return { total: 0, donation: 0, net: 0 };
 
     const total = parseFloat(scanResult.totalReclaimable);
-    const donation = total * 0.15; // 15% service fee
-    const net = total - donation; // 85% to user
+    const donation = total * (effectiveFeePercent / 100);
+    const net = total - donation;
 
     return { total, donation, net };
   };
@@ -3700,14 +3713,23 @@ export default function SolRefund() {
                 <>
                   {scanResult.emptyAccounts > 0 ? (
                 <div className="space-y-6">
+                  {isGfsHolder && (
+                    <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-2.5">
+                      <span className="text-yellow-300 text-lg">👑</span>
+                      <div>
+                        <p className="text-yellow-300 font-semibold text-sm">GFS Holder — 50% Fee Discount Active!</p>
+                        <p className="text-yellow-200/70 text-xs">You pay {effectiveFeePercent}% instead of 15% — holding 1M+ $GFS tokens</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
                       <div className="text-2xl font-bold text-white">{scanResult.emptyAccounts}</div>
                       <div className="text-xs text-purple-200">Empty Accounts</div>
                     </div>
                     <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
-                      <div className="text-2xl font-bold text-green-400">+{(refundCalc.total * 0.85).toFixed(5)}</div>
-                      <div className="text-xs text-purple-200">To Claim</div>
+                      <div className="text-2xl font-bold text-green-400">+{refundCalc.net.toFixed(5)}</div>
+                      <div className="text-xs text-purple-200">To Claim ({effectiveFeePercent}% fee)</div>
                     </div>
                   </div>
 
@@ -6923,7 +6945,7 @@ export default function SolRefund() {
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">15% service fee supports platform maintenance and development</span>
+                  <span className="text-sm">{effectiveFeePercent}% service fee supports platform maintenance and development{isGfsHolder && <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-1.5 py-0.5 rounded-full font-semibold">50% OFF — GFS Holder</span>}</span>
                 </div>
               </div>
             </div>

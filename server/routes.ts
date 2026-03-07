@@ -77,17 +77,39 @@ function verifySignature(message: string, signature: string, publicKey: string):
 // Helper: Get fee rates based on wallet status
 // Top 10 leaderboard users: 15% platform fee, 70% referral commission
 // Regular users: 15% platform fee, 50% referral commission
-async function getWalletFeeRates(walletAddress: string): Promise<{ feePercent: number; referralPercent: number; isTop10: boolean }> {
+const GFS_MINT = '6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump';
+const GFS_HOLDER_THRESHOLD = 1_000_000; // 1M tokens
+
+async function checkGfsHolder(walletAddress: string): Promise<boolean> {
+  try {
+    const { Connection, PublicKey } = await import('@solana/web3.js');
+    const heliusKey = process.env.HELIUS_API_KEY;
+    if (!heliusKey) return false;
+    const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, 'confirmed');
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+      new PublicKey(walletAddress),
+      { mint: new PublicKey(GFS_MINT) }
+    );
+    if (tokenAccounts.value.length === 0) return false;
+    const uiAmount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+    return uiAmount !== null && uiAmount >= GFS_HOLDER_THRESHOLD;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function getWalletFeeRates(walletAddress: string): Promise<{ feePercent: number; referralPercent: number; isTop10: boolean; gfsHolder: boolean }> {
+  const gfsHolder = await checkGfsHolder(walletAddress);
+  const baseFee = gfsHolder ? 7.5 : 15;
   try {
     const isTop10 = await storage.isTop10Wallet(walletAddress);
     if (isTop10) {
-      // Top 10 users pay 15% fee but earn 70% referral commission
-      return { feePercent: 15, referralPercent: 70, isTop10: true };
+      return { feePercent: baseFee, referralPercent: 70, isTop10: true, gfsHolder };
     }
   } catch (error) {
     console.error('Error checking top 10 status:', error);
   }
-  return { feePercent: 15, referralPercent: 50, isTop10: false };
+  return { feePercent: baseFee, referralPercent: 50, isTop10: false, gfsHolder };
 }
 
 // Helper: Get referrer commission rate based on wallet status
@@ -6426,6 +6448,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===================== END CRATE SYSTEM =====================
 
   // Get comprehensive user stats by wallet address
+  app.get("/api/user/gfs-discount/:walletAddress", async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+      const isGfsHolder = await checkGfsHolder(walletAddress);
+      res.json({ isGfsHolder, feePercent: isGfsHolder ? 7.5 : 15, discount: isGfsHolder ? 50 : 0 });
+    } catch (error) {
+      res.json({ isGfsHolder: false, feePercent: 15, discount: 0 });
+    }
+  });
+
   app.get("/api/user/stats/:walletAddress", async (req, res) => {
     try {
       const { walletAddress } = req.params;
