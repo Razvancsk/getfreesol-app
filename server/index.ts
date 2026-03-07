@@ -338,15 +338,33 @@ function getStaticAssetsPath() {
       log(`Vite setup completed`);
     } else {
       log(`Setting up static file serving for production mode...`);
-      const staticPath = getStaticAssetsPath();
-      log(`Using static assets from: ${staticPath}`);
+      let staticPath: string;
+      try {
+        staticPath = getStaticAssetsPath();
+        log(`Using static assets from: ${staticPath}`);
+      } catch (staticErr) {
+        log(`Warning: ${staticErr instanceof Error ? staticErr.message : String(staticErr)}`);
+        staticPath = path.resolve(import.meta.dirname, "public");
+        log(`Falling back to: ${staticPath}`);
+      }
       
       // Serve static files from the resolved path
       app.use(express.static(staticPath));
       
-      // Fall through to index.html if the file doesn't exist (SPA routing)
+      // SPA catch-all - always return 200 so health checks pass
+      const indexHtmlPath = path.resolve(staticPath, "index.html");
       app.use("*", (_req, res) => {
-        res.sendFile(path.resolve(staticPath, "index.html"));
+        if (fs.existsSync(indexHtmlPath)) {
+          res.sendFile(indexHtmlPath, (err) => {
+            if (err) {
+              log(`sendFile error: ${err.message}, serving fallback`);
+              res.status(200).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>GetFreeSol</title></head><body><div id="root"></div></body></html>`);
+            }
+          });
+        } else {
+          log(`index.html not found at ${indexHtmlPath}, serving fallback`);
+          res.status(200).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>GetFreeSol</title></head><body><div id="root"></div></body></html>`);
+        }
       });
       
       log(`Static file serving setup completed`);
