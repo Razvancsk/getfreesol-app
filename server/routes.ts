@@ -98,6 +98,76 @@ async function checkGfsHolder(walletAddress: string): Promise<boolean> {
   }
 }
 
+const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+
+async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Promise<void> {
+  try {
+    if (!walletAddress || walletAddress === PLATFORM_WALLET) return;
+    if (feeAmountSol <= 0) return;
+
+    // Fetch GFS + SOL price from Jupiter
+    const priceRes = await fetch(
+      `https://lite-api.jup.ag/price/v2?ids=${GFS_MINT},So11111111111111111111111111111111111111112`
+    );
+    const priceData = await priceRes.json();
+    const gfsPriceUsd: number = priceData?.data?.[GFS_MINT]?.price;
+    const solPriceUsd: number = priceData?.data?.['So11111111111111111111111111111111111111112']?.price;
+
+    if (!gfsPriceUsd || !solPriceUsd || gfsPriceUsd <= 0 || solPriceUsd <= 0) {
+      console.log('[GFS Cashback] Could not get token price, skipping');
+      return;
+    }
+
+    // 30% of fee (SOL) → converted to USD → converted to GFS
+    const cashbackUsd = feeAmountSol * solPriceUsd * 0.30;
+    const gfsAmount = cashbackUsd / gfsPriceUsd;
+    const GFS_DECIMALS = 6;
+    const gfsAmountRaw = Math.floor(gfsAmount * Math.pow(10, GFS_DECIMALS));
+
+    if (gfsAmountRaw < 1) {
+      console.log(`[GFS Cashback] Amount too small (${gfsAmount.toFixed(6)} GFS), skipping`);
+      return;
+    }
+
+    const { Connection, Keypair, PublicKey, Transaction } = await import('@solana/web3.js');
+    const { getAssociatedTokenAddressSync, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+
+    const heliusKey = process.env.HELIUS_API_KEY;
+    const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, 'confirmed');
+    const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+    if (!relayerKey) { console.log('[GFS Cashback] No RELAYER_PRIVATE_KEY'); return; }
+
+    const senderKeypair = Keypair.fromSecretKey(bs58.decode(relayerKey));
+    const mintPubkey = new PublicKey(GFS_MINT);
+    const userPubkey = new PublicKey(walletAddress);
+    const senderAta = getAssociatedTokenAddressSync(mintPubkey, senderKeypair.publicKey);
+    const recipientAta = getAssociatedTokenAddressSync(mintPubkey, userPubkey);
+
+    const tx = new Transaction();
+
+    // Create recipient ATA if it doesn't exist yet
+    try {
+      await getAccount(connection, recipientAta);
+    } catch {
+      tx.add(createAssociatedTokenAccountInstruction(senderKeypair.publicKey, recipientAta, userPubkey, mintPubkey));
+    }
+
+    tx.add(createTransferInstruction(senderAta, recipientAta, senderKeypair.publicKey, gfsAmountRaw, [], TOKEN_PROGRAM_ID));
+
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = senderKeypair.publicKey;
+    tx.sign(senderKeypair);
+
+    const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
+    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+
+    console.log(`[GFS Cashback] ✅ Sent ${gfsAmount.toFixed(2)} $GFS to ${walletAddress.slice(0, 8)}… (30% of ${feeAmountSol.toFixed(6)} SOL fee) tx=${sig.slice(0, 20)}…`);
+  } catch (e: any) {
+    console.error(`[GFS Cashback] ❌ Failed for ${walletAddress}:`, e.message?.slice(0, 120));
+  }
+}
+
 async function getWalletFeeRates(walletAddress: string): Promise<{ feePercent: number; referralPercent: number; isTop10: boolean; gfsHolder: boolean }> {
   const gfsHolder = await checkGfsHolder(walletAddress);
   const baseFee = gfsHolder ? 7.5 : 15;
@@ -2596,7 +2666,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (walletAddress !== PLATFORM_WALLET_POINTS) {
         await storage.awardPoints(walletAddress, accountsClosed);
       }
-      
+
+      // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
+      sendGfsCashback(walletAddress, Number(feeAmount)).catch(() => {});
+
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
       if (permanentAssociation && referralFeeAmount > 0) {
@@ -3924,6 +3997,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (walletAddress !== PLATFORM_WALLET_POINTS_TOKEN) {
         await storage.awardPoints(walletAddress, tokensProcessed);
       }
+
+      // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
+      sendGfsCashback(walletAddress, Number(feeAmount)).catch(() => {});
+
       
       // Record referral transaction using permanent association (first referral wins forever)
       const permanentAssociation = await storage.getWalletReferralAssociation(walletAddress);
@@ -4927,6 +5004,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (walletAddress !== PLATFORM_WALLET_POINTS_NFT) {
             await storage.awardPoints(walletAddress, 1);
           }
+          // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)
+          sendGfsCashback(walletAddress, realFeeAmount).catch(() => {});
         } catch (insertError: any) {
           // If it's a duplicate key error, update the existing record with real amounts
           if (insertError?.code === '23505' && insertError?.constraint === 'transaction_ledger_signature_unique') {
