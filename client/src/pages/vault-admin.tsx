@@ -27,6 +27,12 @@ export default function VaultAdmin() {
   const [isBotStarting, setIsBotStarting] = useState(false);
   const [isBotStopping, setIsBotStopping] = useState(false);
 
+  const [gfsDistAmount, setGfsDistAmount] = useState('');
+  const [gfsHolders, setGfsHolders] = useState<Array<{ wallet: string; balance: number }> | null>(null);
+  const [isFetchingHolders, setIsFetchingHolders] = useState(false);
+  const [isDistributing, setIsDistributing] = useState(false);
+  const [distResult, setDistResult] = useState<any>(null);
+
   const vaultQuery = useQuery({
     queryKey: ['/api/coinflip/vault'],
     refetchInterval: authenticated ? 10000 : false,
@@ -151,6 +157,54 @@ export default function VaultAdmin() {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
       setIsBotStarting(false);
+    }
+  };
+
+  const handleFetchHolders = async () => {
+    setIsFetchingHolders(true);
+    setGfsHolders(null);
+    setDistResult(null);
+    try {
+      const res = await fetch(`/api/admin/gfs-distribution/holders?adminSecret=${encodeURIComponent(adminSecret)}`);
+      const data = await res.json();
+      if (data.success) {
+        setGfsHolders(data.holders);
+        toast({ title: `Found ${data.count} eligible holders` });
+      } else {
+        toast({ title: 'Error', description: data.error, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsFetchingHolders(false);
+    }
+  };
+
+  const handleDistribute = async () => {
+    const amount = parseFloat(gfsDistAmount);
+    if (!amount || amount <= 0) {
+      toast({ title: 'Enter a valid token amount', variant: 'destructive' });
+      return;
+    }
+    if (!gfsHolders || gfsHolders.length === 0) {
+      toast({ title: 'Fetch holders first', variant: 'destructive' });
+      return;
+    }
+    setIsDistributing(true);
+    setDistResult(null);
+    try {
+      const res = await apiRequest('POST', '/api/admin/gfs-distribution/distribute', { adminSecret, totalTokens: amount });
+      const data = await res.json();
+      if (data.success) {
+        setDistResult(data);
+        toast({ title: 'Distribution complete!', description: `Sent to ${data.totalHolders} holders` });
+      } else {
+        toast({ title: 'Distribution failed', description: data.error, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDistributing(false);
     }
   };
 
@@ -485,6 +539,83 @@ export default function VaultAdmin() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+
+              {/* GFS Token Distribution */}
+              <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl border border-yellow-500/20 p-6">
+                <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                  👑 $GFS Token Distribution
+                </h2>
+                <p className="text-sm text-gray-400 mb-4">
+                  Distribute GFS tokens equally to all wallets holding 1,000,000+ $GFS. Tokens are sent from the platform wallet.
+                </p>
+
+                {/* Step 1: Fetch holders */}
+                <div className="mb-4">
+                  <Button onClick={handleFetchHolders} disabled={isFetchingHolders} className="bg-blue-600 hover:bg-blue-700">
+                    {isFetchingHolders ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wallet className="w-4 h-4 mr-2" />}
+                    {isFetchingHolders ? 'Scanning holders...' : 'Scan Eligible Holders'}
+                  </Button>
+                </div>
+
+                {gfsHolders !== null && (
+                  <div className="bg-black/30 rounded-lg p-4 mb-4 border border-yellow-500/20">
+                    <p className="text-yellow-300 font-semibold mb-1">✅ {gfsHolders.length} eligible holders found (1M+ $GFS)</p>
+                    {gfsHolders.length > 0 && gfsDistAmount && parseFloat(gfsDistAmount) > 0 && (
+                      <p className="text-gray-300 text-sm">
+                        Each holder receives: <span className="text-white font-semibold">{(parseFloat(gfsDistAmount) / gfsHolders.length).toLocaleString(undefined, { maximumFractionDigits: 2 })} $GFS</span>
+                      </p>
+                    )}
+                    {gfsHolders.length > 0 && (
+                      <div className="mt-2 max-h-32 overflow-y-auto space-y-1">
+                        {gfsHolders.slice(0, 20).map((h, i) => (
+                          <div key={i} className="flex justify-between text-xs text-gray-400">
+                            <span className="font-mono">{h.wallet.slice(0, 12)}…</span>
+                            <span>{h.balance.toLocaleString()} $GFS</span>
+                          </div>
+                        ))}
+                        {gfsHolders.length > 20 && <p className="text-xs text-gray-500">…and {gfsHolders.length - 20} more</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Step 2: Enter amount + distribute */}
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">Total $GFS to Distribute</label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 1000000"
+                      value={gfsDistAmount}
+                      onChange={e => setGfsDistAmount(e.target.value)}
+                      className="bg-black/40 border-yellow-500/30 text-white"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleDistribute}
+                    disabled={isDistributing || !gfsHolders || gfsHolders.length === 0 || !gfsDistAmount}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
+                  >
+                    {isDistributing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                    {isDistributing ? 'Distributing...' : 'Distribute'}
+                  </Button>
+                </div>
+
+                {/* Result */}
+                {distResult && (
+                  <div className="mt-4 bg-green-900/20 border border-green-500/30 rounded-lg p-4 space-y-2">
+                    <p className="text-green-400 font-semibold">✅ Distribution Complete</p>
+                    <p className="text-sm text-gray-300">Sent to <span className="text-white font-semibold">{distResult.totalHolders}</span> holders</p>
+                    <p className="text-sm text-gray-300">Each received: <span className="text-white font-semibold">{distResult.perHolderTokens?.toLocaleString(undefined, { maximumFractionDigits: 2 })} $GFS</span></p>
+                    <p className="text-sm text-gray-300">Transactions: <span className="text-white font-semibold">{distResult.signatures?.length}</span></p>
+                    {distResult.errors?.length > 0 && (
+                      <div className="text-xs text-red-400 mt-1">
+                        {distResult.errors.map((e: string, i: number) => <div key={i}>{e}</div>)}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -10798,6 +10798,109 @@ Claimer: ${walletAddress}`;
     res.json(result);
   });
 
+  // ── GFS Token Distribution ───────────────────────────────────────────────
+
+  app.get("/api/admin/gfs-distribution/holders", async (req, res) => {
+    const { adminSecret } = req.query as { adminSecret?: string };
+    if (!process.env.VAULT_ADMIN_SECRET || adminSecret !== process.env.VAULT_ADMIN_SECRET)
+      return res.status(403).json({ error: 'Unauthorized' });
+    try {
+      const heliusKey = process.env.HELIUS_API_KEY;
+      const GFS_DECIMALS = 6;
+      const THRESHOLD = 1_000_000;
+      const holders: Array<{ wallet: string; balance: number }> = [];
+      let cursor: string | null = null;
+      do {
+        const body: any = { jsonrpc: '2.0', id: '1', method: 'getTokenAccounts', params: { mint: GFS_MINT, limit: 1000, displayOptions: {} } };
+        if (cursor) body.params.cursor = cursor;
+        const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await r.json();
+        const accounts: any[] = data.result?.token_accounts || [];
+        for (const acct of accounts) {
+          const uiAmount = acct.amount / Math.pow(10, GFS_DECIMALS);
+          if (uiAmount >= THRESHOLD) holders.push({ wallet: acct.owner, balance: uiAmount });
+        }
+        cursor = accounts.length === 1000 ? (data.result?.cursor || null) : null;
+      } while (cursor);
+      res.json({ success: true, holders, count: holders.length });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/admin/gfs-distribution/distribute", async (req, res) => {
+    const { adminSecret, totalTokens } = req.body;
+    if (!process.env.VAULT_ADMIN_SECRET || adminSecret !== process.env.VAULT_ADMIN_SECRET)
+      return res.status(403).json({ error: 'Unauthorized' });
+    try {
+      const { Connection, Keypair, PublicKey, Transaction } = await import('@solana/web3.js');
+      const { getAssociatedTokenAddressSync, createTransferInstruction, TOKEN_PROGRAM_ID } = await import('@solana/spl-token');
+      const heliusKey = process.env.HELIUS_API_KEY;
+      const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, 'confirmed');
+      const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+      if (!relayerKey) return res.status(500).json({ error: 'RELAYER_PRIVATE_KEY not set' });
+      const senderKeypair = Keypair.fromSecretKey(bs58.decode(relayerKey));
+      const GFS_DECIMALS = 6;
+      const THRESHOLD = 1_000_000;
+      const BATCH_SIZE = 10;
+
+      // Fetch holders
+      const holders: Array<{ wallet: string; balance: number }> = [];
+      let cursor: string | null = null;
+      do {
+        const body: any = { jsonrpc: '2.0', id: '1', method: 'getTokenAccounts', params: { mint: GFS_MINT, limit: 1000, displayOptions: {} } };
+        if (cursor) body.params.cursor = cursor;
+        const r = await fetch(`https://mainnet.helius-rpc.com/?api-key=${heliusKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await r.json();
+        const accounts: any[] = data.result?.token_accounts || [];
+        for (const acct of accounts) {
+          if (acct.owner === senderKeypair.publicKey.toBase58()) continue; // skip self
+          const uiAmount = acct.amount / Math.pow(10, GFS_DECIMALS);
+          if (uiAmount >= THRESHOLD) holders.push({ wallet: acct.owner, balance: uiAmount });
+        }
+        cursor = accounts.length === 1000 ? (data.result?.cursor || null) : null;
+      } while (cursor);
+
+      if (holders.length === 0) return res.status(400).json({ error: 'No eligible holders found' });
+
+      const perHolderTokens = totalTokens / holders.length;
+      const perHolderRaw = Math.floor(perHolderTokens * Math.pow(10, GFS_DECIMALS));
+      if (perHolderRaw < 1) return res.status(400).json({ error: 'Amount too small to distribute' });
+
+      const senderAta = getAssociatedTokenAddressSync(new PublicKey(GFS_MINT), senderKeypair.publicKey);
+      const signatures: string[] = [];
+      const errors: string[] = [];
+
+      // Process in batches
+      for (let i = 0; i < holders.length; i += BATCH_SIZE) {
+        const batch = holders.slice(i, i + BATCH_SIZE);
+        try {
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+          const tx = new Transaction();
+          tx.recentBlockhash = blockhash;
+          tx.feePayer = senderKeypair.publicKey;
+          for (const holder of batch) {
+            const recipientAta = getAssociatedTokenAddressSync(new PublicKey(GFS_MINT), new PublicKey(holder.wallet));
+            tx.add(createTransferInstruction(senderAta, recipientAta, senderKeypair.publicKey, perHolderRaw, [], TOKEN_PROGRAM_ID));
+          }
+          tx.sign(senderKeypair);
+          const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
+          await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+          signatures.push(sig);
+          console.log(`[GFS Dist] Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} holders → ${sig.slice(0, 20)}…`);
+        } catch (e: any) {
+          errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${e.message?.slice(0, 80)}`);
+          console.error(`[GFS Dist] Batch error:`, e.message);
+        }
+        if (i + BATCH_SIZE < holders.length) await new Promise(r => setTimeout(r, 1000));
+      }
+
+      res.json({ success: true, totalHolders: holders.length, perHolderTokens, signatures, errors });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post("/api/coinflip/play", async (req, res) => {
     try {
       const { walletAddress, betAmount, choice, betTxSignature } = req.body;
