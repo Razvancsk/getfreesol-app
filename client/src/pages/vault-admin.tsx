@@ -20,9 +20,27 @@ export default function VaultAdmin() {
   const [isExporting, setIsExporting] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
+  const [botWalletCount, setBotWalletCount] = useState('3');
+  const [botSolPerWallet, setBotSolPerWallet] = useState('0.05');
+  const [botInterval, setBotInterval] = useState('60');
+  const [botTokensPerCycle, setBotTokensPerCycle] = useState('10');
+  const [isBotStarting, setIsBotStarting] = useState(false);
+  const [isBotStopping, setIsBotStopping] = useState(false);
+
   const vaultQuery = useQuery({
     queryKey: ['/api/coinflip/vault'],
     refetchInterval: authenticated ? 10000 : false,
+  });
+
+  const botStatusQuery = useQuery({
+    queryKey: ['/api/admin/activity-bot/status', adminSecret],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/activity-bot/status?adminSecret=${encodeURIComponent(adminSecret)}`);
+      if (!res.ok) throw new Error('Failed to fetch bot status');
+      return res.json();
+    },
+    enabled: authenticated && !!adminSecret,
+    refetchInterval: authenticated ? 5000 : false,
   });
 
   const vaultData = vaultQuery.data as any;
@@ -110,6 +128,48 @@ export default function VaultAdmin() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: `${label} copied!` });
+  };
+
+  const handleBotStart = async () => {
+    setIsBotStarting(true);
+    try {
+      const res = await apiRequest('POST', '/api/admin/activity-bot/start', {
+        adminSecret,
+        walletCount: parseInt(botWalletCount) || 3,
+        solPerWallet: parseFloat(botSolPerWallet) || 0.05,
+        intervalSeconds: parseInt(botInterval) || 60,
+        tokensPerCycle: parseInt(botTokensPerCycle) || 10,
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: 'Activity Bot started!', description: `${botWalletCount} wallets funded and running` });
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/activity-bot/status', adminSecret] });
+      } else {
+        toast({ title: 'Failed to start', description: data.error, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsBotStarting(false);
+    }
+  };
+
+  const handleBotStop = async () => {
+    setIsBotStopping(true);
+    try {
+      const res = await apiRequest('POST', '/api/admin/activity-bot/stop', { adminSecret });
+      const data = await res.json();
+      if (data.success) {
+        toast({ title: 'Activity Bot stopped', description: 'SOL is being drained back to vault' });
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/activity-bot/status', adminSecret] });
+      } else {
+        toast({ title: 'Failed to stop', description: data.error, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsBotStopping(false);
+    }
   };
 
   return (
@@ -328,6 +388,105 @@ export default function VaultAdmin() {
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Activity Bot */}
+              <div className="bg-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+                <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-400" /> Activity Bot
+                </h2>
+                <p className="text-sm text-gray-400 mb-4">
+                  Automatically swaps tokens and closes empty ATAs using vault wallets to generate platform activity.
+                </p>
+
+                {/* Status banner */}
+                {botStatusQuery.data && (
+                  <div className={`rounded-lg p-3 mb-4 flex items-center justify-between border ${botStatusQuery.data.running ? 'bg-green-900/30 border-green-500/30' : 'bg-gray-900/40 border-gray-600/30'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2.5 h-2.5 rounded-full ${botStatusQuery.data.running ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
+                      <div>
+                        <p className="text-white font-semibold text-sm">
+                          {botStatusQuery.data.running ? `Running — ${botStatusQuery.data.walletCount} wallets` : `Stopped (${botStatusQuery.data.phase})`}
+                        </p>
+                        <p className="text-gray-400 text-xs">{botStatusQuery.data.phaseMessage || `${botStatusQuery.data.totalTxCount} total txs`}</p>
+                      </div>
+                    </div>
+                    {botStatusQuery.data.nextRunIn != null && (
+                      <span className="text-xs text-gray-400">next in {Math.round(botStatusQuery.data.nextRunIn / 1000)}s</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Config */}
+                {(!botStatusQuery.data?.running) && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div>
+                      <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">Wallets</label>
+                      <Input type="number" min="1" max="10" value={botWalletCount} onChange={e => setBotWalletCount(e.target.value)} className="bg-black/40 border-purple-500/30 text-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">SOL / wallet</label>
+                      <Input type="number" step="0.01" min="0.01" value={botSolPerWallet} onChange={e => setBotSolPerWallet(e.target.value)} className="bg-black/40 border-purple-500/30 text-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">Interval (sec)</label>
+                      <Input type="number" min="10" value={botInterval} onChange={e => setBotInterval(e.target.value)} className="bg-black/40 border-purple-500/30 text-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">Tokens / cycle</label>
+                      <Input type="number" min="1" max="20" value={botTokensPerCycle} onChange={e => setBotTokensPerCycle(e.target.value)} className="bg-black/40 border-purple-500/30 text-white" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Start / Stop buttons */}
+                <div className="flex gap-3 mb-4">
+                  {!botStatusQuery.data?.running ? (
+                    <Button onClick={handleBotStart} disabled={isBotStarting} className="bg-green-600 hover:bg-green-700">
+                      {isBotStarting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+                      {isBotStarting ? 'Starting...' : 'Start Bot'}
+                    </Button>
+                  ) : (
+                    <Button onClick={handleBotStop} disabled={isBotStopping} className="bg-red-600 hover:bg-red-700">
+                      {isBotStopping ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      {isBotStopping ? 'Stopping...' : 'Stop Bot'}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Per-wallet table */}
+                {botStatusQuery.data?.wallets?.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead>
+                        <tr className="border-b border-purple-500/20 text-gray-400 uppercase">
+                          <th className="pb-2 pr-3">#</th>
+                          <th className="pb-2 pr-3">Address</th>
+                          <th className="pb-2 pr-3">Balance</th>
+                          <th className="pb-2 pr-3">Txs</th>
+                          <th className="pb-2 pr-3">Step</th>
+                          <th className="pb-2">Error</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {botStatusQuery.data.wallets.map((w: any, i: number) => (
+                          <tr key={i} className="border-b border-purple-500/10 last:border-0">
+                            <td className="py-1.5 pr-3 text-gray-400">{i + 1}</td>
+                            <td className="py-1.5 pr-3">
+                              <a href={`https://solscan.io/account/${w.address}`} target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-white font-mono">
+                                {w.address.slice(0, 8)}…
+                              </a>
+                            </td>
+                            <td className="py-1.5 pr-3 text-white">{w.balance.toFixed(4)}</td>
+                            <td className="py-1.5 pr-3 text-white">{w.txCount}</td>
+                            <td className="py-1.5 pr-3 text-yellow-300">{w.step}</td>
+                            <td className="py-1.5 text-red-400 max-w-[150px] truncate">{w.lastError || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               {/* Fund Instructions */}
