@@ -5,6 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import lossGif from '@assets/tenor_1773011576032.gif';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
@@ -323,13 +324,21 @@ export function CoinFlipGame() {
 
         {/* Result */}
         {showResult && flipResult && (
-          <div className="text-center space-y-1">
+          <div className="text-center space-y-2">
             <div className={`text-2xl font-black uppercase tracking-wider ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
               {flipResult.won ? 'YOU WON' : 'YOU LOST'}
             </div>
             <div className={`text-xl font-bold ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
               {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `-${(betAmount * 1.035).toFixed(6)} SOL`}
             </div>
+            {!flipResult.won && (
+              <img
+                src={lossGif}
+                alt="rekt"
+                className="mx-auto rounded-xl mt-2"
+                style={{ maxHeight: '160px', objectFit: 'cover' }}
+              />
+            )}
           </div>
         )}
       </div>
