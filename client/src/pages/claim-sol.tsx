@@ -3786,7 +3786,7 @@ export default function SolRefund() {
                       data-testid={`filter-btn-${label}`}
                       className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
                         maxTokenValueIndex === index
-                          ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
+                          ? 'bg-purple-600 text-white border-purple-400'
                           : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
                       }`}
                     >
