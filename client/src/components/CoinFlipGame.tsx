@@ -211,11 +211,11 @@ export function CoinFlipGame() {
           toast({
             title: (
               <div className="flex items-center gap-2">
-                <img src={lossGif} alt="rekt" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
+                <img src={lossGif} alt="rekt" style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
                 <span>{getLossMeme()}</span>
               </div>
             ) as any,
-            style: { background: '#6b21a8', color: '#ffffff', border: '1px solid #a855f7', fontFamily: 'monospace', fontWeight: 'bold', padding: '10px 14px', minHeight: 'unset' },
+            style: { background: '#6b21a8', color: '#ffffff', border: '1px solid #a855f7', fontFamily: 'monospace', fontWeight: 'bold', padding: '16px 20px', fontSize: '15px', minHeight: 'unset' },
           });
         }
         setFlipResult(result);
