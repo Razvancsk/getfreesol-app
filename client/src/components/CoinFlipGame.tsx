@@ -8,6 +8,18 @@ import { Loader2 } from 'lucide-react';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
+function timeAgo(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function shortWallet(addr: string): string {
+  return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+}
+
 function playWinSound() {
   try {
     const ctx = new AudioContext();
@@ -59,6 +71,11 @@ export function CoinFlipGame() {
   const vaultQuery = useQuery<{ success: boolean; address: string; balance: number }>({
     queryKey: ['/api/coinflip/vault'],
     refetchInterval: 30000,
+  });
+
+  const recentQuery = useQuery<{ success: boolean; flips: any[] }>({
+    queryKey: ['/api/coinflip/recent'],
+    refetchInterval: 10000,
   });
 
   const vaultAddress = (vaultQuery.data as any)?.address || '';
@@ -416,6 +433,42 @@ export function CoinFlipGame() {
           </svg>
         </div>
         <p className="text-center text-xs text-white mt-2">50/50 odds · Win = 2x your bet · 3.5% fee charged upfront</p>
+      </div>
+
+      {/* Recent Plays */}
+      <div className="mt-6">
+        <h3 className="text-center text-white font-black text-lg uppercase tracking-widest mb-3">Recent Plays</h3>
+        <div className="space-y-2">
+          {recentQuery.isLoading && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+            </div>
+          )}
+          {(recentQuery.data?.flips ?? []).slice(0, 10).map((flip: any) => (
+            <div key={flip.id} className="flex items-center gap-3 bg-[#1a1035] border border-purple-500/20 rounded-xl px-4 py-3">
+              <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center"
+                style={{ background: flip.won ? 'conic-gradient(from 0deg, #f59e0b, #fcd34d, #d97706)' : 'conic-gradient(from 0deg, #6b7280, #9ca3af, #4b5563)' }}>
+                <span className="text-xs font-black text-white">{flip.result === 'heads' ? 'H' : 'T'}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-gray-300 text-sm">
+                  <span className="font-mono text-white">{shortWallet(flip.walletAddress)}</span>
+                  {' flipped '}
+                  <span className="font-bold text-white">{parseFloat(flip.betAmount).toFixed(3)}</span>
+                  {' and '}
+                  {flip.won
+                    ? <span className="font-bold text-green-400">doubled.</span>
+                    : <span className="text-gray-400">got rugged.</span>
+                  }
+                </span>
+              </div>
+              <span className="text-gray-500 text-xs shrink-0">{timeAgo(flip.createdAt)}</span>
+            </div>
+          ))}
+          {!recentQuery.isLoading && (recentQuery.data?.flips ?? []).length === 0 && (
+            <p className="text-center text-gray-500 text-sm py-4">No flips yet — be the first!</p>
+          )}
+        </div>
       </div>
 
     </div>
