@@ -90,7 +90,11 @@ export function CoinFlipGame() {
       return;
     }
 
-    const maxPayout = betAmount * 2;
+    const FEE_RATE = 0.035;
+    const feeAmount = betAmount * FEE_RATE;
+    const totalCharge = betAmount + feeAmount; // bet + 3.5% fee paid upfront
+    const maxPayout = betAmount * 2; // win = full 2x bet
+
     if (vaultBalance < maxPayout) {
       toast({ title: 'Vault balance too low for this bet', description: `Vault has ${vaultBalance.toFixed(4)} SOL but needs ${maxPayout.toFixed(4)} SOL to cover a win. Try a smaller bet.`, variant: 'destructive' });
       return;
@@ -101,7 +105,8 @@ export function CoinFlipGame() {
     setShowResult(false);
 
     try {
-      const lamports = Math.floor(betAmount * LAMPORTS_PER_SOL);
+      // Send bet + fee to vault in one transaction
+      const lamports = Math.floor(totalCharge * LAMPORTS_PER_SOL);
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -281,7 +286,7 @@ export function CoinFlipGame() {
               {flipResult.won ? 'YOU WON' : 'YOU LOST'}
             </div>
             <div className={`text-xl font-bold ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
-              {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `${betAmount} SOL`}
+              {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `-${(betAmount * 1.035).toFixed(6)} SOL`}
             </div>
           </div>
         )}
@@ -343,6 +348,26 @@ export function CoinFlipGame() {
         </div>
       </div>
 
+      {/* Fee breakdown */}
+      <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl px-4 py-3 text-sm">
+        <div className="flex justify-between text-gray-400">
+          <span>Bet</span>
+          <span className="text-white font-bold">{betAmount} SOL</span>
+        </div>
+        <div className="flex justify-between text-gray-400 mt-1">
+          <span>Fee (3.5%)</span>
+          <span className="text-yellow-400 font-bold">{(betAmount * 0.035).toFixed(6)} SOL</span>
+        </div>
+        <div className="border-t border-purple-500/30 mt-2 pt-2 flex justify-between">
+          <span className="text-gray-300 font-bold">You pay</span>
+          <span className="text-white font-black">{(betAmount * 1.035).toFixed(6)} SOL</span>
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-gray-400">Win returns</span>
+          <span className="text-green-400 font-black">{(betAmount * 2).toFixed(6)} SOL</span>
+        </div>
+      </div>
+
       {/* DOUBLE OR NOTHING button */}
       <div className="pt-2">
         <button
@@ -390,7 +415,7 @@ export function CoinFlipGame() {
             <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
           </svg>
         </div>
-        <p className="text-center text-xs text-white mt-2">50/50 odds · 3.5% fee · Win = 1.93x your bet</p>
+        <p className="text-center text-xs text-white mt-2">50/50 odds · Win = 2x your bet · 3.5% fee charged upfront</p>
       </div>
 
     </div>

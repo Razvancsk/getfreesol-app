@@ -10819,13 +10819,14 @@ Claimer: ${walletAddress}`;
       }
 
       const receivedLamports = postBalances[vaultIndex] - preBalances[vaultIndex];
-      const expectedLamports = Math.floor(bet * LAMPORTS_PER_SOL);
+      // Player sends bet + fee (bet * 1.035) to vault
+      const expectedLamports = Math.floor(bet * (1 + PLATFORM_FEE_RATE) * LAMPORTS_PER_SOL);
       if (receivedLamports < expectedLamports * 0.99) {
-        return res.status(400).json({ error: 'Transaction amount does not match bet amount' });
+        return res.status(400).json({ error: 'Transaction amount does not match bet + fee amount' });
       }
 
       const vaultKeypair = getVaultKeypair();
-      const maxPossiblePayout = Math.floor((bet * 2 * (1 - PLATFORM_FEE_RATE)) * LAMPORTS_PER_SOL);
+      const maxPossiblePayout = Math.floor(bet * 2 * LAMPORTS_PER_SOL); // Win = full 2x bet
       const recipientPubkey = new PublicKey(walletAddress);
 
       const heliusKey = process.env.HELIUS_API_KEY;
@@ -10867,13 +10868,13 @@ Claimer: ${walletAddress}`;
       const won = choice === result;
 
       let payoutAmount = 0;
-      let platformFee = 0;
+      const platformFee = bet * PLATFORM_FEE_RATE; // 3.5% of bet — always collected
       let payoutTxSignature: string | null = null;
+      const platformWallet = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const feeLamports = Math.floor(platformFee * LAMPORTS_PER_SOL);
 
       if (won) {
-        const grossPayout = bet * 2;
-        platformFee = grossPayout * PLATFORM_FEE_RATE;
-        payoutAmount = grossPayout - platformFee;
+        payoutAmount = bet * 2; // Full 2x — fee was paid upfront
 
         try {
           const payoutLamports = Math.floor(payoutAmount * LAMPORTS_PER_SOL);
@@ -10922,6 +10923,25 @@ Claimer: ${walletAddress}`;
         }
       } else {
         console.log(`🎰 Coin flip LOSS: ${walletAddress} bet ${bet} SOL, result: ${result}`);
+      }
+
+      // Always transfer 3.5% fee to platform wallet (fee was included in player's upfront payment)
+      try {
+        const feeTx = new Transaction().add(
+          SystemProgram.transfer({
+            fromPubkey: vaultKeypair.publicKey,
+            toPubkey: platformWallet,
+            lamports: feeLamports,
+          })
+        );
+        const { blockhash: feeBlockhash } = await payoutConnection.getLatestBlockhash('confirmed');
+        feeTx.recentBlockhash = feeBlockhash;
+        feeTx.feePayer = vaultKeypair.publicKey;
+        feeTx.sign(vaultKeypair);
+        const feeSig = await payoutConnection.sendRawTransaction(feeTx.serialize(), { skipPreflight: true, maxRetries: 3 });
+        console.log(`🎰 Fee ${platformFee} SOL sent to platform wallet, tx: ${feeSig}`);
+      } catch (feeErr: any) {
+        console.error('⚠️ Fee transfer to platform wallet failed (non-critical):', feeErr.message);
       }
 
       await db.insert(coinFlips).values({
