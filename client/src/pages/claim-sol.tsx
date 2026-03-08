@@ -12,7 +12,6 @@ import { Link, useLocation } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun, BookOpen } from "lucide-react";
@@ -3771,37 +3770,34 @@ export default function SolRefund() {
                 <span className={`text-base font-bold ${burnMode === 'swap' ? 'text-green-400' : 'text-purple-400'}`}>Swap</span>
               </div>
 
-              {/* Value Filter Slider - Always visible */}
+              {/* Value Filter Buttons - Always visible */}
               <div className="mb-6 space-y-3">
                 <p className="text-sm text-green-400 font-medium">
                   {currentMaxTokenValue === null 
                     ? 'All tokens being displayed.'
                     : `Showing tokens worth up to $${currentMaxTokenValue}.`}
                 </p>
-                
-                <Slider
-                  value={[maxTokenValueIndex]}
-                  onValueChange={(value) => {
-                    const index = Math.round(value[0]);
-                    setMaxTokenValueIndex(index);
-                  }}
-                  max={4}
-                  step={1}
-                  className="w-full"
-                  data-testid="slider-token-value"
-                />
-                
-                <div className="flex justify-between text-xs text-purple-300">
-                  <span>$1</span>
-                  <span>$10</span>
-                  <span>$30</span>
-                  <span>$100</span>
-                  <span>All</span>
+
+                <div className="flex gap-2 flex-wrap">
+                  {[['$1', 0], ['$10', 1], ['$30', 2], ['$100', 3], ['All', 4]].map(([label, index]) => (
+                    <button
+                      key={label}
+                      onClick={() => setMaxTokenValueIndex(index as number)}
+                      data-testid={`filter-btn-${label}`}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                        maxTokenValueIndex === index
+                          ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-500/30'
+                          : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-                
+
                 <p className="text-xs text-yellow-400 flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <span>This slider cannot be 100% accurate. Always double check the items you're about to {burnMode === 'swap' ? 'swap' : 'burn'}.</span>
+                  <span>These filters cannot be 100% accurate. Always double check the items you're about to {burnMode === 'swap' ? 'swap' : 'burn'}.</span>
                 </p>
               </div>
 
