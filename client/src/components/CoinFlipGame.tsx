@@ -20,19 +20,19 @@ function timeAgo(dateStr: string): string {
 
 
 const LOSS_MEMES = [
-  "Better luck next time fucker. 💀",
-  "You absolute clown. 🤡",
+  "Better luck next time fucker.",
+  "You absolute clown.",
   "Skill issue.",
-  "Your ancestors are disappointed. 😔",
+  "Your ancestors are disappointed.",
   "ngmi.",
-  "Bro really thought. 💀",
+  "Bro really thought.",
   "Touch grass, then try again.",
   "The coin said no lmaooo",
-  "Delete your wallet. 🗑️",
+  "Delete your wallet.",
   "It's not the coin's fault.",
   "Have you tried being less poor?",
   "Rekt. Stay rekt.",
-  "Even the vault feels bad for you. 😂",
+  "Even the vault feels bad for you.",
   "L + ratio + no SOL.",
   "Imagine losing 50/50. Couldn't be me.",
 ];
