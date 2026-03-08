@@ -10777,7 +10777,7 @@ Claimer: ${walletAddress}`;
         });
       }
 
-      const PLATFORM_FEE_RATE = 0;
+      const PLATFORM_FEE_RATE = 0.035;
       const VAULT_ADDRESS = getVaultAddress();
       const rpcUrl = getHeliusRpcUrl();
       const connection = getHeliusConnection();
