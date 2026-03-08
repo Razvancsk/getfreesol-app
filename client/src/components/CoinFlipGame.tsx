@@ -209,9 +209,11 @@ export function CoinFlipGame() {
         } else {
           playLoseSound();
           toast({
-            title: getLossMeme(),
-            description: (
-              <img src={lossGif} alt="rekt" className="rounded-lg mt-1" style={{ width: '80px', height: '80px', objectFit: 'cover' }} />
+            title: (
+              <div className="flex items-center gap-2">
+                <img src={lossGif} alt="rekt" style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
+                <span>{getLossMeme()}</span>
+              </div>
             ) as any,
             style: { background: '#f5c542', color: '#1a1a1a', border: '2px solid #d4a017', fontFamily: 'monospace', fontWeight: 'bold' },
           });
