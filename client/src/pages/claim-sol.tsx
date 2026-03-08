@@ -3778,13 +3778,13 @@ export default function SolRefund() {
                     : `Showing tokens worth up to $${currentMaxTokenValue}.`}
                 </p>
 
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 md:gap-3 flex-wrap">
                   {[['$1', 0], ['$10', 1], ['$30', 2], ['$100', 3], ['All', 4]].map(([label, index]) => (
                     <button
                       key={label}
                       onClick={() => setMaxTokenValueIndex(index as number)}
                       data-testid={`filter-btn-${label}`}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
+                      className={`px-4 py-2 md:px-7 md:py-3 rounded-xl text-sm md:text-base font-bold border transition-all ${
                         maxTokenValueIndex === index
                           ? 'bg-purple-600 text-white border-purple-400'
                           : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
