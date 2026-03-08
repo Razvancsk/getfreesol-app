@@ -467,8 +467,8 @@ export function CoinFlipGame() {
                   <div className="text-white text-center text-sm font-semibold">
                     {parseFloat(flip.betAmount).toFixed(4)} SOL
                   </div>
-                  <div className={`text-center text-sm font-bold ${flip.won ? 'text-green-400' : 'text-gray-400'}`}>
-                    {flip.won ? 'Doubled ✓' : 'Rugged'}
+                  <div className={`text-center text-sm font-bold ${flip.won ? 'text-green-400' : 'text-red-400'}`}>
+                    {flip.won ? 'Doubled' : 'Rugged'}
                   </div>
                   <div className="text-white text-center text-sm">
                     {timeAgo(flip.createdAt)}
