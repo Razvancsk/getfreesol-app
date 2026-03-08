@@ -8,6 +8,14 @@ import { Loader2 } from 'lucide-react';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
+function timeAgo(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return `${diff} sec ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  return `${Math.floor(diff / 86400)} day ago`;
+}
+
 
 
 function playWinSound() {
@@ -436,7 +444,7 @@ export function CoinFlipGame() {
               <div className="text-sm font-semibold uppercase tracking-wider text-purple-200">WALLET/TX</div>
               <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">BET</div>
               <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">RESULT</div>
-              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">DATE</div>
+              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">AGE</div>
             </div>
 
             {/* Rows */}
@@ -463,13 +471,7 @@ export function CoinFlipGame() {
                     {flip.won ? 'Doubled ✓' : 'Rugged'}
                   </div>
                   <div className="text-white text-center text-sm">
-                    {new Date(flip.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true,
-                    })}
+                    {timeAgo(flip.createdAt)}
                   </div>
                 </div>
                 <div className="border-b border-purple-500/10" />
