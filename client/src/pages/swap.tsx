@@ -369,7 +369,6 @@ export default function SwapPage() {
         const signature = executeData.signature;
         
         queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/points/leaderboard'] });
         
         toast({
           title: 'Swap Successful!',

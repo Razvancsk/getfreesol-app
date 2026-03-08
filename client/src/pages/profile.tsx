@@ -13,7 +13,6 @@ interface UserStats {
   totalAccountsClosed: number;
   totalTokensBurned: number;
   totalNftsBurned: number;
-  totalPoints: number;
   referralCode: string;
   referralEarnings: number;
 }
@@ -27,7 +26,7 @@ interface LeaderboardEntry {
 export default function ProfilePage() {
   const { publicKey } = useWalletAdapter();
   const { toast } = useToast();
-  const [pointsLeaderboardPeriod, setPointsLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
 
   const { data: stats, isLoading } = useQuery<UserStats>({
     queryKey: ['/api/user/stats', publicKey?.toString()],
@@ -40,9 +39,9 @@ export default function ProfilePage() {
   });
 
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery<{ success: boolean; leaderboard: LeaderboardEntry[] }>({
-    queryKey: ['/api/statistics/leaderboard', pointsLeaderboardPeriod],
+    queryKey: ['/api/statistics/leaderboard', leaderboardPeriod],
     queryFn: async () => {
-      const period = pointsLeaderboardPeriod === 'weekly' ? 'weekly' : 'all';
+      const period = leaderboardPeriod === 'weekly' ? 'weekly' : 'all';
       const response = await fetch(`/api/statistics/leaderboard?period=${period}&limit=10`);
       if (!response.ok) throw new Error('Failed to fetch leaderboard');
       return response.json();
@@ -131,17 +130,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="bg-slate-800/80 border border-purple-500/30 rounded-xl p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-300 text-sm">Total Points</p>
-                  <p className="text-2xl font-bold text-white" data-testid="text-total-points">
-                    {isLoading ? '...' : (stats?.totalPoints || 0)}
-                  </p>
-                </div>
-                <Trophy className="h-8 w-8 text-purple-400" />
-              </div>
-            </div>
           </div>
 
           {stats?.referralCode && (
@@ -197,22 +185,22 @@ export default function ProfilePage() {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className={pointsLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
-                  onClick={() => setPointsLeaderboardPeriod('weekly')}
+                  className={leaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                  onClick={() => setLeaderboardPeriod('weekly')}
                 >
                   7 Days
                 </Button>
                 <Button
                   size="sm"
-                  className={pointsLeaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
-                  onClick={() => setPointsLeaderboardPeriod('all')}
+                  className={leaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-transparent border border-purple-500 text-purple-200 hover:bg-purple-700/50'}
+                  onClick={() => setLeaderboardPeriod('all')}
                 >
                   All Time
                 </Button>
               </div>
             </div>
             <p className="text-purple-300 text-sm mb-4">
-              {pointsLeaderboardPeriod === 'weekly' ? 'Top SOL claimers in the last 7 days' : 'Top 10 users with the most SOL recovered'}
+              {leaderboardPeriod === 'weekly' ? 'Top SOL claimers in the last 7 days' : 'Top 10 users with the most SOL recovered'}
             </p>
             
             {isLoadingLeaderboard ? (

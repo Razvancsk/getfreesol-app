@@ -658,9 +658,8 @@ export function DexPanel() {
       if (executeData.status === "Success") {
         const signature = executeData.signature;
         
-        // Invalidate user stats and points queries to refresh after swap
+        // Invalidate user stats query to refresh after swap
         queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/points/leaderboard'] });
         
         // Refresh token holdings after successful swap (with small delay for blockchain sync)
         setTimeout(() => {
@@ -674,9 +673,6 @@ export function DexPanel() {
               <p>Transaction confirmed on Solana blockchain</p>
               {executeData.rebatesEnabled && (
                 <p className="text-cyan-300 font-semibold">💰 MEV rebates enabled - earning SOL!</p>
-              )}
-              {executeData.pointsAwarded > 0 && (
-                <p className="text-yellow-300 font-semibold">+{executeData.pointsAwarded} points earned!</p>
               )}
               <a 
                 href={`https://solscan.io/tx/${signature}`}

@@ -385,9 +385,8 @@ export function SwapPanel() {
         const signature = executeData.signature;
         console.log('✅ Ultra Swap successful:', signature);
         
-        // Invalidate user stats and points queries to refresh after swap
+        // Invalidate user stats query to refresh after swap
         queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/points/leaderboard'] });
         
         toast({
           title: 'Swap Successful!',

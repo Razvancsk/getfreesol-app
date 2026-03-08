@@ -101,14 +101,13 @@ export default function SolRefund() {
   const { isNightMode, toggleTheme } = useTheme();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'points' | 'coinflip' | 'crates'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip'>('reclaim');
   const [claimSubTab, setClaimSubTab] = useState<'empty' | 'programs'>('empty');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [showDevAccountModal, setShowDevAccountModal] = useState(false);
   const [devProjectName, setDevProjectName] = useState('');
-  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
+  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
-  const [pointsLeaderboardPeriod, setPointsLeaderboardPeriod] = useState<'weekly' | 'all'>('all');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -120,31 +119,6 @@ export default function SolRefund() {
   const [userReferralCode, setUserReferralCode] = useState<string | null>(null);
   const [enteringGiveaway, setEnteringGiveaway] = useState(false);
   const [viewProfileWallet, setViewProfileWallet] = useState<string | null>(null);
-
-  // Crate system state
-  const [crateOpening, setCrateOpening] = useState<string | null>(null);
-  const [crateResult, setCrateResult] = useState<{ solWon: number; crateType: string; crateName: string; emoji: string; signature: string | null } | null>(null);
-  const [crateShowResult, setCrateShowResult] = useState(false);
-  const [crateError, setCrateError] = useState<string | null>(null);
-  const [cratePreviewId, setCratePreviewId] = useState<string | null>(null);
-
-  const CRATE_COLORS: Record<string, string> = {
-    genesis: 'from-gray-300 to-gray-500',
-    pulse:   'from-green-400 to-green-600',
-    orbit:   'from-blue-400 to-blue-600',
-    vertex:  'from-purple-400 to-purple-600',
-    prism:   'from-yellow-300 to-yellow-500',
-    nova:    'from-red-400 to-red-600',
-    spectra: 'from-orange-400 to-orange-500',
-    quantum: 'from-slate-100 to-white',
-    eclipse: 'from-indigo-500 to-blue-900',
-    apex:    'from-yellow-300 to-amber-500',
-  };
-  const CrateGiftIcon = ({ crateId, className = '' }: { crateId: string; className?: string }) => (
-    <div className={`bg-gradient-to-br ${CRATE_COLORS[crateId] || 'from-gray-400 to-gray-600'} rounded-xl flex items-center justify-center shadow-lg ${className}`}>
-      🎁
-    </div>
-  );
 
   // Selection states for bulk burning
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
@@ -293,7 +267,6 @@ export default function SolRefund() {
   
   const rpcConnection = connection;
 
-  // Points queries - need to be after publicKey is defined
   const pointsWalletAddress = publicKey?.toBase58();
 
   const { data: gfsDiscountData } = useQuery({
@@ -309,75 +282,6 @@ export default function SolRefund() {
   const isGfsHolder = gfsDiscountData?.isGfsHolder ?? false;
   const effectiveFeePercent = isGfsHolder ? 7.5 : 15;
   const donationPercentage = effectiveFeePercent;
-
-  const { data: userPoints, isLoading: userPointsLoading } = useQuery({
-    queryKey: ['/api/points', pointsWalletAddress],
-    queryFn: async () => {
-      if (!pointsWalletAddress) throw new Error('Wallet address required');
-      const response = await fetch(`/api/points/${pointsWalletAddress}`);
-      if (!response.ok) throw new Error('Failed to fetch user points');
-      return response.json();
-    },
-    enabled: activeTab === 'points' && !!pointsWalletAddress,
-  });
-
-  const { data: pointsLeaderboard, isLoading: pointsLeaderboardLoading } = useQuery({
-    queryKey: ['/api/points/leaderboard', pointsLeaderboardPeriod],
-    queryFn: async () => {
-      const response = await fetch(`/api/points/leaderboard?limit=100&period=${pointsLeaderboardPeriod}`);
-      if (!response.ok) throw new Error('Failed to fetch leaderboard');
-      return response.json();
-    },
-    enabled: activeTab === 'points',
-  });
-
-  const { data: crateStatus, isLoading: crateStatusLoading, refetch: refetchCrateStatus } = useQuery({
-    queryKey: ['/api/crates/status', pointsWalletAddress],
-    queryFn: async () => {
-      if (!pointsWalletAddress) throw new Error('Wallet required');
-      const response = await fetch(`/api/crates/status/${pointsWalletAddress}`);
-      if (!response.ok) throw new Error('Failed to fetch crate status');
-      return response.json();
-    },
-    enabled: activeTab === 'crates' && !!pointsWalletAddress,
-    refetchInterval: 5000,
-  });
-
-  const { data: crateHistory, refetch: refetchCrateHistory } = useQuery({
-    queryKey: ['/api/crates/history', pointsWalletAddress],
-    queryFn: async () => {
-      if (!pointsWalletAddress) throw new Error('Wallet required');
-      const response = await fetch(`/api/crates/history/${pointsWalletAddress}`);
-      if (!response.ok) throw new Error('Failed to fetch crate history');
-      return response.json();
-    },
-    enabled: activeTab === 'crates' && !!pointsWalletAddress,
-  });
-
-  async function openCrate(crateTypeId: string) {
-    if (!publicKey) return;
-    setCrateOpening(crateTypeId);
-    setCrateError(null);
-    try {
-      const response = await fetch('/api/crates/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: publicKey.toBase58(), crateType: crateTypeId }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setCrateError(data.error || 'Failed to open crate');
-      } else {
-        setCrateResult(data);
-        setCrateShowResult(true);
-        await Promise.all([refetchCrateStatus(), refetchCrateHistory()]);
-      }
-    } catch (err) {
-      setCrateError('Network error. Please try again.');
-    } finally {
-      setCrateOpening(null);
-    }
-  }
 
   // Function to fetch wallet balance for a specific token (for Lend deposit dialog)
   const fetchTokenBalance = async (tokenMint: string) => {
@@ -3055,8 +2959,7 @@ export default function SolRefund() {
           }
         }
 
-        // Save successful transaction to database and get points message (with retries)
-        let pointsMessage = '';
+        // Save successful transaction to database (with retries)
         const recordData = {
           signature,
           walletAddress: data.walletAddress,
@@ -3083,8 +2986,6 @@ export default function SolRefund() {
             });
 
             if (dbResponse.ok) {
-              const dbResult = await dbResponse.json();
-              pointsMessage = dbResult.message || '';
               console.log('✅ Transaction recorded and posted to X successfully');
               recordSuccess = true;
               break;
@@ -3111,7 +3012,6 @@ export default function SolRefund() {
           accountsClosed: data.selectedAccounts.length, // Correct number of accounts processed
           totalReceived: netAmount,
           feeAmount: feeAmount,
-          pointsMessage: pointsMessage,
           rebateAmount: rebateAmount,
           message: `Transaction sent successfully! Check: https://solscan.io/tx/${signature}`
         };
@@ -3573,7 +3473,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'points' ? 'Earn points for every account you close!' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'crates' ? 'Level up. Unlock crates. Win SOL.' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3660,19 +3560,6 @@ export default function SolRefund() {
                   <span className="text-base md:text-xl">🪙</span> Flip
                 </Button>
                 )}
-                <div className="relative flex-1 md:flex-none">
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 text-xs bg-green-500 text-white font-bold px-2 py-0.5 rounded-full leading-none pointer-events-none">NEW</span>
-                  <Button
-                    onClick={() => setActiveTab('crates')}
-                    className={`w-full md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
-                      activeTab === 'crates'
-                        ? 'bg-purple-600 text-white border-purple-500'
-                        : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
-                    }`}
-                  >
-                    <span className="text-base md:text-xl">🎁</span> Crates
-                  </Button>
-                </div>
               </div>
             </div>
           )}
@@ -4579,423 +4466,12 @@ export default function SolRefund() {
             </>
           )}
 
-          {/* Points Tab Content */}
-          {activeTab === 'points' && (() => {
-            const walletAddress = pointsWalletAddress;
-            
-            const truncateAddress = (address: string) => {
-              return `${address.slice(0, 4)}...${address.slice(-4)}`;
-            };
-
-            const getRankBadgeColor = (rank: number) => {
-              if (rank === 1) return "bg-yellow-500 text-black";
-              if (rank === 2) return "bg-gray-300 text-black";
-              if (rank === 3) return "bg-orange-600 text-white";
-              return "bg-purple-600 text-white";
-            };
-
-            const getUserRank = () => {
-              return userPoints?.rank || null;
-            };
-
-            return (
-              <div className="-mx-4 md:mx-0">
-                <div className="space-y-8 md:space-y-6">
-                  {/* Whales Market Voting Card */}
-                  <Card className="bg-gradient-to-r from-purple-600 to-pink-600 border-pink-500 backdrop-blur shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col items-center text-center space-y-4">
-                        <img 
-                          src={whalesMarketLogo} 
-                          alt="Whales Market" 
-                          className="w-20 h-20 object-contain"
-                        />
-                        <h3 className="text-2xl font-bold text-white">
-                          Vote for GetFreeSol on Whales Market!
-                        </h3>
-                        <p className="text-white/90 max-w-2xl">
-                          Help boost the future of $GFS Points by voting for us on Whales Market. Your support matters!
-                        </p>
-                        <div className="bg-white/10 rounded-lg p-4 max-w-2xl">
-                          <p className="text-white text-sm">
-                            Mention "GetFreeSol" and "@getfreesol_xyz" in conversations (no spamming!)
-                          </p>
-                        </div>
-                        <a
-                          href="https://discord.gg/nWtveZhnra"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-700 rounded-lg font-bold hover:bg-purple-100 transition-colors shadow-lg"
-                          data-testid="button-whales-vote"
-                        >
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z"/>
-                          </svg>
-                          Join Discord & Vote Now
-                        </a>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* User Points Card */}
-                  {walletAddress && (
-                    <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <Star className="w-5 h-5 text-yellow-400" />
-                        Your Points
-                      </CardTitle>
-                      <CardDescription className="text-purple-200">
-                        Your current ranking and statistics
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {userPointsLoading ? (
-                        <div className="text-center py-4 text-purple-300">Loading your points...</div>
-                      ) : (
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">Total Points</div>
-                            <div className="text-4xl font-bold text-yellow-400" data-testid="text-user-points">
-                              {userPoints?.points || 0}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">SOL Claimed</div>
-                            <div className="text-4xl font-bold text-green-400 flex items-center justify-center gap-2" data-testid="text-user-sol">
-                              <svg className="h-8 w-8" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
-                                <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                                <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                                <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                              </svg>
-                              {userPoints?.totalSolClaimed ? parseFloat(userPoints.totalSolClaimed).toFixed(4) : '0.0000'}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">Accounts Closed</div>
-                            <div className="text-4xl font-bold text-white" data-testid="text-user-accounts">
-                              {userPoints?.accountsClosed || 0}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-sm text-purple-300 mb-1">Your Rank</div>
-                            <div className="text-4xl font-bold text-white" data-testid="text-user-rank">
-                              {getUserRank() ? `#${getUserRank()}` : '-'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Leaderboard Card */}
-                <Card className="bg-purple-800/50 border-purple-600 backdrop-blur">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <Trophy className="w-5 h-5 text-yellow-400" />
-                        Top 10 Leaders
-                      </CardTitle>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant={pointsLeaderboardPeriod === 'weekly' ? 'default' : 'outline'}
-                          className={pointsLeaderboardPeriod === 'weekly' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
-                          onClick={() => setPointsLeaderboardPeriod('weekly')}
-                        >
-                          7 Days
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={pointsLeaderboardPeriod === 'all' ? 'default' : 'outline'}
-                          className={pointsLeaderboardPeriod === 'all' ? 'bg-purple-600 hover:bg-purple-700' : 'border-purple-500 text-purple-200 hover:bg-purple-700/50'}
-                          onClick={() => setPointsLeaderboardPeriod('all')}
-                        >
-                          All Time
-                        </Button>
-                      </div>
-                    </div>
-                    <CardDescription className="text-purple-200">
-                      {pointsLeaderboardPeriod === 'weekly' ? 'Points earned in the last 7 days' : 'Top 10 users with the most points'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {pointsLeaderboardLoading ? (
-                      <div className="text-center py-8 text-purple-300">Loading leaderboard...</div>
-                    ) : pointsLeaderboard?.leaderboard && pointsLeaderboard.leaderboard.length > 0 ? (
-                      <div>
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="border-purple-600 hover:bg-purple-700/50">
-                              <TableHead className="text-purple-200 w-16">Rank</TableHead>
-                              <TableHead className="text-purple-200">Wallet</TableHead>
-                              <TableHead className="text-purple-200 text-right">Points</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {pointsLeaderboard.leaderboard.slice(0, 10).map((entry: any) => (
-                              <TableRow 
-                                key={entry.walletAddress}
-                                className={`border-purple-600 hover:bg-purple-700/50 ${
-                                  entry.walletAddress === walletAddress ? 'bg-purple-700/70' : ''
-                                }`}
-                                data-testid={`row-leaderboard-${entry.rank}`}
-                              >
-                                <TableCell className="py-2">
-                                  <Badge className={`${getRankBadgeColor(entry.rank)} text-sm md:text-xs px-2.5 md:px-2 font-bold`}>
-                                    #{entry.rank}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="font-mono text-purple-100 text-xs py-2">
-                                  <span className="md:hidden">{truncateAddress(entry.walletAddress)}</span>
-                                  <span className="hidden md:inline">{entry.walletAddress}</span>
-                                  {entry.walletAddress === walletAddress && (
-                                    <Badge className="ml-1 bg-green-600 text-white text-xs px-1">You</Badge>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right font-bold text-yellow-400 text-sm py-2" data-testid={`text-points-${entry.rank}`}>
-                                  {entry.points.toLocaleString()}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-purple-300">
-                        No leaderboard data available yet. Be the first to earn points!
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                </div>
-              </div>
-            );
-          })()}
-
           {/* Swap Tab Content - Platform Wallet Only */}
           {activeTab === 'swap' && isPlatformWallet && (
             <div className="py-4">
               <SwapPanel />
             </div>
           )}
-
-          {/* Crates Tab Content */}
-          {activeTab === 'crates' && (() => {
-            const previewCrate = crateStatus?.crates?.find((c: any) => c.id === cratePreviewId);
-
-            return (
-            <div className="space-y-6">
-              {/* Win Result Modal */}
-              {crateShowResult && crateResult && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm" onClick={() => setCrateShowResult(false)}>
-                  <div className="relative bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 border border-violet-400/50 rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <div className="mb-4 flex justify-center animate-bounce"><CrateGiftIcon crateId={crateResult.crateType} className="w-24 h-24 text-5xl" /></div>
-                    <h2 className="text-2xl font-bold text-white mb-1">{crateResult.crateName} Crate</h2>
-                    <p className="text-white mb-4 text-sm">You opened a crate!</p>
-                    <div className="bg-black/30 rounded-xl p-4 mb-5 border border-violet-500/20">
-                      <p className="text-white text-sm mb-1">You won</p>
-                      {crateResult.solWon > 0 ? (
-                        <>
-                          <p className="text-4xl font-bold text-green-400">+{crateResult.solWon} SOL</p>
-                          <p className="text-white text-xs mt-2">Sent to your wallet</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-4xl font-bold text-white">0 SOL</p>
-                          <p className="text-white text-xs mt-2">Better luck next time!</p>
-                        </>
-                      )}
-                    </div>
-                    {crateResult.signature && (
-                      <a href={`https://solscan.io/tx/${crateResult.signature}`} target="_blank" rel="noopener noreferrer" className="text-white text-xs underline block mb-4">View on Solscan ↗</a>
-                    )}
-                    <button onClick={() => setCrateShowResult(false)} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold py-3 rounded-xl transition-colors">
-                      {crateResult.solWon > 0 ? 'Awesome! 🎉' : 'Level Up for Next Crate!'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Crate Preview Modal */}
-              {cratePreviewId && previewCrate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setCratePreviewId(null)}>
-                  <div className="relative backdrop-blur-sm rounded-xl w-full max-w-md mx-4 shadow-2xl overflow-hidden bg-gradient-to-br from-purple-800/60 to-purple-900/80 border border-purple-500/30" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-5 pt-5 pb-0">
-                      <h2 className="text-lg font-semibold text-white">{previewCrate.name} Crate</h2>
-                      <button onClick={() => setCratePreviewId(null)} className="text-white/70 hover:text-white text-2xl leading-none transition-colors">&times;</button>
-                    </div>
-                    {/* Emoji */}
-                    <div className="flex justify-center pt-5 pb-2">
-                      <CrateGiftIcon crateId={previewCrate.id} className="w-24 h-24 text-5xl" />
-                    </div>
-                    <p className="text-center text-white font-semibold text-sm mb-4">{previewCrate.name} Crate Preview</p>
-
-                    {/* Rewards Grid */}
-                    <div className="mx-4 mb-4 rounded-xl bg-purple-900/40 border border-purple-500/20 p-4">
-                      <p className="text-center text-white font-semibold mb-3 text-sm">Possible Rewards:</p>
-                      <div className="grid grid-cols-3 gap-2 max-h-52 overflow-y-auto">
-                        {(previewCrate.tiers as any[]).map((tier: any, i: number) => (
-                          <div key={i} className="rounded-xl bg-purple-800/50 border border-purple-500/20 py-2.5 px-2 text-center">
-                            <p className="font-bold text-white text-sm leading-tight">{tier.sol} SOL</p>
-                            <p className="text-green-400 text-xs mt-0.5">{tier.prob}%</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Action Footer */}
-                    <div className="mx-4 mb-5 rounded-xl border border-purple-500/20 p-4 text-center bg-purple-900/40">
-                      {!publicKey ? (
-                        <p className="text-white text-sm">Connect your wallet to open crates</p>
-                      ) : !previewCrate.unlocked ? (
-                        <>
-                          <p className="text-white font-medium text-sm">🔒 You can't open this crate yet</p>
-                          <p className="text-white text-xs mt-1">Requires level {previewCrate.minLevel}.</p>
-                        </>
-                      ) : previewCrate.alreadyOpened ? (
-                        <>
-                          <p className="text-green-400 font-medium text-sm">✅ Already Opened</p>
-                          <p className="text-white text-xs mt-1">Level up to unlock your next crate!</p>
-                        </>
-                      ) : crateError ? (
-                        <>
-                          <p className="text-red-400 text-sm mb-2">⚠️ {crateError}</p>
-                          <button onClick={() => { setCrateError(null); openCrate(previewCrate.id).then(() => setCratePreviewId(null)); }} disabled={crateOpening !== null} className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
-                            {crateOpening === previewCrate.id ? 'Opening...' : 'Try Again 🎁'}
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => { openCrate(previewCrate.id).then(() => setCratePreviewId(null)); }}
-                          disabled={crateOpening !== null}
-                          className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all text-sm"
-                        >
-                          {crateOpening === previewCrate.id ? '🎁 Opening...' : '✅ OPEN CRATE'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Header */}
-              <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">🎁</span>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Crates & Levels</h2>
-                    <p className="text-white text-sm">Earn points by reclaiming SOL. Reach each level milestone to open its crate once and win SOL!</p>
-                  </div>
-                </div>
-              </div>
-
-              {!publicKey ? (
-                <div className="text-center py-16 text-white">Connect your wallet to access Crates</div>
-              ) : crateStatusLoading ? (
-                <div className="text-center py-16 text-white">Loading your crates...</div>
-              ) : crateStatus ? (
-                <>
-                  {/* Level Card */}
-                  <div className="backdrop-blur-sm rounded-xl p-6 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-full bg-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-                          {crateStatus.level}
-                        </div>
-                        <div>
-                          <p className="text-white text-sm">Your Level</p>
-                          <p className="text-white font-bold text-xl">Level {crateStatus.level}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-white text-sm">Total Points</p>
-                        <p className="text-white font-bold text-xl">{crateStatus.points.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    {crateStatus.level < 100 ? (
-                      <div>
-                        <div className="flex justify-between text-xs text-white mb-1.5">
-                          <span>Level {crateStatus.level}</span>
-                          <span>{crateStatus.progress}% to Level {crateStatus.level + 1}</span>
-                        </div>
-                        <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden">
-                          <div className="h-full bg-purple-500 rounded-full transition-all duration-700" style={{ width: `${crateStatus.progress}%` }} />
-                        </div>
-                        <p className="text-white text-xs mt-1.5 text-right">
-                          {crateStatus.nextLevelPoints - crateStatus.points} points to next level
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-center text-yellow-400 font-bold">👑 MAX LEVEL REACHED</p>
-                    )}
-                    <div className="mt-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/20">
-                      <p className="text-white text-xs">💡 Each crate can only be opened once. Level up to unlock the next crate tier with bigger rewards!</p>
-                    </div>
-                  </div>
-
-                  {/* Crate Grid — click to open preview */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {(crateStatus.crates as any[]).map((crate: any) => (
-                      <button
-                        key={crate.id}
-                        onClick={() => { setCrateError(null); setCratePreviewId(crate.id); }}
-                        className={`relative rounded-xl p-3 backdrop-blur-sm bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 flex flex-col items-center gap-2 transition-all hover:border-purple-400/50 hover:from-purple-800/30 text-left ${!crate.unlocked ? 'opacity-50' : ''}`}
-                      >
-                        <CrateGiftIcon crateId={crate.id} className="w-16 h-16 text-3xl" />
-                        <div className="text-center w-full">
-                          <p className="text-white font-semibold text-sm">{crate.name}</p>
-                          <p className="text-white text-xs">Lv {crate.minLevel}–{crate.maxLevel}</p>
-                          {crate.unlocked ? (
-                            crate.alreadyOpened ? (
-                              <span className="mt-1 inline-block text-xs text-green-400 font-medium">✅ Opened</span>
-                            ) : (
-                              <span className="mt-1 inline-block text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-medium">Ready!</span>
-                            )
-                          ) : (
-                            <span className="mt-1 inline-block text-xs text-white">🔒 Lv {crate.minLevel}</span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Recent History */}
-                  {crateHistory?.history && crateHistory.history.length > 0 && (
-                    <div className="backdrop-blur-sm rounded-xl p-5 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20">
-                      <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><span>📜</span> Recent Opens</h3>
-                      <div className="space-y-2">
-                        {crateHistory.history.slice(0, 10).map((h: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between py-2 border-b border-purple-500/10 last:border-0">
-                            <div className="flex items-center gap-2">
-                              <CrateGiftIcon crateId={h.crateType} className="w-8 h-8 text-base" />
-                              <div>
-                                <p className="text-white text-sm font-medium capitalize">{h.crateType} Crate</p>
-                                <p className="text-white text-xs">{new Date(h.openedAt).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className={`font-bold text-sm ${parseFloat(h.solWon) > 0 ? 'text-green-400' : 'text-white'}`}>
-                                {parseFloat(h.solWon) > 0 ? `+${parseFloat(h.solWon)} SOL` : '0 SOL'}
-                              </p>
-                              {h.signature && (
-                                <a href={`https://solscan.io/tx/${h.signature}`} target="_blank" rel="noopener noreferrer" className="text-white text-xs underline">tx ↗</a>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-16 text-white">Failed to load crate status. Please try again.</div>
-              )}
-            </div>
-            );
-          })()}
 
           {/* Statistics Tab Content */}
           {activeTab === 'statistics' && (() => {
