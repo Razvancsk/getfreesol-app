@@ -280,7 +280,7 @@ export default function SolRefund() {
     staleTime: 60000,
   });
   const isGfsHolder = gfsDiscountData?.isGfsHolder ?? false;
-  const effectiveFeePercent = isGfsHolder ? 7.5 : 15;
+  const effectiveFeePercent = isGfsHolder ? 10 : 20;
   const donationPercentage = effectiveFeePercent;
 
   // Function to fetch wallet balance for a specific token (for Lend deposit dialog)
@@ -1008,8 +1008,8 @@ export default function SolRefund() {
           tokenMints: [tokenMint],
           tokensProcessed: 1,
           solRecovered: parseFloat(solRecovered),
-          netAmount: parseFloat(solRecovered) * 0.85, // 15% fee
-          feeAmount: parseFloat(solRecovered) * 0.15
+          netAmount: parseFloat(solRecovered) * 0.80, // 20% fee
+          feeAmount: parseFloat(solRecovered) * 0.20
         })
       });
 
@@ -1366,8 +1366,8 @@ export default function SolRefund() {
             successfulSwaps.push({ signature, inputMint: token.mint, outputAmount: outputSol });
 
             const rentPerAccount = 2039280;
-            const rentRecoveredForThisAccount = (rentPerAccount * 0.85) / 1e9;
-            const feeForThisAccount = (rentPerAccount * 0.15) / 1e9;
+            const rentRecoveredForThisAccount = (rentPerAccount * 0.80) / 1e9;
+            const feeForThisAccount = (rentPerAccount * 0.20) / 1e9;
             totalRentRecovered += rentRecoveredForThisAccount;
 
             try {
@@ -2877,10 +2877,10 @@ export default function SolRefund() {
     return `${netAmount.toFixed(6)}`;
   };
 
-  // Process SOL refund (15% service fee)
+  // Process SOL refund (20% service fee)
   const refundMutation = useMutation({
     mutationFn: async (data: { walletAddress: string; selectedAccounts: string[]; donationPercentage: number; referralCode?: string; skipXPost?: boolean }) => {
-      // Get transaction (15% service fee)
+      // Get transaction (20% service fee)
       const response = await fetch('/api/sol-refund/prepare-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2897,7 +2897,7 @@ export default function SolRefund() {
         throw new Error('Wallet not connected');
       }
 
-      // Execute transaction (15% service fee)
+      // Execute transaction (20% service fee)
       try {
         setProcessing(true);
         console.log('Starting transaction processing...');
@@ -3605,7 +3605,7 @@ export default function SolRefund() {
                       <span className="text-yellow-300 text-lg">👑</span>
                       <div>
                         <p className="text-yellow-300 font-semibold text-sm">GFS Holder — 50% Fee Discount Active!</p>
-                        <p className="text-yellow-200/70 text-xs">You pay {effectiveFeePercent}% instead of 15% — holding 1M+ $GFS tokens</p>
+                        <p className="text-yellow-200/70 text-xs">You pay {effectiveFeePercent}% instead of 20% — holding 1M+ $GFS tokens</p>
                       </div>
                     </div>
                   )}
@@ -6339,7 +6339,7 @@ export default function SolRefund() {
                 </p>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>Platform takes 15% fee → You earn 7.5% of recovered SOL</span>
+                  <span>Platform takes 20% fee → You earn 10% of recovered SOL</span>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />

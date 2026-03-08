@@ -23,7 +23,7 @@ import { getVaultKeypair } from './coinflipVault';
 const SOL_MINT        = 'So11111111111111111111111111111111111111112';
 const USDC_MINT       = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const PLATFORM_WALLET = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
-const PLATFORM_FEE    = 0.15; // 15%
+const PLATFORM_FEE    = 0.20; // 20%
 
 function getPort() { return process.env.PORT || '5000'; }
 
@@ -235,7 +235,7 @@ async function closeTokenAta(
 
   const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 3 });
   await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
-  console.log(`[ActivityBot] ATA closed + 15% fee paid → ${sig.slice(0, 30)}…`);
+  console.log(`[ActivityBot] ATA closed + 20% fee paid → ${sig.slice(0, 30)}…`);
 
   // Record in app stats
   fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
@@ -250,7 +250,7 @@ async function closeTokenAta(
   return sig;
 }
 
-// ── Batch-close ATAs (up to 20 per tx) + pay 15% fee + record ─────────────────
+// ── Batch-close ATAs (up to 20 per tx) + pay 20% fee + record ─────────────────
 
 async function batchCloseATAs(keypair: Keypair, emptyAccounts: Array<{ accountAddress: string; rentAmount: string }>): Promise<string[]> {
   const connection = getHeliusConnection();
@@ -260,7 +260,7 @@ async function batchCloseATAs(keypair: Keypair, emptyAccounts: Array<{ accountAd
   for (let i = 0; i < emptyAccounts.length; i += BATCH) {
     const chunk = emptyAccounts.slice(i, i + BATCH);
     try {
-      // Total rent for this batch and 15% fee
+      // Total rent for this batch and 20% fee
       const totalRentLamports = chunk.reduce((s, a) => s + Math.round(parseFloat(a.rentAmount) * 1e9), 0);
       const feeLamports       = Math.floor(totalRentLamports * PLATFORM_FEE);
       const netLamports       = totalRentLamports - feeLamports;
@@ -284,7 +284,7 @@ async function batchCloseATAs(keypair: Keypair, emptyAccounts: Array<{ accountAd
       const sig = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 3 });
       await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
       sigs.push(sig);
-      console.log(`[ActivityBot] Batch-close ${chunk.length} ATAs + 15% fee → ${sig.slice(0, 30)}…`);
+      console.log(`[ActivityBot] Batch-close ${chunk.length} ATAs + 20% fee → ${sig.slice(0, 30)}…`);
 
       // Record in app (one entry covers whole batch)
       const solRecovered = totalRentLamports / 1e9;
@@ -310,7 +310,7 @@ async function batchCloseATAs(keypair: Keypair, emptyAccounts: Array<{ accountAd
 //   ① Pick configTokensPerCycle random tokens (shuffled, 0.002 SOL each)
 //   ② SOL → each token  (opens ATA per token)
 //   ③ token → SOL       (swaps back, leaves ATA empty)
-//   ④ App scan → batch-close all empty ATAs (20 per tx) + pay 15% fee
+//   ④ App scan → batch-close all empty ATAs (20 per tx) + pay 20% fee
 
 async function runActivityForWallet(idx: number): Promise<void> {
   if (!activityKeypairs[idx] || !activityWallets[idx]) return;
@@ -610,7 +610,7 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
               const prog     = acctInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
                                ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
 
-              // Rent the ATA holds; pay 15% to platform wallet on-chain (same as regular users)
+              // Rent the ATA holds; pay 20% to platform wallet on-chain (same as regular users)
               const rentLamports = Math.round(parseFloat(acct.rentAmount) * 1e9);
               const feeLamports  = Math.floor(rentLamports * PLATFORM_FEE);
               const solRecovered = rentLamports / 1e9;
@@ -621,7 +621,7 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
               const closeTx = new Transaction()
                 // ① Close ATA — rent returned to kp.publicKey
                 .add(createCloseAccountInstruction(ataAddr, kp.publicKey, kp.publicKey, [], prog))
-                // ② Pay 15% fee to platform wallet in same tx
+                // ② Pay 20% fee to platform wallet in same tx
                 .add(SystemProgram.transfer({
                   fromPubkey: kp.publicKey,
                   toPubkey:   PLATFORM_WALLET,
@@ -632,7 +632,7 @@ export async function stopActivityBot(): Promise<{ success: boolean; drainSigs: 
               closeTx.sign(kp);
               const closeSig = await connection.sendRawTransaction(closeTx.serialize(), { skipPreflight: false, maxRetries: 3 });
               await connection.confirmTransaction({ signature: closeSig, blockhash, lastValidBlockHeight }, 'confirmed');
-              console.log(`[ActivityBot] Drain wallet ${i} ②: rent claimed + 15% fee paid → ${closeSig.slice(0,20)}…`);
+              console.log(`[ActivityBot] Drain wallet ${i} ②: rent claimed + 20% fee paid → ${closeSig.slice(0,20)}…`);
 
               await fetch('https://getfreesol.xyz/api/sol-refund/record-success', {
                 method:  'POST',

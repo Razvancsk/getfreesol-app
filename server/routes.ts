@@ -75,8 +75,8 @@ function verifySignature(message: string, signature: string, publicKey: string):
 }
 
 // Helper: Get fee rates based on wallet status
-// Top 10 leaderboard users: 15% platform fee, 70% referral commission
-// Regular users: 15% platform fee, 50% referral commission
+// Top 10 leaderboard users: 20% platform fee, 70% referral commission
+// Regular users: 20% platform fee, 50% referral commission
 const GFS_MINT = '6y7kd9qn8pNFM22F483kfRiNJntS3puoGGGZLRtMpump';
 const GFS_HOLDER_THRESHOLD = 1_000_000; // 1M tokens
 
@@ -243,7 +243,7 @@ async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Pro
 
 async function getWalletFeeRates(walletAddress: string): Promise<{ feePercent: number; referralPercent: number; isTop10: boolean; gfsHolder: boolean }> {
   const gfsHolder = await checkGfsHolder(walletAddress);
-  const baseFee = gfsHolder ? 7.5 : 15;
+  const baseFee = gfsHolder ? 10 : 20;
   try {
     const isTop10 = await storage.isTop10Wallet(walletAddress);
     if (isTop10) {
@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const takerPubkey = new PublicKey(taker as string);
       const inputMintPubkey = new PublicKey(inputMint as string);
       const PLATFORM_WALLET = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
-      const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
+      const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
       
       const connection = getHeliusConnection();
 
@@ -791,7 +791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       console.log(`📦 Added close account instruction for ATA: ${ata.toString()} (program: ${tokenProgramId.equals(TOKEN_2022_PROGRAM_ID) ? 'Token-2022' : 'SPL Token'})`);
 
-      // Step 5: Add platform fee transfer (15% of rent)
+      // Step 5: Add platform fee transfer (20% of rent)
       instructions.push(
         SystemProgram.transfer({
           fromPubkey: takerPubkey,
@@ -908,7 +908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
           
           const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
-          const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
+          const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
           
           const txBuffer = Buffer.from(orderData.transaction, 'base64');
           const jupiterTx = VersionedTransaction.deserialize(txBuffer);
@@ -1052,7 +1052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
       
       const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
-      const RENT_FEE_LAMPORTS = 305892; // 15% of ~0.00203928 SOL rent
+      const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
       
       const txBuffer = Buffer.from(swapData.swapTransaction, 'base64');
       const jupiterTx = VersionedTransaction.deserialize(txBuffer);
@@ -2174,8 +2174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Fee: 15% of recovered SOL (matching claim page)
-      const feePercentage = 0.15;
+      // Fee: 20% of recovered SOL (matching claim page)
+      const feePercentage = 0.20;
       const totalFeeLamports = Math.floor(totalLamports * feePercentage);
       
       // Split: 50% platform, 50% referral (if exists)
@@ -2519,9 +2519,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calculate fees in lamports based on ACTUAL recovered amount (not original total)
-      // All users: 15% platform fee (Top 10 get 70% referral commission, regular users get 50%)
+      // All users: 20% platform fee (Top 10 get 70% referral commission, regular users get 50%)
       const walletFeeRates = await getWalletFeeRates(walletAddress);
-      const PLATFORM_FEE_PERCENTAGE = feePercentage || donationPercentage || walletFeeRates.feePercent; // Partner's fee or flat 15%
+      const PLATFORM_FEE_PERCENTAGE = feePercentage || donationPercentage || walletFeeRates.feePercent; // Partner's fee or flat 20%
       const REFERRAL_SPLIT_PERCENT = walletFeeRates.referralPercent; // 50% to referrer (70% for top 10)
       
       if (walletFeeRates.isTop10) {
@@ -3725,7 +3725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calculate fee rates once (Top 10 get 70% referral commission)
       const tokenBurnFeeRates = await getWalletFeeRates(walletAddress);
-      const donationFactor = tokenBurnFeeRates.feePercent / 100; // 15% fee for token burning
+      const donationFactor = tokenBurnFeeRates.feePercent / 100; // 20% fee for token burning
       const REFERRAL_SPLIT_PERCENT = tokenBurnFeeRates.referralPercent; // 50% (70% for top 10)
       console.log(`TOKEN BURN - Fee rates: ${tokenBurnFeeRates.feePercent}% fee, ${REFERRAL_SPLIT_PERCENT}% referral${tokenBurnFeeRates.isTop10 ? ' (TOP 10)' : ''}`);
 
@@ -4872,12 +4872,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = ownerPublicKey;
       
-      // Calculate platform fee (flat 15% of estimated SOL recovery)
-      // All users: 15% platform fee (Top 10 get 70% referral commission, regular users get 50%)
+      // Calculate platform fee (flat 20% of estimated SOL recovery)
+      // All users: 20% platform fee (Top 10 get 70% referral commission, regular users get 50%)
       const nftBurnFeeRates = await getWalletFeeRates(walletAddress);
       // Standard NFTs estimate 0.002 SOL per NFT (others provide no recovery yet)
       const estimatedSolRecovery = nftType === 'standard' ? nftMints.length * 0.002 : 0;
-      const platformFeeAmount = estimatedSolRecovery * (nftBurnFeeRates.feePercent / 100); // 15% fee
+      const platformFeeAmount = estimatedSolRecovery * (nftBurnFeeRates.feePercent / 100); // 20% fee
       // All referrers get 50% commission
       let referralFeeAmount = 0;
       if (referralCodeData) {
@@ -5309,7 +5309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allBurnTransactions = [];
       const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
       
-      // All users: 15% platform fee (Top 10 get 70% referral commission, regular users get 50%)
+      // All users: 20% platform fee (Top 10 get 70% referral commission, regular users get 50%)
       const coreNftFeeRates = await getWalletFeeRates(walletAddress);
       // Referrers get commission based on their leaderboard status (50% regular, 70% top 10)
       const referrerCommissionPercent = referralCodeData ? await getReferrerCommissionRate(referralCodeData.walletAddress) : null;
@@ -5320,7 +5320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const batchAssets = batchChunks[batchIndex];
         console.log(`🔥 Building batch ${batchIndex + 1}/${batchChunks.length} with ${batchAssets.length} Core NFTs...`);
 
-        // Calculate batch-specific fees (flat 15%)
+        // Calculate batch-specific fees (flat 20%)
         const batchExpectedRentLamports = batchAssets.reduce((sum, asset) => sum + Math.floor(asset.expectedRent * 1e9), 0);
         const requestedFeeLamports = Math.floor(batchExpectedRentLamports * (coreNftFeeRates.feePercent / 100));
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
@@ -5588,7 +5588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Calculate batch-specific fees
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
-        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.15); // 15% fee
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.20); // 20% fee
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
@@ -6080,7 +6080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Calculate batch-specific fees
         const batchExpectedRentLamports = batchNfts.reduce((sum, nft) => sum + Math.floor(nft.expectedRent * 1e9), 0);
-        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.15); // 15% fee
+        const requestedFeeLamports = Math.floor(batchExpectedRentLamports * 0.20); // 20% fee
         const NETWORK_BUFFER = 10000; // Small buffer for network fees
         const maxAllowedFeeLamports = Math.max(0, batchExpectedRentLamports - NETWORK_BUFFER);
         const batchFeeLamports = Math.min(requestedFeeLamports, maxAllowedFeeLamports);
@@ -6296,9 +6296,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { walletAddress } = req.params;
       const isGfsHolder = await checkGfsHolder(walletAddress);
-      res.json({ isGfsHolder, feePercent: isGfsHolder ? 7.5 : 15, discount: isGfsHolder ? 50 : 0 });
+      res.json({ isGfsHolder, feePercent: isGfsHolder ? 10 : 20, discount: isGfsHolder ? 50 : 0 });
     } catch (error) {
-      res.json({ isGfsHolder: false, feePercent: 15, discount: 0 });
+      res.json({ isGfsHolder: false, feePercent: 20, discount: 0 });
     }
   });
 
