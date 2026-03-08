@@ -18,6 +18,28 @@ function timeAgo(dateStr: string): string {
 
 
 
+const LOSS_MEMES = [
+  "Better luck next time fucker. 💀",
+  "You absolute clown. 🤡",
+  "Skill issue.",
+  "Your ancestors are disappointed. 😔",
+  "ngmi.",
+  "Bro really thought. 💀",
+  "Touch grass, then try again.",
+  "The coin said no lmaooo",
+  "Delete your wallet. 🗑️",
+  "It's not the coin's fault.",
+  "Have you tried being less poor?",
+  "Rekt. Stay rekt.",
+  "Even the vault feels bad for you. 😂",
+  "L + ratio + no SOL.",
+  "Imagine losing 50/50. Couldn't be me.",
+];
+
+function getLossMeme(): string {
+  return LOSS_MEMES[Math.floor(Math.random() * LOSS_MEMES.length)];
+}
+
 function playWinSound() {
   try {
     const ctx = new AudioContext();
@@ -185,6 +207,11 @@ export function CoinFlipGame() {
           playWinSound();
         } else {
           playLoseSound();
+          toast({
+            title: getLossMeme(),
+            variant: 'destructive',
+            style: { background: '#f5c542', color: '#1a1a1a', border: '2px solid #d4a017', fontFamily: 'monospace', fontWeight: 'bold' },
+          });
         }
         setFlipResult(result);
         setShowResult(true);
