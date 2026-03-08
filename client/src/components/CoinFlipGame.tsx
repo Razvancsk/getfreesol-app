@@ -8,17 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 const BET_AMOUNTS = [0.00176, 0.01, 0.05, 0.10, 0.25, 0.50];
 
-function timeAgo(dateStr: string): string {
-  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
 
-function shortWallet(addr: string): string {
-  return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-}
 
 function playWinSound() {
   try {
@@ -435,39 +425,57 @@ export function CoinFlipGame() {
         <p className="text-center text-xs text-white mt-2">50/50 odds · Win = 2x your bet · 3.5% fee charged upfront</p>
       </div>
 
-      {/* Recent Plays */}
-      <div className="mt-6">
-        <h3 className="text-center text-white font-black text-lg uppercase tracking-widest mb-3">Recent Plays</h3>
-        <div className="space-y-2">
-          {recentQuery.isLoading && (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+      {/* Recent Plays Ledger */}
+      <div className="mt-6 bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm rounded-xl p-6">
+        <h3 className="text-xl font-bold text-white text-center mb-6">RECENT PLAYS</h3>
+
+        <div className="overflow-x-auto">
+          <div className="min-w-full">
+            {/* Header */}
+            <div className="grid grid-cols-4 gap-4 mb-4 pb-3 border-b border-purple-500/30">
+              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200">WALLET/TX</div>
+              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">BET</div>
+              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">RESULT</div>
+              <div className="text-sm font-semibold uppercase tracking-wider text-purple-200 text-center">DATE</div>
             </div>
-          )}
-          {(recentQuery.data?.flips ?? []).slice(0, 10).map((flip: any) => (
-            <div key={flip.id} className="flex items-center gap-3 bg-[#1a1035] border border-purple-500/20 rounded-xl px-4 py-3">
-              <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center"
-                style={{ background: flip.won ? 'conic-gradient(from 0deg, #f59e0b, #fcd34d, #d97706)' : 'conic-gradient(from 0deg, #6b7280, #9ca3af, #4b5563)' }}>
-                <span className="text-xs font-black text-white">{flip.result === 'heads' ? 'H' : 'T'}</span>
+
+            {/* Rows */}
+            {recentQuery.isLoading && (
+              <div className="text-center text-purple-300 py-8">Loading...</div>
+            )}
+            {!recentQuery.isLoading && (recentQuery.data?.flips ?? []).length === 0 && (
+              <div className="text-center text-purple-300 py-8">No flips yet — be the first!</div>
+            )}
+            {(recentQuery.data?.flips ?? []).slice(0, 10).map((flip: any) => (
+              <div key={flip.id}>
+                <div
+                  className="grid grid-cols-4 gap-4 py-3 transition-colors cursor-pointer hover:bg-purple-800/20 rounded-lg border border-transparent hover:border-purple-500/30"
+                  onClick={() => flip.betTxSignature && window.open(`https://solscan.io/tx/${flip.betTxSignature}`, '_blank')}
+                  title="Click to view on Solscan"
+                >
+                  <div className="text-white font-mono text-sm truncate" title={flip.walletAddress}>
+                    {flip.walletAddress.slice(0, 8)}...{flip.walletAddress.slice(-8)}
+                  </div>
+                  <div className="text-white text-center text-sm font-semibold">
+                    {parseFloat(flip.betAmount).toFixed(4)} SOL
+                  </div>
+                  <div className={`text-center text-sm font-bold ${flip.won ? 'text-green-400' : 'text-gray-400'}`}>
+                    {flip.won ? 'Doubled ✓' : 'Rugged'}
+                  </div>
+                  <div className="text-white text-center text-sm">
+                    {new Date(flip.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </div>
+                </div>
+                <div className="border-b border-purple-500/10" />
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-gray-300 text-sm">
-                  <span className="font-mono text-white">{shortWallet(flip.walletAddress)}</span>
-                  {' flipped '}
-                  <span className="font-bold text-white">{parseFloat(flip.betAmount).toFixed(3)}</span>
-                  {' and '}
-                  {flip.won
-                    ? <span className="font-bold text-green-400">doubled.</span>
-                    : <span className="text-gray-400">got rugged.</span>
-                  }
-                </span>
-              </div>
-              <span className="text-gray-500 text-xs shrink-0">{timeAgo(flip.createdAt)}</span>
-            </div>
-          ))}
-          {!recentQuery.isLoading && (recentQuery.data?.flips ?? []).length === 0 && (
-            <p className="text-center text-gray-500 text-sm py-4">No flips yet — be the first!</p>
-          )}
+            ))}
+          </div>
         </div>
       </div>
 
