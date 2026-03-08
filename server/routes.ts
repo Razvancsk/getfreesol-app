@@ -161,6 +161,7 @@ async function getGfsPriceInSol(): Promise<number | null> {
 }
 
 async function sendGfsCashback(walletAddress: string, feeAmountSol: number): Promise<void> {
+  return; // GFS cashback disabled
   console.log(`[GFS Cashback] Starting for ${walletAddress?.slice(0, 8)}… fee=${feeAmountSol}`);
   try {
     if (!walletAddress || walletAddress === PLATFORM_WALLET) {
