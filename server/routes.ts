@@ -2252,7 +2252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platformFee: (platformFeeLamports / 1e9).toFixed(6),
         referralFee: (referralFeeLamports / 1e9).toFixed(6),
         netRecovery: netRecovery.toFixed(6),
-        feePercentage: '10%',
+        feePercentage: '20%',
       });
 
     } catch (error) {
