@@ -211,7 +211,7 @@ export function CoinFlipGame() {
           toast({
             title: getLossMeme(),
             description: (
-              <img src={lossGif} alt="rekt" className="rounded-lg mt-2 w-full max-h-40 object-cover" />
+              <img src={lossGif} alt="rekt" className="rounded-lg mt-1" style={{ width: '80px', height: '80px', objectFit: 'cover' }} />
             ) as any,
             style: { background: '#f5c542', color: '#1a1a1a', border: '2px solid #d4a017', fontFamily: 'monospace', fontWeight: 'bold' },
           });
