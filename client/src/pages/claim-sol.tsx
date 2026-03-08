@@ -91,6 +91,14 @@ interface RefundStats {
   recentTransactions: TransactionRecord[];
 }
 
+function timeAgo(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return `${diff} sec ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  return `${Math.floor(diff / 86400)} day ago`;
+}
+
 export default function SolRefund() {
   const queryClient = useQueryClient();
   const { open } = useAppKit();
@@ -6252,7 +6260,7 @@ export default function SolRefund() {
                       CLAIMED SOL
                     </div>
                     <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
-                      DATE
+                      AGE
                     </div>
                   </div>
 
@@ -6290,13 +6298,7 @@ export default function SolRefund() {
                               {(tx.netAmount || tx.solRecovered * 0.85).toFixed(6)}
                             </div>
                             <div className="text-white text-center text-sm">
-                              {new Date(tx.processedAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
+                              {timeAgo(tx.processedAt)}
                             </div>
                           </div>
                           {/* Separator line between rows - don't show after last row */}
