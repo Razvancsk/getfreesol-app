@@ -215,7 +215,7 @@ export function CoinFlipGame() {
                 <span>{getLossMeme()}</span>
               </div>
             ) as any,
-            style: { background: 'linear-gradient(135deg, #2d1b69, #1a1035)', color: '#e2d9f3', border: '2px solid #7c3aed', fontFamily: 'monospace', fontWeight: 'bold', padding: '10px 14px', minHeight: 'unset' },
+            style: { background: 'linear-gradient(135deg, #9333ea, #7c3aed)', color: '#ffffff', border: 'none', fontFamily: 'monospace', fontWeight: 'bold', padding: '10px 14px', minHeight: 'unset' },
           });
         }
         setFlipResult(result);
