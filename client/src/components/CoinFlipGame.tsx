@@ -210,7 +210,9 @@ export function CoinFlipGame() {
           playLoseSound();
           toast({
             title: getLossMeme(),
-            variant: 'destructive',
+            description: (
+              <img src={lossGif} alt="rekt" className="rounded-lg mt-2 w-full max-h-40 object-cover" />
+            ) as any,
             style: { background: '#f5c542', color: '#1a1a1a', border: '2px solid #d4a017', fontFamily: 'monospace', fontWeight: 'bold' },
           });
         }
@@ -331,14 +333,6 @@ export function CoinFlipGame() {
             <div className={`text-xl font-bold ${flipResult.won ? 'text-green-400' : 'text-red-400'}`}>
               {flipResult.won ? `${flipResult.payoutAmount.toFixed(4)} SOL` : `-${(betAmount * 1.035).toFixed(6)} SOL`}
             </div>
-            {!flipResult.won && (
-              <img
-                src={lossGif}
-                alt="rekt"
-                className="mx-auto rounded-xl mt-2"
-                style={{ maxHeight: '160px', objectFit: 'cover' }}
-              />
-            )}
           </div>
         )}
       </div>
