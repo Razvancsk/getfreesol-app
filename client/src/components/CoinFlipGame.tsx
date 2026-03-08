@@ -395,26 +395,6 @@ export function CoinFlipGame() {
         </div>
       </div>
 
-      {/* Fee breakdown */}
-      <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl px-4 py-3 text-sm">
-        <div className="flex justify-between text-gray-400">
-          <span>Bet</span>
-          <span className="text-white font-bold">{betAmount} SOL</span>
-        </div>
-        <div className="flex justify-between text-gray-400 mt-1">
-          <span>Fee (3.5%)</span>
-          <span className="text-yellow-400 font-bold">{(betAmount * 0.035).toFixed(6)} SOL</span>
-        </div>
-        <div className="border-t border-purple-500/30 mt-2 pt-2 flex justify-between">
-          <span className="text-gray-300 font-bold">You pay</span>
-          <span className="text-white font-black">{(betAmount * 1.035).toFixed(6)} SOL</span>
-        </div>
-        <div className="flex justify-between mt-1">
-          <span className="text-gray-400">Win returns</span>
-          <span className="text-green-400 font-black">{(betAmount * 2).toFixed(6)} SOL</span>
-        </div>
-      </div>
-
       {/* DOUBLE OR NOTHING button */}
       <div className="pt-2">
         <button
