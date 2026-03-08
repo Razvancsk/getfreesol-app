@@ -3584,13 +3584,13 @@ export default function SolRefund() {
             <div className="space-y-4">
               {/* Empty Accounts Content */}
               {claimSubTab === 'empty' && (
-            <div className={`backdrop-blur-sm rounded-xl p-6 ${
+            <div className={`backdrop-blur-sm rounded-xl p-6 md:p-10 ${
               isNightMode 
                 ? 'bg-[#141414] border border-[#2a2a2a]' 
                 : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
             }`}>
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Scan Results</h3>
+              <div className="mb-4 md:mb-8 flex items-center justify-between">
+                <h3 className="text-lg md:text-2xl font-semibold text-white">Scan Results</h3>
                 <button
                   onClick={() => publicKey && scanMutation.mutate(publicKey)}
                   disabled={scanMutation.isPending}
@@ -3617,14 +3617,14 @@ export default function SolRefund() {
                       </div>
                     </div>
                   )}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
-                      <div className="text-2xl font-bold text-white">{scanResult.emptyAccounts}</div>
-                      <div className="text-xs text-purple-200">Empty Accounts</div>
+                  <div className="grid grid-cols-2 gap-4 md:gap-6">
+                    <div className="text-center p-4 md:p-8 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                      <div className="text-2xl md:text-5xl font-bold text-white">{scanResult.emptyAccounts}</div>
+                      <div className="text-xs md:text-base text-purple-200 mt-1">Empty Accounts</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
-                      <div className="text-2xl font-bold text-green-400">+{refundCalc.net.toFixed(5)}</div>
-                      <div className="text-xs text-purple-200">To Claim ({effectiveFeePercent}% fee)</div>
+                    <div className="text-center p-4 md:p-8 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
+                      <div className="text-2xl md:text-5xl font-bold text-green-400">+{refundCalc.net.toFixed(5)}</div>
+                      <div className="text-xs md:text-base text-purple-200 mt-1">To Claim ({effectiveFeePercent}% fee)</div>
                     </div>
                   </div>
 
@@ -3650,7 +3650,7 @@ export default function SolRefund() {
                     onClick={handleProcessAllRefunds}
                     disabled={refundMutation.isPending || isBatching}
                     size="lg"
-                    className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg"
+                    className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-4 md:py-7 text-lg md:text-2xl font-semibold rounded-lg transition-all duration-200 shadow-lg"
                     data-testid="button-claim-all"
                   >
                     {(refundMutation.isPending || isBatching) ? (
