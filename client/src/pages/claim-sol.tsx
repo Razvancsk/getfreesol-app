@@ -3279,7 +3279,7 @@ export default function SolRefund() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      <div className={`container mx-auto pt-1 pb-2 max-w-6xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'}`}>
+      <div className={`container mx-auto pt-1 pb-2 max-w-6xl md:max-w-7xl flex-grow ${activeTab === 'docs' ? 'px-0' : 'px-4'}`}>
         <div className="space-y-2">
           {/* Header with Navigation and Wallet Connection */}
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 space-y-4 lg:space-y-0">
@@ -3709,11 +3709,11 @@ export default function SolRefund() {
 
           {/* Burn Tokens Results */}
           {activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4 md:mb-6">
+              <div className="flex items-center justify-between mb-4 md:mb-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
+                  <h3 className="text-xl md:text-3xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
                   {scanTokensMutation.isPending && (
                     <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
                   )}
@@ -4012,11 +4012,11 @@ export default function SolRefund() {
 
           {/* NFT Burning Interface */}
           {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
-            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 md:mb-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-white">
+                  <h3 className="text-xl md:text-3xl font-semibold text-white">
                     {nftData && nftData.nfts && nftData.nfts.length > 0 
                       ? `${nftData.nfts.length} NFTs Found` 
                       : 'NFT Scanner'}
