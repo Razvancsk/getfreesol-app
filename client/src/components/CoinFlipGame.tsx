@@ -254,6 +254,7 @@ export function CoinFlipGame() {
               transform: `rotateY(${coinRotation}deg)`,
               transition: isFlipping ? 'none' : 'transform 2s cubic-bezier(0.22, 0.8, 0.36, 1)',
               transformStyle: 'preserve-3d',
+              WebkitTransformStyle: 'preserve-3d',
             }}
           >
             {/* HEADS */}
@@ -262,6 +263,7 @@ export function CoinFlipGame() {
               style={{
                 background: headsBg,
                 backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
                 boxShadow: coinShadow,
               }}
             >
@@ -295,7 +297,9 @@ export function CoinFlipGame() {
               style={{
                 background: headsBg,
                 backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
+                WebkitTransform: 'rotateY(180deg)',
                 boxShadow: coinShadow,
               }}
             >
