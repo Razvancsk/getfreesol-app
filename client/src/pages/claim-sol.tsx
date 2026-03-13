@@ -4510,7 +4510,39 @@ export default function SolRefund() {
                   </div>
                 </div>
 
-                {/* Staking options */}
+                {/* GSOL — Featured hero card */}
+                <div className="mb-6 rounded-2xl p-6 border-2 border-purple-400/60 bg-gradient-to-br from-purple-700/30 to-blue-700/20 relative overflow-hidden">
+                  <div className="absolute top-3 right-3 bg-purple-500 text-white text-xs font-black px-3 py-1 rounded-full tracking-wider uppercase">Our Token</div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 via-blue-400 to-green-400 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <span className="text-white font-black text-xl">G</span>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-black text-2xl">GSOL</h3>
+                      <p className="text-purple-300 text-sm">GetFreeSol Liquid Staking Token</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 mb-5">
+                    <div className="text-center">
+                      <p className="text-gray-400 text-xs mb-1">Token</p>
+                      <p className="text-white font-black text-lg">GSOL</p>
+                    </div>
+                    <div className="text-center border-x border-purple-500/30">
+                      <p className="text-gray-400 text-xs mb-1">APY</p>
+                      <p className="text-green-400 font-black text-lg">Coming Soon</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-400 text-xs mb-1">Rewards</p>
+                      <p className="text-purple-300 font-black text-lg">SOL + $GFS</p>
+                    </div>
+                  </div>
+                  <button className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-lg transition-all border border-purple-400/50 opacity-60 cursor-not-allowed" disabled>
+                    Stake SOL → Get GSOL (Coming Soon)
+                  </button>
+                </div>
+
+                {/* Other staking options */}
+                <p className="text-gray-400 text-sm font-semibold mb-3 uppercase tracking-wider">Other Protocols</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Marinade */}
                   <a href="https://marinade.finance" target="_blank" rel="noopener noreferrer"
