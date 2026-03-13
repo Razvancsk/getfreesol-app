@@ -3561,8 +3561,8 @@ export default function SolRefund() {
                   onClick={() => setActiveTab('staking')}
                   className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
                     activeTab === 'staking'
-                      ? 'bg-blue-600 text-white border-blue-500'
-                      : 'bg-purple-800/40 text-white hover:bg-blue-600/60 border-purple-500/30'
+                      ? 'bg-purple-600 text-white border-purple-500'
+                      : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
                   <Zap className="h-4 w-4 md:h-5 md:w-5 shrink-0" /> Stake
