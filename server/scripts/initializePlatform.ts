@@ -4,7 +4,7 @@ import { deriveProjectPDA } from "../pdaService";
 import { nanoid } from "nanoid";
 
 // Platform wallet address
-const PLATFORM_WALLET = "GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS";
+const PLATFORM_WALLET = "GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT";
 
 export async function initializePlatform() {
   console.log("🚀 Initializing platform project account...");

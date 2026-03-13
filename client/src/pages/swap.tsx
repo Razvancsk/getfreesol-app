@@ -12,7 +12,7 @@ import { queryClient } from '@/lib/queryClient';
 import { useAppKit } from "@reown/appkit/react";
 import logoImage from '@assets/image_1757882056840.png';
 
-const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+const PLATFORM_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
 interface TokenInfo {
   address: string;

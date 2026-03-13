@@ -98,7 +98,7 @@ async function checkGfsHolder(walletAddress: string): Promise<boolean> {
   }
 }
 
-const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+const PLATFORM_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
 async function getGfsPriceInSol(): Promise<number | null> {
   // 1) DexScreener (works after token graduates to Raydium)
@@ -671,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const takerPubkey = new PublicKey(taker as string);
       const inputMintPubkey = new PublicKey(inputMint as string);
-      const PLATFORM_WALLET = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const PLATFORM_WALLET = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
       const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
       
       const connection = getHeliusConnection();
@@ -907,7 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
           const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
           
-          const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+          const PLATFORM_WALLET = new SolanaPublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
           const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
           
           const txBuffer = Buffer.from(orderData.transaction, 'base64');
@@ -1051,7 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { Connection, AddressLookupTableAccount } = await import('@solana/web3.js');
       const { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } = await import('@solana/spl-token');
       
-      const PLATFORM_WALLET = new SolanaPublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const PLATFORM_WALLET = new SolanaPublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
       const RENT_FEE_LAMPORTS = 407856; // 20% of ~0.00203928 SOL rent
       
       const txBuffer = Buffer.from(swapData.swapTransaction, 'base64');
@@ -2158,7 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Platform wallet
-      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const platformWalletAddress = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       
       // Calculate total lamports to recover
       let totalLamports = 0;
@@ -2597,7 +2597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add fee transfer instructions AFTER close instructions
       // Fees are paid from SOL recovered by closing accounts
       if (platformFeeLamports > 0) {
-        const feeCollectorPublicKey = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+        const feeCollectorPublicKey = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
         
         const platformFeeTransferInstruction = SystemProgram.transfer({
           fromPubkey: new PublicKey(walletAddress),
@@ -2735,7 +2735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Award points (20 points per account closed) - skip platform wallet
-      const PLATFORM_WALLET_POINTS = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const PLATFORM_WALLET_POINTS = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       if (walletAddress !== PLATFORM_WALLET_POINTS) {
         await storage.awardPoints(walletAddress, accountsClosed);
       }
@@ -3819,7 +3819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Add fee transfer instructions
         if (batchPlatformFeeLamports > 0) {
-          const feeCollectorPublicKey = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+          const feeCollectorPublicKey = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
           transaction.add(SystemProgram.transfer({
             fromPubkey: ownerPublicKey,
             toPubkey: feeCollectorPublicKey,
@@ -4066,7 +4066,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Award points (20 points per token account closed) - skip platform wallet
-      const PLATFORM_WALLET_POINTS_TOKEN = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const PLATFORM_WALLET_POINTS_TOKEN = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       if (walletAddress !== PLATFORM_WALLET_POINTS_TOKEN) {
         await storage.awardPoints(walletAddress, tokensProcessed);
       }
@@ -4889,7 +4889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`NFT BURN - Fee rates: ${nftBurnFeeRates.feePercent}% fee, ${nftBurnFeeRates.referralPercent}% referral`);
       
       // Add platform fee transfer
-      const platformWallet = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const platformWallet = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
       if (finalPlatformFeeAmount > 0.001) { // Only add if significant
         const platformFeeInstruction = SystemProgram.transfer({
           fromPubkey: ownerPublicKey,
@@ -5073,7 +5073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           await storage.createTransactionLedgerEntry(transactionData);
           // Award points (20 points per NFT account closed) - skip platform wallet
-          const PLATFORM_WALLET_POINTS_NFT = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+          const PLATFORM_WALLET_POINTS_NFT = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
           if (walletAddress !== PLATFORM_WALLET_POINTS_NFT) {
             await storage.awardPoints(walletAddress, 1);
           }
@@ -5307,7 +5307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBurnTransactions = [];
-      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const platformWalletAddress = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       
       // All users: 20% platform fee (Top 10 get 70% referral commission, regular users get 50%)
       const coreNftFeeRates = await getWalletFeeRates(walletAddress);
@@ -5579,7 +5579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBatchTransactions = [];
-      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const platformWalletAddress = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
@@ -6071,7 +6071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allBatchTransactions = [];
-      const platformWalletAddress = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const platformWalletAddress = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
 
       // Process each batch separately  
       for (let batchIndex = 0; batchIndex < batchChunks.length; batchIndex++) {
@@ -6340,7 +6340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Platform wallet should always show 0 points (creator shouldn't earn points)
-      const PLATFORM_WALLET_STATS = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const PLATFORM_WALLET_STATS = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       const displayPoints = walletAddress === PLATFORM_WALLET_STATS ? 0 : (points?.points || 0);
       
       // Use the higher value between user_points and transaction_ledger
@@ -7706,7 +7706,7 @@ Claimer: ${walletAddress}`;
   // X (TWITTER) BOT API ENDPOINTS
   // ============================================
   
-  const PLATFORM_WALLET = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+  const PLATFORM_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
   
   // Middleware to verify platform wallet signature (POST requests)
   const requirePlatformWallet = (req: any, res: any, next: any) => {
@@ -9003,7 +9003,7 @@ Claimer: ${walletAddress}`;
       const feeKeypair = keypairFromEncrypted(feeAccount.encryptedPrivateKey);
       
       // Platform wallet
-      const platformWallet = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const platformWallet = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
       const developerWallet = new PublicKey(walletAddress);
       
       const connection = getHeliusConnection();
@@ -9566,7 +9566,7 @@ Claimer: ${walletAddress}`;
       
       // Setup pubkeys
       const developerPubkey = new PublicKey(walletAddress);
-      const platformPubkey = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const platformPubkey = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
       
       console.log(`📤 Sending claim transaction for ${walletAddress}...`);
       console.log(`   Developer (80%): ${(developerAmount / 1e9).toFixed(9)} SOL`);
@@ -9681,7 +9681,7 @@ Claimer: ${walletAddress}`;
       const { adminWallet, signature, message } = req.body;
       
       // Verify admin wallet
-      const PLATFORM_ADMIN = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+      const PLATFORM_ADMIN = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       if (adminWallet !== PLATFORM_ADMIN) {
         return res.status(403).json({ error: 'Unauthorized - admin only' });
       }
@@ -10252,7 +10252,7 @@ Claimer: ${walletAddress}`;
         transaction.add(
           SystemProgram.transfer({
             fromPubkey: new PublicKey(task.creatorWallet),
-            toPubkey: new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS'),
+            toPubkey: new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT'),
             lamports: platformFee
           })
         );
@@ -10870,7 +10870,7 @@ Claimer: ${walletAddress}`;
       let payoutAmount = 0;
       const platformFee = bet * PLATFORM_FEE_RATE; // 3.5% of bet — always collected
       let payoutTxSignature: string | null = null;
-      const platformWallet = new PublicKey('GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS');
+      const platformWallet = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
       const feeLamports = Math.floor(platformFee * LAMPORTS_PER_SOL);
 
       if (won) {

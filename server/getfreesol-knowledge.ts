@@ -97,7 +97,7 @@ GetFreeSol is a comprehensive Solana utility platform that helps users reclaim S
 ### 9. Backpack Exchange Integration (View-Only)
 - **What it does**: Display borrow/lend markets from Backpack Exchange
 - **Markets shown**: Only SOL markets (not all tokens)
-- **Visibility**: Only visible to platform wallet (GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS)
+- **Visibility**: Only visible to platform wallet (GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT)
 - **Note**: Users cannot be programmatically created on Backpack (requires manual KYC at backpack.exchange)
 
 ### 10. Statistics Dashboard

@@ -13,7 +13,7 @@ export default function AdminMigrate() {
   const { toast } = useToast();
   
   const walletAddress = publicKey?.toBase58();
-  const PLATFORM_ADMIN = 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS';
+  const PLATFORM_ADMIN = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
   const isAdmin = walletAddress === PLATFORM_ADMIN;
 
   const migrateMutation = useMutation({

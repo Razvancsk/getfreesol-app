@@ -27,7 +27,7 @@ This Solana program enables users to authorize a backend relayer to automaticall
 **Seeds**: `["config"]`
 
 **Fields**:
-- `platform_wallet`: Pubkey - receives 15% fees (GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS)
+- `platform_wallet`: Pubkey - receives 15% fees (GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT)
 - `platform_fee_bps`: u16 - 1500 (15%)
 - `authority`: Pubkey - program upgrade authority
 - `bump`: u8
@@ -212,7 +212,7 @@ pub enum AutoClaimError {
 6. **Audit Trail**: All operations emit events
 
 ## Platform Configuration
-- Platform Wallet: `GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS`
+- Platform Wallet: `GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT`
 - Platform Fee: 15% (1500 basis points)
 - User Net: 85% (8500 basis points)
 

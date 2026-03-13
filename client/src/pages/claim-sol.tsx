@@ -375,7 +375,7 @@ export default function SolRefund() {
 
   // Fetch lend statistics for platform wallet
   useEffect(() => {
-    if (activeTab === 'docs' && showDeveloper && publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS') {
+    if (activeTab === 'docs' && showDeveloper && publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT') {
       fetch('/api/jupiter-lend/statistics')
         .then(res => res.json())
         .then(data => {
@@ -395,7 +395,7 @@ export default function SolRefund() {
   });
 
   // Check if platform wallet
-  const isPlatformWallet = publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
+  const isPlatformWallet = publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
   const canFlip = isPlatformWallet || publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
   // Query for user profile stats (platform wallet viewing other users)
@@ -3338,7 +3338,7 @@ export default function SolRefund() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
-                        {publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' && (
+                        {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                           <>
                             <Link href="/admin/x-bot">
                               <DropdownMenuItem 
@@ -3425,7 +3425,7 @@ export default function SolRefund() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
-                      {publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' && (
+                      {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                         <>
                           <Link href="/admin/x-bot">
                             <DropdownMenuItem 
@@ -5656,7 +5656,7 @@ export default function SolRefund() {
           {activeTab === 'docs' && showDeveloper && false && (
               <div className="space-y-6">
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
-                {publicKey?.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS' && (
+                {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                   <div className="px-2 md:px-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       {/* Total Deposits Card */}
@@ -5928,7 +5928,7 @@ export default function SolRefund() {
                                 }
                                 
                                 // Refresh stats if platform wallet
-                                if (publicKey.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS') {
+                                if (publicKey.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT') {
                                   const statsResponse = await fetch('/api/jupiter-lend/statistics');
                                   if (statsResponse.ok) {
                                     const stats = await statsResponse.json();
@@ -6323,7 +6323,7 @@ export default function SolRefund() {
                             }
                             
                             // Refresh stats if platform wallet
-                            if (publicKey.toString() === 'GETjtmGryhn2NvQovweRVU4RZHZDURoQWcioTZGcbRQS') {
+                            if (publicKey.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT') {
                               const statsResponse = await fetch('/api/jupiter-lend/statistics');
                               if (statsResponse.ok) {
                                 const stats = await statsResponse.json();
