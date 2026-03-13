@@ -4533,7 +4533,7 @@ export default function SolRefund() {
                     </div>
                     <div className="text-center">
                       <p className="text-gray-400 text-xs mb-1">Rewards</p>
-                      <p className="text-purple-300 font-black text-lg">SOL + $GFS</p>
+                      <p className="text-purple-300 font-black text-lg">SOL</p>
                     </div>
                   </div>
                   <button className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-lg transition-all border border-purple-400/50 opacity-60 cursor-not-allowed" disabled>
