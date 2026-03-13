@@ -4541,6 +4541,39 @@ export default function SolRefund() {
                   </button>
                 </div>
 
+                {/* GSOL Info Section */}
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-white font-black text-xl">What is GSOL?</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    GSOL is the native liquid staking token of the GetFreeSol platform. When you stake SOL, you receive GSOL in return — a token that automatically grows in value as staking rewards accumulate. You can hold, trade, or use GSOL across Solana DeFi while your SOL keeps earning.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                    <div className={`rounded-xl p-4 border ${isNightMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-purple-900/20 border-purple-500/20'}`}>
+                      <div className="text-2xl mb-2">💧</div>
+                      <p className="text-white font-bold mb-1">Liquid</p>
+                      <p className="text-gray-400 text-xs">Your staked SOL stays liquid. Sell or use GSOL anytime — no lock-up periods.</p>
+                    </div>
+                    <div className={`rounded-xl p-4 border ${isNightMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-purple-900/20 border-purple-500/20'}`}>
+                      <div className="text-2xl mb-2">📈</div>
+                      <p className="text-white font-bold mb-1">Auto-compounding</p>
+                      <p className="text-gray-400 text-xs">Rewards are automatically compounded. GSOL value increases over time relative to SOL.</p>
+                    </div>
+                    <div className={`rounded-xl p-4 border ${isNightMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-purple-900/20 border-purple-500/20'}`}>
+                      <div className="text-2xl mb-2">🔓</div>
+                      <p className="text-white font-bold mb-1">No minimum</p>
+                      <p className="text-gray-400 text-xs">Stake any amount of SOL. No minimum required to start earning.</p>
+                    </div>
+                  </div>
+
+                  <div className={`rounded-xl p-4 border flex gap-3 items-start ${isNightMode ? 'bg-blue-900/10 border-blue-800/30' : 'bg-blue-900/20 border-blue-500/20'}`}>
+                    <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-blue-200 text-sm">
+                      GSOL staking is launching soon. Stake your SOL to receive GSOL and earn native Solana staking rewards automatically — no action needed after staking.
+                    </p>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
