@@ -4514,8 +4514,8 @@ export default function SolRefund() {
                 <div className="mb-6 rounded-2xl p-6 border-2 border-purple-400/60 bg-gradient-to-br from-purple-700/30 to-blue-700/20 relative overflow-hidden">
                   <div className="absolute top-3 right-3 bg-purple-500 text-white text-xs font-black px-3 py-1 rounded-full tracking-wider uppercase">Our Token</div>
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 via-blue-400 to-green-400 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                      <span className="text-white font-black text-xl">G</span>
+                    <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-black/30">
+                      <img src="/gsol-logo.png" alt="GSOL" className="w-12 h-12 object-contain" />
                     </div>
                     <div>
                       <h3 className="text-white font-black text-2xl">GSOL</h3>
