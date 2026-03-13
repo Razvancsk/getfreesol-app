@@ -4508,7 +4508,7 @@ export default function SolRefund() {
           {activeTab === 'staking' && (
             <div className="space-y-6">
               <div className={`rounded-2xl p-6 md:p-10 border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-3 mb-4">
                   <div className="p-3 rounded-xl bg-blue-500/20 border border-blue-400/30">
                     <Zap className="h-7 w-7 text-blue-400" />
                   </div>
@@ -4516,6 +4516,16 @@ export default function SolRefund() {
                     <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
                     <p className="text-blue-300 text-sm">Earn yield on your SOL</p>
                   </div>
+                </div>
+
+                {/* Coming Soon Banner */}
+                <div className="flex items-center justify-center gap-3 mb-6 py-3 px-5 rounded-2xl bg-yellow-500/10 border border-yellow-400/30">
+                  <span className="text-2xl">🔒</span>
+                  <div className="text-center">
+                    <p className="text-yellow-300 font-black text-base tracking-wide uppercase">Coming Soon — Not Yet Live</p>
+                    <p className="text-yellow-400/70 text-xs mt-0.5">GSOL liquid staking is under development. Stay tuned!</p>
+                  </div>
+                  <span className="text-2xl">🔒</span>
                 </div>
 
                 {/* GSOL Staking Module */}
