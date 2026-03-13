@@ -108,7 +108,7 @@ export default function SolRefund() {
   const { isNightMode, toggleTheme } = useTheme();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip'>('reclaim');
+  const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip' | 'staking'>('reclaim');
   const [claimSubTab, setClaimSubTab] = useState<'empty' | 'programs'>('empty');
   const [showDeveloper, setShowDeveloper] = useState(false);
   const [showDevAccountModal, setShowDevAccountModal] = useState(false);
@@ -3480,7 +3480,7 @@ export default function SolRefund() {
           {activeTab !== 'docs' && (
             <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
-{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
+{activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'staking' ? 'Stake your SOL and earn yield.' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
               </p>
             </div>
           )}
@@ -3557,6 +3557,16 @@ export default function SolRefund() {
                   <span className="text-base md:text-xl">🪙</span> Flip
                 </Button>
                 )}
+                <Button
+                  onClick={() => setActiveTab('staking')}
+                  className={`flex-1 md:flex-none md:min-w-[100px] px-3 md:px-4 py-2.5 text-base md:text-lg font-semibold rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2 border whitespace-nowrap ${
+                    activeTab === 'staking'
+                      ? 'bg-blue-600 text-white border-blue-500'
+                      : 'bg-purple-800/40 text-white hover:bg-blue-600/60 border-purple-500/30'
+                  }`}
+                >
+                  <Zap className="h-4 w-4 md:h-5 md:w-5 shrink-0" /> Stake
+                </Button>
               </div>
             </div>
           )}
@@ -4484,6 +4494,103 @@ export default function SolRefund() {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Staking Page */}
+          {activeTab === 'staking' && (
+            <div className="space-y-6">
+              <div className={`rounded-2xl p-6 md:p-10 border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 rounded-xl bg-blue-500/20 border border-blue-400/30">
+                    <Zap className="h-7 w-7 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
+                    <p className="text-blue-300 text-sm">Earn yield on your SOL</p>
+                  </div>
+                </div>
+
+                {/* Staking options */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Marinade */}
+                  <a href="https://marinade.finance" target="_blank" rel="noopener noreferrer"
+                    className={`group rounded-xl p-5 border transition-all hover:scale-[1.02] cursor-pointer ${isNightMode ? 'bg-[#1a1a1a] border-[#333] hover:border-blue-500/50' : 'bg-blue-900/20 border-blue-500/20 hover:border-blue-400/60'}`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-black text-lg">M</div>
+                      <div>
+                        <p className="text-white font-bold text-lg">Marinade</p>
+                        <p className="text-blue-300 text-xs">mSOL liquid staking</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-400 text-sm">APY</span>
+                      <span className="text-green-400 font-black text-xl">~7.5%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Token</span>
+                      <span className="text-white font-bold">mSOL</span>
+                    </div>
+                    <div className="mt-4 w-full py-2 rounded-lg bg-blue-600/30 group-hover:bg-blue-600/60 text-blue-200 text-center text-sm font-bold transition-all border border-blue-500/30">
+                      Stake on Marinade →
+                    </div>
+                  </a>
+
+                  {/* Jito */}
+                  <a href="https://www.jito.network/staking/" target="_blank" rel="noopener noreferrer"
+                    className={`group rounded-xl p-5 border transition-all hover:scale-[1.02] cursor-pointer ${isNightMode ? 'bg-[#1a1a1a] border-[#333] hover:border-green-500/50' : 'bg-green-900/20 border-green-500/20 hover:border-green-400/60'}`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-black text-lg">J</div>
+                      <div>
+                        <p className="text-white font-bold text-lg">Jito</p>
+                        <p className="text-green-300 text-xs">jitoSOL + MEV rewards</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-400 text-sm">APY</span>
+                      <span className="text-green-400 font-black text-xl">~8.2%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Token</span>
+                      <span className="text-white font-bold">jitoSOL</span>
+                    </div>
+                    <div className="mt-4 w-full py-2 rounded-lg bg-green-600/30 group-hover:bg-green-600/60 text-green-200 text-center text-sm font-bold transition-all border border-green-500/30">
+                      Stake on Jito →
+                    </div>
+                  </a>
+
+                  {/* Sanctum */}
+                  <a href="https://sanctum.so" target="_blank" rel="noopener noreferrer"
+                    className={`group rounded-xl p-5 border transition-all hover:scale-[1.02] cursor-pointer ${isNightMode ? 'bg-[#1a1a1a] border-[#333] hover:border-purple-500/50' : 'bg-purple-900/20 border-purple-500/20 hover:border-purple-400/60'}`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-black text-lg">S</div>
+                      <div>
+                        <p className="text-white font-bold text-lg">Sanctum</p>
+                        <p className="text-purple-300 text-xs">Infinite LST liquidity</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-400 text-sm">APY</span>
+                      <span className="text-green-400 font-black text-xl">~8.0%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">Token</span>
+                      <span className="text-white font-bold">LSTs</span>
+                    </div>
+                    <div className="mt-4 w-full py-2 rounded-lg bg-purple-600/30 group-hover:bg-purple-600/60 text-purple-200 text-center text-sm font-bold transition-all border border-purple-500/30">
+                      Stake on Sanctum →
+                    </div>
+                  </a>
+                </div>
+
+                {/* Info box */}
+                <div className={`mt-6 rounded-xl p-4 border flex gap-3 items-start ${isNightMode ? 'bg-blue-900/10 border-blue-800/30' : 'bg-blue-900/20 border-blue-500/20'}`}>
+                  <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-blue-200 text-sm">
+                    Liquid staking lets you earn SOL staking rewards while keeping your SOL liquid — you can use your staked tokens in DeFi or sell them anytime. APYs shown are approximate and change daily.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Swap Tab Content - Platform Wallet Only */}
