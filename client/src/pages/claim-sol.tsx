@@ -3584,7 +3584,7 @@ export default function SolRefund() {
               <div className="relative flex items-center bg-purple-900/40 border border-purple-500/30 rounded-full p-1 gap-0">
                 {/* Sliding background pill */}
                 <div
-                  className="absolute top-1 bottom-1 rounded-full bg-orange-500 transition-all duration-300 ease-in-out"
+                  className="absolute top-1 bottom-1 rounded-full bg-purple-600 transition-all duration-300 ease-in-out"
                   style={{
                     width: 'calc(50% - 4px)',
                     left: burnSubTab === 'tokens' ? '4px' : 'calc(50%)',
