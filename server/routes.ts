@@ -1988,21 +1988,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Store scan result
-      const scanResult = await storage.createScanResult({
-        walletAddress: address,
-        totalAccounts: allTokenAccounts.length,
-        emptyAccounts: emptyAccounts.length,
-        totalReclaimable: totalReclaimable.toString()
-      });
+      // Store scan result (best-effort — skip if DB unavailable)
+      let scannedAt = new Date().toISOString();
+      try {
+        const scanResult = await storage.createScanResult({
+          walletAddress: address,
+          totalAccounts: allTokenAccounts.length,
+          emptyAccounts: emptyAccounts.length,
+          totalReclaimable: totalReclaimable.toString()
+        });
+        scannedAt = scanResult.scannedAt.toISOString();
 
-      // Store empty accounts
-      for (const account of emptyAccounts) {
-        await storage.createEmptyTokenAccount(account);
+        for (const account of emptyAccounts) {
+          await storage.createEmptyTokenAccount(account);
+        }
+      } catch (dbErr) {
+        console.warn("DB unavailable, scan results not persisted:", dbErr);
       }
-
-      // Note: Wallet check Discord alerts are only sent from the Discord bot /scan command
-      // NOT from website scans to avoid spam
 
       const response = {
         success: true,
@@ -2011,7 +2013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emptyAccounts: emptyAccounts.length,
         totalReclaimable: totalReclaimable.toFixed(9),
         accounts: emptyAccounts,
-        scannedAt: scanResult.scannedAt.toISOString()
+        scannedAt
       };
 
       res.json(response);
