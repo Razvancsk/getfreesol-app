@@ -3657,6 +3657,7 @@ export default function SolRefund() {
                     </div>
                     <div className="text-center p-4 md:p-8 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
                       <div className="text-2xl md:text-5xl font-bold text-green-400">+{refundCalc.net.toFixed(5)}</div>
+                      <div className="text-xs md:text-base text-purple-200 mt-1">To Claim</div>
                     </div>
                   </div>
 
