@@ -117,6 +117,7 @@ export default function SolRefund() {
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
   const [mobileWalletMenuOpen, setMobileWalletMenuOpen] = useState(false);
+  const [desktopWalletMenuOpen, setDesktopWalletMenuOpen] = useState(false);
   const [stakeMode, setStakeMode] = useState<'stake' | 'unstake'>('stake');
   const [stakeAmount, setStakeAmount] = useState('');
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
@@ -3414,45 +3415,41 @@ export default function SolRefund() {
                       <span>Profile</span>
                     </Button>
                   </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 flex items-center space-x-2"
-                        data-testid="button-wallet-connected-desktop"
-                      >
-                        <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="bg-slate-800 border-purple-500/30 w-44 max-w-[calc(100vw-16px)]">
-                      {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
-                        <>
-                          <Link href="/admin/x-bot">
-                            <DropdownMenuItem 
-                              className="text-white hover:bg-purple-600/40 cursor-pointer"
-                              data-testid="button-admin-xbot-desktop"
-                            >
-                              🤖 X Bot Admin
-                            </DropdownMenuItem>
-                          </Link>
-                          <Link href="/x-admin">
-                            <DropdownMenuItem 
-                              className="text-white hover:bg-purple-600/40 cursor-pointer"
-                              data-testid="button-x-admin-desktop"
-                            >
-                              🐦 X Account
-                            </DropdownMenuItem>
-                          </Link>
-                        </>
-                      )}
-                      <DropdownMenuItem 
-                        onClick={disconnectWallet}
-                        className="text-white hover:bg-purple-600/40 cursor-pointer"
-                        data-testid="button-disconnect-desktop"
-                      >
-                        Disconnect
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="relative">
+                    <button
+                      onClick={() => setDesktopWalletMenuOpen(o => !o)}
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-4 py-2 text-white font-mono text-sm border border-purple-500/30 outline-none"
+                      style={{ WebkitTapHighlightColor: 'transparent' }}
+                      data-testid="button-wallet-connected-desktop"
+                    >
+                      {publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}
+                    </button>
+                    {desktopWalletMenuOpen && (
+                      <div className="fixed inset-0 z-40" onClick={() => setDesktopWalletMenuOpen(false)} />
+                    )}
+                    {desktopWalletMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg w-full overflow-hidden">
+                        {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                          <>
+                            <Link href="/admin/x-bot" onClick={() => setDesktopWalletMenuOpen(false)}>
+                              <div className="px-3 py-2 text-white cursor-pointer text-sm text-center truncate" style={{ WebkitTapHighlightColor: 'transparent' }} data-testid="button-admin-xbot-desktop">🤖 X Bot Admin</div>
+                            </Link>
+                            <Link href="/x-admin" onClick={() => setDesktopWalletMenuOpen(false)}>
+                              <div className="px-3 py-2 text-white cursor-pointer text-sm text-center truncate" style={{ WebkitTapHighlightColor: 'transparent' }} data-testid="button-x-admin-desktop">🐦 X Account</div>
+                            </Link>
+                          </>
+                        )}
+                        <div
+                          onClick={() => { disconnectWallet(); setDesktopWalletMenuOpen(false); }}
+                          className="px-3 py-2 text-white cursor-pointer text-sm text-center truncate"
+                          style={{ WebkitTapHighlightColor: 'transparent' }}
+                          data-testid="button-disconnect-desktop"
+                        >
+                          Disconnect
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <div className="flex flex-col items-center space-y-3">
