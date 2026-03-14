@@ -3594,7 +3594,7 @@ export default function SolRefund() {
           {/* Burn sub-nav: Token / NFT slider toggle */}
           {activeTab === 'burnTokens' && (
             <div className="flex items-center justify-center pb-2">
-              <div className="relative flex items-center bg-purple-900/40 border border-purple-500/30 rounded-full p-1 gap-0">
+              <div className={`relative flex items-center border rounded-full p-1 gap-0 ${isNightMode ? 'bg-white/10 border-white/20' : 'bg-purple-900/40 border-purple-500/30'}`}>
                 {/* Sliding background pill */}
                 <div
                   className="absolute top-1 bottom-1 rounded-full bg-purple-600 transition-all duration-300 ease-in-out"
