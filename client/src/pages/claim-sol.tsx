@@ -3626,8 +3626,11 @@ export default function SolRefund() {
                     ? 'bg-[#141414] border border-[#2a2a2a]' 
                     : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
                 }`}>
-                  <div className="flex flex-col items-center gap-3 py-2">
-                    <svg viewBox="0 0 397.7 311.7" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
+                  <div className="mb-4 md:mb-8 flex items-center justify-between">
+                    <h3 className="text-lg md:text-2xl font-semibold text-white">Scan Results</h3>
+                  </div>
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <svg viewBox="0 0 397.7 311.7" className="w-8 h-8 opacity-40" xmlns="http://www.w3.org/2000/svg">
                       <defs>
                         <linearGradient id="solGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#9945FF"/>
@@ -3638,19 +3641,10 @@ export default function SolRefund() {
                       <path fill="url(#solGrad1)" d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                       <path fill="url(#solGrad1)" d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                     </svg>
-                    <div>
-                      <h3 className="text-lg font-bold text-white text-center mb-1">Get rewarded for SOL tokens that you don't need</h3>
-                      <p className="text-purple-300 text-center text-xs">Swap, burn, or just close vacant accounts to reclaim locked rent</p>
-                    </div>
-                    <div className="flex items-center gap-3 opacity-60">
-                      <img src="https://phantom.com/img/phantom-logo.svg" alt="Phantom" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                      <img src="https://backpack.app/favicon.ico" alt="Backpack" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                      <img src="https://solflare.com/favicon.ico" alt="Solflare" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                      <img src="https://www.ledger.com/favicon.ico" alt="Ledger" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                    </div>
+                    <p className="text-purple-300 text-sm">Connect wallet and scan to find empty accounts</p>
                     <Button
                       onClick={() => { select(null); setVisible(true); }}
-                      className="bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white rounded-full px-8 py-2 text-sm font-bold border-0 shadow-lg shadow-purple-900/40 flex items-center gap-2"
+                      className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 text-sm font-semibold border border-purple-500/30 flex items-center gap-2"
                     >
                       <Wallet className="h-4 w-4" />
                       Connect wallet
