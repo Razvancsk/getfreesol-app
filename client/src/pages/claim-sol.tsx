@@ -4539,7 +4539,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Stake / Unstake toggle */}
-                  <div className={`relative flex rounded-2xl p-1.5 mb-6 border border-white/30 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/30'}`}>
+                  <div className={`relative flex rounded-2xl p-1.5 mb-6 border border-white ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/30'}`}>
                     <div
                       className="absolute top-1.5 bottom-1.5 rounded-xl bg-purple-600 transition-all duration-300"
                       style={{ width: 'calc(50% - 6px)', left: stakeMode === 'stake' ? '6px' : 'calc(50%)' }}
@@ -4549,7 +4549,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Amount input */}
-                  <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
+                  <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white' : 'bg-purple-900/20 border border-white'}`}>
                     {/* Top row: label + balance + HALF/MAX */}
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-white text-sm font-semibold">{stakeMode === 'stake' ? 'Stake' : 'Unstake'}</span>
@@ -4576,7 +4576,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Stats */}
-                  <div className={`rounded-2xl p-5 mb-5 space-y-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
+                  <div className={`rounded-2xl p-5 mb-5 space-y-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white' : 'bg-purple-900/20 border border-white'}`}>
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">You receive</span>
                       <span className="text-white font-bold text-base flex items-center gap-2">
