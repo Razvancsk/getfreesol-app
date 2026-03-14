@@ -3591,16 +3591,16 @@ export default function SolRefund() {
 
 
 
-          {/* Burn sub-nav: Token / NFT flat tab toggle */}
+          {/* Burn sub-nav: Token / NFT pill toggle */}
           {activeTab === 'burnTokens' && (
             <div className="flex items-center justify-center pb-2">
-              <div className="flex items-center">
+              <div className={`flex items-center border rounded-full overflow-hidden ${isNightMode ? 'bg-white/10 border-white/20' : 'bg-purple-900/40 border-purple-500/30'}`}>
                 <button
                   onClick={() => setBurnSubTab('tokens')}
-                  className={`px-6 py-2 text-sm font-bold transition-colors duration-200 border-b-2 ${
+                  className={`px-6 py-2 text-sm font-bold transition-colors duration-200 ${
                     burnSubTab === 'tokens'
-                      ? 'text-white border-purple-500'
-                      : isNightMode ? 'text-white/40 border-transparent' : 'text-purple-300 border-transparent'
+                      ? 'bg-purple-600 text-white'
+                      : isNightMode ? 'text-white/40' : 'text-purple-300'
                   }`}
                 >
                   🪙 Token
@@ -3608,10 +3608,10 @@ export default function SolRefund() {
                 <div className={`w-px h-5 ${isNightMode ? 'bg-white/20' : 'bg-purple-500/40'}`} />
                 <button
                   onClick={() => setBurnSubTab('nft')}
-                  className={`px-6 py-2 text-sm font-bold transition-colors duration-200 border-b-2 ${
+                  className={`px-6 py-2 text-sm font-bold transition-colors duration-200 ${
                     burnSubTab === 'nft'
-                      ? 'text-white border-purple-500'
-                      : isNightMode ? 'text-white/40 border-transparent' : 'text-purple-300 border-transparent'
+                      ? 'bg-purple-600 text-white'
+                      : isNightMode ? 'text-white/40' : 'text-purple-300'
                   }`}
                 >
                   🖼️ NFT
