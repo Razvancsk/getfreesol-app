@@ -6397,15 +6397,16 @@ export default function SolRefund() {
                 </div>
               </div>
 
-              {/* Desktop: two separate cards */}
-              <div className="hidden md:grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+              {/* Desktop: single card with divider */}
+              <div className="hidden md:flex bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
+                <div className="flex-1 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
                     {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
                   </div>
                   <div className="text-sm text-purple-200 uppercase tracking-wider">TOTAL SOL RECOVERED</div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                <div className="w-px bg-purple-500/30 my-5" />
+                <div className="flex-1 p-6 text-center">
                   <div className="text-3xl font-bold text-white mb-2">
                     {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
                   </div>
