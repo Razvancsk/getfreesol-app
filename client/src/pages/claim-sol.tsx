@@ -3635,9 +3635,8 @@ export default function SolRefund() {
                     <p className="text-purple-300 text-sm">Connect wallet and scan to find empty accounts</p>
                     <Button
                       onClick={() => { select(null); setVisible(true); }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 text-sm font-semibold border border-purple-500/30 flex items-center gap-2"
+                      className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 text-sm font-semibold border border-purple-500/30"
                     >
-                      <Wallet className="h-4 w-4" />
                       Connect wallet
                     </Button>
                   </div>
