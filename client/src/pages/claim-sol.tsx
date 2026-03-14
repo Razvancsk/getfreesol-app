@@ -3594,13 +3594,17 @@ export default function SolRefund() {
           {/* Burn sub-nav: Token / NFT pill toggle */}
           {activeTab === 'burnTokens' && (
             <div className="flex items-center justify-center pb-2">
-              <div className={`flex items-center border rounded-md overflow-hidden ${isNightMode ? 'bg-white/10 border-white/20' : 'bg-purple-900/40 border-purple-500/30'}`}>
+              <div className={`flex items-center gap-2`}>
                 <button
                   onClick={() => setBurnSubTab('tokens')}
-                  className={`px-6 py-2 text-sm font-bold transition-colors duration-200 ${
+                  className={`px-6 py-2 text-sm font-bold rounded-md transition-all duration-200 border ${
                     burnSubTab === 'tokens'
-                      ? 'bg-purple-600 text-white'
-                      : isNightMode ? 'text-white/40' : 'text-purple-300'
+                      ? isNightMode
+                        ? 'bg-transparent text-green-400 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]'
+                        : 'bg-purple-600 text-white border-purple-600'
+                      : isNightMode
+                        ? 'text-white/40 border-white/10 bg-transparent'
+                        : 'text-purple-300 border-purple-500/30 bg-purple-900/40'
                   }`}
                 >
                   🪙 Token
@@ -3608,10 +3612,14 @@ export default function SolRefund() {
                 <div className={`w-px h-5 ${isNightMode ? 'bg-white/20' : 'bg-purple-500/40'}`} />
                 <button
                   onClick={() => setBurnSubTab('nft')}
-                  className={`px-6 py-2 text-sm font-bold transition-colors duration-200 ${
+                  className={`px-6 py-2 text-sm font-bold rounded-md transition-all duration-200 border ${
                     burnSubTab === 'nft'
-                      ? 'bg-purple-600 text-white'
-                      : isNightMode ? 'text-white/40' : 'text-purple-300'
+                      ? isNightMode
+                        ? 'bg-transparent text-green-400 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]'
+                        : 'bg-purple-600 text-white border-purple-600'
+                      : isNightMode
+                        ? 'text-white/40 border-white/10 bg-transparent'
+                        : 'text-purple-300 border-purple-500/30 bg-purple-900/40'
                   }`}
                 >
                   🖼️ NFT
