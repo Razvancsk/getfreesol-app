@@ -4520,15 +4520,6 @@ export default function SolRefund() {
                   </div>
                 </div>
 
-                {/* Coming Soon Banner */}
-                <div className="flex items-center justify-center gap-3 mb-6 py-3 px-5 rounded-2xl bg-yellow-500/10 border border-yellow-400/30">
-                  <span className="text-2xl">🔒</span>
-                  <div className="text-center">
-                    <p className="text-yellow-300 font-black text-base tracking-wide uppercase">Coming Soon — Not Yet Live</p>
-                    <p className="text-yellow-400/70 text-xs mt-0.5">GSOL liquid staking is under development. Stay tuned!</p>
-                  </div>
-                  <span className="text-2xl">🔒</span>
-                </div>
 
                 {/* GSOL Staking Module */}
                 <div className="mb-6 max-w-lg mx-auto">
