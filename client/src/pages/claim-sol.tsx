@@ -3630,7 +3630,7 @@ export default function SolRefund() {
           )}
 
           {/* Reclaim SOL Results */}
-          {isConnected && activeTab === 'reclaim' && (
+          {activeTab === 'reclaim' && (
             <div className="space-y-4">
               {/* Empty Accounts Content */}
               {claimSubTab === 'empty' && (
@@ -3758,7 +3758,7 @@ export default function SolRefund() {
           )}
 
           {/* Burn Tokens Results */}
-          {isConnected && activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
+          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
               <div className="flex items-center justify-between mb-4 md:mb-8">
@@ -4058,7 +4058,7 @@ export default function SolRefund() {
           )}
 
           {/* NFT Burning Interface */}
-          {isConnected && activeTab === 'burnTokens' && burnSubTab === 'nft' && (
+          {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
               <div className="flex items-center justify-between mb-6 md:mb-8">
@@ -6515,7 +6515,7 @@ export default function SolRefund() {
           )}
 
           {/* Referral Program Section - Only show on reclaim tab - Bottom of page */}
-          {isConnected && activeTab === 'reclaim' && (
+          {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <Users className="h-5 w-5 text-purple-400 mr-2" />
@@ -6566,7 +6566,7 @@ export default function SolRefund() {
           )}
 
           {/* What is this rent? Section - Only show on reclaim tab - Bottom of page */}
-          {isConnected && activeTab === 'reclaim' && (
+          {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
@@ -6588,7 +6588,7 @@ export default function SolRefund() {
           )}
 
           {/* Safety & Security Section - Only show on reclaim tab - Bottom of page */}
-          {isConnected && activeTab === 'reclaim' && (
+          {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
