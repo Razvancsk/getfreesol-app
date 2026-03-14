@@ -3366,7 +3366,8 @@ export default function SolRefund() {
                           )}
                           <div
                             onClick={() => { disconnectWallet(); setMobileWalletMenuOpen(false); }}
-                            className="px-2 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate"
+                            className="px-2 py-2 text-white cursor-pointer text-xs text-center truncate"
+                            style={{ WebkitTapHighlightColor: 'transparent' }}
                             data-testid="button-disconnect"
                           >
                             Disconnect
