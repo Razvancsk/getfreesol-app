@@ -3475,19 +3475,6 @@ export default function SolRefund() {
 
 
           {/* Description */}
-          {/* Pre-connect landing: show connect button when not connected */}
-          {!isConnected && activeTab !== 'docs' && (
-            <div className="flex flex-col items-center gap-6 py-4">
-              {/* Connect Wallet button */}
-              <Button
-                onClick={() => { select(null); setVisible(true); }}
-                className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-10 py-4 text-xl font-bold border border-purple-500/30 flex items-center gap-3"
-              >
-                <Wallet className="h-6 w-6" />
-                Connect Wallet
-              </Button>
-            </div>
-          )}
 
           {isConnected && activeTab !== 'docs' && (
             <div className="text-center py-1">
