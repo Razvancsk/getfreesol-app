@@ -3475,7 +3475,37 @@ export default function SolRefund() {
 
 
           {/* Description */}
-          {activeTab !== 'docs' && (
+          {/* Pre-connect landing: show stats + connect button when not connected */}
+          {!isConnected && activeTab !== 'docs' && (
+            <div className="flex flex-col items-center gap-6 py-4">
+              {/* Stats card */}
+              <div className="w-full max-w-md flex bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
+                <div className="flex-1 p-5 text-center">
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
+                  </div>
+                  <div className="text-xs text-purple-200 uppercase tracking-wider">SOL RECOVERED</div>
+                </div>
+                <div className="w-px bg-purple-500/30 my-4" />
+                <div className="flex-1 p-5 text-center">
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {stats ? stats.totalAccountsClaimed.toLocaleString() : '0'}
+                  </div>
+                  <div className="text-xs text-purple-200 uppercase tracking-wider">ACCOUNTS CLOSED</div>
+                </div>
+              </div>
+              {/* Connect Wallet button */}
+              <Button
+                onClick={() => { select(null); setVisible(true); }}
+                className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-10 py-4 text-xl font-bold border border-purple-500/30 flex items-center gap-3"
+              >
+                <Wallet className="h-6 w-6" />
+                Connect Wallet
+              </Button>
+            </div>
+          )}
+
+          {isConnected && activeTab !== 'docs' && (
             <div className="text-center py-1">
               <p className="text-white max-w-2xl mx-auto text-2xl font-semibold">
 {activeTab === 'referrals' ? 'Earn 50% commission from your referrals — just by helping others!' : activeTab === 'burnTokens' ? (burnSubTab === 'tokens' ? 'Burn Unwanted Tokens.' : 'Burn Unwanted NFTs.') : activeTab === 'swap' ? 'Swap tokens instantly. Earn 50% of MEV rebates!' : activeTab === 'statistics' ? 'Track rent recovery metrics and top performers' : activeTab === 'coinflip' ? 'Click, Flip, Snatch!' : activeTab === 'staking' ? 'Stake your SOL and earn yield.' : activeTab === 'reclaim' && claimSubTab === 'programs' ? 'Recover SOL from failed program deploys.' : 'Get your SOL back!'}
@@ -3483,8 +3513,8 @@ export default function SolRefund() {
             </div>
           )}
 
-          {/* Center Navigation Buttons */}
-          {activeTab !== 'docs' && (
+          {/* Center Navigation Buttons - only when connected */}
+          {isConnected && activeTab !== 'docs' && (
             <div className="py-3 -mx-3 md:mx-0 md:px-2">
               <div className="flex items-center gap-2 md:gap-3 md:justify-center w-full">
                 <Button
@@ -3616,7 +3646,7 @@ export default function SolRefund() {
           )}
 
           {/* Reclaim SOL Results */}
-          {activeTab === 'reclaim' && (
+          {isConnected && activeTab === 'reclaim' && (
             <div className="space-y-4">
               {/* Empty Accounts Content */}
               {claimSubTab === 'empty' && (
@@ -3744,7 +3774,7 @@ export default function SolRefund() {
           )}
 
           {/* Burn Tokens Results */}
-          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
+          {isConnected && activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
               <div className="flex items-center justify-between mb-4 md:mb-8">
@@ -4044,7 +4074,7 @@ export default function SolRefund() {
           )}
 
           {/* NFT Burning Interface */}
-          {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
+          {isConnected && activeTab === 'burnTokens' && burnSubTab === 'nft' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
               <div className="flex items-center justify-between mb-6 md:mb-8">
@@ -6370,7 +6400,7 @@ export default function SolRefund() {
           )}
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
-          {activeTab === 'reclaim' && (
+          {isConnected && activeTab === 'reclaim' && (
             <div className="mb-6">
               {/* Mobile: single card with divider */}
               <div className="flex md:hidden bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
@@ -6409,7 +6439,7 @@ export default function SolRefund() {
           )}
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
-          {activeTab === 'reclaim' && (
+          {isConnected && activeTab === 'reclaim' && (
             <div className={`backdrop-blur-sm rounded-xl p-6 mb-6 ${
               isNightMode 
                 ? 'bg-[#141414] border border-[#2a2a2a]' 
@@ -6501,7 +6531,7 @@ export default function SolRefund() {
           )}
 
           {/* Referral Program Section - Only show on reclaim tab - Bottom of page */}
-          {activeTab === 'reclaim' && (
+          {isConnected && activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <Users className="h-5 w-5 text-purple-400 mr-2" />
@@ -6552,7 +6582,7 @@ export default function SolRefund() {
           )}
 
           {/* What is this rent? Section - Only show on reclaim tab - Bottom of page */}
-          {activeTab === 'reclaim' && (
+          {isConnected && activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
@@ -6574,7 +6604,7 @@ export default function SolRefund() {
           )}
 
           {/* Safety & Security Section - Only show on reclaim tab - Bottom of page */}
-          {activeTab === 'reclaim' && (
+          {isConnected && activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
               <div className="flex items-center mb-4">
                 <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
