@@ -6379,24 +6379,37 @@ export default function SolRefund() {
 
           {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
           {activeTab === 'reclaim' && (
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {/* Total SOL Recovered */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
-                  {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
+            <div className="mb-6">
+              {/* Mobile: single card with divider */}
+              <div className="flex md:hidden bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
+                <div className="flex-1 p-5 text-center">
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
+                  </div>
+                  <div className="text-xs text-purple-200 uppercase tracking-wider">TOTAL SOL RECOVERED</div>
                 </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  TOTAL SOL RECOVERED
+                <div className="w-px bg-purple-500/30 my-4" />
+                <div className="flex-1 p-5 text-center">
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
+                  </div>
+                  <div className="text-xs text-purple-200 uppercase tracking-wider">TOTAL ACCOUNTS CLOSED</div>
                 </div>
               </div>
 
-              {/* Total Accounts Closed */}
-              <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">
-                  {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
+              {/* Desktop: two separate cards */}
+              <div className="hidden md:grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">TOTAL SOL RECOVERED</div>
                 </div>
-                <div className="text-sm text-purple-200 uppercase tracking-wider">
-                  TOTAL ACCOUNTS CLOSED
+                <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 text-center">
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
+                  </div>
+                  <div className="text-sm text-purple-200 uppercase tracking-wider">TOTAL ACCOUNTS CLOSED</div>
                 </div>
               </div>
             </div>
