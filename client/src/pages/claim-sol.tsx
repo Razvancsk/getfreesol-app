@@ -6383,8 +6383,8 @@ export default function SolRefund() {
               </div>
           )}
 
-          {/* Statistics Section - Only show on reclaim tab - Above safety sections */}
-          {isConnected && activeTab === 'reclaim' && (
+          {/* Statistics Section - Always show on reclaim tab */}
+          {activeTab === 'reclaim' && (
             <div className="mb-6">
               {/* Mobile: single card with divider */}
               <div className="flex md:hidden bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
