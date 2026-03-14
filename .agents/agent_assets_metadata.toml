@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "nG42daxEn3-jWmD4nnype"
+uri = "file://gsol-token-logo-512.png"
+type = "image"
+title = "GSOL Token Logo 512×512"
