@@ -3642,9 +3642,8 @@ export default function SolRefund() {
                   {scanMutation.isPending ? (
                     <div className="text-purple-300 py-12">Scanning wallet...</div>
                   ) : !isConnected ? (
-                    <div className="flex flex-col items-center gap-5 py-8">
-                      {/* Solana logo */}
-                      <svg viewBox="0 0 397.7 311.7" className="w-12 h-12" xmlns="http://www.w3.org/2000/svg">
+                    <div className="flex flex-col items-center gap-3 py-4">
+                      <svg viewBox="0 0 397.7 311.7" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                           <linearGradient id="solGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#9945FF"/>
@@ -3656,21 +3655,20 @@ export default function SolRefund() {
                         <path fill="url(#solGrad1)" d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                       </svg>
                       <div>
-                        <h3 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">Get rewarded for SOL tokens<br/>that you don't need</h3>
-                        <p className="text-purple-300 text-center text-sm md:text-base">Swap, burn, or just close vacant accounts to reclaim locked rent</p>
+                        <h3 className="text-lg font-bold text-white text-center mb-1">Get rewarded for SOL tokens that you don't need</h3>
+                        <p className="text-purple-300 text-center text-xs">Swap, burn, or just close vacant accounts to reclaim locked rent</p>
                       </div>
-                      {/* Wallet icons */}
-                      <div className="flex items-center gap-4 opacity-60">
-                        <img src="https://phantom.com/img/phantom-logo.svg" alt="Phantom" className="w-8 h-8 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                        <img src="https://backpack.app/favicon.ico" alt="Backpack" className="w-8 h-8 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                        <img src="https://solflare.com/favicon.ico" alt="Solflare" className="w-8 h-8 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                        <img src="https://www.ledger.com/favicon.ico" alt="Ledger" className="w-8 h-8 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                      <div className="flex items-center gap-3 opacity-60">
+                        <img src="https://phantom.com/img/phantom-logo.svg" alt="Phantom" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                        <img src="https://backpack.app/favicon.ico" alt="Backpack" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                        <img src="https://solflare.com/favicon.ico" alt="Solflare" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                        <img src="https://www.ledger.com/favicon.ico" alt="Ledger" className="w-6 h-6 rounded-full bg-gray-800" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                       </div>
                       <Button
                         onClick={() => { select(null); setVisible(true); }}
-                        className="bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white rounded-full px-10 py-3 text-lg font-bold border-0 shadow-lg shadow-purple-900/40 flex items-center gap-2"
+                        className="bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white rounded-full px-8 py-2 text-sm font-bold border-0 shadow-lg shadow-purple-900/40 flex items-center gap-2"
                       >
-                        <Wallet className="h-5 w-5" />
+                        <Wallet className="h-4 w-4" />
                         Connect wallet
                       </Button>
                     </div>
