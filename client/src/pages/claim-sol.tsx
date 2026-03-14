@@ -4522,33 +4522,33 @@ export default function SolRefund() {
 
 
                 {/* GSOL Staking Module */}
-                <div className="mb-6 max-w-lg mx-auto">
+                <div className="mb-6 max-w-2xl mx-auto">
                   {/* Header */}
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-black/30">
-                      <img src="/gsol-logo.png" alt="GSOL" className="w-9 h-9 object-contain" />
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-black/30">
+                      <img src="/gsol-logo.png" alt="GSOL" className="w-12 h-12 object-contain" />
                     </div>
                     <div>
-                      <h3 className="text-white font-black text-xl">GSOL</h3>
-                      <p className="text-purple-300 text-xs">GetFreeSol Liquid Staking Token</p>
+                      <h3 className="text-white font-black text-2xl">GSOL</h3>
+                      <p className="text-purple-300 text-sm">GetFreeSol Liquid Staking Token</p>
                     </div>
                   </div>
 
                   {/* Stake / Unstake toggle */}
-                  <div className={`relative flex rounded-2xl p-1 mb-5 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/30'}`}>
+                  <div className={`relative flex rounded-2xl p-1.5 mb-6 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/30'}`}>
                     <div
-                      className="absolute top-1 bottom-1 rounded-xl bg-purple-600 transition-all duration-300"
-                      style={{ width: 'calc(50% - 4px)', left: stakeMode === 'stake' ? '4px' : 'calc(50%)' }}
+                      className="absolute top-1.5 bottom-1.5 rounded-xl bg-purple-600 transition-all duration-300"
+                      style={{ width: 'calc(50% - 6px)', left: stakeMode === 'stake' ? '6px' : 'calc(50%)' }}
                     />
-                    <button onClick={() => setStakeMode('stake')} className={`relative z-10 flex-1 py-2.5 text-sm font-black rounded-xl transition-colors duration-300 ${stakeMode === 'stake' ? 'text-white' : 'text-purple-400'}`}>Stake</button>
-                    <button onClick={() => setStakeMode('unstake')} className={`relative z-10 flex-1 py-2.5 text-sm font-black rounded-xl transition-colors duration-300 ${stakeMode === 'unstake' ? 'text-white' : 'text-purple-400'}`}>Unstake</button>
+                    <button onClick={() => setStakeMode('stake')} className={`relative z-10 flex-1 py-3.5 text-base font-black rounded-xl transition-colors duration-300 ${stakeMode === 'stake' ? 'text-white' : 'text-purple-400'}`}>Stake</button>
+                    <button onClick={() => setStakeMode('unstake')} className={`relative z-10 flex-1 py-3.5 text-base font-black rounded-xl transition-colors duration-300 ${stakeMode === 'unstake' ? 'text-white' : 'text-purple-400'}`}>Unstake</button>
                   </div>
 
                   {/* Amount input */}
-                  <div className={`rounded-2xl p-4 mb-3 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-400 text-sm">{stakeMode === 'stake' ? 'Stake' : 'Unstake'}</span>
-                      <span className="text-gray-400 text-sm flex items-center gap-1">
+                  <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-gray-400 text-base">{stakeMode === 'stake' ? 'Stake' : 'Unstake'}</span>
+                      <span className="text-gray-400 text-base flex items-center gap-1">
                         <span className="text-purple-300">◎</span>
                         {walletTokenBalance.toFixed(3)} SOL
                       </span>
@@ -4559,48 +4559,48 @@ export default function SolRefund() {
                         placeholder="0.0"
                         value={stakeAmount}
                         onChange={e => setStakeAmount(e.target.value)}
-                        className="flex-1 bg-transparent text-white text-2xl font-black outline-none placeholder-gray-600 min-w-0"
+                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-gray-600 min-w-0"
                       />
                       <div className="flex items-center gap-2 shrink-0">
-                        <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-xs text-purple-400 hover:text-purple-200 font-bold px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount((walletTokenBalance).toFixed(4))} className="text-xs text-purple-400 hover:text-purple-200 font-bold px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-all">MAX</button>
-                        <div className="flex items-center gap-1.5 bg-purple-900/40 rounded-xl px-3 py-1.5 border border-purple-500/20">
-                          <svg className="w-5 h-5" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                        <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-sm text-purple-400 hover:text-purple-200 font-bold px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount((walletTokenBalance).toFixed(4))} className="text-sm text-purple-400 hover:text-purple-200 font-bold px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-all">MAX</button>
+                        <div className="flex items-center gap-2 bg-purple-900/40 rounded-xl px-4 py-2 border border-purple-500/20">
+                          <svg className="w-6 h-6" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
                             <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
                             <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                             <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                           </svg>
-                          <span className="text-white font-bold text-sm">SOL</span>
+                          <span className="text-white font-bold text-base">SOL</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Stats */}
-                  <div className={`rounded-2xl p-4 mb-4 space-y-3 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
+                  <div className={`rounded-2xl p-5 mb-5 space-y-4 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">You receive</span>
-                      <span className="text-white font-bold text-sm flex items-center gap-1.5">
-                        <img src="/gsol-logo.png" alt="GSOL" className="w-4 h-4 object-contain" />
+                      <span className="text-gray-400 text-base">You receive</span>
+                      <span className="text-white font-bold text-base flex items-center gap-2">
+                        <img src="/gsol-logo.png" alt="GSOL" className="w-5 h-5 object-contain" />
                         {stakeAmount ? parseFloat(stakeAmount).toFixed(4) : '—'} GSOL
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Strategy</span>
-                      <span className="text-purple-300 font-bold text-sm">GSOL Max Yield</span>
+                      <span className="text-gray-400 text-base">Strategy</span>
+                      <span className="text-purple-300 font-bold text-base">GSOL Max Yield</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">APY</span>
-                      <span className="text-green-400 font-black text-sm">Coming Soon</span>
+                      <span className="text-gray-400 text-base">APY</span>
+                      <span className="text-green-400 font-black text-base">Coming Soon</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm">Annual rewards</span>
-                      <span className="text-gray-500 text-sm">—</span>
+                      <span className="text-gray-400 text-base">Annual rewards</span>
+                      <span className="text-gray-500 text-base">—</span>
                     </div>
                   </div>
 
                   {/* Stake button */}
-                  <button disabled className="w-full py-3.5 rounded-2xl bg-purple-600/50 text-white/60 font-black text-lg cursor-not-allowed border border-purple-500/30">
+                  <button disabled className="w-full py-4 rounded-2xl bg-purple-600/50 text-white/60 font-black text-xl cursor-not-allowed border border-purple-500/30">
                     {stakeMode === 'stake' ? 'Stake SOL → Get GSOL' : 'Unstake GSOL → Get SOL'} (Coming Soon)
                   </button>
                 </div>
