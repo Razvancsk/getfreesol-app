@@ -116,6 +116,7 @@ export default function SolRefund() {
   const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'developer-api'>('overview');
   const [selectedLeaderboardPeriod, setSelectedLeaderboardPeriod] = useState<'24h' | 'weekly' | 'monthly' | 'all'>('24h');
   const [burnSubTab, setBurnSubTab] = useState<'tokens' | 'nft'>('tokens');
+  const [mobileWalletMenuOpen, setMobileWalletMenuOpen] = useState(false);
   const [stakeMode, setStakeMode] = useState<'stake' | 'unstake'>('stake');
   const [stakeAmount, setStakeAmount] = useState('');
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
@@ -3336,53 +3337,42 @@ export default function SolRefund() {
                         <span>Profile</span>
                       </Button>
                     </Link>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white font-mono text-xs border border-purple-500/30 flex items-center space-x-1"
-                          data-testid="button-wallet-connected"
-                        >
-                          <span>{publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="bg-slate-800 border-purple-500/30 w-44 max-w-[calc(100vw-16px)]">
-                        {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
-                          <>
-                            <Link href="/admin/x-bot">
-                              <DropdownMenuItem 
-                                className="text-white hover:bg-purple-600/40 cursor-pointer"
-                                data-testid="button-admin-xbot"
-                              >
-                                🤖 X Bot Admin
-                              </DropdownMenuItem>
-                            </Link>
-                            <Link href="/x-admin">
-                              <DropdownMenuItem 
-                                className="text-white hover:bg-purple-600/40 cursor-pointer"
-                                data-testid="button-x-admin"
-                              >
-                                🐦 X Account
-                              </DropdownMenuItem>
-                            </Link>
-                            <Link href="/admin/vault">
-                              <DropdownMenuItem 
-                                className="text-white hover:bg-purple-600/40 cursor-pointer"
-                                data-testid="button-vault-admin"
-                              >
-                                🏦 Vault Admin
-                              </DropdownMenuItem>
-                            </Link>
-                          </>
-                        )}
-                        <DropdownMenuItem 
-                          onClick={disconnectWallet}
-                          className="text-white hover:bg-purple-600/40 cursor-pointer"
-                          data-testid="button-disconnect"
-                        >
-                          Disconnect
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="relative">
+                      <Button
+                        onClick={() => setMobileWalletMenuOpen(o => !o)}
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white font-mono text-xs border border-purple-500/30"
+                        data-testid="button-wallet-connected"
+                      >
+                        {publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}
+                      </Button>
+                      {mobileWalletMenuOpen && (
+                        <div className="fixed inset-0 z-40" onClick={() => setMobileWalletMenuOpen(false)} />
+                      )}
+                      {mobileWalletMenuOpen && (
+                        <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg min-w-[140px]">
+                          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
+                            <>
+                              <Link href="/admin/x-bot" onClick={() => setMobileWalletMenuOpen(false)}>
+                                <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm" data-testid="button-admin-xbot">🤖 X Bot Admin</div>
+                              </Link>
+                              <Link href="/x-admin" onClick={() => setMobileWalletMenuOpen(false)}>
+                                <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm" data-testid="button-x-admin">🐦 X Account</div>
+                              </Link>
+                              <Link href="/admin/vault" onClick={() => setMobileWalletMenuOpen(false)}>
+                                <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm" data-testid="button-vault-admin">🏦 Vault Admin</div>
+                              </Link>
+                            </>
+                          )}
+                          <div
+                            onClick={() => { disconnectWallet(); setMobileWalletMenuOpen(false); }}
+                            className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm"
+                            data-testid="button-disconnect"
+                          >
+                            Disconnect
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <Button
