@@ -4546,25 +4546,33 @@ export default function SolRefund() {
 
                   {/* Amount input */}
                   <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
+                    {/* Top row: label + balance + HALF/MAX */}
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-gray-400 text-base">{stakeMode === 'stake' ? 'Stake' : 'Unstake'}</span>
-                      <span className="text-gray-400 text-base flex items-center gap-1">
-                        <span className="text-purple-300">◎</span>
-                        {walletTokenBalance.toFixed(3)} SOL
-                      </span>
+                      <span className="text-gray-400 text-sm">{stakeMode === 'stake' ? 'Pay:' : 'Unstake:'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 text-sm">≈ {walletTokenBalance.toFixed(4)} SOL</span>
+                        <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-xs text-purple-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(walletTokenBalance.toFixed(4))} className="text-xs text-purple-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                      </div>
                     </div>
+                    {/* Bottom row: token badge left, amount right */}
                     <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 bg-purple-900/50 rounded-xl px-3 py-2 border border-purple-500/20 shrink-0">
+                        <svg className="w-5 h-5" viewBox="0 0 397.7 311.7" style={{ fill: '#00FFA3' }}>
+                          <path d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                          <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                          <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                        </svg>
+                        <span className="text-white font-bold text-sm">SOL</span>
+                        <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
                       <input
                         type="number"
-                        placeholder="0.0"
+                        placeholder="0.00"
                         value={stakeAmount}
                         onChange={e => setStakeAmount(e.target.value)}
-                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-gray-600 min-w-0"
+                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-gray-600 text-right min-w-0"
                       />
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-sm text-purple-400 hover:text-purple-200 font-bold px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount((walletTokenBalance).toFixed(4))} className="text-sm text-purple-400 hover:text-purple-200 font-bold px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-all">MAX</button>
-                      </div>
                     </div>
                   </div>
 
