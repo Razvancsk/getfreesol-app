@@ -3475,25 +3475,9 @@ export default function SolRefund() {
 
 
           {/* Description */}
-          {/* Pre-connect landing: show stats + connect button when not connected */}
+          {/* Pre-connect landing: show connect button when not connected */}
           {!isConnected && activeTab !== 'docs' && (
             <div className="flex flex-col items-center gap-6 py-4">
-              {/* Stats card */}
-              <div className="w-full max-w-md flex bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20">
-                <div className="flex-1 p-5 text-center">
-                  <div className="text-3xl font-bold text-white mb-1">
-                    {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
-                  </div>
-                  <div className="text-xs text-purple-200 uppercase tracking-wider">SOL RECOVERED</div>
-                </div>
-                <div className="w-px bg-purple-500/30 my-4" />
-                <div className="flex-1 p-5 text-center">
-                  <div className="text-3xl font-bold text-white mb-1">
-                    {stats ? stats.totalAccountsClaimed.toLocaleString() : '0'}
-                  </div>
-                  <div className="text-xs text-purple-200 uppercase tracking-wider">ACCOUNTS CLOSED</div>
-                </div>
-              </div>
               {/* Connect Wallet button */}
               <Button
                 onClick={() => { select(null); setVisible(true); }}
@@ -6439,7 +6423,7 @@ export default function SolRefund() {
           )}
 
           {/* All Time Ledger Section - Only show on reclaim tab */}
-          {isConnected && activeTab === 'reclaim' && (
+          {activeTab === 'reclaim' && (
             <div className={`backdrop-blur-sm rounded-xl p-6 mb-6 ${
               isNightMode 
                 ? 'bg-[#141414] border border-[#2a2a2a]' 
