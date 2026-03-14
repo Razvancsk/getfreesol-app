@@ -4531,7 +4531,7 @@ export default function SolRefund() {
                 <div className="mb-6 max-w-2xl mx-auto">
                   {/* Header */}
                   <div className="flex items-center gap-4 mb-6">
-                    <img src="/gsol-token-logo.png?v=5" alt="GSOL" className="w-14 h-14 rounded-full object-cover" />
+                    <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-14 h-14 rounded-full object-cover" />
                     <div>
                       <h3 className="text-white font-black text-2xl">GSOL</h3>
                       <p className="text-white text-sm">GetFreeSol Liquid Staking Token</p>
@@ -4580,7 +4580,7 @@ export default function SolRefund() {
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">You receive</span>
                       <span className="text-white font-bold text-base flex items-center gap-2">
-                        <img src="/gsol-token-logo.png?v=5" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
+                        <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
                         {stakeAmount ? parseFloat(stakeAmount).toFixed(4) : '—'} GSOL
                       </span>
                     </div>
