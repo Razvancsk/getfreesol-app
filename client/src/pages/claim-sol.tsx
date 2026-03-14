@@ -3345,7 +3345,7 @@ export default function SolRefund() {
                           <span>{publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-slate-800 border-purple-500/30">
+                      <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="bg-slate-800 border-purple-500/30 w-44 max-w-[calc(100vw-16px)]">
                         {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                           <>
                             <Link href="/admin/x-bot">
@@ -3431,7 +3431,7 @@ export default function SolRefund() {
                         <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-slate-800 border-purple-500/30">
+                    <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="bg-slate-800 border-purple-500/30 w-44 max-w-[calc(100vw-16px)]">
                       {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                         <>
                           <Link href="/admin/x-bot">
