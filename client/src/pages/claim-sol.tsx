@@ -4539,7 +4539,7 @@ export default function SolRefund() {
                     </div>
                     <div>
                       <h3 className="text-white font-black text-2xl">GSOL</h3>
-                      <p className="text-purple-300 text-sm">GetFreeSol Liquid Staking Token</p>
+                      <p className="text-white text-sm">GetFreeSol Liquid Staking Token</p>
                     </div>
                   </div>
 
