@@ -4605,7 +4605,7 @@ export default function SolRefund() {
 
                   {/* Stake button */}
                   <button disabled className="w-full py-4 rounded-2xl bg-purple-600/50 text-white/60 font-black text-xl cursor-not-allowed border border-purple-500/30">
-                    {stakeMode === 'stake' ? 'Stake SOL → Get GSOL' : 'Unstake GSOL → Get SOL'} (Coming Soon)
+                    {stakeMode === 'stake' ? 'Stake' : 'Unstake'}
                   </button>
                 </div>
 
