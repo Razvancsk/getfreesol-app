@@ -4549,7 +4549,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Amount input */}
-                  <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
+                  <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
                     {/* Top row: label + balance + HALF/MAX */}
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-white text-sm font-semibold">{stakeMode === 'stake' ? 'Stake' : 'Unstake'}</span>
@@ -4576,7 +4576,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Stats */}
-                  <div className={`rounded-2xl p-5 mb-5 space-y-4 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
+                  <div className={`rounded-2xl p-5 mb-5 space-y-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">You receive</span>
                       <span className="text-white font-bold text-base flex items-center gap-2">
