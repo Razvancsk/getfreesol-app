@@ -3626,9 +3626,6 @@ export default function SolRefund() {
                     ? 'bg-[#141414] border border-[#2a2a2a]' 
                     : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
                 }`}>
-                  <div className="mb-4 md:mb-8 flex items-center justify-between">
-                    <h3 className="text-lg md:text-2xl font-semibold text-white">Scan Results</h3>
-                  </div>
                   <div className="flex flex-col items-center gap-3 py-4">
                     <svg viewBox="0 0 397.7 311.7" className="w-8 h-8 opacity-40" xmlns="http://www.w3.org/2000/svg">
                       <defs>
