@@ -3594,7 +3594,7 @@ export default function SolRefund() {
           {/* Burn sub-nav: Token / NFT pill toggle */}
           {activeTab === 'burnTokens' && (
             <div className="flex items-center justify-center pb-2">
-              <div className={`flex items-center border rounded-full overflow-hidden ${isNightMode ? 'bg-white/10 border-white/20' : 'bg-purple-900/40 border-purple-500/30'}`}>
+              <div className={`flex items-center border rounded-md overflow-hidden ${isNightMode ? 'bg-white/10 border-white/20' : 'bg-purple-900/40 border-purple-500/30'}`}>
                 <button
                   onClick={() => setBurnSubTab('tokens')}
                   className={`px-6 py-2 text-sm font-bold transition-colors duration-200 ${
