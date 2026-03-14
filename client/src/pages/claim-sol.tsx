@@ -4539,7 +4539,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Stake / Unstake toggle */}
-                  <div className={`relative flex rounded-2xl p-1.5 mb-6 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/30'}`}>
+                  <div className={`relative flex rounded-2xl p-1.5 mb-6 border border-white/30 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/30'}`}>
                     <div
                       className="absolute top-1.5 bottom-1.5 rounded-xl bg-purple-600 transition-all duration-300"
                       style={{ width: 'calc(50% - 6px)', left: stakeMode === 'stake' ? '6px' : 'calc(50%)' }}
