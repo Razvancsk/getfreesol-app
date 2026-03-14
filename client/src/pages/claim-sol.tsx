@@ -3597,7 +3597,7 @@ export default function SolRefund() {
               <div className={`relative flex items-center border rounded-full p-1 gap-0 ${isNightMode ? 'bg-white/10 border-white/20' : 'bg-purple-900/40 border-purple-500/30'}`}>
                 {/* Sliding background pill */}
                 <div
-                  className="absolute top-1 bottom-1 rounded-full bg-purple-600 transition-all duration-300 ease-in-out"
+                  className="absolute top-1 bottom-1 rounded-full bg-purple-600 transition-all duration-300 ease-in-out shadow-lg"
                   style={{
                     width: 'calc(50% - 4px)',
                     left: burnSubTab === 'tokens' ? '4px' : 'calc(50%)',
@@ -3606,7 +3606,7 @@ export default function SolRefund() {
                 <button
                   onClick={() => setBurnSubTab('tokens')}
                   className={`relative z-10 flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-300 ${
-                    burnSubTab === 'tokens' ? 'text-white' : 'text-purple-300'
+                    burnSubTab === 'tokens' ? 'text-white' : isNightMode ? 'text-white/40' : 'text-purple-300'
                   }`}
                 >
                   🪙 Token
@@ -3614,7 +3614,7 @@ export default function SolRefund() {
                 <button
                   onClick={() => setBurnSubTab('nft')}
                   className={`relative z-10 flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-300 ${
-                    burnSubTab === 'nft' ? 'text-white' : 'text-purple-300'
+                    burnSubTab === 'nft' ? 'text-white' : isNightMode ? 'text-white/40' : 'text-purple-300'
                   }`}
                 >
                   🖼️ NFT
