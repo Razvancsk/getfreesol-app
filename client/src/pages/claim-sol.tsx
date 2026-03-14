@@ -4582,7 +4582,7 @@ export default function SolRefund() {
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">You receive</span>
                       <span className="text-white font-bold text-base flex items-center gap-2">
-                        <img src="/sol-logo-purple.png" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
+                        <img src="/gsol-token-logo.png" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
                         {stakeAmount ? parseFloat(stakeAmount).toFixed(4) : '—'} GSOL
                       </span>
                     </div>
