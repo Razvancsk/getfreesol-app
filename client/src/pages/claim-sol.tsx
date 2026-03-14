@@ -4520,12 +4520,9 @@ export default function SolRefund() {
             <div className="space-y-6">
               <div className={`rounded-2xl p-6 md:p-10 border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 rounded-xl bg-blue-500/20 border border-blue-400/30">
-                    <Zap className="h-7 w-7 text-blue-400" />
-                  </div>
                   <div>
                     <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
-                    <p className="text-blue-300 text-sm">Earn yield on your SOL</p>
+                    <p className="text-white text-sm">Earn yield on your SOL</p>
                   </div>
                 </div>
 
