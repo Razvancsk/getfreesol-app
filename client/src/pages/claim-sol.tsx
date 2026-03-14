@@ -3609,7 +3609,7 @@ export default function SolRefund() {
                 >
                   🪙 Token
                 </button>
-                <div className={`w-px h-5 ${isNightMode ? 'bg-white/20' : 'bg-purple-500/40'}`} />
+
                 <button
                   onClick={() => setBurnSubTab('nft')}
                   className={`px-6 py-2 text-sm font-bold rounded-md transition-all duration-200 border ${
