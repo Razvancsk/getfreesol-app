@@ -3338,13 +3338,14 @@ export default function SolRefund() {
                       </Button>
                     </Link>
                     <div className="relative">
-                      <Button
+                      <button
                         onClick={() => setMobileWalletMenuOpen(o => !o)}
-                        className="bg-purple-800/60 hover:bg-purple-700/60 active:bg-purple-800/60 focus:ring-0 focus:outline-none backdrop-blur-sm rounded-lg px-2 py-2 text-white font-mono text-xs border border-purple-500/30"
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-lg px-2 py-2 text-white font-mono text-xs border border-purple-500/30 outline-none"
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
                         data-testid="button-wallet-connected"
                       >
                         {publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}
-                      </Button>
+                      </button>
                       {mobileWalletMenuOpen && (
                         <div className="fixed inset-0 z-40" onClick={() => setMobileWalletMenuOpen(false)} />
                       )}
