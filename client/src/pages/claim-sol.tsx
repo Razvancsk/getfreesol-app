@@ -4556,8 +4556,7 @@ export default function SolRefund() {
                   {/* Amount input */}
                   <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-[#2a2a2a]' : 'bg-purple-900/20 border border-purple-500/20'}`}>
                     {/* Top row: label + balance + HALF/MAX */}
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-white text-sm">{stakeMode === 'stake' ? 'Pay:' : 'Unstake:'}</span>
+                    <div className="flex justify-end items-center mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-white text-sm">≈ {walletTokenBalance.toFixed(4)} SOL</span>
                         <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-xs text-purple-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
