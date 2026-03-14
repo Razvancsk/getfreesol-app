@@ -3349,7 +3349,7 @@ export default function SolRefund() {
                         <div className="fixed inset-0 z-40" onClick={() => setMobileWalletMenuOpen(false)} />
                       )}
                       {mobileWalletMenuOpen && (
-                        <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg min-w-[140px]">
+                        <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg w-max">
                           {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                             <>
                               <Link href="/admin/x-bot" onClick={() => setMobileWalletMenuOpen(false)}>
