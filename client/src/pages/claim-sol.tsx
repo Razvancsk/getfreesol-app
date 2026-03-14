@@ -851,6 +851,15 @@ export default function SolRefund() {
     }
   }, [isConnected, publicKey]);
 
+  // Fetch SOL balance when staking tab is active or wallet connects
+  useEffect(() => {
+    if (activeTab === 'staking' && publicKey && connection) {
+      connection.getBalance(publicKey).then(bal => {
+        setWalletTokenBalance(bal / 1e9);
+      }).catch(() => {});
+    }
+  }, [activeTab, publicKey, connection]);
+
   // Wallet connection functions using wallet adapter
   const handleConnectWallet = async () => {
     try {
