@@ -4557,10 +4557,10 @@ export default function SolRefund() {
                     </div>
                     {/* Bottom row: token badge left, amount right */}
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 bg-purple-900/50 rounded-xl px-3 py-2 border border-purple-500/20 shrink-0">
-                        <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-9 h-9 rounded-full" />
-                        <span className="text-white font-bold text-sm">SOL</span>
-                      </div>
+                      <button type="button" disabled className="border border-purple-500/40 rounded-3xl bg-purple-900/40 text-sm h-9 pl-1.5 pr-3 flex gap-1.5 items-center font-semibold text-white shrink-0 cursor-default">
+                        <img alt="SOL" width="24" height="24" className="rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
+                        <span>SOL</span>
+                      </button>
                       <input
                         type="number"
                         placeholder="0.00"
