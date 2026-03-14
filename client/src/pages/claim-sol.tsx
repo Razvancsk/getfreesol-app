@@ -3349,23 +3349,23 @@ export default function SolRefund() {
                         <div className="fixed inset-0 z-40" onClick={() => setMobileWalletMenuOpen(false)} />
                       )}
                       {mobileWalletMenuOpen && (
-                        <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg min-w-full whitespace-nowrap">
+                        <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg w-full overflow-hidden">
                           {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                             <>
                               <Link href="/admin/x-bot" onClick={() => setMobileWalletMenuOpen(false)}>
-                                <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm" data-testid="button-admin-xbot">🤖 X Bot Admin</div>
+                                <div className="px-2 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate" data-testid="button-admin-xbot">🤖 X Bot</div>
                               </Link>
                               <Link href="/x-admin" onClick={() => setMobileWalletMenuOpen(false)}>
-                                <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm" data-testid="button-x-admin">🐦 X Account</div>
+                                <div className="px-2 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate" data-testid="button-x-admin">🐦 X</div>
                               </Link>
                               <Link href="/admin/vault" onClick={() => setMobileWalletMenuOpen(false)}>
-                                <div className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm" data-testid="button-vault-admin">🏦 Vault Admin</div>
+                                <div className="px-2 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate" data-testid="button-vault-admin">🏦 Vault</div>
                               </Link>
                             </>
                           )}
                           <div
                             onClick={() => { disconnectWallet(); setMobileWalletMenuOpen(false); }}
-                            className="px-3 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-sm"
+                            className="px-2 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate"
                             data-testid="button-disconnect"
                           >
                             Disconnect
