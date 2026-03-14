@@ -3591,35 +3591,29 @@ export default function SolRefund() {
 
 
 
-          {/* Burn sub-nav: Token / NFT slider toggle */}
+          {/* Burn sub-nav: Token / NFT tab toggle */}
           {activeTab === 'burnTokens' && (
-            <div className="flex items-center justify-center pb-2">
-              <div className={`relative flex items-center border rounded-full p-1 gap-0 ${isNightMode ? 'bg-white/10 border-white/20' : 'bg-purple-900/40 border-purple-500/30'}`}>
-                {/* Sliding background pill */}
-                <div
-                  className="absolute top-1 bottom-1 rounded-full bg-purple-600 transition-all duration-300 ease-in-out"
-                  style={{
-                    width: 'calc(50% - 4px)',
-                    left: burnSubTab === 'tokens' ? '4px' : 'calc(50%)',
-                  }}
-                />
-                <button
-                  onClick={() => setBurnSubTab('tokens')}
-                  className={`relative z-10 flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-300 ${
-                    burnSubTab === 'tokens' ? 'text-white' : 'text-purple-300'
-                  }`}
-                >
-                  🪙 Token
-                </button>
-                <button
-                  onClick={() => setBurnSubTab('nft')}
-                  className={`relative z-10 flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold transition-colors duration-300 ${
-                    burnSubTab === 'nft' ? 'text-white' : 'text-purple-300'
-                  }`}
-                >
-                  🖼️ NFT
-                </button>
-              </div>
+            <div className={`flex border-b mb-2 ${isNightMode ? 'border-white/10' : 'border-purple-500/20'}`}>
+              <button
+                onClick={() => setBurnSubTab('tokens')}
+                className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all duration-200 border-b-2 -mb-px ${
+                  burnSubTab === 'tokens'
+                    ? 'text-white border-purple-500'
+                    : isNightMode ? 'text-white/40 border-transparent hover:text-white/70' : 'text-purple-400 border-transparent hover:text-purple-200'
+                }`}
+              >
+                🪙 Token
+              </button>
+              <button
+                onClick={() => setBurnSubTab('nft')}
+                className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all duration-200 border-b-2 -mb-px ${
+                  burnSubTab === 'nft'
+                    ? 'text-white border-purple-500'
+                    : isNightMode ? 'text-white/40 border-transparent hover:text-white/70' : 'text-purple-400 border-transparent hover:text-purple-200'
+                }`}
+              >
+                🖼️ NFT
+              </button>
             </div>
           )}
 
