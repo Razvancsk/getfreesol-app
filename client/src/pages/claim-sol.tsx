@@ -3343,7 +3343,6 @@ export default function SolRefund() {
                           data-testid="button-wallet-connected"
                         >
                           <span>{publicKey.toString().slice(0, 3)}...{publicKey.toString().slice(-3)}</span>
-                          <ChevronDown className="h-3 w-3" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
@@ -3430,7 +3429,6 @@ export default function SolRefund() {
                         data-testid="button-wallet-connected-desktop"
                       >
                         <span>{publicKey.toString().slice(0, 6)}...{publicKey.toString().slice(-6)}</span>
-                        <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="bg-slate-800 border-purple-500/30">
