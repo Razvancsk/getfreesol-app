@@ -6686,15 +6686,12 @@ export default function SolRefund() {
                 <img src="/okx-wallet-logo.png" alt="OKX Wallet" className="h-7 object-contain" />
               </div>
             </a>
-            {/* Bitget */}
+            {/* Bitget Wallet */}
             <a href="https://web3.bitget.com" target="_blank" rel="noopener noreferrer"
                className="flex flex-col items-center gap-2 px-8 md:px-12 group">
               <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
-              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-[#1DA2B4] flex items-center justify-center">
-                  <span className="text-white font-black text-lg leading-none">B</span>
-                </div>
-                <span className="text-white font-bold text-lg tracking-tight">Bitget</span>
+              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200">
+                <img src="/bitget-wallet-logo.png" alt="Bitget Wallet" className="h-7 object-contain" />
               </div>
             </a>
           </div>
