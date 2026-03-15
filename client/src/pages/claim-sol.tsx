@@ -6590,22 +6590,6 @@ export default function SolRefund() {
               </div>
 
               <div className="space-y-3 text-purple-200 text-sm">
-                <p>
-                  Share GetFreeSol with friends and earn <span className="text-green-400 font-semibold">50% of the platform fee</span> from every transaction they make!
-                </p>
-                <div className="flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>Platform takes 20% fee → You earn 10% of recovered SOL</span>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>Lifetime earnings from referred users</span>
-                </div>
-                <div className="flex items-start">
-                  <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span>Top 10 leaderboard users earn 70% commission (10.5%)</span>
-                </div>
-                
                 {publicKey && (
                   <div className="mt-4 p-3 bg-purple-900/50 rounded-lg border border-purple-500/30">
                     <p className="text-xs text-purple-300 mb-2">Your Referral Link:</p>
