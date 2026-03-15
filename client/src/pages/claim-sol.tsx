@@ -6662,19 +6662,12 @@ export default function SolRefund() {
             Listed &amp; Partnered With
           </p>
           <div className="flex flex-wrap items-center justify-center gap-0 divide-x divide-white/10">
-            {/* Seeker Mobile */}
+            {/* Solana Mobile / Seeker */}
             <a href="https://seeker.solana.com" target="_blank" rel="noopener noreferrer"
                className="flex flex-col items-center gap-2 px-8 md:px-12 group">
               <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
-              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center flex-shrink-0">
-                  <svg viewBox="0 0 397.7 311.7" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="white" d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
-                    <path fill="white" d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
-                    <path fill="white" d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
-                  </svg>
-                </div>
-                <span className="text-white font-bold text-lg tracking-tight">Seeker</span>
+              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200">
+                <img src="/solana-mobile-logo.png" alt="Solana Mobile" className="h-7 object-contain" />
               </div>
             </a>
             {/* Phantom */}
@@ -6682,23 +6675,15 @@ export default function SolRefund() {
                className="flex flex-col items-center gap-2 px-8 md:px-12 group">
               <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
               <div className="opacity-50 group-hover:opacity-100 transition-all duration-200">
-                <img src="/phantom-real-logo.png" alt="Phantom" className="h-8 object-contain" />
+                <img src="/phantom-real-logo.png" alt="Phantom" className="h-7 object-contain" />
               </div>
             </a>
-            {/* OKX */}
+            {/* OKX Wallet */}
             <a href="https://www.okx.com/web3" target="_blank" rel="noopener noreferrer"
                className="flex flex-col items-center gap-2 px-8 md:px-12 group">
               <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
-              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="black" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="1" width="8" height="8" rx="0.5"/>
-                    <rect x="15" y="1" width="8" height="8" rx="0.5"/>
-                    <rect x="1" y="15" width="8" height="8" rx="0.5"/>
-                    <rect x="15" y="15" width="8" height="8" rx="0.5"/>
-                  </svg>
-                </div>
-                <span className="text-white font-bold text-lg tracking-tight">OKX</span>
+              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200">
+                <img src="/okx-wallet-logo.png" alt="OKX Wallet" className="h-7 object-contain" />
               </div>
             </a>
             {/* Bitget */}
@@ -6706,8 +6691,8 @@ export default function SolRefund() {
                className="flex flex-col items-center gap-2 px-8 md:px-12 group">
               <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
               <div className="opacity-50 group-hover:opacity-100 transition-all duration-200 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#1DA2B4] flex items-center justify-center">
-                  <span className="text-white font-black text-xl leading-none">B</span>
+                <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-[#1DA2B4] flex items-center justify-center">
+                  <span className="text-white font-black text-lg leading-none">B</span>
                 </div>
                 <span className="text-white font-bold text-lg tracking-tight">Bitget</span>
               </div>
