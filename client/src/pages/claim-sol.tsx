@@ -6656,7 +6656,7 @@ export default function SolRefund() {
       </div>
 
       {/* Partner Trust Strip */}
-      <div className="border-t border-white/10 bg-black/60 backdrop-blur-sm py-10 px-4">
+      <div className="border-t border-purple-500/20 py-10 px-4">
         <div className="container mx-auto max-w-4xl">
           <p className="text-center text-white/30 text-[11px] uppercase tracking-widest mb-8 font-medium">
             Listed &amp; Partnered With
