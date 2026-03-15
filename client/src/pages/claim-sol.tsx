@@ -6655,6 +6655,77 @@ export default function SolRefund() {
         </div>
       </div>
 
+      {/* Partner Trust Strip */}
+      <div className="border-t border-purple-500/20 bg-black/40 backdrop-blur-sm py-8 px-4">
+        <div className="container mx-auto max-w-3xl text-center">
+          <p className="text-white/50 text-xs uppercase tracking-widest mb-6 font-medium">
+            Listed & Partnered With
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14">
+            {/* Seeker Mobile */}
+            <a
+              href="https://seeker.solana.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity group"
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center">
+                <svg viewBox="0 0 40 40" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 25.5c1.5-1.5 3.5-2.5 6-2.5h18c3.5 0 5 4 2.5 6.5L28 36H6c-3.5 0-5-4-2.5-6.5L8 25.5z" fill="white"/>
+                  <path d="M8 4c1.5-1.5 3.5-2.5 6-2.5h18c3.5 0 5 4 2.5 6.5L28 14.5H6c-3.5 0-5-4-2.5-6.5L8 4z" fill="white"/>
+                  <path d="M28 14.5c-1.5-1.5-3.5-2.5-6-2.5H4c-3.5 0-5 4-2.5 6.5L8 25H30c3.5 0 5-4 2.5-6.5L28 14.5z" fill="white"/>
+                </svg>
+              </div>
+              <span className="text-white text-[11px] font-semibold tracking-wide">Seeker</span>
+            </a>
+            {/* Phantom */}
+            <a
+              href="https://phantom.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity group"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#AB9FF2] flex items-center justify-center">
+                <svg viewBox="0 0 128 128" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M110.584 64.9142C110.584 49.1582 98.5642 34.3887 82.0988 34.3887C65.6334 34.3887 53.6135 49.1582 53.6135 64.9142C53.6135 80.6702 65.6334 95.4397 82.0988 95.4397C98.5642 95.4397 110.584 80.6702 110.584 64.9142Z" fill="white"/>
+                  <path d="M17.6011 64.9142C17.6011 49.1582 29.621 34.3887 46.0864 34.3887C62.5518 34.3887 74.5717 49.1582 74.5717 64.9142C74.5717 80.6702 62.5518 95.4397 46.0864 95.4397C29.621 95.4397 17.6011 80.6702 17.6011 64.9142Z" fill="white" fillOpacity="0.6"/>
+                </svg>
+              </div>
+              <span className="text-white text-[11px] font-semibold tracking-wide">Phantom</span>
+            </a>
+            {/* OKX */}
+            <a
+              href="https://www.okx.com/web3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center">
+                <svg viewBox="0 0 40 40" className="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="4" y="4" width="13" height="13" rx="1.5" fill="black"/>
+                  <rect x="23" y="4" width="13" height="13" rx="1.5" fill="black"/>
+                  <rect x="4" y="23" width="13" height="13" rx="1.5" fill="black"/>
+                  <rect x="23" y="23" width="13" height="13" rx="1.5" fill="black"/>
+                </svg>
+              </div>
+              <span className="text-white text-[11px] font-semibold tracking-wide">OKX Wallet</span>
+            </a>
+            {/* Bitget */}
+            <a
+              href="https://web3.bitget.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity group"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#00F0FF] flex items-center justify-center">
+                <span className="text-black font-black text-sm leading-none">B</span>
+              </div>
+              <span className="text-white text-[11px] font-semibold tracking-wide">Bitget</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="border-t border-purple-500/20 bg-gradient-to-r from-purple-900/30 to-slate-900/30 backdrop-blur-sm mt-auto">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
