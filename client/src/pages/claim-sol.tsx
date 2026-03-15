@@ -6554,7 +6554,7 @@ export default function SolRefund() {
           {activeTab === 'reclaim' && (
             <div className="py-8 mb-4">
               <p className="text-center text-white/30 text-[11px] uppercase tracking-widest mb-6 font-medium">
-                Listed &amp; Partnered With
+                Partners
               </p>
               <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-center gap-6 md:gap-0 md:divide-x md:divide-white/10">
                 <a href="https://seeker.solana.com" target="_blank" rel="noopener noreferrer"
