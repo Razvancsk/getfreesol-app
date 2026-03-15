@@ -6592,10 +6592,10 @@ export default function SolRefund() {
               <div className="space-y-3 text-purple-200 text-sm">
                 <p>Refer friends &amp; earn <span className="text-green-400 font-semibold">50% commission</span>.</p>
                 {publicKey && (
-                  <div className="mt-4 p-3 bg-purple-900/50 rounded-lg border border-purple-500/30">
+                  <div className="mt-3">
                     <p className="text-xs text-purple-300 mb-2">Your Referral Link:</p>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-xs bg-black/30 p-2 rounded text-green-400 overflow-x-auto">
+                      <code className="flex-1 text-xs text-green-400 overflow-x-auto break-all">
                         {`${window.location.origin}?ref=${publicKey.toString().slice(0, 8)}`}
                       </code>
                       <button
@@ -6606,7 +6606,7 @@ export default function SolRefund() {
                             description: 'Referral link copied to clipboard',
                           });
                         }}
-                        className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-white text-xs font-medium transition-colors"
+                        className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-white text-xs font-medium transition-colors flex-shrink-0"
                       >
                         Copy
                       </button>
