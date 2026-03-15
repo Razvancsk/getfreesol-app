@@ -6591,7 +6591,7 @@ export default function SolRefund() {
 
               <div className="space-y-3 text-white text-sm">
                 <p>Refer friends &amp; earn <span className="text-green-400 font-semibold">50% commission</span>.</p>
-                {publicKey && (
+                {publicKey ? (
                   <div className="mt-3">
                     <p className="text-xs text-white mb-2">Your Referral Link:</p>
                     <div className="flex items-center gap-2">
@@ -6612,6 +6612,8 @@ export default function SolRefund() {
                       </button>
                     </div>
                   </div>
+                ) : (
+                  <p className="text-xs text-purple-300 mt-2">Connect your wallet to get your referral link.</p>
                 )}
               </div>
             </div>
