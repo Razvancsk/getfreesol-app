@@ -3322,7 +3322,7 @@ export default function SolRefund() {
                     {/* Night Mode Toggle */}
                     <Button
                       onClick={toggleTheme}
-                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md p-1.5 text-white border border-purple-500/30 h-auto"
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white border border-purple-500/30 h-auto"
                       data-testid="button-night-mode"
                     >
                       {isNightMode ? <Sun className="h-4 w-4 text-yellow-400" /> : <Moon className="h-4 w-4" />}
@@ -3331,7 +3331,7 @@ export default function SolRefund() {
                   <>
                     <Link href="/profile">
                       <Button
-                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-1.5 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
+                        className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
                         data-testid="button-profile"
                       >
                         <User className="h-3 w-3" />
@@ -3407,7 +3407,7 @@ export default function SolRefund() {
                 <>
                   <Link href="/profile">
                     <Button
-                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-1.5 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
+                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white text-xs border border-purple-500/30 flex items-center gap-1 h-auto"
                       data-testid="button-profile-desktop"
                     >
                       <User className="h-3 w-3" />
