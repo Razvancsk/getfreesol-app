@@ -822,7 +822,7 @@ export default function SolRefund() {
     queryKey: ['/api/transactions/history', { offset: transactionOffset }],
     queryFn: ({ queryKey }) => {
       const [url, params] = queryKey as [string, { offset: number }];
-      return fetch(`${url}?limit=10&offset=${params.offset}`).then(res => res.json());
+      return fetch(`${url}?limit=6&offset=${params.offset}`).then(res => res.json());
     },
     refetchInterval: transactionOffset === 0 ? 5000 : false, // Only auto-refresh first page
     refetchOnWindowFocus: transactionOffset === 0, // Only auto-refresh first page
