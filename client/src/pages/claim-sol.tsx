@@ -3634,12 +3634,6 @@ export default function SolRefund() {
                       <h3 className="text-lg md:text-xl font-bold text-white mb-1">Reclaim your locked SOL — it's yours</h3>
                       <p className="text-purple-300 text-xs md:text-sm">Empty token accounts hold your rent. Connect to scan and get it back in seconds.</p>
                     </div>
-                    <div className="flex items-center gap-3 opacity-50">
-                      <img src="https://phantom.com/img/phantom-logo.svg" alt="Phantom" className="w-5 h-5 rounded-full" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                      <img src="https://backpack.app/favicon.ico" alt="Backpack" className="w-5 h-5 rounded-full" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                      <img src="https://solflare.com/favicon.ico" alt="Solflare" className="w-5 h-5 rounded-full" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                      <img src="https://www.ledger.com/favicon.ico" alt="Ledger" className="w-5 h-5 rounded-full" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                    </div>
                     <Button
                       onClick={() => { select(null); setVisible(true); }}
                       className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 text-sm font-semibold border border-purple-500/30"
