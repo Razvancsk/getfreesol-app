@@ -6656,57 +6656,60 @@ export default function SolRefund() {
       </div>
 
       {/* Partner Trust Strip */}
-      <div className="border-t border-purple-500/20 bg-black/50 backdrop-blur-sm py-10 px-4">
-        <div className="container mx-auto max-w-4xl text-center">
-          <p className="text-white/40 text-[11px] uppercase tracking-widest mb-8 font-medium">
+      <div className="border-t border-white/10 bg-black/60 backdrop-blur-sm py-10 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <p className="text-center text-white/30 text-[11px] uppercase tracking-widest mb-8 font-medium">
             Listed &amp; Partnered With
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
+          <div className="flex flex-wrap items-center justify-center gap-0 divide-x divide-white/10">
             {/* Seeker Mobile */}
             <a href="https://seeker.solana.com" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider group-hover:text-white/70 transition-colors">Listed on</p>
-              <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                <img src="/seeker-logo.png" alt="Seeker Mobile" className="h-7 w-7 rounded-full object-cover" />
-                <span className="text-white font-bold text-base tracking-tight">Seeker</span>
+               className="flex flex-col items-center gap-2 px-8 md:px-12 group">
+              <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
+              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 397.7 311.7" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="white" d="M64.6,237.9c2.4-2.4,5.7-3.8,9.2-3.8h317.4c5.8,0,8.7,7,4.6,11.1l-62.7,62.7c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,237.9z"/>
+                    <path fill="white" d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
+                    <path fill="white" d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
+                  </svg>
+                </div>
+                <span className="text-white font-bold text-lg tracking-tight">Seeker</span>
               </div>
             </a>
             {/* Phantom */}
             <a href="https://phantom.app" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider group-hover:text-white/70 transition-colors">Listed on</p>
-              <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                <img src="/phantom-logo.png" alt="Phantom" className="h-7 w-7 rounded-full object-cover" />
-                <span className="text-[#AB9FF2] font-bold text-base tracking-tight">phantom</span>
+               className="flex flex-col items-center gap-2 px-8 md:px-12 group">
+              <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
+              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200">
+                <img src="/phantom-real-logo.png" alt="Phantom" className="h-8 object-contain" />
               </div>
             </a>
             {/* OKX */}
             <a href="https://www.okx.com/web3" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider group-hover:text-white/70 transition-colors">Listed on</p>
-              <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                <div className="h-7 w-7 rounded-lg bg-black border border-white/20 flex items-center justify-center">
-                  <svg viewBox="0 0 32 32" className="w-5 h-5" fill="white" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="2" width="10" height="10" rx="1"/>
-                    <rect x="20" y="2" width="10" height="10" rx="1"/>
-                    <rect x="2" y="20" width="10" height="10" rx="1"/>
-                    <rect x="20" y="20" width="10" height="10" rx="1"/>
+               className="flex flex-col items-center gap-2 px-8 md:px-12 group">
+              <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
+              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="black" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="8" height="8" rx="0.5"/>
+                    <rect x="15" y="1" width="8" height="8" rx="0.5"/>
+                    <rect x="1" y="15" width="8" height="8" rx="0.5"/>
+                    <rect x="15" y="15" width="8" height="8" rx="0.5"/>
                   </svg>
                 </div>
-                <span className="text-white font-bold text-base tracking-tight">OKX</span>
+                <span className="text-white font-bold text-lg tracking-tight">OKX</span>
               </div>
             </a>
             {/* Bitget */}
             <a href="https://web3.bitget.com" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider group-hover:text-white/70 transition-colors">Listed on</p>
-              <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                <div className="h-7 w-7 rounded-full bg-[#00C6CF] flex items-center justify-center">
-                  <svg viewBox="0 0 32 32" className="w-4 h-4" fill="white" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 6h10a6 6 0 0 1 0 12H8V6zm0 12h11a6 6 0 0 1 0 12H8V18z"/>
-                  </svg>
+               className="flex flex-col items-center gap-2 px-8 md:px-12 group">
+              <p className="text-white/30 text-[10px] uppercase tracking-wider mb-1">Listed on</p>
+              <div className="opacity-50 group-hover:opacity-100 transition-all duration-200 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[#1DA2B4] flex items-center justify-center">
+                  <span className="text-white font-black text-xl leading-none">B</span>
                 </div>
-                <span className="text-white font-bold text-base tracking-tight">Bitget</span>
+                <span className="text-white font-bold text-lg tracking-tight">Bitget</span>
               </div>
             </a>
           </div>
