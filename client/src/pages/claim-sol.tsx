@@ -6627,13 +6627,7 @@ export default function SolRefund() {
 
               <div className="space-y-3 text-white text-sm">
                 <p>
-                  Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
-                </p>
-                <p>
-                  When you sell or transfer all tokens, the account becomes empty but the rent remains locked. Our tool safely closes these empty accounts and returns your SOL.
-                </p>
-                <p className="font-medium">
-                  Only accounts with 0 tokens are eligible for closure - your funds are completely safe.
+                  On Solana, each token account requires about 0.002 SOL as a rent deposit for storage. You can recover it by closing the account.
                 </p>
               </div>
             </div>
