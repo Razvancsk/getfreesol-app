@@ -3637,7 +3637,7 @@ export default function SolRefund() {
                     </svg>
                     <div>
                       <h3 className="text-lg md:text-xl font-bold text-white mb-1">Get your free SOL back!</h3>
-                      <p className="text-purple-300 text-xs md:text-sm">Connect your wallet to scan and get back the SOL locked in your empty token accounts.</p>
+                      <p className="text-white text-xs md:text-sm">Connect your wallet to scan and get back the SOL locked in your empty token accounts.</p>
                     </div>
                     <Button
                       onClick={() => { select(null); setVisible(true); }}
