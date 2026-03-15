@@ -6644,19 +6644,19 @@ export default function SolRefund() {
               <div className="space-y-3 text-white">
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Only empty accounts (0 token balance) are eligible for closure</span>
+                  <span className="text-sm">Only empty accounts (0 tokens) can be closed</span>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Your tokens and active accounts are completely safe</span>
+                  <span className="text-sm">Your tokens and active accounts stay safe</span>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Transactions are processed on Solana mainnet</span>
+                  <span className="text-sm">Transactions run on Solana mainnet</span>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">{effectiveFeePercent}% service fee supports platform maintenance and development{isGfsHolder && <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-1.5 py-0.5 rounded-full font-semibold">50% OFF — GFS Holder</span>}</span>
+                  <span className="text-sm">20% fee supports platform development{isGfsHolder && <span className="ml-2 text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-1.5 py-0.5 rounded-full font-semibold">50% OFF — GFS Holder</span>}</span>
                 </div>
               </div>
             </div>
