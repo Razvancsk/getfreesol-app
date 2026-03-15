@@ -6625,14 +6625,14 @@ export default function SolRefund() {
                 <h3 className="text-lg font-semibold text-white">What is this rent?</h3>
               </div>
 
-              <div className="space-y-3 text-purple-200 text-sm">
+              <div className="space-y-3 text-white text-sm">
                 <p>
                   Every time you receive a token, NFT, or memecoin, Solana creates a token account that requires ~0.002 SOL rent deposit (approximately 2 years worth of rent).
                 </p>
                 <p>
                   When you sell or transfer all tokens, the account becomes empty but the rent remains locked. Our tool safely closes these empty accounts and returns your SOL.
                 </p>
-                <p className="font-medium text-white">
+                <p className="font-medium">
                   Only accounts with 0 tokens are eligible for closure - your funds are completely safe.
                 </p>
               </div>
@@ -6647,7 +6647,7 @@ export default function SolRefund() {
                 <h3 className="text-lg font-semibold text-white">Safety & Security</h3>
               </div>
 
-              <div className="space-y-3 text-purple-200">
+              <div className="space-y-3 text-white">
                 <div className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">Only empty accounts (0 token balance) are eligible for closure</span>
