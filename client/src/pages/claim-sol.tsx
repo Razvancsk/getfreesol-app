@@ -3523,7 +3523,7 @@ export default function SolRefund() {
                     className={`hidden md:inline-flex px-5 py-2.5 text-base font-medium rounded-full transition-all items-center gap-2 border ${
                       activeTab === 'statistics' 
                         ? 'bg-purple-600 text-white border-purple-500' 
-                        : 'bg-purple-800/40 text-purple-300 hover:bg-purple-600/60 border-purple-500/30'
+                        : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                     }`}
                     data-testid="button-statistics"
                   >
@@ -3595,7 +3595,7 @@ export default function SolRefund() {
                         : 'bg-purple-600 text-white border-purple-600'
                       : isNightMode
                         ? 'text-white/40 border-white/10 bg-transparent'
-                        : 'text-purple-300 border-purple-500/30 bg-purple-900/40'
+                        : 'text-white border-purple-500/30 bg-purple-900/40'
                   }`}
                 >
                   🪙 Token
@@ -3610,7 +3610,7 @@ export default function SolRefund() {
                         : 'bg-purple-600 text-white border-purple-600'
                       : isNightMode
                         ? 'text-white/40 border-white/10 bg-transparent'
-                        : 'text-purple-300 border-purple-500/30 bg-purple-900/40'
+                        : 'text-white border-purple-500/30 bg-purple-900/40'
                   }`}
                 >
                   🖼️ NFT
@@ -3659,14 +3659,14 @@ export default function SolRefund() {
                 <button
                   onClick={() => publicKey && scanMutation.mutate(publicKey)}
                   disabled={scanMutation.isPending}
-                  className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                  className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-white hover:text-white transition-all duration-200 disabled:opacity-50"
                   title="Refresh"
                 >
                   <RefreshCw className={`h-6 w-6 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
                 </button>
               </div>
               {!scanResult ? (
-                <div className="text-center text-purple-300 py-12">
+                <div className="text-center text-white py-12">
                   {scanMutation.isPending ? 'Scanning wallet...' : 'Click refresh to scan your wallet'}
                 </div>
               ) : (
@@ -3685,11 +3685,11 @@ export default function SolRefund() {
                   <div className="grid grid-cols-2 gap-4 md:gap-6">
                     <div className="text-center p-4 md:p-8 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
                       <div className="text-2xl md:text-5xl font-bold text-white">{scanResult.emptyAccounts}</div>
-                      <div className="text-xs md:text-base text-purple-200 mt-1">Empty Accounts</div>
+                      <div className="text-xs md:text-base text-white mt-1">Empty Accounts</div>
                     </div>
                     <div className="text-center p-4 md:p-8 bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm border border-purple-500/20 rounded-xl">
                       <div className="text-2xl md:text-5xl font-bold text-green-400">+{refundCalc.net.toFixed(5)}</div>
-                      <div className="text-xs md:text-base text-purple-200 mt-1">To Claim</div>
+                      <div className="text-xs md:text-base text-white mt-1">To Claim</div>
                     </div>
                   </div>
 
@@ -3753,14 +3753,14 @@ export default function SolRefund() {
                     <div className="text-3xl font-bold text-white mb-1">
                       {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
                     </div>
-                    <div className="text-xs text-purple-200 uppercase tracking-wider">SOL RECOVERED</div>
+                    <div className="text-xs text-white uppercase tracking-wider">SOL RECOVERED</div>
                   </div>
                   <div className="w-px bg-purple-500/30 my-4" />
                   <div className="flex-1 p-5 text-center">
                     <div className="text-3xl font-bold text-white mb-1">
                       {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
                     </div>
-                    <div className="text-xs text-purple-200 uppercase tracking-wider">ACCOUNTS CLOSED</div>
+                    <div className="text-xs text-white uppercase tracking-wider">ACCOUNTS CLOSED</div>
                   </div>
                 </div>
                 {/* Desktop */}
@@ -3769,14 +3769,14 @@ export default function SolRefund() {
                     <div className="text-3xl font-bold text-white mb-2">
                       {stats ? (Math.floor(stats.totalSolRecovered * 100) / 100).toFixed(2) : '0.00'}
                     </div>
-                    <div className="text-sm text-purple-200 uppercase tracking-wider">SOL RECOVERED</div>
+                    <div className="text-sm text-white uppercase tracking-wider">SOL RECOVERED</div>
                   </div>
                   <div className="w-px bg-purple-500/30 my-5" />
                   <div className="flex-1 p-6 text-center">
                     <div className="text-3xl font-bold text-white mb-2">
                       {stats ? (stats.totalAccountsClaimed / 1000).toFixed(3) : '0.000'}
                     </div>
-                    <div className="text-sm text-purple-200 uppercase tracking-wider">ACCOUNTS CLOSED</div>
+                    <div className="text-sm text-white uppercase tracking-wider">ACCOUNTS CLOSED</div>
                   </div>
                 </div>
               </div>
@@ -3819,7 +3819,7 @@ export default function SolRefund() {
                 <Flame className="w-8 h-8 text-orange-400" />
                 <div>
                   <h3 className="text-lg md:text-xl font-bold text-white mb-1">Burn tokens & NFTs, get SOL back!</h3>
-                  <p className="text-purple-300 text-xs md:text-sm">Connect your wallet to scan and burn unwanted tokens or NFTs.</p>
+                  <p className="text-white text-xs md:text-sm">Connect your wallet to scan and burn unwanted tokens or NFTs.</p>
                 </div>
                 <Button
                   onClick={() => { select(null); setVisible(true); }}
@@ -3839,7 +3839,7 @@ export default function SolRefund() {
                 <div>
                   <h3 className="text-xl md:text-3xl font-semibold text-white">{tokenList.length} Tokens Found</h3>
                   {scanTokensMutation.isPending && (
-                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                    <p className="text-xs text-white mt-1">Scanning wallet...</p>
                   )}
                 </div>
                 
@@ -3869,7 +3869,7 @@ export default function SolRefund() {
                       }
                     }}
                     disabled={scanTokensMutation.isPending || !publicKey}
-                    className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                    className="inline-flex items-center justify-center p-3 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-white hover:text-white transition-all duration-200 disabled:opacity-50"
                     data-testid="button-refresh-tokens"
                     title="Refresh"
                   >
@@ -3912,7 +3912,7 @@ export default function SolRefund() {
                       className={`px-4 py-2 md:px-7 md:py-3 rounded-xl text-sm md:text-base font-bold border transition-all ${
                         maxTokenValueIndex === index
                           ? 'bg-purple-600 text-white border-purple-400'
-                          : 'bg-purple-900/30 text-purple-300 border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
+                          : 'bg-purple-900/30 text-white border-purple-500/30 hover:bg-purple-800/40 hover:border-purple-400/60'
                       }`}
                     >
                       {label}
@@ -3932,13 +3932,13 @@ export default function SolRefund() {
                     <Flame className="h-12 w-12 text-purple-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">No Tokens Found</h3>
-                  <p className="text-purple-300 text-sm">Scan your wallet to find tokens available for burning.</p>
+                  <p className="text-white text-sm">Scan your wallet to find tokens available for burning.</p>
                 </div>
               ) : (
                 <>
                   {/* Token Count */}
                   {filteredTokenList.length < tokenList.length && (
-                    <p className="text-sm text-purple-300 mb-3">
+                    <p className="text-sm text-white mb-3">
                       Showing {filteredTokenList.length} of {tokenList.length} tokens
                     </p>
                   )}
@@ -3982,7 +3982,7 @@ export default function SolRefund() {
                         />
                       ) : (
                         <div className="w-12 h-12 rounded-full bg-purple-600/30 flex items-center justify-center">
-                          <Coins className="h-6 w-6 text-purple-300" />
+                          <Coins className="h-6 w-6 text-white" />
                         </div>
                       )}
                     </div>
@@ -3992,11 +3992,11 @@ export default function SolRefund() {
                       <div className="text-lg font-semibold text-white truncate">
                         {token.symbol || token.name || 'Unknown Token'}
                       </div>
-                      <div className="text-sm text-purple-200">
+                      <div className="text-sm text-white">
                         Balance: {token.balance < 1000 ? Number(token.balance.toFixed(6)) : token.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })} {token.symbol || ''}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-purple-300 font-mono truncate">
+                        <span className="text-xs text-white font-mono truncate">
                           {token.mint.slice(0, 8)}...{token.mint.slice(-8)}
                         </span>
                         {token.usdPrice && token.usdPrice > 0 && (
@@ -4040,7 +4040,7 @@ export default function SolRefund() {
 
                 {/* Total Selected */}
                 <div className="text-center">
-                  <div className="text-sm text-purple-300 mb-2">
+                  <div className="text-sm text-white mb-2">
                     Total Selected: {selectedTokens.size} token{selectedTokens.size !== 1 ? 's' : ''} (~{calculateTotalSOL(selectedTokens.size)} SOL net)
                   </div>
                 </div>
@@ -4091,11 +4091,11 @@ export default function SolRefund() {
               <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4 mt-4">
                 <div className="flex items-start space-x-3">
                   <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-purple-200">
+                  <div className="text-sm text-white">
                     {burnMode === 'burn' ? (
                       <>
                         <p className="font-medium mb-2">About Token Burning:</p>
-                        <ul className="space-y-1 text-purple-300">
+                        <ul className="space-y-1 text-white">
                           <li>• Burn unwanted tokens and recover SOL rent deposits</li>
                           <li>• Burning permanently destroys the tokens</li>
                           <li>• Most tokens return ~0.002 SOL per account closed</li>
@@ -4104,7 +4104,7 @@ export default function SolRefund() {
                     ) : (
                       <>
                         <p className="font-medium mb-2">About Token Swap:</p>
-                        <ul className="space-y-1 text-purple-300">
+                        <ul className="space-y-1 text-white">
                           <li>• Swap tokens to SOL before closing the account</li>
                           <li>• Get the token value + rent deposit back</li>
                           <li>• Swap and close account in a single transaction</li>
@@ -4143,7 +4143,7 @@ export default function SolRefund() {
                       : 'NFT Scanner'}
                   </h3>
                   {scanNftsMutation.isPending && (
-                    <p className="text-xs text-purple-300 mt-1">Scanning wallet...</p>
+                    <p className="text-xs text-white mt-1">Scanning wallet...</p>
                   )}
                 </div>
                 <button 
@@ -4153,7 +4153,7 @@ export default function SolRefund() {
                     }
                   }}
                   disabled={scanNftsMutation.isPending || !publicKey}
-                  className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-purple-200 hover:text-white transition-all duration-200 disabled:opacity-50"
+                  className="inline-flex items-center justify-center p-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 hover:border-purple-400/50 backdrop-blur-sm rounded-full text-white hover:text-white transition-all duration-200 disabled:opacity-50"
                   data-testid="button-refresh-nft"
                   title="Refresh"
                 >
@@ -4166,7 +4166,7 @@ export default function SolRefund() {
               {scanNftsMutation.isPending ? (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 text-purple-400 mx-auto animate-spin mb-4" />
-                  <p className="text-purple-200">Scanning for NFTs...</p>
+                  <p className="text-white">Scanning for NFTs...</p>
                 </div>
               ) : nftData && nftData.nfts && nftData.nfts.length > 0 ? (
                 (() => {
@@ -4182,7 +4182,7 @@ export default function SolRefund() {
                         <h3 className="text-lg font-semibold text-white mb-2">
                           No NFTs Found
                         </h3>
-                        <p className="text-purple-200 max-w-md mx-auto">
+                        <p className="text-white max-w-md mx-auto">
                           Ensure you have the correct wallet selected.
                         </p>
                       </div>
@@ -4279,7 +4279,7 @@ export default function SolRefund() {
                               <div className="flex items-center justify-between">
                                 <span className={`text-xs px-2 py-1 rounded-full ${
                                   nft.type === 'standard' ? 'bg-blue-500/20 text-blue-300' :
-                                  nft.type === 'pnft' ? 'bg-purple-500/20 text-purple-300' :
+                                  nft.type === 'pnft' ? 'bg-purple-500/20 text-white' :
                                   nft.type === 'ocp' ? 'bg-green-500/20 text-green-300' :
                                   nft.type === 'core' ? 'bg-orange-500/20 text-orange-300' :
                                   'bg-gray-500/20 text-gray-300'
@@ -4328,7 +4328,7 @@ export default function SolRefund() {
 
                     {/* Total Selected */}
                     <div className="text-center">
-                      <div className="text-sm text-purple-300 mb-2">Total Selected: {selectedNfts.size} NFT{selectedNfts.size !== 1 ? 's' : ''}</div>
+                      <div className="text-sm text-white mb-2">Total Selected: {selectedNfts.size} NFT{selectedNfts.size !== 1 ? 's' : ''}</div>
                     </div>
 
                     {/* Burn Button */}
@@ -4384,7 +4384,7 @@ export default function SolRefund() {
                 <div className="text-center py-8">
                   <Image className="h-12 w-12 text-purple-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-white mb-2">No NFTs Found</h3>
-                  <p className="text-purple-200">Scan your wallet to find NFTs in your collection.</p>
+                  <p className="text-white">Scan your wallet to find NFTs in your collection.</p>
                 </div>
               ) : null}
 
@@ -4392,9 +4392,9 @@ export default function SolRefund() {
               <div className="bg-purple-900/20 border border-purple-500/20 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
                   <Info className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-purple-200">
+                  <div className="text-sm text-white">
                     <p className="font-medium mb-2">About NFT Burning:</p>
-                    <ul className="space-y-1 text-purple-300">
+                    <ul className="space-y-1 text-white">
                       <li>• Burn unwanted NFTs and recover SOL rent deposits</li>
                       <li>• Burning permanently destroys the NFT and its metadata</li>
                       <li>• Burning NFTs usually returns 0.01 SOL, while most tokens and some scam NFTs give only 0.002 SOL. Magic Eden OCP NFTs return 0.004 SOL, and compressed NFTs return nothing.</li>
@@ -4435,7 +4435,7 @@ export default function SolRefund() {
                         <Wallet className="w-6 h-6 text-blue-400" />
                       </div>
                       <h3 className="font-semibold text-white">Connect Wallet</h3>
-                      <p className="text-sm text-purple-200">
+                      <p className="text-sm text-white">
                         Connect your wallet to automatically generate your referral link
                       </p>
                     </div>
@@ -4444,7 +4444,7 @@ export default function SolRefund() {
                         <Users className="w-6 h-6 text-green-400" />
                       </div>
                       <h3 className="font-semibold text-white">Share</h3>
-                      <p className="text-sm text-purple-200">
+                      <p className="text-sm text-white">
                         Share with your friends
                       </p>
                     </div>
@@ -4453,7 +4453,7 @@ export default function SolRefund() {
                         <DollarSign className="w-6 h-6 text-purple-400" />
                       </div>
                       <h3 className="font-semibold text-white">Earn</h3>
-                      <p className="text-sm text-purple-200">
+                      <p className="text-sm text-white">
                         Earn 50% of platform fee from every referral transaction
                       </p>
                     </div>
@@ -4467,7 +4467,7 @@ export default function SolRefund() {
                   <div className="text-3xl font-bold text-white mb-2">
                     {(userReferrals as any)?.referralCode?.stats?.totalEarnings || '0'} SOL
                   </div>
-                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  <div className="text-sm text-white uppercase tracking-wider">
                     Total Earnings
                   </div>
                 </div>
@@ -4476,7 +4476,7 @@ export default function SolRefund() {
                   <div className="text-3xl font-bold text-white mb-2">
                     {(userReferrals as any)?.referralCode?.stats?.totalReferrals || '0'}
                   </div>
-                  <div className="text-sm text-purple-200 uppercase tracking-wider">
+                  <div className="text-sm text-white uppercase tracking-wider">
                     Total Referrals
                   </div>
                 </div>
@@ -4489,11 +4489,11 @@ export default function SolRefund() {
                     <Globe className="w-5 h-5" />
                     Your Referral Information
                   </h3>
-                  <p className="text-purple-300 text-sm mt-1">Earn 50% of the fees from referred users!</p>
+                  <p className="text-white text-sm mt-1">Earn 50% of the fees from referred users!</p>
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-purple-200">Referral Link</Label>
+                    <Label className="text-white">Referral Link</Label>
                     <div className="flex space-x-2">
                       <Input 
                         value={userReferralCode ? `${window.location.origin}/${userReferralCode}` : 'Generating referral link...'} 
@@ -4514,7 +4514,7 @@ export default function SolRefund() {
                           }
                         }}
                         data-testid="button-copy-link"
-                        className="bg-purple-800/20 border-purple-500/30 text-purple-300 hover:bg-purple-700/30 hover:text-white"
+                        className="bg-purple-800/20 border-purple-500/30 text-white hover:bg-purple-700/30 hover:text-white"
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -4527,7 +4527,7 @@ export default function SolRefund() {
               <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white">Recent Referral Transactions</h3>
-                  <p className="text-purple-200 text-sm mt-2">
+                  <p className="text-white text-sm mt-2">
                     Track your recent referral earnings
                   </p>
                 </div>
@@ -4540,7 +4540,7 @@ export default function SolRefund() {
                             <p className="font-mono text-sm text-white">
                               {tx.referredWalletAddress?.slice(0, 8)}...{tx.referredWalletAddress?.slice(-8)}
                             </p>
-                            <p className="text-xs text-purple-300">
+                            <p className="text-xs text-white">
                               {tx.paidAt ? new Date(tx.paidAt).toLocaleString() : 'Date unavailable'}
                             </p>
                           </div>
@@ -4548,19 +4548,19 @@ export default function SolRefund() {
                             <p className="font-semibold text-green-400">
                               +{tx.referralFeeAmount || '0'} SOL
                             </p>
-                            <p className="text-xs text-purple-300">
+                            <p className="text-xs text-white">
                               From {tx.originalFeeAmount || '0'} SOL fee
                             </p>
                           </div>
                         </div>
                         <Separator className="bg-purple-500/30" />
-                        <div className="flex justify-between text-xs text-purple-300">
+                        <div className="flex justify-between text-xs text-white">
                           <span>Transaction: {tx.transactionSignature?.slice(0, 12)}...</span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(`https://solscan.io/tx/${tx.transactionSignature}`, "_blank")}
-                            className="text-purple-300 hover:text-white hover:bg-purple-700/30"
+                            className="text-white hover:text-white hover:bg-purple-700/30"
                           >
                             View on Solscan
                           </Button>
@@ -4569,7 +4569,7 @@ export default function SolRefund() {
                     ))
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-purple-300">No referral transactions yet</p>
+                      <p className="text-white">No referral transactions yet</p>
                       <p className="text-sm text-purple-400 mt-2">Share your referral link to start earning!</p>
                     </div>
                   )}
@@ -4584,8 +4584,8 @@ export default function SolRefund() {
               <CoinFlipGame />
               <div className="mt-10 space-y-6">
                 <div>
-                  <p className="text-purple-300 font-black uppercase tracking-wider text-xl mb-4">How It Works</p>
-                  <ul className="space-y-3 list-disc list-inside text-gray-300 text-xl">
+                  <p className="text-white font-black uppercase tracking-wider text-xl mb-4">How It Works</p>
+                  <ul className="space-y-3 list-disc list-inside text-white text-xl">
                     <li>Pick <span className="text-green-400 font-bold">Green</span> or <span className="text-red-400 font-bold">Red</span>, place your bet, and flip.</li>
                     <li>Win = <span className="text-white font-bold">2x</span> your bet. Lose = you lose your bet.</li>
                     <li>Fair 50/50 odds on every flip.</li>
@@ -4635,8 +4635,8 @@ export default function SolRefund() {
                       <span className="text-white text-sm font-semibold">{stakeMode === 'stake' ? 'Stake' : 'Unstake'}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-white text-sm">≈ {walletTokenBalance.toFixed(4)} SOL</span>
-                        <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-xs text-purple-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount(walletTokenBalance.toFixed(4))} className="text-xs text-purple-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                        <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(walletTokenBalance.toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
                       </div>
                     </div>
                     {/* Bottom row: token badge left, amount right */}
@@ -4750,7 +4750,7 @@ export default function SolRefund() {
                         <DollarSign className="w-5 h-5 text-green-400" />
                         SOL Recovered
                       </CardTitle>
-                      <CardDescription className="text-purple-200">
+                      <CardDescription className="text-white">
                         Last 24 hours
                       </CardDescription>
                     </CardHeader>
@@ -4758,7 +4758,7 @@ export default function SolRefund() {
                       <div data-testid="stat-sol-24h" className="text-4xl font-bold text-green-400">
                         {formatSol(stats24h?.stats.totalSolRecovered || '0')}
                       </div>
-                      <p className="text-sm text-purple-300 mt-3">24H</p>
+                      <p className="text-sm text-white mt-3">24H</p>
                     </CardContent>
                   </Card>
 
@@ -4769,7 +4769,7 @@ export default function SolRefund() {
                         <DollarSign className="w-5 h-5 text-green-400" />
                         SOL Recovered
                       </CardTitle>
-                      <CardDescription className="text-purple-200">
+                      <CardDescription className="text-white">
                         Last 7 days
                       </CardDescription>
                     </CardHeader>
@@ -4777,7 +4777,7 @@ export default function SolRefund() {
                       <div data-testid="stat-sol-weekly" className="text-4xl font-bold text-green-400">
                         {formatSol(statsWeekly?.stats.totalSolRecovered || '0')}
                       </div>
-                      <p className="text-sm text-purple-300 mt-3">Weekly</p>
+                      <p className="text-sm text-white mt-3">Weekly</p>
                     </CardContent>
                   </Card>
 
@@ -4788,7 +4788,7 @@ export default function SolRefund() {
                         <DollarSign className="w-5 h-5 text-green-400" />
                         SOL Recovered
                       </CardTitle>
-                      <CardDescription className="text-purple-200">
+                      <CardDescription className="text-white">
                         Last 30 days
                       </CardDescription>
                     </CardHeader>
@@ -4796,7 +4796,7 @@ export default function SolRefund() {
                       <div data-testid="stat-sol-monthly" className="text-4xl font-bold text-green-400">
                         {formatSol(statsMonthly?.stats.totalSolRecovered || '0')}
                       </div>
-                      <p className="text-sm text-purple-300 mt-3">Monthly</p>
+                      <p className="text-sm text-white mt-3">Monthly</p>
                     </CardContent>
                   </Card>
 
@@ -4804,10 +4804,10 @@ export default function SolRefund() {
                   <Card className="bg-purple-800/50 border-purple-600 backdrop-blur" data-testid="card-total-wallets">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-white">
-                        <Users className="w-5 h-5 text-purple-300" />
+                        <Users className="w-5 h-5 text-white" />
                         Total Wallets
                       </CardTitle>
-                      <CardDescription className="text-purple-200">
+                      <CardDescription className="text-white">
                         Unique wallets
                       </CardDescription>
                     </CardHeader>
@@ -4815,7 +4815,7 @@ export default function SolRefund() {
                       <div data-testid="stat-total-users" className="text-4xl font-bold text-white">
                         {statsAllTime?.stats.totalUsers.toLocaleString('en-US') || '0'}
                       </div>
-                      <p className="text-sm text-purple-300 mt-3">All Time</p>
+                      <p className="text-sm text-white mt-3">All Time</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -4872,7 +4872,7 @@ export default function SolRefund() {
                         </Button>
                       </div>
                     </div>
-                    <CardDescription className="text-purple-200">
+                    <CardDescription className="text-white">
                       Addresses that recovered the most rent ({selectedLeaderboardPeriod === '24h' ? 'last 24 hours' : selectedLeaderboardPeriod === 'weekly' ? 'last 7 days' : selectedLeaderboardPeriod === 'monthly' ? 'last 30 days' : 'all time'})
                     </CardDescription>
                   </CardHeader>
@@ -4902,7 +4902,7 @@ export default function SolRefund() {
                                 </Badge>
                               )}
                               {index > 2 && (
-                                <span className="text-purple-200 font-medium ml-2">#{index + 1}</span>
+                                <span className="text-white font-medium ml-2">#{index + 1}</span>
                               )}
                               {isPlatformWallet ? (
                                 <button
@@ -4931,7 +4931,7 @@ export default function SolRefund() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-purple-300">
+                      <div className="text-center py-8 text-white">
                         No data available for this time period
                       </div>
                     )}
@@ -4980,7 +4980,7 @@ export default function SolRefund() {
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'overview' 
                             ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
+                            : 'text-white hover:bg-purple-700/30'
                         }`}
                         data-testid="docs-nav-overview"
                       >
@@ -4994,7 +4994,7 @@ export default function SolRefund() {
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'burn-tokens' 
                             ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
+                            : 'text-white hover:bg-purple-700/30'
                         }`}
                         data-testid="docs-nav-tokens"
                       >
@@ -5005,7 +5005,7 @@ export default function SolRefund() {
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'burn-nfts' 
                             ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
+                            : 'text-white hover:bg-purple-700/30'
                         }`}
                         data-testid="docs-nav-nfts"
                       >
@@ -5016,7 +5016,7 @@ export default function SolRefund() {
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'referrals' 
                             ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
+                            : 'text-white hover:bg-purple-700/30'
                         }`}
                         data-testid="docs-nav-referrals"
                       >
@@ -5027,7 +5027,7 @@ export default function SolRefund() {
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'points' 
                             ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
+                            : 'text-white hover:bg-purple-700/30'
                         }`}
                         data-testid="docs-nav-points"
                       >
@@ -5041,7 +5041,7 @@ export default function SolRefund() {
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                           activeDocSection === 'developer-api' 
                             ? 'bg-purple-600 text-white' 
-                            : 'text-purple-200 hover:bg-purple-700/30'
+                            : 'text-white hover:bg-purple-700/30'
                         }`}
                         data-testid="docs-nav-api"
                       >
@@ -5071,7 +5071,7 @@ export default function SolRefund() {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <h2 className="text-white text-2xl font-semibold">How to Claim SOL</h2>
-                        <p className="text-purple-200">
+                        <p className="text-white">
                           Complete guide to reclaiming your SOL from empty token accounts
                         </p>
                       </div>
@@ -5081,10 +5081,10 @@ export default function SolRefund() {
                             <h3 className="text-xl font-semibold text-white mb-4">
                               1. Find Our App
                             </h3>
-                            <p className="text-purple-200 leading-relaxed mb-4">
+                            <p className="text-white leading-relaxed mb-4">
                               Open your <strong className="text-white">Phantom Wallet</strong> and use the Discovery feature to find GetFreeSol:
                             </p>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                            <ul className="space-y-3 text-white leading-relaxed mb-6">
                               <li className="flex items-start gap-3">
                                 <span className="text-purple-400 mt-1">▸</span>
                                 <span>Tap the <strong className="text-white">Discovery (search)</strong> icon in Phantom</span>
@@ -5109,7 +5109,7 @@ export default function SolRefund() {
                                   alt="Phantom Discovery Search - Type 'Get Free Sol'" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 1: Search for "Get Free Sol"</p>
+                                <p className="text-sm text-white text-center italic">Step 1: Search for "Get Free Sol"</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5117,7 +5117,7 @@ export default function SolRefund() {
                                   alt="Get Free Sol App Page - Tap Open" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 2: Tap "Open" to launch</p>
+                                <p className="text-sm text-white text-center italic">Step 2: Tap "Open" to launch</p>
                               </div>
                             </div>
                           </div>
@@ -5126,7 +5126,7 @@ export default function SolRefund() {
                             <h3 className="text-xl font-semibold text-white mb-4">
                               2. Connect Your Wallet
                             </h3>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                            <ul className="space-y-3 text-white leading-relaxed mb-6">
                               <li className="flex items-start gap-3">
                                 <span className="text-blue-400 mt-1">▸</span>
                                 <span>Click the <strong className="text-white">"Connect"</strong> button in the top right corner</span>
@@ -5140,7 +5140,7 @@ export default function SolRefund() {
                                 <span>Approve the connection in your wallet</span>
                               </li>
                             </ul>
-                            <p className="text-purple-200 leading-relaxed mb-6">
+                            <p className="text-white leading-relaxed mb-6">
                               We support <strong className="text-white">8 different wallets</strong>: Phantom, Backpack, Solflare, Magic Eden, Coinbase, Coin98, Bitget, and Ledger hardware wallets.
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -5150,7 +5150,7 @@ export default function SolRefund() {
                                   alt="GetFreeSol main page - Click Connect button" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 1: Click "Connect" button</p>
+                                <p className="text-sm text-white text-center italic">Step 1: Click "Connect" button</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5158,7 +5158,7 @@ export default function SolRefund() {
                                   alt="Wallet selection modal - Choose your wallet" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 2: Select your wallet</p>
+                                <p className="text-sm text-white text-center italic">Step 2: Select your wallet</p>
                               </div>
                             </div>
                           </div>
@@ -5167,10 +5167,10 @@ export default function SolRefund() {
                             <h3 className="text-xl font-semibold text-white mb-4">
                               3. Claim Your SOL
                             </h3>
-                            <p className="text-purple-200 leading-relaxed mb-4">
+                            <p className="text-white leading-relaxed mb-4">
                               After connecting your wallet, the app will <strong className="text-white">automatically scan and close all empty accounts</strong>. The process is fully automated:
                             </p>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                            <ul className="space-y-3 text-white leading-relaxed">
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">▸</span>
                                 <span>The app automatically detects all empty token accounts</span>
@@ -5189,7 +5189,7 @@ export default function SolRefund() {
                               </li>
                             </ul>
                             <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mt-4">
-                              <p className="text-sm text-purple-200">
+                              <p className="text-sm text-white">
                                 <strong className="text-white">💡 Note:</strong> If you have more than 20 empty accounts, the app will process them in batches. Just approve each transaction until all accounts are closed.
                               </p>
                             </div>
@@ -5200,7 +5200,7 @@ export default function SolRefund() {
                                   alt="Scan results showing empty accounts - Click Claim All button" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 1: Click "CLAIM ALL"</p>
+                                <p className="text-sm text-white text-center italic">Step 1: Click "CLAIM ALL"</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5208,7 +5208,7 @@ export default function SolRefund() {
                                   alt="Transaction confirmation modal in wallet" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 2: Confirm transaction</p>
+                                <p className="text-sm text-white text-center italic">Step 2: Confirm transaction</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5216,14 +5216,14 @@ export default function SolRefund() {
                                   alt="Success message showing SOL claimed" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 3: SOL claimed! 🎉</p>
+                                <p className="text-sm text-white text-center italic">Step 3: SOL claimed! 🎉</p>
                               </div>
                             </div>
                           </div>
 
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">Additional Features</h3>
-                            <ul className="space-y-3 text-purple-200">
+                            <ul className="space-y-3 text-white">
                               <li className="flex items-start gap-3">
                                 <span className="text-2xl">🔥</span>
                                 <div>
@@ -5253,7 +5253,7 @@ export default function SolRefund() {
 
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
-                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                            <ul className="space-y-2 text-white list-disc list-inside">
                               <li>Use the Auto-Claim feature to automatically recover SOL from new empty accounts</li>
                               <li>Check the Statistics tab to see total SOL recovered across the platform</li>
                               <li>Enable notifications to get alerts when new claimable SOL is detected</li>
@@ -5268,7 +5268,7 @@ export default function SolRefund() {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <h2 className="text-white text-2xl font-semibold">How to Burn Tokens</h2>
-                        <p className="text-purple-200">
+                        <p className="text-white">
                           Remove unwanted tokens from your wallet and recover SOL from token accounts
                         </p>
                       </div>
@@ -5276,7 +5276,7 @@ export default function SolRefund() {
                         <div className="space-y-8">
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">What is Token Burning?</h3>
-                            <p className="text-purple-200 leading-relaxed">
+                            <p className="text-white leading-relaxed">
                               Token burning allows you to <strong className="text-white">permanently destroy unwanted tokens</strong> from your wallet 
                               and <strong className="text-white">recover SOL</strong> from the token accounts. This helps clean up your wallet and 
                               reclaim rent deposits.
@@ -5287,7 +5287,7 @@ export default function SolRefund() {
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">🔥</span> How to Burn Tokens
                             </h3>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                            <ul className="space-y-3 text-white leading-relaxed mb-6">
                               <li className="flex items-start gap-3">
                                 <span className="text-orange-400 mt-1">▸</span>
                                 <span>Navigate to the <strong className="text-white">"Burn Tokens"</strong> tab</span>
@@ -5316,7 +5316,7 @@ export default function SolRefund() {
                                   alt="Token burning interface with value slider and token selection" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 1: Select tokens and click "BURN"</p>
+                                <p className="text-sm text-white text-center italic">Step 1: Select tokens and click "BURN"</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5324,14 +5324,14 @@ export default function SolRefund() {
                                   alt="Transaction confirmation showing token burn" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 2: Confirm the burn transaction</p>
+                                <p className="text-sm text-white text-center italic">Step 2: Confirm the burn transaction</p>
                               </div>
                             </div>
                           </div>
 
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
-                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                            <ul className="space-y-2 text-white list-disc list-inside">
                               <li>Start with low-value tokens to test the feature before burning higher-value tokens</li>
                               <li>The value slider helps you quickly filter out spam tokens worth almost nothing</li>
                               <li>Burning tokens is permanent - make sure you really don't want them!</li>
@@ -5347,7 +5347,7 @@ export default function SolRefund() {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <h2 className="text-white text-2xl font-semibold">How to Burn NFTs</h2>
-                        <p className="text-purple-200">
+                        <p className="text-white">
                           Burn unwanted NFTs (including compressed NFTs and frozen NFTs) and recover SOL
                         </p>
                       </div>
@@ -5355,11 +5355,11 @@ export default function SolRefund() {
                         <div className="space-y-8">
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">What is NFT Burning?</h3>
-                            <p className="text-purple-200 leading-relaxed">
+                            <p className="text-white leading-relaxed">
                               NFT burning allows you to <strong className="text-white">permanently destroy unwanted NFTs</strong> from your wallet 
                               and <strong className="text-white">recover SOL</strong> from the NFT accounts. Our platform supports:
                             </p>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                            <ul className="space-y-3 text-white leading-relaxed">
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">✓</span>
                                 <span><strong className="text-white">Regular NFTs:</strong> Standard Metaplex NFTs</span>
@@ -5381,7 +5381,7 @@ export default function SolRefund() {
 
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">How to Burn NFTs</h3>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                            <ul className="space-y-3 text-white leading-relaxed mb-6">
                               <li className="flex items-start gap-3">
                                 <span className="text-pink-400 mt-1">▸</span>
                                 <span>Navigate to the <strong className="text-white">"Burn NFT"</strong> tab</span>
@@ -5414,7 +5414,7 @@ export default function SolRefund() {
                                   alt="NFT burning interface showing available NFTs" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 1: Browse your NFTs</p>
+                                <p className="text-sm text-white text-center italic">Step 1: Browse your NFTs</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5422,7 +5422,7 @@ export default function SolRefund() {
                                   alt="Selected NFT ready to burn" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 2: Select NFT and click "BURN"</p>
+                                <p className="text-sm text-white text-center italic">Step 2: Select NFT and click "BURN"</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5430,14 +5430,14 @@ export default function SolRefund() {
                                   alt="Transaction confirmation showing SOL recovered" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Step 3: Confirm and recover SOL! 🎉</p>
+                                <p className="text-sm text-white text-center italic">Step 3: Confirm and recover SOL! 🎉</p>
                               </div>
                             </div>
                           </div>
 
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
-                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                            <ul className="space-y-2 text-white list-disc list-inside">
                               <li>Check both NFTs and cNFTs tabs - you might have compressed NFTs you weren't aware of</li>
                               <li>The platform shows you exactly how much SOL you'll recover before you confirm</li>
                               <li>You can use "Select All NFTs" to quickly select all unwanted NFTs at once</li>
@@ -5454,7 +5454,7 @@ export default function SolRefund() {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <h2 className="text-white text-2xl font-semibold">Referral System</h2>
-                        <p className="text-purple-200">
+                        <p className="text-white">
                           Earn 50% commission from your referrals - the highest rate in the market!
                         </p>
                       </div>
@@ -5462,11 +5462,11 @@ export default function SolRefund() {
                         <div className="space-y-8">
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">How the Referral System Works</h3>
-                            <p className="text-purple-200 leading-relaxed mb-4">
+                            <p className="text-white leading-relaxed mb-4">
                               Share your unique referral link with friends and earn <strong className="text-white">50% commission</strong> on all fees 
                               collected from users who sign up through your link. This is the <strong className="text-white">highest commission rate in the market</strong>!
                             </p>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                            <ul className="space-y-3 text-white leading-relaxed">
                               <li className="flex items-start gap-3">
                                 <span className="text-green-400 mt-1">✓</span>
                                 <span><strong className="text-white">50% commission</strong> on all fees from your referrals</span>
@@ -5490,7 +5490,7 @@ export default function SolRefund() {
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">💰</span> How to Get Started
                             </h3>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                            <ul className="space-y-3 text-white leading-relaxed mb-6">
                               <li className="flex items-start gap-3">
                                 <span className="text-blue-400 mt-1">▸</span>
                                 <span>Navigate to the <strong className="text-white">"Referrals"</strong> tab</span>
@@ -5519,7 +5519,7 @@ export default function SolRefund() {
                                   alt="Referral dashboard showing total earnings and referral link" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Your referral stats and link</p>
+                                <p className="text-sm text-white text-center italic">Your referral stats and link</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5527,14 +5527,14 @@ export default function SolRefund() {
                                   alt="Recent referral transactions showing earnings" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Track your referral earnings</p>
+                                <p className="text-sm text-white text-center italic">Track your referral earnings</p>
                               </div>
                             </div>
                           </div>
 
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-3">💡 Pro Tips</h3>
-                            <ul className="space-y-2 text-purple-200 list-disc list-inside">
+                            <ul className="space-y-2 text-white list-disc list-inside">
                               <li>Share your referral link in crypto communities, Discord servers, and social media</li>
                               <li>Explain the benefits of GetFreeSol to maximize conversions</li>
                               <li>Your commission is automatically tracked - no manual claiming needed</li>
@@ -5550,7 +5550,7 @@ export default function SolRefund() {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <h2 className="text-white text-2xl font-semibold">Points System</h2>
-                        <p className="text-purple-200">
+                        <p className="text-white">
                           Earn points for every account you close and compete on the leaderboard!
                         </p>
                       </div>
@@ -5558,12 +5558,12 @@ export default function SolRefund() {
                         <div className="space-y-8">
                           <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-white mb-4">How the Points System Works</h3>
-                            <p className="text-purple-200 leading-relaxed mb-4">
+                            <p className="text-white leading-relaxed mb-4">
                               Every time you close an empty token account, you earn <strong className="text-white">20 points</strong>. 
                               Points are tracked automatically and displayed on your profile. Compete with other users on the 
                               <strong className="text-white"> Top 10 Leaderboard</strong> to see who's recovering the most SOL!
                             </p>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed">
+                            <ul className="space-y-3 text-white leading-relaxed">
                               <li className="flex items-start gap-3">
                                 <span className="text-yellow-400 mt-1">⭐</span>
                                 <span><strong className="text-white">20 points</strong> for every account closed</span>
@@ -5587,7 +5587,7 @@ export default function SolRefund() {
                             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                               <span className="text-2xl">🏆</span> Your Stats & Leaderboard
                             </h3>
-                            <ul className="space-y-3 text-purple-200 leading-relaxed mb-6">
+                            <ul className="space-y-3 text-white leading-relaxed mb-6">
                               <li className="flex items-start gap-3">
                                 <span className="text-blue-400 mt-1">▸</span>
                                 <span>Navigate to the <strong className="text-white">"Points"</strong> tab</span>
@@ -5612,7 +5612,7 @@ export default function SolRefund() {
                                   alt="Points dashboard showing total points, SOL claimed, and rank" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Your points and ranking</p>
+                                <p className="text-sm text-white text-center italic">Your points and ranking</p>
                               </div>
                               <div className="space-y-2">
                                 <img 
@@ -5620,7 +5620,7 @@ export default function SolRefund() {
                                   alt="Top 10 leaderboard showing highest-ranking users" 
                                   className="rounded-lg border border-purple-500/50 w-full"
                                 />
-                                <p className="text-sm text-purple-300 text-center italic">Top 10 leaderboard</p>
+                                <p className="text-sm text-white text-center italic">Top 10 leaderboard</p>
                               </div>
                             </div>
                           </div>
@@ -5639,7 +5639,7 @@ export default function SolRefund() {
                               <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
                                 Create Referral Account
                               </CardTitle>
-                              <CardDescription className="text-gray-600 dark:text-purple-200">
+                              <CardDescription className="text-gray-600 dark:text-white">
                                 Use your project name
                               </CardDescription>
                             </CardHeader>
@@ -5654,7 +5654,7 @@ export default function SolRefund() {
                                   value={devProjectName}
                                   onChange={(e) => setDevProjectName(e.target.value)}
                                   maxLength={50}
-                                  className="bg-white dark:bg-slate-800 border-gray-300 dark:border-purple-400/30 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-purple-300/50"
+                                  className="bg-white dark:bg-slate-800 border-gray-300 dark:border-purple-400/30 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/50"
                                   data-testid="input-dev-project-name-inline"
                                 />
                               </div>
@@ -5693,7 +5693,7 @@ export default function SolRefund() {
                               <CardTitle className="text-xl text-gray-900 dark:text-white">
                                 Connect Your Wallet
                               </CardTitle>
-                              <CardDescription className="text-gray-600 dark:text-purple-200">
+                              <CardDescription className="text-gray-600 dark:text-white">
                                 Connect your wallet to create a developer account
                               </CardDescription>
                             </CardHeader>
@@ -5714,7 +5714,7 @@ export default function SolRefund() {
                         className="w-full text-left bg-purple-800/30 hover:bg-purple-700/50 border border-purple-600/50 rounded-lg p-4 transition-colors"
                         data-testid="button-prev-section"
                       >
-                        <div className="text-xs text-purple-300 mb-1">Previous</div>
+                        <div className="text-xs text-white mb-1">Previous</div>
                         <div className="text-white font-medium">{previousSection.title}</div>
                       </button>
                     )}
@@ -5724,7 +5724,7 @@ export default function SolRefund() {
                         className="w-full text-left bg-purple-800/30 hover:bg-purple-700/50 border border-purple-600/50 rounded-lg p-4 transition-colors"
                         data-testid="button-next-section"
                       >
-                        <div className="text-xs text-purple-300 mb-1">Next</div>
+                        <div className="text-xs text-white mb-1">Next</div>
                         <div className="text-white font-medium">{nextSection.title}</div>
                       </button>
                     )}
@@ -5746,7 +5746,7 @@ export default function SolRefund() {
                         <div className="text-2xl md:text-[32px] font-bold text-white mb-1 md:mb-2">
                           {lendStats ? `$${parseFloat(lendStats.totalDepositsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
                         </div>
-                        <div className="text-xs md:text-sm font-medium text-purple-200 uppercase tracking-wider">
+                        <div className="text-xs md:text-sm font-medium text-white uppercase tracking-wider">
                           Total Deposits
                         </div>
                       </div>
@@ -5756,7 +5756,7 @@ export default function SolRefund() {
                         <div className="text-2xl md:text-[32px] font-bold text-white mb-1 md:mb-2">
                           {lendStats ? `$${parseFloat(lendStats.totalEarningsUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
                         </div>
-                        <div className="text-xs md:text-sm font-medium text-purple-200 uppercase tracking-wider">
+                        <div className="text-xs md:text-sm font-medium text-white uppercase tracking-wider">
                           Total Earned
                         </div>
                       </div>
@@ -5800,7 +5800,7 @@ export default function SolRefund() {
                           <Button
                             variant={lendMode === 'deposit' ? 'default' : 'outline'}
                             onClick={() => { setLendMode('deposit'); setDepositAmount(''); }}
-                            className={lendMode === 'deposit' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
+                            className={lendMode === 'deposit' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-white border-purple-600'}
                             data-testid="button-mode-deposit"
                           >
                             Deposit
@@ -5808,7 +5808,7 @@ export default function SolRefund() {
                           <Button
                             variant={lendMode === 'withdraw' ? 'default' : 'outline'}
                             onClick={() => { setLendMode('withdraw'); setDepositAmount(''); }}
-                            className={lendMode === 'withdraw' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
+                            className={lendMode === 'withdraw' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-white border-purple-600'}
                             data-testid="button-mode-withdraw"
                           >
                             Withdraw
@@ -6075,7 +6075,7 @@ export default function SolRefund() {
                         <Button
                           variant={lendMode === 'deposit' ? 'default' : 'outline'}
                           onClick={() => { setLendMode('deposit'); setDepositAmount(''); }}
-                          className={lendMode === 'deposit' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
+                          className={lendMode === 'deposit' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-white border-purple-600'}
                           data-testid="button-mode-deposit"
                         >
                           Deposit
@@ -6083,7 +6083,7 @@ export default function SolRefund() {
                         <Button
                           variant={lendMode === 'withdraw' ? 'default' : 'outline'}
                           onClick={() => { setLendMode('withdraw'); setDepositAmount(''); }}
-                          className={lendMode === 'withdraw' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-purple-300 border-purple-600'}
+                          className={lendMode === 'withdraw' ? 'bg-purple-600 text-white' : 'bg-purple-900/30 text-white border-purple-600'}
                           data-testid="button-mode-withdraw"
                         >
                           Withdraw
@@ -6094,9 +6094,9 @@ export default function SolRefund() {
                     <div className="bg-purple-900/40 border border-purple-500/30 rounded-lg p-3 mb-3">
                       {/* Header with Balance and Quick Actions */}
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-purple-200 text-sm font-medium">{lendMode === 'deposit' ? 'Deposit Amount' : 'Withdraw Amount'}</span>
+                        <span className="text-white text-sm font-medium">{lendMode === 'deposit' ? 'Deposit Amount' : 'Withdraw Amount'}</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-purple-300">
+                          <span className="text-xs text-white">
                             💰 {lendMode === 'deposit' ? walletTokenBalance.toFixed(2) : (() => {
                               const userPosition = userPositions?.deposits?.find((dep: any) => dep.asset === selectedReserve?.mint);
                               if (!userPosition) return '0.00';
@@ -6107,7 +6107,7 @@ export default function SolRefund() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
+                            className="text-xs bg-purple-800/40 text-white hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
                             onClick={() => {
                               if (lendMode === 'deposit') {
                                 const balance = walletTokenBalance;
@@ -6136,7 +6136,7 @@ export default function SolRefund() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs bg-purple-800/40 text-purple-300 hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
+                            className="text-xs bg-purple-800/40 text-white hover:text-white hover:bg-purple-700/50 px-2 py-0.5 h-auto border border-purple-500/30"
                             onClick={() => {
                               if (lendMode === 'deposit') {
                                 const balance = walletTokenBalance;
@@ -6187,7 +6187,7 @@ export default function SolRefund() {
                     <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-2.5 mb-3 space-y-2">
                       {/* APY */}
                       <div className="flex items-center justify-between">
-                        <span className="text-purple-300 text-sm">APY</span>
+                        <span className="text-white text-sm">APY</span>
                         <span className="text-green-400 text-sm font-semibold bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                           ≈ {selectedReserve?.depositAPY.toFixed(2)}%
                         </span>
@@ -6197,7 +6197,7 @@ export default function SolRefund() {
 
                       {/* Vault TVL */}
                       <div className="flex items-center justify-between">
-                        <span className="text-purple-300 text-sm">Vault TVL</span>
+                        <span className="text-white text-sm">Vault TVL</span>
                         <div className="text-right">
                           {(() => {
                             const tvl = parseFloat(selectedReserve?.tvl || '0');
@@ -6224,7 +6224,7 @@ export default function SolRefund() {
 
                       {/* Layer Total */}
                       <div className="flex items-center justify-between">
-                        <span className="text-purple-300 text-sm">Layer Total</span>
+                        <span className="text-white text-sm">Layer Total</span>
                         <div className="text-right">
                           {(() => {
                             const tvl = parseFloat(selectedReserve?.tvl || '0');
@@ -6252,7 +6252,7 @@ export default function SolRefund() {
                     <div className="grid grid-cols-2 gap-3 mb-3">
                       {/* Deposited Card */}
                       <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
-                        <div className="text-xs text-purple-300 mb-1">Deposited</div>
+                        <div className="text-xs text-white mb-1">Deposited</div>
                         {(() => {
                           const userPos = (userPositions as any)?.deposits?.find(
                             (d: any) => d.asset === selectedReserve?.mint
@@ -6281,7 +6281,7 @@ export default function SolRefund() {
 
                       {/* Earnings Card */}
                       <div className="bg-purple-800/20 border border-purple-500/20 rounded-lg p-3">
-                        <div className="text-xs text-purple-300 mb-1">Your Earnings</div>
+                        <div className="text-xs text-white mb-1">Your Earnings</div>
                         {(() => {
                           const userPos = (userPositions as any)?.deposits?.find(
                             (d: any) => d.asset === selectedReserve?.mint
@@ -6473,16 +6473,16 @@ export default function SolRefund() {
                 <div className="min-w-full">
                   {/* Header */}
                   <div className={`grid grid-cols-4 gap-4 mb-4 pb-3 border-b ${isNightMode ? 'border-[#2a2a2a]' : 'border-purple-500/30'}`}>
-                    <div className={`text-sm font-semibold uppercase tracking-wider ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
                       WALLET/TX
                     </div>
-                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
                       ACCTS
                     </div>
-                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
                       CLAIMED SOL
                     </div>
-                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-purple-200'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
                       AGE
                     </div>
                   </div>
@@ -6490,11 +6490,11 @@ export default function SolRefund() {
                   {/* Transaction Rows */}
                   <div>
                     {isLoadingTransactions && allTransactions.length === 0 ? (
-                      <div className="text-center text-purple-300 py-8">
+                      <div className="text-center text-white py-8">
                         Loading transactions...
                       </div>
                     ) : allTransactions.length === 0 ? (
-                      <div className="text-center text-purple-300 py-8">
+                      <div className="text-center text-white py-8">
                         No transactions yet
                       </div>
                     ) : (
@@ -6613,7 +6613,7 @@ export default function SolRefund() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-purple-300 mt-2">Connect your wallet to get your referral link.</p>
+                  <p className="text-xs text-white mt-2">Connect your wallet to get your referral link.</p>
                 )}
               </div>
             </div>
@@ -6680,8 +6680,8 @@ export default function SolRefund() {
                 />
                 <div className="text-white font-semibold text-lg">Get Free Sol</div>
               </div>
-              <div className="text-purple-300 text-sm mt-1">
-                2026 All rights reserved · <Link href="/privacy" className="text-purple-400 hover:text-purple-300 underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-purple-300 underline">Terms & Conditions</Link>
+              <div className="text-white text-sm mt-1">
+                2026 All rights reserved · <Link href="/privacy" className="text-purple-400 hover:text-white underline">Privacy Policy</Link> · <Link href="/terms" className="text-purple-400 hover:text-white underline">Terms & Conditions</Link>
               </div>
             </div>
             {/* Social Links */}
@@ -6751,7 +6751,7 @@ export default function SolRefund() {
               <User className="w-5 h-5 text-purple-400" />
               User Profile
             </DialogTitle>
-            <DialogDescription className="text-purple-200">
+            <DialogDescription className="text-white">
               {viewProfileWallet && (
                 <span className="font-mono text-xs break-all">{viewProfileWallet}</span>
               )}
@@ -6768,25 +6768,25 @@ export default function SolRefund() {
               <div className="grid grid-cols-2 gap-3">
                 <Card className="bg-purple-800/40 border-purple-500/30">
                   <CardContent className="p-4 text-center">
-                    <p className="text-purple-200 text-sm">SOL Claimed</p>
+                    <p className="text-white text-sm">SOL Claimed</p>
                     <p className="text-xl font-bold text-green-400">{Number(viewProfileData.totalSolClaimed).toFixed(4)}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-purple-800/40 border-purple-500/30">
                   <CardContent className="p-4 text-center">
-                    <p className="text-purple-200 text-sm">Accounts Closed</p>
+                    <p className="text-white text-sm">Accounts Closed</p>
                     <p className="text-xl font-bold text-white">{viewProfileData.totalAccountsClosed}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-purple-800/40 border-purple-500/30">
                   <CardContent className="p-4 text-center">
-                    <p className="text-purple-200 text-sm">Tokens Burned</p>
+                    <p className="text-white text-sm">Tokens Burned</p>
                     <p className="text-xl font-bold text-orange-400">{viewProfileData.totalTokensBurned}</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-purple-800/40 border-purple-500/30">
                   <CardContent className="p-4 text-center">
-                    <p className="text-purple-200 text-sm">NFTs Burned</p>
+                    <p className="text-white text-sm">NFTs Burned</p>
                     <p className="text-xl font-bold text-pink-400">{viewProfileData.totalNftsBurned}</p>
                   </CardContent>
                 </Card>
@@ -6797,7 +6797,7 @@ export default function SolRefund() {
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Trophy className="w-5 h-5 text-yellow-400" />
-                    <span className="text-purple-200">Total Points</span>
+                    <span className="text-white">Total Points</span>
                   </div>
                   <span className="text-xl font-bold text-yellow-400">{viewProfileData.totalPoints.toLocaleString()}</span>
                 </CardContent>
@@ -6808,12 +6808,12 @@ export default function SolRefund() {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-5 h-5 text-purple-400" />
-                    <span className="text-purple-200 font-medium">Leaderboard Rankings</span>
+                    <span className="text-white font-medium">Leaderboard Rankings</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Weekly Rank */}
                     <div className="bg-purple-900/50 rounded-lg p-3 text-center">
-                      <p className="text-xs text-purple-300 mb-1">Weekly (7 days)</p>
+                      <p className="text-xs text-white mb-1">Weekly (7 days)</p>
                       {viewProfileData.weeklyRank ? (
                         <>
                           <p className="text-lg font-bold text-white">
@@ -6831,7 +6831,7 @@ export default function SolRefund() {
                     </div>
                     {/* All Time Rank */}
                     <div className="bg-purple-900/50 rounded-lg p-3 text-center">
-                      <p className="text-xs text-purple-300 mb-1">All Time</p>
+                      <p className="text-xs text-white mb-1">All Time</p>
                       {viewProfileData.allTimeRank ? (
                         <>
                           <p className="text-lg font-bold text-white">
@@ -6857,12 +6857,12 @@ export default function SolRefund() {
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center gap-2">
                       <Users className="w-5 h-5 text-blue-400" />
-                      <span className="text-purple-200">Referral Code</span>
+                      <span className="text-white">Referral Code</span>
                     </div>
                     <p className="font-mono text-sm text-white bg-purple-900/50 px-3 py-1.5 rounded">
                       {viewProfileData.referralCode}
                     </p>
-                    <p className="text-sm text-purple-300">
+                    <p className="text-sm text-white">
                       Earnings: <span className="text-green-400 font-bold">{Number(viewProfileData.referralEarnings).toFixed(4)} SOL</span>
                     </p>
                   </CardContent>
@@ -6871,7 +6871,7 @@ export default function SolRefund() {
 
             </div>
           ) : (
-            <div className="text-center py-8 text-purple-300">
+            <div className="text-center py-8 text-white">
               No data available for this user
             </div>
           )}
@@ -6894,7 +6894,7 @@ export default function SolRefund() {
             <DialogTitle className="text-2xl font-bold text-center">
               🚀 Create Developer Account
             </DialogTitle>
-            <DialogDescription className="text-center text-purple-200">
+            <DialogDescription className="text-center text-white">
               Get your unique PDA wallet to start earning fees from your API integrations
             </DialogDescription>
           </DialogHeader>
@@ -6910,7 +6910,7 @@ export default function SolRefund() {
                 value={devProjectName}
                 onChange={(e) => setDevProjectName(e.target.value)}
                 maxLength={50}
-                className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-purple-300/50 h-12 text-lg"
+                className="bg-slate-900/50 border-purple-400/30 text-white placeholder:text-white/50 h-12 text-lg"
                 data-testid="input-dev-project-name"
               />
             </div>
@@ -6945,7 +6945,7 @@ export default function SolRefund() {
             <Button
               variant="ghost"
               onClick={() => setShowDevAccountModal(false)}
-              className="w-full text-purple-300 hover:text-white"
+              className="w-full text-white hover:text-white"
             >
               Cancel
             </Button>
