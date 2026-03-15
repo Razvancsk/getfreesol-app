@@ -10,6 +10,14 @@ let vaultKeypair: Keypair | null = null;
 function loadOrCreateVault(): Keypair {
   if (vaultKeypair) return vaultKeypair;
 
+  // Prefer RELAYER_PRIVATE_KEY env var (new vault wallet)
+  if (process.env.RELAYER_PRIVATE_KEY) {
+    const secretKey = bs58.decode(process.env.RELAYER_PRIVATE_KEY);
+    vaultKeypair = Keypair.fromSecretKey(secretKey);
+    console.log(`🎰 Coin flip vault loaded from env: ${vaultKeypair.publicKey.toBase58()}`);
+    return vaultKeypair;
+  }
+
   if (existsSync(VAULT_KEY_FILE)) {
     const keyData = readFileSync(VAULT_KEY_FILE, 'utf-8').trim();
     const secretKey = bs58.decode(keyData);
