@@ -6590,6 +6590,7 @@ export default function SolRefund() {
               </div>
 
               <div className="space-y-3 text-purple-200 text-sm">
+                <p>Refer friends &amp; earn <span className="text-green-400 font-semibold">50% commission</span>.</p>
                 {publicKey && (
                   <div className="mt-4 p-3 bg-purple-900/50 rounded-lg border border-purple-500/30">
                     <p className="text-xs text-purple-300 mb-2">Your Referral Link:</p>
