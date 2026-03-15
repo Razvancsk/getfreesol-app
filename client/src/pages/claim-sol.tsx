@@ -6550,6 +6550,37 @@ export default function SolRefund() {
             </div>
           )}
 
+          {/* Partner Trust Strip - under All Time Ledger */}
+          {activeTab === 'reclaim' && (
+            <div className="py-8 mb-4">
+              <p className="text-center text-white/30 text-[11px] uppercase tracking-widest mb-6 font-medium">
+                Listed &amp; Partnered With
+              </p>
+              <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-center gap-6 md:gap-0 md:divide-x md:divide-white/10">
+                <a href="https://seeker.solana.com" target="_blank" rel="noopener noreferrer"
+                   className="flex flex-col items-center gap-2 md:px-10 group">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <img src="/solana-mobile-logo.png" alt="Solana Mobile" className="h-6 object-contain hover:opacity-80 transition-opacity" />
+                </a>
+                <a href="https://phantom.app" target="_blank" rel="noopener noreferrer"
+                   className="flex flex-col items-center gap-2 md:px-10 group">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <img src="/phantom-real-logo.png" alt="Phantom" className="h-6 object-contain hover:opacity-80 transition-opacity" />
+                </a>
+                <a href="https://www.okx.com/web3" target="_blank" rel="noopener noreferrer"
+                   className="flex flex-col items-center gap-2 md:px-10 group">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <img src="/okx-wallet-logo.png" alt="OKX Wallet" className="h-6 object-contain hover:opacity-80 transition-opacity" />
+                </a>
+                <a href="https://web3.bitget.com" target="_blank" rel="noopener noreferrer"
+                   className="flex flex-col items-center gap-2 md:px-10 group">
+                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <img src="/bitget-wallet-logo.png" alt="Bitget Wallet" className="h-6 object-contain hover:opacity-80 transition-opacity" />
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Referral Program Section - Only show on reclaim tab - Bottom of page */}
           {activeTab === 'reclaim' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-6">
@@ -6652,41 +6683,6 @@ export default function SolRefund() {
             </div>
           )}
 
-        </div>
-      </div>
-
-      {/* Partner Trust Strip */}
-      <div className="border-t border-purple-500/20 py-10 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <p className="text-center text-white/30 text-[11px] uppercase tracking-widest mb-8 font-medium">
-            Listed &amp; Partnered With
-          </p>
-          <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-center gap-6 md:gap-0 md:divide-x md:divide-white/10">
-            {/* Solana Mobile / Seeker */}
-            <a href="https://seeker.solana.com" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 md:px-10 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
-              <img src="/solana-mobile-logo.png" alt="Solana Mobile" className="h-6 object-contain hover:opacity-80 transition-opacity" />
-            </a>
-            {/* Phantom */}
-            <a href="https://phantom.app" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 md:px-10 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
-              <img src="/phantom-real-logo.png" alt="Phantom" className="h-6 object-contain hover:opacity-80 transition-opacity" />
-            </a>
-            {/* OKX Wallet */}
-            <a href="https://www.okx.com/web3" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 md:px-10 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
-              <img src="/okx-wallet-logo.png" alt="OKX Wallet" className="h-6 object-contain hover:opacity-80 transition-opacity" />
-            </a>
-            {/* Bitget Wallet */}
-            <a href="https://web3.bitget.com" target="_blank" rel="noopener noreferrer"
-               className="flex flex-col items-center gap-2 md:px-10 group">
-              <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
-              <img src="/bitget-wallet-logo.png" alt="Bitget Wallet" className="h-6 object-contain hover:opacity-80 transition-opacity" />
-            </a>
-          </div>
         </div>
       </div>
 
