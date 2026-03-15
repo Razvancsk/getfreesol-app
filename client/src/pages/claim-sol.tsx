@@ -6466,7 +6466,7 @@ export default function SolRefund() {
                 : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
             }`}>
               <div className="flex items-center mb-6">
-                <h3 className="text-xl font-bold text-white text-center w-full">ALL TIME LEDGER</h3>
+                <h3 className="text-xl font-bold text-white text-center w-full">Recent Claims</h3>
               </div>
 
               <div className="overflow-x-auto">
