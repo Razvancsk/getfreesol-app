@@ -6559,22 +6559,22 @@ export default function SolRefund() {
               <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-center gap-6 md:gap-0 md:divide-x md:divide-white/10">
                 <a href="https://seeker.solana.com" target="_blank" rel="noopener noreferrer"
                    className="flex flex-col items-center gap-2 md:px-10 group">
-                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <p className="text-white text-[10px] uppercase tracking-wider">Listed on</p>
                   <img src="/solana-mobile-logo.png" alt="Solana Mobile" className="h-6 object-contain hover:opacity-80 transition-opacity" />
                 </a>
                 <a href="https://phantom.app" target="_blank" rel="noopener noreferrer"
                    className="flex flex-col items-center gap-2 md:px-10 group">
-                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <p className="text-white text-[10px] uppercase tracking-wider">Listed on</p>
                   <img src="/phantom-real-logo.png" alt="Phantom" className="h-6 object-contain hover:opacity-80 transition-opacity" />
                 </a>
                 <a href="https://www.okx.com/web3" target="_blank" rel="noopener noreferrer"
                    className="flex flex-col items-center gap-2 md:px-10 group">
-                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <p className="text-white text-[10px] uppercase tracking-wider">Listed on</p>
                   <img src="/okx-wallet-logo.png" alt="OKX Wallet" className="h-6 object-contain hover:opacity-80 transition-opacity" />
                 </a>
                 <a href="https://web3.bitget.com" target="_blank" rel="noopener noreferrer"
                    className="flex flex-col items-center gap-2 md:px-10 group">
-                  <p className="text-white/40 text-[10px] uppercase tracking-wider">Listed on</p>
+                  <p className="text-white text-[10px] uppercase tracking-wider">Listed on</p>
                   <img src="/bitget-wallet-logo.png" alt="Bitget Wallet" className="h-6 object-contain hover:opacity-80 transition-opacity" />
                 </a>
               </div>
