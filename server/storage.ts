@@ -1332,7 +1332,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPointsLeaderboard(limit: number = 100, sinceTimestamp?: Date | null): Promise<UserPoints[]> {
     const PLATFORM_WALLETS = [
-      '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy',
+      'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
       'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
     ];
     
@@ -1355,7 +1355,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTop10Wallets(): Promise<string[]> {
     const PLATFORM_WALLETS = [
-      '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy',
+      'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
       'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
     ];
     const top10 = await db
