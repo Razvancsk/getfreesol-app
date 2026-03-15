@@ -6562,7 +6562,7 @@ export default function SolRefund() {
                   <p className="text-white text-[10px] uppercase tracking-wider">Listed on</p>
                   <img src="/solana-mobile-logo.png" alt="Solana Mobile" className="h-6 object-contain hover:opacity-80 transition-opacity" />
                 </a>
-                <a href="https://phantom.app" target="_blank" rel="noopener noreferrer"
+                <a href="https://phantom.com/apps/get-free-sol" target="_blank" rel="noopener noreferrer"
                    className="flex flex-col items-center gap-2 md:px-10 group">
                   <p className="text-white text-[10px] uppercase tracking-wider">Listed on</p>
                   <img src="/phantom-real-logo.png" alt="Phantom" className="h-6 object-contain hover:opacity-80 transition-opacity" />
