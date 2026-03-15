@@ -558,6 +558,13 @@ export default function SolRefund() {
     }
   }, [isConnected, publicKey, queryClient]);
 
+  // Reset to reclaim tab on disconnect so connect card always shows
+  useEffect(() => {
+    if (!isConnected) {
+      setActiveTab('reclaim');
+    }
+  }, [isConnected]);
+
   // Update userReferralCode when data changes - with auto-creation
   useEffect(() => {
     if (userReferrals && typeof userReferrals === 'object' && 'success' in userReferrals && userReferrals.success) {
@@ -3581,7 +3588,7 @@ export default function SolRefund() {
               <div className={`flex items-center gap-2`}>
                 <button
                   onClick={() => setBurnSubTab('tokens')}
-                  className={`w-24 py-2 text-sm font-bold rounded-md transition-all duration-200 border text-center ${
+                  className={`w-36 py-3 text-base font-bold rounded-md transition-all duration-200 border text-center ${
                     burnSubTab === 'tokens'
                       ? isNightMode
                         ? 'bg-transparent text-green-400 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]'
@@ -3596,7 +3603,7 @@ export default function SolRefund() {
 
                 <button
                   onClick={() => setBurnSubTab('nft')}
-                  className={`w-24 py-2 text-sm font-bold rounded-md transition-all duration-200 border text-center ${
+                  className={`w-36 py-3 text-base font-bold rounded-md transition-all duration-200 border text-center ${
                     burnSubTab === 'nft'
                       ? isNightMode
                         ? 'bg-transparent text-green-400 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]'
@@ -3765,8 +3772,31 @@ export default function SolRefund() {
             </div>
           )}
 
+          {/* Burn Connect Card - when not connected */}
+          {activeTab === 'burnTokens' && !isConnected && (
+            <div className={`backdrop-blur-sm rounded-xl p-6 md:p-10 ${
+              isNightMode 
+                ? 'bg-[#141414] border border-[#2a2a2a]' 
+                : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+            }`}>
+              <div className="flex flex-col items-center gap-4 py-4 text-center">
+                <Flame className="w-8 h-8 text-orange-400" />
+                <div>
+                  <h3 className="text-lg md:text-xl font-bold text-white mb-1">Burn tokens & NFTs, get SOL back!</h3>
+                  <p className="text-purple-300 text-xs md:text-sm">Connect your wallet to scan and burn unwanted tokens or NFTs.</p>
+                </div>
+                <Button
+                  onClick={() => { select(null); setVisible(true); }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 text-sm font-semibold border border-purple-500/30"
+                >
+                  Connect wallet
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Burn Tokens Results */}
-          {activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
+          {isConnected && activeTab === 'burnTokens' && burnSubTab === 'tokens' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
               <div className="flex items-center justify-between mb-4 md:mb-8">
@@ -4066,7 +4096,7 @@ export default function SolRefund() {
           )}
 
           {/* NFT Burning Interface */}
-          {activeTab === 'burnTokens' && burnSubTab === 'nft' && (
+          {isConnected && activeTab === 'burnTokens' && burnSubTab === 'nft' && (
             <div className="bg-gradient-to-br from-purple-800/20 to-purple-900/30 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 md:p-10">
               {/* Header */}
               <div className="flex items-center justify-between mb-6 md:mb-8">
