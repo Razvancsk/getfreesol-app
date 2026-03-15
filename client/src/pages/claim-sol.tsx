@@ -6553,7 +6553,7 @@ export default function SolRefund() {
           {/* Partner Trust Strip - under All Time Ledger */}
           {activeTab === 'reclaim' && (
             <div className="py-8 mb-4">
-              <p className="text-center text-white/30 text-[11px] uppercase tracking-widest mb-6 font-medium">
+              <p className="text-center text-white text-[11px] uppercase tracking-widest mb-6 font-medium">
                 Partners
               </p>
               <div className="grid grid-cols-2 md:flex md:flex-row md:items-center md:justify-center gap-6 md:gap-0 md:divide-x md:divide-white/10">
