@@ -3387,7 +3387,6 @@ export default function SolRefund() {
                     title="Connect your wallet"
                     data-testid="button-connect"
                   >
-                    <Wallet className="h-4 w-4 mr-1" />
                     Connect
                   </Button>
                 )}
