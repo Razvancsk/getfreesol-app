@@ -377,7 +377,7 @@ export default function SolRefund() {
 
   // Fetch lend statistics for platform wallet
   useEffect(() => {
-    if (activeTab === 'docs' && showDeveloper && publicKey?.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy') {
+    if (activeTab === 'docs' && showDeveloper && publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT') {
       fetch('/api/jupiter-lend/statistics')
         .then(res => res.json())
         .then(data => {
@@ -397,7 +397,7 @@ export default function SolRefund() {
   });
 
   // Check if platform wallet
-  const isPlatformWallet = publicKey?.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
+  const isPlatformWallet = publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT';
   const canFlip = isPlatformWallet || publicKey?.toString() === 'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6';
 
   // Query for user profile stats (platform wallet viewing other users)
@@ -3359,7 +3359,7 @@ export default function SolRefund() {
                       )}
                       {mobileWalletMenuOpen && (
                         <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg w-full overflow-hidden">
-                          {publicKey?.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy' && (
+                          {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                             <>
                               <Link href="/admin/x-bot" onClick={() => setMobileWalletMenuOpen(false)}>
                                 <div className="px-2 py-2 text-white hover:bg-purple-600/40 cursor-pointer text-xs text-center truncate" data-testid="button-admin-xbot">🤖 X Bot</div>
@@ -3435,7 +3435,7 @@ export default function SolRefund() {
                     )}
                     {desktopWalletMenuOpen && (
                       <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-purple-500/30 rounded-md shadow-lg w-full overflow-hidden">
-                        {publicKey?.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy' && (
+                        {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                           <>
                             <Link href="/admin/x-bot" onClick={() => setDesktopWalletMenuOpen(false)}>
                               <div className="px-3 py-2 text-white cursor-pointer text-sm text-center truncate" style={{ WebkitTapHighlightColor: 'transparent' }} data-testid="button-admin-xbot-desktop">🤖 X Bot Admin</div>
@@ -5738,7 +5738,7 @@ export default function SolRefund() {
           {activeTab === 'docs' && showDeveloper && false && (
               <div className="space-y-6">
                 {/* Jupiter Lend Statistics - Only visible to platform wallet */}
-                {publicKey?.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy' && (
+                {publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' && (
                   <div className="px-2 md:px-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       {/* Total Deposits Card */}
@@ -6010,7 +6010,7 @@ export default function SolRefund() {
                                 }
                                 
                                 // Refresh stats if platform wallet
-                                if (publicKey.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy') {
+                                if (publicKey.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT') {
                                   const statsResponse = await fetch('/api/jupiter-lend/statistics');
                                   if (statsResponse.ok) {
                                     const stats = await statsResponse.json();
@@ -6405,7 +6405,7 @@ export default function SolRefund() {
                             }
                             
                             // Refresh stats if platform wallet
-                            if (publicKey.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy') {
+                            if (publicKey.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT') {
                               const statsResponse = await fetch('/api/jupiter-lend/statistics');
                               if (statsResponse.ok) {
                                 const stats = await statsResponse.json();
