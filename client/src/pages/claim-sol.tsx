@@ -3630,7 +3630,7 @@ export default function SolRefund() {
                       <path fill="#00FFA3" d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                       <path fill="#00FFA3" d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                     </svg>
-                    <p className="text-purple-300 text-sm">Connect wallet and scan to find empty accounts</p>
+                    <p className="text-purple-300 text-sm">Connect wallet to view claimable SOL amount.</p>
                     <Button
                       onClick={() => { select(null); setVisible(true); }}
                       className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 text-sm font-semibold border border-purple-500/30"
