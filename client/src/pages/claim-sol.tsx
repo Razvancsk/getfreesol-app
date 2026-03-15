@@ -6589,11 +6589,11 @@ export default function SolRefund() {
                 <h3 className="text-lg font-semibold text-white">Referral Program</h3>
               </div>
 
-              <div className="space-y-3 text-purple-200 text-sm">
+              <div className="space-y-3 text-white text-sm">
                 <p>Refer friends &amp; earn <span className="text-green-400 font-semibold">50% commission</span>.</p>
                 {publicKey && (
                   <div className="mt-3">
-                    <p className="text-xs text-purple-300 mb-2">Your Referral Link:</p>
+                    <p className="text-xs text-white mb-2">Your Referral Link:</p>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 text-xs text-green-400 overflow-x-auto break-all">
                         {`${window.location.origin}?ref=${publicKey.toString().slice(0, 8)}`}
