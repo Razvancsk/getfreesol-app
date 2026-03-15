@@ -3497,7 +3497,7 @@ export default function SolRefund() {
                     <path d="M64.6,3.8C67.1,1.4,70.4,0,73.8,0h317.4c5.8,0,8.7,7,4.6,11.1L333.1,73.8c-2.4,2.4-5.7,3.8-9.2,3.8H6.5c-5.8,0-8.7-7-4.6-11.1L64.6,3.8z"/>
                     <path d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                   </svg>
-                  Claim
+                  Claim SOL Rent
                 </Button>
                 <Button
                   onClick={() => { setActiveTab('burnTokens'); }}
@@ -3507,7 +3507,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <Flame className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 shrink-0" /> Burn
+                  <Flame className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 shrink-0" /> Burn Tokens/NFTs
                 </Button>
                 {/* Statistics button - only visible to platform wallet */}
                 {isPlatformWallet && (
