@@ -3462,7 +3462,6 @@ export default function SolRefund() {
                     title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
                     data-testid="button-connect-desktop"
                   >
-                    <Wallet className="h-5 w-5 mr-2" />
                     Connect Wallet
                   </Button>
                 </div>
