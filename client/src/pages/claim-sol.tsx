@@ -3631,8 +3631,8 @@ export default function SolRefund() {
                       <path fill="#00FFA3" d="M333.1,120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8,0-8.7,7-4.6,11.1l62.7,62.7c2.4,2.4,5.7,3.8,9.2,3.8h317.4c5.8,0,8.7-7,4.6-11.1L333.1,120.1z"/>
                     </svg>
                     <div>
-                      <h3 className="text-lg md:text-xl font-bold text-white mb-1">Reclaim your locked SOL — it's yours</h3>
-                      <p className="text-purple-300 text-xs md:text-sm">Empty token accounts hold your rent. Connect to scan and get it back in seconds.</p>
+                      <h3 className="text-lg md:text-xl font-bold text-white mb-1">Get your free SOL back!</h3>
+                      <p className="text-purple-300 text-xs md:text-sm">Connect your wallet to scan and get back the SOL locked in your empty token accounts.</p>
                     </div>
                     <Button
                       onClick={() => { select(null); setVisible(true); }}
