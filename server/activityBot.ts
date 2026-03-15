@@ -22,7 +22,7 @@ import { getVaultKeypair } from './coinflipVault';
 
 const SOL_MINT        = 'So11111111111111111111111111111111111111112';
 const USDC_MINT       = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-const PLATFORM_WALLET = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
+const PLATFORM_WALLET = new PublicKey('6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy');
 const PLATFORM_FEE    = 0.20; // 20%
 
 function getPort() { return process.env.PORT || '5000'; }

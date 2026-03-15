@@ -432,7 +432,7 @@ export function CoinFlipGame() {
       <div className="mt-4">
         <div className="flex items-center justify-between mb-2">
           <p className="text-gray-300 font-bold text-sm">Total Bankroll Value</p>
-          {(publicKey?.toString() === 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT') && (
+          {(publicKey?.toString() === '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy' || publicKey?.toString() === 'BtdxCT4DzqYYuxh9WRDFgRpM1g5H3aQ2ZsMRbjGmBQgT') && (
             <a href="/admin/vault" className="text-purple-400 text-sm font-bold hover:text-purple-300">Manage</a>
           )}
         </div>

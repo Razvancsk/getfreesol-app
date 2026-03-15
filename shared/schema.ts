@@ -580,7 +580,7 @@ export const projectAccount = pgTable("project_account", {
   projectName: text("project_name").notNull().default("Get Your SOL Back"),
   baseKey: text("base_key").notNull().unique(), // Seed for PDA derivation
   projectPda: text("project_pda").notNull().unique(), // Derived PDA address
-  adminWallet: text("admin_wallet").notNull(), // Platform wallet (GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT)
+  adminWallet: text("admin_wallet").notNull(), // Platform wallet (6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy)
   bump: integer("bump").notNull(), // PDA bump seed
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

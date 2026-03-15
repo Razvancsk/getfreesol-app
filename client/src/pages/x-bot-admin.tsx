@@ -14,7 +14,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 
-const PLATFORM_WALLET = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
+const PLATFORM_WALLET = '6ZCV6FWis2qxeBWEenCZhf1Ccsxokk9pKzak25zhaHvy';
 
 const GM_TEMPLATES = [
   "GM Solana fam! ☀️\n\nReady to reclaim some hidden SOL today?\n\nVisit getfreesol.xyz 💜\n\n#Solana #SOL #DeFi #GM",
