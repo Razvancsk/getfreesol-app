@@ -3451,19 +3451,17 @@ export default function SolRefund() {
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col items-center space-y-3">
-                  <Button
-                    onClick={() => {
-                      select(null);
-                      setVisible(true);
-                    }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-6 py-3 text-lg font-medium border border-purple-500/30"
-                    title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
-                    data-testid="button-connect-desktop"
-                  >
-                    Connect Wallet
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => {
+                    select(null);
+                    setVisible(true);
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 text-sm font-medium border border-purple-500/30 h-auto"
+                  title="Connect your wallet - supports Phantom, Magic Eden, Solflare, Backpack, Coinbase, Bitget"
+                  data-testid="button-connect-desktop"
+                >
+                  Connect Wallet
+                </Button>
               )}
             </div>
               </>
