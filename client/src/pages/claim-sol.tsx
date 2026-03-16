@@ -4859,27 +4859,30 @@ export default function SolRefund() {
 
                   {/* Stake Method selector */}
                   <div className="mb-5">
+                    {/* Header row */}
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-white font-semibold text-sm">
                         {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
+                        <span className="text-white/40 font-normal ml-1.5">(How to choose?)</span>
                       </span>
-                      <div className={`flex rounded-xl p-0.5 border border-white/20 ${isNightMode ? 'bg-[#111]' : 'bg-purple-900/40'}`}>
+                      {/* Pill toggle */}
+                      <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5">
                         <button
                           onClick={() => setStakingMethod('direct')}
-                          className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                          className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
                             stakingMethod === 'direct'
-                              ? 'bg-white/20 text-white shadow'
-                              : 'text-white/50 hover:text-white/80'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-white/60 hover:text-white'
                           }`}
                         >
                           Direct deposit
                         </button>
                         <button
                           onClick={() => setStakingMethod('jupiter')}
-                          className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                          className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
                             stakingMethod === 'jupiter'
-                              ? 'bg-white/20 text-white shadow'
-                              : 'text-white/50 hover:text-white/80'
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-white/60 hover:text-white'
                           }`}
                         >
                           Via Jupiter
@@ -4888,32 +4891,39 @@ export default function SolRefund() {
                     </div>
 
                     {/* Method detail card */}
-                    <div className={`rounded-2xl p-4 border border-white/10 flex items-center gap-3 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/20'}`}>
+                    <div className={`rounded-xl px-4 py-3.5 border border-white/10 flex items-center gap-3 ${isNightMode ? 'bg-white/5' : 'bg-white/8'}`}>
                       {stakingMethod === 'direct' ? (
                         <>
-                          <div className="w-9 h-9 rounded-xl bg-purple-500/30 flex items-center justify-center shrink-0">
-                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 rounded-full object-cover" />
+                          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white/70">
+                              <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white font-bold text-sm">Direct deposit</p>
-                            <p className="text-white/60 text-xs">{stakeMode === 'stake' ? 'Mint GSOL via Stake Pool contract' : 'Redeem GSOL via Stake Pool contract'}</p>
+                            <p className="text-white font-bold text-sm leading-tight">Direct deposit</p>
+                            <p className="text-white/50 text-xs mt-0.5">{stakeMode === 'stake' ? 'Mint the LST via its stake pool' : 'Redeem via the stake pool directly'}</p>
                           </div>
-                          <span className="text-green-400 text-xs font-bold shrink-0">No price impact</span>
+                          <div className="text-right shrink-0">
+                            <p className="text-green-400 text-xs font-bold leading-tight">0% Deposit Fee</p>
+                            <p className="text-green-400 text-xs font-bold leading-tight">0% Price Impact</p>
+                          </div>
                         </>
                       ) : (
                         <>
-                          <div className="w-9 h-9 rounded-xl bg-purple-500/30 flex items-center justify-center shrink-0">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-green-400">
+                          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white/70">
                               <path d="M7 16L3 12L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                               <path d="M17 8L21 12L17 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-white font-bold text-sm">Via Jupiter</p>
-                            <p className="text-white/60 text-xs">{stakeMode === 'stake' ? 'Swap SOL for GSOL via Jupiter' : 'Swap GSOL for SOL via Jupiter'}</p>
+                            <p className="text-white font-bold text-sm leading-tight">Via Jupiter</p>
+                            <p className="text-white/50 text-xs mt-0.5">{stakeMode === 'stake' ? 'Swap SOL for LST via Jupiter' : 'Swap LST for SOL via Jupiter'}</p>
                           </div>
-                          <span className="text-yellow-400 text-xs font-bold shrink-0">&lt;0.1% price impact</span>
+                          <div className="text-right shrink-0">
+                            <p className="text-yellow-400 text-xs font-bold">&lt;0.1% price impact</p>
+                          </div>
                         </>
                       )}
                     </div>
