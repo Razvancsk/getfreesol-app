@@ -11008,20 +11008,28 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // ─── Sanctum Staking Proxy ───────────────────────────────────────────────
-  const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
-  const WSOL_MINT  = 'So11111111111111111111111111111111111111112';
-  const SANCTUM_EXTRA = 'https://extra.sanctum.so/v1';
+  // ─── GSOL Staking via SPL Stake Pool ─────────────────────────────────────
+  const GSOL_STAKE_POOL = '5YWBPjgVBzfkHTLZea33n7xg9qiEakwauvHpe4ixHH9N';
+  const GSOL_MINT_ADDR  = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+  const SANCTUM_EXTRA   = 'https://extra.sanctum.so/v1';
+
+  function getStakingConnection(): import('@solana/web3.js').Connection {
+    const apiKey = process.env.HELIUS_API_KEY;
+    const rpc = apiKey
+      ? `https://mainnet.helius-rpc.com/?api-key=${apiKey}`
+      : 'https://api.mainnet-beta.solana.com';
+    return new Connection(rpc, 'confirmed');
+  }
 
   app.get('/api/staking/info', async (_req, res) => {
     try {
       const [apyResp, solValResp] = await Promise.all([
-        fetch(`${SANCTUM_EXTRA}/apy?mints[]=${GSOL_MINT}`),
-        fetch(`${SANCTUM_EXTRA}/sol-value?mints[]=${GSOL_MINT}`)
+        fetch(`${SANCTUM_EXTRA}/apy?mints[]=${GSOL_MINT_ADDR}`),
+        fetch(`${SANCTUM_EXTRA}/sol-value?mints[]=${GSOL_MINT_ADDR}`)
       ]);
       const [apyData, solValData] = await Promise.all([apyResp.json(), solValResp.json()]);
-      const apy      = apyData?.apys?.[GSOL_MINT];
-      const solValue = solValData?.sol_values?.[GSOL_MINT];
+      const apy      = apyData?.apys?.[GSOL_MINT_ADDR];
+      const solValue = solValData?.sol_values?.[GSOL_MINT_ADDR];
       res.json({ apy, solValue });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -11033,46 +11041,32 @@ Claimer: ${walletAddress}`;
       const { amount, signerPublicKey } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
 
-      // Step 1 – quote
-      const quoteResp = await fetch(`${SANCTUM_EXTRA}/swap/quote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input_lst_mint: WSOL_MINT,
-          output_lst_mint: GSOL_MINT,
-          in_amount: amount.toString(),
-          slippage_bps: 50,
-          priority_fee: { Auto: { max_unit_price_micro_lamports: 10000 } }
-        })
-      });
-      if (!quoteResp.ok) {
-        const txt = await quoteResp.text();
-        return res.status(400).json({ error: `Quote failed: ${txt}` });
-      }
-      const quote = await quoteResp.json();
+      const { depositSol } = await import('@solana/spl-stake-pool');
+      const { TransactionMessage, VersionedTransaction: VTx, ComputeBudgetProgram } = await import('@solana/web3.js');
 
-      // Step 2 – build transaction
-      const txResp = await fetch(`${SANCTUM_EXTRA}/swap/tx`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input_lst_mint: WSOL_MINT,
-          output_lst_mint: GSOL_MINT,
-          amount: amount.toString(),
-          quoted_amount: (quote.out_amount || quote.quoted_amount || '0').toString(),
-          slippage_bps: 50,
-          signer: signerPublicKey,
-          src_acc: null,
-          dst_acc: null
-        })
-      });
-      if (!txResp.ok) {
-        const txt = await txResp.text();
-        return res.status(400).json({ error: `Tx build failed: ${txt}` });
-      }
-      const txData = await txResp.json();
-      res.json(txData);
+      const conn       = getStakingConnection();
+      const poolPubkey = new PublicKey(GSOL_STAKE_POOL);
+      const signer     = new PublicKey(signerPublicKey);
+
+      const { instructions, signers } = await depositSol(conn, poolPubkey, signer, Number(amount));
+
+      const priorityIx = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 });
+      const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
+
+      const msg = new TransactionMessage({
+        payerKey: signer,
+        recentBlockhash: blockhash,
+        instructions: [priorityIx, ...instructions],
+      }).compileToV0Message();
+
+      const tx = new VTx(msg);
+      // Sign with any pool-side signers if present
+      if (signers.length > 0) tx.sign(signers);
+
+      const serialized = Buffer.from(tx.serialize()).toString('base64');
+      res.json({ transaction: serialized, lastValidBlockHeight });
     } catch (e: any) {
+      console.error('[stake-tx]', e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -11082,45 +11076,31 @@ Claimer: ${walletAddress}`;
       const { amount, signerPublicKey } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
 
-      // Quote: GSOL → wSOL
-      const quoteResp = await fetch(`${SANCTUM_EXTRA}/swap/quote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input_lst_mint: GSOL_MINT,
-          output_lst_mint: WSOL_MINT,
-          in_amount: amount.toString(),
-          slippage_bps: 50,
-          priority_fee: { Auto: { max_unit_price_micro_lamports: 10000 } }
-        })
-      });
-      if (!quoteResp.ok) {
-        const txt = await quoteResp.text();
-        return res.status(400).json({ error: `Quote failed: ${txt}` });
-      }
-      const quote = await quoteResp.json();
+      const { withdrawSol } = await import('@solana/spl-stake-pool');
+      const { TransactionMessage, VersionedTransaction: VTx, ComputeBudgetProgram } = await import('@solana/web3.js');
 
-      const txResp = await fetch(`${SANCTUM_EXTRA}/swap/tx`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input_lst_mint: GSOL_MINT,
-          output_lst_mint: WSOL_MINT,
-          amount: amount.toString(),
-          quoted_amount: (quote.out_amount || quote.quoted_amount || '0').toString(),
-          slippage_bps: 50,
-          signer: signerPublicKey,
-          src_acc: null,
-          dst_acc: null
-        })
-      });
-      if (!txResp.ok) {
-        const txt = await txResp.text();
-        return res.status(400).json({ error: `Tx build failed: ${txt}` });
-      }
-      const txData = await txResp.json();
-      res.json(txData);
+      const conn       = getStakingConnection();
+      const poolPubkey = new PublicKey(GSOL_STAKE_POOL);
+      const signer     = new PublicKey(signerPublicKey);
+
+      const { instructions, signers } = await withdrawSol(conn, poolPubkey, signer, signer, Number(amount));
+
+      const priorityIx = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 });
+      const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
+
+      const msg = new TransactionMessage({
+        payerKey: signer,
+        recentBlockhash: blockhash,
+        instructions: [priorityIx, ...instructions],
+      }).compileToV0Message();
+
+      const tx = new VTx(msg);
+      if (signers.length > 0) tx.sign(signers);
+
+      const serialized = Buffer.from(tx.serialize()).toString('base64');
+      res.json({ transaction: serialized, lastValidBlockHeight });
     } catch (e: any) {
+      console.error('[unstake-tx]', e);
       res.status(500).json({ error: e.message });
     }
   });
