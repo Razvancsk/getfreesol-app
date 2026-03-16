@@ -11008,6 +11008,123 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // ─── Sanctum Staking Proxy ───────────────────────────────────────────────
+  const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
+  const WSOL_MINT  = 'So11111111111111111111111111111111111111112';
+  const SANCTUM_EXTRA = 'https://extra.sanctum.so/v1';
+
+  app.get('/api/staking/info', async (_req, res) => {
+    try {
+      const [apyResp, solValResp] = await Promise.all([
+        fetch(`${SANCTUM_EXTRA}/apy?mints[]=${GSOL_MINT}`),
+        fetch(`${SANCTUM_EXTRA}/sol-value?mints[]=${GSOL_MINT}`)
+      ]);
+      const [apyData, solValData] = await Promise.all([apyResp.json(), solValResp.json()]);
+      const apy      = apyData?.apys?.[GSOL_MINT];
+      const solValue = solValData?.sol_values?.[GSOL_MINT];
+      res.json({ apy, solValue });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/staking/stake-tx', async (req, res) => {
+    try {
+      const { amount, signerPublicKey } = req.body;
+      if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
+
+      // Step 1 – quote
+      const quoteResp = await fetch(`${SANCTUM_EXTRA}/swap/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input_lst_mint: WSOL_MINT,
+          output_lst_mint: GSOL_MINT,
+          in_amount: amount.toString(),
+          slippage_bps: 50,
+          priority_fee: { Auto: { max_unit_price_micro_lamports: 10000 } }
+        })
+      });
+      if (!quoteResp.ok) {
+        const txt = await quoteResp.text();
+        return res.status(400).json({ error: `Quote failed: ${txt}` });
+      }
+      const quote = await quoteResp.json();
+
+      // Step 2 – build transaction
+      const txResp = await fetch(`${SANCTUM_EXTRA}/swap/tx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input_lst_mint: WSOL_MINT,
+          output_lst_mint: GSOL_MINT,
+          amount: amount.toString(),
+          quoted_amount: (quote.out_amount || quote.quoted_amount || '0').toString(),
+          slippage_bps: 50,
+          signer: signerPublicKey,
+          src_acc: null,
+          dst_acc: null
+        })
+      });
+      if (!txResp.ok) {
+        const txt = await txResp.text();
+        return res.status(400).json({ error: `Tx build failed: ${txt}` });
+      }
+      const txData = await txResp.json();
+      res.json(txData);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/staking/unstake-tx', async (req, res) => {
+    try {
+      const { amount, signerPublicKey } = req.body;
+      if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
+
+      // Quote: GSOL → wSOL
+      const quoteResp = await fetch(`${SANCTUM_EXTRA}/swap/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input_lst_mint: GSOL_MINT,
+          output_lst_mint: WSOL_MINT,
+          in_amount: amount.toString(),
+          slippage_bps: 50,
+          priority_fee: { Auto: { max_unit_price_micro_lamports: 10000 } }
+        })
+      });
+      if (!quoteResp.ok) {
+        const txt = await quoteResp.text();
+        return res.status(400).json({ error: `Quote failed: ${txt}` });
+      }
+      const quote = await quoteResp.json();
+
+      const txResp = await fetch(`${SANCTUM_EXTRA}/swap/tx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input_lst_mint: GSOL_MINT,
+          output_lst_mint: WSOL_MINT,
+          amount: amount.toString(),
+          quoted_amount: (quote.out_amount || quote.quoted_amount || '0').toString(),
+          slippage_bps: 50,
+          signer: signerPublicKey,
+          src_acc: null,
+          dst_acc: null
+        })
+      });
+      if (!txResp.ok) {
+        const txt = await txResp.text();
+        return res.status(400).json({ error: `Tx build failed: ${txt}` });
+      }
+      const txData = await txResp.json();
+      res.json(txData);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

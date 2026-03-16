@@ -120,6 +120,11 @@ export default function SolRefund() {
   const [desktopWalletMenuOpen, setDesktopWalletMenuOpen] = useState(false);
   const [stakeMode, setStakeMode] = useState<'stake' | 'unstake'>('stake');
   const [stakeAmount, setStakeAmount] = useState('');
+  const [stakeLoading, setStakeLoading] = useState(false);
+  const [gsolApy, setGsolApy] = useState<number | null>(null);
+  const [gsolSolValue, setGsolSolValue] = useState<number>(1);
+  const [gsolBalance, setGsolBalance] = useState<number>(0);
+  const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
   const [tokenList, setTokenList] = useState<any[]>([]);
@@ -868,6 +873,99 @@ export default function SolRefund() {
       }).catch(() => {});
     }
   }, [activeTab, publicKey, connection]);
+
+  // Fetch GSOL APY and SOL value from Sanctum
+  useEffect(() => {
+    fetch('/api/staking/info')
+      .then(r => r.json())
+      .then(data => {
+        if (data.apy !== undefined && data.apy !== null) setGsolApy(parseFloat((data.apy * 100).toFixed(2)));
+        if (data.solValue) setGsolSolValue(parseFloat(data.solValue));
+      }).catch(() => {});
+  }, []);
+
+  // Fetch GSOL token balance when wallet connects or staking tab is active
+  useEffect(() => {
+    if (!publicKey || !connection) return;
+    (async () => {
+      try {
+        const { getAssociatedTokenAddress } = await import('@solana/spl-token');
+        const gsolMintPk = new PublicKey(GSOL_MINT);
+        const ata = await getAssociatedTokenAddress(gsolMintPk, publicKey);
+        const info = await connection.getTokenAccountBalance(ata).catch(() => null);
+        if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
+      } catch { /* no GSOL account yet */ }
+    })();
+  }, [publicKey, connection, activeTab]);
+
+  // Handle staking SOL → GSOL
+  const handleStake = async () => {
+    if (!publicKey || !signTransaction || !connection) return;
+    const amt = parseFloat(stakeAmount);
+    if (!amt || amt <= 0) { toast({ title: 'Enter an amount', variant: 'destructive' }); return; }
+    if (amt > walletTokenBalance) { toast({ title: 'Insufficient SOL balance', variant: 'destructive' }); return; }
+    setStakeLoading(true);
+    try {
+      const lamports = Math.floor(amt * 1e9);
+      const resp = await fetch('/api/staking/stake-tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58() })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Failed to build transaction');
+      const txBuffer = Buffer.from(data.transaction, 'base64');
+      const tx = VersionedTransaction.deserialize(txBuffer);
+      const signed = await signTransaction(tx);
+      const txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
+      await connection.confirmTransaction(txid, 'confirmed');
+      toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL. Tx: ${txid.slice(0, 8)}...` });
+      setStakeAmount('');
+      // Refresh balances
+      const bal = await connection.getBalance(publicKey);
+      setWalletTokenBalance(bal / 1e9);
+      const { getAssociatedTokenAddress } = await import('@solana/spl-token');
+      const ata = await getAssociatedTokenAddress(new PublicKey(GSOL_MINT), publicKey);
+      const info = await connection.getTokenAccountBalance(ata).catch(() => null);
+      if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
+    } catch (e: any) {
+      toast({ title: 'Staking failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setStakeLoading(false);
+    }
+  };
+
+  // Handle unstaking GSOL → SOL
+  const handleUnstake = async () => {
+    if (!publicKey || !signTransaction || !connection) return;
+    const amt = parseFloat(stakeAmount);
+    if (!amt || amt <= 0) { toast({ title: 'Enter an amount', variant: 'destructive' }); return; }
+    if (amt > gsolBalance) { toast({ title: 'Insufficient GSOL balance', variant: 'destructive' }); return; }
+    setStakeLoading(true);
+    try {
+      const lamports = Math.floor(amt * 1e9);
+      const resp = await fetch('/api/staking/unstake-tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58() })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Failed to build transaction');
+      const txBuffer = Buffer.from(data.transaction, 'base64');
+      const tx = VersionedTransaction.deserialize(txBuffer);
+      const signed = await signTransaction(tx);
+      const txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
+      await connection.confirmTransaction(txid, 'confirmed');
+      toast({ title: '✅ Unstaked!', description: `${amt} GSOL → SOL. Tx: ${txid.slice(0, 8)}...` });
+      setStakeAmount('');
+      const bal = await connection.getBalance(publicKey);
+      setWalletTokenBalance(bal / 1e9);
+    } catch (e: any) {
+      toast({ title: 'Unstaking failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setStakeLoading(false);
+    }
+  };
 
   // Wallet connection functions using wallet adapter
   const handleConnectWallet = async () => {
@@ -4632,18 +4730,31 @@ export default function SolRefund() {
                   <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
                     {/* Top row: label + balance + HALF/MAX */}
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-white text-sm font-semibold">{stakeMode === 'stake' ? 'Stake' : 'Unstake'}</span>
+                      <span className="text-white text-sm font-semibold">{stakeMode === 'stake' ? 'Stake SOL' : 'Unstake GSOL'}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-white text-sm">≈ {walletTokenBalance.toFixed(4)} SOL</span>
-                        <button onClick={() => setStakeAmount((walletTokenBalance * 0.5).toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount(walletTokenBalance.toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                        <span className="text-white text-sm">
+                          {stakeMode === 'stake'
+                            ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
+                            : `≈ ${gsolBalance.toFixed(4)} GSOL`}
+                        </span>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (gsolBalance * 0.5).toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? walletTokenBalance.toFixed(4) : gsolBalance.toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
                       </div>
                     </div>
                     {/* Bottom row: token badge left, amount right */}
                     <div className="flex items-center gap-3">
                       <button type="button" disabled className="border border-purple-500/40 rounded-3xl bg-purple-900/40 text-sm h-9 pl-1.5 pr-3 flex gap-1.5 items-center font-semibold text-white shrink-0 cursor-default">
-                        <img alt="SOL" width="24" height="24" className="rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
-                        <span>SOL</span>
+                        {stakeMode === 'stake' ? (
+                          <>
+                            <img alt="SOL" width="24" height="24" className="rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
+                            <span>SOL</span>
+                          </>
+                        ) : (
+                          <>
+                            <img alt="GSOL" width="24" height="24" className="rounded-full shrink-0 object-cover" src="/gsol-token-logo.png?v=6" />
+                            <span>GSOL</span>
+                          </>
+                        )}
                       </button>
                       <input
                         type="number"
@@ -4660,27 +4771,52 @@ export default function SolRefund() {
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">You receive</span>
                       <span className="text-white font-bold text-base flex items-center gap-2">
-                        <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
-                        {stakeAmount ? parseFloat(stakeAmount).toFixed(4) : '—'} GSOL
+                        {stakeMode === 'stake' ? (
+                          <>
+                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
+                            {stakeAmount ? (parseFloat(stakeAmount) / gsolSolValue).toFixed(4) : '—'} GSOL
+                          </>
+                        ) : (
+                          <>
+                            <img alt="SOL" width="20" height="20" className="rounded-full" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
+                            {stakeAmount ? (parseFloat(stakeAmount) * gsolSolValue).toFixed(4) : '—'} SOL
+                          </>
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-white text-base">Strategy</span>
-                      <span className="text-white font-bold text-base">GSOL Max Yield</span>
+                      <span className="text-white text-base">Method</span>
+                      <span className="text-white font-bold text-base">Direct deposit</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">APY</span>
-                      <span className="text-green-400 font-black text-base">Coming Soon</span>
+                      <span className="text-green-400 font-black text-base">
+                        {gsolApy !== null ? `${gsolApy}%` : '—'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">Annual rewards</span>
-                      <span className="text-white text-base">—</span>
+                      <span className="text-white text-base">
+                        {stakeAmount && gsolApy
+                          ? `${(parseFloat(stakeAmount) * gsolApy / 100).toFixed(4)} SOL`
+                          : '—'}
+                      </span>
                     </div>
                   </div>
 
                   {/* Stake button */}
-                  <button disabled className="w-full py-4 rounded-2xl bg-purple-600/50 text-white/60 font-black text-xl cursor-not-allowed border border-purple-500/30">
-                    {stakeMode === 'stake' ? 'Stake' : 'Unstake'}
+                  <button
+                    onClick={stakeMode === 'stake' ? handleStake : handleUnstake}
+                    disabled={stakeLoading || !stakeAmount || parseFloat(stakeAmount) <= 0 || !publicKey}
+                    className={`w-full py-4 rounded-2xl font-black text-xl border transition-all duration-200 ${
+                      stakeLoading || !stakeAmount || parseFloat(stakeAmount) <= 0 || !publicKey
+                        ? 'bg-purple-600/50 text-white/60 cursor-not-allowed border-purple-500/30'
+                        : 'bg-purple-600 hover:bg-purple-500 text-white cursor-pointer border-purple-400/50 shadow-lg shadow-purple-900/30'
+                    }`}
+                  >
+                    {stakeLoading
+                      ? (stakeMode === 'stake' ? 'Staking...' : 'Unstaking...')
+                      : (stakeMode === 'stake' ? 'Stake SOL' : 'Unstake GSOL')}
                   </button>
                 </div>
 
