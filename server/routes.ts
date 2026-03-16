@@ -11008,18 +11008,11 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // ─── GSOL Staking via SPL Stake Pool ─────────────────────────────────────
-  const GSOL_STAKE_POOL = '5YWBPjgVBzfkHTLZea33n7xg9qiEakwauvHpe4ixHH9N';
+  // ─── GSOL Staking via Jupiter Ultra ──────────────────────────────────────
+  // Pool: 5YWBPjgVBzfkHTLZea33n7xg9qiEakwauvHpe4ixHH9N (Sanctum single-pool program)
+  // Jupiter Ultra routes through all pool types; no need to call SPL Stake Pool directly.
   const GSOL_MINT_ADDR  = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
   const SANCTUM_EXTRA   = 'https://extra.sanctum.so/v1';
-
-  function getStakingConnection(): import('@solana/web3.js').Connection {
-    const apiKey = process.env.HELIUS_API_KEY;
-    const rpc = apiKey
-      ? `https://mainnet.helius-rpc.com/?api-key=${apiKey}`
-      : 'https://api.mainnet-beta.solana.com';
-    return new Connection(rpc, 'confirmed');
-  }
 
   app.get('/api/staking/info', async (_req, res) => {
     try {
@@ -11036,35 +11029,39 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Use Jupiter Ultra to build stake/unstake transactions — routes through
+  // all Sanctum pool types (including SP12tWFx… single-pool program).
+  async function jupiterUltraOrder(
+    inputMint: string,
+    outputMint: string,
+    lamports: number,
+    taker: string
+  ): Promise<{ transaction: string; requestId: string }> {
+    if (!process.env.JUPITER_API_KEY) throw new Error('JUPITER_API_KEY not set');
+    const url = new URL('https://api.jup.ag/ultra/v1/order');
+    url.searchParams.set('inputMint', inputMint);
+    url.searchParams.set('outputMint', outputMint);
+    url.searchParams.set('amount', lamports.toString());
+    url.searchParams.set('taker', taker);
+    const resp = await fetch(url.toString(), {
+      headers: { 'Accept': 'application/json', 'x-api-key': process.env.JUPITER_API_KEY }
+    });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Jupiter Ultra order failed (${resp.status}): ${txt}`);
+    }
+    const data = await resp.json();
+    return { transaction: data.transaction, requestId: data.requestId };
+  }
+
+  const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
   app.post('/api/staking/stake-tx', async (req, res) => {
     try {
       const { amount, signerPublicKey } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
-
-      const { depositSol } = await import('@solana/spl-stake-pool');
-      const { TransactionMessage, VersionedTransaction: VTx, ComputeBudgetProgram } = await import('@solana/web3.js');
-
-      const conn       = getStakingConnection();
-      const poolPubkey = new PublicKey(GSOL_STAKE_POOL);
-      const signer     = new PublicKey(signerPublicKey);
-
-      const { instructions, signers } = await depositSol(conn, poolPubkey, signer, Number(amount));
-
-      const priorityIx = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 });
-      const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
-
-      const msg = new TransactionMessage({
-        payerKey: signer,
-        recentBlockhash: blockhash,
-        instructions: [priorityIx, ...instructions],
-      }).compileToV0Message();
-
-      const tx = new VTx(msg);
-      // Sign with any pool-side signers if present
-      if (signers.length > 0) tx.sign(signers);
-
-      const serialized = Buffer.from(tx.serialize()).toString('base64');
-      res.json({ transaction: serialized, lastValidBlockHeight });
+      const result = await jupiterUltraOrder(SOL_MINT, GSOL_MINT_ADDR, Number(amount), signerPublicKey);
+      res.json(result);
     } catch (e: any) {
       console.error('[stake-tx]', e);
       res.status(500).json({ error: e.message });
@@ -11075,30 +11072,8 @@ Claimer: ${walletAddress}`;
     try {
       const { amount, signerPublicKey } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
-
-      const { withdrawSol } = await import('@solana/spl-stake-pool');
-      const { TransactionMessage, VersionedTransaction: VTx, ComputeBudgetProgram } = await import('@solana/web3.js');
-
-      const conn       = getStakingConnection();
-      const poolPubkey = new PublicKey(GSOL_STAKE_POOL);
-      const signer     = new PublicKey(signerPublicKey);
-
-      const { instructions, signers } = await withdrawSol(conn, poolPubkey, signer, signer, Number(amount));
-
-      const priorityIx = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 });
-      const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
-
-      const msg = new TransactionMessage({
-        payerKey: signer,
-        recentBlockhash: blockhash,
-        instructions: [priorityIx, ...instructions],
-      }).compileToV0Message();
-
-      const tx = new VTx(msg);
-      if (signers.length > 0) tx.sign(signers);
-
-      const serialized = Buffer.from(tx.serialize()).toString('base64');
-      res.json({ transaction: serialized, lastValidBlockHeight });
+      const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
+      res.json(result);
     } catch (e: any) {
       console.error('[unstake-tx]', e);
       res.status(500).json({ error: e.message });

@@ -907,6 +907,7 @@ export default function SolRefund() {
     setStakeLoading(true);
     try {
       const lamports = Math.floor(amt * 1e9);
+      // 1. Get order from backend (proxied to Jupiter Ultra)
       const resp = await fetch('/api/staking/stake-tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -914,12 +915,29 @@ export default function SolRefund() {
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Failed to build transaction');
+      // 2. Sign the transaction
       const txBuffer = Buffer.from(data.transaction, 'base64');
       const tx = VersionedTransaction.deserialize(txBuffer);
       const signed = await signTransaction(tx);
-      const txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
-      await connection.confirmTransaction(txid, 'confirmed');
-      toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL. Tx: ${txid.slice(0, 8)}...` });
+      const signedBase64 = Buffer.from(signed.serialize()).toString('base64');
+      // 3. Execute via Jupiter Ultra execute endpoint (handles broadcasting + confirmation)
+      const execResp = await fetch('/api/jupiter/ultra/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signedTransaction: signedBase64,
+          requestId: data.requestId,
+          walletAddress: publicKey.toBase58(),
+          inputMint: 'So11111111111111111111111111111111111111112',
+          outputMint: GSOL_MINT,
+          inputSymbol: 'SOL',
+          outputSymbol: 'GSOL',
+        })
+      });
+      const execData = await execResp.json();
+      if (!execResp.ok) throw new Error(execData.error || 'Execute failed');
+      const txid = execData.signature || execData.txid || '';
+      toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
       setStakeAmount('');
       // Refresh balances
       const bal = await connection.getBalance(publicKey);
@@ -954,12 +972,31 @@ export default function SolRefund() {
       const txBuffer = Buffer.from(data.transaction, 'base64');
       const tx = VersionedTransaction.deserialize(txBuffer);
       const signed = await signTransaction(tx);
-      const txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
-      await connection.confirmTransaction(txid, 'confirmed');
-      toast({ title: '✅ Unstaked!', description: `${amt} GSOL → SOL. Tx: ${txid.slice(0, 8)}...` });
+      const signedBase64 = Buffer.from(signed.serialize()).toString('base64');
+      const execResp = await fetch('/api/jupiter/ultra/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signedTransaction: signedBase64,
+          requestId: data.requestId,
+          walletAddress: publicKey.toBase58(),
+          inputMint: GSOL_MINT,
+          outputMint: 'So11111111111111111111111111111111111111112',
+          inputSymbol: 'GSOL',
+          outputSymbol: 'SOL',
+        })
+      });
+      const execData = await execResp.json();
+      if (!execResp.ok) throw new Error(execData.error || 'Execute failed');
+      const txid = execData.signature || execData.txid || '';
+      toast({ title: '✅ Unstaked!', description: `${amt} GSOL → SOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
       setStakeAmount('');
       const bal = await connection.getBalance(publicKey);
       setWalletTokenBalance(bal / 1e9);
+      const { getAssociatedTokenAddress } = await import('@solana/spl-token');
+      const ata = await getAssociatedTokenAddress(new PublicKey(GSOL_MINT), publicKey);
+      const info = await connection.getTokenAccountBalance(ata).catch(() => null);
+      if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
     } catch (e: any) {
       toast({ title: 'Unstaking failed', description: e.message, variant: 'destructive' });
     } finally {
