@@ -4910,12 +4910,8 @@ export default function SolRefund() {
                         </>
                       ) : (
                         <>
-                          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white/70">
-                              <path d="M7 16L3 12L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              <path d="M17 8L21 12L17 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
+                          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
+                            <img src="https://jup.ag/favicon.ico" alt="Jupiter" className="w-8 h-8 object-cover" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-bold text-sm leading-tight">Via Jupiter</p>
