@@ -4857,23 +4857,8 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Stake button */}
-                  <button
-                    onClick={stakeMode === 'stake' ? handleStake : handleUnstake}
-                    disabled={stakeLoading || !stakeAmount || parseFloat(stakeAmount) <= 0 || !publicKey}
-                    className={`w-full py-4 rounded-2xl font-black text-xl border transition-all duration-200 ${
-                      stakeLoading || !stakeAmount || parseFloat(stakeAmount) <= 0 || !publicKey
-                        ? 'bg-purple-600/50 text-white/60 cursor-not-allowed border-purple-500/30'
-                        : 'bg-purple-600 hover:bg-purple-500 text-white cursor-pointer border-purple-400/50 shadow-lg shadow-purple-900/30'
-                    }`}
-                  >
-                    {stakeLoading
-                      ? (stakeMode === 'stake' ? 'Staking...' : 'Unstaking...')
-                      : (stakeMode === 'stake' ? 'Stake SOL' : 'Unstake GSOL')}
-                  </button>
-
                   {/* Stake Method selector */}
-                  <div className="mt-5">
+                  <div className="mb-5">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-white font-semibold text-sm">
                         {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
@@ -4933,6 +4918,21 @@ export default function SolRefund() {
                       )}
                     </div>
                   </div>
+
+                  {/* Stake button */}
+                  <button
+                    onClick={stakeMode === 'stake' ? handleStake : handleUnstake}
+                    disabled={stakeLoading || !stakeAmount || parseFloat(stakeAmount) <= 0 || !publicKey}
+                    className={`w-full py-4 rounded-2xl font-black text-xl border transition-all duration-200 ${
+                      stakeLoading || !stakeAmount || parseFloat(stakeAmount) <= 0 || !publicKey
+                        ? 'bg-purple-600/50 text-white/60 cursor-not-allowed border-purple-500/30'
+                        : 'bg-purple-600 hover:bg-purple-500 text-white cursor-pointer border-purple-400/50 shadow-lg shadow-purple-900/30'
+                    }`}
+                  >
+                    {stakeLoading
+                      ? (stakeMode === 'stake' ? 'Staking...' : 'Unstaking...')
+                      : (stakeMode === 'stake' ? 'Stake SOL' : 'Unstake GSOL')}
+                  </button>
                 </div>
 
                 {/* GSOL Info Section */}
