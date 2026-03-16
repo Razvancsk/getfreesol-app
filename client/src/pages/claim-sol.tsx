@@ -121,6 +121,7 @@ export default function SolRefund() {
   const [stakeMode, setStakeMode] = useState<'stake' | 'unstake'>('stake');
   const [stakeAmount, setStakeAmount] = useState('');
   const [stakeLoading, setStakeLoading] = useState(false);
+  const [stakingMethod, setStakingMethod] = useState<'direct' | 'jupiter'>('direct');
   const [gsolApy, setGsolApy] = useState<number | null>(null);
   const [gsolSolValue, setGsolSolValue] = useState<number>(1);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
@@ -911,7 +912,7 @@ export default function SolRefund() {
       const resp = await fetch('/api/staking/stake-tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58() })
+        body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58(), method: stakingMethod })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Failed to build transaction');
@@ -920,23 +921,30 @@ export default function SolRefund() {
       const tx = VersionedTransaction.deserialize(txBuffer);
       const signed = await signTransaction(tx);
       const signedBase64 = Buffer.from(signed.serialize()).toString('base64');
-      // 3. Execute via Jupiter Ultra execute endpoint (handles broadcasting + confirmation)
-      const execResp = await fetch('/api/jupiter/ultra/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signedTransaction: signedBase64,
-          requestId: data.requestId,
-          walletAddress: publicKey.toBase58(),
-          inputMint: 'So11111111111111111111111111111111111111112',
-          outputMint: GSOL_MINT,
-          inputSymbol: 'SOL',
-          outputSymbol: 'GSOL',
-        })
-      });
-      const execData = await execResp.json();
-      if (!execResp.ok) throw new Error(execData.error || 'Execute failed');
-      const txid = execData.signature || execData.txid || '';
+      let txid = '';
+      if (stakingMethod === 'jupiter' && data.requestId) {
+        // Jupiter path: use Ultra execute for reliable broadcast + confirmation
+        const execResp = await fetch('/api/jupiter/ultra/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signedTransaction: signedBase64,
+            requestId: data.requestId,
+            walletAddress: publicKey.toBase58(),
+            inputMint: 'So11111111111111111111111111111111111111112',
+            outputMint: GSOL_MINT,
+            inputSymbol: 'SOL',
+            outputSymbol: 'GSOL',
+          })
+        });
+        const execData = await execResp.json();
+        if (!execResp.ok) throw new Error(execData.error || 'Execute failed');
+        txid = execData.signature || execData.txid || '';
+      } else {
+        // Direct Mint path: broadcast directly
+        txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
+        await connection.confirmTransaction(txid, 'confirmed');
+      }
       toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
       setStakeAmount('');
       // Refresh balances
@@ -965,7 +973,7 @@ export default function SolRefund() {
       const resp = await fetch('/api/staking/unstake-tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58() })
+        body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58(), method: stakingMethod })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Failed to build transaction');
@@ -973,22 +981,28 @@ export default function SolRefund() {
       const tx = VersionedTransaction.deserialize(txBuffer);
       const signed = await signTransaction(tx);
       const signedBase64 = Buffer.from(signed.serialize()).toString('base64');
-      const execResp = await fetch('/api/jupiter/ultra/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signedTransaction: signedBase64,
-          requestId: data.requestId,
-          walletAddress: publicKey.toBase58(),
-          inputMint: GSOL_MINT,
-          outputMint: 'So11111111111111111111111111111111111111112',
-          inputSymbol: 'GSOL',
-          outputSymbol: 'SOL',
-        })
-      });
-      const execData = await execResp.json();
-      if (!execResp.ok) throw new Error(execData.error || 'Execute failed');
-      const txid = execData.signature || execData.txid || '';
+      let txid = '';
+      if (stakingMethod === 'jupiter' && data.requestId) {
+        const execResp = await fetch('/api/jupiter/ultra/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signedTransaction: signedBase64,
+            requestId: data.requestId,
+            walletAddress: publicKey.toBase58(),
+            inputMint: GSOL_MINT,
+            outputMint: 'So11111111111111111111111111111111111111112',
+            inputSymbol: 'GSOL',
+            outputSymbol: 'SOL',
+          })
+        });
+        const execData = await execResp.json();
+        if (!execResp.ok) throw new Error(execData.error || 'Execute failed');
+        txid = execData.signature || execData.txid || '';
+      } else {
+        txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
+        await connection.confirmTransaction(txid, 'confirmed');
+      }
       toast({ title: '✅ Unstaked!', description: `${amt} GSOL → SOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
       setStakeAmount('');
       const bal = await connection.getBalance(publicKey);
@@ -4823,7 +4837,9 @@ export default function SolRefund() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">Method</span>
-                      <span className="text-white font-bold text-base">Direct deposit</span>
+                      <span className="text-white font-bold text-base">
+                        {stakingMethod === 'direct' ? 'Direct deposit' : 'Via Jupiter'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base">APY</span>
@@ -4855,6 +4871,68 @@ export default function SolRefund() {
                       ? (stakeMode === 'stake' ? 'Staking...' : 'Unstaking...')
                       : (stakeMode === 'stake' ? 'Stake SOL' : 'Unstake GSOL')}
                   </button>
+
+                  {/* Stake Method selector */}
+                  <div className="mt-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white font-semibold text-sm">
+                        {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
+                      </span>
+                      <div className={`flex rounded-xl p-0.5 border border-white/20 ${isNightMode ? 'bg-[#111]' : 'bg-purple-900/40'}`}>
+                        <button
+                          onClick={() => setStakingMethod('direct')}
+                          className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                            stakingMethod === 'direct'
+                              ? 'bg-white/20 text-white shadow'
+                              : 'text-white/50 hover:text-white/80'
+                          }`}
+                        >
+                          Direct deposit
+                        </button>
+                        <button
+                          onClick={() => setStakingMethod('jupiter')}
+                          className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                            stakingMethod === 'jupiter'
+                              ? 'bg-white/20 text-white shadow'
+                              : 'text-white/50 hover:text-white/80'
+                          }`}
+                        >
+                          Via Jupiter
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Method detail card */}
+                    <div className={`rounded-2xl p-4 border border-white/10 flex items-center gap-3 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/20'}`}>
+                      {stakingMethod === 'direct' ? (
+                        <>
+                          <div className="w-9 h-9 rounded-xl bg-purple-500/30 flex items-center justify-center shrink-0">
+                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 rounded-full object-cover" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-bold text-sm">Direct deposit</p>
+                            <p className="text-white/60 text-xs">{stakeMode === 'stake' ? 'Mint GSOL via Stake Pool contract' : 'Redeem GSOL via Stake Pool contract'}</p>
+                          </div>
+                          <span className="text-green-400 text-xs font-bold shrink-0">No price impact</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-9 h-9 rounded-xl bg-purple-500/30 flex items-center justify-center shrink-0">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-green-400">
+                              <path d="M7 16L3 12L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              <path d="M17 8L21 12L17 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-bold text-sm">Via Jupiter</p>
+                            <p className="text-white/60 text-xs">{stakeMode === 'stake' ? 'Swap SOL for GSOL via Jupiter' : 'Swap GSOL for SOL via Jupiter'}</p>
+                          </div>
+                          <span className="text-yellow-400 text-xs font-bold shrink-0">&lt;0.1% price impact</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* GSOL Info Section */}

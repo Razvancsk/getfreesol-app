@@ -11056,12 +11056,65 @@ Claimer: ${walletAddress}`;
 
   const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
+  async function sanctumDirectTx(
+    inputMint: string,
+    outputMint: string,
+    lamports: number,
+    signer: string
+  ): Promise<{ transaction: string }> {
+    // Step 1: quote
+    const quoteResp = await fetch(`${SANCTUM_EXTRA}/swap/quote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input_lst_mint: inputMint,
+        output_lst_mint: outputMint,
+        in_amount: lamports.toString(),
+        slippage_bps: 50,
+      })
+    });
+    if (!quoteResp.ok) {
+      const txt = await quoteResp.text();
+      throw new Error(`Sanctum quote failed (${quoteResp.status}): ${txt}`);
+    }
+    const quote = await quoteResp.json();
+
+    // Step 2: build transaction
+    const txResp = await fetch(`${SANCTUM_EXTRA}/swap/tx`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input_lst_mint: inputMint,
+        output_lst_mint: outputMint,
+        amount: lamports.toString(),
+        quoted_amount: (quote.out_amount || quote.quoted_amount || '0').toString(),
+        slippage_bps: 50,
+        signer,
+        src_acc: null,
+        dst_acc: null,
+      })
+    });
+    if (!txResp.ok) {
+      const txt = await txResp.text();
+      throw new Error(`Sanctum tx build failed (${txResp.status}): ${txt}`);
+    }
+    const txData = await txResp.json();
+    return { transaction: txData.tx || txData.transaction };
+  }
+
   app.post('/api/staking/stake-tx', async (req, res) => {
     try {
-      const { amount, signerPublicKey } = req.body;
+      const { amount, signerPublicKey, method } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
-      const result = await jupiterUltraOrder(SOL_MINT, GSOL_MINT_ADDR, Number(amount), signerPublicKey);
-      res.json(result);
+      if (method === 'direct') {
+        // Direct Mint: Sanctum Extra swap API (SOL → GSOL via pool)
+        const result = await sanctumDirectTx(SOL_MINT, GSOL_MINT_ADDR, Number(amount), signerPublicKey);
+        res.json(result);
+      } else {
+        // via Jupiter: Jupiter Ultra routes through Sanctum's pool
+        const result = await jupiterUltraOrder(SOL_MINT, GSOL_MINT_ADDR, Number(amount), signerPublicKey);
+        res.json(result);
+      }
     } catch (e: any) {
       console.error('[stake-tx]', e);
       res.status(500).json({ error: e.message });
@@ -11070,10 +11123,17 @@ Claimer: ${walletAddress}`;
 
   app.post('/api/staking/unstake-tx', async (req, res) => {
     try {
-      const { amount, signerPublicKey } = req.body;
+      const { amount, signerPublicKey, method } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
-      const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
-      res.json(result);
+      if (method === 'direct') {
+        // Direct Unstake: Sanctum Extra swap API (GSOL → SOL via pool)
+        const result = await sanctumDirectTx(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
+        res.json(result);
+      } else {
+        // via Jupiter
+        const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
+        res.json(result);
+      }
     } catch (e: any) {
       console.error('[unstake-tx]', e);
       res.status(500).json({ error: e.message });
