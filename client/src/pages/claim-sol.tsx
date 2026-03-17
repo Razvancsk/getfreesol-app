@@ -4884,12 +4884,6 @@ export default function SolRefund() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-white text-base">Method</span>
-                      <span className="text-white font-bold text-base">
-                        {stakingMethod === 'direct' ? 'Direct deposit' : 'Via Jupiter'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
                       <span className="text-white text-base">APY</span>
                       <span className="text-green-400 font-black text-base">
                         {gsolApy !== null ? `${gsolApy}%` : '—'}
