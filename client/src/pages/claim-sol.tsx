@@ -4805,7 +4805,7 @@ export default function SolRefund() {
 
 
                 {/* GSOL Staking Module */}
-                <div className="mb-6 max-w-2xl mx-auto">
+                <div className="mb-6">
                   {/* Header */}
                   <div className="flex items-center gap-4 mb-6">
                     <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-14 h-14 rounded-full object-cover" />
@@ -4865,7 +4865,7 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Stats */}
+                  {/* Stats — full width */}
                   <div className={`rounded-2xl mb-5 overflow-hidden border ${isNightMode ? 'bg-[#1a1a1a] border-white/15' : 'bg-purple-900/20 border-white/20'}`}>
                     {/* You receive row */}
                     <div className="flex justify-between items-center px-5 py-5">
