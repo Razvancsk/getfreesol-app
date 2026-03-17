@@ -305,7 +305,7 @@ function CardDesigner() {
 function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
   const [postContent, setPostContent] = useState('');
   const [includeImage, setIncludeImage] = useState(true);
-  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas' | 'daily_report'>('promo');
+  const [imageType, setImageType] = useState<'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas' | 'daily_report' | 'staking'>('promo');
   const [imageKey, setImageKey] = useState(Date.now());
   const [aiMemePreview, setAiMemePreview] = useState<string | null>(null);
   const [isGeneratingAiMeme, setIsGeneratingAiMeme] = useState(false);
@@ -343,7 +343,7 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
     },
   });
 
-  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas' | 'daily_report') => {
+  const handleQuickPost = (template: string, imgType: 'promo' | 'gm' | 'gn' | 'stats' | 'funny' | 'ai_meme' | 'trending' | 'trending1' | 'christmas' | 'daily_report' | 'staking') => {
     setPostContent(template);
     setImageType(imgType);
     setAiMemePreview(null);

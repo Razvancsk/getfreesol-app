@@ -2020,7 +2020,88 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
       ctx.font = 'bold 60px sans-serif';
       ctx.fillText('getfreesol.xyz', width / 2, 520);
     }
-    
+
+  } else if (type === 'staking') {
+    // Staking Live banner — deep purple with violet glow
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, '#1a0533');
+    gradient.addColorStop(0.45, '#2d0a5e');
+    gradient.addColorStop(0.7, '#4c1d95');
+    gradient.addColorStop(1, '#1a0533');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Glowing purple radial in center-top
+    const radial = ctx.createRadialGradient(width / 2, 60, 0, width / 2, 60, 400);
+    radial.addColorStop(0, 'rgba(139,92,246,0.45)');
+    radial.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = radial;
+    ctx.fillRect(0, 0, width, height);
+
+    // Subtle grid lines
+    ctx.strokeStyle = 'rgba(167,139,250,0.07)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+    for (let y = 0; y < height; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+
+    // Logo
+    try {
+      const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
+      const logo = await loadImage(logoPath);
+      ctx.drawImage(logo, 50, 40, 110, 110);
+    } catch (e) {}
+
+    // "LIVE" badge top-right
+    ctx.fillStyle = '#7c3aed';
+    roundRect(ctx, width - 160, 45, 120, 50, 12);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('🔴 LIVE', width - 25, 81);
+
+    ctx.textAlign = 'center';
+
+    // Main headline
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 82px sans-serif';
+    ctx.fillText('Get Free Sol', width / 2, 220);
+
+    ctx.fillStyle = '#c4b5fd';
+    ctx.font = 'bold 58px sans-serif';
+    ctx.fillText('Liquid Staking Token', width / 2, 300);
+
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = '46px sans-serif';
+    ctx.fillText('Stake SOL. Earn Yield. Stay Liquid.', width / 2, 370);
+
+    // APY highlight box
+    ctx.fillStyle = 'rgba(124,58,237,0.5)';
+    roundRect(ctx, width / 2 - 200, 400, 400, 100, 18);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(167,139,250,0.6)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, width / 2 - 200, 400, 400, 100, 18);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 78px sans-serif';
+    ctx.fillText('7.20% APY', width / 2, 478);
+
+    // Bullet points
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#e9d5ff';
+    ctx.font = '38px sans-serif';
+    ctx.fillText('💧 Stay Liquid — use GSOL in DeFi', 80, 560);
+    ctx.fillText('🔒 100% Secure — SOL stays on-chain', 80, 615);
+    ctx.fillText('⚡ Unstake Anytime via Jupiter', 80, 670);
+
+    // Website
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 52px sans-serif';
+    ctx.fillText('getfreesol.xyz', width / 2, height - 50);
+
   } else {
     if (template === 0) {
       const gradient = ctx.createLinearGradient(0, 0, width, height);
