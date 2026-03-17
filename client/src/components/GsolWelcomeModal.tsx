@@ -82,7 +82,6 @@ export default function GsolWelcomeModal() {
           {/* Bullet points */}
           <div className="text-center space-y-3 mb-5 relative">
             <div className="flex items-center justify-center gap-2">
-              <span className="text-xl">💰</span>
               <p className="text-white text-xl font-black">7.20% APY</p>
             </div>
             <div className="flex items-center justify-center gap-2">
