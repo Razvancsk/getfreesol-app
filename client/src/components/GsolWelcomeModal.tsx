@@ -94,7 +94,6 @@ export default function GsolWelcomeModal() {
             <p className="text-4xl font-black text-white">
               {apy ? `${apy}%` : <span className="text-2xl animate-pulse text-white/60">Loading…</span>}
             </p>
-            <p className="text-white/50 text-xs mt-1">Live · Updated every visit</p>
           </div>
 
           {/* Feature bullets — all purple icons */}
