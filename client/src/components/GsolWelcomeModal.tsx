@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Droplets, Shield, Zap, X } from "lucide-react";
 
 const STORAGE_KEY = "gsol_welcome_seen_v1";
-const GSOL_MINT = "GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3";
-const GSOL_IMAGE = `https://img.jup.ag/tokens/${GSOL_MINT}`;
+const GSOL_IMAGE = "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw";
 
 export default function GsolWelcomeModal() {
   const [open, setOpen] = useState(false);
