@@ -882,7 +882,7 @@ export default function SolRefund() {
     fetch('/api/staking/info')
       .then(r => r.json())
       .then(data => {
-        if (data.apy !== undefined && data.apy !== null) setGsolApy(parseFloat((data.apy * 100).toFixed(2)));
+        if (data.apy !== undefined && data.apy !== null) setGsolApy(parseFloat(parseFloat(data.apy).toFixed(2)));
         if (data.solValue) setGsolSolValue(parseFloat(data.solValue));
       }).catch(() => {});
   }, []);
