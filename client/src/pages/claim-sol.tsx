@@ -4883,20 +4883,6 @@ export default function SolRefund() {
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-white text-base">APY</span>
-                      <span className="text-green-400 font-black text-base">
-                        {gsolApy !== null ? `${gsolApy}%` : '—'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-white text-base">Annual rewards</span>
-                      <span className="text-white text-base">
-                        {stakeAmount && gsolApy
-                          ? `${(parseFloat(stakeAmount) * gsolApy / 100).toFixed(4)} SOL`
-                          : '—'}
-                      </span>
-                    </div>
                   </div>
 
                   {/* Stake Method selector */}
