@@ -71,7 +71,7 @@ export default function GsolWelcomeModal() {
 
           {/* Title */}
           <h2 className="text-2xl font-extrabold text-white leading-tight mb-2 relative">
-            GSOL Liquid Staking<br />is Live!
+            Get Free Sol Liquid<br />Staking Token is Live!
           </h2>
 
           {/* Subtitle */}
