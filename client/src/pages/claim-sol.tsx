@@ -4850,7 +4850,7 @@ export default function SolRefund() {
                     <div className="flex-1 flex flex-col items-center pr-5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-white text-xs font-medium">GSOL APY</span>
-                        <HelpCircle className="w-3.5 h-3.5 text-white/40" />
+                        <HelpCircle className="w-3.5 h-3.5 text-white" />
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-white font-black text-2xl">
@@ -4865,7 +4865,7 @@ export default function SolRefund() {
                     <div className="flex-1 flex flex-col items-center pl-5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-white text-xs font-medium">Est. rewards per year</span>
-                        <button onClick={() => setShowRewardsInfo(true)} className="text-white/40 hover:text-white/80 transition-colors">
+                        <button onClick={() => setShowRewardsInfo(true)} className="text-white hover:text-white/80 transition-colors">
                           <HelpCircle className="w-3.5 h-3.5" />
                         </button>
                       </div>
