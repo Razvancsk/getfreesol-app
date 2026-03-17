@@ -4764,24 +4764,24 @@ export default function SolRefund() {
 
                     <div className="p-6 pt-7">
                       <h2 className="text-white font-black text-xl mb-1">Choosing How You Stake</h2>
-                      <p className="text-white/50 text-sm mb-6">Direct deposit or via Jupiter</p>
+                      <p className="text-white text-sm mb-6">Direct deposit or via Jupiter</p>
 
-                      <div className="space-y-5 text-sm text-white/80 leading-relaxed">
+                      <div className="space-y-5 text-sm text-white leading-relaxed">
                         <div>
                           <p className="text-white font-bold mb-1">Direct deposit:</p>
                           <p>Stake your SOL directly into the LST's stake pool to mint the LST at the current exchange rate. There's <strong className="text-white">no price impact</strong>, and you'll <strong className="text-white">only pay the pool's deposit fee (if any)</strong>.</p>
-                          <p className="mt-2 text-white/60">Choose this if you prefer predictable fees or if deposit vs. swap matters for tax purposes in your jurisdiction.</p>
+                          <p className="mt-2 text-white">Choose this if you prefer predictable fees or if deposit vs. swap matters for tax purposes in your jurisdiction.</p>
                         </div>
 
                         <div>
                           <p className="text-white font-bold mb-1">Via Jupiter:</p>
                           <p>Swap SOL for LST via Jupiter, which finds the best available price across Solana, including Sanctum's Infinity Pool and Router. <strong className="text-white">Fees and price impact vary</strong> by route.</p>
-                          <p className="mt-2 text-white/60">Choose this if you're open to variable pricing and want a potentially better deal.</p>
+                          <p className="mt-2 text-white">Choose this if you're open to variable pricing and want a potentially better deal.</p>
                         </div>
 
-                        <p className="text-white/60">In both cases, you'll receive your LST instantly and start earning staking rewards right away.</p>
+                        <p className="text-white">In both cases, you'll receive your LST instantly and start earning staking rewards right away.</p>
 
-                        <p className="text-white/40 italic text-xs">This is not financial advice, do your own research.</p>
+                        <p className="text-white italic text-xs">This is not financial advice, do your own research.</p>
                       </div>
 
                       <button
