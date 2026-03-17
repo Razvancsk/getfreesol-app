@@ -63,7 +63,7 @@ export default function GsolWelcomeModal() {
           {/* Top section */}
           <div className="px-6 pt-8 pb-4 text-center relative">
             <Badge className="mb-3 bg-purple-500/20 text-purple-300 border-purple-500/40 text-xs font-medium px-3 py-1">
-              ✨ Liquid Staking Token
+              ✨ Get Free Sol Liquid Staking Token
             </Badge>
 
             {/* GSOL token image */}
