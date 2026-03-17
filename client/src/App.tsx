@@ -21,6 +21,7 @@ import DesignPreview from "@/pages/design-preview";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsConditions from "@/pages/terms-conditions";
 import NotFound from "@/pages/not-found";
+import GsolWelcomeModal from "@/components/GsolWelcomeModal";
 
 function Router() {
   return (
@@ -55,6 +56,7 @@ function App() {
         <ReownProvider>
           <TooltipProvider>
             <Toaster />
+            <GsolWelcomeModal />
             <Router />
           </TooltipProvider>
         </ReownProvider>
