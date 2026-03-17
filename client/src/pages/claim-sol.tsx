@@ -4865,23 +4865,42 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Stats */}
-                  <div className={`rounded-2xl p-5 mb-5 space-y-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
-                    <div className="flex justify-between items-center">
-                      <span className="text-white text-base">You receive</span>
-                      <span className="text-white font-bold text-base flex items-center gap-2">
+                  {/* To Receive card — Sanctum style */}
+                  <div className={`rounded-2xl px-5 pt-4 pb-5 mb-5 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
+                    {/* Top row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white/60 text-sm font-medium">To receive</span>
+                      <span className="text-white/60 text-sm">
+                        You have{' '}
+                        <span className="text-white font-semibold">
+                          {stakeMode === 'stake'
+                            ? `${gsolBalance.toFixed(4)} GSOL`
+                            : `${walletTokenBalance.toFixed(4)} SOL`}
+                        </span>
+                      </span>
+                    </div>
+                    {/* Amount + token pill row */}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-white font-black text-4xl leading-none">
+                        {stakeMode === 'stake'
+                          ? (stakeAmount ? (parseFloat(stakeAmount) / gsolSolValue).toFixed(4) : '0.00')
+                          : (stakeAmount ? (parseFloat(stakeAmount) * gsolSolValue).toFixed(4) : '0.00')}
+                      </span>
+                      {/* Token pill */}
+                      <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
-                            {stakeAmount ? (parseFloat(stakeAmount) / gsolSolValue).toFixed(4) : '—'} GSOL
+                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 rounded-full object-contain" />
+                            <span className="text-white font-bold text-sm">GSOL</span>
                           </>
                         ) : (
                           <>
-                            <img alt="SOL" width="20" height="20" className="rounded-full" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
-                            {stakeAmount ? (parseFloat(stakeAmount) * gsolSolValue).toFixed(4) : '—'} SOL
+                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-6 h-6 rounded-full" />
+                            <span className="text-white font-bold text-sm">SOL</span>
                           </>
                         )}
-                      </span>
+                        <ChevronDown className="w-4 h-4 text-white/50" />
+                      </div>
                     </div>
                   </div>
 
