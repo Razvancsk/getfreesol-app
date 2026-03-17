@@ -52,7 +52,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
       <DialogContent className="sm:max-w-lg bg-transparent border-0 p-0 [&>button]:hidden">
         <div className="space-y-4">
           <div 
-            className="no-night-mode w-full aspect-[16/9] bg-gradient-to-r from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden"
+            className="w-full aspect-[16/9] bg-gradient-to-r from-[#1a0a2e] via-[#2d1b4e] to-[#1a0a2e] rounded-xl shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden"
           >
             <div className="absolute top-4 left-4 flex items-center gap-3 z-10">
               <img src={logoImage} alt="GetFreeSol" className="w-12 h-12" />
@@ -69,7 +69,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
               <button 
                 onClick={handleShareOnX}
-                className="no-night-mode bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors"
+                className="bg-green-400 hover:bg-green-300 border-2 border-green-300 rounded-lg px-6 py-2 transition-colors"
                 style={{ backgroundColor: '#4ade80', borderColor: '#86efac' }}
               >
                 <span className="text-black font-mono font-bold text-base">Tweet It</span>
@@ -77,7 +77,7 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
               {onFlip && (
               <button 
                 onClick={() => { onClose(); onFlip(); }}
-                className="no-night-mode bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg px-6 py-2 transition-colors"
+                className="bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg px-6 py-2 transition-colors"
                 style={{ backgroundColor: '#9333ea', borderColor: '#a855f7' }}
               >
                 <span className="text-white font-mono font-bold text-base">Flip It</span>

@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ReownProvider } from "@/providers/ReownProvider";
 import { SolanaProvider } from "@/providers/SolanaProvider";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import ClaimSol from "@/pages/claim-sol";
 import Referrals from "@/pages/referrals";
 import AdminSettings from "@/pages/admin-settings";
@@ -52,16 +51,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <SolanaProvider>
-          <ReownProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </ReownProvider>
-        </SolanaProvider>
-      </ThemeProvider>
+      <SolanaProvider>
+        <ReownProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </ReownProvider>
+      </SolanaProvider>
     </QueryClientProvider>
   );
 }

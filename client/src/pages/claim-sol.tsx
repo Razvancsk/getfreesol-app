@@ -14,8 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun, BookOpen, HelpCircle } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, BookOpen, HelpCircle } from "lucide-react";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 import {
   DropdownMenu,
@@ -105,7 +104,6 @@ export default function SolRefund() {
   
   // Note: UMI will be created inside the burn handler to avoid initialization errors
   
-  const { isNightMode, toggleTheme } = useTheme();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'referrals' | 'reclaim' | 'burnTokens' | 'swap' | 'dex' | 'statistics' | 'docs' | 'coinflip' | 'staking'>('reclaim');
@@ -3477,14 +3475,6 @@ export default function SolRefund() {
 
                   {/* Mobile Wallet Connection */}
                   <div className="lg:hidden flex items-center space-x-2">
-                    {/* Night Mode Toggle */}
-                    <Button
-                      onClick={toggleTheme}
-                      className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md px-2 py-2 text-white border border-purple-500/30 h-auto"
-                      data-testid="button-night-mode"
-                    >
-                      {isNightMode ? <Sun className="h-4 w-4 text-yellow-400" /> : <Moon className="h-4 w-4" />}
-                    </Button>
                 {isConnected && publicKey ? (
                   <>
                     <Link href="/profile">
@@ -3553,14 +3543,6 @@ export default function SolRefund() {
 
             {/* Desktop Navigation and Wallet Connection - hidden on mobile */}
             <div className="hidden lg:flex items-center space-x-3">
-              {/* Night Mode Toggle - Desktop */}
-              <Button
-                onClick={toggleTheme}
-                className="bg-purple-800/60 hover:bg-purple-700/60 backdrop-blur-sm rounded-md p-2 text-white border border-purple-500/30 h-auto"
-                data-testid="button-night-mode-desktop"
-              >
-                {isNightMode ? <Sun className="h-4 w-4 text-yellow-400" /> : <Moon className="h-4 w-4" />}
-              </Button>
               {isConnected && publicKey ? (
                 <>
                   <Link href="/profile">
@@ -3741,12 +3723,8 @@ export default function SolRefund() {
                   onClick={() => setBurnSubTab('tokens')}
                   className={`w-36 py-3 text-base font-bold rounded-md transition-all duration-200 border text-center ${
                     burnSubTab === 'tokens'
-                      ? isNightMode
-                        ? 'bg-transparent text-green-400 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]'
-                        : 'bg-purple-600 text-white border-purple-600'
-                      : isNightMode
-                        ? 'text-white/40 border-white/10 bg-transparent'
-                        : 'text-white border-purple-500/30 bg-purple-900/40'
+                      ? 'bg-purple-600 text-white border-purple-600'
+                      : 'text-white border-purple-500/30 bg-purple-900/40'
                   }`}
                 >
                   🪙 Token
@@ -3756,12 +3734,8 @@ export default function SolRefund() {
                   onClick={() => setBurnSubTab('nft')}
                   className={`w-36 py-3 text-base font-bold rounded-md transition-all duration-200 border text-center ${
                     burnSubTab === 'nft'
-                      ? isNightMode
-                        ? 'bg-transparent text-green-400 border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]'
-                        : 'bg-purple-600 text-white border-purple-600'
-                      : isNightMode
-                        ? 'text-white/40 border-white/10 bg-transparent'
-                        : 'text-white border-purple-500/30 bg-purple-900/40'
+                      ? 'bg-purple-600 text-white border-purple-600'
+                      : 'text-white border-purple-500/30 bg-purple-900/40'
                   }`}
                 >
                   🖼️ NFT
@@ -3776,9 +3750,7 @@ export default function SolRefund() {
               {/* Empty Accounts Content */}
               {claimSubTab === 'empty' && !isConnected && (
                 <div className={`backdrop-blur-sm rounded-xl p-6 md:p-10 ${
-                  isNightMode 
-                    ? 'bg-[#141414] border border-[#2a2a2a]' 
-                    : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+                  'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
                 }`}>
                   <div className="flex flex-col items-center gap-4 py-4 text-center">
                     <svg viewBox="0 0 397.7 311.7" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
@@ -3801,9 +3773,7 @@ export default function SolRefund() {
               )}
               {claimSubTab === 'empty' && isConnected && (
             <div className={`backdrop-blur-sm rounded-xl p-6 md:p-10 ${
-              isNightMode 
-                ? 'bg-[#141414] border border-[#2a2a2a]' 
-                : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+              'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
             }`}>
               <div className="mb-4 md:mb-8 flex items-center justify-between">
                 <h3 className="text-lg md:text-2xl font-semibold text-white">Scan Results</h3>
@@ -3962,9 +3932,7 @@ export default function SolRefund() {
           {/* Burn Connect Card - when not connected */}
           {activeTab === 'burnTokens' && !isConnected && (
             <div className={`backdrop-blur-sm rounded-xl p-6 md:p-10 ${
-              isNightMode 
-                ? 'bg-[#141414] border border-[#2a2a2a]' 
-                : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+              'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
             }`}>
               <div className="flex flex-col items-center gap-4 py-4 text-center">
                 <Flame className="w-8 h-8 text-orange-400" />
@@ -4755,7 +4723,7 @@ export default function SolRefund() {
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowHowToChoose(false)}>
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                   <div
-                    className={`relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-purple-900/80 border-purple-500/30 backdrop-blur-md'}`}
+                    className={`relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border ${'bg-purple-900/80 border-purple-500/30 backdrop-blur-md'}`}
                     onClick={e => e.stopPropagation()}
                   >
                     {/* Question mark badge top-right */}
@@ -4801,7 +4769,7 @@ export default function SolRefund() {
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowRewardsInfo(false)}>
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                   <div
-                    className={`relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-purple-900/80 border-purple-500/30 backdrop-blur-md'}`}
+                    className={`relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border ${'bg-purple-900/80 border-purple-500/30 backdrop-blur-md'}`}
                     onClick={e => e.stopPropagation()}
                   >
                     <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
@@ -4824,7 +4792,7 @@ export default function SolRefund() {
                 </div>
               )}
 
-              <div className={`rounded-2xl p-6 md:p-10 border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
+              <div className={`rounded-2xl p-6 md:p-10 border ${'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div>
                     <h2 className="text-2xl md:text-3xl font-black text-white">SOL Staking</h2>
@@ -4881,7 +4849,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Stake / Unstake toggle */}
-                  <div className={`relative flex rounded-2xl p-1.5 mb-6 border border-white/30 ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/30'}`}>
+                  <div className={`relative flex rounded-2xl p-1.5 mb-6 border border-white/30 ${'bg-purple-900/30'}`}>
                     <div
                       className="absolute top-1.5 bottom-1.5 rounded-xl bg-purple-600 transition-all duration-300"
                       style={{ width: 'calc(50% - 6px)', left: stakeMode === 'stake' ? '6px' : 'calc(50%)' }}
@@ -4891,7 +4859,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* Amount input */}
-                  <div className={`rounded-2xl p-5 mb-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
+                  <div className={`rounded-2xl p-5 mb-4 ${'bg-purple-900/20 border border-white/30'}`}>
                     {/* Top row: label + balance + HALF/MAX */}
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-white text-sm font-semibold">{stakeMode === 'stake' ? 'Stake SOL' : 'Unstake GSOL'}</span>
@@ -4931,7 +4899,7 @@ export default function SolRefund() {
                   </div>
 
                   {/* To Receive card — Sanctum style */}
-                  <div className={`rounded-2xl px-5 pt-4 pb-5 mb-5 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
+                  <div className={`rounded-2xl px-5 pt-4 pb-5 mb-5 ${'bg-purple-900/20 border border-white/30'}`}>
                     {/* Top row */}
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-white text-sm font-medium">To receive</span>
@@ -5005,7 +4973,7 @@ export default function SolRefund() {
                     </div>
 
                     {/* Method detail card */}
-                    <div className={`rounded-xl px-4 py-3.5 border border-white/10 flex items-center gap-3 ${isNightMode ? 'bg-white/5' : 'bg-white/8'}`}>
+                    <div className={`rounded-xl px-4 py-3.5 border border-white/10 flex items-center gap-3 ${'bg-white/8'}`}>
                       {stakingMethod === 'direct' ? (
                         <>
                           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
@@ -5063,24 +5031,24 @@ export default function SolRefund() {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                    <div className={`rounded-xl p-4 border ${isNightMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-purple-900/20 border-purple-500/20'}`}>
+                    <div className={`rounded-xl p-4 border ${'bg-purple-900/20 border-purple-500/20'}`}>
                       <div className="text-2xl mb-2">💧</div>
                       <p className="text-white font-bold mb-1">Liquid</p>
                       <p className="text-white text-xs">Your staked SOL stays liquid. Sell or use GSOL anytime — no lock-up periods.</p>
                     </div>
-                    <div className={`rounded-xl p-4 border ${isNightMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-purple-900/20 border-purple-500/20'}`}>
+                    <div className={`rounded-xl p-4 border ${'bg-purple-900/20 border-purple-500/20'}`}>
                       <div className="text-2xl mb-2">📈</div>
                       <p className="text-white font-bold mb-1">Auto-compounding</p>
                       <p className="text-white text-xs">Rewards are automatically compounded. GSOL value increases over time relative to SOL.</p>
                     </div>
-                    <div className={`rounded-xl p-4 border ${isNightMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-purple-900/20 border-purple-500/20'}`}>
+                    <div className={`rounded-xl p-4 border ${'bg-purple-900/20 border-purple-500/20'}`}>
                       <div className="text-2xl mb-2">🔓</div>
                       <p className="text-white font-bold mb-1">No minimum</p>
                       <p className="text-white text-xs">Stake any amount of SOL. No minimum required to start earning.</p>
                     </div>
                   </div>
 
-                  <div className={`rounded-xl p-4 border flex gap-3 items-start ${isNightMode ? 'bg-blue-900/10 border-blue-800/30' : 'bg-blue-900/20 border-blue-500/20'}`}>
+                  <div className={`rounded-xl p-4 border flex gap-3 items-start ${'bg-blue-900/20 border-blue-500/20'}`}>
                     <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                     <p className="text-white text-sm">
                       GSOL staking is launching soon. Stake your SOL to receive GSOL and earn native Solana staking rewards automatically — no action needed after staking.
@@ -6832,9 +6800,7 @@ export default function SolRefund() {
           {/* All Time Ledger Section - Only show on reclaim tab */}
           {activeTab === 'reclaim' && (
             <div className={`backdrop-blur-sm rounded-xl p-6 mb-6 ${
-              isNightMode 
-                ? 'bg-[#141414] border border-[#2a2a2a]' 
-                : 'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
+              'bg-gradient-to-br from-purple-800/20 to-purple-900/30 border border-purple-500/20'
             }`}>
               <div className="flex items-center mb-6">
                 <h3 className="text-xl font-bold text-white text-center w-full">Recent Claims</h3>
@@ -6843,17 +6809,17 @@ export default function SolRefund() {
               <div className="overflow-x-auto">
                 <div className="min-w-full">
                   {/* Header */}
-                  <div className={`grid grid-cols-4 gap-4 mb-4 pb-3 border-b ${isNightMode ? 'border-[#2a2a2a]' : 'border-purple-500/30'}`}>
-                    <div className={`text-sm font-semibold uppercase tracking-wider ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
+                  <div className={`grid grid-cols-4 gap-4 mb-4 pb-3 border-b ${'border-purple-500/30'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider ${'text-white'}`}>
                       WALLET/TX
                     </div>
-                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${'text-white'}`}>
                       ACCTS
                     </div>
-                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${'text-white'}`}>
                       CLAIMED SOL
                     </div>
-                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${isNightMode ? 'text-gray-400' : 'text-white'}`}>
+                    <div className={`text-sm font-semibold uppercase tracking-wider text-center ${'text-white'}`}>
                       AGE
                     </div>
                   </div>
@@ -6873,9 +6839,7 @@ export default function SolRefund() {
                         <div key={tx.signature}>
                           <div 
                             className={`grid grid-cols-4 gap-4 py-3 transition-colors cursor-pointer ${
-                              isNightMode 
-                                ? 'hover:bg-[#1a1a1a]' 
-                                : 'hover:bg-purple-800/20 rounded-lg border border-transparent hover:border-purple-500/30'
+                              'hover:bg-purple-800/20 rounded-lg border border-transparent hover:border-purple-500/30'
                             }`}
                             onClick={() => window.open(`https://solscan.io/tx/${tx.signature}`, '_blank')}
                             title="Click to view transaction on Solscan"
@@ -6897,7 +6861,7 @@ export default function SolRefund() {
                           </div>
                           {/* Separator line between rows - don't show after last row */}
                           {index < allTransactions.length - 1 && (
-                            <div className={`border-b my-2 ${isNightMode ? 'border-[#2a2a2a]' : 'border-purple-500/20'}`}></div>
+                            <div className={`border-b my-2 ${'border-purple-500/20'}`}></div>
                           )}
                         </div>
                       ))
