@@ -4849,7 +4849,7 @@ export default function SolRefund() {
                     {/* Left: APY */}
                     <div className="flex-1 flex flex-col items-center pr-5">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-white/60 text-xs font-medium">GSOL APY</span>
+                        <span className="text-white text-xs font-medium">GSOL APY</span>
                         <Info className="w-3 h-3 text-white/40" />
                       </div>
                       <div className="flex items-center gap-2">
@@ -4864,7 +4864,7 @@ export default function SolRefund() {
                     {/* Right: Est. rewards per year */}
                     <div className="flex-1 flex flex-col items-center pl-5">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-white/60 text-xs font-medium">Est. rewards per year</span>
+                        <span className="text-white text-xs font-medium">Est. rewards per year</span>
                         <button onClick={() => setShowRewardsInfo(true)}>
                           <Info className="w-3 h-3 text-white/40 hover:text-white/80 transition-colors" />
                         </button>
