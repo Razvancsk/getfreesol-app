@@ -4754,8 +4754,7 @@ export default function SolRefund() {
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowHowToChoose(false)}>
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                   <div
-                    className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
-                    style={{ background: 'linear-gradient(160deg, #1e1340 0%, #2d1b6b 50%, #1a0e3a 100%)' }}
+                    className={`relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-purple-900/80 border-purple-500/30 backdrop-blur-md'}`}
                     onClick={e => e.stopPropagation()}
                   >
                     {/* Question mark badge top-right */}
