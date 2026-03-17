@@ -2022,85 +2022,152 @@ export async function generatePostCardBanner(type: string = 'promo'): Promise<Bu
     }
 
   } else if (type === 'staking') {
-    // Staking Live banner — deep purple with violet glow
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, '#1a0533');
-    gradient.addColorStop(0.45, '#2d0a5e');
-    gradient.addColorStop(0.7, '#4c1d95');
-    gradient.addColorStop(1, '#1a0533');
-    ctx.fillStyle = gradient;
+    // Background: deep purple gradient
+    const bg = ctx.createLinearGradient(0, 0, width, height);
+    bg.addColorStop(0, '#0d0118');
+    bg.addColorStop(0.4, '#1a0533');
+    bg.addColorStop(0.7, '#2d0a5e');
+    bg.addColorStop(1, '#0d0118');
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, width, height);
 
-    // Glowing purple radial in center-top
-    const radial = ctx.createRadialGradient(width / 2, 60, 0, width / 2, 60, 400);
-    radial.addColorStop(0, 'rgba(139,92,246,0.45)');
-    radial.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = radial;
+    // Top glow
+    const glow = ctx.createRadialGradient(width / 2, 0, 0, width / 2, 0, 500);
+    glow.addColorStop(0, 'rgba(139,92,246,0.5)');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
     ctx.fillRect(0, 0, width, height);
 
-    // Subtle grid lines
-    ctx.strokeStyle = 'rgba(167,139,250,0.07)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < width; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
-    for (let y = 0; y < height; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+    // Bottom glow
+    const glow2 = ctx.createRadialGradient(width / 2, height, 0, width / 2, height, 400);
+    glow2.addColorStop(0, 'rgba(124,58,237,0.3)');
+    glow2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow2;
+    ctx.fillRect(0, 0, width, height);
 
-    // Logo
+    // Thin top border line
+    const borderGrad = ctx.createLinearGradient(0, 0, width, 0);
+    borderGrad.addColorStop(0, 'rgba(167,139,250,0)');
+    borderGrad.addColorStop(0.5, 'rgba(167,139,250,0.8)');
+    borderGrad.addColorStop(1, 'rgba(167,139,250,0)');
+    ctx.strokeStyle = borderGrad;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(width, 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, height - 2); ctx.lineTo(width, height - 2); ctx.stroke();
+
+    // --- LEFT SIDE: GSOL token logo + APY ---
+    const logoX = 130;
+    const logoY = height / 2 - 10;
+    const logoR = 90;
+
+    // Glow ring behind logo
+    const logoGlow = ctx.createRadialGradient(logoX, logoY, 0, logoX, logoY, logoR + 40);
+    logoGlow.addColorStop(0, 'rgba(167,139,250,0.4)');
+    logoGlow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = logoGlow;
+    ctx.beginPath(); ctx.arc(logoX, logoY, logoR + 40, 0, Math.PI * 2); ctx.fill();
+
+    // Circular clip for GSOL token image
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(logoX, logoY, logoR, 0, Math.PI * 2);
+    ctx.clip();
     try {
-      const logoPath = path.join(__dirname, '../attached_assets/Geometric__G__in_Gradient_Colours_1765500475287.png');
-      const logo = await loadImage(logoPath);
-      ctx.drawImage(logo, 50, 40, 110, 110);
-    } catch (e) {}
+      const gsolPath = path.join(__dirname, '../attached_assets/gsol_token_logo.png');
+      const gsolImg = await loadImage(gsolPath);
+      ctx.drawImage(gsolImg, logoX - logoR, logoY - logoR, logoR * 2, logoR * 2);
+    } catch (e) {
+      // Fallback: draw circle with "G"
+      ctx.fillStyle = '#4c1d95';
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('G', logoX, logoY + 28);
+    }
+    ctx.restore();
 
-    // "LIVE" badge top-right
-    ctx.fillStyle = '#7c3aed';
-    roundRect(ctx, width - 160, 45, 120, 50, 12);
+    // Circle border
+    ctx.strokeStyle = 'rgba(167,139,250,0.7)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(logoX, logoY, logoR, 0, Math.PI * 2); ctx.stroke();
+
+    // "GSOL" label under logo
+    ctx.fillStyle = '#c4b5fd';
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GSOL', logoX, logoY + logoR + 38);
+
+    // --- RIGHT SIDE: headline + info ---
+    const rx = 310; // right section start x
+    const rw = width - rx - 40; // right section width
+
+    // LIVE badge
+    ctx.fillStyle = 'rgba(220,38,38,0.85)';
+    roundRect(ctx, rx, 35, 110, 44, 8);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('🔴 LIVE', width - 25, 81);
-
+    ctx.font = 'bold 28px sans-serif';
     ctx.textAlign = 'center';
+    ctx.fillText('LIVE', rx + 55, 65);
 
-    // Main headline
+    // Main title
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 82px sans-serif';
-    ctx.fillText('Get Free Sol', width / 2, 220);
+    ctx.font = 'bold 88px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Get Free Sol', rx, 175);
 
     ctx.fillStyle = '#c4b5fd';
-    ctx.font = 'bold 58px sans-serif';
-    ctx.fillText('Liquid Staking Token', width / 2, 300);
+    ctx.font = 'bold 62px sans-serif';
+    ctx.fillText('Liquid Staking Token', rx, 250);
 
+    // Tagline
     ctx.fillStyle = '#a78bfa';
-    ctx.font = '46px sans-serif';
-    ctx.fillText('Stake SOL. Earn Yield. Stay Liquid.', width / 2, 370);
+    ctx.font = '40px sans-serif';
+    ctx.fillText('Stake SOL. Earn Yield. Stay Liquid.', rx, 305);
 
-    // APY highlight box
-    ctx.fillStyle = 'rgba(124,58,237,0.5)';
-    roundRect(ctx, width / 2 - 200, 400, 400, 100, 18);
+    // Divider line
+    ctx.strokeStyle = 'rgba(167,139,250,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(rx, 325); ctx.lineTo(rx + rw, 325); ctx.stroke();
+
+    // APY box
+    ctx.fillStyle = 'rgba(124,58,237,0.4)';
+    roundRect(ctx, rx, 340, 330, 90, 14);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(167,139,250,0.6)';
-    ctx.lineWidth = 2;
-    roundRect(ctx, width / 2 - 200, 400, 400, 100, 18);
+    ctx.strokeStyle = 'rgba(167,139,250,0.5)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, rx, 340, 330, 90, 14);
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 78px sans-serif';
-    ctx.fillText('7.20% APY', width / 2, 478);
+    ctx.font = 'bold 72px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('7.20% APY', rx + 165, 410);
 
-    // Bullet points
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#e9d5ff';
-    ctx.font = '38px sans-serif';
-    ctx.fillText('💧 Stay Liquid — use GSOL in DeFi', 80, 560);
-    ctx.fillText('🔒 100% Secure — SOL stays on-chain', 80, 615);
-    ctx.fillText('⚡ Unstake Anytime via Jupiter', 80, 670);
+    // Bullet points — colored dots instead of emoji
+    const bx = rx;
+    const bullets = [
+      { color: '#60a5fa', text: 'Stay Liquid — use GSOL in DeFi while earning' },
+      { color: '#34d399', text: '100% Secure — your SOL stays on-chain' },
+      { color: '#fbbf24', text: 'Unstake Anytime via Jupiter' },
+    ];
+    let by = 465;
+    for (const b of bullets) {
+      ctx.fillStyle = b.color;
+      ctx.beginPath(); ctx.arc(bx + 10, by - 10, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e9d5ff';
+      ctx.font = '34px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(b.text, bx + 30, by);
+      by += 55;
+    }
 
     // Website
-    ctx.textAlign = 'center';
     ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 52px sans-serif';
-    ctx.fillText('getfreesol.xyz', width / 2, height - 50);
+    ctx.font = 'bold 44px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('getfreesol.xyz', rx, height - 30);
 
   } else {
     if (template === 0) {
