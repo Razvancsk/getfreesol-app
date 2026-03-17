@@ -71,7 +71,7 @@ export default function GsolWelcomeModal() {
 
           {/* Title */}
           <h2 className="text-2xl font-extrabold text-white leading-tight mb-2 relative">
-            🪙 GSOL Liquid Staking<br />is Live!
+            GSOL Liquid Staking<br />is Live!
           </h2>
 
           {/* Subtitle */}
@@ -83,15 +83,15 @@ export default function GsolWelcomeModal() {
           <div className="text-left space-y-3 mb-5 relative">
             <div className="flex items-start gap-2">
               <span className="text-base">💰</span>
-              <p className="text-white text-sm"><span className="font-bold">7.20% APY</span> — earn real staking rewards automatically</p>
+              <p className="text-white text-sm"><span className="font-bold">7.20% APY</span></p>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-base">💧</span>
               <p className="text-white text-sm"><span className="font-bold">Stay Liquid</span> — use GSOL in DeFi while earning</p>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-base">🔐</span>
-              <p className="text-white text-sm"><span className="font-bold">Non-Custodial</span> — your SOL, your keys, always</p>
+              <span className="text-base">🔒</span>
+              <p className="text-white text-sm"><span className="font-bold">100% Secure</span> — your SOL stays on-chain, always</p>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-base">⚡</span>
@@ -109,7 +109,7 @@ export default function GsolWelcomeModal() {
             onClick={handleStake}
             className="relative w-full bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white font-bold rounded-xl py-3 text-base shadow-lg shadow-purple-900/50 transition-all"
           >
-            Start Staking GSOL 🪙
+            Start Staking GSOL
           </button>
         </div>
       </DialogContent>
