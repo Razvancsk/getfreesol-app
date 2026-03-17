@@ -4845,7 +4845,6 @@ export default function SolRefund() {
                             : '0'}{' '}
                           <span className="text-white/60 font-semibold text-base">SOL</span>
                         </span>
-                        <RefreshCw className="w-4 h-4 text-white/40" />
                       </div>
                     </div>
                   </div>
