@@ -531,6 +531,14 @@ function QuickPostCard({ botStatus, toast }: { botStatus: any; toast: any }) {
                 <><Sparkles className="h-4 w-4 mr-1" /> AI Meme</>
               )}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPost("🚀 Get Free Sol Liquid Staking Token is LIVE!\n\nStake your $SOL and earn 7.20% APY 💧\n\n✅ Stay Liquid — use GSOL in DeFi while earning\n✅ 100% Secure — your SOL stays on-chain\n✅ Unstake Anytime via Jupiter\n\nYour SOL works harder with GetFreeSol 👇\ngetfreesol.xyz\n\n#Solana #LST #DeFi #GetFreeSol #GSOL", 'staking')}
+              className="border-violet-500 text-violet-200 hover:bg-violet-700"
+            >
+              ⚡ Staking Live
+            </Button>
           </div>
         </div>
 
