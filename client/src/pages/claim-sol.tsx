@@ -4902,8 +4902,8 @@ export default function SolRefund() {
                   {/* Stake Method selector */}
                   <div className="mb-5">
                     {/* Header row */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-white font-semibold text-sm">
+                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                      <span className="text-white font-semibold text-sm whitespace-nowrap">
                         {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
                         <button
                           onClick={() => setShowHowToChoose(true)}
@@ -4911,10 +4911,10 @@ export default function SolRefund() {
                         >(How to choose?)</button>
                       </span>
                       {/* Pill toggle */}
-                      <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5">
+                      <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5 shrink-0">
                         <button
                           onClick={() => setStakingMethod('direct')}
-                          className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
+                          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
                             stakingMethod === 'direct'
                               ? 'bg-white text-gray-900 shadow-sm'
                               : 'text-white/60 hover:text-white'
@@ -4924,7 +4924,7 @@ export default function SolRefund() {
                         </button>
                         <button
                           onClick={() => setStakingMethod('jupiter')}
-                          className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
+                          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
                             stakingMethod === 'jupiter'
                               ? 'bg-white text-gray-900 shadow-sm'
                               : 'text-white/60 hover:text-white'
