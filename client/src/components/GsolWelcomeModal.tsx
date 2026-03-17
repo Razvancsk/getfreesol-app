@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Droplets, Shield, Zap, X } from "lucide-react";
 
-const STORAGE_KEY = "gsol_welcome_seen_v5";
+const STORAGE_KEY = "gsol_welcome_seen_v6";
 const GSOL_IMAGES = [
   "https://nsh7c2agdjc3rb4yh3i57wm6tlvoqxeh6dfjmnnpumqcrfl4vgwa.arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
   "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
@@ -65,12 +66,9 @@ export default function GsolWelcomeModal() {
 
           {/* Top section */}
           <div className="px-6 pt-8 pb-4 text-center relative">
-
-            {/* New Feature pill */}
-            <span className="inline-flex items-center gap-1.5 mb-3 bg-green-500/20 text-green-400 border border-green-500/40 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              New Feature
-            </span>
+            <Badge className="mb-3 bg-purple-500/20 text-white border-purple-500/40 text-xs font-medium px-3 py-1">
+              ✨ Get Free Sol Liquid Staking Token
+            </Badge>
 
             {/* GSOL token image */}
             <div className="relative mx-auto w-20 h-20 mb-4">
