@@ -4818,7 +4818,7 @@ export default function SolRefund() {
                   {/* APY + Est. rewards row — no card, just two cols with a divider */}
                   <div className="flex mb-6">
                     {/* Left: APY */}
-                    <div className="flex-1 pr-5">
+                    <div className="flex-1 flex flex-col items-center pr-5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-white/60 text-xs font-medium">GSOL APY</span>
                         <Info className="w-3 h-3 text-white/40" />
@@ -4833,7 +4833,7 @@ export default function SolRefund() {
                     {/* Vertical divider */}
                     <div className="w-px bg-white/20 self-stretch" />
                     {/* Right: Est. rewards per year */}
-                    <div className="flex-1 pl-5">
+                    <div className="flex-1 flex flex-col items-center pl-5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-white/60 text-xs font-medium">Est. rewards per year</span>
                         <Info className="w-3 h-3 text-white/40" />
