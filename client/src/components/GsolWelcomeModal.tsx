@@ -120,13 +120,12 @@ export default function GsolWelcomeModal() {
             >
               Start Staking GSOL
             </Button>
-            <Button
+            <button
               onClick={handleClose}
-              variant="outline"
-              className="px-4 rounded-xl border-white/20 text-white/80 hover:text-white hover:bg-purple-800/30 bg-transparent"
+              className="px-5 rounded-xl border border-white/30 text-white font-medium hover:bg-white/10 transition-colors"
             >
               Later
-            </Button>
+            </button>
           </div>
         </div>
       </DialogContent>
