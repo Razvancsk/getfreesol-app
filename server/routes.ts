@@ -11102,29 +11102,39 @@ Claimer: ${walletAddress}`;
         sigVerify: false,
       });
       const rawCU = simResult.unitsConsumed ?? 100_000;
-      const computeUnits = Math.ceil(rawCU * 1.15); // 15% buffer
+      const computeUnits = Math.max(Math.ceil(rawCU * 1.15), 10_000); // 15% buffer, min 10k
 
-      // ── 2. Query recent prioritisation fees for the writable accounts ─────────
-      const writableKeys: PublicKey[] = [];
+      // ── 2. Helius getPriorityFeeEstimate — much better than getRecentPrioritizationFees ──
+      const writableKeys: string[] = [];
       for (const ix of coreInstructions) {
         for (const meta of ix.keys) {
-          if (meta.isWritable) writableKeys.push(meta.pubkey);
+          if (meta.isWritable) writableKeys.push(meta.pubkey.toBase58());
         }
       }
-      const uniqueWritable = [...new Map(writableKeys.map(k => [k.toBase58(), k])).values()].slice(0, 128);
-      const recentFees = await conn.getRecentPrioritizationFees({ lockedWritableAccounts: uniqueWritable });
-      const feeSamples = recentFees.map(f => f.prioritizationFee).filter(f => f > 0).sort((a, b) => a - b);
-      // Use 75th-percentile for reliable inclusion; fall back to 5 000 microLamports
-      const p75 = feeSamples.length > 0
-        ? feeSamples[Math.floor(feeSamples.length * 0.75)]
-        : 5_000;
-      const microLamports = Math.max(Math.ceil(p75 * 1.1), 5_000);
+      const uniqueKeys = [...new Set(writableKeys)].slice(0, 128);
+      const heliusUrl = process.env.HELIUS_RPC_URL ||
+        `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
+      const feeResp = await fetch(heliusUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'priority-fee',
+          method: 'getPriorityFeeEstimate',
+          params: [{ accountKeys: uniqueKeys, options: { priorityLevel: 'HIGH' } }],
+        }),
+      });
+      const feeJson = await feeResp.json() as any;
+      const heliusFee: number = feeJson?.result?.priorityFeeEstimate ?? 0;
 
-      console.log(`[priorityFee] simCU=${rawCU} → limit=${computeUnits} | p75Fee=${p75} → price=${microLamports}`);
+      // Floor at 50k microLamports — enough to be visible in any explorer
+      const microLamports = Math.max(Math.ceil(heliusFee * 1.1), 50_000);
+
+      console.log(`[priorityFee] simCU=${rawCU} → limit=${computeUnits} | heliusFee=${heliusFee} → price=${microLamports}`);
       return { microLamports, computeUnits };
     } catch (err) {
       console.warn('[priorityFee] fallback to defaults:', err);
-      return { microLamports: 80_000, computeUnits: 200_000 };
+      return { microLamports: 100_000, computeUnits: 200_000 };
     }
   }
 
