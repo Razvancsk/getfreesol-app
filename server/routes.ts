@@ -11084,6 +11084,9 @@ Claimer: ${walletAddress}`;
     payer: PublicKey,
     blockhash: string
   ): Promise<{ microLamports: number; computeUnits: number }> {
+    const heliusUrl = process.env.HELIUS_RPC_URL ||
+      `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
+
     try {
       // ── 1. Simulate with max CU limit to measure actual consumption ──────────
       const simIxs = [
@@ -11104,16 +11107,9 @@ Claimer: ${walletAddress}`;
       const rawCU = simResult.unitsConsumed ?? 100_000;
       const computeUnits = Math.max(Math.ceil(rawCU * 1.15), 10_000); // 15% buffer, min 10k
 
-      // ── 2. Helius getPriorityFeeEstimate — much better than getRecentPrioritizationFees ──
-      const writableKeys: string[] = [];
-      for (const ix of coreInstructions) {
-        for (const meta of ix.keys) {
-          if (meta.isWritable) writableKeys.push(meta.pubkey.toBase58());
-        }
-      }
-      const uniqueKeys = [...new Set(writableKeys)].slice(0, 128);
-      const heliusUrl = process.env.HELIUS_RPC_URL ||
-        `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
+      // ── 2. Helius getPriorityFeeEstimate using the serialized transaction ─────
+      // Pass the actual serialized tx so Helius can inspect all touched accounts
+      const serializedTx = Buffer.from(simTx.serialize()).toString('base64');
       const feeResp = await fetch(heliusUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -11121,14 +11117,23 @@ Claimer: ${walletAddress}`;
           jsonrpc: '2.0',
           id: 'priority-fee',
           method: 'getPriorityFeeEstimate',
-          params: [{ accountKeys: uniqueKeys, options: { priorityLevel: 'HIGH' } }],
+          params: [{
+            transaction: serializedTx,
+            options: {
+              priorityLevel: 'HIGH',
+              recommended: true,
+            },
+          }],
         }),
       });
       const feeJson = await feeResp.json() as any;
-      const heliusFee: number = feeJson?.result?.priorityFeeEstimate ?? 0;
+      // Helius returns `priorityFeeEstimate` (specific level) or `priorityFeeLevels.high`
+      const heliusFee: number =
+        feeJson?.result?.priorityFeeEstimate ??
+        feeJson?.result?.priorityFeeLevels?.high ?? 0;
 
-      // Floor at 50k microLamports — enough to be visible in any explorer
-      const microLamports = Math.max(Math.ceil(heliusFee * 1.1), 50_000);
+      // Floor at 50k microLamports — ensures fee is always visible in explorer
+      const microLamports = Math.max(Math.ceil(heliusFee), 50_000);
 
       console.log(`[priorityFee] simCU=${rawCU} → limit=${computeUnits} | heliusFee=${heliusFee} → price=${microLamports}`);
       return { microLamports, computeUnits };
