@@ -4902,7 +4902,7 @@ export default function SolRefund() {
                   {/* Stake Method selector */}
                   <div className="mb-5">
                     {/* Header row */}
-                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                    <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
                       <span className="text-white font-semibold text-sm whitespace-nowrap">
                         {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
                         <button
@@ -4911,7 +4911,7 @@ export default function SolRefund() {
                         >(How to choose?)</button>
                       </span>
                       {/* Pill toggle */}
-                      <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5 shrink-0">
+                      <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5 shrink-0 self-center sm:self-auto">
                         <button
                           onClick={() => setStakingMethod('direct')}
                           className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
