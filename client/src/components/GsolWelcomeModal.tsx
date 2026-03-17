@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Droplets, Shield, Zap, X } from "lucide-react";
+import { X } from "lucide-react";
 
-const STORAGE_KEY = "gsol_welcome_seen_v3";
+const STORAGE_KEY = "gsol_welcome_seen_v4";
 const GSOL_IMAGES = [
   "https://nsh7c2agdjc3rb4yh3i57wm6tlvoqxeh6dfjmnnpumqcrfl4vgwa.arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
   "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237c3aed'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='36' font-family='Arial' font-weight='bold' fill='white'%3EG%3C/text%3E%3C/svg%3E",
 ];
 
 export default function GsolWelcomeModal() {
   const [open, setOpen] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
+  const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
     const seen = localStorage.getItem(STORAGE_KEY);
@@ -40,77 +38,83 @@ export default function GsolWelcomeModal() {
     }, 200);
   }
 
+  function handleImgError() {
+    if (imgIdx < GSOL_IMAGES.length - 1) {
+      setImgIdx(i => i + 1);
+    } else {
+      setImgFailed(true);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className="max-w-md p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden">
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a0533] via-[#2d0a5e] to-[#0d0820] border border-purple-500/30 shadow-2xl shadow-purple-900/50">
+      <DialogContent className="max-w-sm p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden">
+        <div className="relative rounded-2xl overflow-hidden bg-[#0f0a1e] border border-purple-800/40 shadow-2xl shadow-purple-900/60 px-7 py-8 text-center">
 
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            className="absolute top-3 right-3 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
           >
             <X className="w-4 h-4 text-white/70" />
           </button>
 
-          {/* Header glow */}
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-600/20 via-transparent to-transparent pointer-events-none" />
-
-          {/* Top section */}
-          <div className="px-6 pt-8 pb-4 text-center relative">
-            <Badge className="mb-3 bg-purple-500/20 text-white border-purple-500/40 text-xs font-medium px-3 py-1">
-              ✨ Get Free Sol Liquid Staking Token
-            </Badge>
-
-            {/* GSOL token image */}
-            <div className="relative mx-auto w-20 h-20 mb-4">
-              <div className="absolute inset-0 rounded-full bg-purple-500/40 blur-xl animate-pulse" />
+          {/* Token image or fallback emoji */}
+          <div className="flex justify-center mb-3">
+            {!imgFailed ? (
               <img
                 src={GSOL_IMAGES[imgIdx]}
-                alt="GSOL token"
-                className="relative w-20 h-20 rounded-full border-2 border-purple-400/50 shadow-lg shadow-purple-900/60"
-                onError={() => setImgIdx(i => Math.min(i + 1, GSOL_IMAGES.length - 1))}
+                alt="GSOL"
+                className="w-16 h-16 rounded-full border-2 border-purple-500/50"
+                onError={handleImgError}
               />
+            ) : (
+              <span className="text-5xl">🪙</span>
+            )}
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl font-extrabold text-white leading-tight mb-2">
+            GSOL Liquid Staking<br />is Live!
+          </h2>
+
+          {/* Subtitle */}
+          <p className="text-purple-400 font-semibold text-sm mb-5">
+            Stake SOL. Earn Yield. Stay Liquid.
+          </p>
+
+          {/* Bullet points */}
+          <div className="text-left space-y-3 mb-5">
+            <div className="flex items-start gap-2">
+              <span className="text-base">💰</span>
+              <p className="text-white text-sm"><span className="font-bold">7.20% APY</span> — earn real staking rewards automatically</p>
             </div>
-
-            <h2 className="text-2xl font-bold text-white mb-1">
-              Earn SOL While Staying Liquid
-            </h2>
-            <p className="text-white/90 text-sm">
-              Stake SOL and receive <span className="text-white font-semibold">GSOL</span> — a liquid token that earns staking rewards automatically.
-            </p>
+            <div className="flex items-start gap-2">
+              <span className="text-base">💧</span>
+              <p className="text-white text-sm"><span className="font-bold">Stay Liquid</span> — use GSOL in DeFi while earning</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-base">🔐</span>
+              <p className="text-white text-sm"><span className="font-bold">Non-Custodial</span> — your SOL, your keys, always</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-base">⚡</span>
+              <p className="text-white text-sm"><span className="font-bold">Unstake Anytime</span> — instant swap back to SOL via Jupiter</p>
+            </div>
           </div>
 
-          {/* APY highlight — pure purple, no blue */}
-          <div className="mx-6 mb-4 rounded-xl bg-purple-900/40 border border-purple-500/25 p-4 text-center">
-            <p className="text-white/70 text-xs uppercase tracking-wider mb-1 font-medium">Current Staking APY</p>
-            <p className="text-4xl font-black text-white">7.20%</p>
-          </div>
+          {/* Tagline */}
+          <p className="text-yellow-400 font-semibold text-sm mb-5">
+            Your SOL works harder with GetFreeSol.
+          </p>
 
-          {/* Feature bullets — all purple icons */}
-          <div className="mx-6 mb-5 space-y-2.5">
-            {[
-              { icon: Droplets,   color: "text-purple-400", label: "Stay liquid — use GSOL in DeFi while earning" },
-              { icon: TrendingUp, color: "text-violet-400",  label: "Rewards compound automatically, no claiming needed" },
-              { icon: Shield,     color: "text-fuchsia-400", label: "Non-custodial — your SOL, your keys" },
-              { icon: Zap,        color: "text-purple-300",  label: "Unstake anytime via instant Jupiter swap" },
-            ].map(({ icon: Icon, color, label }) => (
-              <div key={label} className="flex items-start gap-2.5">
-                <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${color}`} />
-                <p className="text-white text-sm leading-snug">{label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA button */}
-          <div className="px-6 pb-6">
-            <Button
-              onClick={handleStake}
-              className="w-full bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white font-semibold rounded-xl py-5 shadow-lg shadow-purple-900/50 border-0"
-            >
-              Start Staking GSOL
-            </Button>
-          </div>
+          {/* CTA */}
+          <button
+            onClick={handleStake}
+            className="w-full bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white font-bold rounded-xl py-3 text-base shadow-lg shadow-purple-900/50 transition-all"
+          >
+            Start Staking GSOL 🪙
+          </button>
         </div>
       </DialogContent>
     </Dialog>
