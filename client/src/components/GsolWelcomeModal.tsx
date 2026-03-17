@@ -80,21 +80,19 @@ export default function GsolWelcomeModal() {
           </p>
 
           {/* Bullet points */}
-          <div className="text-center space-y-3 mb-5 relative">
-            <div className="flex items-center justify-center gap-2">
-              <p className="text-white text-xl font-black">7.20% APY</p>
-            </div>
-            <div className="flex items-center justify-center gap-2">
+          <div className="space-y-3 mb-5 relative">
+            <p className="text-white text-2xl font-black text-center">7.20% APY</p>
+            <div className="flex items-center gap-2">
               <span className="text-lg">💧</span>
-              <p className="text-white text-base font-semibold">Stay Liquid — use GSOL in DeFi while earning</p>
+              <p className="text-white text-sm font-semibold">Stay Liquid — use GSOL in DeFi while earning</p>
             </div>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center gap-2">
               <span className="text-lg">🔒</span>
-              <p className="text-white text-base font-semibold">100% Secure — your SOL stays on-chain</p>
+              <p className="text-white text-sm font-semibold">100% Secure — your SOL stays on-chain</p>
             </div>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center gap-2">
               <span className="text-lg">⚡</span>
-              <p className="text-white text-base font-semibold">Unstake Anytime via Jupiter</p>
+              <p className="text-white text-sm font-semibold">Unstake Anytime via Jupiter</p>
             </div>
           </div>
 
