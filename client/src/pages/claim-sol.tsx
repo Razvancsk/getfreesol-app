@@ -124,6 +124,8 @@ export default function SolRefund() {
   const [showRewardsInfo, setShowRewardsInfo] = useState(false);
   const [gsolApy, setGsolApy] = useState<number | null>(null);
   const [gsolSolValue, setGsolSolValue] = useState<number>(1);
+  const [stakeQuote, setStakeQuote] = useState<{ outputAmount: number; priceImpactPct: number } | null>(null);
+  const [stakeQuoteLoading, setStakeQuoteLoading] = useState(false);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
   const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
@@ -884,6 +886,24 @@ export default function SolRefund() {
         if (data.solValue) setGsolSolValue(parseFloat(data.solValue));
       }).catch(() => {});
   }, []);
+
+  // Debounced Jupiter quote for staking "To receive" amount
+  useEffect(() => {
+    const amt = parseFloat(stakeAmount);
+    if (!stakeAmount || isNaN(amt) || amt <= 0) { setStakeQuote(null); return; }
+    const inputLamports = Math.round(amt * 1e9);
+    setStakeQuoteLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/staking/quote?inputLamports=${inputLamports}&mode=${stakeMode}`);
+        const data = await r.json();
+        if (data.outputAmount) setStakeQuote({ outputAmount: data.outputAmount, priceImpactPct: data.priceImpactPct ?? 0 });
+        else setStakeQuote(null);
+      } catch { setStakeQuote(null); }
+      finally { setStakeQuoteLoading(false); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [stakeAmount, stakeMode]);
 
   // Fetch GSOL token balance when wallet connects or staking tab is active
   useEffect(() => {
@@ -4915,9 +4935,11 @@ export default function SolRefund() {
                     {/* Amount + token pill row */}
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-white font-black text-4xl leading-none">
-                        {stakeMode === 'stake'
-                          ? (stakeAmount ? (parseFloat(stakeAmount) / gsolSolValue).toFixed(4) : '0.00')
-                          : (stakeAmount ? (parseFloat(stakeAmount) * gsolSolValue).toFixed(4) : '0.00')}
+                        {stakeQuoteLoading
+                          ? <span className="text-purple-300 text-2xl animate-pulse">...</span>
+                          : stakeQuote
+                            ? (stakeQuote.outputAmount / 1e9).toFixed(6)
+                            : '0.00'}
                       </span>
                       {/* Token pill */}
                       <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 shrink-0">

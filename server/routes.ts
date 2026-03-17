@@ -11046,70 +11046,39 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // ── /api/staking/quote — real-time exchange-rate quote from on-chain pool state ──
-  // Reads the SPL Stake Pool account at 5YWBPjgVBzfkHTLZea33n7xg9qiEakwauvHpe4ixHH9N
-  // which stores totalLamports and poolTokenSupply at fixed offsets in its account data.
-  // Exchange rate: 1 GSOL = totalLamports / poolTokenSupply  SOL
+  // ── /api/staking/quote — real-time Jupiter Ultra quote for SOL ↔ GSOL ──
+  const WSOL = 'So11111111111111111111111111111111111111112';
   app.get('/api/staking/quote', async (req, res) => {
     try {
       const inputLamports = Number(req.query.inputLamports);
       const mode = (req.query.mode as string) || 'stake'; // 'stake' | 'unstake'
       if (!inputLamports || inputLamports <= 0) return res.status(400).json({ error: 'inputLamports required' });
 
-      const POOL_ADDRESS = '5YWBPjgVBzfkHTLZea33n7xg9qiEakwauvHpe4ixHH9N';
-      const heliusUrl = process.env.HELIUS_RPC_URL ||
-        `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
+      const jupKey = process.env.JUPITER_API_KEY;
+      const inputMint  = mode === 'stake' ? WSOL : GSOL_MINT_ADDR;
+      const outputMint = mode === 'stake' ? GSOL_MINT_ADDR : WSOL;
 
-      // Fetch pool account data
-      const accResp = await fetch(heliusUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0', id: 1, method: 'getAccountInfo',
-          params: [POOL_ADDRESS, { encoding: 'base64' }],
-        }),
+      const quoteUrl = `https://api.jup.ag/ultra/v1/order?inputMint=${inputMint}&outputMint=${outputMint}&amount=${inputLamports}`;
+      const quoteResp = await fetch(quoteUrl, {
+        headers: jupKey ? { 'x-api-key': jupKey } : {},
       });
-      const accJson = await accResp.json() as any;
-      const rawBase64: string = accJson?.result?.value?.data?.[0];
-      if (!rawBase64) throw new Error('Pool account not found');
 
-      const buf = Buffer.from(rawBase64, 'base64');
-      // SPL Stake Pool layout (https://github.com/solana-labs/solana-program-library):
-      //   [0]     account_type (1 byte)
-      //   [1..33] manager pubkey
-      //   [33..65] staker pubkey
-      //   [65..97] stake_deposit_authority
-      //   [97]    stake_withdraw_bump_seed
-      //   [98..130] validator_list
-      //   [130..162] reserve_stake
-      //   [162..194] pool_mint
-      //   [194..226] manager_fee_account
-      //   [226..258] token_program_id
-      //   [258..266] total_lamports   (u64 LE)
-      //   [266..274] pool_token_supply (u64 LE)
-      const totalLamports   = buf.readBigUInt64LE(258);
-      const poolTokenSupply = buf.readBigUInt64LE(266);
-
-      if (poolTokenSupply === 0n) throw new Error('Pool token supply is zero');
-
-      // solPerGsol = totalLamports / poolTokenSupply  (both in smallest units)
-      const solPerGsol = Number(totalLamports) / Number(poolTokenSupply);
-
-      let outputAmount: number;
-      if (mode === 'stake') {
-        // SOL → GSOL: divide lamports by rate
-        outputAmount = inputLamports / solPerGsol;
-      } else {
-        // GSOL → SOL: multiply token amount by rate
-        outputAmount = inputLamports * solPerGsol;
+      if (!quoteResp.ok) {
+        const err = await quoteResp.text();
+        throw new Error(`Jupiter Ultra quote failed: ${err}`);
       }
+
+      const quoteJson = await quoteResp.json() as any;
+      if (quoteJson.error) throw new Error(quoteJson.error);
+
+      const outAmount   = Number(quoteJson.outAmount ?? 0);
+      const priceImpact = Number(quoteJson.priceImpact ?? quoteJson.priceImpactPct ?? 0);
 
       res.json({
         inputLamports,
-        outputAmount,          // in lamports (same precision as input)
-        solPerGsol,
-        totalLamports: totalLamports.toString(),
-        poolTokenSupply: poolTokenSupply.toString(),
+        outputAmount: outAmount,
+        priceImpactPct: priceImpact,
+        mode,
       });
     } catch (e: any) {
       console.error('[staking/quote]', e.message);
