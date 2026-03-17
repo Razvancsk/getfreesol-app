@@ -887,10 +887,11 @@ export default function SolRefund() {
       }).catch(() => {});
   }, []);
 
-  // Debounced live quote for both methods — Jupiter route for Jupiter, pool rate for direct
+  // Debounced Jupiter quote — only for Jupiter method
   useEffect(() => {
+    if (stakingMethod !== 'jupiter') { setStakeQuote(null); setStakeQuoteLoading(false); return; }
     const amt = parseFloat(stakeAmount);
-    if (!stakeAmount || isNaN(amt) || amt <= 0) { setStakeQuote(null); setStakeQuoteLoading(false); return; }
+    if (!stakeAmount || isNaN(amt) || amt <= 0) { setStakeQuote(null); return; }
     const inputLamports = Math.round(amt * 1e9);
     setStakeQuoteLoading(true);
     const timer = setTimeout(async () => {
@@ -903,7 +904,7 @@ export default function SolRefund() {
       finally { setStakeQuoteLoading(false); }
     }, 400);
     return () => clearTimeout(timer);
-  }, [stakeAmount, stakeMode]);
+  }, [stakeAmount, stakeMode, stakingMethod]);
 
   // Fetch GSOL token balance when wallet connects or staking tab is active
   useEffect(() => {
@@ -4935,11 +4936,13 @@ export default function SolRefund() {
                     {/* Amount + token pill row */}
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-white font-black text-4xl leading-none">
-                        {stakeQuoteLoading
-                          ? <span className="text-purple-300 text-2xl animate-pulse">...</span>
-                          : stakeQuote
-                            ? (stakeQuote.outputAmount / 1e9).toFixed(6)
-                            : '0.00'}
+                        {stakingMethod === 'direct'
+                          ? (stakeAmount && parseFloat(stakeAmount) > 0 ? parseFloat(stakeAmount).toFixed(4) : '0.00')
+                          : stakeQuoteLoading
+                            ? <span className="text-purple-300 text-2xl animate-pulse">...</span>
+                            : stakeQuote
+                              ? (stakeQuote.outputAmount / 1e9).toFixed(6)
+                              : '0.00'}
                       </span>
                       {/* Token pill */}
                       <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 shrink-0">
