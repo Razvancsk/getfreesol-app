@@ -4,11 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Droplets, Shield, Zap, X } from "lucide-react";
 
-const STORAGE_KEY = "gsol_welcome_seen_v2";
-const GSOL_IMAGE = "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw";
+const STORAGE_KEY = "gsol_welcome_seen_v3";
+const GSOL_IMAGES = [
+  "https://nsh7c2agdjc3rb4yh3i57wm6tlvoqxeh6dfjmnnpumqcrfl4vgwa.arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
+  "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237c3aed'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='36' font-family='Arial' font-weight='bold' fill='white'%3EG%3C/text%3E%3C/svg%3E",
+];
 
 export default function GsolWelcomeModal() {
   const [open, setOpen] = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
 
   useEffect(() => {
     const seen = localStorage.getItem(STORAGE_KEY);
@@ -61,13 +66,10 @@ export default function GsolWelcomeModal() {
             <div className="relative mx-auto w-20 h-20 mb-4">
               <div className="absolute inset-0 rounded-full bg-purple-500/40 blur-xl animate-pulse" />
               <img
-                src={GSOL_IMAGE}
+                src={GSOL_IMAGES[imgIdx]}
                 alt="GSOL token"
                 className="relative w-20 h-20 rounded-full border-2 border-purple-400/50 shadow-lg shadow-purple-900/60"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237c3aed'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='36' font-family='Arial' font-weight='bold' fill='white'%3EG%3C/text%3E%3C/svg%3E";
-                }}
+                onError={() => setImgIdx(i => Math.min(i + 1, GSOL_IMAGES.length - 1))}
               />
               {/* NEW badge on token image */}
               <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-green-900/50 tracking-wide">
