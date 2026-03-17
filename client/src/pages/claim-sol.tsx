@@ -4874,7 +4874,7 @@ export default function SolRefund() {
                           {stakeAmount && gsolApy
                             ? `${(parseFloat(stakeAmount) * gsolApy / 100).toFixed(4)}`
                             : '0'}{' '}
-                          <span className="text-white/60 font-semibold text-base">SOL</span>
+                          <span className="text-white font-semibold text-base">SOL</span>
                         </span>
                       </div>
                     </div>
@@ -4925,7 +4925,7 @@ export default function SolRefund() {
                         placeholder="0.00"
                         value={stakeAmount}
                         onChange={e => setStakeAmount(e.target.value)}
-                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-gray-600 text-right min-w-0"
+                        className="flex-1 bg-transparent text-white text-3xl font-black outline-none placeholder-white/30 text-right min-w-0"
                       />
                     </div>
                   </div>
@@ -4934,8 +4934,8 @@ export default function SolRefund() {
                   <div className={`rounded-2xl px-5 pt-4 pb-5 mb-5 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
                     {/* Top row */}
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-white/60 text-sm font-medium">To receive</span>
-                      <span className="text-white/60 text-sm">
+                      <span className="text-white text-sm font-medium">To receive</span>
+                      <span className="text-white text-sm">
                         You have{' '}
                         <span className="text-white font-semibold">
                           {stakeMode === 'stake'
@@ -4976,7 +4976,7 @@ export default function SolRefund() {
                         {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
                         <button
                           onClick={() => setShowHowToChoose(true)}
-                          className="text-purple-300 hover:text-white font-normal ml-1.5 underline underline-offset-2 cursor-pointer transition-colors"
+                          className="text-white hover:text-white/80 font-normal ml-1.5 underline underline-offset-2 cursor-pointer transition-colors"
                         >(How to choose?)</button>
                       </span>
                       {/* Pill toggle */}
@@ -4986,7 +4986,7 @@ export default function SolRefund() {
                           className={`flex-1 sm:flex-none px-6 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                             stakingMethod === 'direct'
                               ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-white/60 hover:text-white'
+                              : 'text-white hover:text-white/80'
                           }`}
                         >
                           Direct deposit
@@ -4996,7 +4996,7 @@ export default function SolRefund() {
                           className={`flex-1 sm:flex-none px-6 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                             stakingMethod === 'jupiter'
                               ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-white/60 hover:text-white'
+                              : 'text-white hover:text-white/80'
                           }`}
                         >
                           Via Jupiter
@@ -5009,13 +5009,13 @@ export default function SolRefund() {
                       {stakingMethod === 'direct' ? (
                         <>
                           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white/70">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white">
                               <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-bold text-sm leading-tight">Direct deposit</p>
-                            <p className="text-white/50 text-xs mt-0.5">{stakeMode === 'stake' ? 'Mint the LST via its stake pool' : 'Redeem via the stake pool directly'}</p>
+                            <p className="text-white text-xs mt-0.5">{stakeMode === 'stake' ? 'Mint the LST via its stake pool' : 'Redeem via the stake pool directly'}</p>
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-green-400 text-xs font-bold leading-tight">0% Deposit Fee</p>
@@ -5029,7 +5029,7 @@ export default function SolRefund() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-bold text-sm leading-tight">Via Jupiter</p>
-                            <p className="text-white/50 text-xs mt-0.5">{stakeMode === 'stake' ? 'Swap SOL for LST via Jupiter' : 'Swap LST for SOL via Jupiter'}</p>
+                            <p className="text-white text-xs mt-0.5">{stakeMode === 'stake' ? 'Swap SOL for LST via Jupiter' : 'Swap LST for SOL via Jupiter'}</p>
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-yellow-400 text-xs font-bold">&lt;0.1% price impact</p>
