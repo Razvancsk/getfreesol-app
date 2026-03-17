@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun, BookOpen } from "lucide-react";
+import { Coins, Wallet, Search, CheckCircle, ExternalLink, AlertTriangle, RefreshCw, Flame, Image, Trash2, ArrowLeftRight, ArrowRightLeft, Copy, Share2, Users, User, TrendingUp, DollarSign, Globe, ChevronDown, Code, Shield, Cpu, TreePine, Info, Check, Plane, Zap, X, Trophy, Star, Award, ArrowLeft, Gift, Clock, PartyPopper, BarChart3, Layers, Moon, Sun, BookOpen, HelpCircle } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SiX, SiDiscord, SiTelegram } from 'react-icons/si';
 import {
@@ -4850,7 +4850,7 @@ export default function SolRefund() {
                     <div className="flex-1 flex flex-col items-center pr-5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-white text-xs font-medium">GSOL APY</span>
-                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/50 font-bold text-[9px] leading-none">?</span>
+                        <HelpCircle className="w-3.5 h-3.5 text-white/40" />
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-white font-black text-2xl">
@@ -4865,7 +4865,9 @@ export default function SolRefund() {
                     <div className="flex-1 flex flex-col items-center pl-5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-white text-xs font-medium">Est. rewards per year</span>
-                        <button onClick={() => setShowRewardsInfo(true)} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 border border-white/20 text-white/50 hover:text-white/80 font-bold text-[9px] leading-none transition-colors">?</button>
+                        <button onClick={() => setShowRewardsInfo(true)} className="text-white/40 hover:text-white/80 transition-colors">
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-white font-black text-2xl">
