@@ -4805,7 +4805,7 @@ export default function SolRefund() {
 
 
                 {/* GSOL Staking Module */}
-                <div className="mb-6">
+                <div className="mb-6 max-w-2xl mx-auto">
                   {/* Header */}
                   <div className="flex items-center gap-4 mb-6">
                     <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-14 h-14 rounded-full object-cover" />
@@ -4865,12 +4865,11 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Stats — full width */}
-                  <div className={`rounded-2xl mb-5 overflow-hidden border ${isNightMode ? 'bg-[#1a1a1a] border-white/15' : 'bg-purple-900/20 border-white/20'}`}>
-                    {/* You receive row */}
-                    <div className="flex justify-between items-center px-4 py-3.5">
-                      <span className="text-white/70 text-sm font-medium">You receive</span>
-                      <span className="text-white font-bold text-sm flex items-center gap-1.5">
+                  {/* Stats */}
+                  <div className={`rounded-2xl p-5 mb-5 space-y-4 ${isNightMode ? 'bg-[#1a1a1a] border border-white/30' : 'bg-purple-900/20 border border-white/30'}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white text-base">You receive</span>
+                      <span className="text-white font-bold text-base flex items-center gap-2">
                         {stakeMode === 'stake' ? (
                           <>
                             <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
@@ -4884,23 +4883,15 @@ export default function SolRefund() {
                         )}
                       </span>
                     </div>
-
-                    <div className="border-t border-white/10" />
-
-                    {/* APY row */}
-                    <div className="flex justify-between items-center px-4 py-3.5">
-                      <span className="text-white/70 text-sm font-medium">APY</span>
-                      <span className="text-green-400 font-bold text-sm">
-                        {gsolApy !== null ? `${gsolApy} %` : '—'}
+                    <div className="flex justify-between items-center">
+                      <span className="text-white text-base">APY</span>
+                      <span className="text-green-400 font-black text-base">
+                        {gsolApy !== null ? `${gsolApy}%` : '—'}
                       </span>
                     </div>
-
-                    <div className="border-t border-white/10" />
-
-                    {/* Annual rewards row */}
-                    <div className="flex justify-between items-center px-4 py-3.5">
-                      <span className="text-white/70 text-sm font-medium">Annual rewards</span>
-                      <span className="text-white font-bold text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white text-base">Annual rewards</span>
+                      <span className="text-white text-base">
                         {stakeAmount && gsolApy
                           ? `${(parseFloat(stakeAmount) * gsolApy / 100).toFixed(4)} SOL`
                           : '—'}
