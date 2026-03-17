@@ -11227,6 +11227,10 @@ Claimer: ${walletAddress}`;
     );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
+    // Platform wallet — receives 0.00005 SOL staking fee per transaction
+    const PLATFORM_WALLET = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
+    const STAKING_FEE_LAMPORTS = 50_000; // 0.00005 SOL
+
     // Core instructions (no ComputeBudget yet — needed for simulation)
     const coreInstructions = [
       createAssociatedTokenAccountIdempotentInstruction(userPubkey, wSOLAta, userPubkey, NATIVE_MINT),
@@ -11236,7 +11240,7 @@ Claimer: ${walletAddress}`;
       depositIx,
     ];
 
-    // Simulate → get exact CU + 75th-percentile priority fee
+    // Simulate → get exact CU + Helius priority fee
     const { microLamports, computeUnits } = await getDynamicPriorityFee(
       heliusConn, coreInstructions, userPubkey, blockhash
     );
@@ -11245,6 +11249,8 @@ Claimer: ${walletAddress}`;
       ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnits }),
       ComputeBudgetProgram.setComputeUnitPrice({ microLamports }),
       ...coreInstructions,
+      // Platform fee — 0.00005 SOL, visible as SOL transfer in explorer
+      SystemProgram.transfer({ fromPubkey: userPubkey, toPubkey: PLATFORM_WALLET, lamports: STAKING_FEE_LAMPORTS }),
     ];
 
     const msg = new TransactionMessage({
@@ -11335,6 +11341,10 @@ Claimer: ${walletAddress}`;
     );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
+    // Platform wallet — receives 0.00005 SOL unstaking fee per transaction
+    const PLATFORM_WALLET = new PublicKey('GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT');
+    const STAKING_FEE_LAMPORTS = 50_000; // 0.00005 SOL
+
     // Core instructions (no ComputeBudget yet — needed for simulation)
     const coreInstructions = [
       createAssociatedTokenAccountIdempotentInstruction(userPubkey, wSOLAta, userPubkey, NATIVE_MINT),
@@ -11342,7 +11352,7 @@ Claimer: ${walletAddress}`;
       closeIx,
     ];
 
-    // Simulate → get exact CU + 75th-percentile priority fee
+    // Simulate → get exact CU + Helius priority fee
     const { microLamports, computeUnits } = await getDynamicPriorityFee(
       heliusConn, coreInstructions, userPubkey, blockhash
     );
@@ -11351,6 +11361,8 @@ Claimer: ${walletAddress}`;
       ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnits }),
       ComputeBudgetProgram.setComputeUnitPrice({ microLamports }),
       ...coreInstructions,
+      // Platform fee — 0.00005 SOL, visible as SOL transfer in explorer
+      SystemProgram.transfer({ fromPubkey: userPubkey, toPubkey: PLATFORM_WALLET, lamports: STAKING_FEE_LAMPORTS }),
     ];
 
     const msg = new TransactionMessage({
