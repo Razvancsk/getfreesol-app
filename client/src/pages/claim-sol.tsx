@@ -122,6 +122,7 @@ export default function SolRefund() {
   const [stakeAmount, setStakeAmount] = useState('');
   const [stakeLoading, setStakeLoading] = useState(false);
   const [stakingMethod, setStakingMethod] = useState<'direct' | 'jupiter'>('direct');
+  const [showHowToChoose, setShowHowToChoose] = useState(false);
   const [gsolApy, setGsolApy] = useState<number | null>(null);
   const [gsolSolValue, setGsolSolValue] = useState<number>(1);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
@@ -4747,6 +4748,54 @@ export default function SolRefund() {
           {/* Staking Page */}
           {activeTab === 'staking' && (
             <div className="space-y-6">
+
+              {/* How to Choose modal */}
+              {showHowToChoose && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowHowToChoose(false)}>
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                  <div
+                    className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ background: 'linear-gradient(160deg, #1e1340 0%, #2d1b6b 50%, #1a0e3a 100%)' }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* Question mark badge top-right */}
+                    <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                      <span className="text-white/60 font-bold text-base">?</span>
+                    </div>
+
+                    <div className="p-6 pt-7">
+                      <h2 className="text-white font-black text-xl mb-1">Choosing How You Stake</h2>
+                      <p className="text-white/50 text-sm mb-6">Direct deposit or via Jupiter</p>
+
+                      <div className="space-y-5 text-sm text-white/80 leading-relaxed">
+                        <div>
+                          <p className="text-white font-bold mb-1">Direct deposit:</p>
+                          <p>Stake your SOL directly into the LST's stake pool to mint the LST at the current exchange rate. There's <strong className="text-white">no price impact</strong>, and you'll <strong className="text-white">only pay the pool's deposit fee (if any)</strong>.</p>
+                          <p className="mt-2 text-white/60">Choose this if you prefer predictable fees or if deposit vs. swap matters for tax purposes in your jurisdiction.</p>
+                        </div>
+
+                        <div>
+                          <p className="text-white font-bold mb-1">Via Jupiter:</p>
+                          <p>Swap SOL for LST via Jupiter, which finds the best available price across Solana, including Sanctum's Infinity Pool and Router. <strong className="text-white">Fees and price impact vary</strong> by route.</p>
+                          <p className="mt-2 text-white/60">Choose this if you're open to variable pricing and want a potentially better deal.</p>
+                        </div>
+
+                        <p className="text-white/60">In both cases, you'll receive your LST instantly and start earning staking rewards right away.</p>
+
+                        <p className="text-white/40 italic text-xs">This is not financial advice, do your own research.</p>
+                      </div>
+
+                      <button
+                        onClick={() => setShowHowToChoose(false)}
+                        className="mt-6 w-full py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-base transition-all"
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className={`rounded-2xl p-6 md:p-10 border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div>
@@ -4863,7 +4912,10 @@ export default function SolRefund() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-white font-semibold text-sm">
                         {stakeMode === 'stake' ? 'Stake Method' : 'Unstake Method'}
-                        <span className="text-white/40 font-normal ml-1.5">(How to choose?)</span>
+                        <button
+                          onClick={() => setShowHowToChoose(true)}
+                          className="text-purple-300 hover:text-white font-normal ml-1.5 underline underline-offset-2 cursor-pointer transition-colors"
+                        >(How to choose?)</button>
                       </span>
                       {/* Pill toggle */}
                       <div className="flex rounded-full p-1 bg-white/10 border border-white/15 gap-0.5">
