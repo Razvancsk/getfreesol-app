@@ -4899,7 +4899,6 @@ export default function SolRefund() {
                             <span className="text-white font-bold text-sm">SOL</span>
                           </>
                         )}
-                        <ChevronDown className="w-4 h-4 text-white/50" />
                       </div>
                     </div>
                   </div>
