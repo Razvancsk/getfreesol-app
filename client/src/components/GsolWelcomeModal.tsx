@@ -9,20 +9,11 @@ const GSOL_IMAGE = "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8
 
 export default function GsolWelcomeModal() {
   const [open, setOpen] = useState(false);
-  const [apy, setApy] = useState<string | null>(null);
 
   useEffect(() => {
     const seen = localStorage.getItem(STORAGE_KEY);
     if (!seen) setOpen(true);
   }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    fetch("/api/staking/info")
-      .then(r => r.json())
-      .then(d => { if (d.apy) setApy(parseFloat(d.apy).toFixed(2)); })
-      .catch(() => {});
-  }, [open]);
 
   function handleClose() {
     localStorage.setItem(STORAGE_KEY, "1");
@@ -91,9 +82,7 @@ export default function GsolWelcomeModal() {
           {/* APY highlight — pure purple, no blue */}
           <div className="mx-6 mb-4 rounded-xl bg-purple-900/40 border border-purple-500/25 p-4 text-center">
             <p className="text-white/70 text-xs uppercase tracking-wider mb-1 font-medium">Current Staking APY</p>
-            <p className="text-4xl font-black text-white">
-              {apy ? `${apy}%` : <span className="text-2xl animate-pulse text-white/60">Loading…</span>}
-            </p>
+            <p className="text-4xl font-black text-white">7.20%</p>
           </div>
 
           {/* Feature bullets — all purple icons */}
