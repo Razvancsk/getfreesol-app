@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 
-const STORAGE_KEY = "gsol_welcome_seen_v7";
+const STORAGE_KEY = "gsol_welcome_seen_v8";
 const GSOL_IMAGES = [
   "https://nsh7c2agdjc3rb4yh3i57wm6tlvoqxeh6dfjmnnpumqcrfl4vgwa.arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
   "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw",
@@ -26,14 +26,10 @@ export default function GsolWelcomeModal() {
   function handleStake() {
     handleClose();
     setTimeout(() => {
-      const tabs = Array.from(document.querySelectorAll("button"));
-      const stakingBtn = tabs.find(
-        (b) => b.textContent?.toLowerCase().includes("staking") ||
-               b.getAttribute("data-tab") === "staking"
-      );
-      if (stakingBtn) {
-        stakingBtn.click();
-        stakingBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+      const btn = document.getElementById("staking-tab-btn");
+      if (btn) {
+        btn.click();
+        btn.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }, 200);
   }
