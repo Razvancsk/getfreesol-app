@@ -11074,6 +11074,61 @@ Claimer: ${walletAddress}`;
   const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
   /**
+   * Queries Helius for recent priority fees and simulates the transaction to get the
+   * exact compute units consumed. Returns { microLamports, computeUnits } to build
+   * tight, cost-accurate ComputeBudget instructions — same approach as Sanctum's own UI.
+   */
+  async function getDynamicPriorityFee(
+    conn: Connection,
+    coreInstructions: TransactionInstruction[],
+    payer: PublicKey,
+    blockhash: string
+  ): Promise<{ microLamports: number; computeUnits: number }> {
+    try {
+      // ── 1. Simulate with max CU limit to measure actual consumption ──────────
+      const simIxs = [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }),
+        ...coreInstructions,
+      ];
+      const simMsg = new TransactionMessage({
+        payerKey: payer,
+        recentBlockhash: blockhash,
+        instructions: simIxs,
+      }).compileToV0Message();
+      const simTx = new VersionedTransaction(simMsg);
+      const { value: simResult } = await conn.simulateTransaction(simTx, {
+        replaceRecentBlockhash: true,
+        sigVerify: false,
+      });
+      const rawCU = simResult.unitsConsumed ?? 100_000;
+      const computeUnits = Math.ceil(rawCU * 1.15); // 15% buffer
+
+      // ── 2. Query recent prioritisation fees for the writable accounts ─────────
+      const writableKeys: PublicKey[] = [];
+      for (const ix of coreInstructions) {
+        for (const meta of ix.keys) {
+          if (meta.isWritable) writableKeys.push(meta.pubkey);
+        }
+      }
+      const uniqueWritable = [...new Map(writableKeys.map(k => [k.toBase58(), k])).values()].slice(0, 128);
+      const recentFees = await conn.getRecentPrioritizationFees({ lockedWritableAccounts: uniqueWritable });
+      const feeSamples = recentFees.map(f => f.prioritizationFee).filter(f => f > 0).sort((a, b) => a - b);
+      // Use 75th-percentile for reliable inclusion; fall back to 5 000 microLamports
+      const p75 = feeSamples.length > 0
+        ? feeSamples[Math.floor(feeSamples.length * 0.75)]
+        : 5_000;
+      const microLamports = Math.max(Math.ceil(p75 * 1.1), 5_000);
+
+      console.log(`[priorityFee] simCU=${rawCU} → limit=${computeUnits} | p75Fee=${p75} → price=${microLamports}`);
+      return { microLamports, computeUnits };
+    } catch (err) {
+      console.warn('[priorityFee] fallback to defaults:', err);
+      return { microLamports: 80_000, computeUnits: 200_000 };
+    }
+  }
+
+  /**
    * Builds a SOL → GSOL direct deposit transaction on-chain without any Sanctum API calls.
    * Structure reverse-engineered from a real Sanctum direct-deposit transaction.
    *
@@ -11156,26 +11211,31 @@ Claimer: ${walletAddress}`;
       ],
     });
 
-    const instructions = [
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
-      // Create wSOL ATA for user (idempotent — ok if already exists)
-      createAssociatedTokenAccountIdempotentInstruction(userPubkey, wSOLAta, userPubkey, NATIVE_MINT),
-      // Transfer SOL into wSOL ATA
-      SystemProgram.transfer({ fromPubkey: userPubkey, toPubkey: wSOLAta, lamports }),
-      // Wrap the SOL (SyncNative)
-      createSyncNativeInstruction(wSOLAta),
-      // Create GSOL ATA for user (idempotent)
-      createAssociatedTokenAccountIdempotentInstruction(userPubkey, gSOLAta, userPubkey, gSOLMint),
-      // Direct deposit into the Sanctum pool
-      depositIx,
-    ];
-
     const heliusConn = new Connection(
       process.env.HELIUS_RPC_URL ||
       `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
     );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
+
+    // Core instructions (no ComputeBudget yet — needed for simulation)
+    const coreInstructions = [
+      createAssociatedTokenAccountIdempotentInstruction(userPubkey, wSOLAta, userPubkey, NATIVE_MINT),
+      SystemProgram.transfer({ fromPubkey: userPubkey, toPubkey: wSOLAta, lamports }),
+      createSyncNativeInstruction(wSOLAta),
+      createAssociatedTokenAccountIdempotentInstruction(userPubkey, gSOLAta, userPubkey, gSOLMint),
+      depositIx,
+    ];
+
+    // Simulate → get exact CU + 75th-percentile priority fee
+    const { microLamports, computeUnits } = await getDynamicPriorityFee(
+      heliusConn, coreInstructions, userPubkey, blockhash
+    );
+
+    const instructions = [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnits }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports }),
+      ...coreInstructions,
+    ];
 
     const msg = new TransactionMessage({
       payerKey: userPubkey,
@@ -11259,22 +11319,29 @@ Claimer: ${walletAddress}`;
     // CloseAccount: closes wSOL ATA → user gets native SOL
     const closeIx = createCloseAccountInstruction(wSOLAta, userPubkey, userPubkey);
 
-    const instructions = [
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
-      // Create wSOL ATA (idempotent — receives wSOL during withdraw)
-      createAssociatedTokenAccountIdempotentInstruction(userPubkey, wSOLAta, userPubkey, NATIVE_MINT),
-      // Burn GSOL, receive wSOL into wSOL ATA
-      withdrawIx,
-      // Close wSOL ATA → native SOL lands in user wallet
-      closeIx,
-    ];
-
     const heliusConn = new Connection(
       process.env.HELIUS_RPC_URL ||
       `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
     );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
+
+    // Core instructions (no ComputeBudget yet — needed for simulation)
+    const coreInstructions = [
+      createAssociatedTokenAccountIdempotentInstruction(userPubkey, wSOLAta, userPubkey, NATIVE_MINT),
+      withdrawIx,
+      closeIx,
+    ];
+
+    // Simulate → get exact CU + 75th-percentile priority fee
+    const { microLamports, computeUnits } = await getDynamicPriorityFee(
+      heliusConn, coreInstructions, userPubkey, blockhash
+    );
+
+    const instructions = [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnits }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports }),
+      ...coreInstructions,
+    ];
 
     const msg = new TransactionMessage({
       payerKey: userPubkey,
