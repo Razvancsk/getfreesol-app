@@ -18,3 +18,9 @@ id = "y5yw7eGWUrtBNYP1FSlHJ"
 uri = "file://attached_assets/generated_images/gsol_x_welcome.png"
 type = "image"
 title = "Get Free Sol — X Welcome Banner (16:9)"
+
+[[outputs]]
+id = "bOx0PqKe_ibL0EDj_PolU"
+uri = "file://attached_assets/generated_images/gsol_welcome_x_post.png"
+type = "image"
+title = "Get Free Sol — Welcome Modal X Post"
