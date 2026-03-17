@@ -71,10 +71,6 @@ export default function GsolWelcomeModal() {
                 className="relative w-20 h-20 rounded-full border-2 border-purple-400/50 shadow-lg shadow-purple-900/60"
                 onError={() => setImgIdx(i => Math.min(i + 1, GSOL_IMAGES.length - 1))}
               />
-              {/* NEW badge on token image */}
-              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-green-900/50 tracking-wide">
-                NEW
-              </span>
             </div>
 
             <h2 className="text-2xl font-bold text-white mb-1">
