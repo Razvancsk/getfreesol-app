@@ -4815,37 +4815,37 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* APY + Est. rewards row */}
-                  <div className={`rounded-2xl mb-5 border border-white/20 overflow-hidden ${isNightMode ? 'bg-[#1a1a1a]' : 'bg-purple-900/20'}`}>
-                    <div className="flex divide-x divide-white/10">
-                      {/* Left: APY */}
-                      <div className="flex-1 px-5 py-4">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-white/60 text-xs font-medium">GSOL APY</span>
-                          <Info className="w-3 h-3 text-white/40" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-black text-2xl">
-                            {gsolApy !== null ? `${gsolApy.toFixed(2)}%` : '—'}
-                          </span>
-                          <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 rounded-full object-contain" />
-                        </div>
+                  {/* APY + Est. rewards row — no card, just two cols with a divider */}
+                  <div className="flex mb-6">
+                    {/* Left: APY */}
+                    <div className="flex-1 pr-5">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-white/60 text-xs font-medium">GSOL APY</span>
+                        <Info className="w-3 h-3 text-white/40" />
                       </div>
-                      {/* Right: Est. rewards per year */}
-                      <div className="flex-1 px-5 py-4">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-white/60 text-xs font-medium">Est. rewards per year</span>
-                          <Info className="w-3 h-3 text-white/40" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-black text-2xl">
-                            {stakeAmount && gsolApy
-                              ? `${(parseFloat(stakeAmount) * gsolApy / 100).toFixed(4)}`
-                              : '0'}{' '}
-                            <span className="text-white/60 font-semibold text-base">SOL</span>
-                          </span>
-                          <RefreshCw className="w-4 h-4 text-white/40" />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-black text-2xl">
+                          {gsolApy !== null ? `${gsolApy.toFixed(2)}%` : '—'}
+                        </span>
+                        <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 rounded-full object-contain" />
+                      </div>
+                    </div>
+                    {/* Vertical divider */}
+                    <div className="w-px bg-white/20 self-stretch" />
+                    {/* Right: Est. rewards per year */}
+                    <div className="flex-1 pl-5">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-white/60 text-xs font-medium">Est. rewards per year</span>
+                        <Info className="w-3 h-3 text-white/40" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-black text-2xl">
+                          {stakeAmount && gsolApy
+                            ? `${(parseFloat(stakeAmount) * gsolApy / 100).toFixed(4)}`
+                            : '0'}{' '}
+                          <span className="text-white/60 font-semibold text-base">SOL</span>
+                        </span>
+                        <RefreshCw className="w-4 h-4 text-white/40" />
                       </div>
                     </div>
                   </div>
