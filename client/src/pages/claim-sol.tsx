@@ -4786,7 +4786,7 @@ export default function SolRefund() {
 
                       <button
                         onClick={() => setShowHowToChoose(false)}
-                        className="mt-6 w-full py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-base transition-all"
+                        className="mt-6 w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 border border-purple-400/50 text-white font-bold text-base transition-all shadow-lg shadow-purple-900/30"
                       >
                         Got it
                       </button>
