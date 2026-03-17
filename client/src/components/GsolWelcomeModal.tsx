@@ -112,20 +112,14 @@ export default function GsolWelcomeModal() {
             ))}
           </div>
 
-          {/* CTA buttons — brand purple only */}
-          <div className="px-6 pb-6 flex gap-3">
+          {/* CTA button */}
+          <div className="px-6 pb-6">
             <Button
               onClick={handleStake}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white font-semibold rounded-xl py-5 shadow-lg shadow-purple-900/50 border-0"
+              className="w-full bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white font-semibold rounded-xl py-5 shadow-lg shadow-purple-900/50 border-0"
             >
               Start Staking GSOL
             </Button>
-            <button
-              onClick={handleClose}
-              className="px-5 rounded-xl border border-white/30 text-white font-medium hover:bg-white/10 transition-colors"
-            >
-              Later
-            </button>
           </div>
         </div>
       </DialogContent>
