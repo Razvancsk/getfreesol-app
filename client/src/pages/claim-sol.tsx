@@ -4868,17 +4868,17 @@ export default function SolRefund() {
                   {/* Stats — full width */}
                   <div className={`rounded-2xl mb-5 overflow-hidden border ${isNightMode ? 'bg-[#1a1a1a] border-white/15' : 'bg-purple-900/20 border-white/20'}`}>
                     {/* You receive row */}
-                    <div className="flex justify-between items-center px-5 py-5">
-                      <span className="text-white/70 text-base font-medium">You receive</span>
-                      <span className="text-white font-bold text-xl flex items-center gap-2">
+                    <div className="flex justify-between items-center px-4 py-3.5">
+                      <span className="text-white/70 text-sm font-medium">You receive</span>
+                      <span className="text-white font-bold text-sm flex items-center gap-1.5">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 object-contain rounded-full" />
+                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-5 h-5 object-contain rounded-full" />
                             {stakeAmount ? (parseFloat(stakeAmount) / gsolSolValue).toFixed(4) : '—'} GSOL
                           </>
                         ) : (
                           <>
-                            <img alt="SOL" width="24" height="24" className="rounded-full" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
+                            <img alt="SOL" width="20" height="20" className="rounded-full" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
                             {stakeAmount ? (parseFloat(stakeAmount) * gsolSolValue).toFixed(4) : '—'} SOL
                           </>
                         )}
@@ -4888,9 +4888,9 @@ export default function SolRefund() {
                     <div className="border-t border-white/10" />
 
                     {/* APY row */}
-                    <div className="flex justify-between items-center px-5 py-5">
-                      <span className="text-white/70 text-base font-medium">APY</span>
-                      <span className="text-green-400 font-bold text-xl">
+                    <div className="flex justify-between items-center px-4 py-3.5">
+                      <span className="text-white/70 text-sm font-medium">APY</span>
+                      <span className="text-green-400 font-bold text-sm">
                         {gsolApy !== null ? `${gsolApy} %` : '—'}
                       </span>
                     </div>
@@ -4898,9 +4898,9 @@ export default function SolRefund() {
                     <div className="border-t border-white/10" />
 
                     {/* Annual rewards row */}
-                    <div className="flex justify-between items-center px-5 py-5">
-                      <span className="text-white/70 text-base font-medium">Annual rewards</span>
-                      <span className="text-white font-bold text-xl">
+                    <div className="flex justify-between items-center px-4 py-3.5">
+                      <span className="text-white/70 text-sm font-medium">Annual rewards</span>
+                      <span className="text-white font-bold text-sm">
                         {stakeAmount && gsolApy
                           ? `${(parseFloat(stakeAmount) * gsolApy / 100).toFixed(4)} SOL`
                           : '—'}
