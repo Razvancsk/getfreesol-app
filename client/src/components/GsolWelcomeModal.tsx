@@ -31,9 +31,7 @@ export default function GsolWelcomeModal() {
 
   function handleStake() {
     handleClose();
-    // Small delay so modal closes first, then switch to staking tab
     setTimeout(() => {
-      // Find the staking tab button by its data attribute or text content
       const tabs = Array.from(document.querySelectorAll("button"));
       const stakingBtn = tabs.find(
         (b) => b.textContent?.toLowerCase().includes("staking") ||
@@ -49,7 +47,7 @@ export default function GsolWelcomeModal() {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
       <DialogContent className="max-w-md p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button]:hidden">
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a0533] via-[#2d0a5e] to-[#0f172a] border border-purple-500/30 shadow-2xl shadow-purple-900/50">
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a0533] via-[#2d0a5e] to-[#0d0820] border border-purple-500/30 shadow-2xl shadow-purple-900/50">
 
           {/* Close button */}
           <button
@@ -62,15 +60,15 @@ export default function GsolWelcomeModal() {
           {/* Header glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-purple-600/20 via-transparent to-transparent pointer-events-none" />
 
-          {/* Top banner */}
+          {/* Top section */}
           <div className="px-6 pt-8 pb-4 text-center relative">
             <Badge className="mb-3 bg-purple-500/20 text-purple-300 border-purple-500/40 text-xs font-medium px-3 py-1">
               ✨ Liquid Staking Token
             </Badge>
 
-            {/* GSOL image */}
+            {/* GSOL token image */}
             <div className="relative mx-auto w-20 h-20 mb-4">
-              <div className="absolute inset-0 rounded-full bg-purple-500/30 blur-xl animate-pulse" />
+              <div className="absolute inset-0 rounded-full bg-purple-500/40 blur-xl animate-pulse" />
               <img
                 src={GSOL_IMAGE}
                 alt="GSOL token"
@@ -90,22 +88,22 @@ export default function GsolWelcomeModal() {
             </p>
           </div>
 
-          {/* APY highlight */}
-          <div className="mx-6 mb-4 rounded-xl bg-gradient-to-r from-purple-600/25 to-blue-600/25 border border-purple-500/30 p-4 text-center">
+          {/* APY highlight — pure purple, no blue */}
+          <div className="mx-6 mb-4 rounded-xl bg-purple-900/40 border border-purple-500/25 p-4 text-center">
             <p className="text-purple-300/80 text-xs uppercase tracking-wider mb-1 font-medium">Current Staking APY</p>
             <p className="text-4xl font-black text-white">
               {apy ? `${apy}%` : <span className="text-2xl animate-pulse text-purple-300">Loading…</span>}
             </p>
-            <p className="text-purple-300/60 text-xs mt-1">Live · Updated every visit</p>
+            <p className="text-purple-400/60 text-xs mt-1">Live · Updated every visit</p>
           </div>
 
-          {/* Feature bullets */}
+          {/* Feature bullets — all purple icons */}
           <div className="mx-6 mb-5 space-y-2.5">
             {[
-              { icon: Droplets, color: "text-blue-400", label: "Stay liquid — use GSOL in DeFi while earning" },
-              { icon: TrendingUp, color: "text-green-400", label: "Rewards compound automatically, no claiming needed" },
-              { icon: Shield, color: "text-purple-400", label: "Non-custodial — your SOL, your keys" },
-              { icon: Zap, color: "text-yellow-400", label: "Unstake anytime via instant Jupiter swap" },
+              { icon: Droplets,   color: "text-purple-400", label: "Stay liquid — use GSOL in DeFi while earning" },
+              { icon: TrendingUp, color: "text-violet-400",  label: "Rewards compound automatically, no claiming needed" },
+              { icon: Shield,     color: "text-fuchsia-400", label: "Non-custodial — your SOL, your keys" },
+              { icon: Zap,        color: "text-purple-300",  label: "Unstake anytime via instant Jupiter swap" },
             ].map(({ icon: Icon, color, label }) => (
               <div key={label} className="flex items-start gap-2.5">
                 <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${color}`} />
@@ -114,18 +112,18 @@ export default function GsolWelcomeModal() {
             ))}
           </div>
 
-          {/* CTA buttons */}
+          {/* CTA buttons — brand purple only */}
           <div className="px-6 pb-6 flex gap-3">
             <Button
               onClick={handleStake}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold rounded-xl py-5 shadow-lg shadow-purple-900/40 border-0"
+              className="flex-1 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white font-semibold rounded-xl py-5 shadow-lg shadow-purple-900/50 border-0"
             >
               Start Staking GSOL
             </Button>
             <Button
               onClick={handleClose}
               variant="outline"
-              className="px-4 rounded-xl border-white/20 text-white/60 hover:text-white hover:bg-white/10 bg-transparent"
+              className="px-4 rounded-xl border-purple-500/30 text-purple-300/70 hover:text-white hover:bg-purple-800/30 bg-transparent"
             >
               Later
             </Button>
