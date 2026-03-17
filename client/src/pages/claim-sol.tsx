@@ -123,6 +123,7 @@ export default function SolRefund() {
   const [stakeLoading, setStakeLoading] = useState(false);
   const [stakingMethod, setStakingMethod] = useState<'direct' | 'jupiter'>('direct');
   const [showHowToChoose, setShowHowToChoose] = useState(false);
+  const [showRewardsInfo, setShowRewardsInfo] = useState(false);
   const [gsolApy, setGsolApy] = useState<number | null>(null);
   const [gsolSolValue, setGsolSolValue] = useState<number>(1);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
@@ -4795,6 +4796,34 @@ export default function SolRefund() {
                 </div>
               )}
 
+              {/* Rewards Info modal */}
+              {showRewardsInfo && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowRewardsInfo(false)}>
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                  <div
+                    className={`relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-purple-900/80 border-purple-500/30 backdrop-blur-md'}`}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                      <span className="text-white/60 font-bold text-base">?</span>
+                    </div>
+                    <div className="p-6 pt-7">
+                      <h2 className="text-white font-black text-xl mb-1">How Rewards Are Estimated</h2>
+                      <p className="text-white text-sm mb-5">Based on 10-epoch average APY</p>
+                      <p className="text-white text-sm leading-relaxed mb-6">
+                        The projected SOL value is an estimate based on the average APY from the last 10 epochs. It reflects recent performance trends but does <strong>not guarantee future returns</strong>.
+                      </p>
+                      <button
+                        onClick={() => setShowRewardsInfo(false)}
+                        className="w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 border border-purple-400/50 text-white font-bold text-base transition-all shadow-lg shadow-purple-900/30"
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className={`rounded-2xl p-6 md:p-10 border ${isNightMode ? 'bg-[#141414] border-[#2a2a2a]' : 'bg-gradient-to-br from-blue-900/20 to-purple-900/30 border-blue-500/20'}`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div>
@@ -4836,7 +4865,9 @@ export default function SolRefund() {
                     <div className="flex-1 flex flex-col items-center pl-5">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-white/60 text-xs font-medium">Est. rewards per year</span>
-                        <Info className="w-3 h-3 text-white/40" />
+                        <button onClick={() => setShowRewardsInfo(true)}>
+                          <Info className="w-3 h-3 text-white/40 hover:text-white/80 transition-colors" />
+                        </button>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-white font-black text-2xl">
