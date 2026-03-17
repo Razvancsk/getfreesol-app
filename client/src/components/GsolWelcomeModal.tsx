@@ -69,6 +69,10 @@ export default function GsolWelcomeModal() {
                     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237c3aed'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-size='36' font-family='Arial' font-weight='bold' fill='white'%3EG%3C/text%3E%3C/svg%3E";
                 }}
               />
+              {/* NEW badge on token image */}
+              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-green-900/50 tracking-wide">
+                NEW
+              </span>
             </div>
 
             <h2 className="text-2xl font-bold text-white mb-1">
