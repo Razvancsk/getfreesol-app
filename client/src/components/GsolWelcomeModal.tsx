@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Droplets, Shield, Zap, X } from "lucide-react";
 
-const STORAGE_KEY = "gsol_welcome_seen_v1";
+const STORAGE_KEY = "gsol_welcome_seen_v2";
 const GSOL_IMAGE = "https://arweave.net/bI_xaAYaRbiHmD7R39memuroXIfwypY1r6MgKJV8qaw";
 
 export default function GsolWelcomeModal() {
