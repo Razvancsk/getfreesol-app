@@ -3722,7 +3722,7 @@ export default function SolRefund() {
                       : 'bg-purple-800/40 text-white hover:bg-purple-600/60 border-purple-500/30'
                   }`}
                 >
-                  <Zap className="h-4 w-4 md:h-5 md:w-5 shrink-0" /> Stake
+                  <Zap className="h-4 w-4 md:h-5 md:w-5 shrink-0" /> Staking
                 </Button>
               </div>
             </div>
