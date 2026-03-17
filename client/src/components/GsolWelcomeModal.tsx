@@ -62,7 +62,7 @@ export default function GsolWelcomeModal() {
 
           {/* Top section */}
           <div className="px-6 pt-8 pb-4 text-center relative">
-            <Badge className="mb-3 bg-purple-500/20 text-purple-300 border-purple-500/40 text-xs font-medium px-3 py-1">
+            <Badge className="mb-3 bg-purple-500/20 text-white border-purple-500/40 text-xs font-medium px-3 py-1">
               ✨ Get Free Sol Liquid Staking Token
             </Badge>
 
@@ -83,18 +83,18 @@ export default function GsolWelcomeModal() {
             <h2 className="text-2xl font-bold text-white mb-1">
               Earn SOL While Staying Liquid
             </h2>
-            <p className="text-purple-200/70 text-sm">
-              Stake SOL and receive <span className="text-purple-300 font-semibold">GSOL</span> — a liquid token that earns staking rewards automatically.
+            <p className="text-white/90 text-sm">
+              Stake SOL and receive <span className="text-white font-semibold">GSOL</span> — a liquid token that earns staking rewards automatically.
             </p>
           </div>
 
           {/* APY highlight — pure purple, no blue */}
           <div className="mx-6 mb-4 rounded-xl bg-purple-900/40 border border-purple-500/25 p-4 text-center">
-            <p className="text-purple-300/80 text-xs uppercase tracking-wider mb-1 font-medium">Current Staking APY</p>
+            <p className="text-white/70 text-xs uppercase tracking-wider mb-1 font-medium">Current Staking APY</p>
             <p className="text-4xl font-black text-white">
-              {apy ? `${apy}%` : <span className="text-2xl animate-pulse text-purple-300">Loading…</span>}
+              {apy ? `${apy}%` : <span className="text-2xl animate-pulse text-white/60">Loading…</span>}
             </p>
-            <p className="text-purple-400/60 text-xs mt-1">Live · Updated every visit</p>
+            <p className="text-white/50 text-xs mt-1">Live · Updated every visit</p>
           </div>
 
           {/* Feature bullets — all purple icons */}
@@ -107,7 +107,7 @@ export default function GsolWelcomeModal() {
             ].map(({ icon: Icon, color, label }) => (
               <div key={label} className="flex items-start gap-2.5">
                 <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${color}`} />
-                <p className="text-white/75 text-sm leading-snug">{label}</p>
+                <p className="text-white text-sm leading-snug">{label}</p>
               </div>
             ))}
           </div>
@@ -123,7 +123,7 @@ export default function GsolWelcomeModal() {
             <Button
               onClick={handleClose}
               variant="outline"
-              className="px-4 rounded-xl border-purple-500/30 text-purple-300/70 hover:text-white hover:bg-purple-800/30 bg-transparent"
+              className="px-4 rounded-xl border-white/20 text-white/80 hover:text-white hover:bg-purple-800/30 bg-transparent"
             >
               Later
             </Button>
