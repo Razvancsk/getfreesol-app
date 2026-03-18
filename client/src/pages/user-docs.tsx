@@ -123,6 +123,17 @@ export default function UserDocs() {
                 >
                   ⭐ Points System
                 </button>
+                <button
+                  onClick={() => setActiveDocSection('staking')}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                    activeDocSection === 'staking' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'text-purple-200 hover:bg-purple-700/30'
+                  }`}
+                  data-testid="docs-nav-staking"
+                >
+                  ⚡ Staking (gSOL)
+                </button>
                 <div className="pt-3 pb-2 px-3 text-purple-400 text-xs font-semibold uppercase">
                   Developers
                 </div>
@@ -610,7 +621,7 @@ export default function UserDocs() {
                         <ul className="space-y-3 text-purple-200 leading-relaxed">
                           <li className="flex items-start gap-3">
                             <span className="text-green-400 mt-1">⭐</span>
-                            <span><strong className="text-white">100 points per gSOL</strong> every 24 hours while staked</span>
+                            <span><strong className="text-white">100 points per 1 SOL staked</strong> every 24 hours</span>
                           </li>
                           <li className="flex items-start gap-3">
                             <span className="text-green-400 mt-1">⭐</span>
@@ -752,7 +763,7 @@ export default function UserDocs() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-green-900/30 border border-green-600/50 rounded-lg p-4 text-center">
                         <p className="text-green-400 text-2xl font-bold">100 pts</p>
-                        <p className="text-purple-200 text-sm mt-1">per gSOL every 24 hours</p>
+                        <p className="text-purple-200 text-sm mt-1">per 1 SOL staked every 24 hours</p>
                       </div>
                       <div className="bg-blue-900/30 border border-blue-600/50 rounded-lg p-4 text-center">
                         <p className="text-blue-400 text-2xl font-bold">+100 pts</p>
