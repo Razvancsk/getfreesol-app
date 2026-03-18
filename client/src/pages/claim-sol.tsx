@@ -980,8 +980,9 @@ export default function SolRefund() {
           if (d.isFirstTime) {
             const bonusText = d.pointsAwarded > 0 ? ` +${d.pointsAwarded} pts!` : '';
             toast({
-              title: `✅ Staked ${amt} GSOL — Welcome bonus!${bonusText}`,
+              title: `🎉 Staked ${amt} GSOL — Welcome bonus!${bonusText}`,
               description: 'You now earn points every 24h for holding GSOL.',
+              variant: 'success',
               action: stakeToastAction
             });
           } else {
