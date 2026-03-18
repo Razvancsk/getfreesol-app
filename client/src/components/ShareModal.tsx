@@ -66,21 +66,21 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
             </p>
             <p className="text-green-400 text-base mt-3 z-10 font-mono">{getClaimText()}</p>
             
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+            <div className="absolute bottom-0 left-0 right-0 flex z-10">
               <button 
                 onClick={handleShareOnX}
-                className="rounded-lg px-3 py-1 transition-colors"
-                style={{ backgroundColor: '#2563eb', border: '2px solid #3b82f6' }}
+                className="flex-1 py-3 transition-colors rounded-bl-xl"
+                style={{ backgroundColor: '#2563eb' }}
               >
-                <span className="text-white font-mono font-bold text-xs whitespace-nowrap">Tweet It</span>
+                <span className="text-white font-mono font-bold text-sm whitespace-nowrap">Tweet It</span>
               </button>
               {onStake && (
               <button 
                 onClick={() => { onClose(); onStake(); }}
-                className="rounded-lg px-3 py-1 transition-colors"
-                style={{ backgroundColor: '#4ade80', border: '2px solid #86efac' }}
+                className="flex-1 py-3 transition-colors rounded-br-xl"
+                style={{ backgroundColor: '#4ade80' }}
               >
-                <span className="text-white font-mono font-bold text-xs whitespace-nowrap">Stake It</span>
+                <span className="text-white font-mono font-bold text-sm whitespace-nowrap">Stake It</span>
               </button>
               )}
             </div>
