@@ -734,6 +734,7 @@ export const userPoints = pgTable("user_points", {
   accountsClosed: integer("accounts_closed").notNull().default(0),
   totalSolClaimed: decimal("total_sol_claimed", { precision: 18, scale: 9 }).notNull().default("0"),
   solStaked: decimal("sol_staked", { precision: 18, scale: 9 }).notNull().default("0"),
+  stakingBonusAwarded: boolean("staking_bonus_awarded").notNull().default(false),
   lastUpdated: timestamp("last_updated").notNull().defaultNow(),
 });
 

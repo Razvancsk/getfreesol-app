@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { insertTransactionRecordSchema, insertEmptyTokenAccountSchema, insertScanResultSchema, insertTransactionLedgerSchema, insertTokenBurnRecordSchema, insertNftBurnRecordSchema, insertReferralCodeSchema, insertReferralTransactionSchema, referralCodes, createAutoClaimPermitRequestSchema, revokeAutoClaimPermitRequestSchema, autoClaimPermitMessageSchema, autoClaimRevokeMessageSchema, jupiterLendDeposits, xAuthTokens, xPosts, xSchedules, xEngagement } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { eq, sql, and, gte, notInArray } from 'drizzle-orm';
-import { transactionLedger } from '@shared/schema';
+import { transactionLedger, userPoints } from '@shared/schema';
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
 import axios from 'axios';
@@ -11501,22 +11501,29 @@ Claimer: ${walletAddress}`;
       if (STAKING_PLATFORM_WALLETS.includes(walletAddress)) {
         return res.json({ success: true, pointsAwarded: 0, isFirstTime: false });
       }
-      // Check if user has ever staked before (first-time bonus gate)
-      const existingPosition = await storage.getStakingPosition(walletAddress);
-      const isFirstTime = existingPosition === null;
+      // Check permanent bonus flag — persists even after unstaking
+      const existingPts = await storage.getUserPoints(walletAddress);
+      const isFirstTime = !existingPts || !existingPts.stakingBonusAwarded;
 
       // Track GSOL position for daily points
       const gsolAmt = Number(gsolReceived) > 0 ? Number(gsolReceived) : Number(solAmount);
       await storage.upsertStakingPosition(walletAddress, gsolAmt);
 
-      // One-time flat 100 pt welcome bonus — ONLY on the very first stake ever, amount doesn't matter
+      // One-time flat 100 pt welcome bonus — ONLY on the very first stake ever, forever
       let pointsAwarded = 0;
       if (isFirstTime) {
-        const result = await storage.awardStakingPoints(walletAddress, 1); // always 1 SOL = 100 pts flat
-        pointsAwarded = result.pointsAwarded;
-        console.log(`🎯 First-time staker bonus: ${walletAddress} → +${pointsAwarded} pts (flat 100)`);
+        // Award exactly 100 pts flat and mark bonus as used (permanent)
+        await db
+          .insert(userPoints)
+          .values({ walletAddress, points: 100, accountsClosed: 0, stakingBonusAwarded: true })
+          .onConflictDoUpdate({
+            target: userPoints.walletAddress,
+            set: { points: sql`${userPoints.points} + 100`, stakingBonusAwarded: true, lastUpdated: new Date() }
+          });
+        pointsAwarded = 100;
+        console.log(`🎯 First-time staker bonus: ${walletAddress} → +100 pts (permanent flag set)`);
       } else {
-        console.log(`📍 Returning staker: ${walletAddress} staked ${solAmount} SOL (no bonus, daily hold earns points)`);
+        console.log(`📍 Returning staker: ${walletAddress} (no bonus, earning daily hold points)`);
       }
 
       res.json({ success: true, pointsAwarded, isFirstTime });
