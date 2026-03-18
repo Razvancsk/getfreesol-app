@@ -5109,6 +5109,11 @@ export default function SolRefund() {
                       <p className="text-white font-bold mb-1">No minimum</p>
                       <p className="text-white text-xs">Stake any amount of SOL. No minimum required to start earning.</p>
                     </div>
+                    <div className={`rounded-xl p-4 border bg-green-900/20 border-green-500/30 col-span-full`}>
+                      <div className="text-2xl mb-2">🎯</div>
+                      <p className="text-white font-bold mb-1">Both methods earn staking points</p>
+                      <p className="text-white text-xs">Whether you stake directly or via Jupiter swap, you earn <span className="text-green-400 font-semibold">100 pts per GSOL every 24h</span>. First-time stakers get a <span className="text-green-400 font-semibold">+100 pt welcome bonus</span>. Hold longer than 30 days to unlock a <span className="text-yellow-400 font-semibold">1.5× multiplier</span>.</p>
+                    </div>
                   </div>
 
                 </div>
