@@ -5112,7 +5112,7 @@ export default function SolRefund() {
                     <div className={`rounded-xl p-4 border bg-green-900/20 border-green-500/30 col-span-full`}>
                       <div className="text-2xl mb-2">🎯</div>
                       <p className="text-white font-bold mb-1">Earn staking points</p>
-                      <p className="text-white text-xs">Holding GSOL earns you <span className="text-green-400 font-semibold">100 pts per GSOL every 24h</span>. First-time stakers receive a <span className="text-green-400 font-semibold">+100 pt welcome bonus</span>. Hold for 30+ days to unlock a <span className="text-yellow-400 font-semibold">1.5× multiplier</span>.</p>
+                      <p className="text-white text-xs">Holding GSOL earns you <span className="text-green-400 font-semibold">100 pts per GSOL every 24h</span>. First-time stakers receive a <span className="text-green-400 font-semibold">+100 pt welcome bonus</span>. Hold for 30+ days to unlock a <span className="text-yellow-400 font-semibold">1.5× multiplier</span>. Refer friends and earn <span className="text-purple-400 font-semibold">10% of their daily staking points</span> automatically.</p>
                     </div>
                   </div>
 
