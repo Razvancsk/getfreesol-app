@@ -989,15 +989,16 @@ export default function SolRefund() {
             toast({
               title: `✅ Staked ${amt} GSOL`,
               description: 'Earning points every 24h for holding.',
+              variant: 'success',
               action: stakeToastAction
             });
           }
         }).catch(() => {
-          toast({ title: `✅ Staked ${amt} GSOL`, action: stakeToastAction });
+          toast({ title: `✅ Staked ${amt} GSOL`, variant: 'success', action: stakeToastAction });
         });
         queryClient.invalidateQueries({ queryKey: ['/api/user/gfs-discount', publicKey.toBase58()] });
       } else {
-        toast({ title: `✅ Staked ${amt} GSOL`, action: stakeToastAction });
+        toast({ title: `✅ Staked ${amt} GSOL`, variant: 'success', action: stakeToastAction });
       }
       setStakeAmount('');
       // Refresh balances
