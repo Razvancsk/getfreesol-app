@@ -11485,28 +11485,79 @@ Claimer: ${walletAddress}`;
     }
   });
 
-  // Award staking points after a successful stake transaction
+  const STAKING_PLATFORM_WALLETS = [
+    'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
+    'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
+  ];
+
+  // Award staking points + record position after a successful stake transaction
   app.post('/api/staking/award-points', async (req, res) => {
     try {
-      const { walletAddress, solAmount } = req.body;
+      const { walletAddress, solAmount, gsolReceived } = req.body;
       if (!walletAddress || !solAmount || isNaN(Number(solAmount)) || Number(solAmount) <= 0) {
         return res.status(400).json({ error: 'walletAddress and solAmount required' });
       }
-      const PLATFORM_WALLETS = [
-        'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
-        'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
-      ];
-      if (PLATFORM_WALLETS.includes(walletAddress)) {
+      if (STAKING_PLATFORM_WALLETS.includes(walletAddress)) {
         return res.json({ success: true, pointsAwarded: 0 });
       }
+      // Track GSOL position for daily points (use gsolReceived if provided, else solAmount estimate)
+      const gsolAmt = Number(gsolReceived) > 0 ? Number(gsolReceived) : Number(solAmount);
+      await storage.upsertStakingPosition(walletAddress, gsolAmt);
+      // One-time award on stake (100 pts/SOL)
       const result = await storage.awardStakingPoints(walletAddress, Number(solAmount));
-      console.log(`🎯 Staking points: ${walletAddress} staked ${solAmount} SOL → +${result.pointsAwarded} pts`);
+      console.log(`🎯 Staking: ${walletAddress} staked ${solAmount} SOL → +${result.pointsAwarded} pts (position tracked)`);
       res.json({ success: true, pointsAwarded: result.pointsAwarded });
     } catch (e: any) {
       console.error('[staking/award-points]', e);
       res.status(500).json({ error: e.message });
     }
   });
+
+  // Reduce staking position after unstake
+  app.post('/api/staking/reduce-position', async (req, res) => {
+    try {
+      const { walletAddress, gsolAmount } = req.body;
+      if (!walletAddress || !gsolAmount || isNaN(Number(gsolAmount)) || Number(gsolAmount) <= 0) {
+        return res.status(400).json({ error: 'walletAddress and gsolAmount required' });
+      }
+      if (STAKING_PLATFORM_WALLETS.includes(walletAddress)) {
+        return res.json({ success: true });
+      }
+      await storage.reduceStakingPosition(walletAddress, Number(gsolAmount));
+      console.log(`📉 Unstake position reduced: ${walletAddress} -${gsolAmount} GSOL`);
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error('[staking/reduce-position]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Manual trigger for daily staking points (admin only)
+  app.post('/api/staking/run-daily-points', async (req, res) => {
+    try {
+      const { secret } = req.body;
+      if (secret !== process.env.VAULT_ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      const result = await storage.runDailyStakingPoints();
+      console.log(`⚡ Daily staking points run: ${JSON.stringify(result)}`);
+      res.json({ success: true, ...result });
+    } catch (e: any) {
+      console.error('[staking/run-daily-points]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Daily cron: midnight UTC — award points to all GSOL holders
+  cron.schedule('0 0 * * *', async () => {
+    try {
+      console.log('⏰ Daily staking points cron starting...');
+      const result = await storage.runDailyStakingPoints();
+      console.log(`✅ Daily staking points done: ${result.walletsAwarded} wallets, ${result.totalPoints} pts, ${result.referralBonus} referral pts`);
+    } catch (e: any) {
+      console.error('❌ Daily staking points cron failed:', e.message);
+    }
+  }, { timezone: 'UTC' });
 
   const httpServer = createServer(app);
   return httpServer;

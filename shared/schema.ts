@@ -737,6 +737,18 @@ export const userPoints = pgTable("user_points", {
   lastUpdated: timestamp("last_updated").notNull().defaultNow(),
 });
 
+// GSOL Staking Positions — tracks active GSOL holders for daily point awards
+export const gsolStakingPositions = pgTable("gsol_staking_positions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull().unique(),
+  gsolAmount: decimal("gsol_amount", { precision: 18, scale: 9 }).notNull().default("0"),
+  stakedAt: timestamp("staked_at").notNull().defaultNow(), // first stake time for multiplier
+  lastPointsAt: timestamp("last_points_at").notNull().defaultNow(), // last daily award
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type GsolStakingPosition = typeof gsolStakingPositions.$inferSelect;
+
 // Insert schemas for alert tables
 export const insertAlertConfigSchema = createInsertSchema(alertConfigs).omit({
   id: true,

@@ -1044,6 +1044,12 @@ export default function SolRefund() {
         await connection.confirmTransaction(txid, 'confirmed');
       }
       toast({ title: '✅ Unstaked!', description: `${amt} GSOL → SOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+      // Reduce staking position so daily points stop accruing on unstaked amount
+      fetch('/api/staking/reduce-position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: publicKey.toBase58(), gsolAmount: amt })
+      }).catch(() => {});
       setStakeAmount('');
       const bal = await connection.getBalance(publicKey);
       setWalletTokenBalance(bal / 1e9);

@@ -97,7 +97,9 @@ import {
   giveawayWinners,
   crateOpens,
   type CrateOpen,
-  type InsertCrateOpen
+  type InsertCrateOpen,
+  gsolStakingPositions,
+  type GsolStakingPosition
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, or, and, ne, gte } from "drizzle-orm";
@@ -247,6 +249,13 @@ export interface IStorage {
   awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
   awardStakingPoints(walletAddress: string, solAmount: number): Promise<{ pointsAwarded: number }>;
   getPointsLeaderboard(limit?: number, sinceTimestamp?: Date | null): Promise<UserPoints[]>;
+
+  // GSOL Staking Positions (for daily time-based points)
+  upsertStakingPosition(walletAddress: string, gsolAmount: number): Promise<void>;
+  reduceStakingPosition(walletAddress: string, gsolAmount: number): Promise<void>;
+  getAllActiveStakingPositions(): Promise<GsolStakingPosition[]>;
+  getReferrerWalletForPoints(walletAddress: string): Promise<string | null>;
+  runDailyStakingPoints(): Promise<{ walletsAwarded: number; totalPoints: number; referralBonus: number }>;
   
   // Social Tasks System (Community Grow)
   createSocialTask(task: InsertSocialTask): Promise<SocialTask>;
@@ -1358,6 +1367,146 @@ export class DatabaseStorage implements IStorage {
         });
     }
     return { pointsAwarded: pointsToAward };
+  }
+
+  async upsertStakingPosition(walletAddress: string, gsolAmount: number): Promise<void> {
+    const existing = await db
+      .select()
+      .from(gsolStakingPositions)
+      .where(eq(gsolStakingPositions.walletAddress, walletAddress))
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Add to existing position, keep original stakedAt
+      const newAmount = Number(existing[0].gsolAmount) + gsolAmount;
+      await db
+        .update(gsolStakingPositions)
+        .set({
+          gsolAmount: newAmount.toFixed(9),
+          updatedAt: new Date()
+        })
+        .where(eq(gsolStakingPositions.walletAddress, walletAddress));
+    } else {
+      // New staker — record start time
+      const now = new Date();
+      await db.insert(gsolStakingPositions).values({
+        walletAddress,
+        gsolAmount: gsolAmount.toFixed(9),
+        stakedAt: now,
+        lastPointsAt: now,
+        updatedAt: now
+      });
+    }
+  }
+
+  async reduceStakingPosition(walletAddress: string, gsolAmount: number): Promise<void> {
+    const existing = await db
+      .select()
+      .from(gsolStakingPositions)
+      .where(eq(gsolStakingPositions.walletAddress, walletAddress))
+      .limit(1);
+
+    if (existing.length === 0) return;
+
+    const newAmount = Math.max(0, Number(existing[0].gsolAmount) - gsolAmount);
+    if (newAmount < 0.000001) {
+      // Fully unstaked — remove position
+      await db
+        .delete(gsolStakingPositions)
+        .where(eq(gsolStakingPositions.walletAddress, walletAddress));
+    } else {
+      await db
+        .update(gsolStakingPositions)
+        .set({ gsolAmount: newAmount.toFixed(9), updatedAt: new Date() })
+        .where(eq(gsolStakingPositions.walletAddress, walletAddress));
+    }
+  }
+
+  async getAllActiveStakingPositions(): Promise<GsolStakingPosition[]> {
+    return db
+      .select()
+      .from(gsolStakingPositions)
+      .where(sql`CAST(${gsolStakingPositions.gsolAmount} AS NUMERIC) > 0`);
+  }
+
+  async getReferrerWalletForPoints(walletAddress: string): Promise<string | null> {
+    const assoc = await db
+      .select({ referralCodeId: walletReferralAssociations.referralCodeId })
+      .from(walletReferralAssociations)
+      .where(eq(walletReferralAssociations.walletAddress, walletAddress))
+      .limit(1);
+
+    if (assoc.length === 0) return null;
+
+    const code = await db
+      .select({ ownerWallet: referralCodes.walletAddress })
+      .from(referralCodes)
+      .where(eq(referralCodes.id, assoc[0].referralCodeId))
+      .limit(1);
+
+    return code.length > 0 ? code[0].ownerWallet : null;
+  }
+
+  async runDailyStakingPoints(): Promise<{ walletsAwarded: number; totalPoints: number; referralBonus: number }> {
+    const EARLY_USER_DEADLINE = new Date('2026-06-01'); // 2x bonus for early stakers
+    const now = new Date();
+    const positions = await this.getAllActiveStakingPositions();
+    let walletsAwarded = 0;
+    let totalPoints = 0;
+    let referralBonus = 0;
+
+    for (const pos of positions) {
+      const gsolAmt = Number(pos.gsolAmount);
+      if (gsolAmt <= 0) continue;
+
+      // Calculate days staked for multiplier
+      const msStaked = now.getTime() - pos.stakedAt.getTime();
+      const daysStaked = msStaked / (1000 * 60 * 60 * 24);
+
+      // 1.5x multiplier for 30+ days
+      const holdMultiplier = daysStaked >= 30 ? 1.5 : 1.0;
+      // 2x early user bonus (staked before June 2026)
+      const earlyBonus = pos.stakedAt < EARLY_USER_DEADLINE ? 2.0 : 1.0;
+
+      const basePoints = Math.floor(gsolAmt * holdMultiplier * earlyBonus);
+      if (basePoints <= 0) continue;
+
+      // Upsert the staker's points row, then add daily points
+      await db
+        .insert(userPoints)
+        .values({ walletAddress: pos.walletAddress, points: basePoints, accountsClosed: 0 })
+        .onConflictDoUpdate({
+          target: userPoints.walletAddress,
+          set: { points: sql`${userPoints.points} + ${basePoints}`, lastUpdated: now }
+        });
+
+      // 10% referral bonus — find and reward referrer
+      const referrer = await this.getReferrerWalletForPoints(pos.walletAddress);
+      if (referrer && referrer !== pos.walletAddress) {
+        const refBonus = Math.floor(basePoints * 0.1);
+        if (refBonus > 0) {
+          await db
+            .insert(userPoints)
+            .values({ walletAddress: referrer, points: refBonus, accountsClosed: 0 })
+            .onConflictDoUpdate({
+              target: userPoints.walletAddress,
+              set: { points: sql`${userPoints.points} + ${refBonus}`, lastUpdated: now }
+            });
+          referralBonus += refBonus;
+        }
+      }
+
+      // Update lastPointsAt
+      await db
+        .update(gsolStakingPositions)
+        .set({ lastPointsAt: now })
+        .where(eq(gsolStakingPositions.walletAddress, pos.walletAddress));
+
+      walletsAwarded++;
+      totalPoints += basePoints;
+    }
+
+    return { walletsAwarded, totalPoints, referralBonus };
   }
 
   async getPointsLeaderboard(limit: number = 100, sinceTimestamp?: Date | null): Promise<UserPoints[]> {
