@@ -35,14 +35,17 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">1. What We Collect</h2>
             <p className="mb-3">
-              GetFreeSol uses Reown, a trusted and safe wallet connection provider. When you connect your wallet, we only collect your public wallet address and record transaction data (account closures, burns, swaps, referral activities). All blockchain transactions are publicly visible on the Solana network.
+              GetFreeSol uses Reown, a trusted and safe wallet connection provider. When you connect your wallet, we only collect your public wallet address and record transaction data (account closures, burns, swaps, referral activities, and staking positions). All blockchain transactions are publicly visible on the Solana network.
+            </p>
+            <p>
+              For the GSOL staking feature we additionally store: the amount of GSOL you hold, the date your staking position was opened (to calculate loyalty multipliers), your cumulative staking points balance, and whether your one-time welcome bonus has been awarded. No private keys or sensitive personal information are ever collected.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">2. How We Use It</h2>
             <p>
-              Your information is used to operate the platform, process transactions, track points and rewards, manage the referral and Developer API programs, and improve the Service. We do not sell or rent your data to third parties.
+              Your information is used to operate the platform, process transactions, track points and rewards (including GSOL staking points, loyalty multipliers, and referral bonuses), manage the referral and Developer API programs, and improve the Service. We do not sell or rent your data to third parties.
             </p>
           </section>
 

@@ -42,7 +42,24 @@ export default function TermsConditions() {
           <section>
             <h2 className="text-xl font-bold text-white mb-3">2. What GetFreeSol Does</h2>
             <p>
-              GetFreeSol helps you reclaim SOL from empty token accounts, burn unwanted tokens and NFTs, swap tokens via Jupiter Ultra API, earn referral commissions, and track engagement points on the Solana blockchain.
+              GetFreeSol helps you reclaim SOL from empty token accounts, burn unwanted tokens and NFTs, swap tokens via Jupiter Ultra API, stake SOL to receive GSOL (a liquid staking token), earn referral commissions, and track engagement points on the Solana blockchain.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-white mb-3">2a. GSOL Staking & Points</h2>
+            <p className="mb-3">
+              When you stake SOL through GetFreeSol you receive GSOL, a liquid staking token issued by the SP12 single-validator stake pool on Solana mainnet. Staking rewards are auto-compounded and GSOL appreciates in value relative to SOL over time. There is no minimum stake amount and no lock-up period — you may unstake at any time.
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-2">
+              <li><strong className="text-white">Staking Points:</strong> Holding GSOL earns 100 pts per GSOL every 24 hours, awarded automatically at midnight UTC.</li>
+              <li><strong className="text-white">Welcome Bonus:</strong> First-time stakers receive a one-time flat bonus of 100 pts, permanently recorded per wallet.</li>
+              <li><strong className="text-white">Loyalty Multiplier:</strong> Positions held for more than 30 days earn a 1.5× points multiplier.</li>
+              <li><strong className="text-white">Referral Points:</strong> Referrers automatically earn 10% of their referred users' daily staking points.</li>
+              <li><strong className="text-white">Early User Bonus:</strong> Wallets that stake before June 2026 earn a 2× early-user multiplier on daily staking points.</li>
+            </ul>
+            <p className="mt-3">
+              Points have no guaranteed monetary value and may be used for future platform rewards at GetFreeSol's sole discretion.
             </p>
           </section>
 
