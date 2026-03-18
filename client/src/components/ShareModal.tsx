@@ -10,10 +10,10 @@ interface ShareModalProps {
   accountsClosed?: number;
   claimType?: 'accounts' | 'tokens' | 'nfts';
   walletAddress?: string;
-  onFlip?: () => void;
+  onStake?: () => void;
 }
 
-export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts', onFlip }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accountsClosed = 1, claimType = 'accounts', onStake }: ShareModalProps) {
   const [tweetText, setTweetText] = useState("");
   const [shareUrl, setShareUrl] = useState("");
   
@@ -74,13 +74,13 @@ export function ShareModal({ isOpen, onClose, solClaimed, referralCode, accounts
               >
                 <span className="text-black font-mono font-bold text-base">Tweet It</span>
               </button>
-              {onFlip && (
+              {onStake && (
               <button 
-                onClick={() => { onClose(); onFlip(); }}
-                className="bg-purple-600 hover:bg-purple-500 border-2 border-purple-400 rounded-lg px-6 py-2 transition-colors"
-                style={{ backgroundColor: '#9333ea', borderColor: '#a855f7' }}
+                onClick={() => { onClose(); onStake(); }}
+                className="bg-blue-600 hover:bg-blue-500 border-2 border-blue-400 rounded-lg px-6 py-2 transition-colors"
+                style={{ backgroundColor: '#2563eb', borderColor: '#3b82f6' }}
               >
-                <span className="text-white font-mono font-bold text-base">Flip It</span>
+                <span className="text-white font-mono font-bold text-base">Stake</span>
               </button>
               )}
             </div>
