@@ -11509,12 +11509,12 @@ Claimer: ${walletAddress}`;
       const gsolAmt = Number(gsolReceived) > 0 ? Number(gsolReceived) : Number(solAmount);
       await storage.upsertStakingPosition(walletAddress, gsolAmt);
 
-      // One-time welcome bonus of 100 pts — ONLY on the very first stake ever
+      // One-time flat 100 pt welcome bonus — ONLY on the very first stake ever, amount doesn't matter
       let pointsAwarded = 0;
       if (isFirstTime) {
-        const result = await storage.awardStakingPoints(walletAddress, Number(solAmount));
+        const result = await storage.awardStakingPoints(walletAddress, 1); // always 1 SOL = 100 pts flat
         pointsAwarded = result.pointsAwarded;
-        console.log(`🎯 First-time staker bonus: ${walletAddress} → +${pointsAwarded} pts`);
+        console.log(`🎯 First-time staker bonus: ${walletAddress} → +${pointsAwarded} pts (flat 100)`);
       } else {
         console.log(`📍 Returning staker: ${walletAddress} staked ${solAmount} SOL (no bonus, daily hold earns points)`);
       }
