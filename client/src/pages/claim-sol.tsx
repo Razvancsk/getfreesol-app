@@ -966,7 +966,26 @@ export default function SolRefund() {
         txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
         await connection.confirmTransaction(txid, 'confirmed');
       }
-      toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+      // Award staking points
+      if (publicKey) {
+        fetch('/api/staking/award-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: publicKey.toBase58(), solAmount: amt })
+        }).then(r => r.json()).then(d => {
+          if (d.pointsAwarded > 0) {
+            toast({ title: `✅ Staked! +${d.pointsAwarded} pts`, description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+          } else {
+            toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+          }
+        }).catch(() => {
+          toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+        });
+        // Refresh points display
+        queryClient.invalidateQueries({ queryKey: ['/api/user/gfs-discount', publicKey.toBase58()] });
+      } else {
+        toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+      }
       setStakeAmount('');
       // Refresh balances
       const bal = await connection.getBalance(publicKey);

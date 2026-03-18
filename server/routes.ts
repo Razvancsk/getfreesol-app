@@ -11485,6 +11485,29 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  // Award staking points after a successful stake transaction
+  app.post('/api/staking/award-points', async (req, res) => {
+    try {
+      const { walletAddress, solAmount } = req.body;
+      if (!walletAddress || !solAmount || isNaN(Number(solAmount)) || Number(solAmount) <= 0) {
+        return res.status(400).json({ error: 'walletAddress and solAmount required' });
+      }
+      const PLATFORM_WALLETS = [
+        'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT',
+        'GETyEc6mVeymyH9tyTWxEW7j7thBrqSVFapHGP4Qkfq6'
+      ];
+      if (PLATFORM_WALLETS.includes(walletAddress)) {
+        return res.json({ success: true, pointsAwarded: 0 });
+      }
+      const result = await storage.awardStakingPoints(walletAddress, Number(solAmount));
+      console.log(`🎯 Staking points: ${walletAddress} staked ${solAmount} SOL → +${result.pointsAwarded} pts`);
+      res.json({ success: true, pointsAwarded: result.pointsAwarded });
+    } catch (e: any) {
+      console.error('[staking/award-points]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

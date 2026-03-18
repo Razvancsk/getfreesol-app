@@ -245,6 +245,7 @@ export interface IStorage {
   // User Points System
   getUserPoints(walletAddress: string): Promise<UserPoints | undefined>;
   awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
+  awardStakingPoints(walletAddress: string, solAmount: number): Promise<{ pointsAwarded: number }>;
   getPointsLeaderboard(limit?: number, sinceTimestamp?: Date | null): Promise<UserPoints[]>;
   
   // Social Tasks System (Community Grow)
@@ -1328,6 +1329,35 @@ export class DatabaseStorage implements IStorage {
           accountsClosed
         });
     }
+  }
+
+  async awardStakingPoints(walletAddress: string, solAmount: number): Promise<{ pointsAwarded: number }> {
+    // 100 points per SOL staked
+    const pointsToAward = Math.floor(solAmount * 100);
+    if (pointsToAward <= 0) return { pointsAwarded: 0 };
+
+    const existing = await this.getUserPoints(walletAddress);
+
+    if (existing) {
+      await db
+        .update(userPoints)
+        .set({
+          points: sql`${userPoints.points} + ${pointsToAward}`,
+          solStaked: sql`${userPoints.solStaked} + ${solAmount.toFixed(9)}`,
+          lastUpdated: new Date()
+        })
+        .where(eq(userPoints.walletAddress, walletAddress));
+    } else {
+      await db
+        .insert(userPoints)
+        .values({
+          walletAddress,
+          points: pointsToAward,
+          accountsClosed: 0,
+          solStaked: solAmount.toFixed(9)
+        });
+    }
+    return { pointsAwarded: pointsToAward };
   }
 
   async getPointsLeaderboard(limit: number = 100, sinceTimestamp?: Date | null): Promise<UserPoints[]> {
