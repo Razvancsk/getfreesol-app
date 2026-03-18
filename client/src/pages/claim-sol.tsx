@@ -966,25 +966,36 @@ export default function SolRefund() {
         txid = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: false });
         await connection.confirmTransaction(txid, 'confirmed');
       }
-      // Award staking points
+      // Award staking points (first-time bonus only)
+      const stakeToastAction = txid
+        ? <ToastAction altText="View on Solscan" onClick={() => window.open(`https://solscan.io/tx/${txid}`, '_blank')}>View Tx</ToastAction>
+        : undefined;
+
       if (publicKey) {
         fetch('/api/staking/award-points', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ walletAddress: publicKey.toBase58(), solAmount: amt })
         }).then(r => r.json()).then(d => {
-          if (d.pointsAwarded > 0) {
-            toast({ title: `✅ Staked! +${d.pointsAwarded} pts`, description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+          if (d.isFirstTime && d.pointsAwarded > 0) {
+            toast({
+              title: `✅ Staked ${amt} GSOL — Welcome bonus +${d.pointsAwarded} pts!`,
+              description: 'You now earn points every day for holding GSOL.',
+              action: stakeToastAction
+            });
           } else {
-            toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+            toast({
+              title: `✅ Staked ${amt} GSOL`,
+              description: 'Earning points daily for holding.',
+              action: stakeToastAction
+            });
           }
         }).catch(() => {
-          toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+          toast({ title: `✅ Staked ${amt} GSOL`, action: stakeToastAction });
         });
-        // Refresh points display
         queryClient.invalidateQueries({ queryKey: ['/api/user/gfs-discount', publicKey.toBase58()] });
       } else {
-        toast({ title: '✅ Staked!', description: `${amt} SOL → GSOL${txid ? `. Tx: ${txid.slice(0, 8)}…` : ''}` });
+        toast({ title: `✅ Staked ${amt} GSOL`, action: stakeToastAction });
       }
       setStakeAmount('');
       // Refresh balances

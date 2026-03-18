@@ -11499,15 +11499,27 @@ Claimer: ${walletAddress}`;
         return res.status(400).json({ error: 'walletAddress and solAmount required' });
       }
       if (STAKING_PLATFORM_WALLETS.includes(walletAddress)) {
-        return res.json({ success: true, pointsAwarded: 0 });
+        return res.json({ success: true, pointsAwarded: 0, isFirstTime: false });
       }
-      // Track GSOL position for daily points (use gsolReceived if provided, else solAmount estimate)
+      // Check if user has ever staked before (first-time bonus gate)
+      const existingPosition = await storage.getStakingPosition(walletAddress);
+      const isFirstTime = existingPosition === null;
+
+      // Track GSOL position for daily points
       const gsolAmt = Number(gsolReceived) > 0 ? Number(gsolReceived) : Number(solAmount);
       await storage.upsertStakingPosition(walletAddress, gsolAmt);
-      // One-time award on stake (100 pts/SOL)
-      const result = await storage.awardStakingPoints(walletAddress, Number(solAmount));
-      console.log(`🎯 Staking: ${walletAddress} staked ${solAmount} SOL → +${result.pointsAwarded} pts (position tracked)`);
-      res.json({ success: true, pointsAwarded: result.pointsAwarded });
+
+      // One-time welcome bonus of 100 pts — ONLY on the very first stake ever
+      let pointsAwarded = 0;
+      if (isFirstTime) {
+        const result = await storage.awardStakingPoints(walletAddress, Number(solAmount));
+        pointsAwarded = result.pointsAwarded;
+        console.log(`🎯 First-time staker bonus: ${walletAddress} → +${pointsAwarded} pts`);
+      } else {
+        console.log(`📍 Returning staker: ${walletAddress} staked ${solAmount} SOL (no bonus, daily hold earns points)`);
+      }
+
+      res.json({ success: true, pointsAwarded, isFirstTime });
     } catch (e: any) {
       console.error('[staking/award-points]', e);
       res.status(500).json({ error: e.message });

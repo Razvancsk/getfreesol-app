@@ -252,6 +252,7 @@ export interface IStorage {
   getPointsLeaderboard(limit?: number, sinceTimestamp?: Date | null): Promise<UserPoints[]>;
 
   // GSOL Staking Positions (for daily time-based points)
+  getStakingPosition(walletAddress: string): Promise<GsolStakingPosition | null>;
   upsertStakingPosition(walletAddress: string, gsolAmount: number): Promise<void>;
   reduceStakingPosition(walletAddress: string, gsolAmount: number): Promise<void>;
   getAllActiveStakingPositions(): Promise<GsolStakingPosition[]>;
@@ -1394,6 +1395,15 @@ export class DatabaseStorage implements IStorage {
         });
     }
     return { pointsAwarded: pointsToAward };
+  }
+
+  async getStakingPosition(walletAddress: string): Promise<GsolStakingPosition | null> {
+    const rows = await db
+      .select()
+      .from(gsolStakingPositions)
+      .where(eq(gsolStakingPositions.walletAddress, walletAddress))
+      .limit(1);
+    return rows.length > 0 ? rows[0] : null;
   }
 
   async upsertStakingPosition(walletAddress: string, gsolAmount: number): Promise<void> {
