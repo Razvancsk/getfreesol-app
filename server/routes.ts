@@ -11510,18 +11510,20 @@ Claimer: ${walletAddress}`;
       // Skip actual point award for platform wallets but still return isFirstTime for the toast UI
       let pointsAwarded = 0;
       const isPlatformWallet = STAKING_PLATFORM_WALLETS.includes(walletAddress);
-      if (isFirstTime && !isPlatformWallet) {
-        // Award exactly 100 pts flat and mark bonus as used (permanent)
-        await db
-          .insert(userPoints)
-          .values({ walletAddress, points: 100, accountsClosed: 0, stakingBonusAwarded: true })
-          .onConflictDoUpdate({
-            target: userPoints.walletAddress,
-            set: { points: sql`${userPoints.points} + 100`, stakingBonusAwarded: true, lastUpdated: new Date() }
-          });
-        pointsAwarded = 100;
-        console.log(`🎯 First-time staker bonus: ${walletAddress} → +100 pts (permanent flag set)`);
-      } else if (!isFirstTime) {
+      if (isFirstTime) {
+        if (!isPlatformWallet) {
+          // Award exactly 100 pts flat and mark bonus as used (permanent)
+          await db
+            .insert(userPoints)
+            .values({ walletAddress, points: 100, accountsClosed: 0, stakingBonusAwarded: true })
+            .onConflictDoUpdate({
+              target: userPoints.walletAddress,
+              set: { points: sql`${userPoints.points} + 100`, stakingBonusAwarded: true, lastUpdated: new Date() }
+            });
+          console.log(`🎯 First-time staker bonus: ${walletAddress} → +100 pts (permanent flag set)`);
+        }
+        pointsAwarded = 100; // always show 100 in toast for first-time, regardless of wallet type
+      } else {
         console.log(`📍 Returning staker: ${walletAddress} (no bonus, earning daily hold points)`);
       }
 
