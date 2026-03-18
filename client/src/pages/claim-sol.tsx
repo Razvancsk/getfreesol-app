@@ -977,16 +977,17 @@ export default function SolRefund() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ walletAddress: publicKey.toBase58(), solAmount: amt })
         }).then(r => r.json()).then(d => {
-          if (d.isFirstTime && d.pointsAwarded > 0) {
+          if (d.isFirstTime) {
+            const bonusText = d.pointsAwarded > 0 ? ` +${d.pointsAwarded} pts!` : '';
             toast({
-              title: `✅ Staked ${amt} GSOL — Welcome bonus +${d.pointsAwarded} pts!`,
-              description: 'You now earn points every day for holding GSOL.',
+              title: `✅ Staked ${amt} GSOL — Welcome bonus!${bonusText}`,
+              description: 'You now earn points every 24h for holding GSOL.',
               action: stakeToastAction
             });
           } else {
             toast({
               title: `✅ Staked ${amt} GSOL`,
-              description: 'Earning points daily for holding.',
+              description: 'Earning points every 24h for holding.',
               action: stakeToastAction
             });
           }

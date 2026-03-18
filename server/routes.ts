@@ -11498,20 +11498,19 @@ Claimer: ${walletAddress}`;
       if (!walletAddress || !solAmount || isNaN(Number(solAmount)) || Number(solAmount) <= 0) {
         return res.status(400).json({ error: 'walletAddress and solAmount required' });
       }
-      if (STAKING_PLATFORM_WALLETS.includes(walletAddress)) {
-        return res.json({ success: true, pointsAwarded: 0, isFirstTime: false });
-      }
       // Check permanent bonus flag — persists even after unstaking
       const existingPts = await storage.getUserPoints(walletAddress);
       const isFirstTime = !existingPts || !existingPts.stakingBonusAwarded;
 
-      // Track GSOL position for daily points
+      // Track GSOL position for daily points (all wallets)
       const gsolAmt = Number(gsolReceived) > 0 ? Number(gsolReceived) : Number(solAmount);
       await storage.upsertStakingPosition(walletAddress, gsolAmt);
 
       // One-time flat 100 pt welcome bonus — ONLY on the very first stake ever, forever
+      // Skip actual point award for platform wallets but still return isFirstTime for the toast UI
       let pointsAwarded = 0;
-      if (isFirstTime) {
+      const isPlatformWallet = STAKING_PLATFORM_WALLETS.includes(walletAddress);
+      if (isFirstTime && !isPlatformWallet) {
         // Award exactly 100 pts flat and mark bonus as used (permanent)
         await db
           .insert(userPoints)
@@ -11522,7 +11521,7 @@ Claimer: ${walletAddress}`;
           });
         pointsAwarded = 100;
         console.log(`🎯 First-time staker bonus: ${walletAddress} → +100 pts (permanent flag set)`);
-      } else {
+      } else if (!isFirstTime) {
         console.log(`📍 Returning staker: ${walletAddress} (no bonus, earning daily hold points)`);
       }
 
