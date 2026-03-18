@@ -2734,10 +2734,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
       
-      // Award points (20 points per account closed) - skip platform wallet
+      // Award points: 100 pts per SOL claimed (1 pt per 0.01 SOL) - skip platform wallet
       const PLATFORM_WALLET_POINTS = 'GetxnGXDwWfGwMmNweyCexiY3Z8KRWJjs6qviWv1uqkT';
       if (walletAddress !== PLATFORM_WALLET_POINTS) {
-        await storage.awardPoints(walletAddress, accountsClosed);
+        const claimedSol = Number(netAmount) > 0 ? Number(netAmount) : Number(solRecovered);
+        await storage.awardRentClaimPoints(walletAddress, claimedSol, accountsClosed);
       }
 
       // GFS Cashback: send 30% of fee back as $GFS tokens (fire and forget)

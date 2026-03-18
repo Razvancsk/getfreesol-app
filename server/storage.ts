@@ -247,6 +247,7 @@ export interface IStorage {
   // User Points System
   getUserPoints(walletAddress: string): Promise<UserPoints | undefined>;
   awardPoints(walletAddress: string, accountsClosed: number): Promise<void>;
+  awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number): Promise<{ pointsAwarded: number }>;
   awardStakingPoints(walletAddress: string, solAmount: number): Promise<{ pointsAwarded: number }>;
   getPointsLeaderboard(limit?: number, sinceTimestamp?: Date | null): Promise<UserPoints[]>;
 
@@ -1338,6 +1339,32 @@ export class DatabaseStorage implements IStorage {
           accountsClosed
         });
     }
+  }
+
+  async awardRentClaimPoints(walletAddress: string, solClaimed: number, accountsClosed: number): Promise<{ pointsAwarded: number }> {
+    // 100 points per SOL claimed (1 pt per 0.01 SOL)
+    const pointsToAward = Math.floor(solClaimed * 100);
+    if (pointsToAward <= 0 && accountsClosed <= 0) return { pointsAwarded: 0 };
+
+    await db
+      .insert(userPoints)
+      .values({
+        walletAddress,
+        points: pointsToAward,
+        accountsClosed,
+        totalSolClaimed: solClaimed.toFixed(9)
+      })
+      .onConflictDoUpdate({
+        target: userPoints.walletAddress,
+        set: {
+          points: sql`${userPoints.points} + ${pointsToAward}`,
+          accountsClosed: sql`${userPoints.accountsClosed} + ${accountsClosed}`,
+          totalSolClaimed: sql`${userPoints.totalSolClaimed} + ${solClaimed.toFixed(9)}`,
+          lastUpdated: new Date()
+        }
+      });
+
+    return { pointsAwarded: pointsToAward };
   }
 
   async awardStakingPoints(walletAddress: string, solAmount: number): Promise<{ pointsAwarded: number }> {
