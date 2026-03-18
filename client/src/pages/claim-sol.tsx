@@ -5111,12 +5111,6 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  <div className={`rounded-xl p-4 border flex gap-3 items-start ${'bg-blue-900/20 border-blue-500/20'}`}>
-                    <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-white text-sm">
-                      GSOL staking is launching soon. Stake your SOL to receive GSOL and earn native Solana staking rewards automatically — no action needed after staking.
-                    </p>
-                  </div>
                 </div>
 
               </div>
