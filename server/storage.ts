@@ -1495,7 +1495,8 @@ export class DatabaseStorage implements IStorage {
       // 2x early user bonus (staked before June 2026)
       const earlyBonus = pos.stakedAt < EARLY_USER_DEADLINE ? 2.0 : 1.0;
 
-      const basePoints = Math.floor(gsolAmt * holdMultiplier * earlyBonus);
+      // 100 pts per GSOL per day (consistent with 100 pts per SOL claimed/staked)
+      const basePoints = Math.floor(gsolAmt * 100 * holdMultiplier * earlyBonus);
       if (basePoints <= 0) continue;
 
       // Upsert the staker's points row, then add daily points
