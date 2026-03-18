@@ -4,7 +4,7 @@ import { ArrowLeft, Code } from 'lucide-react';
 import logoPath from '@assets/image_1757882056840.png';
 
 export default function UserDocs() {
-  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'developer-api'>('overview');
+  const [activeDocSection, setActiveDocSection] = useState<'overview' | 'burn-tokens' | 'burn-nfts' | 'referrals' | 'points' | 'staking' | 'developer-api'>('overview');
 
   const sections = [
     { id: 'overview', title: 'How to Claim SOL' },
@@ -12,6 +12,7 @@ export default function UserDocs() {
     { id: 'burn-nfts', title: 'Burn NFTs' },
     { id: 'referrals', title: 'Referral System' },
     { id: 'points', title: 'Points System' },
+    { id: 'staking', title: 'Staking (gSOL)' },
     { id: 'developer-api', title: 'Developer API' }
   ];
   
@@ -578,36 +579,53 @@ export default function UserDocs() {
                 <div className="space-y-2">
                   <h2 className="text-white text-2xl font-semibold">Points System</h2>
                   <p className="text-purple-200">
-                    Earn points for every account you close and compete on the leaderboard!
+                    Earn points for every action you take and compete on the leaderboard!
                   </p>
                 </div>
                 <div className="space-y-6 text-white prose prose-invert max-w-none">
                   <div className="space-y-8">
                     <div className="space-y-4">
-                      <h3 className="text-xl font-semibold text-white mb-4">How the Points System Works</h3>
+                      <h3 className="text-xl font-semibold text-white mb-4">How to Earn Points</h3>
                       <p className="text-purple-200 leading-relaxed mb-4">
-                        Every time you close an empty token account, you earn <strong className="text-white">20 points</strong>. 
-                        Points are tracked automatically and displayed on your profile. Compete with other users on the 
-                        <strong className="text-white"> Top 10 Leaderboard</strong> to see who's recovering the most SOL!
+                        Points are awarded automatically for every action you take on GetFreeSol. 
+                        Compete with other users on the <strong className="text-white">Top 10 Leaderboard</strong> to see who's earning the most!
                       </p>
-                      <ul className="space-y-3 text-purple-200 leading-relaxed">
-                        <li className="flex items-start gap-3">
-                          <span className="text-yellow-400 mt-1">⭐</span>
-                          <span><strong className="text-white">20 points</strong> for every account closed</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <span className="text-yellow-400 mt-1">⭐</span>
-                          <span>Track your total points, SOL claimed, and global rank</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <span className="text-yellow-400 mt-1">⭐</span>
-                          <span>Compete on the Top 10 Leaderboard</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                          <span className="text-yellow-400 mt-1">⭐</span>
-                          <span>See how much SOL the top users have recovered</span>
-                        </li>
-                      </ul>
+
+                      <div className="bg-purple-800/30 border border-purple-600/50 rounded-lg p-5 space-y-3">
+                        <h4 className="text-white font-semibold text-base mb-3 flex items-center gap-2"><span>🔒</span> Claiming & Burning</h4>
+                        <ul className="space-y-3 text-purple-200 leading-relaxed">
+                          <li className="flex items-start gap-3">
+                            <span className="text-yellow-400 mt-1">⭐</span>
+                            <span><strong className="text-white">20 points</strong> for every empty account closed</span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-yellow-400 mt-1">⭐</span>
+                            <span><strong className="text-white">Points</strong> for burning tokens and NFTs</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-blue-900/30 border border-blue-600/50 rounded-lg p-5 space-y-3">
+                        <h4 className="text-white font-semibold text-base mb-3 flex items-center gap-2"><span>⚡</span> Staking (gSOL)</h4>
+                        <ul className="space-y-3 text-purple-200 leading-relaxed">
+                          <li className="flex items-start gap-3">
+                            <span className="text-green-400 mt-1">⭐</span>
+                            <span><strong className="text-white">100 points per gSOL</strong> every 24 hours while staked</span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-green-400 mt-1">⭐</span>
+                            <span><strong className="text-white">+100 point welcome bonus</strong> for first-time stakers</span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-yellow-400 mt-1">⭐</span>
+                            <span>Hold gSOL for <strong className="text-white">30+ days</strong> to unlock a <strong className="text-yellow-400">1.5× point multiplier</strong></span>
+                          </li>
+                          <li className="flex items-start gap-3">
+                            <span className="text-purple-400 mt-1">⭐</span>
+                            <span>Earn <strong className="text-white">10% of your referrals' daily staking points</strong> automatically</span>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
 
                     <div className="space-y-4">
@@ -629,7 +647,7 @@ export default function UserDocs() {
                         </li>
                         <li className="flex items-start gap-3">
                           <span className="text-blue-400 mt-1">▸</span>
-                          <span>Close more accounts to climb the leaderboard!</span>
+                          <span>Stake gSOL and close more accounts to climb the leaderboard!</span>
                         </li>
                       </ul>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
@@ -652,6 +670,111 @@ export default function UserDocs() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeDocSection === 'staking' && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-white text-2xl font-semibold">Staking (gSOL)</h2>
+                  <p className="text-purple-200">
+                    Stake your SOL to receive gSOL — Get Staked SOL — and earn yield plus points while you hold.
+                  </p>
+                </div>
+                <div className="space-y-8 text-white prose prose-invert max-w-none">
+
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                      <span>⚡</span> What is gSOL?
+                    </h3>
+                    <p className="text-purple-200 leading-relaxed">
+                      <strong className="text-white">gSOL (Get Staked SOL)</strong> is a liquid staking token you receive when you stake SOL on GetFreeSol. 
+                      It represents your staked SOL plus any yield it earns over time. You can unstake at any time to get your SOL back.
+                    </p>
+                    <div className="bg-purple-800/30 border border-purple-600/50 rounded-lg p-5 space-y-3">
+                      <ul className="space-y-3 text-purple-200 leading-relaxed">
+                        <li className="flex items-start gap-3">
+                          <span className="text-green-400 mt-1">✓</span>
+                          <span>Stake SOL → receive <strong className="text-white">gSOL</strong> 1:1</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <span className="text-green-400 mt-1">✓</span>
+                          <span>Your SOL earns <strong className="text-white">staking yield</strong> automatically while held as gSOL</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <span className="text-green-400 mt-1">✓</span>
+                          <span>Unstake any time — no lock-up period</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <span className="text-green-400 mt-1">✓</span>
+                          <span>Liquid — hold gSOL in your wallet while still earning</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                      <span>🎯</span> How to Stake
+                    </h3>
+                    <ul className="space-y-3 text-purple-200 leading-relaxed">
+                      <li className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold mt-0.5">1.</span>
+                        <span>Connect your wallet and go to the <strong className="text-white">Staking</strong> tab</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold mt-0.5">2.</span>
+                        <span>Enter the amount of SOL you want to stake</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold mt-0.5">3.</span>
+                        <span>Click <strong className="text-white">Stake</strong> and approve the transaction in your wallet</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold mt-0.5">4.</span>
+                        <span>You'll receive <strong className="text-white">gSOL</strong> in your wallet immediately</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold mt-0.5">5.</span>
+                        <span>To unstake, switch to <strong className="text-white">Unstake</strong> mode and burn your gSOL to get SOL back</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                      <span>⭐</span> Points for Staking
+                    </h3>
+                    <p className="text-purple-200 leading-relaxed mb-4">
+                      Holding gSOL earns you points every single day. The longer you hold, the more you earn.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-green-900/30 border border-green-600/50 rounded-lg p-4 text-center">
+                        <p className="text-green-400 text-2xl font-bold">100 pts</p>
+                        <p className="text-purple-200 text-sm mt-1">per gSOL every 24 hours</p>
+                      </div>
+                      <div className="bg-blue-900/30 border border-blue-600/50 rounded-lg p-4 text-center">
+                        <p className="text-blue-400 text-2xl font-bold">+100 pts</p>
+                        <p className="text-purple-200 text-sm mt-1">first-time staker welcome bonus</p>
+                      </div>
+                      <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-4 text-center">
+                        <p className="text-yellow-400 text-2xl font-bold">1.5×</p>
+                        <p className="text-purple-200 text-sm mt-1">point multiplier after holding 30+ days</p>
+                      </div>
+                      <div className="bg-purple-900/30 border border-purple-600/50 rounded-lg p-4 text-center">
+                        <p className="text-purple-400 text-2xl font-bold">10%</p>
+                        <p className="text-purple-200 text-sm mt-1">of referrals' daily staking points</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-800/20 border border-purple-600/40 rounded-lg p-5">
+                    <p className="text-purple-200 text-sm leading-relaxed">
+                      <strong className="text-white">Tip:</strong> After claiming your SOL, click the <strong className="text-white">Stake It</strong> button on the claim card to go straight to the Staking tab and put your recovered SOL to work immediately!
+                    </p>
+                  </div>
+
                 </div>
               </div>
             )}
