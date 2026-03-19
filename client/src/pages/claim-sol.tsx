@@ -1036,7 +1036,8 @@ export default function SolRefund() {
       const signed = await signTransaction(tx);
       const signedBase64 = Buffer.from(signed.serialize()).toString('base64');
       let txid = '';
-      if (stakingMethod === 'jupiter' && data.requestId) {
+      if (data.requestId) {
+        // Jupiter Ultra execute path (direct method or fallback)
         const execResp = await fetch('/api/jupiter/ultra/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
