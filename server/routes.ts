@@ -11472,9 +11472,16 @@ Claimer: ${walletAddress}`;
       const { amount, signerPublicKey, method } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
       if (method === 'direct') {
-        // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
-        const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
-        res.json(result);
+        try {
+          // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
+          const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
+          return res.json(result);
+        } catch (directErr: any) {
+          // Pool reserve too low (0x23) — fall back to Jupiter Ultra automatically
+          console.warn('[unstake-tx] direct failed, falling back to Jupiter:', directErr.message);
+          const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
+          return res.json({ ...result, fallback: true });
+        }
       } else {
         // Jupiter method: routes through Sanctum pool via Jupiter Ultra
         const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
