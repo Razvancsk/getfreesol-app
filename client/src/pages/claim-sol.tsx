@@ -4987,16 +4987,16 @@ export default function SolRefund() {
                     {/* Token pill left, amount right */}
                     <div className="flex items-center justify-between gap-4">
                       {/* Token pill */}
-                      <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 shrink-0">
+                      <div className="border border-purple-500/40 rounded-3xl bg-purple-900/40 h-9 pl-1.5 pr-3 flex gap-1.5 items-center shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
                             <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 rounded-full object-contain" />
-                            <span className="text-white font-bold text-sm">GSOL</span>
+                            <span className="text-white font-semibold text-sm">GSOL</span>
                           </>
                         ) : (
                           <>
                             <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-6 h-6 rounded-full" />
-                            <span className="text-white font-bold text-sm">SOL</span>
+                            <span className="text-white font-semibold text-sm">SOL</span>
                           </>
                         )}
                       </div>
