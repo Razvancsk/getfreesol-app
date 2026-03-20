@@ -11368,23 +11368,6 @@ Claimer: ${walletAddress}`;
     const POOL_VALIDATOR_LIST = new PublicKey('EkcTdkQ4G6FnmZr5XdEouSHL7rJsAwRF4m7NuBxcjDWG');
     const POOL_RESERVE        = new PublicKey('5kQdTc11recnZzm1bYJXEz1sNQvEUUWqHDBkYkyvptLu');
 
-    // ── Pre-check: pool reserve must have enough SOL ──────────────────────────
-    // POOL_VALIDATOR_LIST is actually the reserve stake account (EkcTdkQ4...).
-    // SP12 allows withdrawing: reserve_balance - MIN_STAKE_RENT_EXEMPTION.
-    const MIN_STAKE_RENT = 2_282_880; // lamports — minimum balance for a stake account
-    const checkConn = new Connection(
-      process.env.HELIUS_RPC_URL ||
-      `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-    );
-    const reserveBalance = await checkConn.getBalance(POOL_VALIDATOR_LIST);
-    const maxWithdrawable = Math.max(0, reserveBalance - MIN_STAKE_RENT);
-    if (lamports > maxWithdrawable) {
-      const maxSol = (maxWithdrawable / 1e9).toFixed(4);
-      throw Object.assign(
-        new Error(`POOL_RESERVE_INSUFFICIENT:${maxWithdrawable}`),
-        { code: 'POOL_RESERVE_INSUFFICIENT', maxWithdrawable, maxSol }
-      );
-    }
     // wSOL fee vault for this pool (self-owned wSOL token account, fixed address)
     const WSOL_FEE_VAULT      = new PublicKey('D3DxbHp7YvgdD2iH8GfsGWdFE5gp37aoYjp4jW5jNMjH');
     // SP12 single-pool program
@@ -11415,7 +11398,7 @@ Claimer: ${walletAddress}`;
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }, // 6: Token program
         { pubkey: SP12_PROGRAM,     isSigner: false, isWritable: false }, // 7: SP12 program
         { pubkey: GSOL_POOL,        isSigner: false, isWritable: true  }, // 8: GSOL pool
-        { pubkey: POOL_MANAGER_FEE, isSigner: false, isWritable: true  }, // 9: pool manager fee
+        { pubkey: POOL_MANAGER_FEE, isSigner: false, isWritable: false }, // 9: withdraw authority (non-writable)
         { pubkey: POOL_VALIDATOR_LIST, isSigner: false, isWritable: true }, // 10: validator list
         { pubkey: POOL_RESERVE,     isSigner: false, isWritable: true  }, // 11: pool reserve
         { pubkey: CLOCK_SYSVAR,     isSigner: false, isWritable: false }, // 12: Clock sysvar
@@ -11434,7 +11417,7 @@ Claimer: ${walletAddress}`;
     );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
-    const FEE_DEST = new PublicKey('9fBpwxcudpLyJskhiiKmU8wPszeUuCB8sSjhPi44QuFb');
+    const FEE_DEST = new PublicKey('FzESY59j4xCef1EjqoprVBDXEFTWcrx8hGq6AYYvGH1v');
     const STAKING_FEE_LAMPORTS = 50_000; // 0.00005 SOL
 
     // Fixed compute budget values taken from a real WithdrawWrappedSol transaction
@@ -11484,20 +11467,9 @@ Claimer: ${walletAddress}`;
       const { amount, signerPublicKey, method } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
       if (method === 'direct') {
-        try {
-          // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
-          const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
-          return res.json(result);
-        } catch (err: any) {
-          if (err.code === 'POOL_RESERVE_INSUFFICIENT') {
-            return res.status(422).json({
-              error: 'POOL_RESERVE_INSUFFICIENT',
-              maxWithdrawable: err.maxWithdrawable,
-              maxSol: err.maxSol,
-            });
-          }
-          throw err;
-        }
+        // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
+        const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
+        return res.json(result);
       } else {
         // Jupiter method: routes through Sanctum pool via Jupiter Ultra
         const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
@@ -11505,23 +11477,6 @@ Claimer: ${walletAddress}`;
       }
     } catch (e: any) {
       console.error('[unstake-tx]', e);
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  // Returns current GSOL pool reserve capacity for the unstake UI
-  app.get('/api/staking/pool-reserve', async (_req, res) => {
-    try {
-      const conn = new Connection(
-        process.env.HELIUS_RPC_URL ||
-        `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-      );
-      const POOL_RESERVE_STAKE = new PublicKey('EkcTdkQ4G6FnmZr5XdEouSHL7rJsAwRF4m7NuBxcjDWG');
-      const MIN_STAKE_RENT = 2_282_880;
-      const balance = await conn.getBalance(POOL_RESERVE_STAKE);
-      const maxWithdrawable = Math.max(0, balance - MIN_STAKE_RENT);
-      res.json({ maxWithdrawable, maxSol: (maxWithdrawable / 1e9).toFixed(4) });
-    } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
   });

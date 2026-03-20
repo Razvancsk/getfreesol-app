@@ -127,7 +127,6 @@ export default function SolRefund() {
   const [stakeQuote, setStakeQuote] = useState<{ outputAmount: number; priceImpactPct: number } | null>(null);
   const [stakeQuoteLoading, setStakeQuoteLoading] = useState(false);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
-  const [poolReserveSol, setPoolReserveSol] = useState<number | null>(null);
   const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -907,15 +906,6 @@ export default function SolRefund() {
     return () => clearTimeout(timer);
   }, [stakeAmount, stakeMode, stakingMethod]);
 
-  // Fetch pool reserve capacity whenever user switches to unstake+direct mode
-  useEffect(() => {
-    if (stakeMode !== 'unstake' || stakingMethod !== 'direct') return;
-    fetch('/api/staking/pool-reserve')
-      .then(r => r.json())
-      .then(d => { if (d.maxWithdrawable !== undefined) setPoolReserveSol(d.maxWithdrawable / 1e9); })
-      .catch(() => {});
-  }, [stakeMode, stakingMethod]);
-
   // Fetch GSOL token balance when wallet connects or staking tab is active
   useEffect(() => {
     if (!publicKey || !connection) return;
@@ -1040,13 +1030,7 @@ export default function SolRefund() {
         body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58(), method: stakingMethod })
       });
       const data = await resp.json();
-      if (!resp.ok) {
-        if (data.error === 'POOL_RESERVE_INSUFFICIENT') {
-          const maxSol = data.maxSol ?? (data.maxWithdrawable / 1e9).toFixed(4);
-          throw new Error(`Pool reserve low. Max you can unstake right now: ${maxSol} SOL. Try a smaller amount.`);
-        }
-        throw new Error(data.error || 'Failed to build transaction');
-      }
+      if (!resp.ok) throw new Error(data.error || 'Failed to build transaction');
       const txBuffer = Buffer.from(data.transaction, 'base64');
       const tx = VersionedTransaction.deserialize(txBuffer);
       const signed = await signTransaction(tx);
@@ -4945,20 +4929,8 @@ export default function SolRefund() {
                             ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
                             : `≈ ${gsolBalance.toFixed(4)} GSOL`}
                         </span>
-                        <button onClick={() => {
-                          if (stakeMode === 'stake') { setStakeAmount((walletTokenBalance * 0.5).toFixed(4)); }
-                          else {
-                            const maxUnstake = (stakingMethod === 'direct' && poolReserveSol !== null) ? Math.min(gsolBalance, poolReserveSol) : gsolBalance;
-                            setStakeAmount((maxUnstake * 0.5).toFixed(4));
-                          }
-                        }} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
-                        <button onClick={() => {
-                          if (stakeMode === 'stake') { setStakeAmount(Math.max(0, walletTokenBalance - 0.01).toFixed(4)); }
-                          else {
-                            const maxUnstake = (stakingMethod === 'direct' && poolReserveSol !== null) ? Math.min(gsolBalance, poolReserveSol) : gsolBalance;
-                            setStakeAmount(maxUnstake.toFixed(4));
-                          }
-                        }} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (gsolBalance * 0.5).toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : gsolBalance.toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
                       </div>
                     </div>
                     {/* Bottom row: token badge left, amount right */}
@@ -5027,21 +4999,6 @@ export default function SolRefund() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Pool reserve hint — only for direct unstake */}
-                  {stakeMode === 'unstake' && stakingMethod === 'direct' && poolReserveSol !== null && (
-                    <div className={`flex items-center gap-2 rounded-xl px-4 py-2.5 mb-4 text-sm ${
-                      parseFloat(stakeAmount) > poolReserveSol
-                        ? 'bg-red-500/20 border border-red-500/40 text-red-300'
-                        : 'bg-blue-500/10 border border-blue-500/20 text-blue-300'
-                    }`}>
-                      <span>
-                        {parseFloat(stakeAmount) > poolReserveSol
-                          ? `⚠️ Exceeds pool reserve. Max available: ${poolReserveSol.toFixed(4)} SOL`
-                          : `ℹ️ Pool reserve: ${poolReserveSol.toFixed(4)} SOL available`}
-                      </span>
-                    </div>
-                  )}
 
                   {/* Stake Method selector */}
                   <div className="mb-5">
