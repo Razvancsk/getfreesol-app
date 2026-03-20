@@ -4937,7 +4937,7 @@ export default function SolRefund() {
                         <span className="text-white text-sm">
                           {stakeMode === 'stake'
                             ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
-                            : `≈ ${(gsolRawLamports / 1e9).toFixed(4)} GSOL`}
+                            : `≈ ${(Math.floor(gsolRawLamports / 1e5) / 1e4).toFixed(4)} GSOL`}
                         </span>
                         <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (Math.floor(gsolRawLamports / 2) / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
                         <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : (gsolRawLamports / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
