@@ -127,6 +127,7 @@ export default function SolRefund() {
   const [stakeQuote, setStakeQuote] = useState<{ outputAmount: number; priceImpactPct: number } | null>(null);
   const [stakeQuoteLoading, setStakeQuoteLoading] = useState(false);
   const [gsolBalance, setGsolBalance] = useState<number>(0);
+  const [gsolRawLamports, setGsolRawLamports] = useState<number>(0);
   const GSOL_MINT = 'GSoLRcWKQE5nbWTYFr83Ei3HGjnp9YzQNAFK6VAATg3';
   const [burnMode, setBurnMode] = useState<'burn' | 'swap'>('burn'); // Toggle between burn and swap
   const [selectedTokenMint, setSelectedTokenMint] = useState<string>('So11111111111111111111111111111111111111112'); // Default to SOL
@@ -915,7 +916,10 @@ export default function SolRefund() {
         const gsolMintPk = new PublicKey(GSOL_MINT);
         const ata = await getAssociatedTokenAddress(gsolMintPk, publicKey);
         const info = await connection.getTokenAccountBalance(ata).catch(() => null);
-        if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
+        if (info?.value?.uiAmount !== undefined) {
+          setGsolBalance(info.value.uiAmount ?? 0);
+          setGsolRawLamports(Number(info.value.amount ?? 0));
+        }
       } catch { /* no GSOL account yet */ }
     })();
   }, [publicKey, connection, activeTab]);
@@ -1007,7 +1011,10 @@ export default function SolRefund() {
       const { getAssociatedTokenAddress } = await import('@solana/spl-token');
       const ata = await getAssociatedTokenAddress(new PublicKey(GSOL_MINT), publicKey);
       const info = await connection.getTokenAccountBalance(ata).catch(() => null);
-      if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
+      if (info?.value?.uiAmount !== undefined) {
+        setGsolBalance(info.value.uiAmount ?? 0);
+        setGsolRawLamports(Number(info.value.amount ?? 0));
+      }
     } catch (e: any) {
       toast({ title: 'Staking failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -1020,10 +1027,10 @@ export default function SolRefund() {
     if (!publicKey || !signTransaction || !connection) return;
     const amt = parseFloat(stakeAmount);
     if (!amt || amt <= 0) { toast({ title: 'Enter an amount', variant: 'destructive' }); return; }
-    if (amt > gsolBalance + 1e-9) { toast({ title: 'Insufficient GSOL balance', variant: 'destructive' }); return; }
+    const lamports = Math.floor(amt * 1e9);
+    if (lamports > gsolRawLamports) { toast({ title: 'Insufficient GSOL balance', variant: 'destructive' }); return; }
     setStakeLoading(true);
     try {
-      const lamports = Math.floor(amt * 1e9);
       const resp = await fetch('/api/staking/unstake-tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1071,7 +1078,10 @@ export default function SolRefund() {
       const { getAssociatedTokenAddress } = await import('@solana/spl-token');
       const ata = await getAssociatedTokenAddress(new PublicKey(GSOL_MINT), publicKey);
       const info = await connection.getTokenAccountBalance(ata).catch(() => null);
-      if (info?.value?.uiAmount !== undefined) setGsolBalance(info.value.uiAmount ?? 0);
+      if (info?.value?.uiAmount !== undefined) {
+        setGsolBalance(info.value.uiAmount ?? 0);
+        setGsolRawLamports(Number(info.value.amount ?? 0));
+      }
     } catch (e: any) {
       toast({ title: 'Unstaking failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -4929,8 +4939,8 @@ export default function SolRefund() {
                             ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
                             : `≈ ${gsolBalance.toFixed(4)} GSOL`}
                         </span>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (Math.floor(gsolBalance * 0.5 * 1e9) / 1e9).toFixed(6))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : (Math.floor(gsolBalance * 1e9) / 1e9).toFixed(6))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (Math.floor(gsolRawLamports / 2) / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : (gsolRawLamports / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
                       </div>
                     </div>
                     {/* Bottom row: token badge left, amount right */}
