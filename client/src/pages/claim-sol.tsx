@@ -1020,7 +1020,7 @@ export default function SolRefund() {
     if (!publicKey || !signTransaction || !connection) return;
     const amt = parseFloat(stakeAmount);
     if (!amt || amt <= 0) { toast({ title: 'Enter an amount', variant: 'destructive' }); return; }
-    if (amt > gsolBalance) { toast({ title: 'Insufficient GSOL balance', variant: 'destructive' }); return; }
+    if (amt > gsolBalance + 1e-9) { toast({ title: 'Insufficient GSOL balance', variant: 'destructive' }); return; }
     setStakeLoading(true);
     try {
       const lamports = Math.floor(amt * 1e9);
@@ -4929,8 +4929,8 @@ export default function SolRefund() {
                             ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
                             : `≈ ${gsolBalance.toFixed(4)} GSOL`}
                         </span>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (gsolBalance * 0.5).toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
-                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : gsolBalance.toFixed(4))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (Math.floor(gsolBalance * 0.5 * 1e9) / 1e9).toFixed(6))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
+                        <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : (Math.floor(gsolBalance * 1e9) / 1e9).toFixed(6))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
                       </div>
                     </div>
                     {/* Bottom row: token badge left, amount right */}
