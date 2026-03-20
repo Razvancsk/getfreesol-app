@@ -5071,7 +5071,7 @@ export default function SolRefund() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-bold text-sm leading-tight">Via Jupiter</p>
-                            <p className="text-white text-xs mt-0.5">{stakeMode === 'stake' ? 'Swap SOL for LST via Jupiter' : 'Swap LST for SOL via Jupiter'}</p>
+                            <p className="text-white text-xs mt-0.5 whitespace-nowrap">{stakeMode === 'stake' ? 'Swap SOL for LST via Jupiter' : 'Swap LST for SOL via Jupiter'}</p>
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-yellow-400 text-xs font-bold">&lt;0.1% price impact</p>
