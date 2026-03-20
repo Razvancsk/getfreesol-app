@@ -1083,7 +1083,21 @@ export default function SolRefund() {
         setGsolRawLamports(Number(info.value.amount ?? 0));
       }
     } catch (e: any) {
-      toast({ title: 'Unstaking failed', description: e.message, variant: 'destructive' });
+      const msg: string = e.message || '';
+      const reserveMatch = msg.match(/maximum possible SOL withdrawal is (\d+) lamports/i);
+      if (reserveMatch || msg.includes('Too much SOL withdrawn')) {
+        const maxLamports = reserveMatch ? parseInt(reserveMatch[1]) : 0;
+        const maxSol = maxLamports ? (Math.floor(maxLamports / 1e5) / 1e4).toFixed(4) : null;
+        toast({
+          title: 'Pool reserve too low',
+          description: maxSol
+            ? `The stake pool reserve can only handle ${maxSol} SOL right now. Try a smaller amount.`
+            : 'The stake pool reserve is insufficient. Try a smaller amount or try again later.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({ title: 'Unstaking failed', description: msg, variant: 'destructive' });
+      }
     } finally {
       setStakeLoading(false);
     }
