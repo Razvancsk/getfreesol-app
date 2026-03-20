@@ -5058,7 +5058,7 @@ export default function SolRefund() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-bold text-sm leading-tight">Direct deposit</p>
-                            <p className="text-white text-xs mt-0.5">{stakeMode === 'stake' ? 'Mint the LST via its stake pool' : 'Redeem via the stake pool directly'}</p>
+                            <p className="text-white text-xs mt-0.5 whitespace-nowrap">{stakeMode === 'stake' ? 'Mint LST via stake pool' : 'Redeem via stake pool'}</p>
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-green-400 text-xs font-bold leading-tight">0% Deposit Fee</p>
