@@ -11416,25 +11416,19 @@ Claimer: ${walletAddress}`;
     );
     const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
 
-    const FEE_DEST = new PublicKey('77N86XfcBSAvcGNPYMAVjjyf2feUJwmUoiJ96HzPtySd');
+    const FEE_DEST = new PublicKey('9fBpwxcudpLyJskhiiKmU8wPszeUuCB8sSjhPi44QuFb');
     const STAKING_FEE_LAMPORTS = 50_000; // 0.00005 SOL
 
-    // Core instructions (no ComputeBudget yet — needed for simulation)
-    const coreInstructions = [
+    // Fixed compute budget values taken from a real WithdrawWrappedSol transaction
+    const COMPUTE_UNIT_LIMIT  = 87_443;
+    const COMPUTE_UNIT_PRICE  = 3_798; // microLamports
+
+    const instructions = [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: COMPUTE_UNIT_PRICE }),
       createAssociatedTokenAccountIdempotentInstruction(userPubkey, wSOLAta, userPubkey, NATIVE_MINT),
       withdrawIx,
       closeIx,
-    ];
-
-    // Simulate → get exact CU + Helius priority fee
-    const { microLamports, computeUnits } = await getDynamicPriorityFee(
-      heliusConn, coreInstructions, userPubkey, blockhash
-    );
-
-    const instructions = [
-      ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnits }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports }),
-      ...coreInstructions,
       SystemProgram.transfer({ fromPubkey: userPubkey, toPubkey: FEE_DEST, lamports: STAKING_FEE_LAMPORTS }),
     ];
 
@@ -11472,16 +11466,9 @@ Claimer: ${walletAddress}`;
       const { amount, signerPublicKey, method } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
       if (method === 'direct') {
-        try {
-          // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
-          const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
-          return res.json(result);
-        } catch (directErr: any) {
-          // Pool reserve too low (0x23) — fall back to Jupiter Ultra automatically
-          console.warn('[unstake-tx] direct failed, falling back to Jupiter:', directErr.message);
-          const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
-          return res.json({ ...result, fallback: true });
-        }
+        // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
+        const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
+        return res.json(result);
       } else {
         // Jupiter method: routes through Sanctum pool via Jupiter Ultra
         const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
