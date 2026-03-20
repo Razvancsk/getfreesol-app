@@ -5048,7 +5048,7 @@ export default function SolRefund() {
                     </div>
 
                     {/* Method detail card */}
-                    <div className={`rounded-xl px-4 py-3.5 border border-white/10 flex items-center gap-3 ${'bg-white/8'}`}>
+                    <div className={`rounded-xl px-4 py-3.5 border border-white/10 flex items-start gap-3 ${'bg-white/8'}`}>
                       {stakingMethod === 'direct' ? (
                         <>
                           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
