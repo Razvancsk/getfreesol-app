@@ -5012,8 +5012,8 @@ export default function SolRefund() {
                     </div>
                   </div>
 
-                  {/* Stake Method selector */}
-                  <div className="mb-5">
+                  {/* Stake Method selector — hidden on Unstake tab */}
+                  <div className={`mb-5 ${stakeMode === 'unstake' ? 'hidden' : ''}`}>
                     {/* Header row */}
                     <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
                       <span className="text-white font-semibold text-sm whitespace-nowrap">
