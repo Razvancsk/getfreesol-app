@@ -4984,22 +4984,8 @@ export default function SolRefund() {
                         </span>
                       </span>
                     </div>
-                    {/* Token pill left, amount right */}
-                    <div className="flex items-center justify-between gap-4">
-                      {/* Token pill */}
-                      <div className="border border-purple-500/40 rounded-3xl bg-purple-900/40 h-9 pl-1.5 pr-3 flex gap-1.5 items-center shrink-0">
-                        {stakeMode === 'stake' ? (
-                          <>
-                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 rounded-full object-contain" />
-                            <span className="text-white font-semibold text-sm">GSOL</span>
-                          </>
-                        ) : (
-                          <>
-                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-6 h-6 rounded-full" />
-                            <span className="text-white font-semibold text-sm">SOL</span>
-                          </>
-                        )}
-                      </div>
+                    {/* Amount row */}
+                    <div className="flex items-center justify-end">
                       <span className="text-white font-black text-4xl leading-none text-right">
                         {stakingMethod === 'direct'
                           ? (stakeAmount && parseFloat(stakeAmount) > 0 ? parseFloat(stakeAmount).toFixed(4) : '0.00')
