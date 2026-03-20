@@ -11461,19 +11461,140 @@ Claimer: ${walletAddress}`;
     }
   });
 
+  /**
+   * Sanctum Router SDK instant-unstake: GSOL → SOL via prefundWithdrawStake.
+   * Uses the @sanctumso/sanctum-router WASM SDK to build the instruction locally —
+   * no external API call required. Routes through the Sanctum 614K SOL liquidity pool
+   * (unpXTU2 / Unstake.it program), so it works even when the GSOL pool reserve is depleted.
+   */
+  async function sanctumInstantUnstakeTx(
+    lamports: number,
+    signer: string
+  ): Promise<{ transaction: string }> {
+    const GSOL = GSOL_MINT_ADDR;
+    const FEE_DEST = new PublicKey('9fBpwxcudpLyJskhiiKmU8wPszeUuCB8sSjhPi44QuFb');
+    const STAKING_FEE = 50_000;
+    const userPubkey = new PublicKey(signer);
+
+    const heliusConn = new Connection(
+      process.env.HELIUS_RPC_URL || `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+    );
+
+    // 1. Initialize Sanctum Router WASM SDK (ESM via dynamic import)
+    const sdk = await import('@sanctumso/sanctum-router');
+    sdk.initSyncEmbed();
+
+    const GSOL_INIT_DATA = {
+      pool: 'spl' as const,
+      stakePoolAddr: '5YWBPjgVBzfkHTLZea33n7xg9qiEakwauvHpe4ixHH9N',
+      stakePoolProgramAddr: 'SP12tWFxD9oJsVWNavTTBZvMbA6gkAmxtVgxdqvyvhY',
+      validatorListAddr: '2DAbCbi1EygjiottLzbsBDDQRt83SQPeQbvoEVdqEmwH',
+      reserveStakeAddr: 'EkcTdkQ4G6FnmZr5XdEouSHL7rJsAwRF4m7NuBxcjDWG',
+    };
+
+    const router = sdk.newSanctumRouter();
+    sdk.init(router, [{ mint: GSOL, init: GSOL_INIT_DATA }]);
+
+    // 2. Fetch accounts required by the router for prefundWithdrawStake
+    const swapMints = [{ swap: 'prefundWithdrawStake' as const, inp: GSOL }];
+    const accountKeys = sdk.accountsToUpdate(router, swapMints);
+    const accountInfos = await heliusConn.getMultipleAccountsInfo(
+      accountKeys.map((k: string) => new PublicKey(k))
+    );
+    const accountMap = new Map<string, { owner: string; data: Uint8Array; lamports: bigint }>();
+    accountKeys.forEach((key: string, i: number) => {
+      const info = accountInfos[i];
+      if (info) {
+        accountMap.set(key, {
+          owner: info.owner.toBase58(),
+          data: new Uint8Array(info.data),
+          lamports: BigInt(info.lamports),
+        });
+      }
+    });
+    sdk.update(router, swapMints, accountMap);
+
+    // 3. Get quote to determine which validator vote account to route through
+    const quote = sdk.quotePrefundWithdrawStake(router, {
+      amt: BigInt(lamports),
+      inp: GSOL,
+    });
+    const voteAccount: string = quote.quote.vote;
+
+    // 4. Find an unused bridgeStakeSeed (PDA must not yet exist on-chain)
+    let bridgeStakeSeed = 0;
+    for (let i = 0; i < 200; i++) {
+      const pdaAddr = sdk.findBridgeStakeAccPda(signer, i);
+      const info = await heliusConn.getAccountInfo(new PublicKey(pdaAddr));
+      if (!info) { bridgeStakeSeed = i; break; }
+    }
+
+    // 5. Derive user's GSOL ATA
+    const { getAssociatedTokenAddressSync } = await import('@solana/spl-token');
+    const gsolAta = getAssociatedTokenAddressSync(new PublicKey(GSOL), userPubkey);
+
+    // 6. Build the prefundWithdrawStake instruction
+    const ixRaw = sdk.prefundWithdrawStakeIx(router, {
+      amt: BigInt(lamports),
+      inp: GSOL,
+      out: voteAccount,
+      signerInp: gsolAta.toBase58(),
+      bridgeStakeSeed,
+      signer,
+    });
+
+    // 7. Convert SDK Instruction → web3.js TransactionInstruction
+    const unstakeIx = new TransactionInstruction({
+      programId: new PublicKey(ixRaw.programAddress),
+      keys: (ixRaw.accounts as Array<{ address: string; role: number }>).map((acc) => ({
+        pubkey: new PublicKey(acc.address),
+        isSigner: acc.role >= 2,
+        isWritable: acc.role === 1 || acc.role === 3,
+      })),
+      data: Buffer.from(ixRaw.data),
+    });
+
+    // 8. Fee transfer instruction
+    const feeIx = SystemProgram.transfer({
+      fromPubkey: userPubkey,
+      toPubkey: FEE_DEST,
+      lamports: STAKING_FEE,
+    });
+
+    // 9. Compute budget — prefundWithdrawStake needs ~500k CU
+    const cuLimitIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 });
+    const cuPriceIx = ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 });
+
+    // 10. Load the Sanctum global LUT to compress account list in V0 transaction
+    const { AddressLookupTableAccount } = await import('@solana/web3.js');
+    const LUT_KEY = new PublicKey('KtrvWWkPkhSWM9VMqafZhgnTuozQiHzrBDT8oPcMj3T');
+    const lutInfo = await heliusConn.getAccountInfo(LUT_KEY);
+    const luts = lutInfo
+      ? [new AddressLookupTableAccount({
+          key: LUT_KEY,
+          state: AddressLookupTableAccount.deserialize(lutInfo.data),
+        })]
+      : [];
+
+    // 11. Compile V0 message with LUT and return serialized transaction
+    const { blockhash } = await heliusConn.getLatestBlockhash('finalized');
+    const msg = new TransactionMessage({
+      payerKey: userPubkey,
+      recentBlockhash: blockhash,
+      instructions: [cuLimitIx, cuPriceIx, unstakeIx, feeIx],
+    }).compileToV0Message(luts);
+
+    const tx = new VersionedTransaction(msg);
+    return { transaction: Buffer.from(tx.serialize()).toString('base64') };
+  }
+
   app.post('/api/staking/unstake-tx', async (req, res) => {
     try {
-      const { amount, signerPublicKey, method } = req.body;
+      const { amount, signerPublicKey } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
-      if (method === 'direct') {
-        // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
-        const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
-        return res.json(result);
-      } else {
-        // Jupiter method: routes through Sanctum pool via Jupiter Ultra
-        const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);
-        res.json(result);
-      }
+      // Always use Sanctum instant-unstake router (disc 0x07) — works even when reserve is depleted
+      const result = await sanctumInstantUnstakeTx(Number(amount), signerPublicKey);
+      return res.json(result);
     } catch (e: any) {
       console.error('[unstake-tx]', e);
       res.status(500).json({ error: e.message });
