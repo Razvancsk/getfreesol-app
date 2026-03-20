@@ -4986,7 +4986,7 @@ export default function SolRefund() {
                     </div>
                     {/* Token pill left, amount right */}
                     <div className="flex items-center justify-between gap-4">
-                      <div className="border border-purple-500/40 rounded-3xl bg-purple-900/40 h-9 pl-1.5 pr-3 flex gap-1.5 items-center shrink-0">
+                      <div className="flex gap-1.5 items-center shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
                             <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 rounded-full object-contain" />
