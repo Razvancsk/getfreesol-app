@@ -1083,21 +1083,7 @@ export default function SolRefund() {
         setGsolRawLamports(Number(info.value.amount ?? 0));
       }
     } catch (e: any) {
-      const msg: string = e.message || '';
-      const reserveMatch = msg.match(/maximum possible SOL withdrawal is (\d+) lamports/i);
-      if (reserveMatch || msg.includes('Too much SOL withdrawn')) {
-        const maxLamports = reserveMatch ? parseInt(reserveMatch[1]) : 0;
-        const maxSol = maxLamports ? (Math.floor(maxLamports / 1e5) / 1e4).toFixed(4) : null;
-        toast({
-          title: 'Pool reserve too low',
-          description: maxSol
-            ? `The stake pool reserve can only handle ${maxSol} SOL right now. Try a smaller amount.`
-            : 'The stake pool reserve is insufficient. Try a smaller amount or try again later.',
-          variant: 'destructive'
-        });
-      } else {
-        toast({ title: 'Unstaking failed', description: msg, variant: 'destructive' });
-      }
+      toast({ title: 'Unstaking failed', description: e.message, variant: 'destructive' });
     } finally {
       setStakeLoading(false);
     }
@@ -4951,7 +4937,7 @@ export default function SolRefund() {
                         <span className="text-white text-sm">
                           {stakeMode === 'stake'
                             ? `≈ ${walletTokenBalance.toFixed(4)} SOL`
-                            : `≈ ${(Math.floor(gsolRawLamports / 1e5) / 1e4).toFixed(4)} GSOL`}
+                            : `≈ ${parseFloat((gsolRawLamports / 1e9).toFixed(9))} GSOL`}
                         </span>
                         <button onClick={() => setStakeAmount(stakeMode === 'stake' ? (walletTokenBalance * 0.5).toFixed(4) : (Math.floor(gsolRawLamports / 2) / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">HALF</button>
                         <button onClick={() => setStakeAmount(stakeMode === 'stake' ? Math.max(0, walletTokenBalance - 0.01).toFixed(4) : (gsolRawLamports / 1e9).toFixed(9))} className="text-xs text-white hover:text-white font-bold px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-500/30 transition-all">MAX</button>
