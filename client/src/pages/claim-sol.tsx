@@ -5062,7 +5062,6 @@ export default function SolRefund() {
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-green-400 text-xs font-bold leading-tight">0% Deposit Fee</p>
-                            <p className="text-green-400 text-xs font-bold leading-tight">0% Price Impact</p>
                           </div>
                         </>
                       ) : (
