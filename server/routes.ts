@@ -11368,6 +11368,22 @@ Claimer: ${walletAddress}`;
     const POOL_VALIDATOR_LIST = new PublicKey('EkcTdkQ4G6FnmZr5XdEouSHL7rJsAwRF4m7NuBxcjDWG');
     const POOL_RESERVE        = new PublicKey('5kQdTc11recnZzm1bYJXEz1sNQvEUUWqHDBkYkyvptLu');
 
+    // ── Pool reserve pre-check (SP12 enforces this on-chain, check here first) ─
+    // Reserve stake account balance minus minimum rent = max withdrawable lamports
+    const MIN_STAKE_RENT = 2_282_880;
+    const checkConn = new Connection(
+      process.env.HELIUS_RPC_URL ||
+      `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+    );
+    const reserveBalance = await checkConn.getBalance(POOL_VALIDATOR_LIST);
+    const maxWithdrawable = Math.max(0, reserveBalance - MIN_STAKE_RENT);
+    if (lamports > maxWithdrawable) {
+      throw Object.assign(
+        new Error(`Pool reserve insufficient: max ${maxWithdrawable} lamports available`),
+        { code: 'POOL_RESERVE_INSUFFICIENT', maxWithdrawable, maxSol: (maxWithdrawable / 1e9).toFixed(9) }
+      );
+    }
+
     // wSOL fee vault for this pool (self-owned wSOL token account, fixed address)
     const WSOL_FEE_VAULT      = new PublicKey('D3DxbHp7YvgdD2iH8GfsGWdFE5gp37aoYjp4jW5jNMjH');
     // SP12 single-pool program
@@ -11467,9 +11483,19 @@ Claimer: ${walletAddress}`;
       const { amount, signerPublicKey, method } = req.body;
       if (!amount || !signerPublicKey) return res.status(400).json({ error: 'amount and signerPublicKey required' });
       if (method === 'direct') {
-        // Direct Unstake: stkitrT1 WithdrawWrappedSol (GSOL → wSOL → SOL) — no external API
-        const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
-        return res.json(result);
+        try {
+          const result = await sanctumDirectUnstakeTx(Number(amount), signerPublicKey);
+          return res.json(result);
+        } catch (err: any) {
+          if (err.code === 'POOL_RESERVE_INSUFFICIENT') {
+            return res.status(422).json({
+              error: 'POOL_RESERVE_INSUFFICIENT',
+              maxWithdrawable: err.maxWithdrawable,
+              maxSol: err.maxSol,
+            });
+          }
+          throw err;
+        }
       } else {
         // Jupiter method: routes through Sanctum pool via Jupiter Ultra
         const result = await jupiterUltraOrder(GSOL_MINT_ADDR, SOL_MINT, Number(amount), signerPublicKey);

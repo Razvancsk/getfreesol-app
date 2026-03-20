@@ -1030,7 +1030,19 @@ export default function SolRefund() {
         body: JSON.stringify({ amount: lamports, signerPublicKey: publicKey.toBase58(), method: stakingMethod })
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Failed to build transaction');
+      if (!resp.ok) {
+        if (resp.status === 422 && data.error === 'POOL_RESERVE_INSUFFICIENT') {
+          const maxSol = data.maxSol ?? (data.maxWithdrawable / 1e9).toFixed(9);
+          setStakeAmount(String(parseFloat(maxSol)));
+          toast({
+            title: 'Pool reserve limit',
+            description: `Pool only has ${parseFloat(maxSol).toFixed(6)} SOL available right now. Amount updated — try again.`,
+            variant: 'destructive',
+          });
+          return;
+        }
+        throw new Error(data.error || 'Failed to build transaction');
+      }
       const txBuffer = Buffer.from(data.transaction, 'base64');
       const tx = VersionedTransaction.deserialize(txBuffer);
       const signed = await signTransaction(tx);
