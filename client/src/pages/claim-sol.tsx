@@ -4950,12 +4950,12 @@ export default function SolRefund() {
                       <div className="flex gap-1.5 items-center shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img alt="SOL" width="24" height="24" className="rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
+                            <img alt="SOL" className="w-7 h-7 rounded-full shrink-0" src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" />
                             <span className="text-white font-semibold text-sm">SOL</span>
                           </>
                         ) : (
                           <>
-                            <img alt="GSOL" width="24" height="24" className="rounded-full shrink-0 object-cover" src="/gsol-token-logo.png?v=6" />
+                            <img alt="GSOL" className="w-7 h-7 rounded-full shrink-0 object-cover" src="/gsol-token-logo.png?v=6" />
                             <span className="text-white font-semibold text-sm">GSOL</span>
                           </>
                         )}
@@ -4989,12 +4989,12 @@ export default function SolRefund() {
                       <div className="flex gap-1.5 items-center shrink-0">
                         {stakeMode === 'stake' ? (
                           <>
-                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-6 h-6 rounded-full object-contain" />
+                            <img src="/gsol-token-logo.png?v=6" alt="GSOL" className="w-7 h-7 rounded-full object-contain shrink-0" />
                             <span className="text-white font-semibold text-sm">GSOL</span>
                           </>
                         ) : (
                           <>
-                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-6 h-6 rounded-full" />
+                            <img src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png" alt="SOL" className="w-7 h-7 rounded-full shrink-0" />
                             <span className="text-white font-semibold text-sm">SOL</span>
                           </>
                         )}
